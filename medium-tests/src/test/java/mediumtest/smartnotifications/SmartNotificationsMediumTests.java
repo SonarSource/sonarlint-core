@@ -333,13 +333,14 @@ class SmartNotificationsMediumTests {
     var client = harness.newFakeClient().build();
     var server = newSonarQubeServer()
       .withProject(PROJECT_KEY, project -> project.withBranch("master"))
-      .withSmartNotifications(List.of(PROJECT_KEY), List.of(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1)
+      .withSmartNotifications(List.of(PROJECT_KEY), EVENT_PROJECT_1)
       .start();
     harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, server.baseUrl(),
-        storage -> storage.withProject(PROJECT_KEY, project -> project
-          .withLastSmartNotificationPoll(STORED_DATE)
-          .shouldThrowOnReadLastEvenPollingTime()))
+        storage -> storage
+          .withProject(PROJECT_KEY, project -> project
+            .withLastSmartNotificationPoll(STORED_DATE)
+            .shouldThrowOnReadLastEvenPollingTime()))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(FULL_SYNCHRONIZATION, SMART_NOTIFICATIONS)
       .start(client);
@@ -348,6 +349,6 @@ class SmartNotificationsMediumTests {
     assertDoesNotThrow(client::getSmartNotificationsToShow);
 
     await().untilAsserted(() -> assertThat(client.getLogMessages())
-      .contains("Couldn't access storage to read and update last event polling time for connection '" + CONNECTION_ID + "'"));
+      .anyMatch(log -> log.startsWith("Couldn't access storage to read and update last event polling:")));
   }
 }

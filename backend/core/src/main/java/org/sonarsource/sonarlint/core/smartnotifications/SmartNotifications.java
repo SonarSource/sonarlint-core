@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
@@ -108,27 +107,22 @@ public class SmartNotifications {
     AbstractConnectionConfiguration connection, SonarLintCancelMonitor cancelMonitor) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
-    try {
-      var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
-        .collect(Collectors.toMap(Function.identity(),
-          p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
+    var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
+      .collect(Collectors.toMap(Function.identity(),
+        p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
-      var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
+    var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
 
-      for (var n : notifications) {
-        var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
-          n.category(), connectionId);
-        client.showSmartNotification(smartNotification);
-        telemetryService.smartNotificationsReceived(n.category());
-      }
-
-      projectKeysByLastEventPolling.keySet()
-        .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
-    } catch (StorageException e) {
-      // likely the reason is sync happening at the moment, polling of events will happen next time when storage is available
-      logger.debug("Couldn't access storage to read and update last event polling time for connection '{}'", connectionId, e);
+    for (var n : notifications) {
+      var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
+      var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
+        n.category(), connectionId);
+      client.showSmartNotification(smartNotification);
+      telemetryService.smartNotificationsReceived(n.category());
     }
+
+    projectKeysByLastEventPolling.keySet()
+      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
   }
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {

@@ -181,12 +181,12 @@ public class ServerFixture {
       return (T) this;
     }
 
-    public T withSmartNotifications(List<String> projects, List<String> dates, String events) {
-      this.smartNotifications.add(new SmartNotifications(projects, dates, events));
+    public T withSmartNotifications(List<String> projects, String events) {
+      this.smartNotifications.add(new SmartNotifications(projects, events));
       return (T) this;
     }
 
-    record SmartNotifications (List<String> projects, List<String> dates, String events) {}
+    record SmartNotifications (List<String> projects, String events) {}
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
@@ -1318,8 +1318,7 @@ public class ServerFixture {
       mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(responseCodes.statusCode)));
       smartNotifications.forEach(sn -> {
         var projects = sn.projects.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(","));
-        var dates = sn.dates.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(","));
-        mockServer.stubFor(get("/api/developers/search_events?projects=" + projects + "&from=" + dates)
+        mockServer.stubFor(get(urlMatching("\\Q/api/developers/search_events?projects=" + projects + "\\E(&from=.*)"))
           .willReturn(aResponse().withBody(sn.events).withStatus(responseCodes.statusCode)));
       });
     }
