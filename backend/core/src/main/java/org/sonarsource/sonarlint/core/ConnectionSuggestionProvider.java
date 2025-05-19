@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -103,16 +104,23 @@ public class ConnectionSuggestionProvider {
     if (!listConfigScopeIds.isEmpty()) {
       var cancelMonitor = new SonarLintCancelMonitor();
       cancelMonitor.watchForShutdown(executorService);
-      executorService.execute(() -> suggestConnectionForGivenScopes(listConfigScopeIds, cancelMonitor));
+      executorService.execute(() -> suggestConnectionAndBindingForGivenScopes(listConfigScopeIds, cancelMonitor));
     }
   }
 
-  private void suggestConnectionForGivenScopes(Set<String> listOfFilesPerConfigScopeIds, SonarLintCancelMonitor cancelMonitor) {
+  private void suggestConnectionAndBindingForGivenScopes(Set<String> configScopeIds, SonarLintCancelMonitor cancelMonitor) {
+    var connectionAndBindingSuggestions = computeConnectionAndBindingSuggestions(configScopeIds, cancelMonitor);
+
+    suggestConnectionToClientIfAny(connectionAndBindingSuggestions.connectionSuggestionsByConfigScopeIds());
+    computeBindingSuggestionIfAny(connectionAndBindingSuggestions.bindingSuggestionsForConfigScopeIds());
+  }
+
+  private @NotNull ConnectionAndBindingSuggestions computeConnectionAndBindingSuggestions(Set<String> configScopeIds, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing connection suggestions");
     var connectionSuggestionsByConfigScopeIds = new HashMap<String, List<ConnectionSuggestionDto>>();
     var bindingSuggestionsForConfigScopeIds = new HashSet<String>();
 
-    for (var configScopeId : listOfFilesPerConfigScopeIds) {
+    for (var configScopeId : configScopeIds) {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
         LOG.debug("A binding already exists, skipping the connection suggestion");
@@ -135,9 +143,7 @@ public class ConnectionSuggestionProvider {
         }
       }
     }
-
-    suggestConnectionToClientIfAny(connectionSuggestionsByConfigScopeIds);
-    computeBindingSuggestionIfAny(bindingSuggestionsForConfigScopeIds);
+    return new ConnectionAndBindingSuggestions(connectionSuggestionsByConfigScopeIds, bindingSuggestionsForConfigScopeIds);
   }
 
   private Optional<Either<String, String>> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
@@ -175,5 +181,17 @@ public class ConnectionSuggestionProvider {
       bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(bindingSuggestionsForConfigScopeIds);
     }
   }
+
+  public List<ConnectionSuggestionDto> getConnectionSuggestions(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
+    var connectionAndBindingSuggestions = computeConnectionAndBindingSuggestions(Set.of(configScopeId), cancelMonitor);
+    return connectionAndBindingSuggestions.connectionSuggestionsByConfigScopeIds.containsKey(configScopeId) ?
+      connectionAndBindingSuggestions.connectionSuggestionsByConfigScopeIds.get(configScopeId) :
+      List.of();
+  }
+
+  private record ConnectionAndBindingSuggestions(
+    Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
+    Set<String> bindingSuggestionsForConfigScopeIds
+  ) {}
 
 }
