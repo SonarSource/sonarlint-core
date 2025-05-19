@@ -155,7 +155,7 @@ class TaintIssueDownloaderTests {
       .build();
 
     mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,kotlinsecurity,phpsecurity,pythonsecurity,tssecurity,gosecurity&f=repo&s=key&ps=500&p=1",
       ruleSearchResponse);
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
@@ -221,7 +221,7 @@ class TaintIssueDownloaderTests {
         .setKey("javasecurity:S789"))
       .build();
     mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,kotlinsecurity,phpsecurity,pythonsecurity,tssecurity,gosecurity&f=repo&s=key&ps=500&p=1",
       ruleSearchResponse);
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);

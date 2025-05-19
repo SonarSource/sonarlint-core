@@ -50,12 +50,14 @@ public class RulesApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final Map<SonarLanguage, String> TAINT_REPOS_BY_LANGUAGE = Map.of(
-    SonarLanguage.CS, "roslyn.sonaranalyzer.security.cs",
+    SonarLanguage.GO, "gosecurity",
     SonarLanguage.JAVA, "javasecurity",
     SonarLanguage.JS, "jssecurity",
-    SonarLanguage.TS, "tssecurity",
+    SonarLanguage.KOTLIN, "kotlinsecurity",
     SonarLanguage.PHP, "phpsecurity",
-    SonarLanguage.PYTHON, "pythonsecurity");
+    SonarLanguage.PYTHON, "pythonsecurity",
+    SonarLanguage.CS, "roslyn.sonaranalyzer.security.cs",
+    SonarLanguage.TS, "tssecurity");
 
   public static final Set<String> TAINT_REPOS = Set.copyOf(TAINT_REPOS_BY_LANGUAGE.values());
 
