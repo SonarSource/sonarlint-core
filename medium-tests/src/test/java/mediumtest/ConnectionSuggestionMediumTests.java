@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetConnectionSuggestionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -424,6 +425,50 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
+  }
+
+  @SonarLintTest
+  void should_return_list_of_suggestions_when_requested(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"ProjectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"SonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    var backend = harness.newBackend()
+      .start(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
+
+    var connectionSuggestions = backend.getConnectionService().getConnectionSuggestions(new GetConnectionSuggestionsParams(CONFIG_SCOPE_ID)).join();
+
+    assertThat(connectionSuggestions.getConnectionSuggestions()).hasSize(1);
+    var connectionSuggestion = connectionSuggestions.getConnectionSuggestions().get(0);
+    assertThat(connectionSuggestion.getConnectionSuggestion().getRight()).isNotNull();
+    assertThat(connectionSuggestion.getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
+    assertThat(connectionSuggestion.getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+    assertThat(connectionSuggestion.isFromSharedConfiguration()).isTrue();
+  }
+
+  @SonarLintTest
+  void should_return_empty_suggestions_list_when_no_clues(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
+      .build();
+
+    var backend = harness.newBackend()
+      .start(fakeClient);
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+        null))));
+
+    var connectionSuggestions = backend.getConnectionService().getConnectionSuggestions(new GetConnectionSuggestionsParams(CONFIG_SCOPE_ID)).join();
+
+    assertThat(connectionSuggestions.getConnectionSuggestions()).isEmpty();
   }
 
   private static Stream<Arguments> emptyBindingSuggestionsTestValueProvider() {

@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetConnectionSuggestionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
@@ -43,6 +45,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetConnectionSuggestionsParams;
 
 class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements ConnectionRpcService {
 
@@ -104,4 +107,12 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
     return requestAsync(cancelMonitor -> new GetProjectNamesByKeyResponse(getBean(ConnectionService.class)
       .getProjectNamesByKey(params.getTransientConnection(), params.getProjectKeys(), cancelMonitor)));
   }
+
+  @Override
+  public CompletableFuture<GetConnectionSuggestionsResponse> getConnectionSuggestions(GetConnectionSuggestionsParams params) {
+    return requestAsync(
+      cancelMonitor -> new GetConnectionSuggestionsResponse(getBean(ConnectionSuggestionProvider.class)
+        .getConnectionSuggestions(params.getConfigurationScopeId(), cancelMonitor)));
+  }
+
 }

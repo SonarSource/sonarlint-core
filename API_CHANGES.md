@@ -3,6 +3,10 @@
 ## New features
 
 * Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.toolCalled` method.
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.getConnectionSuggestions` method.
+  * This method is used to get connection suggestions for a given configuration scope.
+  * The method should only be used when neither connection nor binding exists for a given configuration scope.
+  * If a connection already exists, a `org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService.getBindingSuggestions` should be used instead
 
 # 10.20
 
