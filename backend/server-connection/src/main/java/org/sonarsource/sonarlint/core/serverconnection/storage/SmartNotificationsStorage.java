@@ -47,8 +47,13 @@ public class SmartNotificationsStorage {
   }
 
   public Optional<Long> readLastEventPolling() {
-    return rwLock.read(() -> Files.exists(storageFilePath) ?
-      Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
+    try {
+      return rwLock.read(() -> Files.exists(storageFilePath) ?
+        Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
+    } catch (StorageException e) {
+      LOG.debug("Couldn't access storage to read and update last event polling: " + storageFilePath);
+      return Optional.empty();
+    }
   }
 
   private static Sonarlint.LastEventPolling adapt(Long lastEventPolling) {

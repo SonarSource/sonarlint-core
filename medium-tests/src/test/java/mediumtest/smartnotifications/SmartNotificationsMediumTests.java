@@ -42,8 +42,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class SmartNotificationsMediumTests {
   @RegisterExtension
@@ -323,5 +326,29 @@ class SmartNotificationsMediumTests {
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
+  }
+
+  @SonarLintTest
+  void it_should_not_fail_on_pull_notifications_during_sync(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var server = newSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch("master"))
+      .withSmartNotifications(List.of(PROJECT_KEY), EVENT_PROJECT_1)
+      .start();
+    harness.newBackend()
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, server.baseUrl(),
+        storage -> storage
+          .withProject(PROJECT_KEY, project -> project
+            .withLastSmartNotificationPoll(STORED_DATE)
+            .shouldThrowOnReadLastEvenPollingTime()))
+      .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SMART_NOTIFICATIONS)
+      .start(client);
+    client.waitForSynchronization();
+
+    assertDoesNotThrow(client::getSmartNotificationsToShow);
+
+    await().untilAsserted(() -> assertThat(client.getLogMessages())
+      .anyMatch(log -> log.startsWith("Couldn't access storage to read and update last event polling:")));
   }
 }
