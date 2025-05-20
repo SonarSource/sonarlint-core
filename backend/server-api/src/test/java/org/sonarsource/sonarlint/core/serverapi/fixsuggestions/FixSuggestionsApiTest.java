@@ -179,14 +179,19 @@ class FixSuggestionsApiTest {
         {
           "organizationId": "orgId",
           "enablement": "DISABLED",
-          "organizationEligible": true
+          "organizationEligible": true,
+          "aiCodeFix": {
+            "enablement": "DISABLED",
+            "organizationEligible": true
+          }
         }
         """);
 
       var response = underTest.getOrganizationConfigs("orgId", new SonarLintCancelMonitor());
 
       assertThat(response)
-        .isEqualTo(new OrganizationConfigsResponseDto("orgId", true, SuggestionFeatureEnablement.DISABLED, null));
+        .isEqualTo(new OrganizationConfigsResponseDto("orgId",
+          new AiCodeFix(SuggestionFeatureEnablement.DISABLED, null, true)));
     }
   }
 

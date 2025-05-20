@@ -1452,11 +1452,15 @@ public class ServerFixture {
       organizationsByKey.forEach((organizationKey, organization) -> {
         var enabledProjectKeys = organization.aiCodeFixFeature.enabledProjectKeys == null ? null
           : ("[" + String.join(", ", organization.aiCodeFixFeature.enabledProjectKeys) + "]");
+        var aiCodeFix = "\"aiCodeFix\": {" +
+          "\"enablement\": \"" + organization.aiCodeFixFeature.enablement.name() + "\"," +
+          "\"enabledProjectKeys\":" + enabledProjectKeys + "," +
+          "\"organizationEligible\": " + organization.aiCodeFixFeature.organizationEligible +
+          "}";
+        var response = "{\"enablement\": \"" + organization.aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": "
+          + organization.aiCodeFixFeature.organizationEligible + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "," + aiCodeFix + "}";
         mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organization.id)
-          .willReturn(jsonResponse(
-            "{\"enablement\": \"" + organization.aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + organization.aiCodeFixFeature.organizationEligible
-              + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}",
-            responseCodes.statusCode)));
+          .willReturn(jsonResponse(response, responseCodes.statusCode)));
       });
     }
 
