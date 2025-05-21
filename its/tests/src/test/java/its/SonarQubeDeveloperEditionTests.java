@@ -811,7 +811,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
@@ -1178,7 +1178,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "Why is this an issue?",
           "<p>Path injections occur when an application us...",
           "How can I fix it?",
-          "--> Java SE (java_se)",
+          "--> Java I/O API (java_i_o_api)",
           "    <p>The following code is vulnerable to path inj...",
           "--> Others (others)",
           "    <h4>How can I fix it in another component or fr...",
@@ -1230,7 +1230,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> <a href=\"htt...");
+            + "  <li> OWASP - <a h...");
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
