@@ -49,7 +49,9 @@ public class ModuleInputFileBuilder {
       } catch (IOException e) {
         throw new IllegalStateException("Failed to open a stream on file: " + f.uri(), e);
       }
-      return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri(), null);
+      var encoding = charset != null ? charset : Charset.defaultCharset();
+      LOG.debug("File metadata encoding {}", encoding);
+      return fileMetadata.readMetadata(stream, encoding, f.uri(), null);
     });
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     var fileLanguage = inputFile.language();

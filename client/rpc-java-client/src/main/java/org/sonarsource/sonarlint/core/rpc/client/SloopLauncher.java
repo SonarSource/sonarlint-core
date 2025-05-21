@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -162,7 +163,7 @@ public class SloopLauncher {
 
     @Override
     public void run() {
-      new BufferedReader(new InputStreamReader(inputStream)).lines()
+      new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines()
         .forEach(consumer);
     }
   }
