@@ -811,14 +811,19 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 8)) {
+      var version = ORCHESTRATOR.getServer().version();
+      if (version.isGreaterThanOrEquals(2025, 3)) {
+        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
+      } else {
+        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
+      }
+      if (version.isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
         assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
           ImpactSeverity.MEDIUM);
         assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
+      } else if (version.isGreaterThanOrEquals(10, 2)) {
         // In 10.2 <= SQ < 10.8, the impact severity is not overridden
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
@@ -1171,6 +1176,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var serverVersion = ORCHESTRATOR.getServer().version();
       var extendedDescription = description.getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
+      var framework = serverVersion.isGreaterThanOrEquals(2025, 3) ? "Java I/O API (java_i_o_api)" : "Java SE (java_se)";
       var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
@@ -1178,7 +1184,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "Why is this an issue?",
           "<p>Path injections occur when an application us...",
           "How can I fix it?",
-          "--> Java I/O API (java_i_o_api)",
+          "--> " + framework,
           "    <p>The following code is vulnerable to path inj...",
           "--> Others (others)",
           "    <h4>How can I fix it in another component or fr...",
@@ -1211,6 +1217,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           + "to the user.</p>");
       var iterator = extendedDescription.getTabs().iterator();
       iterator.next();
+      var documentation = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 3) ? "OWASP - <a h..." : "<a href=\"htt...";
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .containsExactly(
@@ -1230,7 +1237,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> OWASP - <a h...");
+            + "  <li> " + documentation);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
