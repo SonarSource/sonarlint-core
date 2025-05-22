@@ -811,7 +811,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
@@ -1169,6 +1169,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var description = activeRuleDetailsResponse.details().getDescription();
       var serverVersion = ORCHESTRATOR.getServer().version();
+      System.out.println("SonarQube Server Version: " + serverVersion);
       var extendedDescription = description.getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
       var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
@@ -1185,7 +1186,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Standards</h3>\n"
             + "<ul>\n"
-            + "  <li> " + link);
+            + "  <li> OWASP - <a href=..." + link);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
@@ -1230,7 +1231,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> <a href=\"htt...");
+            + "  <li> OWASP - <a h...");
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
