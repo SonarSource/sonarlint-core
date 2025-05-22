@@ -811,19 +811,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      var version = ORCHESTRATOR.getServer().version();
-      if (version.isGreaterThanOrEquals(2025, 3)) {
-        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
-      } else {
-        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
-      }
-      if (version.isGreaterThanOrEquals(10, 8)) {
+      var serverVersion = ORCHESTRATOR.getServer().version();
+      var ruleDescriptionContextKey = serverVersion.isGreaterThanOrEquals(2025, 3) ? "java_jdbc_api" : "java_se";
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo(ruleDescriptionContextKey);
+      if (serverVersion.isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
         assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
           ImpactSeverity.MEDIUM);
         assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      } else if (version.isGreaterThanOrEquals(10, 2)) {
+      } else if (serverVersion.isGreaterThanOrEquals(10, 2)) {
         // In 10.2 <= SQ < 10.8, the impact severity is not overridden
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
