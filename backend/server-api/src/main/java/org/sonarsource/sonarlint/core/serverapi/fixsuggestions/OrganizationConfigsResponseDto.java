@@ -19,5 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
-public record OrganizationConfigsResponseDto(String organizationId, AiCodeFix aiCodeFix) {
+public record OrganizationConfigsResponseDto(String organizationId, AiCodeFixConfiguration aiCodeFix) {
 }

@@ -191,7 +191,7 @@ class FixSuggestionsApiTest {
 
       assertThat(response)
         .isEqualTo(new OrganizationConfigsResponseDto("orgId",
-          new AiCodeFix(SuggestionFeatureEnablement.DISABLED, null, true)));
+          new AiCodeFixConfiguration(SuggestionFeatureEnablement.DISABLED, null, true)));
     }
   }
 
