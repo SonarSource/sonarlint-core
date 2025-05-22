@@ -57,9 +57,10 @@ public class AiCodeFixSettingsSynchronizer {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var organization = organizationSynchronizer.readOrSynchronizeOrganization(serverApi, cancelMonitor);
         var organizationConfig = serverApi.fixSuggestions().getOrganizationConfigs(organization.id(), cancelMonitor);
-        var enabledProjectKeys = organizationConfig.enabledProjectKeys();
-        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), organizationConfig.organizationEligible(),
-          AiCodeFixFeatureEnablement.valueOf(organizationConfig.enablement().name()), enabledProjectKeys == null ? Set.of() : enabledProjectKeys));
+        var aiCodeFixConfiguration = organizationConfig.aiCodeFix();
+        var enabledProjectKeys = aiCodeFixConfiguration.enabledProjectKeys();
+        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), aiCodeFixConfiguration.organizationEligible(),
+          AiCodeFixFeatureEnablement.valueOf(aiCodeFixConfiguration.enablement().name()), enabledProjectKeys == null ? Set.of() : enabledProjectKeys));
       } catch (Exception e) {
         LOG.error("Error synchronizing AI CodeFix settings for SonarQube Cloud", e);
       }

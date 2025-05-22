@@ -19,5 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
-public record OrganizationConfigsResponseDto(String organizationId, AiCodeFixConfiguration aiCodeFix) {
+import java.util.Set;
+import javax.annotation.Nullable;
+
+public record AiCodeFixConfiguration(SuggestionFeatureEnablement enablement, @Nullable Set<String> enabledProjectKeys, boolean organizationEligible) {
 }
