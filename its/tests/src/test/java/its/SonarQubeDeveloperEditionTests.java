@@ -811,7 +811,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_jdbc_api");
+      var serverVersion = ORCHESTRATOR.getServer().version();
+      System.out.println("Taint Rule Key: " + taintVulnerability.getRuleKey());
+      System.out.println("SonarQube Server Version: " + serverVersion);
+      var ruleDescriptionContextKey = serverVersion.isGreaterThanOrEquals(2025, 3) ? "java_jdbc_api" : "java_se";
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo(ruleDescriptionContextKey);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
