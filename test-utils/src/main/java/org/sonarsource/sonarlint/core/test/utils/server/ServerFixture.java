@@ -1452,6 +1452,7 @@ public class ServerFixture {
       organizationsByKey.forEach((organizationKey, organization) -> {
         var enabledProjectKeys = organization.aiCodeFixFeature.enabledProjectKeys == null ? null
           : ("[" + String.join(", ", organization.aiCodeFixFeature.enabledProjectKeys) + "]");
+        // this payload will change in the future and will need to update the fixture to have up to date payload example
         var aiCodeFix = "\"aiCodeFix\": {" +
           "\"enablement\": \"" + organization.aiCodeFixFeature.enablement.name() + "\"," +
           "\"enabledProjectKeys\":" + enabledProjectKeys + "," +
