@@ -1186,7 +1186,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Standards</h3>\n"
             + "<ul>\n"
-            + "  <li> OWASP - <a href=..." + link);
+            + "  <li> " + link);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
@@ -1231,7 +1231,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> OWASP - <a h...");
+            + "  <li> <a href=\"htt...");
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
