@@ -165,8 +165,6 @@ class ConnectionValidatorMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
-    serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": }")));
 
     var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("https://foo.bar:1234",
       Either.forLeft(new TokenDto("token"))))).join();
