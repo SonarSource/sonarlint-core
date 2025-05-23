@@ -46,7 +46,7 @@ class ConnectionValidatorMediumTests {
     .build();
 
   @SonarLintTest
-  void testConnection_ok(SonarLintTestHarness harness) {
+  void test_connection_ok(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -61,7 +61,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testConnectionOrganizationNotFound(SonarLintTestHarness harness) {
+  void test_connection_organization_not_found(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -79,7 +79,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testConnection_ok_with_org(SonarLintTestHarness harness) {
+  void test_connection_ok_with_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -103,7 +103,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testConnection_ok_without_org(SonarLintTestHarness harness) {
+  void test_connection_ok_without_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -117,7 +117,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testUnsupportedServer(SonarLintTestHarness harness) {
+  void test_unsupported_server(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -131,7 +131,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testClientError(SonarLintTestHarness harness) {
+  void test_client_error(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -146,7 +146,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @SonarLintTest
-  void testResponseError(SonarLintTestHarness harness) {
+  void test_response_error(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
@@ -158,6 +158,19 @@ class ConnectionValidatorMediumTests {
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("Unable to parse server infos from: {\"id\": }");
+  }
+
+  @SonarLintTest
+  void should_catch_connection_error_to_server(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("https://foo.bar:1234",
+      Either.forLeft(new TokenDto("token"))))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+    assertThat(response.getMessage()).startsWith("java.net.UnknownHostException:");
   }
 
 }
