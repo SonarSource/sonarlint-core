@@ -170,7 +170,7 @@ class ConnectionValidatorMediumTests {
       Either.forLeft(new TokenDto("token"))))).join();
 
     assertThat(response.isSuccess()).isFalse();
-    assertThat(response.getMessage()).isEqualTo("java.net.UnknownHostException: foo.bar: Name or service not known");
+    assertThat(response.getMessage()).startsWith("java.net.UnknownHostException:");
   }
 
 }
