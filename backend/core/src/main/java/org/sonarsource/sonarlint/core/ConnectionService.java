@@ -156,9 +156,9 @@ public class ConnectionService {
 
   public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
-    var serverChecker = new ServerVersionAndStatusChecker(serverApi);
     try {
+      var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
+      var serverChecker = new ServerVersionAndStatusChecker(serverApi);
       serverChecker.checkVersionAndStatus(cancelMonitor);
       var validateCredentials = serverApi.authentication().validate(cancelMonitor);
       if (validateCredentials.success() && transientConnection.isRight()) {
