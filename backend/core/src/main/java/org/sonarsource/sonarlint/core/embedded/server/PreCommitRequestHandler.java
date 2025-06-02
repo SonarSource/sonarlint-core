@@ -1,0 +1,75 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) 2016-2025 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.embedded.server;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import javax.annotation.Nullable;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.io.HttpRequestHandler;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+
+public class PreCommitRequestHandler implements HttpRequestHandler {
+
+  private static final String GIT_URL_SCHEME = "git://";
+
+  private final ClientFileSystemService fileSystemService;
+  private final AnalysisService analysisService;
+
+  public PreCommitRequestHandler(ClientFileSystemService fileSystemService, AnalysisService analysisService) {
+    this.fileSystemService = fileSystemService;
+    this.analysisService = analysisService;
+  }
+
+  @Override
+  public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
+    var originHeader = request.getHeader("Origin");
+    var origin = originHeader != null ? originHeader.getValue() : null;
+    if (origin == null || !Method.POST.isSame(request.getMethod())) {
+      response.setCode(HttpStatus.SC_BAD_REQUEST);
+      return;
+    }
+
+    var maybeRepoPath = originToPath(origin);
+    fileSystemService.getConfigurationScopeForPath(maybeRepoPath).ifPresent(analysisService::analyzeVCSChangedFiles);
+
+    response.setCode(HttpStatus.SC_OK);
+    response.setEntity(new StringEntity("OK"));
+  }
+
+  private static Path originToPath(@Nullable String origin) {
+    if (origin == null || !origin.startsWith(GIT_URL_SCHEME)) {
+      return null;
+    }
+
+    try {
+      return Path.of(origin.substring(GIT_URL_SCHEME.length()));
+    } catch(IllegalArgumentException e) {
+      return null;
+    }
+  }
+}

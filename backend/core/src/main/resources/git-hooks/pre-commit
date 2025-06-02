@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# SonarLint Core - Implementation
+# Copyright (C) 2016-2025 SonarSource SA
+# mailto:info AT sonarsource DOT com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+set -euo pipefail
+
+function main() {
+  REPO_BASE=$(git rev-parse --show-toplevel)
+  ORIGIN="git://${REPO_BASE}"
+
+  COMPATIBLE_SQ_IDE_HOST=''
+  for SQ_IDE_PORT in $(seq 64120 64130); do
+    SQ_IDE_HOST="http://localhost:${SQ_IDE_PORT}"
+    SQ_IDE_URL="${SQ_IDE_HOST}/sonarlint/api/status"
+    SQ_CAN_ANALYZE_REPO=$(curl -s -H "Origin: ${ORIGIN}" "${SQ_IDE_URL}" | jq '.capabilities.canAnalyzeGitRepository')
+    if [ "${SQ_CAN_ANALYZE_REPO}" = "true" ]; then
+      echo "Found compatible SQ:IDE host on port ${SQ_IDE_PORT}"
+      COMPATIBLE_SQ_IDE_HOST="${SQ_IDE_HOST}"
+      curl -s -X POST -H "Origin: ${ORIGIN}" "${COMPATIBLE_SQ_IDE_HOST}/sonarlint/api/precommit"
+      break
+    fi
+  done
+
+  if [ "${COMPATIBLE_SQ_IDE_HOST}" = '' ]; then
+    echo "No compatible SQ:IDE host found, skipping check"
+  fi
+
+  return 0
+}
+
+main

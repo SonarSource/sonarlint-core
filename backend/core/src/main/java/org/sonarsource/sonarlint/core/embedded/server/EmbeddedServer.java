@@ -52,15 +52,18 @@ public class EmbeddedServer {
   private final ShowHotspotRequestHandler showHotspotRequestHandler;
   private final ShowIssueRequestHandler showIssueRequestHandler;
   private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
+  private final PreCommitRequestHandler preCommitRequestHandler;
 
   public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
-    ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler) {
+    ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
+    PreCommitRequestHandler preCommitRequestHandler) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;
     this.showIssueRequestHandler = showIssueRequestHandler;
     this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
+    this.preCommitRequestHandler = preCommitRequestHandler;
   }
 
   @PostConstruct
@@ -94,6 +97,7 @@ public class EmbeddedServer {
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
           .register("/sonarlint/api/issues/show", showIssueRequestHandler)
           .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
+          .register("/sonarlint/api/precommit", preCommitRequestHandler)
           .addFilterLast("CSP", new CspFilter())
           .create();
         startedServer.start();

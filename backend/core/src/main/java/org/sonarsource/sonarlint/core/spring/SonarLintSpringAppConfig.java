@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.PreCommitRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.embedded.server.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
@@ -146,6 +147,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ShowHotspotRequestHandler.class,
   ShowIssueRequestHandler.class,
   ShowFixSuggestionRequestHandler.class,
+  PreCommitRequestHandler.class,
   BindingSuggestionProvider.class,
   ConnectionSuggestionProvider.class,
   BindingClueProvider.class,

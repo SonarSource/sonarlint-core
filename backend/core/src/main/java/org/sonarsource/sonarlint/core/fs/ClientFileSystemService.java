@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -196,6 +197,13 @@ public class ClientFileSystemService {
         return null;
       }
     });
+  }
+
+  public Optional<String> getConfigurationScopeForPath(Path path) {
+    return baseDirPerConfigScopeId.entrySet().stream()
+      .filter(e -> path.endsWith(e.getValue()))
+      .findFirst()
+      .map(Map.Entry::getKey);
   }
 
   public void didOpenFile(String configurationScopeId, URI fileUri) {

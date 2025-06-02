@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -33,6 +35,7 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
@@ -40,14 +43,18 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 
 public class StatusRequestHandler implements HttpRequestHandler {
 
+  private static final String GIT_URL_SCHEME = "git://";
+
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
   private final ClientConstantInfoDto clientInfo;
+  private final ClientFileSystemService fileSystemService;
 
-  public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
+  public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params, ClientFileSystemService fileSystemService) {
     this.client = client;
     this.repository = repository;
     this.clientInfo = params.getClientConstantInfo();
+    this.fileSystemService = fileSystemService;
   }
 
   @Override
@@ -57,13 +64,17 @@ public class StatusRequestHandler implements HttpRequestHandler {
       return;
     }
 
-    boolean trustedServer = Optional.ofNullable(request.getHeader("Origin"))
+    String origin = Optional.ofNullable(request.getHeader("Origin"))
       .map(Header::getValue)
-      .map(this::isTrustedServer)
-      .orElse(false);
+      .orElse(null);
+
+    var maybeRepoPath = originToPath(origin);
+    boolean canAnalyzeGitRepository = fileSystemService.getConfigurationScopeForPath(maybeRepoPath).isPresent();
+
+    boolean trustedServer = origin != null && isTrustedServer(origin, canAnalyzeGitRepository);
 
     var description = getDescription(trustedServer);
-    var capabilities = new CapabilitiesResponse(true);
+    var capabilities = new CapabilitiesResponse(true, canAnalyzeGitRepository);
     // We need a token when the requesting server is not a trusted one (in order to automatically create a connection).
     response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer, capabilities)), ContentType.APPLICATION_JSON));
 
@@ -77,12 +88,24 @@ public class StatusRequestHandler implements HttpRequestHandler {
     return "";
   }
 
-  private boolean isTrustedServer(String serverOrigin) {
-    return repository.hasConnectionWithOrigin(serverOrigin);
+  private static Path originToPath(@Nullable String origin) {
+    if (origin == null || !origin.startsWith(GIT_URL_SCHEME)) {
+      return null;
+    }
+
+    try {
+      return Path.of(origin.substring(GIT_URL_SCHEME.length()));
+    } catch(IllegalArgumentException e) {
+      return null;
+    }
+  }
+
+  private boolean isTrustedServer(String serverOrigin, boolean canAnalyzeGitRepository) {
+    return canAnalyzeGitRepository || repository.hasConnectionWithOrigin(serverOrigin);
   }
 
   private record StatusResponse(@Expose String ideName, @Expose String description, @Expose boolean needsToken,
                                 @Expose CapabilitiesResponse capabilities) { }
 
-  private record CapabilitiesResponse(@Expose boolean canOpenFixSuggestion) { }
+  private record CapabilitiesResponse(@Expose boolean canOpenFixSuggestion, @Expose boolean canAnalyzeGitRepository) { }
 }
