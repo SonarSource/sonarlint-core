@@ -19,25 +19,31 @@
  */
 package mediumtest.monitoring;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
-import uk.org.webcompere.systemstubs.properties.SystemProperties;
 import utils.TestPlugin;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -49,14 +55,39 @@ import static utils.AnalysisUtils.createFile;
 @ExtendWith(SystemStubsExtension.class)
 class MonitoringMediumTests {
   private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private WireMockServer sentryServer;
 
-  @SystemStub
-  private final SystemProperties systemProperties = new SystemProperties(
-    // Force Sentry DSN to an unreachable URL; ideally, it should be set to a mock Web server to check what is sent
-    MonitoringService.DSN_PROPERTY, "https://public@notsentry.example.com/42",
-    // Force trace sample rate to 1 to capture all analysis traces
-    MonitoringService.TRACES_SAMPLE_RATE_PROPERTY, "1"
-  );
+  @BeforeEach
+  void setup() {
+    sentryServer = new WireMockServer(wireMockConfig().dynamicPort());
+    sentryServer.start();
+    System.setProperty(MonitoringService.DSN_PROPERTY, createValidSentryDsn(sentryServer));
+    System.setProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY, "1");
+    setupSentryStubs();
+  }
+
+  @AfterEach
+  void tearDown() {
+    sentryServer.stop();
+  }
+
+  private String createValidSentryDsn(WireMockServer server) {
+    return "http://fake-public-key@localhost:" + server.port() + "/12345";
+  }
+
+  private void setupSentryStubs() {
+    // Stub the Sentry project endpoint (where events are sent)
+    sentryServer.stubFor(post(urlPathMatching("/api/\\d+/store/"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"id\": \"event-id-12345\"}")));
+
+    // Stub the Sentry envelope endpoint (used for transactions, etc.)
+    sentryServer.stubFor(post(urlPathMatching("/api/\\d+/envelope/"))
+      .willReturn(aResponse()
+        .withStatus(200)));
+  }
 
   @SonarLintTest
   void simplePhpWithMonitoring(SonarLintTestHarness harness, @TempDir Path baseDir) {
@@ -117,5 +148,37 @@ class MonitoringMediumTests {
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isEmpty());
+  }
+
+  @SonarLintTest
+  void it_should_not_capture_silenced_exception(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var content = """
+      [3, 1, 4, 1, 5, 9]
+      result = set(sorted(data))
+      
+      result = set(sordata))
+      """;
+    var newContent = """
+      [3, 1, 4, 1, 5, 9]
+      result = set(sorted(data))
+      
+      result = set(sordata))
+      """;
+    var filePath = createFile(baseDir, "invalid.py", content);
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, content, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withBackendCapability(MONITORING)
+      .start(client);
+
+    var updatedFile = new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, newContent, Language.PYTHON, true);
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(updatedFile), List.of()));
+
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error processing file event"));
+    await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).isEmpty());
   }
 }
