@@ -150,30 +150,12 @@ public class SonarLintLogger {
   private void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
     String stacktrace = null;
     if (t != null) {
-      captureExceptionIfNeeded(t);
+      Sentry.captureException(t);
       stacktrace = LogOutput.stackTraceToString(t);
     }
     if (formattedMessage != null || t != null) {
       log(formattedMessage, level, stacktrace);
     }
-  }
-
-  private static void captureExceptionIfNeeded(Throwable t) {
-    if (shouldCapture(t)) {
-      Sentry.captureException(t);
-    }
-  }
-
-  /**
-   * This filter is not supposed to be the main way to omit logging exceptions,
-   * since if it is - it may grow quite fast and become a significant performance overhead.
-   * It should be used only in cases when the exception is coming from dependencies,
-   * and we don't have a way to avoid this exception being thrown.
-   * E.g., analyzers and libraries as a part of a use-case we can't change.
-   */
-  private static boolean shouldCapture(Throwable throwable) {
-    var className = throwable.getClass().getName();
-    return !className.equals("com.sonar.sslr.api.RecognitionException");
   }
 
   private void log(@Nullable String formattedMessage, Level level, @Nullable String stackTrace) {
