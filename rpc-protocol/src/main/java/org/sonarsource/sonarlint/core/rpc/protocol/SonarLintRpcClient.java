@@ -37,8 +37,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -208,13 +206,6 @@ public interface SonarLintRpcClient {
 
   @JsonRequest
   CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params);
-
-  /**
-   * Used for checking whether a locally checked out branch matches a candidate branch name (not necessarily a Sonar branch).
-   * For example, in "show fix suggestion" use-case, to match a local branch with a PR branch that originated a fix suggestion
-   */
-  @JsonRequest
-  CompletableFuture<MatchProjectBranchResponse> matchProjectBranch(MatchProjectBranchParams params);
 
   @JsonNotification
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);

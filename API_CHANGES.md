@@ -1,3 +1,11 @@
+# 10.23
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams` class.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse` class.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#matchProjectBranch` method since it is not used anymore.
+
 # 10.22
 
 ## New features

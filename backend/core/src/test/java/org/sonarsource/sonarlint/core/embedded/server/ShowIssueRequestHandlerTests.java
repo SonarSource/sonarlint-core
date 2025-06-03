@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -41,12 +40,11 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -56,11 +54,8 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -352,36 +347,6 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_cancel_flow_when_branch_does_not_match() throws HttpException, IOException {
-    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
-      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
-      "&organizationKey=sample-organization" +
-      "&tokenValue=123" +
-      "&branch=branch");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
-    var response = mock(ClassicHttpResponse.class);
-    var context = mock(HttpContext.class);
-
-    when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
-        false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
-
-    showIssueRequestHandler.handle(request, response, context);
-    var showMessageArgumentCaptor = ArgumentCaptor.forClass(ShowMessageParams.class);
-
-    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
-    assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
-    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show an issue from branch 'branch', " +
-      "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again.");
-    verify(sonarLintRpcClient).matchProjectBranch(any());
-    verifyNoMoreInteractions(sonarLintRpcClient);
-  }
-
-  @Test
   void should_find_main_branch_when_branch_is_not_provided() throws HttpException, IOException {
     var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
@@ -397,7 +362,6 @@ class ShowIssueRequestHandlerTests {
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
         false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(true);
     when(branchesStorage.read()).thenReturn(new ProjectBranches(Set.of(), "main"));
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
@@ -427,7 +391,6 @@ class ShowIssueRequestHandlerTests {
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
         false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(false);
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
     when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
