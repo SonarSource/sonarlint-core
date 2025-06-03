@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
@@ -41,13 +40,12 @@ public class RaisedHotspotDto extends RaisedFindingDto {
 
   public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
     Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
-    @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability, HotspotStatus status) {
+    @Nullable String ruleDescriptionContextKey, VulnerabilityProbability vulnerabilityProbability, HotspotStatus status) {
     super(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
     this.vulnerabilityProbability = vulnerabilityProbability;
     this.status = status;
   }
 
-  @CheckForNull
   public VulnerabilityProbability getVulnerabilityProbability() {
     return vulnerabilityProbability;
   }

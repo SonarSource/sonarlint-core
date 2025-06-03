@@ -64,6 +64,11 @@ public class DtoMapper {
   public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
     var status = issue.getHotspotStatus();
     status = status != null ? status : HotspotStatus.TO_REVIEW;
+    var vp = RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability());
+    if (vp == null) {
+      // this should not normally happen because all hotspots supposed to have the vulnerability probability set
+      throw new IllegalStateException("Vulnerability probability should be set for security hotspots");
+    }
     return new RaisedHotspotDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       isMQRMode && !issue.getImpacts().isEmpty() ?
         Either.forRight(new MQRModeDetails(RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts())))
@@ -72,7 +77,7 @@ public class DtoMapper {
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).toList(),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).toList(),
-      issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()), status);
+      issue.getRuleDescriptionContextKey(), vp, status);
   }
 
 }

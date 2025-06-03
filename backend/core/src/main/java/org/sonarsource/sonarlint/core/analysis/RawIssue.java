@@ -128,6 +128,7 @@ public class RawIssue {
     return issue.getInputFile();
   }
 
+  @CheckForNull
   public VulnerabilityProbability getVulnerabilityProbability() {
     return activeRule.getVulnerabilityProbability();
   }
