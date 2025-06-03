@@ -22,7 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 public enum AnalysisReportingType {
   VCS_CHANGED_ANALYSIS_TYPE("trigger_count_vcs_changed_files"),
   ALL_FILES_ANALYSIS_TYPE("trigger_count_all_project_files"),
-  PRE_COMMIT_ANALYSIS_TYPE("trigger_count_pre_commit");
+  PRE_COMMIT_ANALYSIS_TYPE("trigger_count_pre_commit"),
+  WHOLE_FOLDER_HOTSPOTS_SCAN_TYPE("trigger_count_whole_folder_hotspots_scan");
 
   private final String id;
 
