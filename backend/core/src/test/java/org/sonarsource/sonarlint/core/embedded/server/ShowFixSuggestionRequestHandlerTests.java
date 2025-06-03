@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -39,12 +38,11 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
@@ -56,9 +54,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -106,7 +101,7 @@ class ShowFixSuggestionRequestHandlerTests {
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
         sonarCloudActiveEnvironment, connectionConfiguration, mock(SonarQubeClientManager.class)),
-      pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
+      pathTranslationService, sonarCloudActiveEnvironment, clientFs);
   }
 
   @Test
@@ -235,51 +230,7 @@ class ShowFixSuggestionRequestHandlerTests {
   }
 
   @Test
-  void should_cancel_flow_when_branch_does_not_match() throws HttpException, IOException {
-    var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
-      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
-      "&organizationKey=sample-organization");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
-    request.setEntity(new StringEntity("""
-      {
-        "fileEdit": {
-          "path": "src/main/java/Main.java",
-          "changes": [{
-            "beforeLineRange": {
-              "startLine": 0,
-              "endLine": 1
-            },
-            "before": "",
-            "after": "var fix = 1;"
-          }]
-        },
-        "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-        "explanation": "Modifying the variable name is good"
-      }
-      """));
-    var response = mock(ClassicHttpResponse.class);
-    var context = mock(HttpContext.class);
-
-    when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
-        false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
-
-    showFixSuggestionRequestHandler.handle(request, response, context);
-    var showMessageArgumentCaptor = ArgumentCaptor.forClass(ShowMessageParams.class);
-
-    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
-    assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
-    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show a fix suggestion from branch 'branch', " +
-      "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again.");
-    verify(sonarLintRpcClient).matchProjectBranch(any());
-    verifyNoMoreInteractions(sonarLintRpcClient);
-  }
-
-  @Test
-  void should_find_main_branch_when_not_provided_and_not_stored() throws HttpException, IOException {
+  void should_show_fix_suggestion() throws HttpException, IOException {
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr" +
@@ -311,7 +262,6 @@ class ShowFixSuggestionRequestHandlerTests {
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
         false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
 
     showFixSuggestionRequestHandler.handle(request, response, context);
 

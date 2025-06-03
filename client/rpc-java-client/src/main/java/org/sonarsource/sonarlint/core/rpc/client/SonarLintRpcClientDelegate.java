@@ -169,8 +169,6 @@ public interface SonarLintRpcClientDelegate {
   String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames,
     SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
-  boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException;
-
   void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName);
 
   TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes();

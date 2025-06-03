@@ -49,7 +49,6 @@ import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
@@ -62,7 +61,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
-import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -79,19 +77,16 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
-  private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private final ClientFileSystemService clientFs;
 
   public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, ApplicationEventPublisher eventPublisher,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant,
-    PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
-    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, ClientFileSystemService clientFs) {
+    PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ClientFileSystemService clientFs) {
     this.client = client;
     this.eventPublisher = eventPublisher;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
-    this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
     this.clientFs = clientFs;
   }
 
@@ -117,20 +112,6 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey, origin,
       (connectionId, boundScopes, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          var branchToMatch = showFixSuggestionQuery.branch;
-          if (branchToMatch == null) {
-            branchToMatch = sonarProjectBranchesSynchronizationService.findMainBranch(connectionId, showFixSuggestionQuery.projectKey,
-              cancelMonitor);
-          }
-          var localBranchMatchesRequesting =
-            client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
-          if (!localBranchMatchesRequesting) {
-            client.showMessage(new ShowMessageParams(MessageType.ERROR,
-              "Attempted to show a fix suggestion from branch '" + StringEscapeUtils.escapeHtml(branchToMatch) + "', " +
-                "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
-            return;
-          }
-
           if (doesClientFileExists(configScopeId, showFixSuggestionQuery.fixSuggestion.fileEdit.path, boundScopes)) {
             showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.fixSuggestion);
           } else {
