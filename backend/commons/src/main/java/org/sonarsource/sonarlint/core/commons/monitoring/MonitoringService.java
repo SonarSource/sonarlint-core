@@ -72,7 +72,7 @@ public class MonitoringService {
     sentryOptions.setTag("architecture", SystemUtils.OS_ARCH);
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
-    addCaptureIgnoreRule( sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
+    addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
     return sentryOptions;
   }
 
@@ -93,8 +93,9 @@ public class MonitoringService {
   }
 
   /**
-   *  To ignore exceptions, it's better to use {@link SentryOptions#addIgnoredExceptionForType}, but it accepts Class type
-   *  and this is the workaround for the case when Exception class is not in the classpath
+   * To ignore exceptions, it's better to use {@link SentryOptions#addIgnoredExceptionForType}, but it accepts Class type
+   * and this is the workaround for the case when Exception class is not in the classpath
+   *
    * @param regex this should be the regex satisfying java.util.regex.Pattern spec
    */
   private static void addCaptureIgnoreRule(SentryOptions sentryOptions, String regex) {
