@@ -54,6 +54,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
@@ -394,6 +395,18 @@ class GitServiceTests {
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3))).isEmpty();
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(1, 2))).isPresent();
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(3))).isEmpty();
+  }
+
+  @Test
+  void should_return_empty_blame_result_if_no_commits_in_repo() throws IOException, GitAPIException {
+    FileUtils.deleteDirectory(projectDirPath.resolve(".git").toFile());
+    Git.init().setDirectory(projectDirPath.toFile()).call();
+    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+    var filePath = Path.of("fileA");
+
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(filePath));
+
+    assertTrue(sonarLintBlameResult.isEmpty());
   }
 
 }
