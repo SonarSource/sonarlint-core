@@ -39,6 +39,10 @@ public class SonarLintBlameResult {
     this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
   }
 
+  public static SonarLintBlameResult withEmptyBlameResult(Path gitRepoRelativeProjectBaseDir) {
+    return new SonarLintBlameResult(new BlameResult(), gitRepoRelativeProjectBaseDir);
+  }
+
   /**
    * @param projectDirRelativeFilePath A path relative to the Git repository root
    * @param lineNumbers Line numbers for which to check the latest change date. Numbering starts from `1`!

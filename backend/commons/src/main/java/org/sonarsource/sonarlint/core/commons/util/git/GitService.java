@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.lib.Constants;
@@ -113,6 +114,9 @@ public class GitService {
     try {
       var blameResult = blameCommand.call();
       return new SonarLintBlameResult(blameResult, gitRepoRelativeProjectBaseDir);
+    } catch (NoHeadException e) {
+      // it means that the repository has no commits, so we can't get any blame information
+      return SonarLintBlameResult.withEmptyBlameResult(gitRepoRelativeProjectBaseDir);
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
