@@ -39,6 +39,6 @@ class AnalyzerConfigurationStorageTests {
     var valid = analyzerConfigurationStorage.isValid();
 
     assertFalse(valid);
-    assertThat(logTester.logs()).contains("Could not load analyzer configuration storage : " + tempDir.toAbsolutePath() + "/analyzer_config.pb");
+    assertThat(logTester.logs()).contains("Could not load analyzer configuration storage : " + tempDir.toAbsolutePath().resolve("analyzer_config.pb"));
   }
 }
