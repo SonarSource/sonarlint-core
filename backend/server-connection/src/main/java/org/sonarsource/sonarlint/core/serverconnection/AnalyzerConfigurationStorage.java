@@ -59,6 +59,9 @@ public class AnalyzerConfigurationStorage {
   private Optional<AnalyzerConfiguration> tryRead() {
     try {
       return Optional.of(read());
+    } catch (StorageException e) {
+      LOG.debug("Could not load analyzer configuration storage : {}", storageFilePath);
+      return Optional.empty();
     } catch (Exception e) {
       LOG.debug("Could not load analyzer configuration storage", e);
       return Optional.empty();
