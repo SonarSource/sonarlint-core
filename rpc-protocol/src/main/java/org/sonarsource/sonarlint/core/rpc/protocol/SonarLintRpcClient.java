@@ -212,7 +212,7 @@ public interface SonarLintRpcClient {
   /**
    * @deprecated Should not be implemented as it is not used anymore
    */
-  @Deprecated(since = "10.22", forRemoval = true)
+  @Deprecated(since = "10.23", forRemoval = true)
   @JsonRequest
   default CompletableFuture<MatchProjectBranchResponse> matchProjectBranch(MatchProjectBranchParams params) {
     return CompletableFuture.completedFuture(new MatchProjectBranchResponse(true));
