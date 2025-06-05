@@ -37,6 +37,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -206,6 +208,15 @@ public interface SonarLintRpcClient {
 
   @JsonRequest
   CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params);
+
+  /**
+   * @deprecated Should not be implemented as it is not used anymore
+   */
+  @Deprecated(since = "10.22", forRemoval = true)
+  @JsonRequest
+  default CompletableFuture<MatchProjectBranchResponse> matchProjectBranch(MatchProjectBranchParams params) {
+    return CompletableFuture.completedFuture(new MatchProjectBranchResponse(true));
+  }
 
   @JsonNotification
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);
