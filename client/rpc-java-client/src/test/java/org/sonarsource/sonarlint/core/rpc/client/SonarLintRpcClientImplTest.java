@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rpc.client;
 
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,5 +47,18 @@ class SonarLintRpcClientImplTest {
         assertThat(logParam.getMessage()).contains("Error when handling a notification");
         assertThat(logParam.getStackTrace()).contains("java.lang.IllegalStateException: Kaboom");
       });
+  }
+
+  @Test
+  void it_should_match_project_branch() throws ExecutionException, InterruptedException {
+    var fakeClientDelegate = mock(SonarLintRpcClientDelegate.class);
+    var rpcClient = new SonarLintRpcClientImpl(fakeClientDelegate, Runnable::run, Runnable::run);
+    var params = new MatchProjectBranchParams("configScopeId", "branch");
+
+    var response = rpcClient.matchProjectBranch(params);
+
+    assertThat(params.getConfigurationScopeId()).isEqualTo("configScopeId");
+    assertThat(params.getServerBranchToMatch()).isEqualTo("branch");
+    assertThat(response.get().isBranchMatched()).isTrue();
   }
 }

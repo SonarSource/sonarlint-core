@@ -255,6 +255,15 @@ class SonarProjectBranchMediumTests {
       .isNull();
   }
 
+  @SonarLintTest
+  void it_should_match_project_branch(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+
+    client.matchProjectBranch(any(), any(), any());
+
+    verify(client).matchProjectBranch(any(), any(), any());
+  }
+
   private void bind(SonarLintTestRpcServer backend, String configScopeId, String connectionId, String projectKey) {
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, projectKey, true)));
   }
