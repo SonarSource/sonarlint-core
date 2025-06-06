@@ -171,7 +171,7 @@ public interface SonarLintRpcClientDelegate {
     SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
   @Deprecated(since = "10.23", forRemoval = true)
-  default boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException {
+  default boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) {
     return true;
   }
 
