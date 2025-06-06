@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol;
+package org.sonarsource.sonarlint.core.serverapi.exception;
 
-public class SonarLintRpcErrorCode {
-
-  public static final int CONNECTION_NOT_FOUND = -1;
-  public static final int CONFIG_SCOPE_NOT_FOUND = -2;
-  public static final int RULE_NOT_FOUND = -3;
-  public static final int BACKEND_ALREADY_INITIALIZED = -4;
-  public static final int ISSUE_NOT_FOUND = -5;
-  public static final int CONFIG_SCOPE_NOT_BOUND = -6;
-  public static final int HTTP_REQUEST_TIMEOUT = -7;
-  public static final int HTTP_REQUEST_FAILED = -8;
-  public static final int TASK_EXECUTION_TIMEOUT = -9;
-  public static final int PROGRESS_CREATION_FAILED = -10;
-  public static final int CONNECTION_KIND_NOT_SUPPORTED = -11;
-  public static final int FILE_NOT_FOUND = -12;
-  public static final int TOO_MANY_REQUESTS = -13;
+public class TooManyRequestsException extends RuntimeException {
+  public TooManyRequestsException(String message) {
+    super(message);
+  }
 }

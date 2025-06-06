@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
@@ -45,8 +46,12 @@ public class FixSuggestionsApi {
       : helper.post("/api/v2/fix-suggestions/ai-suggestions", JSON_CONTENT_TYPE, gson.toJson(dto), cancelMonitor)) {
       return gson.fromJson(response.bodyAsString(), AiSuggestionResponseBodyDto.class);
     } catch (Exception e) {
-      LOG.error("Error while generating an AI CodeFix", e);
-      throw new UnexpectedBodyException(e);
+      if(e instanceof TooManyRequestsException) {
+        throw e;
+      } else {
+        LOG.error("Error while generating an AI CodeFix", e);
+        throw new UnexpectedBodyException(e);
+      }
     }
   }
 
