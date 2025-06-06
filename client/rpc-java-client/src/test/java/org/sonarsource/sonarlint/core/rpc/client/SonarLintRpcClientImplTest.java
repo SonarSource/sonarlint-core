@@ -53,9 +53,12 @@ class SonarLintRpcClientImplTest {
   void it_should_match_project_branch() throws ExecutionException, InterruptedException {
     var fakeClientDelegate = mock(SonarLintRpcClientDelegate.class);
     var rpcClient = new SonarLintRpcClientImpl(fakeClientDelegate, Runnable::run, Runnable::run);
+    var params = new MatchProjectBranchParams("configScopeId", "branch");
 
-    var response = rpcClient.matchProjectBranch(new MatchProjectBranchParams("configScopeId", "branch"));
+    var response = rpcClient.matchProjectBranch(params);
 
+    assertThat(params.getConfigurationScopeId()).isEqualTo("configScopeId");
+    assertThat(params.getServerBranchToMatch()).isEqualTo("branch");
     assertThat(response.get().isBranchMatched()).isTrue();
   }
 }
