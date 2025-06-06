@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -52,6 +53,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.ISSUE_NOT_FOUND;
+import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.TOO_MANY_REQUESTS;
 
 public class AiCodeFixService {
   private final ConnectionConfigurationRepository connectionRepository;
@@ -108,8 +110,14 @@ public class AiCodeFixService {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));
     }
 
-    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), raisedIssue),
-      cancelMonitor);
+    AiSuggestionResponseBodyDto fixResponseDto;
+
+    try {
+      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), raisedIssue),
+        cancelMonitor);
+    } catch (TooManyRequestsException e) {
+      throw new ResponseErrorException(new ResponseError(TOO_MANY_REQUESTS, "AI CodeFix usage has been capped. Too many requests have been made.", issueId));
+    }
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
       fixResponseDto.id().toString(),
@@ -128,9 +136,14 @@ public class AiCodeFixService {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided taint cannot be fixed", taint.getId()));
     }
 
-    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(
-      toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), taint, configScopeId),
-      cancelMonitor);
+    AiSuggestionResponseBodyDto fixResponseDto;
+
+    try {
+      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), taint, configScopeId),
+        cancelMonitor);
+    } catch (TooManyRequestsException e) {
+      throw new ResponseErrorException(new ResponseError(TOO_MANY_REQUESTS, "AI CodeFix usage has been capped. Too many requests have been made.", taint.getId()));
+    }
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
       fixResponseDto.id().toString(),

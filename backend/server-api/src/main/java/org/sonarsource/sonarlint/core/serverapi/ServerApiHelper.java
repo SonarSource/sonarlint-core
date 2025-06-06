@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 import static java.util.Objects.requireNonNull;
@@ -59,6 +60,7 @@ public class ServerApiHelper {
 
   public static final int PAGE_SIZE = 500;
   public static final int MAX_PAGES = 20;
+  public static final int HTTP_TOO_MANY_REQUESTS = 429;
 
   private final HttpClient client;
   private final EndpointParams endpointParams;
@@ -194,6 +196,9 @@ public class ServerApiHelper {
       }
       if (failedResponse.code() >= HttpURLConnection.HTTP_INTERNAL_ERROR) {
         return new ServerErrorException(formatHttpFailedResponse(failedResponse, null));
+      }
+      if (failedResponse.code() == HTTP_TOO_MANY_REQUESTS) {
+        return new TooManyRequestsException("Too many requests have been made.");
       }
 
       var errorMsg = tryParseAsJsonError(failedResponse);
