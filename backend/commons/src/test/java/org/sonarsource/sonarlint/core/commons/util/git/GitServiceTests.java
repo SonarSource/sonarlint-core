@@ -400,13 +400,14 @@ class GitServiceTests {
   @Test
   void should_return_empty_blame_result_if_no_commits_in_repo() throws IOException, GitAPIException {
     FileUtils.deleteDirectory(projectDirPath.resolve(".git").toFile());
-    Git.init().setDirectory(projectDirPath.toFile()).call();
-    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
-    var filePath = Path.of("fileA");
+    try (var ignored = Git.init().setDirectory(projectDirPath.toFile()).call()) {
+      createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+      var filePath = Path.of("fileA");
 
-    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(filePath));
+      var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(filePath));
 
-    assertTrue(sonarLintBlameResult.isEmpty());
+      assertTrue(sonarLintBlameResult.isEmpty());
+    }
   }
 
 }
