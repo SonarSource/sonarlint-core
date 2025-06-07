@@ -19,49 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 
-public class HttpConfig {
-
-  private final SslConfig sslConfig;
-  private final Timeout connectTimeout;
-  private final Timeout socketTimeout;
-  private final Timeout connectionRequestTimeout;
-  private final Timeout responseTimeout;
-
-  public HttpConfig(SslConfig sslConfig, @Nullable Timeout connectTimeout, @Nullable Timeout socketTimeout, @Nullable Timeout connectionRequestTimeout,
-    @Nullable Timeout responseTimeout) {
-    this.sslConfig = sslConfig;
-    this.connectTimeout = connectTimeout;
-    this.socketTimeout = socketTimeout;
-    this.connectionRequestTimeout = connectionRequestTimeout;
-    this.responseTimeout = responseTimeout;
-  }
-
-  public SslConfig getSslConfig() {
-    return sslConfig;
-  }
-
-  @CheckForNull
-  public Timeout getConnectTimeout() {
-    return connectTimeout;
-  }
-
-  @CheckForNull
-  public Timeout getSocketTimeout() {
-    return socketTimeout;
-  }
-
-  @CheckForNull
-  public Timeout getConnectionRequestTimeout() {
-    return connectionRequestTimeout;
-  }
-
-  @CheckForNull
-  public Timeout getResponseTimeout() {
-    return responseTimeout;
-  }
+public record HttpConfig(SslConfig sslConfig, @Nullable Timeout connectTimeout, @Nullable Timeout socketTimeout,
+                         @Nullable Timeout connectionRequestTimeout, @Nullable Timeout responseTimeout) {
 }
