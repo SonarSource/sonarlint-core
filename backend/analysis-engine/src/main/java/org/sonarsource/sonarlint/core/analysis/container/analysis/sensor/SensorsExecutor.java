@@ -40,6 +40,8 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+
 /**
  * Execute Sensors.
  */
@@ -95,17 +97,10 @@ public class SensorsExecutor {
 
   private static void executeSensor(SensorContext context, ProjectSensor sensor, DefaultSensorDescriptor descriptor, @Nullable Trace trace) {
     var sensorName = descriptor.name() != null ? descriptor.name() : describe(sensor);
-    var sensorSpan = trace == null ? null : trace.startChild("executeSensor", sensorName);
     LOG.debug("Execute Sensor: {}", sensorName);
     try {
-      sensor.execute(context);
-      if (sensorSpan != null) {
-        sensorSpan.finishSuccessfully();
-      }
+      startChild(trace, "executeSensor", sensorName, () -> sensor.execute(context));
     } catch (Throwable t) {
-      if (sensorSpan != null) {
-        sensorSpan.finishExceptionally(t);
-      }
       LOG.error("Error executing sensor: '{}'", sensorName, t);
     }
   }
