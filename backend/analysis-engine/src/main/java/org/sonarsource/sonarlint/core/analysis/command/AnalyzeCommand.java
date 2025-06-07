@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
@@ -50,6 +51,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
 public class AnalyzeCommand extends Command {
@@ -167,8 +169,8 @@ public class AnalyzeCommand extends Command {
     analysisStarted.accept(configuration.inputFiles());
     var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     if (moduleContainer == null) {
-      // if not found, means we are outside any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
+      moduleContainer = startChild(trace, "createTransientContainer", null,
+        () -> moduleRegistry.createTransientContainer(configuration.inputFiles()));
     }
     Throwable originalException = null;
     doIfTraceIsSet(t -> {
@@ -205,7 +207,7 @@ public class AnalyzeCommand extends Command {
       });
       result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
-    } catch (Throwable e) {
+    } catch (Exception e) {
       originalException = e;
       doIfTraceIsSet(t -> t.finishExceptionally(e));
       throw e;
@@ -265,5 +267,10 @@ public class AnalyzeCommand extends Command {
     var filesMatch = Objects.equals(getFiles(), analyzeCommand.getFiles());
     var extraPropertiesMatch = Objects.equals(getExtraProperties(), analyzeCommand.getExtraProperties());
     return triggerTypesMatch && filesMatch && extraPropertiesMatch;
+  }
+
+  @CheckForNull
+  public Trace getTrace() {
+    return trace;
   }
 }
