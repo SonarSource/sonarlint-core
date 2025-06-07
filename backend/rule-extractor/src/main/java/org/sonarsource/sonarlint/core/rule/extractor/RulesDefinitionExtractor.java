@@ -36,7 +36,7 @@ public class RulesDefinitionExtractor {
     Context context;
     try {
       var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
-      container.execute();
+      container.execute(null);
       context = container.getRulesDefinitionContext();
     } catch (Exception e) {
       throw new IllegalStateException("Unable to extract rules metadata", e);

@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.commons.monitoring;
 import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import io.sentry.SpanStatus;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 public class Trace {
 
@@ -35,16 +37,42 @@ public class Trace {
     return new Trace(Sentry.startTransaction(name, operation));
   }
 
+  public static <T> T startChild(@Nullable Trace trace, String task, @Nullable String description, Supplier<T> operation) {
+    if (trace == null) {
+      return operation.get();
+    }
+    var span = new Span(trace.transaction.startChild(task, description));
+    try {
+      var result = operation.get();
+      span.finishSuccessfully();
+      return result;
+    } catch (Exception exception) {
+      span.finishExceptionally(exception);
+      throw exception;
+    }
+  }
+
+  public static void startChild(@Nullable Trace trace, String task, @Nullable String description, Runnable operation) {
+    if (trace == null) {
+      operation.run();
+      return;
+    }
+    var span = new Span(trace.transaction.startChild(task, description));
+    try {
+      operation.run();
+      span.finishSuccessfully();
+    } catch (Exception exception) {
+      span.finishExceptionally(exception);
+      throw exception;
+    }
+  }
+
   public void setData(String key, Object value) {
     this.transaction.setData(key, value);
   }
 
   public void setThrowable(Throwable throwable) {
     this.transaction.setThrowable(throwable);
-  }
-
-  public Span startChild(String task, String operation) {
-    return new Span(this.transaction.startChild(task, operation));
   }
 
   public void finishExceptionally(Throwable throwable) {

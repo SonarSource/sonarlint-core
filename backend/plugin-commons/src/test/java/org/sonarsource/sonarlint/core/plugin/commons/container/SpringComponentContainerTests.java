@@ -54,7 +54,7 @@ class SpringComponentContainerTests {
       }
     };
 
-    assertThrows(IllegalStateException.class, container::execute);
+    assertThrows(IllegalStateException.class, () -> container.execute(null));
     assertThat(startStop.start).isOne();
     assertThat(startStop.stop).isOne();
   }
@@ -125,7 +125,7 @@ class SpringComponentContainerTests {
         throw new IllegalStateException("doBeforeStart");
       }
     };
-    assertThrows(IllegalStateException.class, container::execute);
+    assertThrows(IllegalStateException.class, () -> container.execute(null));
     assertThat(errorStopClass.stopped).isTrue();
   }
 
@@ -219,7 +219,7 @@ class SpringComponentContainerTests {
         getComponentByType(AutoClose.class);
       }
     };
-    container.execute();
+    container.execute(null);
 
     assertThat(closeable.closed).isOne();
     assertThat(jsr.postConstruct).isOne();
