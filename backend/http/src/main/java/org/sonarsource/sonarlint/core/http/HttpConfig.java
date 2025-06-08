@@ -25,4 +25,32 @@ import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 
 public record HttpConfig(SslConfig sslConfig, @Nullable Timeout connectTimeout, @Nullable Timeout socketTimeout,
                          @Nullable Timeout connectionRequestTimeout, @Nullable Timeout responseTimeout) {
+
+  private static final Timeout DEFAULT_CONNECT_TIMEOUT = Timeout.ofSeconds(60);
+  private static final Timeout DEFAULT_RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
+
+  @Override
+  public Timeout connectionRequestTimeout() {
+    if (connectionRequestTimeout == null) {
+      return DEFAULT_CONNECT_TIMEOUT;
+    }
+    return connectionRequestTimeout;
+  }
+
+  @Override
+  public Timeout responseTimeout() {
+    if (responseTimeout == null) {
+      return DEFAULT_RESPONSE_TIMEOUT;
+    }
+    return responseTimeout;
+  }
+
+  @Override
+  public Timeout connectTimeout() {
+    if (connectTimeout == null) {
+      return DEFAULT_CONNECT_TIMEOUT;
+    }
+    return connectTimeout;
+  }
+
 }
