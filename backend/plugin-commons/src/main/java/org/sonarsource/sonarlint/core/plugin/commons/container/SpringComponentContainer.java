@@ -37,6 +37,8 @@ import static java.util.Collections.emptyList;
 import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 
 public class SpringComponentContainer implements StartableContainer {
+  private static final String START_COMPONENTS = "startComponents";
+
   protected final AnnotationConfigApplicationContext context;
   @Nullable
   protected final SpringComponentContainer parent;
@@ -180,9 +182,9 @@ public class SpringComponentContainer implements StartableContainer {
 
   @Override
   public SpringComponentContainer startComponents() {
-    startChild(trace, "doBeforeStart", "startComponents", this::doBeforeStart);
-    startChild(trace, "refresh", "startComponents", context::refresh);
-    startChild(trace, "doAfterStart", "startComponents", this::doAfterStart);
+    startChild(trace, "doBeforeStart", START_COMPONENTS, this::doBeforeStart);
+    startChild(trace, "refresh", START_COMPONENTS, context::refresh);
+    startChild(trace, "doAfterStart", START_COMPONENTS, this::doAfterStart);
     return this;
   }
 
