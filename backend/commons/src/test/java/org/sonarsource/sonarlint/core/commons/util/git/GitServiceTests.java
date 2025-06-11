@@ -388,6 +388,16 @@ class GitServiceTests {
   }
 
   @Test
+  void should_not_read_git_ignore_on_bare_repo_with_no_commit(@TempDir Path bareRepoNoCommitPath) throws GitAPIException {
+    try (var ignored = Git.init().setBare(true).setDirectory(bareRepoNoCommitPath.toFile()).call()) {
+      var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(bareRepoNoCommitPath);
+
+      assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sonar.txt"))).isFalse();
+      assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sonar.log"))).isFalse();
+    }
+  }
+
+  @Test
   void git_blame_works_for_bare_repos_too() {
     var sonarLintBlameResult = blameWithFilesGitCommand(bareRepoPath, Stream.of("fileA", "fileB").map(Path::of).collect(Collectors.toSet()));
 
