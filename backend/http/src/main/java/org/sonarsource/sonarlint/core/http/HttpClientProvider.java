@@ -70,12 +70,12 @@ public class HttpClientProvider {
     this.userAgent = userAgent;
     this.webSocketThreadPool = FailSafeExecutors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.getSslConfig(), trustManagerParametersPredicate)))
+      .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.sslConfig(), trustManagerParametersPredicate)))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
         .build())
-      .setDefaultConnectionConfig(buildConnectionConfig(httpConfig.getConnectTimeout(), httpConfig.getSocketTimeout()))
+      .setDefaultConnectionConfig(buildConnectionConfig(httpConfig.connectTimeout(), httpConfig.socketTimeout()))
       .build();
     this.sharedClient = HttpAsyncClients.custom()
       .setConnectionManager(asyncConnectionManager)
@@ -84,7 +84,7 @@ public class HttpClientProvider {
       // proxy settings
       .setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector))
       .setDefaultCredentialsProvider(proxyCredentialsProvider)
-      .setDefaultRequestConfig(buildRequestConfig(httpConfig.getConnectionRequestTimeout(), httpConfig.getResponseTimeout()))
+      .setDefaultRequestConfig(buildRequestConfig(httpConfig.connectionRequestTimeout(), httpConfig.responseTimeout()))
       .build();
 
     sharedClient.start();
@@ -125,7 +125,8 @@ public class HttpClientProvider {
   }
 
   private static RequestConfig buildRequestConfig(@Nullable Timeout connectionRequestTimeout, @Nullable Timeout responseTimeout) {
-    var requestConfig = RequestConfig.custom();
+    var requestConfig = RequestConfig.custom()
+      .setContentCompressionEnabled(false);
     if (connectionRequestTimeout != null) {
       requestConfig.setConnectionRequestTimeout(connectionRequestTimeout);
     }
