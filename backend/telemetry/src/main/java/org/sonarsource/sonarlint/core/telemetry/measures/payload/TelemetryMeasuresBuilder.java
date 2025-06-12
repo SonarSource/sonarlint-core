@@ -58,7 +58,15 @@ public class TelemetryMeasuresBuilder {
 
     addToolsMeasures(values);
 
+    addPerformanceMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
+  }
+
+  private void addPerformanceMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    if (storage.getBiggestNumberOfFilesInConfigScope() > 0) {
+      values.add(new TelemetryMeasuresValue("performance.biggest_size_config_scope_files", String.valueOf(storage.getBiggestNumberOfFilesInConfigScope()), INTEGER, DAILY));
+    }
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {

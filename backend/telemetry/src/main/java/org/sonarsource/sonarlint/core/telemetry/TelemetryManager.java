@@ -90,4 +90,8 @@ public class TelemetryManager {
   public boolean isTelemetryEnabledByUser() {
     return storageManager.isEnabled();
   }
+
+  public void updateBiggestFileCount(int size) {
+
+  }
 }
