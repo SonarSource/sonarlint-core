@@ -75,6 +75,7 @@ public class TelemetryLocalStorage {
   private int exportedConnectedModeCount;
   private long newIssuesFoundCount;
   private long issuesFixedCount;
+  private int biggestNumberOfFilesInConfigScope;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -222,6 +223,7 @@ public class TelemetryLocalStorage {
     exportedConnectedModeCount = 0;
     newIssuesFoundCount = 0;
     issuesFixedCount = 0;
+    biggestNumberOfFilesInConfigScope = 0;
     calledToolsByName.clear();
   }
 
@@ -487,5 +489,15 @@ public class TelemetryLocalStorage {
 
   public Map<String, ToolCallCounter> getCalledToolsByName() {
     return calledToolsByName;
+  }
+
+  public void updateBiggestFileCount(int size) {
+    if (size > biggestNumberOfFilesInConfigScope) {
+      biggestNumberOfFilesInConfigScope = size;
+    }
+  }
+
+  public int getBiggestNumberOfFilesInConfigScope() {
+    return biggestNumberOfFilesInConfigScope;
   }
 }
