@@ -51,6 +51,9 @@ public class PluginsStorage {
   }
 
   public boolean isValid() {
+    if (!Files.exists(pluginReferencesFilePath)) {
+      return false;
+    }
     try {
       rwLock.read(() -> ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser()));
       return true;
