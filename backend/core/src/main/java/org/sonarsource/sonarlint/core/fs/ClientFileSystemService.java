@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -51,13 +53,16 @@ public class ClientFileSystemService {
   private final Map<URI, ClientFile> filesByUri = new ConcurrentHashMap<>();
   private final Map<String, Path> baseDirPerConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
+  private final TelemetryService telemetryService;
   private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
     new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
 
-  public ClientFileSystemService(SonarLintRpcClient rpcClient, ApplicationEventPublisher eventPublisher, OpenFilesRepository openFilesRepository) {
+  public ClientFileSystemService(SonarLintRpcClient rpcClient, ApplicationEventPublisher eventPublisher, OpenFilesRepository openFilesRepository,
+    TelemetryService telemetryService) {
     this.rpcClient = rpcClient;
     this.eventPublisher = eventPublisher;
     this.openFilesRepository = openFilesRepository;
+    this.telemetryService = telemetryService;
   }
 
   public List<ClientFile> getFiles(String configScopeId) {
@@ -107,14 +112,24 @@ public class ClientFileSystemService {
 
   public Map<URI, ClientFile> initializeFileSystem(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
     var result = new ConcurrentHashMap<URI, ClientFile>();
-    var future = rpcClient.listFiles(new ListFilesParams(configScopeId));
-    cancelMonitor.onCancel(() -> future.cancel(true));
-    future.join().getFiles().forEach(clientFileDto -> {
+    var files = getClientFileDtos(configScopeId, cancelMonitor);
+    files.forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       filesByUri.put(clientFileDto.getUri(), clientFile);
       result.put(clientFileDto.getUri(), clientFile);
     });
     return result;
+  }
+
+  @NotNull
+  private List<ClientFileDto> getClientFileDtos(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
+    var startTime = System.currentTimeMillis();
+    var future = rpcClient.listFiles(new ListFilesParams(configScopeId));
+    cancelMonitor.onCancel(() -> future.cancel(true));
+    var files = future.join().getFiles();
+    var endTime = System.currentTimeMillis();
+    telemetryService.updateListFilesPerformance(files.size(), endTime - startTime);
+    return files;
   }
 
   public void didUpdateFileSystem(DidUpdateFileSystemParams params) {

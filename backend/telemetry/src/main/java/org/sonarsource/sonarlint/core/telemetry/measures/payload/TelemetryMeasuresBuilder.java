@@ -58,7 +58,19 @@ public class TelemetryMeasuresBuilder {
 
     addToolsMeasures(values);
 
+    addPerformanceMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
+  }
+
+  private void addPerformanceMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("performance.biggest_size_config_scope_files", String.valueOf(storage.getBiggestNumberOfFilesInConfigScope()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("performance.listing_file_for_biggest_number_config_scope_files",
+      String.valueOf(storage.getListingTimeForBiggestNumberConfigScopeFiles()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("performance.longest_listing_time_for_config_scope_files",
+      String.valueOf(storage.getLongestListingTimeForConfigScopeFiles()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("performance.number_of_files_for_longest_files_listing_for_config_scope",
+      String.valueOf(storage.getNumberOfFilesForLongestFilesListingTimeConfigScope()), INTEGER, DAILY));
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {
