@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,10 @@ public class AnalyzerConfigurationStorage {
   }
 
   public boolean isValid() {
+    if (!Files.exists(storageFilePath)) {
+      LOG.debug("Analyzer configuration storage doesn't exist: {}", storageFilePath);
+      return false;
+    }
     return tryRead().isPresent();
   }
 
