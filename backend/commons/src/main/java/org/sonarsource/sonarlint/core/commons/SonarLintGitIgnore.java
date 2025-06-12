@@ -21,10 +21,8 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.nio.file.Path;
 import org.eclipse.jgit.ignore.IgnoreNode;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintGitIgnore {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final IgnoreNode ignoreNode;
 
   public SonarLintGitIgnore(IgnoreNode ignoreNode) {

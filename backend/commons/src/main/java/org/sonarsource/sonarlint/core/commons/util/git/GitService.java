@@ -205,6 +205,10 @@ public class GitService {
 
   private static Optional<ObjectLoader> readFileContentFromGitRepo(Repository repository, String fileName) throws IOException {
     var headId = repository.resolve(Constants.HEAD);
+    if (headId == null) {
+      // No commits in the repository
+      return Optional.empty();
+    }
 
     try (var revWalk = new RevWalk(repository)) {
       var commit = revWalk.parseCommit(headId);
