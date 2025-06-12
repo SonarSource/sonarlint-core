@@ -21,6 +21,11 @@ package org.sonarsource.sonarlint.core.test.utils.junit5;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -32,6 +37,9 @@ import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
 public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness> implements BeforeAllCallback, AfterEachCallback, AfterAllCallback {
+  private static final Logger LOG = Logger.getLogger(SonarLintTestHarness.class.getName());
+  private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
+
   private final List<SonarLintTestRpcServer> backends = new ArrayList<>();
   private final List<ServerFixture.Server> servers = new ArrayList<>();
   private boolean isStatic;
@@ -61,9 +69,31 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   }
 
   private void shutdownAll() {
-    backends.forEach(backend -> backend.shutdown().join());
+    // Shutdown backends with timeout and exception handling
+    for (SonarLintTestRpcServer backend : backends) {
+      try {
+        CompletableFuture<Void> future = backend.shutdown();
+        future.orTimeout(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+          .exceptionally(ex -> {
+            LOG.log(Level.WARNING, "Error shutting down backend", ex);
+            return null;
+          })
+          .join();
+      } catch (CompletionException | IllegalStateException e) {
+        // Log and continue with next backend
+        LOG.log(Level.WARNING, "Failed to shutdown backend", e);
+      }
+    }
     backends.clear();
-    servers.forEach(ServerFixture.Server::shutdown);
+    // Shutdown servers with exception handling
+    for (ServerFixture.Server server : servers) {
+      try {
+        server.shutdown();
+      } catch (Exception e) {
+        // Log and continue with next server
+        LOG.log(Level.WARNING, "Failed to shutdown server", e);
+      }
+    }
     servers.clear();
   }
 
