@@ -443,7 +443,7 @@ public class AiCodeFixMediumTest {
   }
 
   @SonarLintTest
-  void it_should_throw_too_many_requests(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_throw_too_many_requests_when_fixing_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarCloudServer()
@@ -476,6 +476,57 @@ public class AiCodeFixMediumTest {
     var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
 
     var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId()));
+
+    assertThat(future).failsWithin(Duration.ofSeconds(3))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(TOO_MANY_REQUESTS,
+        "AI CodeFix usage has been capped. Too many requests have been made.");
+  }
+
+  @SonarLintTest
+  void it_should_throw_too_many_requests_when_fixing_taint_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "File.java", XML_SOURCE_CODE_WITH_ISSUE);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
+      .withResponseCodes(codes -> codes.withStatusCode(HTTP_TOO_MANY_REQUESTS))
+      .start();
+
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project
+          .withMainBranch("branchName", branch -> branch.withTaintIssue(aServerTaintIssue("key")
+            .withRuleKey("javasecurity:S2076")
+            .withFilePath("File.java")
+            .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")))))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("javasecurity:S2076"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var listAllResponse = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams("configScope")).join();
+    var taintVulnerabilityDto = listAllResponse.getTaintVulnerabilities().get(0);
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", taintVulnerabilityDto.getId()));
 
     assertThat(future).failsWithin(Duration.ofSeconds(3))
       .withThrowableThat()
