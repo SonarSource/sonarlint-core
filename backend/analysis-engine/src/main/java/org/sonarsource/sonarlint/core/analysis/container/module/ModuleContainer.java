@@ -37,6 +37,8 @@ import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+
 public class ModuleContainer extends SpringComponentContainer {
 
   private final boolean isTransient;
@@ -63,16 +65,17 @@ public class ModuleContainer extends SpringComponentContainer {
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressIndicator progressIndicator, @Nullable Trace trace) {
-    var analysisContainer = new AnalysisContainer(this, progressIndicator);
+    var analysisContainer = startChild(trace, "newAnalysisContainer", "analyze", () -> new AnalysisContainer(this, progressIndicator));
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
-    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList()));
+    analysisContainer.add(startChild(trace, "newActiveRulesAdapter", "analyze", () ->
+      new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList())));
     var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
     if (trace != null) {
       analysisContainer.add(trace);
     }
-    analysisContainer.execute();
+    analysisContainer.execute(trace);
     return defaultAnalysisResult;
   }
 }
