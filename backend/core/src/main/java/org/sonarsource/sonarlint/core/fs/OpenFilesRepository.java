@@ -20,17 +20,21 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class OpenFilesRepository {
-  private final Map<String, List<URI>> openFilesByConfigScopeId = new ConcurrentHashMap<>();
+  private final Map<String, Set<URI>> openFilesByConfigScopeId = new ConcurrentHashMap<>();
 
-  public void considerOpened(String configurationScopeId, URI fileUri) {
-    openFilesByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(fileUri);
+  /**
+   * @return true if the file was previously not considered open; it is a newly opened file
+   */
+  public boolean considerOpened(String configurationScopeId, URI fileUri) {
+    var openFiles = openFilesByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new HashSet<>());
+    return openFiles.add(fileUri);
   }
 
   public void considerClosed(String configurationScopeId, URI fileUri) {
@@ -40,16 +44,16 @@ public class OpenFilesRepository {
     }
   }
 
-  public List<URI> getOpenFilesAmong(String configurationScopeId, Set<URI> fileUris) {
-    var openFiles = openFilesByConfigScopeId.getOrDefault(configurationScopeId, new ArrayList<>());
-    return openFiles.stream().filter(fileUris::contains).toList();
+  public Set<URI> getOpenFilesAmong(String configurationScopeId, Set<URI> fileUris) {
+    var openFiles = openFilesByConfigScopeId.getOrDefault(configurationScopeId, Set.of());
+    return openFiles.stream().filter(fileUris::contains).collect(Collectors.toSet());
   }
 
-  public Map<String, List<URI>> getOpenFilesByConfigScopeId() {
+  public Map<String, Set<URI>> getOpenFilesByConfigScopeId() {
     return openFilesByConfigScopeId;
   }
 
-  public List<URI> getOpenFilesForConfigScope(String configurationScopeId) {
-    return openFilesByConfigScopeId.getOrDefault(configurationScopeId, List.of());
+  public Set<URI> getOpenFilesForConfigScope(String configurationScopeId) {
+    return openFilesByConfigScopeId.getOrDefault(configurationScopeId, Set.of());
   }
 }

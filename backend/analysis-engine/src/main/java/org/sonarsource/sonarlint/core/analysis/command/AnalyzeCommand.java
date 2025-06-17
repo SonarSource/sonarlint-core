@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -62,12 +63,12 @@ public class AnalyzeCommand extends Command {
   private final TaskManager taskManager;
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
-  private final List<URI> files;
+  private final Set<URI> files;
   private final Map<String, String> extraProperties;
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
-    List<URI> files, Map<String, String> extraProperties) {
+    Set<URI> files, Map<String, String> extraProperties) {
     this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
       new CompletableFuture<>());
 
@@ -75,7 +76,7 @@ public class AnalyzeCommand extends Command {
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
-    List<URI> files, Map<String, String> extraProperties, CompletableFuture<AnalysisResults> futureResult) {
+    Set<URI> files, Map<String, String> extraProperties, CompletableFuture<AnalysisResults> futureResult) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
     this.triggerType = triggerType;
@@ -108,7 +109,7 @@ public class AnalyzeCommand extends Command {
     return futureResult;
   }
 
-  public List<URI> getFiles() {
+  public Set<URI> getFiles() {
     return files;
   }
 
@@ -219,7 +220,8 @@ public class AnalyzeCommand extends Command {
       .addInputFiles(mergedInputFiles)
       .build();
     return new AnalyzeCommand(moduleKey, analysisId, triggerType, () -> mergedAnalysisConfiguration, issueListener, trace, new SonarLintCancelMonitor(), taskManager,
-      analysisStarted, isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).toList(), newerAnalysisConfiguration.extraProperties(), futureResult);
+      analysisStarted, isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).collect(Collectors.toSet()), newerAnalysisConfiguration.extraProperties(),
+      futureResult);
   }
 
   @Override

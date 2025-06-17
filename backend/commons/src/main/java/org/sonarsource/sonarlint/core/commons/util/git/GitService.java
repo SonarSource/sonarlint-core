@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -74,9 +73,9 @@ public class GitService {
     return blameWithFilesGitCommand(baseDir, gitRelativePath, null);
   }
 
-  public static List<URI> getVSCChangedFiles(@Nullable Path baseDir) {
+  public static Set<URI> getVSCChangedFiles(@Nullable Path baseDir) {
     if (baseDir == null) {
-      return List.of();
+      return Set.of();
     }
     try {
       var repo = buildGitRepository(baseDir);
@@ -86,10 +85,10 @@ public class GitService {
       var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
       return Stream.concat(uncommitted, untracked)
         .map(file -> baseDir.resolve(file).toUri())
-        .toList();
+        .collect(Collectors.toSet());
     } catch (GitAPIException | GitException e) {
       LOG.debug("Git repository access error: ", e);
-      return List.of();
+      return Set.of();
     }
   }
 

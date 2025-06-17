@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -137,8 +138,9 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params) {
     var configurationScopeId = params.getConfigurationScopeId();
-    return requestFutureAsync(cancelChecker -> getBean(AnalysisService.class).scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(),
-      params.getExtraProperties(), params.isShouldFetchServerIssues(), TriggerType.FORCED_WITH_EXCLUSIONS, cancelChecker)
+    return requestFutureAsync(cancelChecker -> getBean(AnalysisService.class)
+      .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), Set.copyOf(params.getFilesToAnalyze()),
+        params.getExtraProperties(), params.isShouldFetchServerIssues(), TriggerType.FORCED_WITH_EXCLUSIONS, cancelChecker)
       .thenApply(AnalysisRpcServiceDelegate::generateAnalyzeFilesResponse), configurationScopeId);
   }
 
