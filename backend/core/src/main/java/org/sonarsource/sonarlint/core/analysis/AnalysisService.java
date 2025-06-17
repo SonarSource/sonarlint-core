@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -242,32 +243,35 @@ public class AnalysisService {
   }
 
   private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, Set<URI> filesUrisToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
-    TriggerType triggerType) {
+    TriggerType triggerType, Trace trace) {
+    trace.setData("trigger", triggerType);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var filesToAnalyze = fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filesUrisToAnalyze) : baseDir;
-    var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly);
+    var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly, trace);
     var analysisProperties = analysisConfig.getAnalysisProperties();
     var inferredAnalysisProperties = client
       .getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filesToAnalyze.stream().map(ClientFile::getUri).toList())).join().getProperties();
     analysisProperties.putAll(inferredAnalysisProperties);
+    var activeRules = analysisConfig.getActiveRules().stream().map(r -> {
+      var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
+      ar.setParams(r.getParams());
+      ar.setTemplateRuleKey(r.getTemplateRuleKey());
+      return ar;
+    }).toList();
+    trace.setData("activeRulesCount", activeRules.size());
     return AnalysisConfiguration.builder()
       .addInputFiles(filesToAnalyze.stream().map(BackendInputFile::new).toList())
       .putAllExtraProperties(analysisProperties)
       // properties sent by client using new API were merged above
       // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
-        var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
-        ar.setParams(r.getParams());
-        ar.setTemplateRuleKey(r.getTemplateRuleKey());
-        return ar;
-      }).toList())
+      .addActiveRules(activeRules)
       .setBaseDir(actualBaseDir)
       .build();
   }
 
-  public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId, boolean hotspotsOnly) {
+  public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId, boolean hotspotsOnly, @Nullable Trace trace) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
@@ -276,6 +280,12 @@ public class AnalysisService {
       userAnalysisProperties.put(SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP, this.esLintBridgeServerPath.toString());
     }
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
+    if (trace != null) {
+      if (activeNodeJs != null) {
+        trace.setData("nodeJsVersion", activeNodeJs.getVersion().toString());
+      }
+      trace.setData("connected", bindingOpt.isPresent());
+    }
     return bindingOpt.map(binding -> {
       var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
       var analysisProperties = new HashMap<>(serverProperties);
@@ -709,12 +719,22 @@ public class AnalysisService {
     boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
+    var trace = newAnalysisTrace();
     var analysisTask = new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
-      () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
-      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), cancelChecker,
+      () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType, trace),
+      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), trace, cancelChecker,
       taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
       files, extraProperties);
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues);
+  }
+
+  private Trace newAnalysisTrace() {
+    var newTrace = monitoringService.newTrace("AnalysisService", "analyze");
+    var currentRuntime = Runtime.getRuntime();
+    newTrace.setData("availableProcessors", currentRuntime.availableProcessors());
+    newTrace.setData("totalMemory", currentRuntime.totalMemory());
+    newTrace.setData("maxMemory", currentRuntime.maxMemory());
+    return newTrace;
   }
 
   private void scheduleAutomaticAnalysis(String configScopeId, Set<URI> filesToAnalyze) {
@@ -765,8 +785,10 @@ public class AnalysisService {
   private AnalyzeCommand getAnalyzeCommand(String configurationScopeId, Set<URI> files, ArrayList<RawIssue> rawIssues, boolean hotspotsOnly, TriggerType triggerType,
     UUID analysisId) {
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
-    return new AnalyzeCommand(configurationScopeId, analysisId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),
-      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"),
+    var trace = newAnalysisTrace();
+    return new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
+      () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
+      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
       () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
   }

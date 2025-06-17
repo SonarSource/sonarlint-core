@@ -19,16 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -167,27 +171,43 @@ public class AnalyzeCommand extends Command {
       moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
-    if (trace != null) {
-      trace.setData("filesCount", configuration.inputFiles().size());
-      trace.setData("languages", configuration.inputFiles().stream()
-        .map(ClientInputFile::language)
-        .filter(Objects::nonNull)
-        .map(SonarLanguage::getSonarLanguageKey)
-        .toList());
-    }
+    doIfTraceIsSet(t -> {
+      int filesCount = configuration.inputFiles().size();
+      t.setData("filesCount", filesCount);
+      var fileSizes = new ArrayList<>(filesCount);
+      var languages = new HashSet<>();
+      configuration.inputFiles().forEach(f -> {
+        try {
+          fileSizes.add(f.contents().length());
+        } catch (IOException | IllegalStateException e) {
+          fileSizes.add(0);
+        }
+        Optional.ofNullable(f.language())
+          .map(SonarLanguage::getSonarLanguageKey)
+          .ifPresent(languages::add);
+      });
+      t.setData("fileSizes", fileSizes);
+      t.setData("languages", languages);
+      t.setData("activeRulesCount", configuration.activeRules().size());
+
+    });
     try {
-      var result = moduleContainer.analyze(configuration, issueListener, progressIndicator, trace);
-      if (trace != null) {
-        trace.setData("failedFilesCount", result.failedAnalysisFiles().size());
-        trace.finishSuccessfully();
-      }
+      var issueCounter = new AtomicInteger(0);
+      Consumer<Issue> issueCountingListener = issue -> {
+        issueCounter.incrementAndGet();
+        issueListener.accept(issue);
+      };
+      var result = moduleContainer.analyze(configuration, issueCountingListener, progressIndicator, trace);
+      doIfTraceIsSet(t -> {
+        t.setData("failedFilesCount", result.failedAnalysisFiles().size());
+        t.setData("foundIssuesCount", issueCounter.get());
+        t.finishSuccessfully();
+      });
       result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
     } catch (Throwable e) {
       originalException = e;
-      if (trace != null) {
-        trace.finishExceptionally(e);
-      }
+      doIfTraceIsSet(t -> t.finishExceptionally(e));
       throw e;
     } finally {
       try {
@@ -200,6 +220,12 @@ public class AnalyzeCommand extends Command {
         }
         throw e;
       }
+    }
+  }
+
+  private void doIfTraceIsSet(Consumer<Trace> action) {
+    if (trace != null) {
+      action.accept(trace);
     }
   }
 
