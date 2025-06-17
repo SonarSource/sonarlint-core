@@ -292,4 +292,12 @@ public class TelemetryService {
       LOG.error("Failed to stop telemetry executor");
     }
   }
+
+  public void updateListFilesPerformance(int size, long timeMs) {
+    if (!isTelemetryFeatureEnabled) {
+      LOG.info("Telemetry disabled on server startup");
+      return;
+    }
+    updateTelemetry(localStorage -> localStorage.updateListFilesPerformance(size, timeMs));
+  }
 }
