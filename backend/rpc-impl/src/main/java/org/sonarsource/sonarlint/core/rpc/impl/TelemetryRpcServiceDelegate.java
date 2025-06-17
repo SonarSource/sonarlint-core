@@ -123,4 +123,23 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
     notify(() -> getBean(TelemetryService.class).addedAutomaticBindings());
   }
 
+  @Override
+  public void taintInvestigatedLocally() {
+    notify(() -> getBean(TelemetryService.class).taintInvestigatedLocally());
+  }
+
+  @Override
+  public void taintInvestigatedRemotely() {
+    notify(() -> getBean(TelemetryService.class).taintInvestigatedRemotely());
+  }
+
+  @Override
+  public void hotspotInvestigatedLocally() {
+    notify(() -> getBean(TelemetryService.class).hotspotInvestigatedLocally());
+  }
+
+  @Override
+  public void hotspotInvestigatedRemotely() {
+    notify(() -> getBean(TelemetryService.class).hotspotInvestigatedRemotely());
+  }
 }

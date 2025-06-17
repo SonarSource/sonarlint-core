@@ -60,6 +60,8 @@ public class TelemetryMeasuresBuilder {
 
     addPerformanceMeasures(values);
 
+    addIssueInvestigationMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -68,6 +70,13 @@ public class TelemetryMeasuresBuilder {
     values.add(new TelemetryMeasuresValue("performance.largest_file_count_ms", String.valueOf(storage.getListingTimeForBiggestNumberConfigScopeFiles()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("performance.longest_file_count_ms", String.valueOf(storage.getLongestListingTimeForConfigScopeFiles()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("performance.longest_file_count", String.valueOf(storage.getNumberOfFilesForLongestFilesListingTimeConfigScope()), INTEGER, DAILY));
+  }
+
+  private void addIssueInvestigationMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("findings_investigation.taints_locally", String.valueOf(storage.getTaintInvestigatedLocallyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.taints_remotely", String.valueOf(storage.getTaintInvestigatedRemotelyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_locally", String.valueOf(storage.getHotspotInvestigatedLocallyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_remotely", String.valueOf(storage.getHotspotInvestigatedRemotelyCount()), INTEGER, DAILY));
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {

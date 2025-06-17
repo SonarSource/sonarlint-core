@@ -79,6 +79,10 @@ public class TelemetryLocalStorage {
   private long listingTimeForBiggestNumberConfigScopeFiles;
   private long longestListingTimeForConfigScopeFiles;
   private int numberOfFilesForLongestFilesListingTimeConfigScope;
+  private int taintInvestigatedLocallyCount;
+  private int taintInvestigatedRemotelyCount;
+  private int hotspotInvestigatedLocallyCount;
+  private int hotspotInvestigatedRemotelyCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -519,5 +523,41 @@ public class TelemetryLocalStorage {
 
   public long getLongestListingTimeForConfigScopeFiles() {
     return longestListingTimeForConfigScopeFiles;
+  }
+
+  public void incrementHotspotInvestigatedLocallyCount() {
+    markSonarLintAsUsedToday();
+    hotspotInvestigatedLocallyCount++;
+  }
+
+  public void incrementHotspotInvestigatedRemotelyCount() {
+    markSonarLintAsUsedToday();
+    hotspotInvestigatedRemotelyCount++;
+  }
+
+  public void incrementTaintInvestigatedLocallyCount() {
+    markSonarLintAsUsedToday();
+    taintInvestigatedLocallyCount++;
+  }
+
+  public void incrementTaintInvestigatedRemotelyCount() {
+    markSonarLintAsUsedToday();
+    taintInvestigatedRemotelyCount++;
+  }
+
+  public int getHotspotInvestigatedRemotelyCount() {
+    return hotspotInvestigatedRemotelyCount;
+  }
+
+  public int getHotspotInvestigatedLocallyCount() {
+    return hotspotInvestigatedLocallyCount;
+  }
+
+  public int getTaintInvestigatedRemotelyCount() {
+    return taintInvestigatedRemotelyCount;
+  }
+
+  public int getTaintInvestigatedLocallyCount() {
+    return taintInvestigatedLocallyCount;
   }
 }

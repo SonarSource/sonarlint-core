@@ -457,6 +457,34 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
+  void it_should_record_issue_investigation_telemetry(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().taintInvestigatedLocally();
+    backend.getTelemetryService().taintInvestigatedRemotely();
+    backend.getTelemetryService().hotspotInvestigatedLocally();
+    backend.getTelemetryService().hotspotInvestigatedRemotely();
+
+    backend.getTelemetryService().taintInvestigatedRemotely();
+    backend.getTelemetryService().hotspotInvestigatedLocally();
+    backend.getTelemetryService().hotspotInvestigatedRemotely();
+
+    backend.getTelemetryService().hotspotInvestigatedLocally();
+    backend.getTelemetryService().hotspotInvestigatedRemotely();
+
+    backend.getTelemetryService().hotspotInvestigatedRemotely();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"hotspotInvestigatedRemotelyCount\":4"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"hotspotInvestigatedLocallyCount\":3"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"taintInvestigatedRemotelyCount\":2"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"taintInvestigatedLocallyCount\":1"));
+  }
+
+  @SonarLintTest
   void it_should_add_issue_uuid_when_ai_fixable(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", """
       <?xml version="1.0" encoding="UTF-8"?>
