@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
@@ -262,6 +263,74 @@ class AnalysisTriggeringMediumTests {
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
         .extracting(RaisedIssueDto::getPrimaryMessage)
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
+  }
+
+  @SonarLintTest
+  void it_should_analyze_open_files_when_re_enabling_automatic_analysis_when_same_file_opened_twice(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withAutomaticAnalysisEnabled(false)
+      .start(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(true));
+
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
+  }
+
+  @SonarLintTest
+  void it_should_not_analyze_opened_file_if_it_was_already_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
+    clearInvocations(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    // check that no analysis is started
+    verify(client, timeout(500).times(0)).startProgress(any());
   }
 
   @SonarLintTest

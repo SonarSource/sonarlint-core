@@ -241,7 +241,7 @@ public class AnalysisService {
       isDataflowBugDetectionEnabled);
   }
 
-  private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filesUrisToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
+  private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, Set<URI> filesUrisToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
     TriggerType triggerType) {
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var filesToAnalyze = fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir);
@@ -287,7 +287,7 @@ public class AnalysisService {
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
-  private static Path findCommonPrefix(List<URI> uris) {
+  private static Path findCommonPrefix(Set<URI> uris) {
     var paths = uris.stream().map(Paths::get).toList();
     Path currentPrefixCandidate = paths.get(0).getParent();
     while (currentPrefixCandidate.getNameCount() > 0 && !isPrefixForAll(currentPrefixCandidate, paths)) {
@@ -525,7 +525,7 @@ public class AnalysisService {
 
   @EventListener
   public void onFileOpened(FileOpenedEvent event) {
-    scheduleAutomaticAnalysis(event.configurationScopeId(), List.of(event.fileUri()));
+    scheduleAutomaticAnalysis(event.configurationScopeId(), Set.of(event.fileUri()));
   }
 
   @EventListener
@@ -675,11 +675,11 @@ public class AnalysisService {
 
   public UUID analyzeFullProject(String configScopeId, boolean hotspotsOnly) {
     var files = clientFileSystemService.getFiles(configScopeId);
-    return scheduleForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).toList(), hotspotsOnly);
+    return scheduleForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(toSet()), hotspotsOnly);
   }
 
   public UUID analyzeFileList(String configScopeId, List<URI> filesToAnalyze) {
-    return scheduleForcedAnalysis(configScopeId, filesToAnalyze, false);
+    return scheduleForcedAnalysis(configScopeId, Set.copyOf(filesToAnalyze), false);
   }
 
   public UUID analyzeVCSChangedFiles(String configScopeId) {
@@ -692,7 +692,7 @@ public class AnalysisService {
       .forEach((configurationScopeId, files) -> scheduleForcedAnalysis(configurationScopeId, files, false));
   }
 
-  public UUID scheduleForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
+  public UUID scheduleForcedAnalysis(String configurationScopeId, Set<URI> files, boolean hotspotsOnly) {
     var analysisId = UUID.randomUUID();
     var rawIssues = new ArrayList<RawIssue>();
     schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, true)
@@ -705,7 +705,7 @@ public class AnalysisService {
     return analysisId;
   }
 
-  public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, List<URI> files, Map<String, String> extraProperties,
+  public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, Set<URI> files, Map<String, String> extraProperties,
     boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
@@ -717,7 +717,7 @@ public class AnalysisService {
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues);
   }
 
-  private void scheduleAutomaticAnalysis(String configScopeId, List<URI> filesToAnalyze) {
+  private void scheduleAutomaticAnalysis(String configScopeId, Set<URI> filesToAnalyze) {
     if (automaticAnalysisEnabled && !filesToAnalyze.isEmpty()) {
       var rawIssues = new ArrayList<RawIssue>();
       var analysisId = UUID.randomUUID();
@@ -762,7 +762,7 @@ public class AnalysisService {
       });
   }
 
-  private AnalyzeCommand getAnalyzeCommand(String configurationScopeId, List<URI> files, ArrayList<RawIssue> rawIssues, boolean hotspotsOnly, TriggerType triggerType,
+  private AnalyzeCommand getAnalyzeCommand(String configurationScopeId, Set<URI> files, ArrayList<RawIssue> rawIssues, boolean hotspotsOnly, TriggerType triggerType,
     UUID analysisId) {
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     return new AnalyzeCommand(configurationScopeId, analysisId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),

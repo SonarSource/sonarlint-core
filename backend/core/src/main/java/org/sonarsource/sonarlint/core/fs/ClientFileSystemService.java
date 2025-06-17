@@ -212,8 +212,10 @@ public class ClientFileSystemService {
   }
 
   public void didOpenFile(String configurationScopeId, URI fileUri) {
-    openFilesRepository.considerOpened(configurationScopeId, fileUri);
-    eventPublisher.publishEvent(new FileOpenedEvent(configurationScopeId, fileUri));
+    var isNewlyOpenedFile = openFilesRepository.considerOpened(configurationScopeId, fileUri);
+    if (isNewlyOpenedFile) {
+      eventPublisher.publishEvent(new FileOpenedEvent(configurationScopeId, fileUri));
+    }
   }
 
   public void didCloseFile(String configurationScopeId, URI fileUri) {

@@ -119,7 +119,7 @@ class AnalysisSchedulerMediumTests {
     List<Issue> issues = new ArrayList<>();
     analysisScheduler.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())));
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
     analyzeCommand.getFutureResult().get();
     assertThat(issues).hasSize(1);
@@ -134,7 +134,7 @@ class AnalysisSchedulerMediumTests {
     var command = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> {
       throw new RuntimeException("Kaboom");
     }, issue -> {
-    }, null, progressMonitor, TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+    }, null, progressMonitor, TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(command);
 
     assertThat(command.getFutureResult()).failsWithin(300, TimeUnit.MILLISECONDS)
@@ -158,7 +158,7 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
-      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
     // let the engine run the first command
     Thread.sleep(100);
@@ -185,9 +185,9 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
-      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor,
-      TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
     analysisScheduler.post(secondAnalyzeCommand);
     // let the engine run the first command
@@ -224,13 +224,13 @@ class AnalysisSchedulerMediumTests {
     var issues2 = new ArrayList<>();
     var analyzeCommand1 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, issues1::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     var throwingCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, throwingSupplier, List.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, throwingSupplier, Set.of(), Map.of());
     var analyzeCommand2 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, issues2::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
 
     analysisScheduler.post(analyzeCommand1);
     analysisScheduler.post(throwingCommand);
@@ -265,7 +265,7 @@ class AnalysisSchedulerMediumTests {
           return;
         }
         threadTermination.set("FINISHED");
-      }, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+      }, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
     // let the engine run the first command
     pause(200);

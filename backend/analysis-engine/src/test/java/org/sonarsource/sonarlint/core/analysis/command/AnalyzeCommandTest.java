@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.analysis.command;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class AnalyzeCommandTest {
   void it_should_rethrow_an_exception_when_stopping_a_transient_module_container() {
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.AUTO, () -> AnalysisConfiguration.builder().addInputFiles(new InMemoryTestClientInputFile("", "path", null, false, null)).build(), issue -> {
     }, null, new SonarLintCancelMonitor(), new TaskManager(), inputFiles -> {
-    }, () -> true, List.of(), Map.of());
+    }, () -> true, Set.of(), Map.of());
     var moduleRegistry = mock(ModuleRegistry.class);
     var moduleContainer = mock(ModuleContainer.class);
     when(moduleContainer.isTransient()).thenReturn(true);

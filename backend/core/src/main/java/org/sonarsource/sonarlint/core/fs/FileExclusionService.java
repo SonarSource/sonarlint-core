@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 import org.sonar.api.CoreProperties;
@@ -192,7 +193,7 @@ public class FileExclusionService {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 
-  public List<ClientFile> refineAnalysisScope(String configScopeId, List<URI> requestedFileUris, TriggerType triggerType, Path baseDir) {
+  public List<ClientFile> refineAnalysisScope(String configScopeId, Set<URI> requestedFileUris, TriggerType triggerType, Path baseDir) {
     if (!triggerType.shouldHonorExclusions()) {
       var filteredURIsNoFile = new ArrayList<URI>();
       var filesToAnalyze = requestedFileUris.stream().map(uri -> {
@@ -210,7 +211,7 @@ public class FileExclusionService {
     return filterOutExcludedFiles(configScopeId, baseDir, requestedFileUris);
   }
 
-  private List<ClientFile> filterOutExcludedFiles(String configurationScopeId, Path baseDir, List<URI> files) {
+  private List<ClientFile> filterOutExcludedFiles(String configurationScopeId, Path baseDir, Set<URI> files) {
     var sonarLintGitIgnore = createSonarLintGitIgnore(baseDir);
     // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
     var filteredURIsFromExclusionService = new ArrayList<URI>();
@@ -303,7 +304,7 @@ public class FileExclusionService {
     }
   }
 
-  private List<URI> filterOutClientExcludedFiles(String configurationScopeId, List<URI> files) {
+  private Set<URI> filterOutClientExcludedFiles(String configurationScopeId, Set<URI> files) {
     if (isConnectedMode(configurationScopeId)) {
       // client-defined file exclusions only apply in standalone mode
       return files;
@@ -315,7 +316,7 @@ public class FileExclusionService {
 
     return files.stream()
       .filter(fileExclusionFilter)
-      .toList();
+      .collect(Collectors.toSet());
   }
 
   private boolean isConnectedMode(String configurationScopeId) {
