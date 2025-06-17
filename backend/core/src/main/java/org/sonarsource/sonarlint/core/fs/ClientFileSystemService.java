@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -121,7 +120,6 @@ public class ClientFileSystemService {
     return result;
   }
 
-  @NotNull
   private List<ClientFileDto> getClientFileDtos(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
     var startTime = System.currentTimeMillis();
     var future = rpcClient.listFiles(new ListFilesParams(configScopeId));
