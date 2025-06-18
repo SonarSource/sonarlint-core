@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -72,7 +73,7 @@ public class NodeJsService {
 
   @CheckForNull
   public synchronized InstalledNodeJs didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
-    if (this.clientNodeJsPath != clientNodeJsPath) {
+    if (!Objects.equals(this.clientNodeJsPath, clientNodeJsPath)) {
       this.clientNodeJsPath = clientNodeJsPath;
       this.clientForcedNodeJsDetected = false;
       this.eventPublisher.publishEvent(new ClientNodeJsPathChanged());
