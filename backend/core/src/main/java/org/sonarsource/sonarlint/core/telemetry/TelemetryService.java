@@ -238,6 +238,22 @@ public class TelemetryService {
     updateTelemetry(storage -> storage.incrementToolCalledCount(params.getToolName(), params.isSucceeded()));
   }
 
+  public void taintInvestigatedLocally() {
+    updateTelemetry(TelemetryLocalStorage::incrementTaintInvestigatedLocallyCount);
+  }
+
+  public void taintInvestigatedRemotely() {
+    updateTelemetry(TelemetryLocalStorage::incrementTaintInvestigatedRemotelyCount);
+  }
+
+  public void hotspotInvestigatedLocally() {
+    updateTelemetry(TelemetryLocalStorage::incrementHotspotInvestigatedLocallyCount);
+  }
+
+  public void hotspotInvestigatedRemotely() {
+    updateTelemetry(TelemetryLocalStorage::incrementHotspotInvestigatedRemotelyCount);
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {

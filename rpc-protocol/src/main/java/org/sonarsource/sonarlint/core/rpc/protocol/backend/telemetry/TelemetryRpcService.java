@@ -106,4 +106,15 @@ public interface TelemetryRpcService {
   @JsonNotification
   void addedAutomaticBindings();
 
+  @JsonNotification
+  void taintInvestigatedLocally();
+
+  @JsonNotification
+  void taintInvestigatedRemotely();
+
+  @JsonNotification
+  void hotspotInvestigatedLocally();
+
+  @JsonNotification
+  void hotspotInvestigatedRemotely();
 }
