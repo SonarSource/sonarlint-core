@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -57,19 +56,17 @@ public class TelemetryServerAttributesProvider {
     var allBindings = configurationRepository.getAllBoundScopes();
 
     var usesConnectedMode = !allBindings.isEmpty();
-
     var usesSonarCloud = allBindings.stream().anyMatch(isSonarCloudConnectionConfiguration());
 
+    var childBindingCount = countChildBindings(allBindings);
     var sonarQubeServerBindingCount = countSonarQubeServerBindings(allBindings);
-
     var sonarQubeCloudEUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.EU);
-
     var sonarQubeCloudUSBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.US);
 
     var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
-    List<String> nonDefaultEnabledRules = new ArrayList<>();
-    List<String> defaultDisabledRules = new ArrayList<>();
+    var nonDefaultEnabledRules = new ArrayList<String>();
+    var defaultDisabledRules = new ArrayList<String>();
 
     rulesService.getStandaloneRuleConfig().forEach((ruleKey, standaloneRuleConfigDto) -> {
       var optionalEmbeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
@@ -87,7 +84,7 @@ public class TelemetryServerAttributesProvider {
 
     var nodeJsVersion = getNodeJsVersion();
 
-    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, sonarQubeServerBindingCount,
+    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, childBindingCount, sonarQubeServerBindingCount,
       sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, devNotificationsDisabled, nonDefaultEnabledRules,
       defaultDisabledRules, nodeJsVersion);
   }
@@ -105,6 +102,12 @@ public class TelemetryServerAttributesProvider {
   private int countSonarQubeServerBindings(Collection<BoundScope> allBindings) {
     return (int) allBindings.stream()
       .filter(binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarQubeConnectionConfiguration)
+      .count();
+  }
+
+  private int countChildBindings(Collection<BoundScope> allBindings) {
+    return (int) allBindings.stream()
+      .filter(scope -> configurationRepository.getParentId(scope.getConfigScopeId()).isPresent())
       .count();
   }
 

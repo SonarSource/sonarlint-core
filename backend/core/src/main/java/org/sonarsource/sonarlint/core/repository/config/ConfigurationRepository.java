@@ -105,7 +105,7 @@ public class ConfigurationRepository {
   public Binding getEffectiveBindingOrThrow(String configScopeId) {
     return getEffectiveBinding(configScopeId).orElseThrow(() -> {
       var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
-      throw new ResponseErrorException(error);
+      return new ResponseErrorException(error);
     });
   }
 
@@ -118,7 +118,7 @@ public class ConfigurationRepository {
     return Optional.empty();
   }
 
-  private Optional<String> getParentId(String configScopeId) {
+  public Optional<String> getParentId(String configScopeId) {
     var configurationScope = configScopePerId.get(configScopeId);
     if (configurationScope != null) {
       return Optional.ofNullable(configurationScope.getParentId());

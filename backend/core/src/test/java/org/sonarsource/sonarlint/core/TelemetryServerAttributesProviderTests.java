@@ -59,6 +59,7 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isTrue();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isEqualTo(1);
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
@@ -80,6 +81,9 @@ class TelemetryServerAttributesProviderTests {
       new BoundScope(configurationScopeId_1, connectionId_1, projectKey),
       new BoundScope(configurationScopeId_2, connectionId_2, projectKey)));
 
+    when(configurationRepository.getParentId(configurationScopeId_1)).thenReturn(Optional.empty());
+    when(configurationRepository.getParentId(configurationScopeId_2)).thenReturn(Optional.of(configurationScopeId_1));
+
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
     when(connectionConfigurationRepository.getConnectionById(connectionId_2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_2, "www.squrl2.org", true));
@@ -88,6 +92,7 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isEqualTo(1);
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isEqualTo(2);
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
@@ -121,6 +126,7 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).containsExactly("ruleKey_2");
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).containsExactly("ruleKey_3");
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isFalse();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
