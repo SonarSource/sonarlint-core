@@ -58,7 +58,7 @@ public class TelemetryServerAttributesProvider {
     var usesConnectedMode = !allBindings.isEmpty();
     var usesSonarCloud = allBindings.stream().anyMatch(isSonarCloudConnectionConfiguration());
 
-    var childBindingCount = countChildBindings(allBindings);
+    var childBindingCount = countChildBindings();
     var sonarQubeServerBindingCount = countSonarQubeServerBindings(allBindings);
     var sonarQubeCloudEUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.EU);
     var sonarQubeCloudUSBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.US);
@@ -105,9 +105,22 @@ public class TelemetryServerAttributesProvider {
       .count();
   }
 
-  private int countChildBindings(Collection<BoundScope> allBindings) {
-    return (int) allBindings.stream()
-      .filter(scope -> configurationRepository.getParentId(scope.getConfigScopeId()).isPresent())
+  // We are looking for leaf config scope IDs that are bound to a different project key than their parents
+  private int countChildBindings() {
+    return (int) configurationRepository.getLeafConfigScopeIds().stream()
+      .filter(scopeId -> {
+        var configScope = configurationRepository.getConfigurationScope(scopeId);
+        if (configScope != null && configScope.getParentId() != null) {
+          var parentBindingConfig = configurationRepository.getBindingConfiguration(configScope.getParentId());
+          var leafBindingConfig = configurationRepository.getBindingConfiguration(scopeId);
+          if (parentBindingConfig != null && leafBindingConfig != null) {
+            var parentProjectKey = parentBindingConfig.getSonarProjectKey();
+            var leafProjectKey = leafBindingConfig.getSonarProjectKey();
+            return parentProjectKey != null && leafProjectKey != null && !parentProjectKey.equals(leafProjectKey);
+          }
+        }
+        return false;
+      })
       .count();
   }
 

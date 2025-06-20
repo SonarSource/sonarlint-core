@@ -118,7 +118,7 @@ public class ConfigurationRepository {
     return Optional.empty();
   }
 
-  public Optional<String> getParentId(String configScopeId) {
+  private Optional<String> getParentId(String configScopeId) {
     var configurationScope = configScopePerId.get(configScopeId);
     if (configurationScope != null) {
       return Optional.ofNullable(configurationScope.getParentId());
