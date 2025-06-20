@@ -116,4 +116,21 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   public ServerFixture.SonarQubeCloudBuilder newFakeSonarCloudServer() {
     return ServerFixture.newSonarCloudServer(servers::add);
   }
+
+  public void addBackend(SonarLintTestRpcServer backend) {
+    backends.add(backend);
+  }
+
+  public void addServer(ServerFixture.Server server) {
+    servers.add(server);
+  }
+
+  public List<SonarLintTestRpcServer> getBackends() {
+    return backends;
+  }
+
+  public List<ServerFixture.Server> getServers() {
+    return servers;
+  }
+
 }
