@@ -130,11 +130,12 @@ public class ClientFile {
       return new ByteArrayInputStream(clientProvidedContent.getBytes(getCharset()));
     }
     if (fsPath == null) {
-      throw new IllegalStateException("File " + uri + " is not dirty but has no OS Path defined");
+      throw new IllegalStateException("File " + uri + " is not dirty or does not have content but has no OS Path defined");
     }
     try {
       return BOMInputStream.builder().setInputStream(Files.newInputStream(fsPath))
-        .setByteOrderMarks(ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE).get();
+        // order list of BOMs by length descending, as anyway a sort is made in the constructor
+        .setByteOrderMarks(ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE).get();
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
