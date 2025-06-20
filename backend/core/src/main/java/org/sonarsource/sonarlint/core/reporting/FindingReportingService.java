@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixFeature;
@@ -64,6 +65,7 @@ import static org.sonarsource.sonarlint.core.DtoMapper.toRaisedIssueDto;
 
 public class FindingReportingService {
   public static final Duration STREAMING_INTERVAL = Duration.ofMillis(300);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
@@ -167,6 +169,7 @@ public class FindingReportingService {
   private synchronized void updateRaisedFindingsCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> updatedIssues,
     Map<URI, List<RaisedHotspotDto>> updatedHotspots, boolean isIntermediatePublication) {
     var issuesToRaise = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
+    LOG.debug("Reporting {} issues for configuration scope {}", issuesToRaise.size(), configurationScopeId);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, isIntermediatePublication, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
