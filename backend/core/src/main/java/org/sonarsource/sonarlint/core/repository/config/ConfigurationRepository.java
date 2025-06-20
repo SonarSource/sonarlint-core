@@ -105,7 +105,7 @@ public class ConfigurationRepository {
   public Binding getEffectiveBindingOrThrow(String configScopeId) {
     return getEffectiveBinding(configScopeId).orElseThrow(() -> {
       var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
-      throw new ResponseErrorException(error);
+      return new ResponseErrorException(error);
     });
   }
 

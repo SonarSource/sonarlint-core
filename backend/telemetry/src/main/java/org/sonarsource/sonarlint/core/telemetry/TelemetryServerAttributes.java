@@ -23,15 +23,19 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- * @param usesConnectedMode        At least one project in the IDE is bound to a SQ server or SC
- * @param usesSonarCloud           At least one project in the IDE is bound to SC
- * @param devNotificationsDisabled Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
- * @param nonDefaultEnabledRules   Rule keys for rules that disabled by default, but was enabled by user in settings.
- * @param defaultDisabledRules     Rule keys for rules that enabled by default, but was disabled by user in settings.
- * @param nodeVersion              Node.js version used by analyzers (detected or configured by the user).
- *                                 Empty if no node present/detected/configured
+ * @param usesConnectedMode             At least one project in the IDE is bound to a SQ server or SC
+ * @param usesSonarCloud                At least one project in the IDE is bound to SC
+ * @param childBindingCount             Number of bindings for a child configuration scope
+ * @param sonarQubeServerBindingCount   Number of bindings with SonarQube Server
+ * @param sonarQubeCloudEUBindingCount  Number of bindings with SonarQube Cloud EU
+ * @param sonarQubeCloudUSBindingCount  Number of bindings with SonarQube Cloud US
+ * @param devNotificationsDisabled      Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
+ * @param nonDefaultEnabledRules        Rule keys for rules that disabled by default, but was enabled by user in settings.
+ * @param defaultDisabledRules          Rule keys for rules that enabled by default, but was disabled by user in settings.
+ * @param nodeVersion                   Node.js version used by analyzers (detected or configured by the user).
+ *                                      Empty if no node present/detected/configured
  */
-public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, int sonarQubeServerBindingCount,
+public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, int childBindingCount, int sonarQubeServerBindingCount,
                                         int sonarQubeCloudEUBindingCount, int sonarQubeCloudUSBindingCount, boolean devNotificationsDisabled,
                                         List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
                                         @Nullable String nodeVersion) {

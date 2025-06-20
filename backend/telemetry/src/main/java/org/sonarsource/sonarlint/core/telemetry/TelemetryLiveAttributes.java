@@ -43,6 +43,10 @@ public class TelemetryLiveAttributes {
     return serverAttributes.usesSonarCloud();
   }
 
+  public int countChildBindings() {
+    return serverAttributes.childBindingCount();
+  }
+
   public int countSonarQubeServerBindings() {
     return serverAttributes.sonarQubeServerBindingCount();
   }

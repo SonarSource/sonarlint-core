@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -57,19 +56,17 @@ public class TelemetryServerAttributesProvider {
     var allBindings = configurationRepository.getAllBoundScopes();
 
     var usesConnectedMode = !allBindings.isEmpty();
-
     var usesSonarCloud = allBindings.stream().anyMatch(isSonarCloudConnectionConfiguration());
 
+    var childBindingCount = countChildBindings();
     var sonarQubeServerBindingCount = countSonarQubeServerBindings(allBindings);
-
     var sonarQubeCloudEUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.EU);
-
     var sonarQubeCloudUSBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.US);
 
     var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
-    List<String> nonDefaultEnabledRules = new ArrayList<>();
-    List<String> defaultDisabledRules = new ArrayList<>();
+    var nonDefaultEnabledRules = new ArrayList<String>();
+    var defaultDisabledRules = new ArrayList<String>();
 
     rulesService.getStandaloneRuleConfig().forEach((ruleKey, standaloneRuleConfigDto) -> {
       var optionalEmbeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
@@ -87,7 +84,7 @@ public class TelemetryServerAttributesProvider {
 
     var nodeJsVersion = getNodeJsVersion();
 
-    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, sonarQubeServerBindingCount,
+    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, childBindingCount, sonarQubeServerBindingCount,
       sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, devNotificationsDisabled, nonDefaultEnabledRules,
       defaultDisabledRules, nodeJsVersion);
   }
@@ -105,6 +102,25 @@ public class TelemetryServerAttributesProvider {
   private int countSonarQubeServerBindings(Collection<BoundScope> allBindings) {
     return (int) allBindings.stream()
       .filter(binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarQubeConnectionConfiguration)
+      .count();
+  }
+
+  // We are looking for leaf config scope IDs that are bound to a different project key than their parents
+  private int countChildBindings() {
+    return (int) configurationRepository.getLeafConfigScopeIds().stream()
+      .filter(scopeId -> {
+        var configScope = configurationRepository.getConfigurationScope(scopeId);
+        if (configScope != null && configScope.getParentId() != null) {
+          var parentBindingConfig = configurationRepository.getBindingConfiguration(configScope.getParentId());
+          var leafBindingConfig = configurationRepository.getBindingConfiguration(scopeId);
+          if (parentBindingConfig != null && leafBindingConfig != null) {
+            var parentProjectKey = parentBindingConfig.getSonarProjectKey();
+            var leafProjectKey = leafBindingConfig.getSonarProjectKey();
+            return parentProjectKey != null && leafProjectKey != null && !parentProjectKey.equals(leafProjectKey);
+          }
+        }
+        return false;
+      })
       .count();
   }
 

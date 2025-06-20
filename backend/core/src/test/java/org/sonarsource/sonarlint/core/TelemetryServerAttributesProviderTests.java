@@ -27,7 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
@@ -59,6 +61,7 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isTrue();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isEqualTo(1);
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
@@ -71,14 +74,25 @@ class TelemetryServerAttributesProviderTests {
   void it_should_calculate_connectedMode_notUsesSC_disabledDevNotifications_telemetry_attrs() {
     var configurationScopeId_1 = "scopeId_1";
     var configurationScopeId_2 = "scopeId_2";
+    var configurationScopeId_3 = "scopeId_3";
     var connectionId_1 = "connectionId_1";
     var connectionId_2 = "connectionId_2";
-    var projectKey = "projectKey";
+    var projectKey_1 = "projectKey1";
+    var projectKey_2 = "projectKey2";
 
     var configurationRepository = mock(ConfigurationRepository.class);
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
-      new BoundScope(configurationScopeId_1, connectionId_1, projectKey),
-      new BoundScope(configurationScopeId_2, connectionId_2, projectKey)));
+      new BoundScope(configurationScopeId_1, connectionId_1, projectKey_1),
+      new BoundScope(configurationScopeId_2, connectionId_2, projectKey_2)));
+
+    when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId_2, configurationScopeId_3));
+
+    when(configurationRepository.getConfigurationScope(configurationScopeId_1)).thenReturn(new ConfigurationScope(configurationScopeId_1, null, false, "1"));
+    when(configurationRepository.getConfigurationScope(configurationScopeId_2)).thenReturn(new ConfigurationScope(configurationScopeId_2, configurationScopeId_1, false, "2"));
+    when(configurationRepository.getConfigurationScope(configurationScopeId_3)).thenReturn(new ConfigurationScope(configurationScopeId_3, configurationScopeId_1, false, "3"));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId_1)).thenReturn(new BindingConfiguration(configurationScopeId_1, projectKey_1, false));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId_2)).thenReturn(new BindingConfiguration(configurationScopeId_2, projectKey_2, false));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId_3)).thenReturn(new BindingConfiguration(null, null, false));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
@@ -88,6 +102,7 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isEqualTo(1);
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isEqualTo(2);
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
@@ -121,6 +136,7 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).containsExactly("ruleKey_2");
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).containsExactly("ruleKey_3");
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isFalse();
+    assertThat(telemetryLiveAttributes.childBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
