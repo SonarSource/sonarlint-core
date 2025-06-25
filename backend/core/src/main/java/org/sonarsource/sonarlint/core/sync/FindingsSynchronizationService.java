@@ -32,6 +32,8 @@ import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 public class FindingsSynchronizationService {
   private static final int FETCH_ALL_ISSUES_THRESHOLD = 10;
@@ -41,15 +43,18 @@ public class FindingsSynchronizationService {
   private final IssueSynchronizationService issueSynchronizationService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final ExecutorService issueUpdaterExecutorService;
+  private final boolean shouldRefreshHotspots;
 
   public FindingsSynchronizationService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-    PathTranslationService pathTranslationService, IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService) {
+    PathTranslationService pathTranslationService, IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
+    InitializeParams initializeParams) {
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
     this.pathTranslationService = pathTranslationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.issueUpdaterExecutorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-server-tracking-issue-updater");
+    this.shouldRefreshHotspots = initializeParams.getBackendCapabilities().contains(BackendCapability.SECURITY_HOTSPOTS);
   }
 
   public void refreshServerFindings(String configurationScopeId, Set<Path> pathsToRefresh) {
@@ -62,7 +67,9 @@ public class FindingsSynchronizationService {
       var translation = translationOpt.get();
       var cancelMonitor = new SonarLintCancelMonitor();
       refreshServerIssues(cancelMonitor, binding, activeBranch, pathsToRefresh, translation);
-      refreshServerSecurityHotspots(cancelMonitor, binding, activeBranch, pathsToRefresh, translationOpt.get());
+      if (shouldRefreshHotspots) {
+        refreshServerSecurityHotspots(cancelMonitor, binding, activeBranch, pathsToRefresh, translationOpt.get());
+      }
     }
   }
 
