@@ -64,7 +64,7 @@ class ConnectedHotspotMediumTests {
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
-          .withBranch(branchName))
+          .withBranch(branchName, branch -> branch.withHotspot("key", hotspot -> hotspot.withFilePath("Foo.java"))))
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
