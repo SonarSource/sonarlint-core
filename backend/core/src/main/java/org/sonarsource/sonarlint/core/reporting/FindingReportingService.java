@@ -48,6 +48,8 @@ import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
@@ -78,9 +80,11 @@ public class FindingReportingService {
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
   private final ApplicationEventPublisher eventPublisher;
   private final StorageService storageService;
+  private final boolean isStreamingEnabled;
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, StorageService storageService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, StorageService storageService,
+    InitializeParams initializeParams) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
@@ -88,6 +92,7 @@ public class FindingReportingService {
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.eventPublisher = eventPublisher;
     this.storageService = storageService;
+    this.isStreamingEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.ISSUE_STREAMING);
   }
 
   public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
@@ -116,7 +121,9 @@ public class FindingReportingService {
     } else {
       insertTrackedIssue(issuesPerFileUri, trackedIssue);
     }
-    getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
+    if (isStreamingEnabled) {
+      getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
+    }
   }
 
   private static void insertTrackedIssue(Map<URI, Collection<TrackedIssue>> map, TrackedIssue trackedIssue) {

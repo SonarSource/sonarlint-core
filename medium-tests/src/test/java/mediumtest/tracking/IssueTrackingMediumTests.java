@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -795,6 +796,7 @@ class IssueTrackingMediumTests {
       .withRulesDefinition(IssueStreamingRulesDefinition.class)
       .generate(baseDir);
     var backend = harness.newBackend()
+      .withBackendCapability(BackendCapability.ISSUE_STREAMING)
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -837,6 +839,7 @@ class IssueTrackingMediumTests {
       .withRulesDefinition(IssueStreamingRulesDefinition.class)
       .generate(baseDir);
     var backend = harness.newBackend()
+      .withBackendCapability(BackendCapability.ISSUE_STREAMING)
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
