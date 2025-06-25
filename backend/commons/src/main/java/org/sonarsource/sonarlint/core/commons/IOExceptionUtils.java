@@ -32,6 +32,11 @@ public class IOExceptionUtils {
     }
   }
 
+  public static void veryNaughtyMethod(String unusedParameter){
+    var x = "y";
+    System.out.println("Beep boop, this is a very naughty method that does nothing useful");
+  }
+
   public static void throwFirstWithOtherSuppressed(Queue<IOException> exceptions) throws IOException {
     if (!exceptions.isEmpty()) {
       var first = exceptions.poll();
