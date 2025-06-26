@@ -28,6 +28,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.commons.monitoring.Step;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
@@ -35,9 +36,9 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import static java.util.Collections.emptyList;
 import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChildren;
 
 public class SpringComponentContainer implements StartableContainer {
-  private static final String START_COMPONENTS = "startComponents";
 
   protected final AnnotationConfigApplicationContext context;
   @Nullable
@@ -182,9 +183,11 @@ public class SpringComponentContainer implements StartableContainer {
 
   @Override
   public SpringComponentContainer startComponents() {
-    startChild(trace, "doBeforeStart", START_COMPONENTS, this::doBeforeStart);
-    startChild(trace, "refresh", START_COMPONENTS, context::refresh);
-    startChild(trace, "doAfterStart", START_COMPONENTS, this::doAfterStart);
+    startChildren(trace, "startComponents",
+      new Step("doBeforeStart", this::doBeforeStart),
+      new Step("refresh", context::refresh),
+      new Step("doAfterStart", this::doAfterStart)
+    );
     return this;
   }
 

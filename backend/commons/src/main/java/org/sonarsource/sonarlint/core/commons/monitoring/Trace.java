@@ -23,6 +23,7 @@ import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import io.sentry.SpanStatus;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 public class Trace {
@@ -65,6 +66,14 @@ public class Trace {
       span.finishExceptionally(exception);
       throw exception;
     }
+  }
+
+  public static void startChildren(@Nullable Trace trace, @Nullable String description, Step... steps) {
+    if (trace == null) {
+      Stream.of(steps).forEach(Step::execute);
+      return;
+    }
+    Stream.of(steps).forEach(step -> step.executeTransaction(trace.transaction,  description));
   }
 
   public void setData(String key, Object value) {
