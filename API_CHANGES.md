@@ -1,3 +1,9 @@
+# 10.25
+
+## Breaking changes
+
+* Add a new `ISSUE_STREAMING` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
+
 # 10.23
 
 ## Deprecation
