@@ -35,7 +35,6 @@ import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFact
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import static java.util.Collections.emptyList;
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChildren;
 
 public class SpringComponentContainer implements StartableContainer {
