@@ -207,7 +207,7 @@ public class AnalyzeCommand extends Command {
       });
       result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       originalException = e;
       doIfTraceIsSet(t -> t.finishExceptionally(e));
       throw e;

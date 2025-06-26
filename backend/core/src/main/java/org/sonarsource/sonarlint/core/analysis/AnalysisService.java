@@ -306,12 +306,9 @@ public class AnalysisService {
         Set.copyOf(connectedPluginPaths));
     })
       .orElseGet(() -> {
-        var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG,
-          this::buildStandaloneActiveRules);
-        var embeddedPluginPaths = startChild(trace, "getEmbeddedPluginPaths", GET_ANALYSIS_CFG,
-          pluginsService::getEmbeddedPluginPaths);
-        return new GetAnalysisConfigResponse(standaloneActiveRules, userAnalysisProperties, nodeJsDetailsDto,
-          Set.copyOf(embeddedPluginPaths));
+        var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, this::buildStandaloneActiveRules);
+        var embeddedPluginPaths = startChild(trace, "getEmbeddedPluginPaths", GET_ANALYSIS_CFG, pluginsService::getEmbeddedPluginPaths);
+        return new GetAnalysisConfigResponse(standaloneActiveRules, userAnalysisProperties, nodeJsDetailsDto, Set.copyOf(embeddedPluginPaths));
       });
   }
 
