@@ -106,6 +106,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
@@ -115,6 +116,8 @@ public class AnalysisService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP = "sonar.js.internal.bundlePath";
+  private static final String ANALYSIS_CFG_FOR_ENGINE = "getAnalysisConfigForEngine";
+  private static final String GET_ANALYSIS_CFG = "getAnalysisConfig";
 
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
@@ -245,13 +248,16 @@ public class AnalysisService {
   private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, Set<URI> filesUrisToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
     TriggerType triggerType, Trace trace) {
     trace.setData("trigger", triggerType);
-    var baseDir = fileSystemService.getBaseDir(configScopeId);
-    var filesToAnalyze = fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir);
+    var baseDir = startChild(trace, "getBaseDir", ANALYSIS_CFG_FOR_ENGINE, () -> fileSystemService.getBaseDir(configScopeId));
+    var filesToAnalyze = startChild(trace, "refineAnalysisScope", ANALYSIS_CFG_FOR_ENGINE,
+      () -> fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir));
     var actualBaseDir = baseDir == null ? findCommonPrefix(filesUrisToAnalyze) : baseDir;
     var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly, trace);
     var analysisProperties = analysisConfig.getAnalysisProperties();
-    var inferredAnalysisProperties = client
-      .getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filesToAnalyze.stream().map(ClientFile::getUri).toList())).join().getProperties();
+    var inferredAnalysisProperties = startChild(trace, "getInferredAnalysisProperties", ANALYSIS_CFG_FOR_ENGINE,
+      () -> client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(
+        configScopeId, filesToAnalyze.stream().map(ClientFile::getUri).toList()
+      )).join().getProperties());
     analysisProperties.putAll(inferredAnalysisProperties);
     var activeRules = analysisConfig.getActiveRules().stream().map(r -> {
       var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
@@ -260,7 +266,8 @@ public class AnalysisService {
       return ar;
     }).toList();
     trace.setData("activeRulesCount", activeRules.size());
-    return AnalysisConfiguration.builder()
+    return startChild(trace, "buildAnalysisConfiguration", ANALYSIS_CFG_FOR_ENGINE, () ->
+      AnalysisConfiguration.builder()
       .addInputFiles(filesToAnalyze.stream().map(BackendInputFile::new).toList())
       .putAllExtraProperties(analysisProperties)
       // properties sent by client using new API were merged above
@@ -268,14 +275,14 @@ public class AnalysisService {
       .putAllExtraProperties(extraProperties)
       .addActiveRules(activeRules)
       .setBaseDir(actualBaseDir)
-      .build();
+      .build());
   }
 
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId, boolean hotspotsOnly, @Nullable Trace trace) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
-    var activeNodeJs = nodeJsService.getActiveNodeJs();
+    var activeNodeJs = startChild(trace, "getActiveNodeJs", GET_ANALYSIS_CFG, nodeJsService::getActiveNodeJs);
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
-    // if client (IDE) has specified a bundle path, use it
+    // If the client (IDE) has specified a bundle path, use it
     if (this.esLintBridgeServerPath != null) {
       userAnalysisProperties.put(SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP, this.esLintBridgeServerPath.toString());
     }
@@ -287,14 +294,22 @@ public class AnalysisService {
       trace.setData("connected", bindingOpt.isPresent());
     }
     return bindingOpt.map(binding -> {
-      var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
+      var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
+        () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
       var analysisProperties = new HashMap<>(serverProperties);
       analysisProperties.putAll(userAnalysisProperties);
-      return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding, hotspotsOnly), analysisProperties, nodeJsDetailsDto,
-        Set.copyOf(pluginsService.getConnectedPluginPaths(binding.connectionId())));
+      var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
+        () -> buildConnectedActiveRules(binding, hotspotsOnly));
+      var connectedPluginPaths = startChild(trace, "getConnectedPluginPaths", GET_ANALYSIS_CFG,
+        () -> pluginsService.getConnectedPluginPaths(binding.connectionId()));
+      return new GetAnalysisConfigResponse(connectedActiveRules, analysisProperties, nodeJsDetailsDto,
+        Set.copyOf(connectedPluginPaths));
     })
-      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
-        Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
+      .orElseGet(() -> {
+        var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, this::buildStandaloneActiveRules);
+        var embeddedPluginPaths = startChild(trace, "getEmbeddedPluginPaths", GET_ANALYSIS_CFG, pluginsService::getEmbeddedPluginPaths);
+        return new GetAnalysisConfigResponse(standaloneActiveRules, userAnalysisProperties, nodeJsDetailsDto, Set.copyOf(embeddedPluginPaths));
+      });
   }
 
   private static Path findCommonPrefix(Set<URI> uris) {
@@ -705,7 +720,7 @@ public class AnalysisService {
   public UUID scheduleForcedAnalysis(String configurationScopeId, Set<URI> files, boolean hotspotsOnly) {
     var analysisId = UUID.randomUUID();
     var rawIssues = new ArrayList<RawIssue>();
-    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, true)
+    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, true, null)
       .exceptionally(e -> {
         if (!(e instanceof CancellationException)) {
           LOG.error("Error during analysis", e);
@@ -725,7 +740,7 @@ public class AnalysisService {
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), trace, cancelChecker,
       taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
       files, extraProperties);
-    return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues);
+    return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues, trace);
   }
 
   private Trace newAnalysisTrace() {
@@ -742,7 +757,7 @@ public class AnalysisService {
       var rawIssues = new ArrayList<RawIssue>();
       var analysisId = UUID.randomUUID();
       var command = getAnalyzeCommand(configScopeId, filesToAnalyze, rawIssues, false, TriggerType.AUTO, analysisId);
-      schedule(configScopeId, command, analysisId, rawIssues, true)
+      schedule(configScopeId, command, analysisId, rawIssues, true, null)
         .exceptionally(exception -> {
           if (!(exception instanceof CancellationException) && !(exception instanceof CompletionException && exception.getCause() instanceof CancellationException)) {
             LOG.error("Error during automatic analysis", exception);
@@ -757,8 +772,10 @@ public class AnalysisService {
   }
 
   private CompletableFuture<AnalysisResult> schedule(String configScopeId, AnalyzeCommand command, UUID analysisId, ArrayList<RawIssue> rawIssues,
-    boolean shouldFetchServerIssues) {
-    schedulerCache.getOrCreateAnalysisScheduler(configScopeId).post(command);
+    boolean shouldFetchServerIssues, @Nullable Trace trace) {
+    var scheduler = startChild(trace, "getOrCreateAnalysisScheduler", "schedule", () ->
+      schedulerCache.getOrCreateAnalysisScheduler(configScopeId, command.getTrace()));
+    startChild(trace, "post", "schedule", () -> scheduler.post(command));
     var result = command.getFutureResult();
     result.exceptionally(exception -> {
       eventPublisher.publishEvent(new AnalysisFailedEvent(analysisId));

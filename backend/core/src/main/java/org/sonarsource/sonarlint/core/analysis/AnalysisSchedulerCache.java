@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -43,6 +44,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.event.EventListener;
+
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 
 public class AnalysisSchedulerCache {
   private final Path workDir;
@@ -87,14 +90,18 @@ public class AnalysisSchedulerCache {
   }
 
   public AnalysisScheduler getOrCreateAnalysisScheduler(String configurationScopeId) {
-    return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> getOrCreateConnectedScheduler(binding.connectionId()))
-      .orElseGet(this::getOrCreateStandaloneScheduler);
+    return getOrCreateAnalysisScheduler(configurationScopeId, null);
   }
 
-  private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId) {
+  public AnalysisScheduler getOrCreateAnalysisScheduler(String configurationScopeId, @Nullable Trace trace) {
+    return configurationRepository.getEffectiveBinding(configurationScopeId)
+      .map(binding -> getOrCreateConnectedScheduler(binding.connectionId(), trace))
+      .orElseGet(() -> getOrCreateStandaloneScheduler(trace));
+  }
+
+  private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId, @Nullable Trace trace) {
     return connectedSchedulerByConnectionId.computeIfAbsent(connectionId,
-      k -> createScheduler(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId)));
+      k -> createScheduler(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId), trace));
   }
 
   @CheckForNull
@@ -102,10 +109,10 @@ public class AnalysisSchedulerCache {
     return connectedSchedulerByConnectionId.get(connectionId);
   }
 
-  private synchronized AnalysisScheduler getOrCreateStandaloneScheduler() {
+  private synchronized AnalysisScheduler getOrCreateStandaloneScheduler(@Nullable Trace trace) {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
+      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath, trace);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -116,12 +123,16 @@ public class AnalysisSchedulerCache {
     return standaloneScheduler.get();
   }
 
-  private AnalysisScheduler createScheduler(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
-    return new AnalysisScheduler(createSchedulerConfiguration(actualCsharpAnalyzerPath), plugins, SonarLintLogger.get().getTargetForCopy());
+  private AnalysisScheduler createScheduler(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath, @Nullable Trace trace) {
+    return new AnalysisScheduler(createSchedulerConfiguration(actualCsharpAnalyzerPath, trace), plugins, SonarLintLogger.get().getTargetForCopy());
   }
 
   private AnalysisSchedulerConfiguration createSchedulerConfiguration(@Nullable Path actualCsharpAnalyzerPath) {
-    var activeNodeJs = nodeJsService.getActiveNodeJs();
+    return createSchedulerConfiguration(actualCsharpAnalyzerPath, null);
+  }
+
+  private AnalysisSchedulerConfiguration createSchedulerConfiguration(@Nullable Path actualCsharpAnalyzerPath, @Nullable Trace trace) {
+    var activeNodeJs = startChild(trace, "getActiveNodeJs", "createSchedulerConfiguration", nodeJsService::getActiveNodeJs);
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
     var fullExtraProperties = new HashMap<>(extraProperties);
     if (actualCsharpAnalyzerPath != null) {

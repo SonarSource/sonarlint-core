@@ -28,13 +28,17 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.commons.monitoring.Step;
+import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import static java.util.Collections.emptyList;
+import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChildren;
 
 public class SpringComponentContainer implements StartableContainer {
+
   protected final AnnotationConfigApplicationContext context;
   @Nullable
   protected final SpringComponentContainer parent;
@@ -42,6 +46,8 @@ public class SpringComponentContainer implements StartableContainer {
 
   private final PropertyDefinitions propertyDefinitions;
   private final ComponentKeys componentKeys = new ComponentKeys();
+  @Nullable
+  private Trace trace;
 
   public SpringComponentContainer() {
     this(null, new PropertyDefinitions(System2.INSTANCE), emptyList(), new LazyUnlessStartableStrategy());
@@ -153,7 +159,8 @@ public class SpringComponentContainer implements StartableContainer {
     return context;
   }
 
-  public void execute() {
+  public void execute(@Nullable Trace trace) {
+    this.trace = trace;
     RuntimeException r = null;
     try {
       startComponents();
@@ -175,9 +182,11 @@ public class SpringComponentContainer implements StartableContainer {
 
   @Override
   public SpringComponentContainer startComponents() {
-    doBeforeStart();
-    context.refresh();
-    doAfterStart();
+    startChildren(trace, "startComponents",
+      new Step("doBeforeStart", this::doBeforeStart),
+      new Step("refresh", context::refresh),
+      new Step("doAfterStart", this::doAfterStart)
+    );
     return this;
   }
 
