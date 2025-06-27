@@ -4,6 +4,10 @@
 
 * Add a new `ISSUE_STREAMING` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
 
+## New features
+
+* Add a new optional parameter to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams` to track SonarQube Cloud account creation through token generation.
+
 # 10.23
 
 ## Deprecation

@@ -20,14 +20,60 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 public class HelpGenerateUserTokenParams {
   private final String serverUrl;
 
+  private final Utm utm;
+
+  @Deprecated
   public HelpGenerateUserTokenParams(String serverUrl) {
+    this(serverUrl, null);
+  }
+
+  public HelpGenerateUserTokenParams(String serverUrl, @Nullable Utm utm) {
     this.serverUrl = serverUrl;
+    this.utm = utm;
   }
 
   public String getServerUrl() {
     return serverUrl;
+  }
+
+  @CheckForNull
+  public Utm getUtm() {
+    return utm;
+  }
+
+  public static class Utm {
+    private final String type;
+    private final String source;
+    private final String content;
+    private final String term;
+
+    public Utm(String type, String source, String content, String term) {
+      this.type = type;
+      this.source = source;
+      this.content = content;
+      this.term = term;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public String getSource() {
+      return source;
+    }
+
+    public String getContent() {
+      return content;
+    }
+
+    public String getTerm() {
+      return term;
+    }
   }
 }

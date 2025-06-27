@@ -71,6 +71,36 @@ class ConnectionSetupMediumTests {
   }
 
   @SonarLintTest
+  void it_should_open_token_generation_url_for_sonarcloud_with_tracking(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    ServerFixture.Server scServer = harness.newFakeSonarCloudServer()
+      .start();
+
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarCloudConnection("connectionId").start(fakeClient);
+
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(
+      new HelpGenerateUserTokenParams(scServer.baseUrl(),
+        new HelpGenerateUserTokenParams.Utm("referral", "sq-ide-product-name", "create-new-sqc-connection", "generate-token-2")));
+
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(
+      new URL(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort() +
+        "&utm_type=referral&utm_source=sq-ide-product-name&utm_content=create-new-sqc-connection&utm_term=generate-token-2")));
+
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Content-Type", "application/json; charset=utf-8")
+      .header("Origin", scServer.baseUrl())
+      .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    assertThat(futureResponse)
+      .succeedsWithin(Duration.ofSeconds(3))
+      .extracting(HelpGenerateUserTokenResponse::getToken)
+      .isEqualTo("value");
+  }
+
+  @SonarLintTest
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
     var server = harness.newFakeSonarQubeServer("9.9").start();
