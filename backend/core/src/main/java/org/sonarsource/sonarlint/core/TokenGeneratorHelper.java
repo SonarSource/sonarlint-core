@@ -20,10 +20,12 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
@@ -47,8 +49,8 @@ public class TokenGeneratorHelper {
     this.clientName = params.getClientConstantInfo().getName();
   }
 
-  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverBaseUrl, SonarLintCancelMonitor cancelMonitor) {
-    client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen())));
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverBaseUrl, @Nullable HelpGenerateUserTokenParams.Utm utm, SonarLintCancelMonitor cancelMonitor) {
+    client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen(utm))));
     var shouldWaitIncomingToken = embeddedServer.isStarted();
     if (shouldWaitIncomingToken) {
       var future = new CompletableFuture<HelpGenerateUserTokenResponse>();
@@ -60,8 +62,14 @@ public class TokenGeneratorHelper {
     }
   }
 
-  private String getUserTokenGenerationRelativeUrlToOpen() {
-    return "/sonarlint/auth?ideName=" + urlEncode(clientName) + (embeddedServer.isStarted() ? ("&port=" + embeddedServer.getPort()) : "");
+  private String getUserTokenGenerationRelativeUrlToOpen(@Nullable HelpGenerateUserTokenParams.Utm utm) {
+    var params = new StringBuilder("ideName=" + urlEncode(clientName) + (embeddedServer.isStarted() ? ("&port=" + embeddedServer.getPort()) : ""));
+    if (utm != null) {
+      params.append(String.format("&utm_type=%s&utm_source=%s&utm_content=%s&utm_term=%s",
+          urlEncode(utm.getType()), urlEncode(utm.getSource()), urlEncode(utm.getContent()), urlEncode(utm.getTerm())
+        ));
+    }
+    return "/sonarlint/auth?" + params;
   }
 
 }
