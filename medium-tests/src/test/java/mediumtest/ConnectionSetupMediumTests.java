@@ -84,7 +84,7 @@ class ConnectionSetupMediumTests {
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(
       new URL(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort() +
-        "&utm_type=referral&utm_source=sq-ide-product-name&utm_content=create-new-sqc-connection&utm_term=generate-token-2")));
+        "&utm_medium=referral&utm_source=sq-ide-product-name&utm_content=create-new-sqc-connection&utm_term=generate-token-2")));
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))

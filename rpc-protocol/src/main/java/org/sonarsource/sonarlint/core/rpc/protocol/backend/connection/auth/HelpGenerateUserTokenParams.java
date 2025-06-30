@@ -48,20 +48,20 @@ public class HelpGenerateUserTokenParams {
   }
 
   public static class Utm {
-    private final String type;
+    private final String medium;
     private final String source;
     private final String content;
     private final String term;
 
-    public Utm(String type, String source, String content, String term) {
-      this.type = type;
+    public Utm(String medium, String source, String content, String term) {
+      this.medium = medium;
       this.source = source;
       this.content = content;
       this.term = term;
     }
 
-    public String getType() {
-      return type;
+    public String getMedium() {
+      return medium;
     }
 
     public String getSource() {

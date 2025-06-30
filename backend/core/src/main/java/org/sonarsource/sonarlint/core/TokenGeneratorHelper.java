@@ -65,8 +65,8 @@ public class TokenGeneratorHelper {
   private String getUserTokenGenerationRelativeUrlToOpen(@Nullable HelpGenerateUserTokenParams.Utm utm) {
     var params = new StringBuilder("ideName=" + urlEncode(clientName) + (embeddedServer.isStarted() ? ("&port=" + embeddedServer.getPort()) : ""));
     if (utm != null) {
-      params.append(String.format("&utm_type=%s&utm_source=%s&utm_content=%s&utm_term=%s",
-          urlEncode(utm.getType()), urlEncode(utm.getSource()), urlEncode(utm.getContent()), urlEncode(utm.getTerm())
+      params.append(String.format("&utm_medium=%s&utm_source=%s&utm_content=%s&utm_term=%s",
+          urlEncode(utm.getMedium()), urlEncode(utm.getSource()), urlEncode(utm.getContent()), urlEncode(utm.getTerm())
         ));
     }
     return "/sonarlint/auth?" + params;
