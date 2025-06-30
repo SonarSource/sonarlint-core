@@ -88,7 +88,7 @@ public class PathTranslationService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    cachedPathsTranslationByConfigScope.refreshAsync(event.getRemovedConfigurationScopeId());
+    cachedPathsTranslationByConfigScope.clear(event.getRemovedConfigurationScopeId());
   }
 
   @EventListener
