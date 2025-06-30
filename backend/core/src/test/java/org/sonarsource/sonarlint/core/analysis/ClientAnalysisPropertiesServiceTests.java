@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClientAnalysisPropertiesServiceTests {
-
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONFIG_SCOPE_ID = "scope-id";
   private static final String ANOTHER_CONFIG_SCOPE_ID = "another-scope-id";
   UserAnalysisPropertiesRepository underTest;

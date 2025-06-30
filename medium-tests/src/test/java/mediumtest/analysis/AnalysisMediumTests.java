@@ -850,10 +850,10 @@ class AnalysisMediumTests {
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).isNotEmpty());
     client.cleanRaisedIssues();
 
-    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path"));
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile/commands.json"));
 
     var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path"));
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path/to/compile/commands.json"));
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsOnlyKeys(cFileUri);
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).hasSize(1);
@@ -1179,6 +1179,86 @@ class AnalysisMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
     assertThat(raisedIssueDto).isNotEmpty();
+  }
+
+  @SonarLintTest
+  void it_should_trigger_analysis_after_analysis_properties_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = URI.create(filePath.toUri().toString());
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
+
+    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
+
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
+  }
+
+  @SonarLintTest
+  void it_should_trigger_analysis_after_path_to_compile_commands_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = URI.create(filePath.toUri().toString());
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
+
+    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
+
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,

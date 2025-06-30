@@ -25,9 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 public class UserAnalysisPropertiesRepository {
-
   private static final String PATH_TO_COMPILE_COMMANDS_ANALYZER_PROPERTY = "sonar.cfamily.compile-commands";
-  private static final Map<String, String> pathToCompileCommandsByConfigScope = new ConcurrentHashMap<>();
+  private final Map<String, String> pathToCompileCommandsByConfigScope = new ConcurrentHashMap<>();
   private final Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
 
   public Map<String, String> getUserProperties(String configurationScopeId) {
@@ -40,11 +39,23 @@ public class UserAnalysisPropertiesRepository {
     return properties;
   }
 
-  public void setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    propertiesByConfigScope.put(configurationScopeId, new HashMap<>(extraProperties));
+  public boolean setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
+    var oldProperties = propertiesByConfigScope.get(configurationScopeId);
+    var newProperties = new HashMap<>(extraProperties);
+    var changed = !newProperties.equals(oldProperties);
+    if (changed) {
+      propertiesByConfigScope.put(configurationScopeId, newProperties);
+    }
+    return changed;
   }
 
-  public void setOrUpdatePathToCompileCommands(String configurationScopeId, @Nullable String value) {
-    pathToCompileCommandsByConfigScope.put(configurationScopeId, value == null ? "" : value);
+  public boolean setOrUpdatePathToCompileCommands(String configurationScopeId, @Nullable String value) {
+    var newValue = value == null ? "" : value;
+    var oldValue = pathToCompileCommandsByConfigScope.get(configurationScopeId);
+    var changed = !newValue.equals(oldValue);
+    if (changed) {
+      pathToCompileCommandsByConfigScope.put(configurationScopeId, newValue);
+    }
+    return changed;
   }
 }
