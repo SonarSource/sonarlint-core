@@ -104,6 +104,20 @@ class PluginsSynchronizerTests {
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-enterprise-plugin-1.2.3.4.jar")).exists();
   }
 
+  @Test
+  void should_not_synchronize_sonar_go_enterprise_in_2025_2_if_language_not_enabled(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"goenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-enterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-enterprise-plugin-1.2.3.4.jar")).doesNotExist();
+  }
+
   /**
    * Emulating SonarQube 2025.3 where `sonar-go` is embedded but the `sonar-go` from the server will be downloaded
    */
@@ -125,5 +139,47 @@ class PluginsSynchronizerTests {
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-plugin-1.2.3.4.jar")).exists();
+  }
+
+  @Test
+  void should_not_synchronize_sonar_go_in_2025_3_if_language_not_enabled(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"go\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-plugin-1.2.3.4.jar")).doesNotExist();
+  }
+
+  @Test
+  void should_synchronize_csharp_enterprise_if_language_enabled(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-go");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-csharpenterprise-plugin-1.2.3.4.jar")).exists();
+  }
+
+  @Test
+  void should_not_synchronize_csharp_enterprise_if_language_disabled(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-csharp");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-csharpenterprise-plugin-1.2.3.4.jar")).doesNotExist();
   }
 }
