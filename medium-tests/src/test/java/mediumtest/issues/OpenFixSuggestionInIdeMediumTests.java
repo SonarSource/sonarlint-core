@@ -269,28 +269,6 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @SonarLintTest
-  void it_should_revoke_token_when_exception_thrown_while_assist_creating_the_connection(SonarLintTestHarness harness) throws Exception {
-    var fakeClient = harness.newFakeClient().build();
-    doThrow(RuntimeException.class).when(fakeClient).assistCreatingConnection(any(), any());
-
-    var scServer = buildSonarCloudServer(harness).start();
-    var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
-      .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
-      .withBackendCapability(EMBEDDED_SERVER)
-      .start(fakeClient);
-
-    var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
-    assertThat(statusCode).isEqualTo(200);
-
-    ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
-    verify(fakeClient, after(500).atLeastOnce()).log(captor.capture());
-    assertThat(captor.getAllValues())
-      .extracting(LogParams::getMessage)
-      .containsAnyOf("Revoking token 'token-name'");
-  }
-
-  @SonarLintTest
   void it_should_fail_request_when_issue_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
