@@ -40,21 +40,24 @@ public class PluginsSynchronizer {
   public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
   public static final Version ENTERPRISE_GO_MIN_SQ_VERSION = Version.create("2025.2");
   public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
-  public static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
-  private static final Set<String> FORCE_SYNCHRONIZED_ANALYZERS = Set.of(
-    // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
-    CSHARP_ENTERPRISE_PLUGIN_ID,
-    // SLCORE-1337 Force synchronize "Go Enterprise" before proper repackaging (SQS 2025.2)
-    GO_ENTERPRISE_PLUGIN_ID
-  );
+  private static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
+  private final Set<String> notSonarLintSupportedPluginsToSynchronize = new HashSet<>();
   private final ConnectionStorage storage;
   private Set<String> embeddedPluginKeys;
 
   public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
+    if (enabledLanguages.contains(SonarLanguage.GO)) {
+      // SLCORE-1337 Force synchronize "Go Enterprise" before proper repackaging (SQS 2025.2)
+      this.notSonarLintSupportedPluginsToSynchronize.add(GO_ENTERPRISE_PLUGIN_ID);
+    }
+    if (enabledLanguages.contains(SonarLanguage.CS)) {
+      // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
+      this.notSonarLintSupportedPluginsToSynchronize.add(CSHARP_ENTERPRISE_PLUGIN_ID);
+    }
     this.storage = storage;
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
@@ -120,7 +123,7 @@ public class PluginsSynchronizer {
       return Optional.of(DownloadSkipReason.UP_TO_DATE);
     }
     if (!serverPlugin.isSonarLintSupported() &&
-      !isForceSynchronized(serverPlugin.getKey())) {
+      !notSonarLintSupportedPluginsToSynchronize.contains(serverPlugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.NOT_SONARLINT_SUPPORTED);
     }
@@ -129,10 +132,6 @@ public class PluginsSynchronizer {
       return Optional.of(DownloadSkipReason.LANGUAGE_NOT_ENABLED);
     }
     return Optional.empty();
-  }
-
-  private static boolean isForceSynchronized(String pluginKey) {
-    return FORCE_SYNCHRONIZED_ANALYZERS.contains(pluginKey);
   }
 
   private static boolean upToDate(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
