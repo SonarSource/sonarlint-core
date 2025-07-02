@@ -61,7 +61,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFi
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.blameWithFilesGitCommand;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVCSChangedFiles;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class GitServiceTests {
@@ -250,7 +250,7 @@ class GitServiceTests {
 
     createFile(projectDirPath, uncommittedUntrackedFile, "line1", "line2", "line3");
 
-    var changedFiles = getVSCChangedFiles(projectDirPath);
+    var changedFiles = getVCSChangedFiles(projectDirPath);
 
     assertThat(changedFiles).hasSize(4)
       .doesNotContain(committedFileUri)
@@ -261,13 +261,26 @@ class GitServiceTests {
   }
 
   @Test
+  void it_should_get_uncommited_file_in_sub_base_dir() throws GitAPIException, IOException {
+    var folderFile = Path.of("folder").resolve("folderFile");
+    var string = FilenameUtils.separatorsToUnix(folderFile.toString());
+    createFile(projectDirPath, string, "line1", "line2", "line3");
+    git.add().setUpdate(true).addFilepattern(string).call();
+
+    var changedFiles = getVCSChangedFiles(projectDirPath.resolve("folder"));
+
+    assertThat(changedFiles).hasSize(1)
+      .contains(projectDirPath.resolve(folderFile).toUri());
+  }
+
+  @Test
   void it_should_return_empty_list_if_base_dir_not_resolved() {
-    assertThat(getVSCChangedFiles(null)).isEmpty();
+    assertThat(getVCSChangedFiles(null)).isEmpty();
   }
 
   @Test
   void it_should_return_empty_list_on_git_exception(@TempDir Path nonGitDir) {
-    assertThat(getVSCChangedFiles(nonGitDir)).isEmpty();
+    assertThat(getVCSChangedFiles(nonGitDir)).isEmpty();
   }
 
   @Test
