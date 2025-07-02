@@ -80,12 +80,17 @@ class ServerInfoSynchronizerTests {
         .setKey("sonar.multi-quality-mode.enabled")
         .setValue("true"))
       .build());
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.earlyAccess.misra.enabled")
+        .setValue("true"))
+      .build());
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
-      .containsExactly(Version.create("9.9"), DEFAULT);
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode, StoredServerInfo::areMisraEarlyAccessRulesEnabled)
+      .containsExactly(Version.create("9.9"), DEFAULT, true);
   }
 
   @Test
@@ -94,6 +99,11 @@ class ServerInfoSynchronizerTests {
     mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
         .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("true"))
+      .build());
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.earlyAccess.misra.enabled")
         .setValue("true"))
       .build());
 
@@ -112,12 +122,17 @@ class ServerInfoSynchronizerTests {
         .setKey("sonar.multi-quality-mode.enabled")
         .setValue("false"))
       .build());
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.earlyAccess.misra.enabled")
+        .setValue("false"))
+      .build());
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
-      .containsExactly(Version.create("10.8"), STANDARD);
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode, StoredServerInfo::areMisraEarlyAccessRulesEnabled)
+      .containsExactly(Version.create("10.8"), STANDARD, false);
   }
 
   @Test

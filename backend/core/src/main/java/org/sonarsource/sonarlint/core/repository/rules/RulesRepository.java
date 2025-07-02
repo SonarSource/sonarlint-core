@@ -30,6 +30,8 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 public class RulesRepository {
@@ -41,10 +43,12 @@ public class RulesRepository {
   private final Map<String, Map<String, SonarLintRuleDefinition>> rulesByKeyByConnectionId = new HashMap<>();
   private final Map<String, Map<String, String>> ruleKeyReplacementsByConnectionId = new HashMap<>();
   private final ConfigurationRepository configurationRepository;
+  private final StorageService storageService;
 
-  public RulesRepository(RulesExtractionHelper extractionHelper, ConfigurationRepository configurationRepository) {
+  public RulesRepository(RulesExtractionHelper extractionHelper, ConfigurationRepository configurationRepository, StorageService storageService) {
     this.extractionHelper = extractionHelper;
     this.configurationRepository = configurationRepository;
+    this.storageService = storageService;
   }
 
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
@@ -63,11 +67,6 @@ public class RulesRepository {
     }
   }
 
-  public Collection<SonarLintRuleDefinition> getRules(String connectionId) {
-    lazyInit(connectionId);
-    return rulesByKeyByConnectionId.getOrDefault(connectionId, Map.of()).values();
-  }
-
   public Optional<SonarLintRuleDefinition> getRule(String connectionId, String ruleKey) {
     lazyInit(connectionId);
     var connectionRules = rulesByKeyByConnectionId.get(connectionId);
@@ -76,9 +75,10 @@ public class RulesRepository {
   }
 
   private synchronized void lazyInit(String connectionId) {
+    var areMisraEarlyAccessRulesEnabled = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::areMisraEarlyAccessRulesEnabled).orElse(false);
     var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
     if (rulesByKey == null) {
-      setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId));
+      setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId, areMisraEarlyAccessRulesEnabled));
     }
   }
 
