@@ -46,7 +46,7 @@ public class ConfigurationRepository {
   private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new ConcurrentHashMap<>();
 
   public ConfigurationScope addOrReplace(ConfigurationScope configScope, BindingConfiguration bindingConfig) {
-    var id = configScope.getId();
+    var id = configScope.id();
     var previous = configScopePerId.put(id, configScope);
     bindingPerConfigScopeId.put(id, bindingConfig);
     return previous;
@@ -62,11 +62,11 @@ public class ConfigurationRepository {
   public Map<String, BindingConfiguration> removeBindingForConnection(String connectionId) {
     var removedBindingByConfigScope = new HashMap<String, BindingConfiguration>();
     var configScopeIdsToUnbind =
-      bindingPerConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().getConnectionId())).map(Map.Entry::getKey).collect(toSet());
+      bindingPerConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().connectionId())).map(Map.Entry::getKey).collect(toSet());
     configScopeIdsToUnbind.forEach(configScopeId -> {
       var removedBindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
       if (removedBindingConfiguration != null) {
-        var noBinding = BindingConfiguration.noBinding(removedBindingConfiguration.isBindingSuggestionDisabled());
+        var noBinding = BindingConfiguration.noBinding(removedBindingConfiguration.bindingSuggestionDisabled());
         updateBinding(configScopeId, noBinding);
         removedBindingByConfigScope.put(configScopeId, removedBindingConfiguration);
       }
@@ -85,6 +85,20 @@ public class ConfigurationRepository {
   @CheckForNull
   public BindingConfiguration getBindingConfiguration(String configScopeId) {
     return bindingPerConfigScopeId.get(configScopeId);
+  }
+
+  // Check the configuration scope and its parents to know if it's in connected mode
+  public boolean isConnectedMode(String configScopeId) {
+    var currentId = configScopeId;
+    while (currentId != null) {
+      var binding = bindingPerConfigScopeId.get(currentId);
+      if (binding != null && binding.isBound()) {
+        return true;
+      }
+      var configScope = configScopePerId.get(currentId);
+      currentId = (configScope != null) ? configScope.parentId() : null;
+    }
+    return false;
   }
 
   public Optional<Binding> getEffectiveBinding(String configScopeId) {
@@ -112,8 +126,8 @@ public class ConfigurationRepository {
   public Optional<Binding> getConfiguredBinding(String configScopeId) {
     var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()),
-        requireNonNull(bindingConfiguration.getSonarProjectKey())));
+      return Optional.of(new Binding(requireNonNull(bindingConfiguration.connectionId()),
+        requireNonNull(bindingConfiguration.sonarProjectKey())));
     }
     return Optional.empty();
   }
@@ -121,7 +135,7 @@ public class ConfigurationRepository {
   private Optional<String> getParentId(String configScopeId) {
     var configurationScope = configScopePerId.get(configScopeId);
     if (configurationScope != null) {
-      return Optional.ofNullable(configurationScope.getParentId());
+      return Optional.ofNullable(configurationScope.parentId());
     }
     return Optional.empty();
   }
@@ -129,7 +143,7 @@ public class ConfigurationRepository {
   public Set<String> getLeafConfigScopeIds() {
     var leafConfigScopeIds = new HashSet<>(configScopePerId.keySet());
     configScopePerId.values().forEach(scope -> {
-      var parentId = scope.getParentId();
+      var parentId = scope.parentId();
       if (parentId != null) {
         leafConfigScopeIds.remove(parentId);
       }
@@ -160,7 +174,7 @@ public class ConfigurationRepository {
   public Collection<ConfigurationScope> getAllBindableUnboundScopes() {
     return configScopePerId.entrySet()
       .stream()
-      .filter(e -> e.getValue().isBindable())
+      .filter(e -> e.getValue().bindable())
       .filter(e -> getEffectiveBinding(e.getKey()).isEmpty())
       .map(Map.Entry::getValue)
       .toList();

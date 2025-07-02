@@ -58,8 +58,8 @@ public class SharedConnectedModeSettingsProvider {
   public String getSharedConnectedModeConfigFileContents(String configScopeId) {
     var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      var projectKey = bindingConfiguration.getSonarProjectKey();
-      var connectionId = bindingConfiguration.getConnectionId();
+      var projectKey = bindingConfiguration.sonarProjectKey();
+      var connectionId = bindingConfiguration.connectionId();
 
       var connection =  Objects.requireNonNull(connectionRepository.getConnectionById(Objects.requireNonNull(connectionId)));
       telemetryService.exportedConnectedMode();

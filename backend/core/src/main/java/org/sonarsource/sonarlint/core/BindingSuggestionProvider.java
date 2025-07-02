@@ -78,7 +78,7 @@ public class BindingSuggestionProvider {
   @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
-    if (!event.newConfig().isBindingSuggestionDisabled() && event.previousConfig().isBindingSuggestionDisabled()) {
+    if (!event.newConfig().bindingSuggestionDisabled() && event.previousConfig().bindingSuggestionDisabled()) {
       suggestBindingForGivenScopesAndAllConnections(Set.of(event.configScopeId()));
     }
   }
@@ -170,7 +170,7 @@ public class BindingSuggestionProvider {
       }
     }
     if (suggestions.isEmpty()) {
-      var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
+      var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::name).orElse(null);
       if (isNotBlank(configScopeName)) {
         var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).toList();
         for (var bindingClueWithConnections : cluesWithoutProjectKey) {
@@ -216,7 +216,7 @@ public class BindingSuggestionProvider {
       LOG.debug("Configuration scope '{}' is gone.", configScopeId);
       return false;
     }
-    if (!configScope.isBindable()) {
+    if (!configScope.bindable()) {
       LOG.debug("Configuration scope '{}' is not bindable.", configScopeId);
       return false;
     }
@@ -224,7 +224,7 @@ public class BindingSuggestionProvider {
       LOG.debug("Configuration scope '{}' is already bound.", configScopeId);
       return false;
     }
-    if (bindingConfiguration.isBindingSuggestionDisabled()) {
+    if (bindingConfiguration.bindingSuggestionDisabled()) {
       LOG.debug("Configuration scope '{}' has binding suggestions disabled.", configScopeId);
       return false;
     }

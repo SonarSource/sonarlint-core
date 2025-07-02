@@ -22,20 +22,9 @@ package org.sonarsource.sonarlint.core.repository.config;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class BindingConfiguration {
-
-  private final String connectionId;
-  private final String sonarProjectKey;
-  private final boolean bindingSuggestionDisabled;
-
-  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-    this.bindingSuggestionDisabled = bindingSuggestionDisabled;
-  }
+public record BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
 
   public static BindingConfiguration noBinding() {
     return noBinding(false);
@@ -43,20 +32,6 @@ public class BindingConfiguration {
 
   public static BindingConfiguration noBinding(boolean bindingSuggestionDisabled) {
     return new BindingConfiguration(null, null, bindingSuggestionDisabled);
-  }
-
-  @CheckForNull
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  @CheckForNull
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  public boolean isBindingSuggestionDisabled() {
-    return bindingSuggestionDisabled;
   }
 
   public boolean isBound() {
@@ -80,25 +55,6 @@ public class BindingConfiguration {
       return Optional.of(calledIfBound.apply(connectionId, sonarProjectKey));
     }
     return Optional.empty();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    var that = (BindingConfiguration) o;
-    return bindingSuggestionDisabled == that.bindingSuggestionDisabled
-      && Objects.equals(connectionId, that.connectionId)
-      && Objects.equals(sonarProjectKey, that.sonarProjectKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(connectionId, sonarProjectKey, bindingSuggestionDisabled);
   }
 
 }

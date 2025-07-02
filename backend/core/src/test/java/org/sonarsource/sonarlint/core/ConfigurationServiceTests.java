@@ -157,13 +157,13 @@ class ConfigurationServiceTests {
     var event = captor.getValue();
 
     assertThat(event.configScopeId()).isEqualTo("id1");
-    assertThat(event.previousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.previousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
-    assertThat(event.previousConfig().isBindingSuggestionDisabled()).isFalse();
+    assertThat(event.previousConfig().connectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.previousConfig().sonarProjectKey()).isEqualTo("projectKey1");
+    assertThat(event.previousConfig().bindingSuggestionDisabled()).isFalse();
 
-    assertThat(event.newConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.newConfig().getSonarProjectKey()).isEqualTo("projectKey2");
-    assertThat(event.newConfig().isBindingSuggestionDisabled()).isTrue();
+    assertThat(event.newConfig().connectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.newConfig().sonarProjectKey()).isEqualTo("projectKey2");
+    assertThat(event.newConfig().bindingSuggestionDisabled()).isTrue();
   }
 
   @Test
@@ -186,10 +186,10 @@ class ConfigurationServiceTests {
       .isNotNull()
       .extracting(BoundScope::getConnectionId).isEqualTo(CONNECTION_2);
     assertThat(repository.getBindingConfiguration(CONFIG_DTO_1.getId()))
-      .extracting(BindingConfiguration::getConnectionId, BindingConfiguration::getSonarProjectKey, BindingConfiguration::isBindingSuggestionDisabled)
+      .extracting(BindingConfiguration::connectionId, BindingConfiguration::sonarProjectKey, BindingConfiguration::bindingSuggestionDisabled)
       .containsExactly(null, null, false);
     assertThat(repository.getBindingConfiguration(CONFIG_DTO_3.getId()))
-      .extracting(BindingConfiguration::getConnectionId, BindingConfiguration::getSonarProjectKey, BindingConfiguration::isBindingSuggestionDisabled)
+      .extracting(BindingConfiguration::connectionId, BindingConfiguration::sonarProjectKey, BindingConfiguration::bindingSuggestionDisabled)
       .containsExactly(BINDING_DTO_3.getConnectionId(), BINDING_DTO_3.getSonarProjectKey(), BINDING_DTO_3.isBindingSuggestionDisabled());
   }
 

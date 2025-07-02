@@ -103,7 +103,7 @@ public class RulesRepository {
   @EventListener
   public void configScopeRemoved(ConfigurationScopeRemovedEvent e) {
     var removedBindingConfiguration = e.getRemovedBindingConfiguration();
-    var connectionId = removedBindingConfiguration.getConnectionId();
+    var connectionId = removedBindingConfiguration.connectionId();
     if (removedBindingConfiguration.isBound() && hasNoMoreBindings(connectionId)) {
       evictAll(connectionId);
     }

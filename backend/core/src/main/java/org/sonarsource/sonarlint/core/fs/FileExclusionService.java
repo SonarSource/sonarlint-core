@@ -33,7 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -141,8 +140,8 @@ public class FileExclusionService {
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     if (event.newConfig().isBound()) {
-      var connectionId = requireNonNull(event.newConfig().getConnectionId());
-      var projectKey = requireNonNull(event.newConfig().getSonarProjectKey());
+      var connectionId = requireNonNull(event.newConfig().connectionId());
+      var projectKey = requireNonNull(event.newConfig().sonarProjectKey());
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
@@ -295,12 +294,7 @@ public class FileExclusionService {
 
   @CheckForNull
   private ClientFile findFile(String configScopeId, URI fileUriToAnalyze) {
-    var clientFile = clientFileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
-    if (clientFile == null) {
-      LOG.error("File to analyze was not found in the file system: {}", fileUriToAnalyze);
-      return null;
-    }
-    return clientFile;
+    return clientFileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
   }
 
   private void logFilteredURIs(String reason, ArrayList<URI> uris) {
@@ -310,6 +304,11 @@ public class FileExclusionService {
   }
 
   private Set<URI> filterOutClientExcludedFiles(String configurationScopeId, Set<URI> files) {
+    if (configRepo.isConnectedMode(configurationScopeId)) {
+      // client-defined file exclusions only apply in standalone mode
+      return files;
+    }
+
     var fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
     var matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
     Predicate<URI> fileExclusionFilter = uri -> matchers.stream().noneMatch(matcher -> matcher.matches(Paths.get(uri)));
@@ -317,12 +316,6 @@ public class FileExclusionService {
     return files.stream()
       .filter(fileExclusionFilter)
       .collect(Collectors.toSet());
-  }
-
-  private boolean isConnectedMode(String configurationScopeId) {
-    return Optional.ofNullable(configRepo.getBindingConfiguration(configurationScopeId))
-      .map(BindingConfiguration::isBound)
-      .orElse(false);
   }
 
   private Set<String> getClientFileExclusionPatterns(String configurationScopeId) {
