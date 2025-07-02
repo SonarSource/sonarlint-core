@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.analysis.AnalysisResult;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -141,7 +142,12 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestFutureAsync(cancelChecker -> getBean(AnalysisService.class)
       .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), Set.copyOf(params.getFilesToAnalyze()),
         params.getExtraProperties(), params.isShouldFetchServerIssues(), TriggerType.FORCED_WITH_EXCLUSIONS, cancelChecker)
-      .thenApply(AnalysisRpcServiceDelegate::generateAnalyzeFilesResponse), configurationScopeId);
+      .thenApply(analysisResults -> {
+        if (analysisResults == null) {
+          throw new ResponseErrorException(new ResponseError(ResponseErrorCode.RequestCancelled, "Analysis was cancelled", null));
+        }
+        return generateAnalyzeFilesResponse(analysisResults);
+      }), configurationScopeId);
   }
 
   @Override
