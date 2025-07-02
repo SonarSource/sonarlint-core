@@ -25,10 +25,12 @@ import org.sonarsource.sonarlint.core.commons.Version;
 public class StoredServerInfo {
 
   private final Version version;
+  private final boolean misraEarlyAccessRulesEnabled;
   private final SeverityModeDetails severityMode;
 
-  public StoredServerInfo(Version version, @Nullable Boolean mode) {
+  public StoredServerInfo(Version version, @Nullable Boolean mode, boolean misraEarlyAccessRulesEnabled) {
     this.version = version;
+    this.misraEarlyAccessRulesEnabled = misraEarlyAccessRulesEnabled;
     if (mode == null) {
       this.severityMode = SeverityModeDetails.DEFAULT;
     } else if (mode) {
@@ -44,6 +46,10 @@ public class StoredServerInfo {
 
   public SeverityModeDetails getSeverityMode() {
     return this.severityMode;
+  }
+
+  public boolean areMisraEarlyAccessRulesEnabled() {
+    return misraEarlyAccessRulesEnabled;
   }
 
   public enum SeverityModeDetails {

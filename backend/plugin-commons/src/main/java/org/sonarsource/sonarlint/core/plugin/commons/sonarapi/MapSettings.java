@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.sonarapi;
+package org.sonarsource.sonarlint.core.plugin.commons.sonarapi;
 
 import java.util.Date;
 import java.util.List;
@@ -36,7 +36,7 @@ import org.sonar.api.utils.System2;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toUnmodifiableMap;
 import static org.apache.commons.lang3.StringUtils.trim;
-import static org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty.parseAsCsv;
+import static org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty.parseAsCsv;
 
 public class MapSettings extends Settings {
 

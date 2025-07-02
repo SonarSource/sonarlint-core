@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.rule.extractor.RuleSettings;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -57,6 +59,7 @@ class RuleExtractorMediumTests {
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
   private static final Optional<Version> NODE_VERSION = Optional.of(Version.create("20.0"));
+  private static final RuleSettings EMPTY_SETTINGS = new RuleSettings(Map.of());
   private static Set<Path> allJars;
 
   @BeforeAll
@@ -73,7 +76,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
     var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false, EMPTY_SETTINGS);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
@@ -94,7 +97,8 @@ class RuleExtractorMediumTests {
         .hasSize(1)
         .hasEntrySatisfying("legalTrailingCommentPattern", param -> {
           assertThat(param.defaultValue()).isEqualTo("^#\\s*+([^\\s]++|fmt.*|type.*)$");
-          assertThat(param.description()).isEqualTo("Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.");
+          assertThat(param.description())
+            .isEqualTo("Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.");
           assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
           assertThat(param.multiple()).isFalse();
           assertThat(param.name()).isEqualTo("legalTrailingCommentPattern");
@@ -119,7 +123,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
     var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, true, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, true, false, EMPTY_SETTINGS);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
@@ -135,7 +139,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
     var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, true);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, true, EMPTY_SETTINGS);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT + COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
@@ -161,7 +165,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
     var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false, EMPTY_SETTINGS);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage).distinct()).hasSameElementsAs(enabledLanguages);
 
@@ -172,7 +176,7 @@ class RuleExtractorMediumTests {
     var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, false, NODE_VERSION);
     var result = new PluginsLoader().load(config, Set.of());
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false, EMPTY_SETTINGS);
 
     assertThat(allRules).isEmpty();
   }

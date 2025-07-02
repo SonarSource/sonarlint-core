@@ -58,7 +58,7 @@ public class ServerVersionAndStatusChecker {
     if (isSonarCloud) {
       return true;
     } else {
-      var serverVersion = Version.create(serverStatus.getVersion());
+      var serverVersion = Version.create(serverStatus.version());
       return serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION_SUPPORTING_BEARER)) >= 0;
     }
   }
@@ -71,18 +71,18 @@ public class ServerVersionAndStatusChecker {
 
   private static void checkServerUpAndSupported(ServerStatusInfo serverStatus) {
     checkServerUp(serverStatus);
-    var serverVersion = Version.create(serverStatus.getVersion());
+    var serverVersion = Version.create(serverStatus.version());
     if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
       throw new UnsupportedServerException(unsupportedVersion(serverStatus));
     }
   }
 
   private static String unsupportedVersion(ServerStatusInfo serverStatus) {
-    return "Your SonarQube Server instance has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
+    return "Your SonarQube Server instance has version " + serverStatus.version() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
   }
 
   private static String serverNotReady(ServerStatusInfo serverStatus) {
-    return "Server not ready (" + serverStatus.getStatus() + ")";
+    return "Server not ready (" + serverStatus.status() + ")";
   }
 
 }

@@ -116,7 +116,7 @@ public class SpringComponentContainer implements StartableContainer {
    * Spring contexts supporting annotations will fail if multiple constructors are present without any annotations indicating which one to use for injection.
    * For that reason, we need to create the beans ourselves, using ClassDerivedBeanDefinition, which will declare that all constructors can be used for injection.
    */
-  private Container addExtension(Object o) {
+  private void addExtension(Object o) {
     if (o instanceof Class<?> clazz) {
       var bd = new ClassDerivedBeanDefinition(clazz);
       context.registerBeanDefinition(componentKeys.ofClass(clazz), bd);
@@ -125,7 +125,6 @@ public class SpringComponentContainer implements StartableContainer {
     } else {
       registerInstance(o);
     }
-    return this;
   }
 
   @Override
@@ -243,11 +242,6 @@ public class SpringComponentContainer implements StartableContainer {
   public SpringComponentContainer declareProperties(Object extension) {
     this.propertyDefinitions.addComponent(extension, "");
     return this;
-  }
-
-  // For medium tests
-  public AnnotationConfigApplicationContext getSpringContext() {
-    return context;
   }
 
   /**

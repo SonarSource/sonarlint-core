@@ -45,8 +45,9 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var isMQRMode = retrieveMQRMode(serverApi, serverStatus.getVersion(), cancelMonitor);
-    storage.serverInfo().store(serverStatus, isMQRMode);
+    var isMQRMode = retrieveMQRMode(serverApi, serverStatus.version(), cancelMonitor);
+    var areMisraEarlyAccessRulesEnabled = retrieveMisraEarlyAccessRulesEnabled(serverApi, cancelMonitor);
+    storage.serverInfo().store(serverStatus, isMQRMode, areMisraEarlyAccessRulesEnabled);
   }
 
   @Nullable
@@ -58,5 +59,10 @@ public class ServerInfoSynchronizer {
       }
     }
     return null;
+  }
+
+  private static boolean retrieveMisraEarlyAccessRulesEnabled(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    var setting = serverApi.settings().getGlobalSetting(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, cancelMonitor);
+    return Boolean.parseBoolean(setting);
   }
 }
