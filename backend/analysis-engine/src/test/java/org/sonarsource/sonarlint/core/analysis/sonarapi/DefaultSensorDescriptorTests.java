@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

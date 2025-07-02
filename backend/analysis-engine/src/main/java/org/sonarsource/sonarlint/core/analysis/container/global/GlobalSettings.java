@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 
 public class GlobalSettings extends MapSettings {
 

@@ -42,7 +42,7 @@ import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;

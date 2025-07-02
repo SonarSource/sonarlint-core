@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.sonarapi;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.util.Random;
 import java.util.stream.Stream;
@@ -30,8 +30,8 @@ import static java.util.function.UnaryOperator.identity;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty.parseAsCsv;
-import static org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty.trimFieldsAndRemoveEmptyFields;
+import static org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty.parseAsCsv;
+import static org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty.trimFieldsAndRemoveEmptyFields;
 
 class MultivaluePropertyTests {
   private static final String[] EMPTY_STRING_ARRAY = {};

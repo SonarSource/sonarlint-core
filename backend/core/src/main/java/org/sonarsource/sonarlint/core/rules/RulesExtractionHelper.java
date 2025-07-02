@@ -20,12 +20,15 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
+import java.util.Map;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rule.extractor.RuleSettings;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
@@ -47,13 +50,14 @@ public class RulesExtractionHelper {
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {
     logger.debug("Extracting standalone rules metadata");
     return ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getAllPluginInstancesByKeys(),
-      languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false, false);
+      languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false, false, new RuleSettings(Map.of()));
   }
 
-  public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId) {
+  public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId, boolean areMisraEarlyAccessRulesEnabled) {
     logger.debug("Extracting rules metadata for connection '{}'", connectionId);
+    var settings = new RuleSettings(Map.of(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(areMisraEarlyAccessRulesEnabled)));
     return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getAllPluginInstancesByKeys(),
-      languageSupportRepository.getEnabledLanguagesInConnectedMode(), true, enableSecurityHotspots);
+      languageSupportRepository.getEnabledLanguagesInConnectedMode(), true, enableSecurityHotspots, settings);
   }
 
 }

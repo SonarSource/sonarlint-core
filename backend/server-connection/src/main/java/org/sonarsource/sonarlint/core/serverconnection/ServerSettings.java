@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis;
+package org.sonarsource.sonarlint.core.serverconnection;
 
-import org.sonar.api.config.Configuration;
-import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.ConfigurationBridge;
-import org.springframework.context.annotation.Bean;
+public class ServerSettings {
+  public static final String EARLY_ACCESS_MISRA_ENABLED = "sonar.earlyAccess.misra.enabled";
 
-public class AnalysisConfigurationProvider {
-
-  private Configuration analysisConfig;
-
-  @Bean("Configuration")
-  public Configuration provide(AnalysisSettings settings) {
-    if (analysisConfig == null) {
-      this.analysisConfig = new ConfigurationBridge(settings);
-    }
-    return analysisConfig;
+  private ServerSettings() {
+    // utility class
   }
-
 }

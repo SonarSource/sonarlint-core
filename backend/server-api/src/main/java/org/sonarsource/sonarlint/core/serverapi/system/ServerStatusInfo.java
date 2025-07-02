@@ -19,29 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.system;
 
-public class ServerStatusInfo {
-  private final String id;
-  private final String status;
-  private final String version;
-
-  public ServerStatusInfo(String id, String status, String version) {
-    this.id = id;
-    this.status = status;
-    this.version = version;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
+public record ServerStatusInfo(String id, String status, String version) {
   public boolean isUp() {
     return "UP".equals(status);
   }

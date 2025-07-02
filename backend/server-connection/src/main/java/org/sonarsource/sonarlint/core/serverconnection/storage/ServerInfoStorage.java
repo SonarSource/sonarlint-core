@@ -43,9 +43,9 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode) {
+  public void store(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode, boolean areMisraEarlyAccessRulesEnabled) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverStatus, isMQRMode);
+    var serverInfoToStore = adapt(serverStatus, isMQRMode, areMisraEarlyAccessRulesEnabled);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
     LOG.debug("Stored server info");
@@ -56,19 +56,20 @@ public class ServerInfoStorage {
       : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode) {
-    var serverInfoBuilder = Sonarlint.ServerInfo.newBuilder().setVersion(serverStatus.getVersion());
+  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode, boolean areMisraEarlyAccessRulesEnabled) {
+    var serverInfoBuilder = Sonarlint.ServerInfo.newBuilder().setVersion(serverStatus.version());
     if (isMQRMode != null) {
       serverInfoBuilder.setIsMqrMode(isMQRMode);
     }
+    serverInfoBuilder.setMisraEarlyAccessRulesEnabled(areMisraEarlyAccessRulesEnabled);
     return serverInfoBuilder.build();
   }
 
   private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
     if (serverInfo.hasIsMqrMode()) {
-      return new StoredServerInfo(Version.create(serverInfo.getVersion()), serverInfo.getIsMqrMode());
+      return new StoredServerInfo(Version.create(serverInfo.getVersion()), serverInfo.getIsMqrMode(), serverInfo.getMisraEarlyAccessRulesEnabled());
     } else {
-      return new StoredServerInfo(Version.create(serverInfo.getVersion()), null);
+      return new StoredServerInfo(Version.create(serverInfo.getVersion()), null, serverInfo.getMisraEarlyAccessRulesEnabled());
     }
   }
 

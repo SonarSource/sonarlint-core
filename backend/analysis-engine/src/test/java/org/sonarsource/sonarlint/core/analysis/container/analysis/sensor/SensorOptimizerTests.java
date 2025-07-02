@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;

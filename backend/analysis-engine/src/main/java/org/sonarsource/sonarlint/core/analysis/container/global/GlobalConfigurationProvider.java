@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import org.sonar.api.config.Configuration;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ConfigurationBridge;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.ConfigurationBridge;
 import org.springframework.context.annotation.Bean;
 
 public class GlobalConfigurationProvider {

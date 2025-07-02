@@ -24,7 +24,7 @@ import java.util.Map;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalSettings;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 
 public class AnalysisSettings extends MapSettings {
 
