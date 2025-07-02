@@ -216,28 +216,9 @@ public class RequestHandlerBindingAssistant {
   }
 
   AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams connectionParams, SonarLintCancelMonitor cancelMonitor) {
-    try {
-      var future = client.assistCreatingConnection(connectionParams);
-      cancelMonitor.onCancel(() -> future.cancel(true));
-      return future.join();
-    } catch (Exception e) {
-      revokeToken(connectionParams, cancelMonitor);
-      throw e;
-    }
-  }
-
-  private void revokeToken(AssistCreatingConnectionParams connectionParams, SonarLintCancelMonitor cancelMonitor) {
-    String tokenName = connectionParams.getTokenName();
-    String tokenValue = connectionParams.getTokenValue();
-    if (tokenName != null && tokenValue != null) {
-      LOG.debug(String.format("Revoking token '%s'", tokenName));
-      var token = Either.<TokenDto, UsernamePasswordDto>forLeft(new TokenDto(tokenValue));
-      sonarQubeClientManager.getForTransientConnection(connectionParams.getConnectionParams().mapToEither(
-        sq -> new TransientSonarQubeConnectionDto(sq.getServerUrl(), token),
-        sc -> new TransientSonarCloudConnectionDto(sc.getOrganizationKey(), token, sc.getRegion())))
-        .userTokens()
-        .revoke(tokenName, cancelMonitor);
-    }
+    var future = client.assistCreatingConnection(connectionParams);
+    cancelMonitor.onCancel(() -> future.cancel(true));
+    return future.join();
   }
 
   NewBinding assistBinding(String connectionId, boolean isSonarCloud, String projectKey, SonarLintCancelMonitor cancelMonitor) {

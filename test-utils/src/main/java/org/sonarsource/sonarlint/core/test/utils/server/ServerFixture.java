@@ -803,7 +803,6 @@ public class ServerFixture {
         registerMeasuresApiResponses();
         registerComponentsApiResponses();
         registerSettingsApiResponses();
-        registerTokenApiResponse();
         registerComponentApiResponses();
         registerFixSuggestionsApiResponses();
         registerOrganizationApiResponses();
@@ -1425,12 +1424,6 @@ public class ServerFixture {
         mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
           .willReturn(aResponse().withResponseBody(protobufBody(response))));
       }
-    }
-
-    private void registerTokenApiResponse() {
-      tokensRegistered.forEach(
-        tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName))
-          .willReturn(aResponse().withStatus(responseCodes.statusCode))));
     }
 
     private void registerFixSuggestionsApiResponses() {
