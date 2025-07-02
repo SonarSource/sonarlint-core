@@ -199,7 +199,36 @@ class AnalysisSchedulingMediumTests {
     Thread.sleep(1000);
     var taskId = client.getProgressReportsByTaskId().keySet().iterator().next();
 
-    backend.getTaskProgressRpcService().cancelTask(new CancelTaskParams(taskId));
+    backend.getTaskProgressRpcService().cancelTask(new CancelTaskParams(taskId, null));
+
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
+  }
+
+  @SonarLintTest
+  void it_should_cancel_automatic_analysis_when_canceling_task_via_request_with_provided_config_scope(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var plugin = newSonarPlugin("xml")
+      .withSensor(WaitingCancellationSensor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPlugin(plugin)
+      .withEnabledLanguageInStandaloneMode(Language.XML)
+      .start(client);
+    var cancelationFilePath = baseDir.resolve("cancellation.result");
+    client.setInferredAnalysisProperties(CONFIG_SCOPE_ID, Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    await().untilAsserted(() -> assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1));
+    Thread.sleep(1000);
+    var taskId = client.getProgressReportsByTaskId().keySet().iterator().next();
+
+    backend.getTaskProgressRpcService().cancelTask(new CancelTaskParams(taskId, CONFIG_SCOPE_ID));
 
     await().atMost(3, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));

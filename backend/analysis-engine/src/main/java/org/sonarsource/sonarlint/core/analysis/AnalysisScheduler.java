@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
@@ -61,6 +62,14 @@ public class AnalysisScheduler {
 
   public void wakeUp() {
     analysisQueue.wakeUp();
+  }
+
+  public void cancelQueuedAnalysis(String analysisId) {
+    try {
+      analysisQueue.remove(analysisId);
+    } catch (CompletionException e) {
+      LOG.debug("Analysis '" + analysisId + "' canceled", e);
+    }
   }
 
   private void executeQueuedCommands() {

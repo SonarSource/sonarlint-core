@@ -205,6 +205,66 @@ class AnalysisSchedulerMediumTests {
   }
 
   @Test
+  void should_cancel_queued_analysis_commands(@TempDir Path baseDir) throws IOException, InterruptedException {
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
+    var inputFile = preparePythonInputFile(baseDir, content);
+    var secondAnalysisId = UUID.randomUUID();
+
+    var analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(inputFile)
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+    var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", secondAnalysisId, TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor,
+      TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+    analysisScheduler.post(analyzeCommand);
+    analysisScheduler.post(secondAnalyzeCommand);
+    // let the engine run the first command
+    Thread.sleep(100);
+
+    analysisScheduler.cancelQueuedAnalysis(secondAnalysisId.toString());
+    engineStopped = true;
+
+    await().until(analyzeCommand.getFutureResult()::isDone);
+    assertThat(analyzeCommand.getFutureResult()).isDone();
+    assertThat(secondAnalyzeCommand.getFutureResult()).isCancelled();
+    assertThat(progressMonitor.isCanceled()).isTrue();
+  }
+
+  @Test
+  void should_not_cancel_running_analysis_command(@TempDir Path baseDir) throws IOException, InterruptedException {
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
+    var inputFile = preparePythonInputFile(baseDir, content);
+    var analysisId = UUID.randomUUID();
+
+    var analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(inputFile)
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    var analyzeCommand = new AnalyzeCommand("moduleKey", analysisId, TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+    analysisScheduler.post(analyzeCommand);
+    // let the engine run the first command
+    Thread.sleep(100);
+
+    analysisScheduler.cancelQueuedAnalysis(analysisId.toString());
+    engineStopped = true;
+
+    await().until(analyzeCommand.getFutureResult()::isDone);
+    assertThat(analyzeCommand.getFutureResult()).isDone();
+    assertThat(progressMonitor.isCanceled()).isFalse();
+  }
+
+  @Test
   void should_not_fail_next_analysis_on_exception_from_command(@TempDir Path baseDir) throws IOException {
     Supplier<Boolean> throwingSupplier = () -> {
       throw new RuntimeException("Kaboom");

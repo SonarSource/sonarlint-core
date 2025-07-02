@@ -25,6 +25,10 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 @JsonSegment("taskProgress")
 public interface TaskProgressRpcService {
 
+  /**
+   * Cancels a running task
+   * If the configuration scope ID is provided, allows cancelling a queued analysis if it exists
+   */
   @JsonNotification
   void cancelTask(CancelTaskParams params);
 }

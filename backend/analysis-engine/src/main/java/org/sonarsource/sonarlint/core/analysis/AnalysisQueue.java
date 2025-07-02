@@ -63,6 +63,19 @@ public class AnalysisQueue {
     return pendingTasks.stream().map(QueuedCommand::getCommand).toList();
   }
 
+  public synchronized void remove(String analysisId) {
+    var optQueuedCommand = queue.stream()
+      .filter(qc -> qc.getCommand() instanceof AnalyzeCommand)
+      .filter(qc -> ((AnalyzeCommand) qc.getCommand()).getAnalysisId().toString().equals(analysisId))
+      .findFirst();
+
+    if (optQueuedCommand.isPresent()) {
+      var queuedCommand = optQueuedCommand.get();
+      queuedCommand.getCommand().cancel();
+      queue.remove(queuedCommand);
+    }
+  }
+
   public synchronized Command takeNextCommand() throws InterruptedException {
     while (true) {
       var firstReadyCommand = pollNextReadyCommand();

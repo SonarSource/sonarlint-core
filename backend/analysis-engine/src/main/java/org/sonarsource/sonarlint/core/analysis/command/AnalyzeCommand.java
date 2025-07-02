@@ -258,6 +258,10 @@ public class AnalyzeCommand extends Command {
     futureResult.cancel(true);
   }
 
+  public UUID getAnalysisId() {
+    return analysisId;
+  }
+
   @Override
   public boolean shouldCancel(Command executingCommand) {
     if (!(executingCommand instanceof AnalyzeCommand analyzeCommand)) {
