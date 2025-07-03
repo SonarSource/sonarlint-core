@@ -8,6 +8,10 @@
 
 * Add a new optional parameter to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams` to track SonarQube Cloud account creation through token generation.
 
+## File exclusions
+
+* The RPC client method `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.getFilesStatus` previously returned information exclusively about server exclusions. It now includes the same exclusion criteria as used during the analysis (client exclusions, gitignore, etc.).
+
 # 10.23
 
 ## Deprecation

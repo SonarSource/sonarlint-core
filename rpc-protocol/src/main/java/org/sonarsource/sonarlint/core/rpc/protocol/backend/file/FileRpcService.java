@@ -27,6 +27,10 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 @JsonSegment("file")
 public interface FileRpcService {
 
+  /**
+   * Returns whether a file is currently excluded or not
+   * It is based on the same criteria as for the exclusions during an analysis
+   */
   @JsonRequest
   CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
 

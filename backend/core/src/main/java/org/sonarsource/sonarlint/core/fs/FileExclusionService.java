@@ -28,6 +28,8 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,7 +64,6 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.createSonarLintGitIgnore;
 
 public class FileExclusionService {
@@ -85,8 +86,7 @@ public class FileExclusionService {
   private final SonarLintRpcClient client;
 
   private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache = new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded,
-    (key, oldValue, newValue) -> {
-    });
+    (key, oldValue, newValue) -> {});
 
   public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
     ClientFileSystemService clientFileSystemService, SonarLintRpcClient client) {
@@ -178,18 +178,18 @@ public class FileExclusionService {
   }
 
   public Map<URI, FileStatusDto> getFilesStatus(Map<String, List<URI>> fileUrisByConfigScope) {
-    var existingFileUris = fileUrisByConfigScope.entrySet().stream()
-      .flatMap(e -> e.getValue().stream().map(v -> Map.entry(e.getKey(), v)))
-      .map(e -> clientFileSystemService.getClientFiles(e.getKey(), e.getValue()))
-      .filter(Objects::nonNull)
-      .map(ClientFile::getUri)
-      .toList();
-    return existingFileUris.stream()
-      .map(k -> Map.entry(k, serverExclusionByUriCache.get(k)))
-      .collect(toMap(Map.Entry::getKey, e -> new FileStatusDto(e.getValue())));
+    var result = new HashMap<URI, FileStatusDto>();
+    for (var entry : fileUrisByConfigScope.entrySet()) {
+      var configScopeId = entry.getKey();
+      var baseDir = clientFileSystemService.getBaseDir(configScopeId);
+      var files = new HashSet<>(entry.getValue());
+      var filteredFileUris = filterOutExcludedFiles(configScopeId, baseDir, files).stream().map(ClientFile::getUri).collect(Collectors.toSet());
+      files.forEach(uri -> result.put(uri, new FileStatusDto(!filteredFileUris.contains(uri))));
+    }
+    return result;
   }
 
-  public boolean isExcluded(URI fileUri) {
+  public boolean isExcludedFromServer(URI fileUri) {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 
@@ -214,15 +214,21 @@ public class FileExclusionService {
   private List<ClientFile> filterOutExcludedFiles(String configurationScopeId, Path baseDir, Set<URI> files) {
     var sonarLintGitIgnore = createSonarLintGitIgnore(baseDir);
     // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
-    var filteredURIsFromExclusionService = new ArrayList<URI>();
+    var filteredURIsFromServerExclusionService = new ArrayList<URI>();
     var filteredURIsFromGitIgnore = new ArrayList<URI>();
     var filteredURIsNotUserDefined = new ArrayList<URI>();
     var filteredURIsFromSymbolicLink = new ArrayList<URI>();
     var filteredURIsFromWindowsShortcut = new ArrayList<URI>();
     var filteredURIsNoFile = new ArrayList<URI>();
 
+    var filesToExclude = files;
+    if (!isConnectedMode(configurationScopeId)) {
+      // client-defined file exclusions only apply in standalone mode
+      filesToExclude = filterOutClientExcludedFiles(configurationScopeId, files);
+    }
+
     // Do the actual filtering and in case of a filtered out URI, save them for later logging!
-    var actualFilesToAnalyze = filterOutClientExcludedFiles(configurationScopeId, files)
+    var actualFilesToAnalyze = filesToExclude
       .stream()
       .map(uri -> {
         var file = findFile(configurationScopeId, uri);
@@ -233,8 +239,8 @@ public class FileExclusionService {
       })
       .filter(Objects::nonNull)
       .filter(file -> {
-        if (isExcluded(file.getUri())) {
-          filteredURIsFromExclusionService.add(file.getUri());
+        if (isExcludedFromServer(file.getUri())) {
+          filteredURIsFromServerExclusionService.add(file.getUri());
           return false;
         }
         return true;
@@ -254,11 +260,10 @@ public class FileExclusionService {
         return true;
       })
       .filter(file -> {
-        // On protocols with schemes like "temp" (used by IntelliJ in the integration tests) or "rse" (the Eclipse Remote System Explorer)
-        // and maybe others the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the
-        // operations.
+        // On Schemes like "temp" (used by IntelliJ) or "rse" (Eclipse Remote System Explorer),
+        // the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the operations.
         // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
-        // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
+        // symbolic links or Windows shortcuts should be near zero, and this is less error-prone than excluding the
         try {
           var uri = file.getUri();
           if (Files.isSymbolicLink(FileUtils.getFilePathFromUri(uri))) {
@@ -278,7 +283,7 @@ public class FileExclusionService {
       .toList();
 
     // Log all the filtered out URIs but not for the filters where there were none
-    logFilteredURIs("Filtered out URIs based on the exclusion service", filteredURIsFromExclusionService);
+    logFilteredURIs("Filtered out URIs based on the server exclusion service", filteredURIsFromServerExclusionService);
     logFilteredURIs("Filtered out URIs ignored by Git", filteredURIsFromGitIgnore);
     logFilteredURIs("Filtered out URIs not user-defined", filteredURIsNotUserDefined);
     logFilteredURIs("Filtered out URIs that are symbolic links", filteredURIsFromSymbolicLink);
@@ -305,11 +310,6 @@ public class FileExclusionService {
   }
 
   private Set<URI> filterOutClientExcludedFiles(String configurationScopeId, Set<URI> files) {
-    if (isConnectedMode(configurationScopeId)) {
-      // client-defined file exclusions only apply in standalone mode
-      return files;
-    }
-
     var fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
     var matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
     Predicate<URI> fileExclusionFilter = uri -> matchers.stream().noneMatch(matcher -> matcher.matches(Paths.get(uri)));
@@ -342,7 +342,7 @@ public class FileExclusionService {
       try {
         parsedMatchers.add(fs.getPathMatcher("glob:" + pattern));
       } catch (Exception e) {
-        // ignore invalid patterns, simply skip them
+        // ignore invalid patterns, skip them
       }
     }
     return parsedMatchers;

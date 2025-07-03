@@ -22,6 +22,7 @@ package mediumtest.file;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,6 +32,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
@@ -40,6 +42,7 @@ import utils.AnalysisUtils;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -221,6 +224,28 @@ class ClientFileExclusionsMediumTests {
 
     await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+  }
+
+  @SonarLintTest
+  void it_should_include_client_exclusions_when_getting_file_status(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createXmlFile(baseDir);
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.xml"))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+
+    var future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(fileUri))));
+
+    assertThat(future).succeedsWithin(5, TimeUnit.SECONDS);
+    assertThat(future.join().getFileStatuses().entrySet())
+      .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
+      .containsExactlyInAnyOrder(
+        tuple(fileUri, true));
   }
 
   private static Path createXmlFile(Path baseDir) {
