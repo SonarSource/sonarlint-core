@@ -117,4 +117,7 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void hotspotInvestigatedRemotely();
+
+  @JsonNotification
+  void issueInvestigatedLocally();
 }
