@@ -142,4 +142,9 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   public void hotspotInvestigatedRemotely() {
     notify(() -> getBean(TelemetryService.class).hotspotInvestigatedRemotely());
   }
+
+  @Override
+  public void issueInvestigatedLocally() {
+    notify(() -> getBean(TelemetryService.class).issueInvestigatedLocally());
+  }
 }
