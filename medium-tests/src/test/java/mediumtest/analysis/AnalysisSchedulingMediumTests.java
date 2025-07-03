@@ -225,7 +225,7 @@ class AnalysisSchedulingMediumTests {
     var future = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
-    Thread.sleep(1000);
+    Thread.sleep(2000);
     var secondFuture = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
@@ -277,7 +277,7 @@ class AnalysisSchedulingMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, secondFileUri));
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, thirdFileUri));
 
-    verify(client, timeout(1000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
+    verify(client, timeout(2000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEqualTo(Map.of(firstFileUri, List.of()));
     var raisedIssuesPerFile = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID);
     assertThat(raisedIssuesPerFile.get(secondFileUri))

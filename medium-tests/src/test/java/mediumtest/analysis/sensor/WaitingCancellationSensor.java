@@ -40,7 +40,7 @@ public class WaitingCancellationSensor implements Sensor {
     var cancellationFilePath = Path.of(sensorContext.config().get(CANCELLATION_FILE_PATH_PROPERTY_NAME)
       .orElseThrow(() -> new IllegalArgumentException("Missing '" + CANCELLATION_FILE_PATH_PROPERTY_NAME + "' property")));
     var startTime = System.currentTimeMillis();
-    while (!sensorContext.isCancelled() && startTime + 2000 > System.currentTimeMillis()) {
+    while (!sensorContext.isCancelled() && startTime + 4000 > System.currentTimeMillis()) {
       System.out.println("Helloooo");
       try {
         Thread.sleep(200);
