@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
@@ -46,10 +48,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.V
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.UNAUTHORIZED;
 
 public class ConnectionService {
 
@@ -183,9 +187,14 @@ public class ConnectionService {
 
   public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
-    return serverApi.component().getAllProjects(cancelMonitor)
-      .stream().map(serverProject -> new SonarProjectDto(serverProject.key(), serverProject.name()))
-      .toList();
+
+    try {
+      return serverApi.component().getAllProjects(cancelMonitor)
+        .stream().map(serverProject -> new SonarProjectDto(serverProject.key(), serverProject.name()))
+        .toList();
+    } catch (UnauthorizedException e) {
+      throw new ResponseErrorException(new ResponseError(UNAUTHORIZED, "The authorization has failed. Please check your credentials.", null));
+    }
   }
 
   public Map<String, String> getProjectNamesByKey(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,

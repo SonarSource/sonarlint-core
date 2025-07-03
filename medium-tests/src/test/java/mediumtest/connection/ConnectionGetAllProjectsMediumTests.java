@@ -19,6 +19,7 @@
  */
 package mediumtest.connection;
 
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
@@ -37,6 +38,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
@@ -153,6 +155,22 @@ class ConnectionGetAllProjectsMediumTests {
     future.cancel(true);
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Request cancelled"));
+  }
+
+  @SonarLintTest
+  void it_should_throw_ResponseErrorException_when_getAllProjects_unauthorized(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1").willReturn(aResponse()
+      .withStatus(401)
+      .withBody("Unauthorized")));
+    var backend = harness.newBackend().start();
+
+    var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("invalid-token")));
+
+    var future = backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto));
+
+    assertThatThrownBy(future::join)
+      .hasCauseInstanceOf(ResponseErrorException.class);
   }
 
   private GetAllProjectsResponse getAllProjects(SonarLintTestRpcServer backend, TransientSonarQubeConnectionDto connectionDto) {
