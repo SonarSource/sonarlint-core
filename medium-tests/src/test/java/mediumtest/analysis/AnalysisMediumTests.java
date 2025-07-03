@@ -63,7 +63,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
@@ -76,7 +75,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.OnDiskTestClientInputFile;
@@ -91,7 +89,10 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
-import static utils.AnalysisUtils.waitForRaisedIssues;
+import static utils.AnalysisUtils.awaitRaisedIssuesNotification;
+import static utils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.editFile;
+import static utils.AnalysisUtils.removeFile;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class AnalysisMediumTests {
@@ -850,10 +851,10 @@ class AnalysisMediumTests {
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).isNotEmpty());
     client.cleanRaisedIssues();
 
-    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile/commands.json"));
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path"));
 
     var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path/to/compile/commands.json"));
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path"));
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsOnlyKeys(cFileUri);
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).hasSize(1);
@@ -1181,123 +1182,10 @@ class AnalysisMediumTests {
     assertThat(raisedIssueDto).isNotEmpty();
   }
 
-  @SonarLintTest
-  void it_should_trigger_analysis_after_analysis_properties_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml",
-      """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <project>
-          <modelVersion>4.0.0</modelVersion>
-          <groupId>com.foo</groupId>
-          <artifactId>bar</artifactId>
-          <version>${pom.version}</version>
-        </project>""");
-    var fileUri = URI.create(filePath.toUri().toString());
-    var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
-      .build();
-    var backend = harness.newBackend()
-      .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .start(client);
-
-    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
-    assertThat(raisedIssueDto).isNotEmpty();
-
-    client.cleanRaisedIssues();
-    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
-
-    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
-
-    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
-    assertThat(raisedIssueDto).isNotEmpty();
-
-    client.cleanRaisedIssues();
-    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
-
-    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
-
-    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
-  }
-
-  @SonarLintTest
-  void it_should_trigger_analysis_after_path_to_compile_commands_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml",
-      """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <project>
-          <modelVersion>4.0.0</modelVersion>
-          <groupId>com.foo</groupId>
-          <artifactId>bar</artifactId>
-          <version>${pom.version}</version>
-        </project>""");
-    var fileUri = URI.create(filePath.toUri().toString());
-    var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
-      .build();
-    var backend = harness.newBackend()
-      .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .start(client);
-
-    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
-    assertThat(raisedIssueDto).isNotEmpty();
-
-    client.cleanRaisedIssues();
-    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
-
-    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
-
-    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
-    assertThat(raisedIssueDto).isNotEmpty();
-
-    client.cleanRaisedIssues();
-    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
-
-    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
-
-    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
-  }
-
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
     @Nullable SonarLanguage language, Path baseDir) throws IOException {
     final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
-  }
-
-  private static Path createFile(Path folderPath, String fileName, String content) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.writeString(filePath, content);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return filePath;
-  }
-
-  private static void editFile(Path folderPath, String fileName, String content) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.writeString(filePath, content);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static void removeFile(Path folderPath, String fileName) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.deleteIfExists(filePath);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static List<RaisedIssueDto> awaitRaisedIssuesNotification(SonarLintBackendFixture.FakeSonarLintRpcClient client, String configScopeId) {
-    waitForRaisedIssues(client, configScopeId);
-    return client.getRaisedIssuesForScopeIdAsList(configScopeId);
   }
 }

@@ -108,4 +108,26 @@ public class AnalysisUtils {
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.isAnalysisReadyForScope(scopeId)).isTrue());
   }
 
+  public static void editFile(Path folderPath, String fileName, String content) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.writeString(filePath, content);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void removeFile(Path folderPath, String fileName) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.deleteIfExists(filePath);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static List<RaisedIssueDto> awaitRaisedIssuesNotification(SonarLintBackendFixture.FakeSonarLintRpcClient client, String configScopeId) {
+    waitForRaisedIssues(client, configScopeId);
+    return client.getRaisedIssuesForScopeIdAsList(configScopeId);
+  }
 }

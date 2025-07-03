@@ -39,9 +39,9 @@ public class UserAnalysisPropertiesRepository {
     return properties;
   }
 
-  public boolean setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
+  public boolean setUserProperties(String configurationScopeId, Map<String, String> userProperties) {
     var oldProperties = propertiesByConfigScope.get(configurationScopeId);
-    var newProperties = new HashMap<>(extraProperties);
+    var newProperties = new HashMap<>(userProperties);
     var changed = !newProperties.equals(oldProperties);
     if (changed) {
       propertiesByConfigScope.put(configurationScopeId, newProperties);

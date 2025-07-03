@@ -31,20 +31,18 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static utils.AnalysisUtils.waitForRaisedIssues;
+import static utils.AnalysisUtils.awaitRaisedIssuesNotification;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class AnalysisCharsetMediumTests {
@@ -81,10 +79,5 @@ class AnalysisCharsetMediumTests {
     assertThat(raisedIssueDto.getQuickFixes()).isEmpty();
     assertThat(raisedIssueDto.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(1, 3, 1, 7));
     assertThat(raisedIssueDto.getRuleDescriptionContextKey()).isNull();
-  }
-
-  private static List<RaisedIssueDto> awaitRaisedIssuesNotification(SonarLintBackendFixture.FakeSonarLintRpcClient client, String configScopeId) {
-    waitForRaisedIssues(client, configScopeId);
-    return client.getRaisedIssuesForScopeIdAsList(configScopeId);
   }
 }
