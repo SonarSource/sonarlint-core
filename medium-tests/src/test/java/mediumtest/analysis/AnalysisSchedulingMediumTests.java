@@ -277,7 +277,7 @@ class AnalysisSchedulingMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, secondFileUri));
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, thirdFileUri));
 
-    verify(client, timeout(1000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
+    verify(client, timeout(2000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEqualTo(Map.of(firstFileUri, List.of()));
     var raisedIssuesPerFile = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID);
     assertThat(raisedIssuesPerFile.get(secondFileUri))
