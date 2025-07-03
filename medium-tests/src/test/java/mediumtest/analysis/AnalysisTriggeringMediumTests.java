@@ -21,6 +21,7 @@ package mediumtest.analysis;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +32,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -53,6 +56,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static utils.AnalysisUtils.awaitRaisedIssuesNotification;
 import static utils.AnalysisUtils.createFile;
 import static utils.AnalysisUtils.getPublishedIssues;
 import static utils.AnalysisUtils.waitForRaisedIssues;
@@ -408,4 +412,85 @@ class AnalysisTriggeringMediumTests {
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
   }
+
+  @SonarLintTest
+  void it_should_trigger_analysis_after_analysis_properties_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = URI.create(filePath.toUri().toString());
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
+
+    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("foo", "bar")));
+
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
+  }
+
+  @SonarLintTest
+  void it_should_trigger_analysis_after_path_to_compile_commands_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = URI.create(filePath.toUri().toString());
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
+
+    raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+
+    client.cleanRaisedIssues();
+    assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
+
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path/to/compile_commands.json"));
+
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
+  }
+
 }

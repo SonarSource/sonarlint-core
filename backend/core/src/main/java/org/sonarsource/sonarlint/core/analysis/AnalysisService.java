@@ -326,13 +326,15 @@ public class AnalysisService {
   }
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
-    userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
+    if (userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties)) {
+      autoAnalyzeOpenFiles(configScopeId);
+    }
   }
 
   public void didChangePathToCompileCommands(String configScopeId, @Nullable String pathToCompileCommands) {
-    userAnalysisPropertiesRepository.setOrUpdatePathToCompileCommands(configScopeId, pathToCompileCommands);
-    var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
-    scheduleAutomaticAnalysis(configScopeId, openFiles);
+    if (userAnalysisPropertiesRepository.setOrUpdatePathToCompileCommands(configScopeId, pathToCompileCommands)) {
+      autoAnalyzeOpenFiles(configScopeId);
+    }
   }
 
   private List<ActiveRuleDto> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {

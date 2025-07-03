@@ -63,7 +63,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
@@ -76,7 +75,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.OnDiskTestClientInputFile;
@@ -91,7 +89,10 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
-import static utils.AnalysisUtils.waitForRaisedIssues;
+import static utils.AnalysisUtils.awaitRaisedIssuesNotification;
+import static utils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.editFile;
+import static utils.AnalysisUtils.removeFile;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class AnalysisMediumTests {
@@ -1186,38 +1187,5 @@ class AnalysisMediumTests {
     final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
-  }
-
-  private static Path createFile(Path folderPath, String fileName, String content) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.writeString(filePath, content);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return filePath;
-  }
-
-  private static void editFile(Path folderPath, String fileName, String content) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.writeString(filePath, content);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static void removeFile(Path folderPath, String fileName) {
-    var filePath = folderPath.resolve(fileName);
-    try {
-      Files.deleteIfExists(filePath);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static List<RaisedIssueDto> awaitRaisedIssuesNotification(SonarLintBackendFixture.FakeSonarLintRpcClient client, String configScopeId) {
-    waitForRaisedIssues(client, configScopeId);
-    return client.getRaisedIssuesForScopeIdAsList(configScopeId);
   }
 }
