@@ -495,27 +495,38 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
-  void it_should_record_issue_investigation_telemetry(SonarLintTestHarness harness) {
+  void it_should_accumulate_investigated_findings_count(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedRemotely();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedRemotely();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
+
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
-      .extracting(TelemetryLocalStorage::getHotspotInvestigatedRemotelyCount, TelemetryLocalStorage::getHotspotInvestigatedLocallyCount,
-        TelemetryLocalStorage::getTaintInvestigatedRemotelyCount, TelemetryLocalStorage::getTaintInvestigatedLocallyCount)
-      .containsExactly(4, 3, 2, 1));
+      .extracting(
+        TelemetryLocalStorage::getIssueInvestigatedLocallyCount,
+        TelemetryLocalStorage::getHotspotInvestigatedRemotelyCount,
+        TelemetryLocalStorage::getHotspotInvestigatedLocallyCount,
+        TelemetryLocalStorage::getTaintInvestigatedRemotelyCount,
+        TelemetryLocalStorage::getTaintInvestigatedLocallyCount
+      )
+      .containsExactly(5, 4, 3, 2, 1));
   }
 
   @SonarLintTest
