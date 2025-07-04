@@ -117,6 +117,7 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.incrementToolCalledCount("tool_name", true);
     telemetryLocalStorage.incrementToolCalledCount("tool_name", false);
     telemetryLocalStorage.addFixedIssues(2);
+    telemetryLocalStorage.findingsFiltered("severity");
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -137,7 +138,8 @@ class TelemetryHttpClientTests {
             {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
-            {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"}
+            {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
+            {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

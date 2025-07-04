@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDone
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
@@ -573,6 +574,21 @@ class TelemetryMediumTests {
       .start();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
+  }
+
+  @SonarLintTest
+  void it_should_record_findingsFiltered(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("severity"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("severity"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("location"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"findingsFilteredCountersByType\":{\"severity\":{\"findingsFilteredCount\":2},\"location\":{\"findingsFilteredCount\":1},\"fix_availability\":{\"findingsFilteredCount\":3}}"));
   }
 
   @SonarLintTest

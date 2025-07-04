@@ -233,6 +233,7 @@ class TelemetryManagerTests {
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
       data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
+      data.findingsFiltered("severity");
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -251,6 +252,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
     assertThat(reloaded.getAnalysisReportingCountersByType()).isEmpty();
+    assertThat(reloaded.getFindingsFilteredCountersByType()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
