@@ -220,4 +220,34 @@ class TelemetryLocalStorageTests {
     assertThat(data.getFixSuggestionResolved().get(suggestionId)).extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
       .containsExactly(tuple(FixSuggestionStatus.DECLINED, 0));
   }
+
+  @Test
+  void should_track_findings_filtered_by_type() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getFindingsFilteredCountersByType()).isEmpty();
+
+    data.findingsFiltered("severity");
+
+    data.findingsFiltered("severity");
+
+    data.findingsFiltered("location");
+    
+    data.findingsFiltered("fix_availability");
+    assertThat(data.getFindingsFilteredCountersByType()).hasSize(3);
+    assertThat(data.getFindingsFilteredCountersByType().get("location").getFindingsFilteredCount()).isEqualTo(1);
+    assertThat(data.getFindingsFilteredCountersByType().get("severity").getFindingsFilteredCount()).isEqualTo(2);
+    assertThat(data.getFindingsFilteredCountersByType().get("fix_availability").getFindingsFilteredCount()).isEqualTo(1);
+  }
+
+  @Test
+  void should_clear_findings_filtered_counters() {
+    var data = new TelemetryLocalStorage();
+    
+    data.findingsFiltered("severity");
+    data.findingsFiltered("location");
+    assertThat(data.getFindingsFilteredCountersByType()).hasSize(2);
+
+    data.clearAfterPing();
+    assertThat(data.getFindingsFilteredCountersByType()).isEmpty();
+  }
 }
