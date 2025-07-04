@@ -76,31 +76,4 @@ class ConfigurationRepositoryTest {
       });
   }
 
-  @Test
-  void it_should_not_detect_connected_mode_if_unbound_and_no_parent() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id1", null, true, "name1"), BindingConfiguration.noBinding(true));
-
-    assertThat(configurationRepository.isConnectedMode("id1")).isFalse();
-  }
-
-  @Test
-  void it_should_detect_connected_mode_if_bound() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id2", null, true, "name2"), new BindingConfiguration("conn", "proj", true));
-
-    assertThat(configurationRepository.isConnectedMode("id2")).isTrue();
-  }
-
-  @Test
-  void it_should_detect_connected_mode_from_parent() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id2", null, true, "name2"), new BindingConfiguration("conn", "proj", true));
-    configurationRepository.addOrReplace(new ConfigurationScope("child", "id2", true, "childName"), BindingConfiguration.noBinding(true));
-
-    assertThat(configurationRepository.isConnectedMode("child")).isTrue();
-  }
-
-  @Test
-  void it_should_not_detect_connected_mode_from_unknown_config_scope() {
-    assertThat(configurationRepository.isConnectedMode("unknown")).isFalse();
-  }
-
 }

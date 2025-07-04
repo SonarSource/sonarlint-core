@@ -42,29 +42,29 @@ import static java.util.stream.Collectors.toSet;
 
 public class ConfigurationRepository {
 
-  private final Map<String, ConfigurationScope> configScopePerId = new ConcurrentHashMap<>();
-  private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new ConcurrentHashMap<>();
+  private final Map<String, ConfigurationScope> configScopeById = new ConcurrentHashMap<>();
+  private final Map<String, BindingConfiguration> bindingByConfigScopeId = new ConcurrentHashMap<>();
 
   public ConfigurationScope addOrReplace(ConfigurationScope configScope, BindingConfiguration bindingConfig) {
     var id = configScope.id();
-    var previous = configScopePerId.put(id, configScope);
-    bindingPerConfigScopeId.put(id, bindingConfig);
+    var previous = configScopeById.put(id, configScope);
+    bindingByConfigScopeId.put(id, bindingConfig);
     return previous;
   }
 
   @CheckForNull
   public ConfigurationScopeWithBinding remove(String idToRemove) {
-    var removedScope = configScopePerId.remove(idToRemove);
-    var removeBindingConfiguration = bindingPerConfigScopeId.remove(idToRemove);
+    var removedScope = configScopeById.remove(idToRemove);
+    var removeBindingConfiguration = bindingByConfigScopeId.remove(idToRemove);
     return removedScope == null ? null : new ConfigurationScopeWithBinding(removedScope, removeBindingConfiguration);
   }
 
   public Map<String, BindingConfiguration> removeBindingForConnection(String connectionId) {
     var removedBindingByConfigScope = new HashMap<String, BindingConfiguration>();
     var configScopeIdsToUnbind =
-      bindingPerConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().connectionId())).map(Map.Entry::getKey).collect(toSet());
+      bindingByConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().connectionId())).map(Map.Entry::getKey).collect(toSet());
     configScopeIdsToUnbind.forEach(configScopeId -> {
-      var removedBindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
+      var removedBindingConfiguration = bindingByConfigScopeId.get(configScopeId);
       if (removedBindingConfiguration != null) {
         var noBinding = BindingConfiguration.noBinding(removedBindingConfiguration.bindingSuggestionDisabled());
         updateBinding(configScopeId, noBinding);
@@ -75,30 +75,16 @@ public class ConfigurationRepository {
   }
 
   public void updateBinding(String configScopeId, BindingConfiguration bindingConfig) {
-    bindingPerConfigScopeId.put(configScopeId, bindingConfig);
+    bindingByConfigScopeId.put(configScopeId, bindingConfig);
   }
 
   public Set<String> getConfigScopeIds() {
-    return Set.copyOf(configScopePerId.keySet());
+    return Set.copyOf(configScopeById.keySet());
   }
 
   @CheckForNull
   public BindingConfiguration getBindingConfiguration(String configScopeId) {
-    return bindingPerConfigScopeId.get(configScopeId);
-  }
-
-  // Check the configuration scope and its parents to know if it's in connected mode
-  public boolean isConnectedMode(String configScopeId) {
-    var currentId = configScopeId;
-    while (currentId != null) {
-      var binding = bindingPerConfigScopeId.get(currentId);
-      if (binding != null && binding.isBound()) {
-        return true;
-      }
-      var configScope = configScopePerId.get(currentId);
-      currentId = (configScope != null) ? configScope.parentId() : null;
-    }
-    return false;
+    return bindingByConfigScopeId.get(configScopeId);
   }
 
   public Optional<Binding> getEffectiveBinding(String configScopeId) {
@@ -124,7 +110,7 @@ public class ConfigurationRepository {
   }
 
   public Optional<Binding> getConfiguredBinding(String configScopeId) {
-    var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
+    var bindingConfiguration = bindingByConfigScopeId.get(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
       return Optional.of(new Binding(requireNonNull(bindingConfiguration.connectionId()),
         requireNonNull(bindingConfiguration.sonarProjectKey())));
@@ -133,7 +119,7 @@ public class ConfigurationRepository {
   }
 
   private Optional<String> getParentId(String configScopeId) {
-    var configurationScope = configScopePerId.get(configScopeId);
+    var configurationScope = configScopeById.get(configScopeId);
     if (configurationScope != null) {
       return Optional.ofNullable(configurationScope.parentId());
     }
@@ -141,8 +127,8 @@ public class ConfigurationRepository {
   }
 
   public Set<String> getLeafConfigScopeIds() {
-    var leafConfigScopeIds = new HashSet<>(configScopePerId.keySet());
-    configScopePerId.values().forEach(scope -> {
+    var leafConfigScopeIds = new HashSet<>(configScopeById.keySet());
+    configScopeById.values().forEach(scope -> {
       var parentId = scope.parentId();
       if (parentId != null) {
         leafConfigScopeIds.remove(parentId);
@@ -157,11 +143,11 @@ public class ConfigurationRepository {
 
   @CheckForNull
   public ConfigurationScope getConfigurationScope(String configScopeId) {
-    return configScopePerId.get(configScopeId);
+    return configScopeById.get(configScopeId);
   }
 
   public Collection<BoundScope> getAllBoundScopes() {
-    return configScopePerId.keySet()
+    return configScopeById.keySet()
       .stream()
       .map(scopeId -> {
         var effectiveBinding = getEffectiveBinding(scopeId);
@@ -172,7 +158,7 @@ public class ConfigurationRepository {
   }
 
   public Collection<ConfigurationScope> getAllBindableUnboundScopes() {
-    return configScopePerId.entrySet()
+    return configScopeById.entrySet()
       .stream()
       .filter(e -> e.getValue().bindable())
       .filter(e -> getEffectiveBinding(e.getKey()).isEmpty())

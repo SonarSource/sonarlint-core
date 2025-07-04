@@ -90,7 +90,6 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.NewRulesActivatedOnServer;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.rules.StandaloneRulesConfigurationChanged;
-import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;

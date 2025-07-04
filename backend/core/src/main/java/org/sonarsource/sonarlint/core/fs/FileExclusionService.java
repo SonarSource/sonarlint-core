@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
-import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
@@ -221,7 +220,8 @@ public class FileExclusionService {
     var filteredURIsNoFile = new ArrayList<URI>();
 
     var filesToExclude = files;
-    if (!isConnectedMode(configurationScopeId)) {
+
+    if (configRepo.getEffectiveBinding(configurationScopeId).isEmpty()) {
       // client-defined file exclusions only apply in standalone mode
       filesToExclude = filterOutClientExcludedFiles(configurationScopeId, files);
     }
@@ -294,7 +294,12 @@ public class FileExclusionService {
 
   @CheckForNull
   private ClientFile findFile(String configScopeId, URI fileUriToAnalyze) {
-    return clientFileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
+    var clientFile = clientFileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
+    if (clientFile == null) {
+      LOG.error("File to analyze was not found in the file system: {}", fileUriToAnalyze);
+      return null;
+    }
+    return clientFile;
   }
 
   private void logFilteredURIs(String reason, ArrayList<URI> uris) {
@@ -304,11 +309,6 @@ public class FileExclusionService {
   }
 
   private Set<URI> filterOutClientExcludedFiles(String configurationScopeId, Set<URI> files) {
-    if (configRepo.isConnectedMode(configurationScopeId)) {
-      // client-defined file exclusions only apply in standalone mode
-      return files;
-    }
-
     var fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
     var matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
     Predicate<URI> fileExclusionFilter = uri -> matchers.stream().noneMatch(matcher -> matcher.matches(Paths.get(uri)));
