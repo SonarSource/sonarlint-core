@@ -258,6 +258,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementIssueInvestigatedLocallyCount);
   }
 
+  public void findingsFiltered(String filterType) {
+    updateTelemetry(localStorage -> localStorage.findingsFiltered(filterType));
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {

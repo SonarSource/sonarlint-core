@@ -63,6 +63,7 @@ public class TelemetryLocalStorage {
   private final Map<String, Integer> quickFixCountByRuleKey;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<AnalysisReportingType, TelemetryAnalysisReportingCounter> analysisReportingCountersByType;
+  private final Map<String, TelemetryFindingsFilteredCounter> findingsFilteredCountersByType;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
   private final Map<String, ToolCallCounter> calledToolsByName;
@@ -96,6 +97,7 @@ public class TelemetryLocalStorage {
     quickFixCountByRuleKey = new LinkedHashMap<>();
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     analysisReportingCountersByType = new LinkedHashMap<>();
+    findingsFilteredCountersByType = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
@@ -168,6 +170,10 @@ public class TelemetryLocalStorage {
     return analysisReportingCountersByType;
   }
 
+  public Map<String, TelemetryFindingsFilteredCounter> getFindingsFilteredCountersByType() {
+    return findingsFilteredCountersByType;
+  }
+
   public Map<String, TelemetryFixSuggestionReceivedCounter> getFixSuggestionReceivedCounter() {
     return fixSuggestionReceivedCounter;
   }
@@ -221,6 +227,7 @@ public class TelemetryLocalStorage {
     quickFixCountByRuleKey.clear();
     helpAndFeedbackLinkClickedCount.clear();
     analysisReportingCountersByType.clear();
+    findingsFilteredCountersByType.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
     issuesUuidAiFixableSeen.clear();
@@ -400,6 +407,11 @@ public class TelemetryLocalStorage {
 
   public void analysisReportingTriggered(AnalysisReportingType analysisType) {
     this.analysisReportingCountersByType.computeIfAbsent(analysisType, k -> new TelemetryAnalysisReportingCounter()).incrementAnalysisReportingCount();
+  }
+
+  public void findingsFiltered(String filterType) {
+    markSonarLintAsUsedToday();
+    this.findingsFilteredCountersByType.computeIfAbsent(filterType, k -> new TelemetryFindingsFilteredCounter()).incrementFindingsFilteredCount();
   }
 
   public void incrementHotspotStatusChangedCount() {

@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
@@ -146,5 +147,10 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void issueInvestigatedLocally() {
     notify(() -> getBean(TelemetryService.class).issueInvestigatedLocally());
+  }
+
+  @Override
+  public void findingsFiltered(FindingsFilteredParams params) {
+    notify(() -> getBean(TelemetryService.class).findingsFiltered(params.getFilterType()));
   }
 }
