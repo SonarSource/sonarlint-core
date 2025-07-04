@@ -2,3 +2,4 @@
     "sonarQubeUri": "https://next.sonarqube.com/sonarqube",
     "projectKey": "org.sonarsource.sonarlint.core:sonarlint-core-parent"
 }
+    

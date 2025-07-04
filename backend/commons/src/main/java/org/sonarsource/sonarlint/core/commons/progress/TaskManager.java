@@ -28,16 +28,32 @@ public class TaskManager {
   private static final ProgressMonitor NO_OP = new NoOpProgressMonitor();
   private final ConcurrentHashMap<String, ProgressMonitor> progressMonitorsByTaskId = new ConcurrentHashMap<>();
 
-  public final void runTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable, Task task,
+  public final void createAndRunTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message,
+    boolean indeterminate, boolean cancellable, Task task,
     SonarLintCancelMonitor cancelMonitor) {
-    var progressMonitor = startProgress(configurationScopeId, taskId, title, message, indeterminate, cancellable, cancelMonitor);
-    progressMonitorsByTaskId.put(taskId.toString(), progressMonitor);
+    trackNewTask(taskId, cancelMonitor);
+    runExistingTask(configurationScopeId, taskId, title, message, indeterminate, cancellable, task, cancelMonitor);
+  }
+
+  public final void runExistingTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message,
+    boolean indeterminate, boolean cancellable, Task task, SonarLintCancelMonitor cancelMonitor) {
+    var progressMonitor = progressMonitorsByTaskId.get(taskId.toString());
+    if (progressMonitor == null) {
+      SonarLintLogger.get().debug("Cannot run unknown task '{}'", taskId);
+      return;
+    }
+    startProgress(configurationScopeId, taskId, title, message, indeterminate, cancellable, cancelMonitor);
     try {
       task.run(progressMonitor);
     } finally {
       progressMonitor.complete();
       progressMonitorsByTaskId.remove(taskId.toString());
     }
+  }
+
+  public final void trackNewTask(UUID taskId, SonarLintCancelMonitor cancelMonitor) {
+    var progressMonitor = createProgress(taskId, cancelMonitor);
+    progressMonitorsByTaskId.put(taskId.toString(), progressMonitor);
   }
 
   public void cancel(String taskId) {
@@ -48,8 +64,12 @@ public class TaskManager {
     }
   }
 
-  protected ProgressMonitor startProgress(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+  protected void startProgress(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
     SonarLintCancelMonitor cancelMonitor) {
+    // can be overridden
+  }
+
+  protected ProgressMonitor createProgress(UUID taskId, SonarLintCancelMonitor cancelMonitor) {
     // can be overridden
     return NO_OP;
   }

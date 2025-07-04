@@ -224,13 +224,13 @@ class AnalysisSchedulerMediumTests {
     var issues2 = new ArrayList<>();
     var analyzeCommand1 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, issues1::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of("a", "1"));
     var throwingCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, throwingSupplier, Set.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, throwingSupplier, Set.of(), Map.of("b", "2"));
     var analyzeCommand2 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
       () -> analysisConfig, issues2::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of("c", "3"));
 
     analysisScheduler.post(analyzeCommand1);
     analysisScheduler.post(throwingCommand);
@@ -240,6 +240,22 @@ class AnalysisSchedulerMediumTests {
     await().atMost(3, TimeUnit.SECONDS)
       .until(() -> analyzeCommand2.getFutureResult().isDone());
     assertThat(issues2).hasSize(1);
+  }
+
+  @Test
+  void should_not_queue_command_if_already_canceled(@TempDir Path baseDir) {
+    var analysisConfig = AnalysisConfiguration.builder()
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
+      () -> analysisConfig, i -> {}, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of("a", "1"));
+    progressMonitor.cancel();
+
+    analysisScheduler.post(analyzeCommand);
+
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Not picking next command " + analyzeCommand + ", is canceled"));
   }
 
   @Test

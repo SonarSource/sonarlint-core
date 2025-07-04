@@ -33,4 +33,5 @@ public class TaskProgressRpcServiceDelegate extends AbstractRpcServiceDelegate i
   public void cancelTask(CancelTaskParams params) {
     notify(() -> getBean(TaskManager.class).cancel(params.getTaskId()));
   }
+
 }

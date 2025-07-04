@@ -39,7 +39,7 @@ public class ClientAwareTaskManager extends TaskManager {
   }
 
   @Override
-  protected ProgressMonitor startProgress(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+  protected void startProgress(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
     SonarLintCancelMonitor cancelMonitor) {
     try {
       client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable)).get();
@@ -49,8 +49,12 @@ public class ClientAwareTaskManager extends TaskManager {
       throw new CanceledException();
     } catch (ExecutionException e) {
       LOG.error("The client was unable to start progress, cause:", e);
-      return super.startProgress(configurationScopeId, taskId, title, message, indeterminate, cancellable, cancelMonitor);
+      super.startProgress(configurationScopeId, taskId, title, message, indeterminate, cancellable, cancelMonitor);
     }
+  }
+
+  @Override
+  protected ProgressMonitor createProgress(UUID taskId, SonarLintCancelMonitor cancelMonitor) {
     return new ClientAwareProgressMonitor(client, taskId, cancelMonitor);
   }
 }

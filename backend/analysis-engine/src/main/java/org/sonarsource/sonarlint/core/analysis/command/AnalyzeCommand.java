@@ -77,7 +77,6 @@ public class AnalyzeCommand extends Command {
     Set<URI> files, Map<String, String> extraProperties) {
     this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
       new CompletableFuture<>());
-
   }
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
@@ -96,6 +95,8 @@ public class AnalyzeCommand extends Command {
     this.files = files;
     this.extraProperties = extraProperties;
     this.futureResult = futureResult;
+
+    taskManager.trackNewTask(analysisId, cancelMonitor);
   }
 
   @Override
@@ -127,7 +128,7 @@ public class AnalyzeCommand extends Command {
   public void execute(ModuleRegistry moduleRegistry) {
     try {
       var configuration = configurationSupplier.get();
-      taskManager.runTask(moduleKey, analysisId, "Analyzing " + pluralize(configuration.inputFiles().size(), "file"), null, true, true,
+      taskManager.runExistingTask(moduleKey, analysisId, "Analyzing " + pluralize(configuration.inputFiles().size(), "file"), null, true, true,
         indicator -> execute(moduleRegistry, indicator, configuration), cancelMonitor);
     } catch (Exception e) {
       handleAnalysisFailed(e);
@@ -254,19 +255,31 @@ public class AnalyzeCommand extends Command {
 
   @Override
   public void cancel() {
-    cancelMonitor.cancel();
-    futureResult.cancel(true);
+    if (!cancelMonitor.isCanceled()) {
+      cancelMonitor.cancel();
+    }
+    if (!futureResult.isCancelled()) {
+      futureResult.cancel(true);
+    }
   }
 
   @Override
-  public boolean shouldCancel(Command executingCommand) {
+  public boolean shouldCancelPost(Command executingCommand) {
     if (!(executingCommand instanceof AnalyzeCommand analyzeCommand)) {
       return false;
+    }
+    if (cancelMonitor.isCanceled() || futureResult.isCancelled()) {
+      return true;
     }
     var triggerTypesMatch = getTriggerType() == analyzeCommand.getTriggerType();
     var filesMatch = Objects.equals(getFiles(), analyzeCommand.getFiles());
     var extraPropertiesMatch = Objects.equals(getExtraProperties(), analyzeCommand.getExtraProperties());
     return triggerTypesMatch && filesMatch && extraPropertiesMatch;
+  }
+
+  @Override
+  public boolean shouldCancelQueue() {
+    return cancelMonitor.isCanceled() || futureResult.isCancelled();
   }
 
   @CheckForNull

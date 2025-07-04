@@ -32,7 +32,6 @@ public class ClientAwareProgressMonitor implements ProgressMonitor {
   private final SonarLintRpcClient client;
   private final UUID taskId;
   private final SonarLintCancelMonitor cancelMonitor;
-  private volatile boolean canceled;
 
   public ClientAwareProgressMonitor(SonarLintRpcClient client, UUID taskId, SonarLintCancelMonitor cancelMonitor) {
     this.client = client;
@@ -47,12 +46,12 @@ public class ClientAwareProgressMonitor implements ProgressMonitor {
 
   @Override
   public boolean isCanceled() {
-    return canceled || cancelMonitor.isCanceled();
+    return cancelMonitor.isCanceled();
   }
 
   @Override
   public void cancel() {
-    canceled = true;
+    cancelMonitor.cancel();
   }
 
   @Override

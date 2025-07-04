@@ -27,4 +27,5 @@ public interface TaskProgressRpcService {
 
   @JsonNotification
   void cancelTask(CancelTaskParams params);
+
 }

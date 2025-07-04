@@ -85,12 +85,17 @@ public class AnalysisQueue {
     // cannot use iterator as priority order is not guaranteed
     while (!queue.isEmpty()) {
       var candidateCommand = queue.poll();
-      if (candidateCommand.command.isReady()) {
-        queue.addAll(commandsToKeep);
-        return Optional.of(candidateCommand);
+      if (candidateCommand.command.shouldCancelQueue()) {
+        candidateCommand.command.cancel();
+        LOG.debug("Not picking next command {}, is canceled", candidateCommand.command);
+      } else {
+        if (candidateCommand.command.isReady()) {
+          queue.addAll(commandsToKeep);
+          return Optional.of(candidateCommand);
+        }
+        LOG.debug("Not picking next command {}, is not ready", candidateCommand.command);
+        commandsToKeep.add(candidateCommand);
       }
-      LOG.debug("Not picking next command {}, is not ready", candidateCommand.command);
-      commandsToKeep.add(candidateCommand);
     }
     queue.addAll(commandsToKeep);
     return Optional.empty();

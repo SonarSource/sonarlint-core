@@ -99,8 +99,8 @@ public class AnalysisScheduler {
       return;
     }
     var currentCommand = executingCommand.get();
-    if (currentCommand != null && command.shouldCancel(currentCommand)) {
-      LOG.debug("Cancelling execution of executing command");
+    if (currentCommand != null && command.shouldCancelPost(currentCommand)) {
+      LOG.debug("Cancelling queuing of command");
       currentCommand.cancel();
     }
     LOG.debug("Posting command from Scheduler to queue: " + command);

@@ -40,7 +40,11 @@ public abstract class Command {
     // most commands are not cancelable
   }
 
-  public boolean shouldCancel(Command executingCommand) {
+  public boolean shouldCancelPost(Command executingCommand) {
+    return false;
+  }
+
+  public boolean shouldCancelQueue() {
     return false;
   }
 }
