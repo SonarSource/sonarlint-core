@@ -141,9 +141,7 @@ class OpenHotspotInIdeMediumTests {
     requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
-        .content().asBase64Decoded().asString()
-        .contains("\"showHotspotRequestsCount\":1"));
+      .untilAsserted(() -> assertThat(backend.telemetryFileContent().showHotspotRequestsCount()).isEqualTo(1));
   }
 
   @SonarLintTest

@@ -130,7 +130,7 @@ public class TelemetryLocalStorage {
   }
 
   @Deprecated
-  LocalDate installDate() {
+  public LocalDate installDate() {
     return installDate;
   }
 
@@ -147,7 +147,7 @@ public class TelemetryLocalStorage {
   }
 
   @CheckForNull
-  LocalDate lastUseDate() {
+  public LocalDate lastUseDate() {
     return lastUseDate;
   }
 
@@ -196,7 +196,7 @@ public class TelemetryLocalStorage {
   }
 
   @CheckForNull
-  LocalDateTime lastUploadTime() {
+  public LocalDateTime lastUploadTime() {
     return lastUploadDateTime;
   }
 
@@ -234,7 +234,7 @@ public class TelemetryLocalStorage {
     calledToolsByName.clear();
   }
 
-  long numUseDays() {
+  public long numUseDays() {
     return numUseDays;
   }
 
@@ -242,7 +242,7 @@ public class TelemetryLocalStorage {
     this.enabled = enabled;
   }
 
-  boolean enabled() {
+  public boolean enabled() {
     return enabled;
   }
 

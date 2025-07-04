@@ -143,9 +143,7 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"hotspotStatusChangedCount\":1");
+    assertThat(backend.telemetryFileContent().hotspotStatusChangedCount()).isEqualTo(1);
   }
 
   private CompletableFuture<Void> setStatusToSafe(SonarLintTestRpcServer backend, String configScopeId, String hotspotKey) {

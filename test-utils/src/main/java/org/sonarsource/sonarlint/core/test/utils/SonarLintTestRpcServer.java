@@ -19,7 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.test.utils;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
@@ -44,6 +53,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.telemetry.LocalDateAdapter;
+import org.sonarsource.sonarlint.core.telemetry.LocalDateTimeAdapter;
+import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 
 import static java.util.Objects.requireNonNull;
 
@@ -163,6 +176,27 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public Path telemetryFilePath() {
     return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
+  }
+
+  public TelemetryLocalStorage telemetryFileContent() {
+    try {
+      return readTelemetryFile(telemetryFilePath());
+    } catch (IOException e) {
+      // use this exception type to allow retries with awaitility's untilAsserted method
+      throw new AssertionError("Failed to read telemetry file", e);
+    }
+  }
+
+  private static TelemetryLocalStorage readTelemetryFile(Path path) throws IOException {
+    var fileContent = Files.readString(path, StandardCharsets.UTF_8);
+    var decoded = new String(Base64.getDecoder().decode(fileContent), StandardCharsets.UTF_8);
+    var gson = new GsonBuilder()
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
+      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
+      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
+      .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
+      .create();
+    return gson.fromJson(decoded, TelemetryLocalStorage.class);
   }
 
   public LocalOnlyIssueStorageService getLocalOnlyIssueStorageService() {

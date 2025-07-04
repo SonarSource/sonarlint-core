@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,8 +44,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -58,7 +61,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -108,18 +110,14 @@ class OpenFixSuggestionInIdeMediumTests {
       .withTelemetryEnabled()
       .start(fakeClient);
 
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"fixSuggestionReceivedCounter\":{}");
+    assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter()).isEmpty();
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
-        .content().asBase64Decoded().asString()
-        .contains(
-          "\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":false}}"));
+      .untilAsserted(() -> assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter())
+        .isEqualTo(Map.of("eb93b2b4-f7b0-4b5c-9460-50893968c264", new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 1, false))));
   }
 
   @SonarLintTest
