@@ -32,7 +32,7 @@ public class ConfigurationScopeRemovedEvent {
   }
 
   public String getRemovedConfigurationScopeId() {
-    return removedConfigurationScope.getId();
+    return removedConfigurationScope.id();
   }
 
   public ConfigurationScope getRemovedConfigurationScope() {

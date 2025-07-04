@@ -86,7 +86,7 @@ public class WebSocketService {
       if (didChangeRegion(bindingConfigChangedEvent.previousConfig(), bindingConfigChangedEvent.newConfig())) {
         // will only enter this block if previous connection (and connectionId) existed
         var previousRegion = ((SonarCloudConnectionConfiguration) connectionConfigurationRepository
-          .getConnectionById(bindingConfigChangedEvent.previousConfig().getConnectionId())).getRegion();
+          .getConnectionById(bindingConfigChangedEvent.previousConfig().connectionId())).getRegion();
         webSocketsByRegion.get(previousRegion).forget(bindingConfigChangedEvent.configScopeId());
         webSocketsByRegion.get(previousRegion).closeSocketIfNoMoreNeeded();
       }
@@ -206,9 +206,9 @@ public class WebSocketService {
   }
 
   private boolean didChangeRegion(BindingConfiguration previousBindingConfiguration, BindingConfiguration newBindingConfiguration) {
-    var previousConnectionId = previousBindingConfiguration.getConnectionId();
+    var previousConnectionId = previousBindingConfiguration.connectionId();
     var previousConnection = previousConnectionId != null ? connectionConfigurationRepository.getConnectionById(previousConnectionId) : null;
-    var newConnectionId = newBindingConfiguration.getConnectionId();
+    var newConnectionId = newBindingConfiguration.connectionId();
     var newConnection = newConnectionId != null ? connectionConfigurationRepository.getConnectionById(newConnectionId) : null;
     if (newConnection == null || previousConnection == null) {
       // nothing to do
@@ -225,7 +225,7 @@ public class WebSocketService {
   private Binding getCurrentBinding(String configScopeId) {
     var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey()));
+      return new Binding(requireNonNull(bindingConfiguration.connectionId()), requireNonNull(bindingConfiguration.sonarProjectKey()));
     }
     return null;
   }

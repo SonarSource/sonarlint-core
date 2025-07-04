@@ -513,7 +513,7 @@ public class AnalysisService {
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
     var removedConfigurationScopeId = event.getRemovedConfigurationScopeId();
     analysisReadinessByConfigScopeId.remove(removedConfigurationScopeId);
-    schedulerCache.unregisterModule(removedConfigurationScopeId, event.getRemovedBindingConfiguration().getConnectionId());
+    schedulerCache.unregisterModule(removedConfigurationScopeId, event.getRemovedBindingConfiguration().connectionId());
   }
 
   @EventListener

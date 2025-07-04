@@ -33,7 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -51,7 +50,6 @@ import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
-import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
@@ -141,8 +139,8 @@ public class FileExclusionService {
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     if (event.newConfig().isBound()) {
-      var connectionId = requireNonNull(event.newConfig().getConnectionId());
-      var projectKey = requireNonNull(event.newConfig().getSonarProjectKey());
+      var connectionId = requireNonNull(event.newConfig().connectionId());
+      var projectKey = requireNonNull(event.newConfig().sonarProjectKey());
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
@@ -222,7 +220,8 @@ public class FileExclusionService {
     var filteredURIsNoFile = new ArrayList<URI>();
 
     var filesToExclude = files;
-    if (!isConnectedMode(configurationScopeId)) {
+
+    if (configRepo.getEffectiveBinding(configurationScopeId).isEmpty()) {
       // client-defined file exclusions only apply in standalone mode
       filesToExclude = filterOutClientExcludedFiles(configurationScopeId, files);
     }
@@ -317,12 +316,6 @@ public class FileExclusionService {
     return files.stream()
       .filter(fileExclusionFilter)
       .collect(Collectors.toSet());
-  }
-
-  private boolean isConnectedMode(String configurationScopeId) {
-    return Optional.ofNullable(configRepo.getBindingConfiguration(configurationScopeId))
-      .map(BindingConfiguration::isBound)
-      .orElse(false);
   }
 
   private Set<String> getClientFileExclusionPatterns(String configurationScopeId) {

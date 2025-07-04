@@ -19,40 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class ConfigurationScope {
-
-  private final String id;
-  private final String parentId;
-  private final boolean bindable;
-  /**
-   * The name of this configuration scope. Used for auto-binding.
-   */
-  private final String name;
-
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
-    this.id = id;
-    this.parentId = parentId;
-    this.bindable = bindable;
-    this.name = name;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  @CheckForNull
-  public String getParentId() {
-    return parentId;
-  }
-
-  public boolean isBindable() {
-    return bindable;
-  }
-
-  public String getName() {
-    return name;
-  }
+/**
+ * @param name The name of this configuration scope. Used for auto-binding.
+ */
+public record ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
 }

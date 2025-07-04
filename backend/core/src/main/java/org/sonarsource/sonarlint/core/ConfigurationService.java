@@ -59,7 +59,7 @@ public class ConfigurationService {
       if (previous != null) {
         LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
       } else {
-        LOG.debug("Added configuration scope '{}'", configScopeInReferential.getId());
+        LOG.debug("Added configuration scope '{}'", configScopeInReferential.id());
         addedIds.add(new ConfigurationScopeWithBinding(configScopeInReferential, bindingConfigInReferential));
       }
     }
@@ -102,7 +102,7 @@ public class ConfigurationService {
     var bindingConfigurationByConfigScope = repository.removeBindingForConnection(event.getRemovedConnectionId());
     bindingConfigurationByConfigScope.forEach((configScope, bindingConfiguration) ->
       applicationEventPublisher.publishEvent(new BindingConfigChangedEvent(configScope, bindingConfiguration,
-        BindingConfiguration.noBinding(bindingConfiguration.isBindingSuggestionDisabled()))));
+        BindingConfiguration.noBinding(bindingConfiguration.bindingSuggestionDisabled()))));
   }
 
   @CheckForNull

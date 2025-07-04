@@ -110,12 +110,12 @@ public class TelemetryServerAttributesProvider {
     return (int) configurationRepository.getLeafConfigScopeIds().stream()
       .filter(scopeId -> {
         var configScope = configurationRepository.getConfigurationScope(scopeId);
-        if (configScope != null && configScope.getParentId() != null) {
-          var parentBindingConfig = configurationRepository.getBindingConfiguration(configScope.getParentId());
+        if (configScope != null && configScope.parentId() != null) {
+          var parentBindingConfig = configurationRepository.getBindingConfiguration(configScope.parentId());
           var leafBindingConfig = configurationRepository.getBindingConfiguration(scopeId);
           if (parentBindingConfig != null && leafBindingConfig != null) {
-            var parentProjectKey = parentBindingConfig.getSonarProjectKey();
-            var leafProjectKey = leafBindingConfig.getSonarProjectKey();
+            var parentProjectKey = parentBindingConfig.sonarProjectKey();
+            var leafProjectKey = leafBindingConfig.sonarProjectKey();
             return parentProjectKey != null && leafProjectKey != null && !parentProjectKey.equals(leafProjectKey);
           }
         }

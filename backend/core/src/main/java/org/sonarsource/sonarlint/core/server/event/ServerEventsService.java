@@ -92,7 +92,7 @@ public class ServerEventsService {
     }
     var removedScope = event.getRemovedConfigurationScope();
     var removedBindingConfiguration = event.getRemovedBindingConfiguration();
-    var bindingConfigurationFromRepository = configurationRepository.getBindingConfiguration(removedScope.getId());
+    var bindingConfigurationFromRepository = configurationRepository.getBindingConfiguration(removedScope.id());
     if (bindingConfigurationFromRepository == null
       || isBindingDifferent(removedBindingConfiguration, bindingConfigurationFromRepository)) {
       // it has not been re-added in the meantime, or re-added with different binding
@@ -155,8 +155,8 @@ public class ServerEventsService {
   }
 
   private static boolean isBindingDifferent(BindingConfiguration previousConfig, BindingConfiguration newConfig) {
-    return !Objects.equals(previousConfig.getSonarProjectKey(), newConfig.getSonarProjectKey())
-      || !Objects.equals(previousConfig.getConnectionId(), newConfig.getConnectionId());
+    return !Objects.equals(previousConfig.sonarProjectKey(), newConfig.sonarProjectKey())
+      || !Objects.equals(previousConfig.connectionId(), newConfig.connectionId());
   }
 
   private void subscribeAll(Set<String> configurationScopeIds) {
@@ -191,8 +191,8 @@ public class ServerEventsService {
 
   private void unsubscribe(BindingConfiguration previousBindingConfiguration) {
     if (previousBindingConfiguration.isBound()) {
-      var connectionId = requireNonNull(previousBindingConfiguration.getConnectionId());
-      var projectKey = requireNonNull(previousBindingConfiguration.getSonarProjectKey());
+      var connectionId = requireNonNull(previousBindingConfiguration.connectionId());
+      var projectKey = requireNonNull(previousBindingConfiguration.sonarProjectKey());
       if (supportsServerSentEvents(connectionId) && streamsPerConnectionId.containsKey(connectionId)
         && configurationRepository.getSonarProjectsUsedForConnection(connectionId).stream().noneMatch(usedProjectKey -> usedProjectKey.equals(projectKey))) {
         streamsPerConnectionId.get(connectionId).unsubscribe(projectKey);

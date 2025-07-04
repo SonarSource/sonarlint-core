@@ -239,8 +239,8 @@ public class SynchronizationService {
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(scopeId);
     var previousBinding = event.getRemovedBindingConfiguration();
     if (previousBinding.isBound()) {
-      var connectionId = requireNonNull(previousBinding.getConnectionId());
-      var projectKey = requireNonNull(previousBinding.getSonarProjectKey());
+      var connectionId = requireNonNull(previousBinding.connectionId());
+      var projectKey = requireNonNull(previousBinding.sonarProjectKey());
       var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
       if (scopes.isEmpty()) {
         // no remaining scope bound to this connection and project, clear the cache
@@ -265,15 +265,15 @@ public class SynchronizationService {
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
     if (event.previousConfig().isBound()) {
       // when unbinding, we want to let future rebinds trigger a sync
-      var previousBinding = new Binding(requireNonNull(event.previousConfig().getConnectionId()), requireNonNull(event.previousConfig().getSonarProjectKey()));
+      var previousBinding = new Binding(requireNonNull(event.previousConfig().connectionId()), requireNonNull(event.previousConfig().sonarProjectKey()));
       bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(previousBinding);
       branchSynchronizationTimestampRepository.clearLastSynchronizationTimestampIf(branchBinding -> branchBinding.getBinding().equals(previousBinding));
     }
-    var newConnectionId = event.newConfig().getConnectionId();
+    var newConnectionId = event.newConfig().connectionId();
     if (newConnectionId != null) {
       synchronizeConnectionAndProjectsIfNeededAsync(
         newConnectionId,
-        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.newConfig().getSonarProjectKey()))));
+        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.newConfig().sonarProjectKey()))));
     }
   }
 

@@ -88,6 +88,7 @@ public class GitService {
       var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
       return Stream.concat(uncommitted, untracked)
         .map(workTreePath::resolve)
+        .filter(path -> path.normalize().startsWith(baseDir.normalize()))
         .map(Path::toUri)
         .collect(Collectors.toSet());
     } catch (GitAPIException | GitException e) {

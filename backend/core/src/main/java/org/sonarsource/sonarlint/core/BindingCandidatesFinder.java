@@ -68,7 +68,7 @@ public class BindingCandidatesFinder {
     ConfigurationScope scope, String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     cancelMonitor.checkCanceled();
 
-    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(scope.getId(), Set.of(connectionId), cancelMonitor);
+    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(scope.id(), Set.of(connectionId), cancelMonitor);
 
     var cluesWithMatchingProjectKey = cluesAndConnections.stream()
       .filter(c -> projectKey.equals(c.getBindingClue().getSonarProjectKey()))
@@ -79,7 +79,7 @@ public class BindingCandidatesFinder {
       var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(c -> c.getBindingClue().isFromSharedConfiguration());
       return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
     }
-    var configScopeName = scope.getName();
+    var configScopeName = scope.name();
     if (isNotBlank(configScopeName) && isConfigScopeNameCloseEnoughToSonarProject(configScopeName, connectionId, projectKey, cancelMonitor)) {
       return Optional.of(new ConfigurationScopeSharedContext(scope, false));
     }
@@ -87,10 +87,10 @@ public class BindingCandidatesFinder {
   }
 
   private static Set<ConfigurationScopeSharedContext> filterOutLeafCandidates(Set<ConfigurationScopeSharedContext> candidates) {
-    var candidateIds = candidates.stream().map(ConfigurationScopeSharedContext::getConfigurationScope).map(ConfigurationScope::getId).collect(Collectors.toSet());
+    var candidateIds = candidates.stream().map(ConfigurationScopeSharedContext::getConfigurationScope).map(ConfigurationScope::id).collect(Collectors.toSet());
     return candidates.stream().filter(bindableConfig -> {
       var scope = bindableConfig.getConfigurationScope();
-      var parentId = scope.getParentId();
+      var parentId = scope.parentId();
       return parentId == null || !candidateIds.contains(parentId);
     }).collect(Collectors.toSet());
   }

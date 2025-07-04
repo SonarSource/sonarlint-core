@@ -27,7 +27,7 @@ public record ConfigurationScopesAddedWithBindingEvent(Set<ConfigurationScopeWit
 
   public Set<String> getConfigScopeIds() {
     return addedConfigurationScopes.stream()
-      .map(configScope -> configScope.scope().getId())
+      .map(configScope -> configScope.scope().id())
       .collect(Collectors.toSet());
   }
 

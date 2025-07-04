@@ -433,4 +433,32 @@ class GitServiceTests {
     }
   }
 
+  @Test
+  void it_should_only_return_files_under_baseDir() throws IOException, GitAPIException {
+    // Create files in root and in a subfolder
+    var rootFile = "rootFile.txt";
+    var subDir = projectDirPath.resolve("subdir");
+    Files.createDirectories(subDir);
+    var subFile = subDir.resolve("subFile.txt");
+    createFile(projectDirPath, rootFile, "root");
+    createFile(subDir, "subFile.txt", "sub");
+
+    // Add and commit both files
+    git.add().addFilepattern(rootFile).call();
+    git.add().addFilepattern("subdir/subFile.txt").call();
+    commit(git, rootFile);
+    commit(git, "subdir/subFile.txt");
+
+    // Modify both files (so they appear as changed)
+    modifyFile(projectDirPath.resolve(rootFile), "root", "changed");
+    modifyFile(subFile, "sub", "changed");
+
+    // getVCSChangedFiles for subdir should only return subFile
+    var changedFiles = getVCSChangedFiles(subDir);
+
+    assertThat(changedFiles)
+      .contains(subFile.toUri())
+      .doesNotContain(projectDirPath.resolve(rootFile).toUri());
+  }
+
 }
