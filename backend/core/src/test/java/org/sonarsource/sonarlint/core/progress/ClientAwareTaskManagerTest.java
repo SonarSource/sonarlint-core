@@ -47,7 +47,7 @@ class ClientAwareTaskManagerTest {
     var caughtException = new AtomicReference<Exception>();
     var thread = new Thread(() -> {
       try {
-        taskManager.runTask("configScopeId", UUID.randomUUID(), "Title", null, true, true, progressIndicator -> {
+        taskManager.createAndRunTask("configScopeId", UUID.randomUUID(), "Title", null, true, true, progressIndicator -> {
         }, new SonarLintCancelMonitor());
       } catch (Exception e) {
         caughtException.set(e);

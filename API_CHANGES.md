@@ -3,9 +3,6 @@
 ## Breaking changes
 
 * Add a new `ISSUE_STREAMING` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
-* Add a new optional parameter `configurationScopeId` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.CancelTaskParams`
-  * If provided, it will include cancellation of a queued analysis if it exists
-  * If null, it will keep the same behavior as today and only cancel a running task
 
 ## New features
 

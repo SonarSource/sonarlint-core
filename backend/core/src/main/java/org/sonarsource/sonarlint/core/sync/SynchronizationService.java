@@ -160,7 +160,7 @@ public class SynchronizationService {
     if (boundScopeByConnectionAndSonarProject.isEmpty()) {
       return;
     }
-    taskManager.runTask(null, UUID.randomUUID(), "Synchronizing projects...", null, false, false, progressIndicator -> {
+    taskManager.createAndRunTask(null, UUID.randomUUID(), "Synchronizing projects...", null, false, false, progressIndicator -> {
       var connectionsCount = boundScopeByConnectionAndSonarProject.size();
       var progressGap = 100f / connectionsCount;
       var progress = 0f;

@@ -38,7 +38,7 @@ public final class UnregisterModuleCommand extends Command {
   }
 
   @Override
-  public boolean shouldCancel(Command executingCommand) {
+  public boolean shouldCancelPost(Command executingCommand) {
     return executingCommand instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(moduleKey);
   }
 }

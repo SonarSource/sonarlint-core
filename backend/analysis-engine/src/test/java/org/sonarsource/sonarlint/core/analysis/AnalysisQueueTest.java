@@ -24,11 +24,15 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class AnalysisQueueTest {
   @RegisterExtension
@@ -37,7 +41,8 @@ class AnalysisQueueTest {
   @Test
   void it_should_prioritize_register_module_commands_over_analyses() throws InterruptedException {
     var analysisQueue = new AnalysisQueue();
-    analysisQueue.post(new AnalyzeCommand(null, UUID.randomUUID(), null, null, null, null, null, null, null, () -> true, Set.of(), Map.of()));
+    var taskManager = mock(TaskManager.class);
+    analysisQueue.post(new AnalyzeCommand(null, UUID.randomUUID(), null, null, null, null, null, taskManager, null, () -> true, Set.of(), Map.of()));
     var registerModuleCommand = new RegisterModuleCommand(null);
     analysisQueue.post(registerModuleCommand);
 
@@ -45,4 +50,22 @@ class AnalysisQueueTest {
 
     assertThat(command).isEqualTo(registerModuleCommand);
   }
+
+  @Test
+  void it_should_not_queue_a_canceled_command() throws InterruptedException {
+    var canceledProgressMonitor = new SonarLintCancelMonitor();
+    var progressMonitor = new SonarLintCancelMonitor();
+    var analysisQueue = new AnalysisQueue();
+    var taskManager = mock(TaskManager.class);
+    var canceledCommand = new AnalyzeCommand("1", UUID.randomUUID(), TriggerType.FORCED, null, null, null, canceledProgressMonitor, taskManager, null, () -> true, Set.of(), Map.of());
+    var command = new AnalyzeCommand("2", UUID.randomUUID(), TriggerType.FORCED, null, null, null, progressMonitor, taskManager, null, () -> true, Set.of(), Map.of());
+    canceledProgressMonitor.cancel();
+    analysisQueue.post(canceledCommand);
+    analysisQueue.post(command);
+
+    var nextCommand = analysisQueue.takeNextCommand();
+
+    assertThat(nextCommand).isEqualTo(command);
+  }
+
 }

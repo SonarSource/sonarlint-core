@@ -19,25 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.progress;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 public class CancelTaskParams {
   private final String taskId;
-  @Nullable
-  private final String configurationScopeId;
 
-  public CancelTaskParams(String taskId, @Nullable String configurationScopeId) {
+  public CancelTaskParams(String taskId) {
     this.taskId = taskId;
-    this.configurationScopeId = configurationScopeId;
   }
 
   public String getTaskId() {
     return taskId;
-  }
-
-  @CheckForNull
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
   }
 }

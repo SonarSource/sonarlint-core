@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.CancelTaskParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
@@ -32,17 +31,7 @@ public class TaskProgressRpcServiceDelegate extends AbstractRpcServiceDelegate i
 
   @Override
   public void cancelTask(CancelTaskParams params) {
-    notify(() -> {
-      getBean(TaskManager.class).cancel(params.getTaskId());
-      // Also cancel queued analysis
-      var configScopeId = params.getConfigurationScopeId();
-      if (configScopeId != null) {
-        var scheduler = getBean(AnalysisSchedulerCache.class).getAnalysisSchedulerIfStarted(configScopeId);
-        if (scheduler != null) {
-          scheduler.cancelQueuedAnalysis(params.getTaskId());
-        }
-      }
-    });
+    notify(() -> getBean(TaskManager.class).cancel(params.getTaskId()));
   }
 
 }
