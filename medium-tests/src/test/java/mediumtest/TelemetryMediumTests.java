@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDone
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
@@ -457,23 +458,31 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
-  void it_should_record_issue_investigation_telemetry(SonarLintTestHarness harness) {
+  void it_should_accumulate_investigated_findings_count(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedRemotely();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().taintInvestigatedRemotely();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
+    backend.getTelemetryService().issueInvestigatedLocally();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"issueInvestigatedLocallyCount\":5"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
       .contains("\"hotspotInvestigatedRemotelyCount\":4"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
@@ -530,6 +539,21 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
 
+
+  @SonarLintTest
+  void it_should_record_findingsFiltered(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("severity"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("severity"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("location"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+    backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
+      .contains("\"findingsFilteredCountersByType\":{\"severity\":{\"findingsFilteredCount\":2},\"location\":{\"findingsFilteredCount\":1},\"fix_availability\":{\"findingsFilteredCount\":3}}"));
+  }
 
   @SonarLintTest
   void it_should_count_new_and_fixed_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
