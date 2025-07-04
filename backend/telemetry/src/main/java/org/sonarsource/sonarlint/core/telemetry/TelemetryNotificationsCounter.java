@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Objects;
+
 public class TelemetryNotificationsCounter {
   private int devNotificationsCount;
   private int devNotificationsClicked;
@@ -47,4 +49,15 @@ public class TelemetryNotificationsCounter {
     this.devNotificationsClicked++;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    TelemetryNotificationsCounter that = (TelemetryNotificationsCounter) o;
+    return devNotificationsCount == that.devNotificationsCount && devNotificationsClicked == that.devNotificationsClicked;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(devNotificationsCount, devNotificationsClicked);
+  }
 }

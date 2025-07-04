@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Objects;
+
 public class TelemetryHelpAndFeedbackCounter {
   private int helpAndFeedbackLinkClickedCount;
 
@@ -35,5 +37,19 @@ public class TelemetryHelpAndFeedbackCounter {
 
   public void incrementHelpAndFeedbackLinkClickedCount() {
     this.helpAndFeedbackLinkClickedCount++;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var that = (TelemetryHelpAndFeedbackCounter) o;
+    return helpAndFeedbackLinkClickedCount == that.helpAndFeedbackLinkClickedCount;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(helpAndFeedbackLinkClickedCount);
   }
 }

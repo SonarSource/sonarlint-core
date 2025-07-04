@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Objects;
+
 public class TelemetryAnalysisReportingCounter {
   private int analysisReportingCount;
 
@@ -35,5 +37,19 @@ public class TelemetryAnalysisReportingCounter {
 
   public void incrementAnalysisReportingCount() {
     this.analysisReportingCount++;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var that = (TelemetryAnalysisReportingCounter) o;
+    return analysisReportingCount == that.analysisReportingCount;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(analysisReportingCount);
   }
 }

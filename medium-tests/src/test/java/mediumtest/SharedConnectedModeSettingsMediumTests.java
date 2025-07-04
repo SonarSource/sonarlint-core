@@ -71,9 +71,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"exportedConnectedModeCount\":1");
+    assertThat(backend.telemetryFileContent().getExportedConnectedModeCount()).isEqualTo(1);
   }
 
   @SonarLintTest
@@ -103,9 +101,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"exportedConnectedModeCount\":1");
+    assertThat(backend.telemetryFileContent().getExportedConnectedModeCount()).isEqualTo(1);
   }
 
   @SonarLintTest
@@ -132,9 +128,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"exportedConnectedModeCount\":1");
+    assertThat(backend.telemetryFileContent().getExportedConnectedModeCount()).isEqualTo(1);
   }
 
   private CompletableFuture<GetSharedConnectedModeConfigFileResponse> getFileContents(SonarLintTestRpcServer backend, String configScopeId) {

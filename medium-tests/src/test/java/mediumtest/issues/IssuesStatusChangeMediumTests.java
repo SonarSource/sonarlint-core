@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -202,9 +203,7 @@ class IssuesStatusChangeMediumTests {
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"issueStatusChangedRuleKeys\":[\"rule:key\"]");
+    assertThat(backend.telemetryFileContent().issueStatusChangedRuleKeys()).isEqualTo(Set.of("rule:key"));
   }
 
   @SonarLintTest
@@ -364,9 +363,7 @@ class IssuesStatusChangeMediumTests {
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"issueStatusChangedRuleKeys\":[\"xml:S3421\"]");
+    assertThat(backend.telemetryFileContent().issueStatusChangedRuleKeys()).isEqualTo(Set.of("xml:S3421"));
   }
 
   @SonarLintTest
