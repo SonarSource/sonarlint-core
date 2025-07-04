@@ -46,5 +46,4 @@ public class TelemetryNotificationsCounter {
   public void incrementDevNotificationsClicked() {
     this.devNotificationsClicked++;
   }
-
 }

@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -55,9 +54,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -90,17 +87,13 @@ class OpenIssueInIdeMediumTests {
       .withTelemetryEnabled()
       .start(fakeClient);
 
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"showIssueRequestsCount\":0");
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getShowIssueRequestsCount()).isZero());
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
-        .content().asBase64Decoded().asString()
-        .contains("\"showIssueRequestsCount\":1"));
+      .untilAsserted(() -> assertThat(backend.telemetryFileContent().getShowIssueRequestsCount()).isOne());
   }
 
   @SonarLintTest
@@ -133,7 +126,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
   }
@@ -167,7 +160,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
   }
@@ -202,7 +195,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(0, 0, 0, 0);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile\nfive\nlines");
   }
@@ -221,7 +214,6 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
-
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -359,25 +351,23 @@ class OpenIssueInIdeMediumTests {
     assertThat(statusCode).isEqualTo(400);
   }
 
-  private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch) throws IOException, InterruptedException {
+  private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch)
+    throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
-  private int executeOpenSCIssueRequest(SonarLintTestRpcServer backend, String issueKey, String projectKey, String branch, String organizationKey) throws IOException, InterruptedException {
-    HttpRequest request = this.openIssueRequest(backend, "https://sonar.my", "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&organizationKey=" + organizationKey);
+  private int executeOpenSCIssueRequest(SonarLintTestRpcServer backend, String issueKey, String projectKey, String branch, String organizationKey)
+    throws IOException, InterruptedException {
+    HttpRequest request = this.openIssueRequest(backend, "https://sonar.my", "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch,
+      "&organizationKey=" + organizationKey);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
-  private Object executeOpenSCIssueRequest(SonarLintTestRpcServer backend, String issueKey, String projectKey, String branchName, String orgKey, String tokenName, String tokenValue) throws IOException, InterruptedException {
-    HttpRequest request = this.openIssueRequest(backend, "https://sonar.my", "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName, "&organizationKey=" + orgKey, "&tokenName=" + tokenName, "&tokenValue=" + tokenValue);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    return response.statusCode();
-  }
-
-  private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch, String pullRequest) throws IOException, InterruptedException {
+  private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch, String pullRequest)
+    throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&pullRequest=" + pullRequest);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
@@ -391,14 +381,16 @@ class OpenIssueInIdeMediumTests {
       .GET().build();
   }
 
-  private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId, String sonarProjectKey) {
+  private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,
+    String sonarProjectKey) {
     doAnswer((Answer<AssistBindingResponse>) invocation -> {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, sonarProjectKey, false)));
       return new AssistBindingResponse(configScopeId);
     }).when(fakeClient).assistBinding(any(), any());
   }
 
-  private void mockAssistCreatingConnection(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, ServerFixture.Server server, String connectionId) {
+  private void mockAssistCreatingConnection(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, ServerFixture.Server server,
+    String connectionId) {
     doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(connectionId, server.baseUrl(), true)), Collections.emptyList()));

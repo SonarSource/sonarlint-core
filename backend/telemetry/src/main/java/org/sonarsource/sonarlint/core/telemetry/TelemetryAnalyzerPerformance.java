@@ -59,5 +59,4 @@ public class TelemetryAnalyzerPerformance {
   public int analysisCount() {
     return analysisCount;
   }
-
 }
