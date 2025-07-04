@@ -73,18 +73,22 @@ public class GitService {
     return blameWithFilesGitCommand(baseDir, gitRelativePath, null);
   }
 
-  public static Set<URI> getVSCChangedFiles(@Nullable Path baseDir) {
+  // Could be optimized to only fetch VCS changed files matching the base dir
+  // Currently, it finds all the files of the git repo, even when called against a subfolder
+  public static Set<URI> getVCSChangedFiles(@Nullable Path baseDir) {
     if (baseDir == null) {
       return Set.of();
     }
     try {
       var repo = buildGitRepository(baseDir);
+      var workTreePath = repo.getWorkTree().toPath();
       var git = new Git(repo);
       var status = git.status().call();
       var uncommitted = status.getUncommittedChanges().stream();
       var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
       return Stream.concat(uncommitted, untracked)
-        .map(file -> baseDir.resolve(file).toUri())
+        .map(workTreePath::resolve)
+        .map(Path::toUri)
         .collect(Collectors.toSet());
     } catch (GitAPIException | GitException e) {
       LOG.debug("Git repository access error: ", e);

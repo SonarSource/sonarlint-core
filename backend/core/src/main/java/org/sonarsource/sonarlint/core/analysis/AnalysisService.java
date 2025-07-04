@@ -108,7 +108,7 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVCSChangedFiles;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
@@ -710,7 +710,7 @@ public class AnalysisService {
   }
 
   public UUID analyzeVCSChangedFiles(String configScopeId) {
-    var changedFiles = getVSCChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
+    var changedFiles = getVCSChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
     return scheduleForcedAnalysis(configScopeId, changedFiles, false);
   }
 
