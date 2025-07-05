@@ -35,6 +35,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 
@@ -143,9 +144,8 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"hotspotStatusChangedCount\":1");
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().hotspotStatusChangedCount())
+      .isEqualTo(1));
   }
 
   private CompletableFuture<Void> setStatusToSafe(SonarLintTestRpcServer backend, String configScopeId, String hotspotKey) {

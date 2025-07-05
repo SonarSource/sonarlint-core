@@ -19,6 +19,7 @@
  */
 package mediumtest.newcode;
 
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
@@ -31,14 +32,18 @@ class NewCodeTelemetryMediumTests {
   void it_should_save_initial_value_when_focus_on_overall_code(SonarLintTestHarness harness) {
     var backend = harness.newBackend().withTelemetryEnabled().start();
 
-    assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":0");
+    assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isFocusOnNewCode, TelemetryLocalStorage::getCodeFocusChangedCount)
+      .containsExactly(false, 0);
   }
 
   @SonarLintTest
   void it_should_save_initial_value_when_focus_on_new_code(SonarLintTestHarness harness) {
     var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().start();
 
-    assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":0");
+    assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isFocusOnNewCode, TelemetryLocalStorage::getCodeFocusChangedCount)
+      .containsExactly(true, 0);
   }
 
   @SonarLintTest
@@ -47,7 +52,9 @@ class NewCodeTelemetryMediumTests {
 
     backend.getNewCodeService().didToggleFocus();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isFocusOnNewCode, TelemetryLocalStorage::getCodeFocusChangedCount)
+      .containsExactly(true, 1));
   }
 
   @SonarLintTest
@@ -56,6 +63,8 @@ class NewCodeTelemetryMediumTests {
 
     backend.getNewCodeService().didToggleFocus();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isFocusOnNewCode, TelemetryLocalStorage::getCodeFocusChangedCount)
+      .containsExactly(false, 1));
   }
 }

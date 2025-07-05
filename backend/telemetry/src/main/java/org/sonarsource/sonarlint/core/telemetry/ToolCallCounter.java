@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Objects;
+
 public class ToolCallCounter {
   private int success;
   private int error;
@@ -45,5 +47,17 @@ public class ToolCallCounter {
 
   public int getError() {
     return error;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    ToolCallCounter that = (ToolCallCounter) o;
+    return success == that.success && error == that.error;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(success, error);
   }
 }

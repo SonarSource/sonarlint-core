@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -34,9 +35,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -976,10 +979,8 @@ public class AiCodeFixMediumTest {
 
     backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId())).join();
 
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains(
-        "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
+    assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter())
+      .isEqualTo(Map.of("e51b7bbd-72bc-4008-a4f1-d75583f3dc98", new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 1, true)));
   }
 
   @SonarLintTest
@@ -1013,10 +1014,8 @@ public class AiCodeFixMediumTest {
 
     backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId())).join();
 
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains(
-        "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARQUBE\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
+    assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter())
+      .isEqualTo(Map.of("e51b7bbd-72bc-4008-a4f1-d75583f3dc98", new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARQUBE, 1, true)));
   }
 
   @SonarLintTest

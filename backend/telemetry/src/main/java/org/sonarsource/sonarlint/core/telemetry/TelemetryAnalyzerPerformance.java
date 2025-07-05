@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 public class TelemetryAnalyzerPerformance {
@@ -44,6 +45,11 @@ public class TelemetryAnalyzerPerformance {
     INTERVALS.forEach((k, v) -> frequencies.put(v, 0));
   }
 
+  public TelemetryAnalyzerPerformance(int analysisCount, Map<String, Integer> frequencies) {
+    this.analysisCount = analysisCount;
+    this.frequencies = frequencies;
+  }
+
   public void registerAnalysis(int analysisTimeMs) {
     var entry = INTERVALS.higherEntry(analysisTimeMs);
     if (entry != null) {
@@ -60,4 +66,15 @@ public class TelemetryAnalyzerPerformance {
     return analysisCount;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    TelemetryAnalyzerPerformance that = (TelemetryAnalyzerPerformance) o;
+    return analysisCount == that.analysisCount && Objects.equals(frequencies, that.frequencies);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(analysisCount, frequencies);
+  }
 }

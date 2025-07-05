@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.util.Objects;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
@@ -44,5 +45,19 @@ public class TelemetryFixSuggestionResolvedStatus {
 
   public void setFixSuggestionResolvedStatus(FixSuggestionStatus fixSuggestionResolvedStatus) {
     this.fixSuggestionResolvedStatus = fixSuggestionResolvedStatus;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var that = (TelemetryFixSuggestionResolvedStatus) o;
+    return fixSuggestionResolvedStatus == that.fixSuggestionResolvedStatus && Objects.equals(fixSuggestionResolvedSnippetIndex, that.fixSuggestionResolvedSnippetIndex);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(fixSuggestionResolvedStatus, fixSuggestionResolvedSnippetIndex);
   }
 }

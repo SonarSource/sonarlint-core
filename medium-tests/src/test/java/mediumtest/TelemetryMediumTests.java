@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
@@ -53,7 +54,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledPa
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryAnalysisReportingCounter;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryAnalyzerPerformance;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionResolvedStatus;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryHelpAndFeedbackCounter;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryNotificationsCounter;
+import org.sonarsource.sonarlint.core.telemetry.ToolCallCounter;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -157,7 +165,7 @@ class TelemetryMediumTests {
       .start(fakeClient);
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).isNotEmptyFile());
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().openHotspotInBrowserCount()).isEqualTo(1));
 
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(equalToJson("{\n" +
@@ -183,13 +191,14 @@ class TelemetryMediumTests {
       .start();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
-    assertThat(backend.telemetryFilePath()).isNotEmptyFile();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().enabled()).isEqualTo(true));
 
     // Emulate another process has disabled telemetry
     var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath(), mock(InitializeParams.class));
     telemetryLocalStorageManager.tryUpdateAtomically(data -> data.setEnabled(false));
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().enabled()).isEqualTo(false));
   }
 
   @SonarLintTest
@@ -308,10 +317,10 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().numUseDays()).isEqualTo(1));
 
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().numUseDays()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -320,14 +329,17 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedRemotely();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"taintVulnerabilitiesInvestigatedLocallyCount\":1,\"taintVulnerabilitiesInvestigatedRemotelyCount\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::taintVulnerabilitiesInvestigatedLocallyCount, TelemetryLocalStorage::taintVulnerabilitiesInvestigatedRemotelyCount)
+      .containsExactly(1, 1));
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedRemotely();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"taintVulnerabilitiesInvestigatedLocallyCount\":3,\"taintVulnerabilitiesInvestigatedRemotelyCount\":2"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::taintVulnerabilitiesInvestigatedLocallyCount, TelemetryLocalStorage::taintVulnerabilitiesInvestigatedRemotelyCount)
+      .containsExactly(3, 2));
   }
 
   @SonarLintTest
@@ -336,12 +348,10 @@ class TelemetryMediumTests {
     var notificationEvent = "myNotification";
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"notificationsCountersByEventType\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":1}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().notifications()).isEqualTo(Map.of("myNotification", new TelemetryNotificationsCounter(0, 1))));
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"notificationsCountersByEventType\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":2}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().notifications()).isEqualTo(Map.of("myNotification", new TelemetryNotificationsCounter(0, 2))));
   }
 
   @SonarLintTest
@@ -349,17 +359,20 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().helpAndFeedbackLinkClicked(new HelpAndFeedbackClickedParams("itemId"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"helpAndFeedbackLinkClickedCount\":{\"itemId\":{\"helpAndFeedbackLinkClickedCount\":1}}"));
+
+    await()
+      .untilAsserted(() -> assertThat(backend.telemetryFileContent().getHelpAndFeedbackLinkClickedCounter()).isEqualTo(Map.of("itemId", new TelemetryHelpAndFeedbackCounter(1))));
   }
 
   @SonarLintTest
-  void it_should_record_anaysisReportingTriggered(SonarLintTestHarness harness) {
+  void it_should_record_analysisReportingTriggered(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().analysisReportingTriggered(new AnalysisReportingTriggeredParams(AnalysisReportingType.ALL_FILES_ANALYSIS_TYPE));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"analysisReportingCountersByType\":{\"ALL_FILES_ANALYSIS_TYPE\":{\"analysisReportingCount\":1}}"));
+
+    await().untilAsserted(
+      () -> assertThat(backend.telemetryFileContent().getAnalysisReportingCountersByType())
+        .isEqualTo(Map.of(AnalysisReportingType.ALL_FILES_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(1))));
   }
 
   @SonarLintTest
@@ -368,8 +381,11 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().fixSuggestionResolved(new FixSuggestionResolvedParams("suggestionId", FixSuggestionStatus.ACCEPTED, 0));
     backend.getTelemetryService().fixSuggestionResolved(new FixSuggestionResolvedParams("suggestionId2", FixSuggestionStatus.DECLINED, null));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"fixSuggestionResolved\":{\"suggestionId\":[{\"fixSuggestionResolvedStatus\":\"ACCEPTED\",\"fixSuggestionResolvedSnippetIndex\":0}],\"suggestionId2\":[{\"fixSuggestionResolvedStatus\":\"DECLINED\"}]}"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getFixSuggestionResolved())
+      .isEqualTo(
+        Map.of("suggestionId", List.of(new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.ACCEPTED, 0)),
+          "suggestionId2", List.of(new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.DECLINED, null)))));
   }
 
   @SonarLintTest
@@ -377,7 +393,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().addQuickFixAppliedForRule(new AddQuickFixAppliedForRuleParams("ruleKey"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"quickFixesApplied\":[\"ruleKey\"]"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getQuickFixesApplied()).isEqualTo(Set.of("ruleKey")));
   }
 
   @SonarLintTest
@@ -385,7 +402,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().addReportedRules(new AddReportedRulesParams(Set.of("ruleA")));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"raisedIssuesRules\":[\"ruleA\"]"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getRaisedIssuesRules()).isEqualTo(Set.of("ruleA")));
   }
 
   @SonarLintTest
@@ -393,7 +411,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedRemotely();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"taintVulnerabilitiesInvestigatedRemotelyCount\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().taintVulnerabilitiesInvestigatedRemotelyCount()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -404,7 +423,7 @@ class TelemetryMediumTests {
     backend.getTelemetryService().toolCalled(new ToolCalledParams("tool_name", true));
     backend.getTelemetryService().toolCalled(new ToolCalledParams("tool_name", false));
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"calledToolsByName\":{\"tool_name\":{\"success\":2,\"error\":1}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getCalledToolsByName()).isEqualTo(Map.of("tool_name", new ToolCallCounter(2, 1))));
   }
 
   @SonarLintTest
@@ -412,7 +431,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"taintVulnerabilitiesInvestigatedLocallyCount\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().taintVulnerabilitiesInvestigatedLocallyCount()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -420,8 +440,14 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().analysisDoneOnSingleLanguage(new AnalysisDoneOnSingleLanguageParams(Language.JAVA, 1000));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"analyzers" +
-      "\":{\"java\":{\"analysisCount\":1,\"frequencies\":{\"0-300\":0,\"300-500\":0,\"500-1000\":0,\"1000-2000\":1,\"2000-4000\":0,\"4000+\":0}}"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().analyzers()).isEqualTo(Map.of("java", new TelemetryAnalyzerPerformance(1, Map.of(
+      "0-300", 0,
+      "300-500", 0,
+      "500-1000", 0,
+      "1000-2000", 1,
+      "2000-4000", 0,
+      "4000+", 0)))));
   }
 
   @SonarLintTest
@@ -429,7 +455,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().numUseDays()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -437,7 +464,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().addedManualBindings();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"manualAddedBindingsCount\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getManualAddedBindingsCount()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -445,7 +473,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().addedImportedBindings();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"importedAddedBindingsCount\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getImportedAddedBindingsCount()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -453,7 +482,8 @@ class TelemetryMediumTests {
     var backend = setupClientAndBackend(harness);
 
     backend.getTelemetryService().addedAutomaticBindings();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"autoAddedBindingsCount\":1"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getAutoAddedBindingsCount()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -474,14 +504,10 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().hotspotInvestigatedRemotely();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"hotspotInvestigatedRemotelyCount\":4"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"hotspotInvestigatedLocallyCount\":3"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"taintInvestigatedRemotelyCount\":2"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"taintInvestigatedLocallyCount\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::getHotspotInvestigatedRemotelyCount, TelemetryLocalStorage::getHotspotInvestigatedLocallyCount,
+        TelemetryLocalStorage::getTaintInvestigatedRemotelyCount, TelemetryLocalStorage::getTaintInvestigatedLocallyCount)
+      .containsExactly(4, 3, 2, 1));
   }
 
   @SonarLintTest
@@ -515,9 +541,9 @@ class TelemetryMediumTests {
       .withTelemetryEnabled()
       .start(fakeClient);
 
-    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+    analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"issuesUuidAiFixableSeen\":[\"" + issue.getId() + "\"]"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(1));
   }
 
   @SonarLintTest
@@ -530,13 +556,12 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
 
-
   @SonarLintTest
   void it_should_count_new_and_fixed_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "sample.py", """
       def empty_function1():
         pass
-      
+
       def empty_function2():
         pass
       """);
@@ -565,9 +590,9 @@ class TelemetryMediumTests {
     var issuesAfter = analyzeFileAndGetIssues(fileUri, fakeClient, backend, configScope);
     assertThat(issuesAfter).hasSize(1);
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("""
-        "newIssuesFoundCount":2,"issuesFixedCount":1"""));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::getNewIssuesFoundCount, TelemetryLocalStorage::getIssuesFixedCount)
+      .containsExactly(2L, 1L));
   }
 
   private SonarLintTestRpcServer setupClientAndBackend(SonarLintTestHarness harness) {
