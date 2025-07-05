@@ -31,14 +31,17 @@ import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.ConfigurationBridge;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class RulesDefinitionExtractorContainer extends SpringComponentContainer {
   private Context rulesDefinitionContext;
   private final Map<String, Plugin> pluginInstancesByKeys;
+  private final RuleSettings settings;
 
-  public RulesDefinitionExtractorContainer(Map<String, Plugin> pluginInstancesByKeys) {
+  public RulesDefinitionExtractorContainer(Map<String, Plugin> pluginInstancesByKeys, RuleSettings settings) {
     this.pluginInstancesByKeys = pluginInstancesByKeys;
+    this.settings = settings;
   }
 
   @Override
@@ -48,9 +51,7 @@ public class RulesDefinitionExtractorContainer extends SpringComponentContainer 
 
     var sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, -1);
 
-    var config = new EmptyConfiguration();
-
-    var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
+    var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, new EmptyConfiguration());
     extensionInstaller.install(this, pluginInstancesByKeys, (key, ext) -> {
       if (ExtensionUtils.isType(ext, Sensor.class)) {
         // Optimization, and allows to run with the Xoo plugin
@@ -63,15 +64,15 @@ public class RulesDefinitionExtractorContainer extends SpringComponentContainer 
       }
       return false;
     });
-
     add(
-      config,
+      settings,
+      ConfigurationBridge.class,
+      RuleExtractionSettings.class,
       sonarLintRuntime,
       new SonarQubeVersion(sonarPluginApiVersion),
       RulesDefinitionXmlLoader.class,
       RuleDefinitionsLoader.class,
-      NoopTempFolder.class,
-      EmptySettings.class);
+      NoopTempFolder.class);
   }
 
   @Override

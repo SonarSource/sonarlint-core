@@ -1424,6 +1424,13 @@ public class ServerFixture {
         mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
           .willReturn(aResponse().withResponseBody(protobufBody(response))));
       }
+
+      mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled")
+        .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder()
+          .addSettings(Settings.Setting.newBuilder()
+            .setKey("sonar.earlyAccess.misra.enabled")
+            .setValue("false"))
+          .build()))));
     }
 
     private void registerFixSuggestionsApiResponses() {

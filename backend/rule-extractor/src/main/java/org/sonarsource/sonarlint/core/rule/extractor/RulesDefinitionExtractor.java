@@ -32,10 +32,10 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 public class RulesDefinitionExtractor {
 
   public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<SonarLanguage> enabledLanguages,
-    boolean includeTemplateRules, boolean includeSecurityHotspots) {
+    boolean includeTemplateRules, boolean includeSecurityHotspots, RuleSettings settings) {
     Context context;
     try {
-      var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
+      var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys, settings);
       container.execute(null);
       context = container.getRulesDefinitionContext();
     } catch (Exception e) {

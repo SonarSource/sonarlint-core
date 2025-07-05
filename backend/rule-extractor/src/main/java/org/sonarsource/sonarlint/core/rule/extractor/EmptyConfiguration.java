@@ -23,7 +23,6 @@ import java.util.Optional;
 import org.sonar.api.config.Configuration;
 
 public class EmptyConfiguration implements Configuration {
-
   @Override
   public Optional<String> get(String key) {
     return Optional.empty();
@@ -38,5 +37,4 @@ public class EmptyConfiguration implements Configuration {
   public String[] getStringArray(String key) {
     return new String[0];
   }
-
 }
