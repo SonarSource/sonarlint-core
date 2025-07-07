@@ -219,6 +219,18 @@
                       <version>1.36.1.13250</version>
                       <type>jar</type>
                     </artifactItem>
+                    <artifactItem>
+                      <groupId>com.sonarsource.security</groupId>
+                      <artifactId>sonar-security-plugin</artifactId>
+                      <version>11.5.0.38524</version>
+                      <type>jar</type>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>com.sonarsource.security</groupId>
+                      <artifactId>sonar-security-java-frontend-plugin</artifactId>
+                      <version>11.5.0.38524</version>
+                      <type>jar</type>
+                    </artifactItem>
                   </artifactItems>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
                   <overWriteReleases>false</overWriteReleases>

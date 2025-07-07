@@ -31,6 +31,14 @@ public class PluginLocator {
   public static final String SONAR_JAVA_SE_PLUGIN_JAR = "sonar-java-symbolic-execution-plugin-" + SONAR_JAVA_SE_PLUGIN_VERSION + ".jar";
   public static final String SONAR_JAVA_SE_PLUGIN_JAR_HASH = "unused";
 
+  public static final String SONAR_SECURITY_PLUGIN_VERSION = "11.5.0.38524";
+  public static final String SONAR_SECURITY_PLUGIN_JAR = "sonar-security-plugin-" + SONAR_SECURITY_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_SECURITY_PLUGIN_JAR_HASH = "osef";
+
+  public static final String SONAR_SECURITY_JAVA_FRONTEND_PLUGIN_VERSION = "11.5.0.38524";
+  public static final String SONAR_SECURITY_JAVA_FRONTEND_PLUGIN_JAR = "sonar-security-java-frontend-plugin-" + SONAR_SECURITY_JAVA_FRONTEND_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_SECURITY_JAVA_FRONTEND_PLUGIN_JAR_HASH = "osef";
+
   public static final String SONAR_DBD_PLUGIN_VERSION = "1.36.1.13250";
   public static final String SONAR_DBD_PLUGIN_JAR = "sonar-dbd-plugin-" + SONAR_DBD_PLUGIN_VERSION + ".jar";
   public static final String SONAR_DBD_PLUGIN_JAR_HASH = "unused";
@@ -62,6 +70,14 @@ public class PluginLocator {
 
   public static Path getJavaPluginPath() {
     return getValidPluginPath(SONAR_JAVA_PLUGIN_JAR);
+  }
+
+  public static Path getSecurityPluginPath() {
+    return getValidPluginPath(SONAR_SECURITY_PLUGIN_JAR);
+  }
+
+  public static Path getSecurityJavaFrontendPluginPath() {
+    return getValidPluginPath(SONAR_SECURITY_JAVA_FRONTEND_PLUGIN_JAR);
   }
 
   public static Path getJavaSePluginPath() {

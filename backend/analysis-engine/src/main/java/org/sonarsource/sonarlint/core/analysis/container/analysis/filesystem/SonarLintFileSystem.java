@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.SortedSet;
 import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicate;
@@ -140,7 +141,7 @@ public class SonarLintFileSystem implements FileSystem {
 
   @Override
   public File resolvePath(String path) {
-    throw new UnsupportedOperationException("resolvePath");
+    return Paths.get(path).toFile();
   }
 
 }
