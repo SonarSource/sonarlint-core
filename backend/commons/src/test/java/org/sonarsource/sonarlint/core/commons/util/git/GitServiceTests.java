@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -459,6 +460,77 @@ class GitServiceTests {
     assertThat(changedFiles)
       .contains(subFile.toUri())
       .doesNotContain(projectDirPath.resolve(rootFile).toUri());
+  }
+
+  @Test
+  void it_should_get_remote_url() throws GitAPIException, URISyntaxException {
+    // Set up a remote URL for the test repository
+    var remoteUrl = "https://github.com/org/project.git";
+    git.remoteAdd()
+      .setName("origin")
+      .setUri(new URIish(remoteUrl))
+      .call();
+
+    var retrievedUrl = GitService.getRemoteUrl(projectDirPath);
+
+    assertThat(retrievedUrl).isEqualTo(remoteUrl);
+  }
+
+  @Test
+  void it_should_return_null_when_no_origin_remote() {
+    var retrievedUrl = GitService.getRemoteUrl(projectDirPath);
+
+    assertThat(retrievedUrl).isNull();
+  }
+
+  @Test
+  void it_should_return_null_for_null_base_dir() {
+    var retrievedUrl = GitService.getRemoteUrl(null);
+
+    assertThat(retrievedUrl).isNull();
+  }
+
+  @Test
+  void it_should_return_null_for_non_git_directory(@TempDir Path nonGitDir) {
+    var retrievedUrl = GitService.getRemoteUrl(nonGitDir);
+
+    assertThat(retrievedUrl).isNull();
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+      .anyMatch(s -> s.contains("Git repository not found for"));
+  }
+
+  @Test
+  void it_should_get_remote_url_from_subdirectory() throws GitAPIException, IOException, URISyntaxException {
+    var remoteUrl = "git@github.com:org/project.git";
+    git.remoteAdd()
+      .setName("origin")
+      .setUri(new URIish(remoteUrl))
+      .call();
+
+    var subDir = projectDirPath.resolve("subdirectory");
+    Files.createDirectories(subDir);
+
+    var retrievedUrl = GitService.getRemoteUrl(subDir);
+
+    assertThat(retrievedUrl).isEqualTo(remoteUrl);
+  }
+
+  @Test
+  void it_should_return_null_when_config_access_fails() throws GitAPIException, URISyntaxException, IOException {
+    var remoteUrl = "https://github.com/org/project.git";
+    git.remoteAdd()
+      .setName("origin")
+      .setUri(new URIish(remoteUrl))
+      .call();
+
+    var gitConfigFile = projectDirPath.resolve(".git").resolve("config");
+    Files.write(gitConfigFile, "invalid config content".getBytes());
+
+    var retrievedUrl = GitService.getRemoteUrl(projectDirPath);
+
+    assertThat(retrievedUrl).isNull();
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+      .anyMatch(s -> s.contains("Error retrieving remote URL for"));
   }
 
 }

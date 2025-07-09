@@ -97,6 +97,31 @@ public class GitService {
     }
   }
 
+  /**
+   * Retrieves the Git remote URL for the origin remote from the repository.
+   *
+   * @param baseDir the base directory of the project
+   * @return Optional containing the remote URL if found, empty otherwise
+   */
+  public static String getRemoteUrl(@Nullable Path baseDir) {
+    if (baseDir == null) {
+      return null;
+    }
+
+    try {
+      var gitRepo = buildGitRepository(baseDir);
+      var config = gitRepo.getConfig();
+
+      return config.getString("remote", "origin", "url");
+    } catch (GitRepoNotFoundException e) {
+      LOG.debug("Git repository not found for {}", baseDir);
+      return null;
+    } catch (Exception e) {
+      LOG.debug("Error retrieving remote URL for {}: {}", baseDir, e.getMessage());
+      return null;
+    }
+  }
+
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
     var gitRepo = buildGitRepository(projectBaseDir);
 
