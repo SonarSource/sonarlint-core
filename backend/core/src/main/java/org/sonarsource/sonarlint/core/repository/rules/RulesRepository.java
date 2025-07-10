@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -75,10 +76,10 @@ public class RulesRepository {
   }
 
   private synchronized void lazyInit(String connectionId) {
-    var areMisraEarlyAccessRulesEnabled = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::areMisraEarlyAccessRulesEnabled).orElse(false);
+    var serverSettings = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::globalSettings);
     var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
     if (rulesByKey == null) {
-      setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId, areMisraEarlyAccessRulesEnabled));
+      setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId, serverSettings.map(ServerSettings::globalSettings).orElseGet(Map::of)));
     }
   }
 

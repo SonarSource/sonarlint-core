@@ -21,14 +21,11 @@ package org.sonarsource.sonarlint.core.mode;
 
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 public class SeverityModeService {
-
-  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
 
   private final StorageService storageService;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
@@ -49,12 +46,10 @@ public class SeverityModeService {
     if (connection.getKind() == ConnectionKind.SONARCLOUD) {
       return true;
     }
-    var optServerInfo = storageService.connection(connectionId).serverInfo().read();
-    var isMQRMode = optServerInfo.map(StoredServerInfo::getSeverityMode).orElse(StoredServerInfo.SeverityModeDetails.MQR);
-    if (isMQRMode == StoredServerInfo.SeverityModeDetails.DEFAULT) {
-      return optServerInfo.get().getVersion().compareToIgnoreQualifier(Version.create(MIN_MQR_MODE_SUPPORT_VERSION)) >= 0;
-    }
-    return isMQRMode == StoredServerInfo.SeverityModeDetails.MQR;
+    return storageService.connection(connectionId).serverInfo().read()
+      .map(StoredServerInfo::shouldConsiderMultiQualityModeEnabled)
+      // if no storage, use MQR
+      .orElse(true);
   }
 
 }

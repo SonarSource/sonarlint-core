@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,9 +39,6 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.DEFAULT;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.MQR;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.STANDARD;
 
 class ServerInfoSynchronizerTests {
   @RegisterExtension
@@ -65,81 +63,40 @@ class ServerInfoSynchronizerTests {
     Files.createDirectory(connectionPath);
     ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()),
+      new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion)
+      .extracting(StoredServerInfo::version)
       .hasToString("1.0.0");
   }
 
   @Test
-  void it_should_synchronize_version_and_mode_when_not_supported() {
+  void it_should_synchronize_version_and_settings() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
+    mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
         .setKey("sonar.multi-quality-mode.enabled")
         .setValue("true"))
-      .build());
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
         .setKey("sonar.earlyAccess.misra.enabled")
         .setValue("true"))
       .build());
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()),
+      new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode, StoredServerInfo::areMisraEarlyAccessRulesEnabled)
-      .containsExactly(Version.create("9.9"), DEFAULT, true);
-  }
-
-  @Test
-  void it_should_synchronize_version_and_mode_when_supported() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}");
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.multi-quality-mode.enabled")
-        .setValue("true"))
-      .build());
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.earlyAccess.misra.enabled")
-        .setValue("true"))
-      .build());
-
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
-
-    assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
-      .containsExactly(Version.create("10.8"), MQR);
-  }
-
-  @Test
-  void it_should_synchronize_standard_mode() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}");
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.multi-quality-mode.enabled")
-        .setValue("false"))
-      .build());
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled", Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.earlyAccess.misra.enabled")
-        .setValue("false"))
-      .build());
-
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
-
-    assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode, StoredServerInfo::areMisraEarlyAccessRulesEnabled)
-      .containsExactly(Version.create("10.8"), STANDARD, false);
+      .extracting(StoredServerInfo::version, StoredServerInfo::globalSettings)
+      .containsExactly(Version.create("9.9"), new ServerSettings(Map.of("sonar.multi-quality-mode.enabled", "true", "sonar.earlyAccess.misra.enabled", "true")));
   }
 
   @Test
   void it_should_fail_when_server_is_down() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"DOWN\"}");
 
-    var throwable = catchThrowable(() -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor()));
+    var throwable = catchThrowable(
+      () -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor()));
 
     assertThat(throwable)
       .isInstanceOf(IllegalStateException.class)

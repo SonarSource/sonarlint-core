@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -177,6 +178,7 @@ class ServerInfoSynchronizationMediumTests {
   @Nullable
   private Boolean readServerMode(Path protoFilePath) {
     var serverInfo = ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser());
-    return serverInfo.hasIsMqrMode() ? serverInfo.getIsMqrMode() : null;
+    var mqrModeSetting = serverInfo.getGlobalSettingsMap().get(ServerSettings.MQR_MODE_SETTING);
+    return mqrModeSetting == null ? null : Boolean.valueOf(mqrModeSetting);
   }
 }

@@ -50,7 +50,7 @@ public class LocalStorageSynchronizer {
 
   public Summary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
-    var version = storage.serverInfo().read().orElseThrow().getVersion();
+    var version = storage.serverInfo().read().orElseThrow().version();
     var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, version, cancelMonitor);
     return new Summary(version, pluginSynchronizationSummary.anyPluginSynchronized());
   }
@@ -77,7 +77,7 @@ public class LocalStorageSynchronizer {
     }
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
-    var version = storage.serverInfo().read().orElseThrow().getVersion();
+    var version = storage.serverInfo().read().orElseThrow().version();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;

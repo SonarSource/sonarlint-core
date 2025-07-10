@@ -19,14 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 public class ServerInfoSynchronizer {
-  private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
-  private static final String MQR_MODE_SETTING_MIN_VERSION = "10.8";
   private final ConnectionStorage storage;
 
   public ServerInfoSynchronizer(ConnectionStorage storage) {
@@ -45,24 +41,7 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var isMQRMode = retrieveMQRMode(serverApi, serverStatus.version(), cancelMonitor);
-    var areMisraEarlyAccessRulesEnabled = retrieveMisraEarlyAccessRulesEnabled(serverApi, cancelMonitor);
-    storage.serverInfo().store(serverStatus, isMQRMode, areMisraEarlyAccessRulesEnabled);
-  }
-
-  @Nullable
-  private static Boolean retrieveMQRMode(ServerApi serverApi, String serverVersion, SonarLintCancelMonitor cancelMonitor) {
-    if (!serverApi.isSonarCloud() && Version.create(serverVersion).compareToIgnoreQualifier(Version.create(MQR_MODE_SETTING_MIN_VERSION)) >= 0) {
-      var mqrModeResponse = serverApi.settings().getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
-      if (mqrModeResponse != null) {
-        return Boolean.parseBoolean(mqrModeResponse);
-      }
-    }
-    return null;
-  }
-
-  private static boolean retrieveMisraEarlyAccessRulesEnabled(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    var setting = serverApi.settings().getGlobalSetting(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, cancelMonitor);
-    return Boolean.parseBoolean(setting);
+    var globalSettings = serverApi.settings().getGlobalSettings(cancelMonitor);
+    storage.serverInfo().store(serverStatus, globalSettings);
   }
 }

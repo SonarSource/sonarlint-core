@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rule.extractor.RuleSettings;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
-import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
@@ -53,9 +52,9 @@ public class RulesExtractionHelper {
       languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false, false, new RuleSettings(Map.of()));
   }
 
-  public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId, boolean areMisraEarlyAccessRulesEnabled) {
+  public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId, Map<String, String> globalSettings) {
     logger.debug("Extracting rules metadata for connection '{}'", connectionId);
-    var settings = new RuleSettings(Map.of(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(areMisraEarlyAccessRulesEnabled)));
+    var settings = new RuleSettings(globalSettings);
     return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getAllPluginInstancesByKeys(),
       languageSupportRepository.getEnabledLanguagesInConnectedMode(), true, enableSecurityHotspots, settings);
   }
