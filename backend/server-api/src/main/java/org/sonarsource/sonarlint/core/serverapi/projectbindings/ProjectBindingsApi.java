@@ -1,0 +1,61 @@
+/*
+ * SonarLint Core - Server API
+ * Copyright (C) 2016-2025 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.serverapi.projectbindings;
+
+import java.util.Optional;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import com.google.gson.JsonParser;
+
+public class ProjectBindingsApi {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final ServerApiHelper serverApiHelper;
+
+  public ProjectBindingsApi(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
+  }
+
+  public Optional<String> getProjectIdByUrl(String url, SonarLintCancelMonitor cancelMonitor) {
+    var encodedUrl = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
+    var path = "/dop-translation/project-bindings?url=" + encodedUrl;
+
+    try (var response = serverApiHelper.apiGet(path, cancelMonitor)) {
+      if (response.isSuccessful()) {
+        var responseBody = response.bodyAsString();
+        var jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+        var bindings = jsonResponse.getAsJsonArray("bindings");
+
+        if (!bindings.isEmpty()) {
+          var firstBinding = bindings.get(0).getAsJsonObject();
+          var projectId = firstBinding.get("projectId").getAsString();
+          return Optional.of(projectId);
+        }
+      } else {
+        LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
+      }
+    } catch (Exception e) {
+      LOG.error("Error retrieving project bindings for URL: {}", url, e);
+    }
+
+    return Optional.empty();
+  }
+}

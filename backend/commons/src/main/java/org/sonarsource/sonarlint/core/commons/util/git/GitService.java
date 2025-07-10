@@ -33,6 +33,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
@@ -103,6 +104,7 @@ public class GitService {
    * @param baseDir the base directory of the project
    * @return Optional containing the remote URL if found, empty otherwise
    */
+  @CheckForNull
   public static String getRemoteUrl(@Nullable Path baseDir) {
     if (baseDir == null) {
       return null;

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
+import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -80,6 +81,51 @@ public class ComponentApi {
     helper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     return searchUrl.toString();
+  }
+
+  public Optional<ProjectKeyName> getProjectKeyByProjectId(String projectId, SonarLintCancelMonitor cancelMonitor) {
+    var encodedProjectId = java.net.URLEncoder.encode(projectId, java.nio.charset.StandardCharsets.UTF_8);
+    var path = "/api/components/search_projects?projectIds=" + encodedProjectId;
+
+    try (var response = helper.rawGet(path, cancelMonitor)) {
+      if (response.isSuccessful()) {
+        var responseBody = response.bodyAsString();
+        var jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+        var components = jsonResponse.getAsJsonArray("components");
+
+        if (!components.isEmpty()) {
+          var firstComponent = components.get(0).getAsJsonObject();
+          var key = firstComponent.get("key").getAsString();
+          var name = firstComponent.get("name").getAsString();
+
+          return Optional.of(new ProjectKeyName(key, name));
+        }
+      } else {
+        LOG.warn("Failed to retrieve project for ID: {} (status: {})", projectId, response.code());
+      }
+    } catch (Exception e) {
+      LOG.error("Error retrieving project for ID: {}", projectId, e);
+    }
+
+    return Optional.empty();
+  }
+
+  public static class ProjectKeyName {
+    private final String key;
+    private final String name;
+
+    public ProjectKeyName(String key, String name) {
+      this.key = key;
+      this.name = name;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getName() {
+      return name;
+    }
   }
 
   private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {

@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -75,8 +76,10 @@ class BindingSuggestionProviderTests {
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final BindingClueProvider bindingClueProvider = mock(BindingClueProvider.class);
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
+  private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
+  private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache);
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, sonarQubeClientManager, clientFs);
 
   @BeforeEach
   public void setup() {
