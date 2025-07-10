@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class ComponentApiTests {
   @RegisterExtension
@@ -43,6 +44,49 @@ class ComponentApiTests {
   @BeforeEach
   void setUp() {
     underTest = new ComponentApi(mockServer.serverApiHelper());
+  }
+
+  @Test
+  void should_return_empty_when_no_components_returned() {
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
+      "{\"components\":[]}");
+
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void should_return_empty_when_response_is_invalid_json() {
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
+      "invalid json");
+
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void should_get_project_key_by_project_id() {
+    var projectId = "project:key";
+    var encodedProjectId = "project%3Akey";
+    var organization = "my-org";
+    underTest = new ComponentApi(mockServer.serverApiHelper(organization));
+
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=" + encodedProjectId + "&organization=" + organization,
+      "{\"components\":[{\"key\":\"projectKey\",\"name\":\"projectName\"}]}\n");
+
+    var result = underTest.searchProjects(projectId, new SonarLintCancelMonitor());
+
+    assertThat(result.projectKey()).isEqualTo("projectKey");
+    assertThat(result.projectName()).isEqualTo("projectName");
+  }
+
+  @Test
+  void should_return_empty_if_project_not_found() {
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
   }
 
   @Test

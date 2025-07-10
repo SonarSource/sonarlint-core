@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
+import org.sonarsource.sonarlint.core.serverapi.projectbindings.ProjectBindingsApi;
 import org.sonarsource.sonarlint.core.serverapi.push.PushApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
@@ -53,6 +54,10 @@ public class ServerApi {
 
   public AuthenticationApi authentication() {
     return new AuthenticationApi(helper);
+  }
+
+  public ProjectBindingsApi projectBindings() {
+    return new ProjectBindingsApi(helper);
   }
 
   public ComponentApi component() {
