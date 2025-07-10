@@ -216,7 +216,7 @@ public class SynchronizationService {
 
   public Version readOrSynchronizeServerVersion(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
-    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
+    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).version();
   }
 
   @EventListener

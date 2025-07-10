@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.settings;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -82,24 +83,10 @@ class SettingsApiTests {
         .setKey("fake.property")
         .setValue("false"))
       .build();
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", response);
+    mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
-    var globalSettings = new SettingsApi(mockServer.serverApiHelper()).getGlobalSetting("sonar.multi-quality-mode.enabled", new SonarLintCancelMonitor());
+    var globalSettings = new SettingsApi(mockServer.serverApiHelper()).getGlobalSettings(new SonarLintCancelMonitor());
 
-    assertThat(globalSettings).isEqualTo("true");
-  }
-
-  @Test
-  void test_fetch_global_setting_not_present() {
-    var response = Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("fake.property")
-        .setValue("false"))
-      .build();
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", response);
-
-    var globalSettings = new SettingsApi(mockServer.serverApiHelper()).getGlobalSetting("sonar.multi-quality-mode.enabled", new SonarLintCancelMonitor());
-
-    assertThat(globalSettings).isNull();
+    assertThat(globalSettings).isEqualTo(Map.of("sonar.multi-quality-mode.enabled", "true", "fake.property", "false"));
   }
 }

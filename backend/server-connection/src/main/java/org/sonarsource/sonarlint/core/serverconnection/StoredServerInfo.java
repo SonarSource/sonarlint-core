@@ -19,41 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 
-public class StoredServerInfo {
+import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.MQR_MODE_SETTING;
 
-  private final Version version;
-  private final boolean misraEarlyAccessRulesEnabled;
-  private final SeverityModeDetails severityMode;
+public record StoredServerInfo(Version version, ServerSettings globalSettings) {
+  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
+  private static final String MQR_MODE_SETTING_MIN_VERSION = "10.8";
 
-  public StoredServerInfo(Version version, @Nullable Boolean mode, boolean misraEarlyAccessRulesEnabled) {
-    this.version = version;
-    this.misraEarlyAccessRulesEnabled = misraEarlyAccessRulesEnabled;
-    if (mode == null) {
-      this.severityMode = SeverityModeDetails.DEFAULT;
-    } else if (mode) {
-      this.severityMode = SeverityModeDetails.MQR;
-    } else {
-      this.severityMode = SeverityModeDetails.STANDARD;
+  public boolean shouldConsiderMultiQualityModeEnabled() {
+    if (version.satisfiesMinRequirement(Version.create(MQR_MODE_SETTING_MIN_VERSION))) {
+      // starting 10.8, the sonar.multi-quality-mode.enabled setting was introduced. We honor this setting in priority
+      return globalSettings.getAsBoolean(MQR_MODE_SETTING).orElse(false);
     }
+    // if no setting is present, MQR mode should be used for 10.2+, otherwise standard mode should be used
+    return version.satisfiesMinRequirement(Version.create(MIN_MQR_MODE_SUPPORT_VERSION));
   }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public SeverityModeDetails getSeverityMode() {
-    return this.severityMode;
-  }
-
-  public boolean areMisraEarlyAccessRulesEnabled() {
-    return misraEarlyAccessRulesEnabled;
-  }
-
-  public enum SeverityModeDetails {
-    DEFAULT, STANDARD, MQR
-  }
-
 }

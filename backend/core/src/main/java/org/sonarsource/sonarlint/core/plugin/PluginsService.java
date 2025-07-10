@@ -206,7 +206,7 @@ public class PluginsService {
     }
     // when storage is not present, assume that server version is lower than requested
     return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(version) >= 0)
+      .map(serverInfo -> serverInfo.version().compareToIgnoreQualifier(version) >= 0)
       .orElse(false);
   }
 
@@ -246,7 +246,7 @@ public class PluginsService {
       } else {
         // For SQ versions older than 10.8, enterprise C# analyzer was packaged in all editions.
         // For newer versions, we need to check if enterprise plugin is present on the server
-        var serverVersion = serverInfo.get().getVersion();
+        var serverVersion = serverInfo.get().version();
         var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
         var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch("csharpenterprise"::equals);
         return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;

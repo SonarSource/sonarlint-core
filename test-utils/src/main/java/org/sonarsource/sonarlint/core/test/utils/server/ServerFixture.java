@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.AnythingPattern;
 import com.google.protobuf.Message;
 import java.io.IOException;
@@ -1413,24 +1412,19 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/settings/values.protobuf?component=" + projectKey)
         .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder().build())))));
 
+      var settingsBuilder = Settings.ValuesWsResponse.newBuilder()
+        .addSettings(Settings.Setting.newBuilder()
+          .setKey("sonar.earlyAccess.misra.enabled")
+          .setValue("false"));
       var mqrModeAvailable = this.version != null && this.version.compareToIgnoreQualifier(Version.create("10.8")) >= 0;
       if (mqrModeAvailable) {
-        var response = Settings.ValuesWsResponse.newBuilder()
+        settingsBuilder
           .addSettings(Settings.Setting.newBuilder()
             .setKey("sonar.multi-quality-mode.enabled")
-            .setValue("true"))
-          .build();
-
-        mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
-          .willReturn(aResponse().withResponseBody(protobufBody(response))));
+            .setValue("true"));
       }
-
-      mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.earlyAccess.misra.enabled")
-        .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder()
-          .addSettings(Settings.Setting.newBuilder()
-            .setKey("sonar.earlyAccess.misra.enabled")
-            .setValue("false"))
-          .build()))));
+      mockServer.stubFor(get("/api/settings/values.protobuf")
+        .willReturn(aResponse().withResponseBody(protobufBody(settingsBuilder.build()))));
     }
 
     private void registerFixSuggestionsApiResponses() {

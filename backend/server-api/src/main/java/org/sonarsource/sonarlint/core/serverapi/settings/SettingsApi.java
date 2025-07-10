@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -41,32 +40,17 @@ public class SettingsApi {
     this.helper = helper;
   }
 
-  @Nullable
-  public String getGlobalSetting(String settingKey, SonarLintCancelMonitor cancelMonitor) {
-    var settings = new HashMap<String, String>();
-    var url = API_SETTINGS_PATH + "?keys=" + UrlUtils.urlEncode(settingKey);
-    ServerApiHelper.consumeTimed(
-      () -> helper.get(url, cancelMonitor),
-      response -> {
-        try (var is = response.bodyAsStream()) {
-          var values = Settings.ValuesWsResponse.parseFrom(is);
-          for (Settings.Setting s : values.getSettingsList()) {
-            if (s.getKey().equals(settingKey)) {
-              processSetting(settings::put, s);
-              break;
-            }
-          }
-        } catch (IOException e) {
-          throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);
-        }
-      },
-      duration -> LOG.info("Downloaded settings in {}ms", duration));
-    return settings.get(settingKey);
+  public Map<String, String> getGlobalSettings(SonarLintCancelMonitor cancelMonitor) {
+    return getSettings("", cancelMonitor);
   }
 
   public Map<String, String> getProjectSettings(String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    return getSettings("?component=" + UrlUtils.urlEncode(projectKey), cancelMonitor);
+  }
+
+  private Map<String, String> getSettings(String queryParameters, SonarLintCancelMonitor cancelMonitor) {
     var settings = new HashMap<String, String>();
-    var url = API_SETTINGS_PATH + "?component=" + UrlUtils.urlEncode(projectKey);
+    var url = API_SETTINGS_PATH + queryParameters;
     ServerApiHelper.consumeTimed(
       () -> helper.get(url, cancelMonitor),
       response -> {

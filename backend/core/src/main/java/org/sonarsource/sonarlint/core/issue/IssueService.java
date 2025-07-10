@@ -185,7 +185,7 @@ public class IssueService {
    */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
     return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
-      .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
+      .map(version -> version.version().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
       .orElse(false);
   }
 
@@ -216,7 +216,7 @@ public class IssueService {
   private boolean is104orNewer(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var serverVersionSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
     var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor);
-    return serverVersion.getVersion().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
+    return serverVersion.version().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
   }
 
   private static CheckStatusChangePermittedResponse toResponse(List<ResolutionStatus> statuses, String reason) {

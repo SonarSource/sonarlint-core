@@ -28,8 +28,11 @@ option optimize_for = SPEED;
 
 message ServerInfo {
   string version = 1;
-  optional bool isMqrMode = 2;
-  optional bool misraEarlyAccessRulesEnabled = 3;
+  // deprecated, store in the settings map below
+  optional bool isMqrMode = 2 [deprecated=true];
+  // deprecated, store in the settings map below
+  optional bool misraEarlyAccessRulesEnabled = 3 [deprecated=true];
+  map<string, string> globalSettings = 4;
 }
 
 message PluginReferences {

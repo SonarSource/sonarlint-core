@@ -19,10 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-public class ServerSettings {
-  public static final String EARLY_ACCESS_MISRA_ENABLED = "sonar.earlyAccess.misra.enabled";
+import java.util.Map;
+import java.util.Optional;
 
-  private ServerSettings() {
-    // utility class
+public record ServerSettings(Map<String, String> globalSettings) {
+  public static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
+  public static final String EARLY_ACCESS_MISRA_ENABLED = "sonar.earlyAccess.misra.enabled";
+  public static final String SCA_ENABLED = "sonar.sca.enabled";
+
+  public Optional<Boolean> getAsBoolean(String settingKey) {
+    return Optional.ofNullable(globalSettings.get(settingKey))
+      .map(Boolean::valueOf);
   }
 }
