@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.collect.ImmutableSortedSet;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,10 +29,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -44,6 +47,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi.ProjectKeyName;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -398,7 +403,97 @@ class BindingSuggestionProviderTests {
         tuple(SC_1_ID, "key2", "Project 2"));
   }
 
-  private static ServerProject serverProject(String projectKey, String name) {
+  @Test
+  void search_by_remote_url_should_return_suggestion_when_project_found() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    Path baseDir = Path.of("repo");
+
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1))
+      .thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Some project"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of());
+
+    when(clientFs.getBaseDir(CONFIG_SCOPE_ID_1)).thenReturn(baseDir);
+
+    try (MockedStatic<GitService> gitServiceMock = mockStatic(GitService.class)) {
+      gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
+
+      when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
+        .thenReturn(Optional.of("123"))
+        .thenReturn(Optional.of(new ProjectKeyName(PROJECT_KEY_1, "Project 1")));
+
+      var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
+
+      assertThat(result).containsOnlyKeys(CONFIG_SCOPE_ID_1);
+      assertThat(result.get(CONFIG_SCOPE_ID_1))
+        .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+        .containsOnly(tuple(SQ_1_ID, PROJECT_KEY_1, "Project 1"));
+    }
+  }
+
+  @Test
+  void search_by_remote_url_should_do_nothing_when_no_remote_url() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    Path baseDir = Path.of("repo");
+
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1))
+      .thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Some project"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of());
+
+    when(clientFs.getBaseDir(CONFIG_SCOPE_ID_1)).thenReturn(baseDir);
+
+    try (MockedStatic<GitService> gitServiceMock = mockStatic(GitService.class)) {
+      gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn(null);
+
+      var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
+
+      assertThat(result).containsOnlyKeys(CONFIG_SCOPE_ID_1);
+      assertThat(result.get(CONFIG_SCOPE_ID_1)).isEmpty();
+    }
+  }
+
+  @Test
+  void search_by_remote_url_should_do_nothing_when_no_project_id_found() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    Path baseDir = Path.of("repo");
+
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1))
+      .thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Some project"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of());
+
+    when(clientFs.getBaseDir(CONFIG_SCOPE_ID_1)).thenReturn(baseDir);
+
+    try (MockedStatic<GitService> gitServiceMock = mockStatic(GitService.class)) {
+      gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
+
+      when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
+        .thenReturn(Optional.empty());
+
+      var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
+
+      assertThat(result).containsOnlyKeys(CONFIG_SCOPE_ID_1);
+      assertThat(result.get(CONFIG_SCOPE_ID_1)).isEmpty();
+    }
+  }
+
+private static ServerProject serverProject(String projectKey, String name) {
     return new ServerProject(projectKey, name, false);
   }
 
