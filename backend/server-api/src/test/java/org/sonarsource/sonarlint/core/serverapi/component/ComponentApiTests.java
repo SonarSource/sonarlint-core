@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class ComponentApiTests {
   @RegisterExtension
@@ -50,9 +51,9 @@ class ComponentApiTests {
     mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
       "{\"components\":[]}");
 
-    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 
   @Test
@@ -60,9 +61,9 @@ class ComponentApiTests {
     mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
       "invalid json");
 
-    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 
   @Test
@@ -73,19 +74,17 @@ class ComponentApiTests {
     mockServer.addStringResponse("/api/components/search_projects?projectIds=" + encodedProjectId,
       "{\"components\":[{\"key\":\"projectKey\",\"name\":\"projectName\"}]}\n");
 
-    var result = underTest.getProjectKeyByProjectId(projectId, new SonarLintCancelMonitor());
+    var result = underTest.searchProjects(projectId, new SonarLintCancelMonitor());
 
-    assertThat(result).hasValueSatisfying(p -> {
-      assertThat(p.getKey()).isEqualTo("projectKey");
-      assertThat(p.getName()).isEqualTo("projectName");
-    });
+    assertThat(result.projectKey()).isEqualTo("projectKey");
+    assertThat(result.projectName()).isEqualTo("projectName");
   }
 
   @Test
   void should_return_empty_if_project_not_found() {
-    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+    var result = underTest.searchProjects("project:key", new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 
   @Test

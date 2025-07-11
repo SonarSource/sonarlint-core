@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi.ProjectKeyName;
+import org.sonarsource.sonarlint.core.serverapi.component.SearchProjectResponse;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -425,7 +425,7 @@ class BindingSuggestionProviderTests {
 
       when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
         .thenReturn(Optional.of("123"))
-        .thenReturn(Optional.of(new ProjectKeyName(PROJECT_KEY_1, "Project 1")));
+        .thenReturn(Optional.of(new SearchProjectResponse(PROJECT_KEY_1, "Project 1")));
 
       var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
 
