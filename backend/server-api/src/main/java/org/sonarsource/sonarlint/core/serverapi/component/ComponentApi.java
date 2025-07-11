@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +82,29 @@ public class ComponentApi {
       .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     return searchUrl.toString();
   }
+
+  public Optional<ProjectKeyName> getProjectKeyByProjectId(String projectId, SonarLintCancelMonitor cancelMonitor) {
+    var encodedProjectId = UrlUtils.urlEncode(projectId);
+    var path = "/api/components/search_projects?projectIds=" + encodedProjectId;
+
+    try (var response = helper.rawGet(path, cancelMonitor)) {
+      if (response.isSuccessful()) {
+        var searchResponse = new Gson().fromJson(response.bodyAsString(), SearchProjectsResponse.class);
+
+        return searchResponse.components().stream()
+          .findFirst()
+          .map(component -> new ProjectKeyName(component.key(), component.name()));
+      } else {
+        LOG.warn("Failed to retrieve project for ID: {} (status: {})", projectId, response.code());
+      }
+    } catch (Exception e) {
+      LOG.error("Error retrieving project for ID: {}", projectId, e);
+    }
+
+    return Optional.empty();
+  }
+
+  public record ProjectKeyName(String key, String name) {}
 
   private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {
     return fetchComponent(componentKey, response -> {
