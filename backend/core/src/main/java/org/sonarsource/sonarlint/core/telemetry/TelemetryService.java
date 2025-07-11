@@ -254,6 +254,14 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementHotspotInvestigatedRemotelyCount);
   }
 
+  public void issueInvestigatedLocally() {
+    updateTelemetry(TelemetryLocalStorage::incrementIssueInvestigatedLocallyCount);
+  }
+
+  public void findingsFiltered(String filterType) {
+    updateTelemetry(localStorage -> localStorage.findingsFiltered(filterType));
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {

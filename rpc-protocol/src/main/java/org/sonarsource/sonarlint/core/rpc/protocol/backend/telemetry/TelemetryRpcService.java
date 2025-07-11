@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
@@ -117,4 +118,10 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void hotspotInvestigatedRemotely();
+
+  @JsonNotification
+  void issueInvestigatedLocally();
+
+  @JsonNotification
+  void findingsFiltered(FindingsFilteredParams params);
 }

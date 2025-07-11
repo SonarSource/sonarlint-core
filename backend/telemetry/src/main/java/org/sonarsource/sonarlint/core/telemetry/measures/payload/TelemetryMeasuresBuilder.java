@@ -58,6 +58,8 @@ public class TelemetryMeasuresBuilder {
 
     addToolsMeasures(values);
 
+    addFindingsFilteredMeasures(values);
+
     addPerformanceMeasures(values);
 
     addFindingInvestigationMeasures(values);
@@ -77,6 +79,7 @@ public class TelemetryMeasuresBuilder {
     values.add(new TelemetryMeasuresValue("findings_investigation.taints_remotely", String.valueOf(storage.getTaintInvestigatedRemotelyCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_locally", String.valueOf(storage.getHotspotInvestigatedLocallyCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_remotely", String.valueOf(storage.getHotspotInvestigatedRemotelyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.issues_locally", String.valueOf(storage.getIssueInvestigatedLocallyCount()), INTEGER, DAILY));
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {
@@ -148,5 +151,17 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("tools." + key + "_success_count", Integer.toString(toolCallCounter.getSuccess()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("tools." + key + "_error_count", Integer.toString(toolCallCounter.getError()), INTEGER, DAILY));
     });
+  }
+
+  private void addFindingsFilteredMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    storage.getFindingsFilteredCountersByType().entrySet().stream()
+      .filter(e -> e.getValue().getFindingsFilteredCount() > 0)
+      .map(e -> new TelemetryMeasuresValue(
+        "findings_filtered." + e.getKey().toLowerCase(Locale.ROOT),
+        String.valueOf(e.getValue().getFindingsFilteredCount()),
+        INTEGER,
+        DAILY
+      ))
+      .forEach(values::add);
   }
 }
