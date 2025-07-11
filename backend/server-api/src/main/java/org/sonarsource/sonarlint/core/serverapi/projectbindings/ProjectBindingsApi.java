@@ -19,11 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
+import com.google.gson.Gson;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import com.google.gson.JsonParser;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class ProjectBindingsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -35,19 +36,17 @@ public class ProjectBindingsApi {
   }
 
   public Optional<String> getProjectIdByUrl(String url, SonarLintCancelMonitor cancelMonitor) {
-    var encodedUrl = java.net.URLEncoder.encode(url, java.nio.charset.StandardCharsets.UTF_8);
+    var encodedUrl = UrlUtils.urlEncode(url);
     var path = "/dop-translation/project-bindings?url=" + encodedUrl;
 
     try (var response = serverApiHelper.apiGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {
         var responseBody = response.bodyAsString();
-        var jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
-        var bindings = jsonResponse.getAsJsonArray("bindings");
+        var dto = new Gson().fromJson(responseBody, BindingsResponse.class);
+        var bindings = dto.getBindings();
 
         if (!bindings.isEmpty()) {
-          var firstBinding = bindings.get(0).getAsJsonObject();
-          var projectId = firstBinding.get("projectId").getAsString();
-          return Optional.of(projectId);
+          return Optional.of(bindings.get(0).getProjectId());
         }
       } else {
         LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
