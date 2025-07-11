@@ -46,6 +46,49 @@ class ComponentApiTests {
   }
 
   @Test
+  void should_return_empty_when_no_components_returned() {
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
+      "{\"components\":[]}");
+
+    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void should_return_empty_when_response_is_invalid_json() {
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=project%3Akey",
+      "invalid json");
+
+    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void should_get_project_key_by_project_id() {
+    var projectId = "project:key";
+    var encodedProjectId = "project%3Akey";
+
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=" + encodedProjectId,
+      "{\"components\":[{\"key\":\"projectKey\",\"name\":\"projectName\"}]}\n");
+
+    var result = underTest.getProjectKeyByProjectId(projectId, new SonarLintCancelMonitor());
+
+    assertThat(result).hasValueSatisfying(p -> {
+      assertThat(p.getKey()).isEqualTo("projectKey");
+      assertThat(p.getName()).isEqualTo("projectName");
+    });
+  }
+
+  @Test
+  void should_return_empty_if_project_not_found() {
+    var result = underTest.getProjectKeyByProjectId("project:key", new SonarLintCancelMonitor());
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
   void should_get_files() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/component_tree.pb");
 
