@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
 import org.sonarsource.sonarlint.core.serverapi.push.PushApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
+import org.sonarsource.sonarlint.core.serverapi.sca.ScaApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
@@ -116,6 +117,10 @@ public class ServerApi {
 
   public FeaturesApi features() {
     return new FeaturesApi(helper);
+  }
+
+  public ScaApi sca() {
+    return new ScaApi(helper);
   }
 
   public boolean isSonarCloud() {

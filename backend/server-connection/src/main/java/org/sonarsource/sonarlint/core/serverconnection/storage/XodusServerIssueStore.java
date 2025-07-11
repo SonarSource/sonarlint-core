@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityIterable;
@@ -68,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
@@ -99,11 +101,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
   private static final String HOTSPOT_ENTITY_TYPE = "Hotspot";
+  private static final String SCA_ISSUE_ENTITY_TYPE = "ScaIssue";
   private static final String SCHEMA_ENTITY_TYPE = "Schema";
 
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
   private static final String BRANCH_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
+  private static final String BRANCH_TO_SCA_ISSUES_LINK_NAME = "scaIssues";
   private static final String TAINT_ISSUE_TO_BRANCH_LINK_NAME = "branch";
+  private static final String SCA_ISSUE_TO_BRANCH_LINK_NAME = "branch";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String FILE_TO_HOTSPOTS_LINK_NAME = "hotspots";
@@ -141,6 +146,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String CLEAN_CODE_ATTRIBUTE_PROPERTY_NAME = "cleanCodeAttribute";
   private static final String IMPACTS_BLOB_NAME = "impacts";
   private static final String ASSIGNEE_PROPERTY_NAME = "assignee";
+  private static final String PACKAGE_NAME_PROPERTY_NAME = "packageName";
+  private static final String PACKAGE_VERSION_PROPERTY_NAME = "packageVersion";
+  private static final String TRANSITIONS_PROPERTY_NAME = "transitions";
+  private static final String STATUS_PROPERTY_NAME = "status";
   private final PersistentEntityStore entityStore;
 
   private final Path backupFile;
@@ -260,7 +269,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME),
       Optional.ofNullable(cleanCodeAttribute).map(CleanCodeAttribute::valueOf).orElse(null),
       readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME)))
-      .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
+        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
   private static ServerHotspot adaptHotspot(Entity storedHotspot) {
@@ -390,7 +399,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp,
+    Set<SonarLanguage> enabledLanguages) {
     var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
     timed(mergedMessage(hotspotsToMerge.size(), closedHotspotKeysToDelete.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -829,6 +839,64 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .or(() -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey))
       .isPresent());
+  }
+
+  @Override
+  public List<ServerScaIssue> loadScaIssues(String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME).spliterator(), false)
+        .map(XodusServerIssueStore::adaptScaIssue)
+        .toList())
+      .orElseGet(Collections::emptyList));
+  }
+
+  @Override
+  public void replaceAllScaIssuesOfBranch(String branchName, List<ServerScaIssue> scaIssues) {
+    timed(wroteMessage(scaIssues.size(), "SCA issues"), () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      deleteAllScaIssuesOfBranch(branch);
+      txn.flush();
+      scaIssues.forEach(issue -> updateOrCreateScaIssue(branch, issue, txn));
+      txn.flush();
+    }));
+  }
+
+  private static ServerScaIssue adaptScaIssue(Entity storedIssue) {
+    var key = UUID.fromString((String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)));
+    var type = ServerScaIssue.Type.valueOf((String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)));
+    var severity = ServerScaIssue.Severity.valueOf((String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)));
+    var status = ServerScaIssue.Status.valueOf((String) requireNonNull(storedIssue.getProperty(STATUS_PROPERTY_NAME)));
+    var packageName = (String) requireNonNull(storedIssue.getProperty(PACKAGE_NAME_PROPERTY_NAME));
+    var packageVersion = (String) requireNonNull(storedIssue.getProperty(PACKAGE_VERSION_PROPERTY_NAME));
+    var transitionsString = (String) requireNonNull(storedIssue.getProperty(TRANSITIONS_PROPERTY_NAME));
+    var transitions = transitionsString.trim().isEmpty() ? List.<ServerScaIssue.Transition>of()
+      : Stream.of(transitionsString.split(",")).map(ServerScaIssue.Transition::valueOf).toList();
+    return new ServerScaIssue(key, type, severity, status, packageName, packageVersion, transitions);
+  }
+
+  private static void deleteAllScaIssuesOfBranch(Entity branchEntity) {
+    branchEntity.getLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME).forEach(Entity::delete);
+    branchEntity.deleteLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME);
+  }
+
+  private static void updateOrCreateScaIssue(Entity branchEntity, ServerScaIssue issue, StoreTransaction transaction) {
+    var issueEntity = findUnique(transaction, SCA_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issue.key().toString())
+      .orElseGet(() -> transaction.newEntity(SCA_ISSUE_ENTITY_TYPE));
+    updateScaIssueEntity(issue, issueEntity);
+    branchEntity.addLink(BRANCH_TO_SCA_ISSUES_LINK_NAME, issueEntity);
+    issueEntity.setLink(SCA_ISSUE_TO_BRANCH_LINK_NAME, branchEntity);
+  }
+
+  private static void updateScaIssueEntity(ServerScaIssue issue, Entity issueEntity) {
+    issueEntity.setProperty(KEY_PROPERTY_NAME, issue.key().toString());
+    issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.type().name());
+    issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.severity().name());
+    issueEntity.setProperty(STATUS_PROPERTY_NAME, issue.status().name());
+    issueEntity.setProperty(PACKAGE_NAME_PROPERTY_NAME, issue.packageName());
+    issueEntity.setProperty(PACKAGE_VERSION_PROPERTY_NAME, issue.packageVersion());
+    issueEntity.setProperty(TRANSITIONS_PROPERTY_NAME, issue.transitions().stream()
+      .map(Enum::name)
+      .collect(Collectors.joining(",")));
   }
 
   @Override

@@ -96,6 +96,7 @@ public class SynchronizationService {
   private final SynchronizationTimestampRepository<Binding> bindingSynchronizationTimestampRepository = new SynchronizationTimestampRepository<>();
   private final SynchronizationTimestampRepository<BranchBinding> branchSynchronizationTimestampRepository = new SynchronizationTimestampRepository<>();
   private final TaintSynchronizationService taintSynchronizationService;
+  private final ScaSynchronizationService scaSynchronizationService;
   private final IssueSynchronizationService issueSynchronizationService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
@@ -108,9 +109,9 @@ public class SynchronizationService {
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarQubeClientManager sonarQubeClientManager, TaskManager taskManager, StorageService storageService, InitializeParams params,
-    TaintSynchronizationService taintSynchronizationService, IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
-    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
-    ApplicationEventPublisher applicationEventPublisher) {
+    TaintSynchronizationService taintSynchronizationService, ScaSynchronizationService scaSynchronizationService, IssueSynchronizationService issueSynchronizationService,
+    HotspotSynchronizationService hotspotSynchronizationService, SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
+    SonarProjectBranchTrackingService sonarProjectBranchTrackingService, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -122,6 +123,7 @@ public class SynchronizationService {
     this.shouldSynchronizeHotspots = params.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
     this.fullSynchronizationEnabled = params.getBackendCapabilities().contains(FULL_SYNCHRONIZATION);
     this.taintSynchronizationService = taintSynchronizationService;
+    this.scaSynchronizationService = scaSynchronizationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
@@ -206,6 +208,7 @@ public class SynchronizationService {
           progressIndicator.notifyProgress("Synchronizing project '" + sonarProjectKey + "'...", (int) subProgress);
           issueSynchronizationService.syncServerIssuesForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
           taintSynchronizationService.synchronizeTaintVulnerabilities(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
+          scaSynchronizationService.synchronize(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
           if (shouldSynchronizeHotspots) {
             hotspotSynchronizationService.syncServerHotspotsForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
           }
