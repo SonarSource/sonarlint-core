@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,7 +49,7 @@ public class TelemetryLocalStorageManager {
   private final Path path;
   private final Gson gson;
   private TelemetryLocalStorage inMemoryStorage = new TelemetryLocalStorage();
-  private long lastModified = Long.MAX_VALUE;
+  private FileTime lastModified;
   @Nullable
   private final TelemetryMigrationDto telemetryMigration;
 
@@ -95,11 +96,19 @@ public class TelemetryLocalStorageManager {
   }
 
   private boolean isCacheInvalid() {
-    return lastModified != path.toFile().lastModified();
+    try {
+      return lastModified == null || !lastModified.equals(Files.getLastModifiedTime(path));
+    } catch (IOException e) {
+      if (InternalDebug.isEnabled()) {
+        LOG.error("Error checking if cache is invalid", e);
+        throw new IllegalStateException(e);
+      }
+      return true;
+    }
   }
 
   private void invalidateCache() {
-    lastModified = Long.MAX_VALUE;
+    lastModified = null;
   }
 
   private synchronized void refreshInMemoryStorage() {
@@ -116,8 +125,8 @@ public class TelemetryLocalStorageManager {
     }
   }
 
-  private void updateLastModified() {
-    lastModified = path.toFile().lastModified();
+  private void updateLastModified() throws IOException {
+    lastModified = Files.getLastModifiedTime(path);
   }
 
   private TelemetryLocalStorage read() throws IOException {
@@ -141,7 +150,7 @@ public class TelemetryLocalStorageManager {
   private synchronized void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
     Files.createDirectories(path.getParent());
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
-         var ignored = fileChannel.lock()) {
+      var ignored = fileChannel.lock()) {
       var storageData = read(fileChannel);
       updater.accept(storageData);
       storageData.validateAndMigrate();
