@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 
 public interface ProjectServerIssueStore {
   boolean wasEverUpdated();
@@ -196,4 +197,14 @@ public interface ProjectServerIssueStore {
   void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater);
 
   boolean containsIssue(String issueKey);
+
+  /**
+   * Store SCA issues for a branch by replacing existing ones.
+   */
+  void replaceAllScaIssuesOfBranch(String branchName, List<ServerScaIssue> scaIssues);
+
+  /**
+   * Load all SCA issues stored for a branch.
+   */
+  List<ServerScaIssue> loadScaIssues(String branchName);
 }
