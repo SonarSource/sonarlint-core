@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
-import com.google.gson.JsonParser;
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,22 +84,16 @@ public class ComponentApi {
   }
 
   public Optional<ProjectKeyName> getProjectKeyByProjectId(String projectId, SonarLintCancelMonitor cancelMonitor) {
-    var encodedProjectId = java.net.URLEncoder.encode(projectId, java.nio.charset.StandardCharsets.UTF_8);
+    var encodedProjectId = UrlUtils.urlEncode(projectId);
     var path = "/api/components/search_projects?projectIds=" + encodedProjectId;
 
     try (var response = helper.rawGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {
-        var responseBody = response.bodyAsString();
-        var jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
-        var components = jsonResponse.getAsJsonArray("components");
+        var searchResponse = new Gson().fromJson(response.bodyAsString(), SearchProjectsResponse.class);
 
-        if (!components.isEmpty()) {
-          var firstComponent = components.get(0).getAsJsonObject();
-          var key = firstComponent.get("key").getAsString();
-          var name = firstComponent.get("name").getAsString();
-
-          return Optional.of(new ProjectKeyName(key, name));
-        }
+        return searchResponse.components().stream()
+          .findFirst()
+          .map(component -> new ProjectKeyName(component.key(), component.name()));
       } else {
         LOG.warn("Failed to retrieve project for ID: {} (status: {})", projectId, response.code());
       }
@@ -110,23 +104,7 @@ public class ComponentApi {
     return Optional.empty();
   }
 
-  public static class ProjectKeyName {
-    private final String key;
-    private final String name;
-
-    public ProjectKeyName(String key, String name) {
-      this.key = key;
-      this.name = name;
-    }
-
-    public String getKey() {
-      return key;
-    }
-
-    public String getName() {
-      return name;
-    }
-  }
+  public record ProjectKeyName(String key, String name) {}
 
   private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {
     return fetchComponent(componentKey, response -> {

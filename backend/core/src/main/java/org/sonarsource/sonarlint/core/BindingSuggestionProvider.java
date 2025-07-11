@@ -188,7 +188,7 @@ public class BindingSuggestionProvider {
       }
     }
 
-    if(suggestions.isEmpty()) {
+    if (suggestions.isEmpty()) {
       searchByRemoteUrlInConnections(suggestions, checkedConfigScopeId, candidateConnectionIds, cancelMonitor);
     }
 
@@ -204,21 +204,21 @@ public class BindingSuggestionProvider {
 
   private void searchByRemoteUrlInConnections(List<BindingSuggestionDto> suggestions, String configScopeId, Set<String> connectionIds,
     SonarLintCancelMonitor cancelMonitor) {
+    var remoteUrl = GitService.getRemoteUrl(clientFs.getBaseDir(configScopeId));
+
+    if (remoteUrl == null) {
+      LOG.debug("No remote URL found for configuration scope '{}", configScopeId);
+      return;
+    }
+
     for (var connectionId : connectionIds) {
-      var remoteUrl = GitService.getRemoteUrl(clientFs.getBaseDir(configScopeId));
-
-      if (remoteUrl == null) {
-        LOG.debug("No remote URL found for configuration scope '{}', skipping search in connection '{}'", configScopeId, connectionId);
-        return;
-      }
-
       Optional<String> projectIdOpt =
         sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(
           connectionId,
           api -> api.projectBindings().getProjectIdByUrl(remoteUrl, cancelMonitor)
         );
 
-      if( projectIdOpt.isEmpty() ) {
+      if (projectIdOpt.isEmpty()) {
         LOG.debug("No project ID found for remote URL '{}' on connection '{}'", remoteUrl, connectionId);
         return;
       }
@@ -230,7 +230,7 @@ public class BindingSuggestionProvider {
         );
 
       projectKeyName.ifPresent(
-        keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.getKey(), keyName.getName(), false))
+        keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.key(), keyName.name(), false))
       );
     }
   }

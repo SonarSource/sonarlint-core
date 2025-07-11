@@ -76,8 +76,8 @@ class ComponentApiTests {
     var result = underTest.getProjectKeyByProjectId(projectId, new SonarLintCancelMonitor());
 
     assertThat(result).hasValueSatisfying(p -> {
-      assertThat(p.getKey()).isEqualTo("projectKey");
-      assertThat(p.getName()).isEqualTo("projectName");
+      assertThat(p.key()).isEqualTo("projectKey");
+      assertThat(p.name()).isEqualTo("projectName");
     });
   }
 
