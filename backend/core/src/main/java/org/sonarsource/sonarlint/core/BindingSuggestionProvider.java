@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.serverapi.projectbindings.ProjectBindingsResponse;
 import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
@@ -188,7 +189,7 @@ public class BindingSuggestionProvider {
       }
     }
 
-    if(suggestions.isEmpty()) {
+    if (suggestions.isEmpty()) {
       searchByRemoteUrlInConnections(suggestions, checkedConfigScopeId, candidateConnectionIds, cancelMonitor);
     }
 
@@ -202,36 +203,27 @@ public class BindingSuggestionProvider {
     }
   }
 
-  private void searchByRemoteUrlInConnections(List<BindingSuggestionDto> suggestions, String configScopeId, Set<String> connectionIds,
-    SonarLintCancelMonitor cancelMonitor) {
+  private void searchByRemoteUrlInConnections(List<BindingSuggestionDto> suggestions, String configScopeId, Set<String> connectionIds, SonarLintCancelMonitor cancelMonitor) {
+    var remoteUrl = GitService.getRemoteUrl(clientFs.getBaseDir(configScopeId));
+
+    if (remoteUrl == null) {
+      LOG.debug("No remote URL found for configuration scope '{}", configScopeId);
+      return;
+    }
+
     for (var connectionId : connectionIds) {
-      var remoteUrl = GitService.getRemoteUrl(clientFs.getBaseDir(configScopeId));
+      Optional<ProjectBindingsResponse> projectIdOpt = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
+        api -> Optional.ofNullable(api.projectBindings().getProjectBindings(remoteUrl, cancelMonitor)));
 
-      if (remoteUrl == null) {
-        LOG.debug("No remote URL found for configuration scope '{}', skipping search in connection '{}'", configScopeId, connectionId);
-        return;
-      }
-
-      Optional<String> projectIdOpt =
-        sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(
-          connectionId,
-          api -> api.projectBindings().getProjectIdByUrl(remoteUrl, cancelMonitor)
-        );
-
-      if( projectIdOpt.isEmpty() ) {
+      if (projectIdOpt.isEmpty()) {
         LOG.debug("No project ID found for remote URL '{}' on connection '{}'", remoteUrl, connectionId);
         return;
       }
 
-      var projectKeyName =
-        sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(
-          connectionId,
-          api -> api.component().getProjectKeyByProjectId(projectIdOpt.get(), cancelMonitor)
-        );
+      var projectKeyName = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
+        api -> Optional.ofNullable(api.component().searchProjects(projectIdOpt.get().projectId(), cancelMonitor)));
 
-      projectKeyName.ifPresent(
-        keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.getKey(), keyName.getName(), false))
-      );
+      projectKeyName.ifPresent(keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.projectKey(), keyName.projectName(), false)));
     }
   }
 
