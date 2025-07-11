@@ -779,17 +779,20 @@ public class AnalysisService {
       schedulerCache.getOrCreateAnalysisScheduler(configScopeId, command.getTrace()));
     startChild(trace, "post", "schedule", () -> scheduler.post(command));
     var result = command.getFutureResult();
-    result.exceptionally(exception -> {
-      eventPublisher.publishEvent(new AnalysisFailedEvent(analysisId));
-      if (exception instanceof CancellationException) {
-        LOG.debug("Analysis canceled");
-      } else {
-        LOG.error("Error during analysis", exception);
-      }
-      return null;
-    });
     return result
+      .exceptionally(exception -> {
+        eventPublisher.publishEvent(new AnalysisFailedEvent(analysisId));
+        if (exception instanceof CancellationException) {
+          LOG.debug("Analysis canceled");
+        } else {
+          LOG.error("Error during analysis", exception);
+        }
+        return null;
+      })
       .thenApply(analysisResults -> {
+        if (analysisResults == null) {
+          return null;
+        }
         var languagePerFile = analysisResults.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
           (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
         logSummary(rawIssues, analysisResults.getDuration());
