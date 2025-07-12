@@ -185,7 +185,8 @@ public class ServerFixture {
       return (T) this;
     }
 
-    record SmartNotifications (List<String> projects, String events) {}
+    record SmartNotifications(List<String> projects, String events) {
+    }
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
@@ -807,6 +808,7 @@ public class ServerFixture {
         registerOrganizationApiResponses();
         registerPushApiResponses();
         registerFeaturesApiResponses();
+        registerScaApiResponses();
       }
     }
 
@@ -1495,6 +1497,23 @@ public class ServerFixture {
         .willReturn(jsonResponse(
           "[" + String.join(", ", features.stream().map(feature -> "\"" + feature + "\"").toList()) + "]",
           responseCodes.statusCode)));
+    }
+
+    private void registerScaApiResponses() {
+      projectsByProjectKey.forEach((projectKey,
+        project) -> project.branchesByName.forEach((branchName,
+          branch) -> mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "pageSize=500&pageIndex=1")
+            .willReturn(jsonResponse("""
+              {
+                "issuesReleases": [],
+                "page": {
+                  "pageIndex": 1,
+                  "pageSize": 100,
+                  "total": 0
+                }
+              }
+              """,
+              responseCodes.statusCode)))));
     }
 
     public void pushEvent(String eventPayload) {
