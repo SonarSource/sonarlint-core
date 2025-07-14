@@ -36,4 +36,4 @@ public class TelemetryFindingsFilteredCounter {
   public void incrementFindingsFilteredCount() {
     this.findingsFilteredCount++;
   }
-} 
+}
