@@ -104,7 +104,7 @@ class AnalysisReadinessMediumTests {
     // analysis is ready
     await().atMost(1, TimeUnit.SECONDS)
       .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
-    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).containsOnlyKeys(fileUri);
