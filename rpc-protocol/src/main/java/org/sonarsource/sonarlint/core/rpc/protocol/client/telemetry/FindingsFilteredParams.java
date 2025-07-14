@@ -29,4 +29,4 @@ public class FindingsFilteredParams {
   public String getFilterType() {
     return filterType;
   }
-} 
+}
