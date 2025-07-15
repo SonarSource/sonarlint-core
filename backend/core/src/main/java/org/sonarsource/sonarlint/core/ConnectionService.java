@@ -27,8 +27,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.validation.InvalidFields;
+import org.sonarsource.sonarlint.core.commons.validation.RegexpValidator;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
@@ -58,6 +61,10 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 public class ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  /**
+   * Validator for strings containing small letters, numbers and "-" symbols.
+   */
+  private static final RegexpValidator REGEXP_VALIDATOR = new RegexpValidator("[a-z0-9\\-]+");
 
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ConnectionConfigurationRepository repository;
@@ -182,7 +189,24 @@ public class ConnectionService {
   }
 
   public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, @Nullable HelpGenerateUserTokenParams.Utm utm, SonarLintCancelMonitor cancelMonitor) {
+    if (utm != null) {
+      var invalidFields = validateUtm(utm);
+      if (invalidFields.hasInvalidFields()) {
+        throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams,
+          "UTM parameters should match regular expression: [a-z0-9\\-]+",
+          invalidFields.getNames()));
+      }
+    }
+
     return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, utm, cancelMonitor);
+  }
+
+  private static InvalidFields validateUtm(HelpGenerateUserTokenParams.Utm utm) {
+    return REGEXP_VALIDATOR.validateAll(Map.of(
+      "utm_medium", utm.getMedium(),
+      "utm_source", utm.getSource(),
+      "utm_content", utm.getContent(),
+      "utm_term", utm.getTerm()));
   }
 
   public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {

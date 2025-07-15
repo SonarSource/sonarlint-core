@@ -19,6 +19,7 @@
  */
 package mediumtest;
 
+import com.google.gson.JsonArray;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,6 +28,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
@@ -43,6 +47,8 @@ import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
 class ConnectionSetupMediumTests {
+
+  public static final String EXPECTED_MESSAGE = "UTM parameters should match regular expression: [a-z0-9\\-]+";
 
   @SonarLintTest
   void it_should_open_the_sonarlint_auth_url_for_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
@@ -98,6 +104,31 @@ class ConnectionSetupMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isEqualTo("value");
+  }
+
+  @SonarLintTest
+  void it_should_throw_invalid_parameters_for_invalid_utm_params(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarCloudConnection("connectionId").start();
+
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(
+      new HelpGenerateUserTokenParams("irrelevant",
+        new HelpGenerateUserTokenParams.Utm("referral", "sq-ide-product-name", "create-new-sqc-connection", "INVALID")));
+
+    assertThat(futureResponse)
+      .failsWithin(Duration.ofSeconds(3))
+      .withThrowableOfType(ExecutionException.class)
+      .withCauseInstanceOf(ResponseErrorException.class)
+      .havingCause()
+      .withMessage(EXPECTED_MESSAGE)
+      .extracting("responseError.message", "responseError.code", "responseError.data")
+      .containsOnly(EXPECTED_MESSAGE, ResponseErrorCode.InvalidParams.getValue(), utmArray());
+  }
+
+  @NotNull
+  private static JsonArray utmArray() {
+    JsonArray arrayOfInvalidParameters = new JsonArray();
+    arrayOfInvalidParameters.add("utm_term");
+    return arrayOfInvalidParameters;
   }
 
   @SonarLintTest
