@@ -34,9 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
-import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
@@ -53,17 +51,15 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
@@ -74,6 +70,8 @@ class BindingSuggestionsMediumTests {
   public static final String CONFIG_SCOPE_ID = "myProject1";
   public static final String SLCORE_PROJECT_KEY = "org.sonarsource.sonarlint:sonarlint-core-parent";
   public static final String SLCORE_PROJECT_NAME = "SonarLint Core";
+  public static final String PROJECT_ID = "my-project-id";
+  public static final String REMOTE_URL = "git@github.com:myorg/myproject.git";
 
   @RegisterExtension
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
@@ -340,13 +338,14 @@ class BindingSuggestionsMediumTests {
   void should_suggest_binding_by_remote_url_when_no_other_suggestions_found(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String remoteUrl = "git@github.com:myorg/myproject.git";
-    String encodedUrl = UrlUtils.urlEncode(remoteUrl);
+    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
+    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID;
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
         .setName("origin")
-        .setUri(new URIish(remoteUrl))
+        .setUri(new URIish(REMOTE_URL))
         .call();
     } catch (Exception e) {
       throw new RuntimeException("Failed to setup Git repository", e);
@@ -358,31 +357,39 @@ class BindingSuggestionsMediumTests {
 
     var scServer = harness.newFakeSonarCloudServer()
       .withOrganization("orgKey", organization ->
-        organization.withProject("my-project-key", project -> project.withBranch("main")))
+        organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
       .start();
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
-      .withSonarCloudConnection("connectionId", "orgKey")
+      .withSonarQubeCloudEuRegionApiUri(scServer.baseUrl())
+      .withSonarCloudConnection(MYSONAR, "orgKey")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
 
-    scServer.getMockServer().stubFor(get(urlMatching(".*/dop-translation.*"))
+    scServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
       .willReturn(aResponse()
         .withStatus(200)
         .withHeader("Content-Type", "application/json")
-        .withBody("{\"bindings\":[{\"projectKey\":\"my-project-key\"}]}")));
+        .withBody("{\"bindings\":[{\"projectId\":\"" + PROJECT_ID + "\"}]}")));
 
-    sonarqubeMock.stubFor(
-      get(urlMatching("/dop-translation/project-bindings\\?.*"))
-        .willReturn(aResponse()
-          .withStatus(200)
-          .withHeader("Content-Type", "application/json")
-          .withBody("{\"bindings\":[{\"projectId\":\"project123\"}]}"))
-    );
+    scServer.getMockServer().stubFor(get(urlEqualTo(expectedSearchProjectsPath))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"components\":[{\"key\":\"" + SLCORE_PROJECT_KEY + "\",\"name\":\"" + SLCORE_PROJECT_NAME + "\"}]}\n")));
 
-    sonarqubeMock.stubFor(get("/api/projects/search?projectId=project123")
-      .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"my-project-key\", \"name\": \"My Project\"}")));
+    scServer.getMockServer().stubFor(get(urlPathMatching("/api/components/search\\.protobuf"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/x-protobuf")
+        .withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+          .addComponents(Components.Component.newBuilder()
+            .setKey("my-project-key")
+            .setName("My Project")
+            .build())
+          .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+          .build()))));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -391,7 +398,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, "my-project-key", "My Project"));
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
   }
 
 }
