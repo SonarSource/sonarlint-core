@@ -83,17 +83,18 @@ public class ComponentApi {
     return searchUrl.toString();
   }
 
-  public Optional<ProjectKeyName> getProjectKeyByProjectId(String projectId, SonarLintCancelMonitor cancelMonitor) {
+  public SearchProjectResponse searchProjects(String projectId, SonarLintCancelMonitor cancelMonitor) {
     var encodedProjectId = UrlUtils.urlEncode(projectId);
     var path = "/api/components/search_projects?projectIds=" + encodedProjectId;
 
     try (var response = helper.rawGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {
-        var searchResponse = new Gson().fromJson(response.bodyAsString(), SearchProjectsResponse.class);
+        var searchResponse = new Gson().fromJson(response.bodyAsString(), SearchProjectResponseDto.class);
 
         return searchResponse.components().stream()
           .findFirst()
-          .map(component -> new ProjectKeyName(component.key(), component.name()));
+          .map(component -> new SearchProjectResponse(component.key(), component.name()))
+          .orElse(null);
       } else {
         LOG.warn("Failed to retrieve project for ID: {} (status: {})", projectId, response.code());
       }
@@ -101,10 +102,8 @@ public class ComponentApi {
       LOG.error("Error retrieving project for ID: {}", projectId, e);
     }
 
-    return Optional.empty();
+    return null;
   }
-
-  public record ProjectKeyName(String key, String name) {}
 
   private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {
     return fetchComponent(componentKey, response -> {

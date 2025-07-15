@@ -52,9 +52,9 @@ class ProjectBindingsApiTests {
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "{\"bindings\":[{\"projectId\":\"proj:123\"}]}");
 
-    var result = underTest.getProjectIdByUrl(url, new SonarLintCancelMonitor());
+    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
 
-    assertThat(result).hasValue("proj:123");
+    assertThat(result).isEqualTo(new ProjectBindingsResponse("proj:123"));
   }
 
   @Test
@@ -64,9 +64,9 @@ class ProjectBindingsApiTests {
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "{\"bindings\":[]}");
 
-    var result = underTest.getProjectIdByUrl(url, new SonarLintCancelMonitor());
+    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 
   @Test
@@ -76,9 +76,9 @@ class ProjectBindingsApiTests {
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "this is not json");
 
-    var result = underTest.getProjectIdByUrl(url, new SonarLintCancelMonitor());
+    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 
   @Test
@@ -88,8 +88,8 @@ class ProjectBindingsApiTests {
     mockServer.addResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       new MockResponse().setResponseCode(500).setBody("Internal error"));
 
-    var result = underTest.getProjectIdByUrl(url, new SonarLintCancelMonitor());
+    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
 
-    assertThat(result).isEmpty();
+    assertThat(result).isNull();
   }
 }
