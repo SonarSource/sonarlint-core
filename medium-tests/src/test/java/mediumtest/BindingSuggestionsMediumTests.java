@@ -28,10 +28,15 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
+import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
+import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
@@ -41,19 +46,24 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
@@ -324,6 +334,64 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, true));
+  }
+
+  @SonarLintTest
+  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException {
+    var gitRepo = tmp.resolve("git-repo");
+    Files.createDirectory(gitRepo);
+    String remoteUrl = "git@github.com:myorg/myproject.git";
+    String encodedUrl = UrlUtils.urlEncode(remoteUrl);
+
+    try (var git = GitUtils.createRepository(gitRepo)) {
+      git.remoteAdd()
+        .setName("origin")
+        .setUri(new URIish(remoteUrl))
+        .call();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to setup Git repository", e);
+    }
+
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, gitRepo, List.of())
+      .build();
+
+    var scServer = harness.newFakeSonarCloudServer()
+      .withOrganization("orgKey", organization ->
+        organization.withProject("my-project-key", project -> project.withBranch("main")))
+      .start();
+
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
+      .withSonarCloudConnection("connectionId", "orgKey")
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
+      .start(fakeClient);
+
+    scServer.getMockServer().stubFor(get(urlMatching(".*/dop-translation.*"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"bindings\":[{\"projectKey\":\"my-project-key\"}]}")));
+
+    sonarqubeMock.stubFor(
+      get(urlMatching("/dop-translation/project-bindings\\?.*"))
+        .willReturn(aResponse()
+          .withStatus(200)
+          .withHeader("Content-Type", "application/json")
+          .withBody("{\"bindings\":[{\"projectId\":\"project123\"}]}"))
+    );
+
+    sonarqubeMock.stubFor(get("/api/projects/search?projectId=project123")
+      .willReturn(aResponse().withStatus(200).withBody("{\"key\": \"my-project-key\", \"name\": \"My Project\"}")));
+
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
+    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsExactly(tuple(MYSONAR, "my-project-key", "My Project"));
   }
 
 }
