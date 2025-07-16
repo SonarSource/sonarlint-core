@@ -32,6 +32,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -181,6 +182,10 @@ public interface SonarLintRpcClientDelegate {
 
   void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
     List<TaintVulnerabilityDto> updatedTaintVulnerabilities);
+
+  default void didChangeScaIssues(String configurationScopeId, Set<UUID> closedScaIssueIds, List<ScaIssueDto> addedScaIssues,
+    List<ScaIssueDto> updatedScaIssues) {
+  }
 
   default Path getBaseDir(String configurationScopeId) throws ConfigScopeNotFoundException {
     return null;

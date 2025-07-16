@@ -71,6 +71,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigu
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -92,6 +93,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
@@ -168,7 +170,7 @@ public class SonarLintBackendFixture {
     private String usRegionApiUri;
     @Nullable
     private String usRegionWebSocketUri;
-    
+
     private Duration responseTimeout;
     private Path keyStorePath;
     private String keyStorePassword;
@@ -240,7 +242,7 @@ public class SonarLintBackendFixture {
       storages.add(storage);
       return this;
     }
-    
+
     public SonarLintBackendBuilder withSonarQubeCloudEuRegionUri(String euRegionUri) {
       this.euRegionUri = euRegionUri;
       return this;
@@ -490,7 +492,7 @@ public class SonarLintBackendFixture {
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
-        
+
         // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
         var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
           SonarCloudRegion.EU,
@@ -517,7 +519,7 @@ public class SonarLintBackendFixture {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
     }
-    
+
     private static URI createUriFromString(@Nullable String uri) {
       return uri == null ? null : URI.create(uri);
     }
@@ -651,6 +653,7 @@ public class SonarLintBackendFixture {
     private final boolean printLogsToStdOut;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
+    private final List<DidChangeScaIssuesParams> scaIssueChanges = new CopyOnWriteArrayList<>();
     private final Map<String, String> matchedBranchPerScopeId;
     private final Map<String, Path> baseDirsByConfigScope;
     private final Map<String, Set<String>> fileExclusionsByConfigScope;
@@ -833,6 +836,13 @@ public class SonarLintBackendFixture {
     }
 
     @Override
+    public void didChangeScaIssues(String configurationScopeId, Set<UUID> closedScaIssueIds, List<ScaIssueDto> addedScaIssues,
+      List<ScaIssueDto> updatedScaIssues) {
+      this.scaIssueChanges
+        .add(new DidChangeScaIssuesParams(configurationScopeId, closedScaIssueIds, addedScaIssues, updatedScaIssues));
+    }
+
+    @Override
     public void log(LogParams params) {
       this.logs.add(params);
       if (printLogsToStdOut) {
@@ -930,6 +940,10 @@ public class SonarLintBackendFixture {
 
     public List<DidChangeTaintVulnerabilitiesParams> getTaintVulnerabilityChanges() {
       return taintVulnerabilityChanges;
+    }
+
+    public List<DidChangeScaIssuesParams> getScaIssueChanges() {
+      return scaIssueChanges;
     }
 
     public void clearLogs() {

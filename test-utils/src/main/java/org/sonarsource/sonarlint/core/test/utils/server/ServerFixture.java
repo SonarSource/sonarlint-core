@@ -136,12 +136,12 @@ public class ServerFixture {
     protected final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey = new HashMap<>();
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
-    private final List<String> tokensRegistered = new ArrayList<>();
     private ResponseCodesBuilder responseCodes = new ResponseCodesBuilder();
     protected boolean serverSentEventsEnabled;
     protected Set<String> aiCodeFixSupportedRules = Set.of();
     protected Set<String> features = new HashSet<>();
     private final List<SmartNotifications> smartNotifications = new ArrayList<>();
+    private final Map<String, String> globalSettings = new HashMap<>();
 
     protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
@@ -154,8 +154,8 @@ public class ServerFixture {
       return (T) this;
     }
 
-    public T withToken(String tokenName) {
-      tokensRegistered.add(tokenName);
+    public T withGlobalSetting(String key, String value) {
+      globalSettings.put(key, value);
       return (T) this;
     }
 
@@ -189,8 +189,8 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
-        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications);
+      var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, responseCodes.build(),
+        aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications, globalSettings);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -365,10 +365,21 @@ public class ServerFixture {
         return this;
       }
 
+      public record ServerScaIssue(
+        String id,
+        String type,
+        String severity,
+        String status,
+        String packageName,
+        String packageVersion,
+        List<String> transitions) {
+      }
+
       public static class ServerProjectBranchBuilder {
         protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
         protected final Collection<ServerIssue> issues = new ArrayList<>();
         private final Collection<ServerIssue> taintIssues = new ArrayList<>();
+        private final Collection<ServerScaIssue> scaIssues = new ArrayList<>();
         protected final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
 
         public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
@@ -416,6 +427,20 @@ public class ServerFixture {
           String status, String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
           this.taintIssues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType));
           return this;
+        }
+
+        public ServerProjectBranchBuilder withScaIssue(ServerScaIssue scaIssue) {
+          this.scaIssues.add(scaIssue);
+          return this;
+        }
+
+        public void setScaIssues(Collection<ServerScaIssue> newScaIssues) {
+          this.scaIssues.clear();
+          this.scaIssues.addAll(newScaIssues);
+        }
+
+        public void clearScaIssues() {
+          this.scaIssues.clear();
         }
 
         private static class ServerHotspot {
@@ -752,9 +777,9 @@ public class ServerFixture {
     private final Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey;
     private final Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
-    private final List<String> tokensRegistered;
     private final AbstractServerBuilder.ResponseCodes responseCodes;
     private final List<AbstractServerBuilder.SmartNotifications> smartNotifications;
+    private final Map<String, String> globalSettings;
     private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
     private final Set<String> features;
@@ -763,8 +788,8 @@ public class ServerFixture {
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
-      List<String> tokensRegistered, AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules,
-      boolean serverSentEventsEnabled, Set<String> features, List<AbstractServerBuilder.SmartNotifications> smartNotifications) {
+      AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules, boolean serverSentEventsEnabled, Set<String> features,
+      List<AbstractServerBuilder.SmartNotifications> smartNotifications, Map<String, String> globalSettings) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
@@ -772,12 +797,12 @@ public class ServerFixture {
       this.projectsByProjectKey = projectsByProjectKey;
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
-      this.tokensRegistered = tokensRegistered;
       this.responseCodes = responseCodes;
       this.aiCodeFixSupportedRules = aiCodeFixSupportedRules;
       this.serverSentEventsEnabled = serverSentEventsEnabled;
       this.features = features;
       this.smartNotifications = smartNotifications;
+      this.globalSettings = globalSettings;
     }
 
     public void start() {
@@ -1425,6 +1450,9 @@ public class ServerFixture {
             .setKey("sonar.multi-quality-mode.enabled")
             .setValue("true"));
       }
+      settingsBuilder.addAllSettings(globalSettings.entrySet().stream().map(entry -> Settings.Setting.newBuilder()
+        .setKey(entry.getKey())
+        .setValue(entry.getValue()).build()).toList());
       mockServer.stubFor(get("/api/settings/values.protobuf")
         .willReturn(aResponse().withResponseBody(protobufBody(settingsBuilder.build()))));
     }
@@ -1500,20 +1528,37 @@ public class ServerFixture {
     }
 
     private void registerScaApiResponses() {
-      projectsByProjectKey.forEach((projectKey,
-        project) -> project.branchesByName.forEach((branchName,
-          branch) -> mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "pageSize=500&pageIndex=1")
-            .willReturn(jsonResponse("""
-              {
-                "issuesReleases": [],
-                "page": {
-                  "pageIndex": 1,
-                  "pageSize": 100,
-                  "total": 0
-                }
-              }
-              """,
-              responseCodes.statusCode)))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var scaIssuesJson = branch.scaIssues.stream()
+          .map(issue -> String.format("""
+            {
+              "key": "%s",
+              "type": "%s",
+              "severity": "%s",
+              "status": "%s",
+              "release": {
+                "packageName": "%s",
+                "version": "%s"
+              },
+              "transitions": [%s]
+            }
+            """, issue.id(), issue.type(), issue.severity(), issue.status(), issue.packageName(), issue.packageVersion(), String.join(", ", issue.transitions())))
+          .collect(Collectors.joining(","));
+
+        var responseJson = String.format("""
+          {
+            "issuesReleases": [%s],
+            "page": {
+              "pageIndex": 1,
+              "pageSize": %d,
+              "total": %d
+            }
+          }
+          """, scaIssuesJson, branch.scaIssues.size(), branch.scaIssues.size());
+
+        mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "&pageSize=500&pageIndex=1")
+          .willReturn(jsonResponse(responseJson, responseCodes.statusCode)));
+      }));
     }
 
     public void pushEvent(String eventPayload) {

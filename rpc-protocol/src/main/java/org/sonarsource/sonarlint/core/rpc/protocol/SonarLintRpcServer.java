@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 
 public interface SonarLintRpcServer {
@@ -82,6 +83,9 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService();
+
+  @JsonDelegate
+  ScaIssueTrackingRpcService getScaIssueTrackingService();
 
   @JsonDelegate
   DogfoodingRpcService getDogfoodingService();

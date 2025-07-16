@@ -288,7 +288,8 @@ class AnalysisMediumTests {
     await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
     client.cleanRaisedIssues();
 
-    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(OTHER_CONFIG_SCOPE_ID, null, true, "Name", null))));
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(OTHER_CONFIG_SCOPE_ID, null, true, "Name", null))));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(OTHER_CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true)));
 
     var result = backend.getAnalysisService()

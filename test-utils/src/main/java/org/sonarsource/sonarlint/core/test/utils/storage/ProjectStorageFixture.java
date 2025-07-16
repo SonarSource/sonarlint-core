@@ -339,6 +339,24 @@ public class ProjectStorageFixture {
                   fileEntity.addLink("hotspots", hotspotEntity);
                 });
             });
+
+          branch.serverScaIssues.stream()
+            .map(ServerScaIssueFixtures.ServerScaIssueBuilder::build)
+            .forEach(scaIssue -> {
+              var scaIssueEntity = txn.newEntity("ScaIssue");
+              scaIssueEntity.setProperty("key", scaIssue.key().toString());
+              scaIssueEntity.setProperty("type", scaIssue.type().name());
+              scaIssueEntity.setProperty("severity", scaIssue.severity().name());
+              scaIssueEntity.setProperty("status", scaIssue.status().name());
+              scaIssueEntity.setProperty("packageName", scaIssue.packageName());
+              scaIssueEntity.setProperty("packageVersion", scaIssue.packageVersion());
+              scaIssueEntity.setProperty("transitions", scaIssue.transitions().stream()
+                .map(Enum::name)
+                .collect(Collectors.joining(",")));
+
+              branchEntity.addLink("scaIssues", scaIssueEntity);
+              scaIssueEntity.setLink("branch", branchEntity);
+            });
         });
       });
       try {
@@ -374,6 +392,7 @@ public class ProjectStorageFixture {
     public static class BranchBuilder {
       private final List<ServerIssueFixtures.ServerIssueBuilder> serverIssues = new ArrayList<>();
       private final List<ServerTaintIssueFixtures.ServerTaintIssueBuilder> serverTaintIssues = new ArrayList<>();
+      private final List<ServerScaIssueFixtures.ServerScaIssueBuilder> serverScaIssues = new ArrayList<>();
       private final List<ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder> serverHotspots = new ArrayList<>();
       private final String name;
       private final boolean isMain;
@@ -390,6 +409,11 @@ public class ProjectStorageFixture {
 
       public BranchBuilder withTaintIssue(ServerTaintIssueFixtures.ServerTaintIssueBuilder serverTaintIssueBuilder) {
         serverTaintIssues.add(serverTaintIssueBuilder);
+        return this;
+      }
+
+      public BranchBuilder withScaIssue(ServerScaIssueFixtures.ServerScaIssueBuilder serverScaIssueBuilder) {
+        serverScaIssues.add(serverScaIssueBuilder);
         return this;
       }
 

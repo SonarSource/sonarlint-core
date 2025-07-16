@@ -19,24 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
-public class ListAllParams {
-  private final String configurationScopeId;
-  private final boolean shouldRefresh;
+import java.util.List;
 
-  public ListAllParams(String configurationScopeId) {
-    this(configurationScopeId, false);
+public class ListAllScaIssuesResponse {
+  private final List<ScaIssueDto> scaIssues;
+
+  public ListAllScaIssuesResponse(List<ScaIssueDto> scaIssues) {
+    this.scaIssues = scaIssues;
   }
 
-  public ListAllParams(String configurationScopeId, boolean shouldRefresh) {
-    this.configurationScopeId = configurationScopeId;
-    this.shouldRefresh = shouldRefresh;
-  }
-
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public boolean shouldRefresh() {
-    return shouldRefresh;
+  public List<ScaIssueDto> getScaIssues() {
+    return scaIssues;
   }
 }

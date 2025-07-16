@@ -21,19 +21,25 @@ package org.sonarsource.sonarlint.core.sync;
 
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.ScaIssuesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.ApplicationEventPublisher;
 
+import static java.util.stream.Collectors.toSet;
 import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.SCA_ENABLED;
 
 public class ScaSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final StorageService storageService;
+  private final ApplicationEventPublisher eventPublisher;
 
-  public ScaSynchronizationService(StorageService storageService) {
+  public ScaSynchronizationService(StorageService storageService, ApplicationEventPublisher eventPublisher) {
     this.storageService = storageService;
+    this.eventPublisher = eventPublisher;
   }
 
   public void synchronize(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -41,8 +47,20 @@ public class ScaSynchronizationService {
       return;
     }
     LOG.info("[SYNC] Synchronizing SCA issues for project '{}' on branch '{}'", sonarProjectKey, branchName);
+
+    var summary = updateServerScaIssuesForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
+    if (summary.hasAnythingChanged()) {
+      eventPublisher.publishEvent(new ScaIssuesSynchronizedEvent(connectionId, sonarProjectKey, branchName, summary));
+    }
+  }
+
+  private UpdateSummary<ServerScaIssue> updateServerScaIssuesForProject(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName,
+    SonarLintCancelMonitor cancelMonitor) {
     var issuesReleases = serverApi.sca().getIssuesReleases(sonarProjectKey, branchName, cancelMonitor);
     var findingsStore = storageService.connection(connectionId).project(sonarProjectKey).findings();
+
+    var previousScaIssues = findingsStore.loadScaIssues(branchName);
+    var previousScaIssueKeys = previousScaIssues.stream().map(ServerScaIssue::key).collect(toSet());
 
     var scaIssues = issuesReleases.issuesReleases().stream()
       .map(issueRelease -> new ServerScaIssue(
@@ -56,6 +74,20 @@ public class ScaSynchronizationService {
       .toList();
 
     findingsStore.replaceAllScaIssuesOfBranch(branchName, scaIssues);
+
+    var newScaIssueKeys = scaIssues.stream().map(ServerScaIssue::key).collect(toSet());
+    var deletedScaIssueIds = previousScaIssues.stream()
+      .map(ServerScaIssue::key)
+      .filter(key -> !newScaIssueKeys.contains(key))
+      .collect(toSet());
+    var addedScaIssues = scaIssues.stream()
+      .filter(issue -> !previousScaIssueKeys.contains(issue.key()))
+      .toList();
+    var updatedScaIssues = scaIssues.stream()
+      .filter(issue -> previousScaIssueKeys.contains(issue.key()))
+      .toList();
+
+    return new UpdateSummary<>(deletedScaIssueIds, addedScaIssues, updatedScaIssues);
   }
 
   private boolean isScaSupported(ServerApi serverApi, String connectionId) {

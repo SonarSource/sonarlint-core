@@ -104,6 +104,7 @@ import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.sonarsource.sonarlint.core.tracking.ScaIssueTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
@@ -167,6 +168,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   NewCodeService.class,
   RequestHandlerBindingAssistant.class,
   TaintVulnerabilityTrackingService.class,
+  ScaIssueTrackingService.class,
   SonarProjectBranchesSynchronizationService.class,
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,

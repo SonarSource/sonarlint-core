@@ -17,26 +17,40 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.sca;
 
-public class ListAllParams {
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
+
+public class DidChangeScaIssuesParams {
   private final String configurationScopeId;
-  private final boolean shouldRefresh;
+  private final Set<UUID> closedScaIssueIds;
+  private final List<ScaIssueDto> addedScaIssues;
+  private final List<ScaIssueDto> updatedScaIssues;
 
-  public ListAllParams(String configurationScopeId) {
-    this(configurationScopeId, false);
-  }
-
-  public ListAllParams(String configurationScopeId, boolean shouldRefresh) {
+  public DidChangeScaIssuesParams(String configurationScopeId, Set<UUID> closedScaIssueIds, List<ScaIssueDto> addedScaIssues,
+    List<ScaIssueDto> updatedScaIssues) {
     this.configurationScopeId = configurationScopeId;
-    this.shouldRefresh = shouldRefresh;
+    this.closedScaIssueIds = closedScaIssueIds;
+    this.addedScaIssues = addedScaIssues;
+    this.updatedScaIssues = updatedScaIssues;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public boolean shouldRefresh() {
-    return shouldRefresh;
+  public Set<UUID> getClosedScaIssueIds() {
+    return closedScaIssueIds;
+  }
+
+  public List<ScaIssueDto> getAddedScaIssues() {
+    return addedScaIssues;
+  }
+
+  public List<ScaIssueDto> getUpdatedScaIssues() {
+    return updatedScaIssues;
   }
 }
