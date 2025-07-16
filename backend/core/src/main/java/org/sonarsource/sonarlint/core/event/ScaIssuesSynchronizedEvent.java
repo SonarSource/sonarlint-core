@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
+package org.sonarsource.sonarlint.core.event;
 
-public class ListAllParams {
-  private final String configurationScopeId;
-  private final boolean shouldRefresh;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
-  public ListAllParams(String configurationScopeId) {
-    this(configurationScopeId, false);
-  }
-
-  public ListAllParams(String configurationScopeId, boolean shouldRefresh) {
-    this.configurationScopeId = configurationScopeId;
-    this.shouldRefresh = shouldRefresh;
-  }
-
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public boolean shouldRefresh() {
-    return shouldRefresh;
-  }
+public record ScaIssuesSynchronizedEvent(String connectionId, String sonarProjectKey, String sonarBranch, UpdateSummary<ServerScaIssue> summary) {
 }

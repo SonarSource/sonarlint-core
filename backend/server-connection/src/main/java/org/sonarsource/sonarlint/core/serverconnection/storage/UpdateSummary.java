@@ -23,30 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class UpdateSummary<T> {
-  private final Set<UUID> deletedTaintVulnerabilityIds;
-  private final List<T> addedTaintVulnerabilities;
-  private final List<T> updatedTaintVulnerabilities;
-
-  public UpdateSummary(Set<UUID> deletedTaintVulnerabilityIds, List<T> addedTaintVulnerabilities, List<T> updatedTaintVulnerabilities) {
-    this.deletedTaintVulnerabilityIds = deletedTaintVulnerabilityIds;
-    this.addedTaintVulnerabilities = addedTaintVulnerabilities;
-    this.updatedTaintVulnerabilities = updatedTaintVulnerabilities;
-  }
-
-  public Set<UUID> getDeletedTaintVulnerabilityIds() {
-    return deletedTaintVulnerabilityIds;
-  }
-
-  public List<T> getAddedTaintVulnerabilities() {
-    return addedTaintVulnerabilities;
-  }
-
-  public List<T> getUpdatedTaintVulnerabilities() {
-    return updatedTaintVulnerabilities;
-  }
-
+public record UpdateSummary<T>(Set<UUID> deletedItemIds, List<T> addedItems, List<T> updatedItems) {
   public boolean hasAnythingChanged() {
-    return !deletedTaintVulnerabilityIds.isEmpty() || !addedTaintVulnerabilities.isEmpty() || !updatedTaintVulnerabilities.isEmpty();
+    return !deletedItemIds.isEmpty() || !addedItems.isEmpty() || !updatedItems.isEmpty();
   }
 }

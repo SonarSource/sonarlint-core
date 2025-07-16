@@ -82,6 +82,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtra
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -347,6 +348,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params) {
     notify(() -> delegate.didChangeTaintVulnerabilities(params.getConfigurationScopeId(), params.getClosedTaintVulnerabilityIds(), params.getAddedTaintVulnerabilities(),
       params.getUpdatedTaintVulnerabilities()));
+  }
+
+  @Override
+  public void didChangeScaIssues(DidChangeScaIssuesParams params) {
+    notify(() -> delegate.didChangeScaIssues(params.getConfigurationScopeId(), params.getClosedScaIssueIds(), params.getAddedScaIssues(),
+      params.getUpdatedScaIssues()));
   }
 
   @Override

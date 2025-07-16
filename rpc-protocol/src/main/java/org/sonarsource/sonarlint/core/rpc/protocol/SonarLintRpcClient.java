@@ -73,6 +73,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtra
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -245,6 +246,15 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params);
+
+  /**
+   * Called whenever there is a change in the list of SCA issues of a configuration scope. The change can be caused by:
+   * <ul>
+   *   <li>a synchronization</li>
+   * </ul>
+   */
+  @JsonNotification
+  void didChangeScaIssues(DidChangeScaIssuesParams params);
 
   @JsonNotification
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);

@@ -19,24 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
-public class ListAllParams {
-  private final String configurationScopeId;
-  private final boolean shouldRefresh;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
-  public ListAllParams(String configurationScopeId) {
-    this(configurationScopeId, false);
-  }
+@JsonSegment("sca")
+public interface ScaIssueTrackingRpcService {
 
-  public ListAllParams(String configurationScopeId, boolean shouldRefresh) {
-    this.configurationScopeId = configurationScopeId;
-    this.shouldRefresh = shouldRefresh;
-  }
-
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public boolean shouldRefresh() {
-    return shouldRefresh;
-  }
+  /**
+   * Returns the list of SCA issues detected for the given configuration scopes.
+   */
+  @JsonRequest
+  CompletableFuture<ListAllScaIssuesResponse> listAll(ListAllParams params);
 }

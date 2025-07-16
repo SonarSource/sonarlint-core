@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -219,6 +220,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService() {
     return new TaintVulnerabilityTrackingRpcServiceDelegate(this);
+  }
+
+  @Override
+  public ScaIssueTrackingRpcService getScaIssueTrackingService() {
+    return new ScaIssueTrackingRpcServiceDelegate(this);
   }
 
   @Override
