@@ -99,6 +99,7 @@ import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
+import org.sonarsource.sonarlint.core.sca.ScaService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
@@ -195,6 +196,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AiCodeFixService.class,
   ClientAwareTaskManager.class,
   ScaSynchronizationService.class,
+  ScaService.class,
 })
 public class SonarLintSpringAppConfig {
 
