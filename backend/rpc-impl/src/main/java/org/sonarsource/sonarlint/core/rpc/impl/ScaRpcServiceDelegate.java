@@ -24,6 +24,8 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeScaIssueStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
 import org.sonarsource.sonarlint.core.sca.ScaService;
 
@@ -44,7 +46,7 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
           params.getComment(),
           cancelMonitor);
       } catch (ScaService.ScaIssueNotFoundException e) {
-        var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, 
+        var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND,
           "Dependency Risk with key " + e.getIssueKey() + " was not found", e.getIssueKey());
         throw new ResponseErrorException(error);
       } catch (IllegalArgumentException e) {
@@ -52,5 +54,11 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
         throw new ResponseErrorException(error);
       }
     }, params.getConfigurationScopeId());
+  }
+
+  @Override
+  public CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params) {
+    return requestAsync(cancelMonitor -> getBean(ScaService.class)
+      .getDependencyRiskDetails(params.getConfigurationScopeId(), params.getDependencyRiskKey(), cancelMonitor), params.getConfigurationScopeId());
   }
 }

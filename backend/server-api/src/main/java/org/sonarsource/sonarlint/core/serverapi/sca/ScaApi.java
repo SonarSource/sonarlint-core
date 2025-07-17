@@ -59,6 +59,13 @@ public class ScaApi {
     return new GetIssuesReleasesResponse(allIssuesReleases, new GetIssuesReleasesResponse.Page(allIssuesReleases.size()));
   }
 
+  public GetIssueReleaseResponse getIssueRelease(String key, SonarLintCancelMonitor cancelMonitor) {
+    var url = "/api/v2/sca/issues-releases/" + UrlUtils.urlEncode(key);
+    try (var response = serverApiHelper.get(url, cancelMonitor)) {
+      return new Gson().fromJson(new InputStreamReader(response.bodyAsStream(), StandardCharsets.UTF_8), GetIssueReleaseResponse.class);
+    }
+  }
+
   public void changeStatus(UUID issueReleaseKey, String transitionKey, String comment, SonarLintCancelMonitor cancelMonitor) {
     var body = new ChangeStatusRequestBody(issueReleaseKey.toString(), transitionKey, comment);
     var url = "/api/v2/sca/issues-releases/change-status";
