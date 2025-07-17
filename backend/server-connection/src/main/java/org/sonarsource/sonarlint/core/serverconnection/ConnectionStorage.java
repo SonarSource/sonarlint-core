@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.serverconnection.storage.AiCodeFixStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.SQCProjectBindingStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.SQCSearchedProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
@@ -33,6 +35,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 public class ConnectionStorage {
   private final ServerIssueStoresManager serverIssueStoresManager;
   private final ServerInfoStorage serverInfoStorage;
+  private final SQCProjectBindingStorage sqcProjectBindingStorage;
+  private final SQCSearchedProjectStorage sqcSearchedProjectStorage;
   private final Map<String, SonarProjectStorage> sonarProjectStorageByKey = new ConcurrentHashMap<>();
   private final Path projectsStorageRoot;
   private final PluginsStorage pluginsStorage;
@@ -48,10 +52,20 @@ public class ConnectionStorage {
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
     this.aiCodeFixStorage = new AiCodeFixStorage(connectionStorageRoot);
     this.organizationStorage = new OrganizationStorage(connectionStorageRoot);
+    this.sqcProjectBindingStorage = new SQCProjectBindingStorage(connectionStorageRoot);
+    this.sqcSearchedProjectStorage = new SQCSearchedProjectStorage(connectionStorageRoot);
   }
 
   public ServerInfoStorage serverInfo() {
     return serverInfoStorage;
+  }
+
+  public SQCProjectBindingStorage sqcProjectBinding() {
+    return sqcProjectBindingStorage;
+  }
+
+  public SQCSearchedProjectStorage sqcSearchedProject() {
+    return sqcSearchedProjectStorage;
   }
 
   public SonarProjectStorage project(String sonarProjectKey) {

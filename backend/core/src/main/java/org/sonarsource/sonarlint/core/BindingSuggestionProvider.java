@@ -47,7 +47,10 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.serverapi.projectbindings.ProjectBindingsResponse;
+import org.sonarsource.sonarlint.core.serverapi.component.SearchProjectResponse;
+import org.sonarsource.sonarlint.core.serverconnection.SQCProjectBindingSynchronizer;
+import org.sonarsource.sonarlint.core.serverconnection.SQCSearchedProjectSynchronizer;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
@@ -68,10 +71,11 @@ public class BindingSuggestionProvider {
   private final AtomicBoolean enabled = new AtomicBoolean(true);
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ClientFileSystemService clientFs;
+  private final StorageService storageService;
 
   @Inject
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
-    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFs) {
+    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFs, StorageService storageService) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
@@ -79,6 +83,7 @@ public class BindingSuggestionProvider {
     this.sonarProjectsCache = sonarProjectsCache;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.clientFs = clientFs;
+    this.storageService = storageService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Binding Suggestion Provider"));
   }
 
@@ -212,16 +217,29 @@ public class BindingSuggestionProvider {
     }
 
     for (var connectionId : connectionIds) {
-      Optional<ProjectBindingsResponse> projectIdOpt = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
-        api -> Optional.ofNullable(api.projectBindings().getProjectBindings(remoteUrl, cancelMonitor)));
+      Optional<String> projectIdOpt = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
+        api -> {
+          var sqcProjectBindingSynchronizer = new SQCProjectBindingSynchronizer(storageService.connection(connectionId));
+          return Optional.ofNullable(sqcProjectBindingSynchronizer.readOrSynchronizeSQCProjectBinding(api, remoteUrl, cancelMonitor).getProjectId());
+        });
 
       if (projectIdOpt.isEmpty()) {
         LOG.debug("No project ID found for remote URL '{}' on connection '{}'", remoteUrl, connectionId);
-        return;
+        continue;
       }
 
       var projectKeyName = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
-        api -> Optional.ofNullable(api.component().searchProjects(projectIdOpt.get().projectId(), cancelMonitor)));
+        api -> {
+          var sqcSearchedProjectSynchronizer = new SQCSearchedProjectSynchronizer(storageService.connection(connectionId));
+          var result = sqcSearchedProjectSynchronizer.readOrSynchronizeSQCSearchedProject(api, projectIdOpt.get(), cancelMonitor);
+          if (result.getProjectKey() != null && result.getProjectName() != null) {
+            return Optional.of(new SearchProjectResponse(result.getProjectKey(), result.getProjectName()));
+          } else {
+            return Optional.empty();
+          }
+
+        }
+      );
 
       projectKeyName.ifPresent(keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.projectKey(), keyName.projectName(), false)));
     }

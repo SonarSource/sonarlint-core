@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.SearchProjectResponse;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -83,8 +84,9 @@ class BindingSuggestionProviderTests {
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
   private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
+  private final StorageService storageService = mock(StorageService .class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, sonarQubeClientManager, clientFs);
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, sonarQubeClientManager, clientFs, storageService);
 
   @BeforeEach
   public void setup() {

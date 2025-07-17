@@ -26,6 +26,15 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
 option optimize_for = SPEED;
 
+message SQCProjectBinding {
+  string projectId  = 2;
+}
+
+message SQCSearchedProject {
+  string projectKey = 3;
+  string projectName = 4;
+}
+
 message ServerInfo {
   string version = 1;
   optional bool isMqrMode = 2;
