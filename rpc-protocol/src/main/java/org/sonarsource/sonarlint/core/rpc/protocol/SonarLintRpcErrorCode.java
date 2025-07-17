@@ -35,4 +35,5 @@ public class SonarLintRpcErrorCode {
   public static final int FILE_NOT_FOUND = -12;
   public static final int TOO_MANY_REQUESTS = -13;
   public static final int UNAUTHORIZED = -14;
+  public static final int INVALID_ARGUMENT = -15;
 }

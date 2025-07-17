@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
@@ -240,6 +241,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public TaskProgressRpcService getTaskProgressRpcService() {
     return new TaskProgressRpcServiceDelegate(this);
+  }
+
+  @Override
+  public ScaRpcService getScaService() {
+    return new ScaRpcServiceDelegate(this);
   }
 
   @Override

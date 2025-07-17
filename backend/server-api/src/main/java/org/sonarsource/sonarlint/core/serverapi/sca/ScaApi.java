@@ -23,9 +23,12 @@ import com.google.gson.Gson;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+
+import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 
 public class ScaApi {
 
@@ -54,6 +57,19 @@ public class ScaApi {
       "pageIndex",
       "pageSize");
     return new GetIssuesReleasesResponse(allIssuesReleases, new GetIssuesReleasesResponse.Page(allIssuesReleases.size()));
+  }
+
+  public void changeStatus(UUID issueReleaseKey, String transitionKey, String comment, SonarLintCancelMonitor cancelMonitor) {
+    var body = new ChangeStatusRequestBody(issueReleaseKey.toString(), transitionKey, comment);
+    var url = "/api/v2/sca/issues-releases/change-status";
+
+    serverApiHelper.post(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+  }
+
+  private record ChangeStatusRequestBody(String issueReleaseKey, String transitionKey, String comment) {
+    public String toJson() {
+      return new Gson().toJson(this);
+    }
   }
 
 }
