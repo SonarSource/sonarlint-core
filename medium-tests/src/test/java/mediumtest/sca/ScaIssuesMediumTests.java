@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SCA_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue.Severity;
 import static org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue.Status;
 import static org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue.Type;
@@ -52,6 +53,7 @@ class ScaIssuesMediumTests {
   @SonarLintTest
   void it_should_return_no_sca_issues_if_the_scope_does_not_exist(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
       .start();
 
     var scaIssues = listAllScaIssues(backend, CONFIG_SCOPE_ID);
@@ -62,6 +64,7 @@ class ScaIssuesMediumTests {
   @SonarLintTest
   void it_should_return_no_sca_issues_if_the_scope_is_not_bound(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start();
 
@@ -73,6 +76,7 @@ class ScaIssuesMediumTests {
   @SonarLintTest
   void it_should_return_no_sca_issues_if_the_storage_is_empty(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
       .withSonarQubeConnection(CONNECTION_ID)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -89,6 +93,7 @@ class ScaIssuesMediumTests {
       .start();
     var scaIssueKey = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject(PROJECT_KEY,
           project -> project.withMainBranch("main",
@@ -120,6 +125,7 @@ class ScaIssuesMediumTests {
                 "2.1.0", List.of("CONFIRM")))))
       .start();
     var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
           .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
@@ -153,7 +159,7 @@ class ScaIssuesMediumTests {
     harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SCA_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -196,7 +202,7 @@ class ScaIssuesMediumTests {
               .withType(Type.VULNERABILITY)
               .withSeverity(Severity.HIGH)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SCA_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -235,7 +241,7 @@ class ScaIssuesMediumTests {
               .withStatus(Status.OPEN)
               .withTransitions(List.of(ServerScaIssue.Transition.REOPEN))))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SCA_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -250,7 +256,8 @@ class ScaIssuesMediumTests {
         .extracting(ScaIssueDto::getId, ScaIssueDto::getType, ScaIssueDto::getSeverity, ScaIssueDto::getStatus, ScaIssueDto::getTransitions, ScaIssueDto::getPackageName,
           ScaIssueDto::getPackageVersion)
         .containsExactly(
-          tuple(scaIssueKey, ScaIssueDto.Type.VULNERABILITY, ScaIssueDto.Severity.LOW, ScaIssueDto.Status.ACCEPT, List.of(ScaIssueDto.Transition.REOPEN), "com.example.vulnerable", "2.1.0"));
+          tuple(scaIssueKey, ScaIssueDto.Type.VULNERABILITY, ScaIssueDto.Severity.LOW, ScaIssueDto.Status.ACCEPT, List.of(ScaIssueDto.Transition.REOPEN), "com.example.vulnerable",
+            "2.1.0"));
     });
   }
 

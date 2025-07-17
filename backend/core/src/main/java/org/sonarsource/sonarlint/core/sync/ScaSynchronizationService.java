@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.sync;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ScaIssuesSynchronizedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
@@ -36,13 +38,18 @@ public class ScaSynchronizationService {
 
   private final StorageService storageService;
   private final ApplicationEventPublisher eventPublisher;
+  private final boolean isScaSynchronizationEnabled;
 
-  public ScaSynchronizationService(StorageService storageService, ApplicationEventPublisher eventPublisher) {
+  public ScaSynchronizationService(StorageService storageService, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams) {
     this.storageService = storageService;
     this.eventPublisher = eventPublisher;
+    this.isScaSynchronizationEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.SCA_SYNCHRONIZATION);
   }
 
   public void synchronize(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    if (!isScaSynchronizationEnabled) {
+      return;
+    }
     if (!isScaSupported(serverApi, connectionId)) {
       return;
     }

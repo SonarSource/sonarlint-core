@@ -1,3 +1,10 @@
+# 10.26
+
+## New features
+
+* Add a new `SCA_SYNCHRONIZATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService` service and a `listAll` method
+
 # 10.25
 
 ## Breaking changes
