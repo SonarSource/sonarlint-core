@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -83,9 +84,16 @@ public class ComponentApi {
     return searchUrl.toString();
   }
 
+  @CheckForNull
   public SearchProjectResponse searchProjects(String projectId, SonarLintCancelMonitor cancelMonitor) {
     var encodedProjectId = UrlUtils.urlEncode(projectId);
-    var path = "/api/components/search_projects?projectIds=" + encodedProjectId;
+    var organization = helper.getOrganizationKey();
+
+    if (organization.isEmpty()) {
+      LOG.warn("Organization key is not set, cannot search projects for ID: {}", projectId);
+      return null;
+    }
+    var path = "/api/components/search_projects?projectIds=" + encodedProjectId + "&organization=" + organization.get();
 
     try (var response = helper.rawGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {

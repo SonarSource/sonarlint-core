@@ -340,7 +340,7 @@ class BindingSuggestionsMediumTests {
     Files.createDirectory(gitRepo);
     String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
     String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
-    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID;
+    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()

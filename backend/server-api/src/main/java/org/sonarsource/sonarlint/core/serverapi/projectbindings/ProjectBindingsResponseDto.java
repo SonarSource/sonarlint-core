@@ -21,18 +21,8 @@ package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
 import java.util.List;
 
-public class ProjectBindingsResponseDto {
-  private List<Binding> bindings;
+public record ProjectBindingsResponseDto(List<Binding> bindings) {
 
-  public List<Binding> getBindings() {
-    return bindings;
-  }
-
-  public static class Binding {
-    private String projectId;
-
-    public String getProjectId() {
-      return projectId;
-    }
+  public record Binding(String projectId) {
   }
 }

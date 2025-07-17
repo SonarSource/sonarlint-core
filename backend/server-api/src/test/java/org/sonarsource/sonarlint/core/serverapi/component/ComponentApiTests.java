@@ -70,8 +70,10 @@ class ComponentApiTests {
   void should_get_project_key_by_project_id() {
     var projectId = "project:key";
     var encodedProjectId = "project%3Akey";
+    var organization = "my-org";
+    underTest = new ComponentApi(mockServer.serverApiHelper(organization));
 
-    mockServer.addStringResponse("/api/components/search_projects?projectIds=" + encodedProjectId,
+    mockServer.addStringResponse("/api/components/search_projects?projectIds=" + encodedProjectId + "&organization=" + organization,
       "{\"components\":[{\"key\":\"projectKey\",\"name\":\"projectName\"}]}\n");
 
     var result = underTest.searchProjects(projectId, new SonarLintCancelMonitor());
