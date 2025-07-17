@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,21 +32,26 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ConnectionServiceTests {
@@ -57,12 +65,13 @@ class ConnectionServiceTests {
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2", true);
   public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, true);
   public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, true);
+  private static final String EXPECTED_MESSAGE = "UTM parameters should match regular expression: [a-z0-9\\-]+";
 
   ApplicationEventPublisher eventPublisher;
   ConnectionService underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     eventPublisher = mock(ApplicationEventPublisher.class);
   }
 
@@ -71,6 +80,57 @@ class ConnectionServiceTests {
     underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2), SonarCloudActiveEnvironment.prod(), null, null);
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
+  }
+
+  @Test
+  void generate_user_token_should_ignore_null_utm() {
+    SonarLintCancelMonitor cancelMonitor = new SonarLintCancelMonitor();
+    TokenGeneratorHelper mockedHelper = mock(TokenGeneratorHelper.class);
+    when(mockedHelper.helpGenerateUserToken("serverUrl", null, cancelMonitor))
+      .thenReturn(new HelpGenerateUserTokenResponse("TOKEN"));
+    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, mockedHelper);
+
+    var response = underTest.helpGenerateUserToken("serverUrl", null, cancelMonitor);
+
+    assertThat(response.getToken()).isEqualTo("TOKEN");
+  }
+
+  @Test
+  void generate_user_token_should_throw_validation_error_for_all() {
+    TokenGeneratorHelper mockedHelper = mock(TokenGeneratorHelper.class);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, mockedHelper);
+    HelpGenerateUserTokenParams.Utm invalidParams = new HelpGenerateUserTokenParams.Utm("medium wrong", "source/", "contENT", "t.e.r.m");
+    SonarLintCancelMonitor cancelMonitor = new SonarLintCancelMonitor();
+
+    ResponseErrorException exception = catchThrowableOfType(ResponseErrorException.class, () ->
+      underTest.helpGenerateUserToken("serverUrl", invalidParams, cancelMonitor));
+    ResponseError innerError = exception.getResponseError();
+
+    assertThat(exception).hasMessage(EXPECTED_MESSAGE);
+    assertThat(innerError).extracting("message").isEqualTo(EXPECTED_MESSAGE);
+    assertThat(innerError).extracting("code").isEqualTo(ResponseErrorCode.InvalidParams.getValue());
+    assertThat(innerError).extracting("data").asInstanceOf(InstanceOfAssertFactories.array(String[].class))
+      .containsExactlyInAnyOrder("utm_medium", "utm_source", "utm_content", "utm_term");
+    verifyNoInteractions(mockedHelper);
+  }
+
+  @Test
+  void generate_user_token_should_throw_validation_error_for_two() {
+    TokenGeneratorHelper mockedHelper = mock(TokenGeneratorHelper.class);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, mockedHelper);
+    HelpGenerateUserTokenParams.Utm invalidParams = new HelpGenerateUserTokenParams.Utm("medium wrong", "source", "cont-ent", "t.e.r.m");
+    SonarLintCancelMonitor cancelMonitor = new SonarLintCancelMonitor();
+
+    ResponseErrorException exception = catchThrowableOfType(ResponseErrorException.class, () ->
+      underTest.helpGenerateUserToken("serverUrl", invalidParams, cancelMonitor));
+    ResponseError innerError = exception.getResponseError();
+
+    assertThat(exception).hasMessage(EXPECTED_MESSAGE);
+    assertThat(innerError).extracting("message").isEqualTo(EXPECTED_MESSAGE);
+    assertThat(innerError).extracting("code").isEqualTo(ResponseErrorCode.InvalidParams.getValue());
+    assertThat(innerError).extracting("data").asInstanceOf(InstanceOfAssertFactories.array(String[].class))
+      .containsExactlyInAnyOrder("utm_medium", "utm_term");
+    verifyNoInteractions(mockedHelper);
   }
 
   @Test
