@@ -866,13 +866,13 @@ public class ServerFixture {
       mockServer.stubFor(get("/api/plugins/installed")
         .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody("{\"plugins\": [" +
           pluginsByKey.entrySet().stream().map(
-            entry -> {
-              var pluginKey = entry.getKey();
-              return "{\"key\": \"" + pluginKey + "\", " +
-                "\"hash\": \"" + entry.getValue().hash + "\", " +
-                "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
-                "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
-            })
+              entry -> {
+                var pluginKey = entry.getKey();
+                return "{\"key\": \"" + pluginKey + "\", " +
+                  "\"hash\": \"" + entry.getValue().hash + "\", " +
+                  "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
+                  "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
+              })
             .collect(Collectors.joining(", "))
           + "]}")));
     }
@@ -1028,11 +1028,11 @@ public class ServerFixture {
         var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
-            .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
-              .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
-              .addAllHotspots(messages)
-              .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
-              .build())))));
+          .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
+            .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+            .addAllHotspots(messages)
+            .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
+            .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).toList();
         mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -1314,7 +1314,7 @@ public class ServerFixture {
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
         mockServer.stubFor(get(
           urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
-            .willReturn(response));
+          .willReturn(response));
       }));
     }
 
@@ -1558,6 +1558,8 @@ public class ServerFixture {
 
         mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "&pageSize=500&pageIndex=1")
           .willReturn(jsonResponse(responseJson, responseCodes.statusCode)));
+        mockServer.stubFor(post("/api/v2/sca/issues-releases/change-status")
+          .willReturn(aResponse().withStatus(200)));
       }));
     }
 
