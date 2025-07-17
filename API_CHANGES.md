@@ -5,6 +5,7 @@
 * Allow changing status of SCA issues via `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.changeStatus`.
   * Required parameters are `configScopeId`, `issueId` and `transition`.
   * If transition is `ACCEPT`, `FIXED`, or `SAFE`, a `comment` field is mandatory
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.getDependencyRiskDetails`.
 
 # 10.26
 
