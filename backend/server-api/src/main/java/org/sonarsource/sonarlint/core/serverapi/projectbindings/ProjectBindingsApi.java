@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
 import com.google.gson.Gson;
+import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -34,6 +35,7 @@ public class ProjectBindingsApi {
     this.serverApiHelper = serverApiHelper;
   }
 
+  @CheckForNull
   public ProjectBindingsResponse getProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
     var encodedUrl = UrlUtils.urlEncode(url);
     var path = "/dop-translation/project-bindings?url=" + encodedUrl;
@@ -42,10 +44,10 @@ public class ProjectBindingsApi {
       if (response.isSuccessful()) {
         var responseBody = response.bodyAsString();
         var dto = new Gson().fromJson(responseBody, ProjectBindingsResponseDto.class);
-        var bindings = dto.getBindings();
+        var bindings = dto.bindings();
 
         if (!bindings.isEmpty()) {
-          return new ProjectBindingsResponse(bindings.get(0).getProjectId());
+          return new ProjectBindingsResponse(bindings.get(0).projectId());
         }
       } else {
         LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
