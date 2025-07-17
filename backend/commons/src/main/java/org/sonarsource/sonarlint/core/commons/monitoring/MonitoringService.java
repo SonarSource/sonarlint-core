@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
+import io.sentry.Hint;
 import io.sentry.Sentry;
+import io.sentry.SentryBaseEvent;
 import io.sentry.SentryOptions;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.SystemUtils;
@@ -73,7 +75,14 @@ public class MonitoringService {
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
+    sentryOptions.setBeforeSend(MonitoringService::scrubPii);
+    sentryOptions.setBeforeSendTransaction(MonitoringService::scrubPii);
     return sentryOptions;
+  }
+
+  private static <T extends SentryBaseEvent> T scrubPii(T event, Hint hint) {
+    event.setServerName(null);
+    return event;
   }
 
   private static String getDsn() {

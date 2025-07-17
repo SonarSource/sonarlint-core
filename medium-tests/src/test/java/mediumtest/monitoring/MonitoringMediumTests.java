@@ -29,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -37,6 +38,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import utils.TestPlugin;
 
@@ -57,12 +60,16 @@ class MonitoringMediumTests {
   private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
   private WireMockServer sentryServer;
 
+  @SystemStub
+  private EnvironmentVariables environmentVariables;
+
   @BeforeEach
   void setup() {
     sentryServer = new WireMockServer(wireMockConfig().dynamicPort());
     sentryServer.start();
     System.setProperty(MonitoringService.DSN_PROPERTY, createValidSentryDsn(sentryServer));
     System.setProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY, "1");
+    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "1");
     setupSentryStubs();
   }
 
@@ -114,6 +121,9 @@ class MonitoringMediumTests {
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine()).contains(tuple("php:S1172", 2));
+
+    // The mock Sentry server receives 1 event for the analysis trace
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
   }
 
   @SonarLintTest
@@ -148,6 +158,12 @@ class MonitoringMediumTests {
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isEmpty());
+    // The mock Sentry server receives 2 events: one for the trace, one for the exception
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(2));
+    assertThat(sentryServer.getAllServeEvents())
+      .extracting(e -> e.getRequest().getBodyAsString())
+      // Server name should be removed from events
+      .noneMatch(m -> m.contains("server_name"));
   }
 
   @SonarLintTest
