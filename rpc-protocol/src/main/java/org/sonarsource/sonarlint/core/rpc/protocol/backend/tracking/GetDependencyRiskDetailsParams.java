@@ -19,22 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+public class GetDependencyRiskDetailsParams {
+  private final String configurationScopeId;
+  private final String dependencyRiskKey;
 
-@JsonSegment("sca")
-public interface ScaIssueTrackingRpcService {
+  public GetDependencyRiskDetailsParams(String configurationScopeId, String dependencyRiskKey) {
+    this.configurationScopeId = configurationScopeId;
+    this.dependencyRiskKey = dependencyRiskKey;
+  }
 
-  /**
-   * Returns the list of SCA issues detected for the given configuration scopes.
-   */
-  @JsonRequest
-  CompletableFuture<ListAllScaIssuesResponse> listAll(ListAllParams params);
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
 
-  /**
-   * Returns the details of a dependency risk including description and affected packages.
-   */
-  @JsonRequest
-  CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params);
+  public String getDependencyRiskKey() {
+    return dependencyRiskKey;
+  }
 }
