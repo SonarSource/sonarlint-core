@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -102,7 +102,7 @@ class ConnectionServiceTests {
     HelpGenerateUserTokenParams.Utm invalidParams = new HelpGenerateUserTokenParams.Utm("medium wrong", "source/", "contENT", "t.e.r.m");
     SonarLintCancelMonitor cancelMonitor = new SonarLintCancelMonitor();
 
-    ResponseErrorException exception = assertThrows(ResponseErrorException.class, () ->
+    ResponseErrorException exception = catchThrowableOfType(ResponseErrorException.class, () ->
       underTest.helpGenerateUserToken("serverUrl", invalidParams, cancelMonitor));
     ResponseError innerError = exception.getResponseError();
 
@@ -121,7 +121,7 @@ class ConnectionServiceTests {
     HelpGenerateUserTokenParams.Utm invalidParams = new HelpGenerateUserTokenParams.Utm("medium wrong", "source", "cont-ent", "t.e.r.m");
     SonarLintCancelMonitor cancelMonitor = new SonarLintCancelMonitor();
 
-    ResponseErrorException exception = assertThrows(ResponseErrorException.class, () ->
+    ResponseErrorException exception = catchThrowableOfType(ResponseErrorException.class, () ->
       underTest.helpGenerateUserToken("serverUrl", invalidParams, cancelMonitor));
     ResponseError innerError = exception.getResponseError();
 

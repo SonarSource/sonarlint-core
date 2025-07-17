@@ -24,7 +24,7 @@ import java.util.regex.PatternSyntaxException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RegexpValidatorTest {
 
@@ -32,8 +32,8 @@ class RegexpValidatorTest {
 
   @Test
   void should_throw_exception_on_invalid_regexp() {
-    assertThrows(PatternSyntaxException.class,
-      () -> new RegexpValidator("[4-[8)"));
+    assertThatThrownBy(() -> new RegexpValidator("[4-[8)"))
+      .isInstanceOf(PatternSyntaxException.class);
   }
 
   @Test
@@ -46,7 +46,7 @@ class RegexpValidatorTest {
       "field3", "0"
     ));
 
-    assertFalse(invalidFields.hasInvalidFields());
+    assertThat(invalidFields.hasInvalidFields()).isFalse();
     assertThat(invalidFields.getNames()).isEmpty();
   }
 
@@ -60,7 +60,7 @@ class RegexpValidatorTest {
       "field3", "0"
     ));
 
-    assertTrue(invalidFields.hasInvalidFields());
+    assertThat(invalidFields.hasInvalidFields()).isTrue();
     assertThat(invalidFields.getNames())
       .containsExactlyInAnyOrder("field2");
   }
@@ -75,7 +75,7 @@ class RegexpValidatorTest {
       "field3", "^0^"
     ));
 
-    assertTrue(invalidFields.hasInvalidFields());
+    assertThat(invalidFields.hasInvalidFields()).isTrue();
     assertThat(invalidFields.getNames())
       .containsExactlyInAnyOrder("field1", "field2", "field3");
   }

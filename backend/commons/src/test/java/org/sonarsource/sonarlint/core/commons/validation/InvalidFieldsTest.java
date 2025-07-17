@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.commons.validation;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class InvalidFieldsTest {
 
@@ -31,7 +31,7 @@ class InvalidFieldsTest {
   void should_have_no_invalid_fields_initially() {
     InvalidFields tested = new InvalidFields();
 
-    assertFalse(tested.hasInvalidFields());
+    assertThat(tested.hasInvalidFields()).isFalse();
   }
 
   @Test
@@ -40,7 +40,7 @@ class InvalidFieldsTest {
 
     tested.add("name1");
 
-    assertTrue(tested.hasInvalidFields());
+    assertThat(tested.hasInvalidFields()).isTrue();
   }
 
   @Test
@@ -52,6 +52,6 @@ class InvalidFieldsTest {
     tested.add("name3");
     String[] names = tested.getNames();
 
-    assertArrayEquals(EXPECTED, names);
+    assertThat(names).containsExactly(EXPECTED);
   }
 }
