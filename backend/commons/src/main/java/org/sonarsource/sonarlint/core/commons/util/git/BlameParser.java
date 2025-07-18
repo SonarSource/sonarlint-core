@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class BlameParser {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String FILENAME = "filename ";
+  private static final String FILENAME_PORCELAIN_REGEXP = "\nfilename ";
   private static final String AUTHOR_MAIL = "author-mail ";
   private static final String COMMITTER_TIME = "committer-time ";
   // if this text change between different git versions it will break the implementation
@@ -48,7 +48,7 @@ public class BlameParser {
     }
     var currentFileBlame = new BlameResult.FileBlame(currentFilePath, numberOfLines);
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
-    var lineBlameSnippets = blameOutput.split(FILENAME);
+    var lineBlameSnippets = blameOutput.split(FILENAME_PORCELAIN_REGEXP);
     var currentLineNumber = 0;
 
     // because of the way we split the blame output, the last snippet should be skipped
@@ -77,7 +77,7 @@ public class BlameParser {
   }
 
   public static int numberOfLinesInBlameOutput(String blameOutput) {
-    var pattern = Pattern.compile("^" + FILENAME, Pattern.MULTILINE);
+    var pattern = Pattern.compile(FILENAME_PORCELAIN_REGEXP, Pattern.MULTILINE);
     var matcher = pattern.matcher(blameOutput);
     var count = 0;
     while (matcher.find()) {
