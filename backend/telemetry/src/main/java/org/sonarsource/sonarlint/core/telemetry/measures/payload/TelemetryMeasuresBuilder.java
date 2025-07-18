@@ -80,6 +80,9 @@ public class TelemetryMeasuresBuilder {
     values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_locally", String.valueOf(storage.getHotspotInvestigatedLocallyCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("findings_investigation.hotspots_remotely", String.valueOf(storage.getHotspotInvestigatedRemotelyCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("findings_investigation.issues_locally", String.valueOf(storage.getIssueInvestigatedLocallyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.dependency_risks_locally", String.valueOf(storage.getDependencyRiskInvestigatedLocallyCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("findings_investigation.dependency_risks_remotely",
+      String.valueOf(storage.getDependencyRiskInvestigatedRemotelyCount()), INTEGER, DAILY));
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {

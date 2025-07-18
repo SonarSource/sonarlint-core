@@ -258,6 +258,14 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementIssueInvestigatedLocallyCount);
   }
 
+  public void dependencyRiskInvestigatedRemotely() {
+    updateTelemetry(TelemetryLocalStorage::incrementDependencyRiskInvestigatedRemotelyCount);
+  }
+
+  public void dependencyRiskInvestigatedLocally() {
+    updateTelemetry(TelemetryLocalStorage::incrementDependencyRiskInvestigatedLocallyCount);
+  }
+
   public void findingsFiltered(String filterType) {
     updateTelemetry(localStorage -> localStorage.findingsFiltered(filterType));
   }
