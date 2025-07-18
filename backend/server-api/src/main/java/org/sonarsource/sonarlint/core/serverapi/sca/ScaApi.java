@@ -56,4 +56,11 @@ public class ScaApi {
     return new GetIssuesReleasesResponse(allIssuesReleases, new GetIssuesReleasesResponse.Page(allIssuesReleases.size()));
   }
 
+  public GetIssueReleaseResponse getIssueRelease(String key, SonarLintCancelMonitor cancelMonitor) {
+    var url = "/api/v2/sca/issues-releases/" + UrlUtils.urlEncode(key);
+    try (var response = serverApiHelper.get(url, cancelMonitor)) {
+      return new Gson().fromJson(new InputStreamReader(response.bodyAsStream(), StandardCharsets.UTF_8), GetIssueReleaseResponse.class);
+    }
+  }
+
 }

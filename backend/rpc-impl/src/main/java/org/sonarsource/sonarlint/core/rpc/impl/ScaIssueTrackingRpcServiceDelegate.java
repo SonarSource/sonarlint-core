@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.GetDependencyRiskDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllScaIssuesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
@@ -34,5 +36,11 @@ public class ScaIssueTrackingRpcServiceDelegate extends AbstractRpcServiceDelega
   public CompletableFuture<ListAllScaIssuesResponse> listAll(ListAllParams params) {
     return requestAsync(cancelMonitor -> new ListAllScaIssuesResponse(getBean(ScaIssueTrackingService.class)
       .listAll(params.getConfigurationScopeId(), params.shouldRefresh(), cancelMonitor)));
+  }
+
+  @Override
+  public CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params) {
+    return requestAsync(cancelMonitor -> getBean(ScaIssueTrackingService.class)
+      .getDependencyRiskDetails(params.getConfigurationScopeId(), params.getDependencyRiskKey(), cancelMonitor), params.getConfigurationScopeId());
   }
 }

@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collections;
 import java.util.List;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -28,8 +30,12 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ScaIssuesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
+import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
@@ -62,6 +68,23 @@ public class ScaIssueTrackingService {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
       .map(binding -> loadScaIssues(configurationScopeId, binding, shouldRefresh, cancelMonitor))
       .orElseGet(Collections::emptyList);
+  }
+
+  public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, String dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
+    var configScope = configurationRepository.getConfigurationScope(configurationScopeId);
+    if (configScope == null) {
+      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configurationScopeId, configurationScopeId);
+      throw new ResponseErrorException(error);
+    }
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    if (effectiveBinding.isEmpty()) {
+      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND,
+        "The provided configuration scope is not bound to a SonarQube/SonarCloud project: " + configurationScopeId, configurationScopeId);
+      throw new ResponseErrorException(error);
+    }
+    var apiClient = sonarQubeClientManager.getClientOrThrow(effectiveBinding.get().connectionId());
+    var serverResponse = apiClient.withClientApiAndReturn(serverApi -> serverApi.sca().getIssueRelease(dependencyRiskKey, cancelMonitor));
+    return convertToRpcResponse(serverResponse);
   }
 
   @EventListener
@@ -104,5 +127,30 @@ public class ScaIssueTrackingService {
       serverScaIssue.transitions().stream()
         .map(transition -> ScaIssueDto.Transition.valueOf(transition.name()))
         .toList());
+  }
+
+  private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
+    var affectedPackages = serverResponse.affectedPackages().stream()
+      .map(pkg -> AffectedPackageDto.builder()
+        .purl(pkg.purl())
+        .recommendation(pkg.recommendation())
+        .impactScore(pkg.recommendationDetails().impactScore())
+        .impactDescription(pkg.recommendationDetails().impactDescription())
+        .realIssue(pkg.recommendationDetails().realIssue())
+        .falsePositiveReason(pkg.recommendationDetails().falsePositiveReason())
+        .includesDev(pkg.recommendationDetails().includesDev())
+        .specificMethodsAffected(pkg.recommendationDetails().specificMethodsAffected())
+        .specificMethodsDescription(pkg.recommendationDetails().specificMethodsDescription())
+        .otherConditions(pkg.recommendationDetails().otherConditions())
+        .otherConditionsDescription(pkg.recommendationDetails().otherConditionsDescription())
+        .workaroundAvailable(pkg.recommendationDetails().workaroundAvailable())
+        .workaroundDescription(pkg.recommendationDetails().workaroundDescription())
+        .visibility(pkg.recommendationDetails().visibility())
+        .build())
+      .toList();
+
+    return new GetDependencyRiskDetailsResponse(serverResponse.key(), ScaIssueDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
+      serverResponse.release().version(), ScaIssueDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
+      serverResponse.vulnerability().description(), affectedPackages);
   }
 }
