@@ -1,0 +1,71 @@
+/*
+ * SonarLint Core - Medium Tests
+ * Copyright (C) 2016-2025 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package mediumtest.sca;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.UUID;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+
+class OpenDependencyRiskInBrowserMediumTests {
+  public static final String CONNECTION_ID = "connectionId";
+  public static final String SCOPE_ID = "scopeId";
+  public static final String PROJECT_KEY = "projectKey";
+  public static final String DEPENDENCY_KEY = UUID.randomUUID().toString();
+  public static final String BRANCH_NAME = "master";
+
+  @SonarLintTest
+  void it_should_open_dependency_risk_in_sonarqube(SonarLintTestHarness harness) throws IOException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, "http://localhost:12345", storage -> storage.withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME)))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .withTelemetryEnabled()
+      .start(fakeClient);
+
+    backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
+      SCOPE_ID, DEPENDENCY_KEY));
+
+    var expectedUrl = String.format("http://localhost:12345/dependency-risks/%s/what?id=%s&branch=%s",
+      urlEncode(DEPENDENCY_KEY), urlEncode(PROJECT_KEY), urlEncode(BRANCH_NAME));
+
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL(expectedUrl));
+  }
+
+  @SonarLintTest
+  void it_should_not_open_dependency_risk_if_unbound(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(SCOPE_ID)
+      .start(fakeClient);
+
+    backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
+      SCOPE_ID, DEPENDENCY_KEY));
+
+    verify(fakeClient, timeout(5000).times(0)).openUrlInBrowser(any(URL.class));
+  }
+} 

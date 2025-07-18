@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
@@ -52,4 +53,7 @@ public interface ScaRpcService {
    */
   @JsonRequest
   CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params);
+
+  @JsonNotification
+  void openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params);
 }

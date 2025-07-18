@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeScaIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
 import org.sonarsource.sonarlint.core.sca.ScaService;
 
@@ -60,5 +61,10 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   public CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params) {
     return requestAsync(cancelMonitor -> getBean(ScaService.class)
       .getDependencyRiskDetails(params.getConfigurationScopeId(), params.getDependencyRiskKey(), cancelMonitor), params.getConfigurationScopeId());
+  }
+
+  @Override
+  public void openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params) {
+    notify(() -> getBean(ScaService.class).openDependencyRiskInBrowser(params.getConfigScopeId(), params.getDependencyKey()), params.getConfigScopeId());
   }
 }
