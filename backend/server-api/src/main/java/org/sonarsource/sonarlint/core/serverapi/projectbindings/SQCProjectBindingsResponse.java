@@ -19,5 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
-public record ProjectBindingsResponse(String projectId) {
+public record SQCProjectBindingsResponse(String projectId) {
 }

@@ -36,18 +36,44 @@ public class ProjectBindingsApi {
   }
 
   @CheckForNull
-  public ProjectBindingsResponse getProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
+  public SQCProjectBindingsResponse getSQCProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
     var encodedUrl = UrlUtils.urlEncode(url);
+
     var path = "/dop-translation/project-bindings?url=" + encodedUrl;
 
     try (var response = serverApiHelper.apiGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {
         var responseBody = response.bodyAsString();
-        var dto = new Gson().fromJson(responseBody, ProjectBindingsResponseDto.class);
+        var dto = new Gson().fromJson(responseBody, SQCProjectBindingsResponseDto.class);
         var bindings = dto.bindings();
 
         if (!bindings.isEmpty()) {
-          return new ProjectBindingsResponse(bindings.get(0).projectId());
+          return new SQCProjectBindingsResponse(bindings.get(0).projectId());
+        }
+      } else {
+        LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
+      }
+    } catch (Exception e) {
+      LOG.error("Error retrieving project bindings for URL: {}", url, e);
+    }
+
+    return null;
+  }
+
+  @CheckForNull
+  public SQSProjectBindingsResponse getSQSProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
+    var encodedUrl = UrlUtils.urlEncode(url);
+
+    var path = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+
+    try (var response = serverApiHelper.get(path, cancelMonitor)) {
+      if (response.isSuccessful()) {
+        var responseBody = response.bodyAsString();
+        var dto = new Gson().fromJson(responseBody, SQSProjectBindingsResponseDto.class);
+        var bindings = dto.projectBindings();
+
+        if (!bindings.isEmpty()) {
+          return new SQSProjectBindingsResponse(dto.projectBindings().get(0).projectId(), dto.projectBindings().get(0).projectKey());
         }
       } else {
         LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
