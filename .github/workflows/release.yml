@@ -14,4 +14,4 @@ jobs:
     with:
       publishToBinaries: false
       mavenCentralSync: true
-      slackChannel: squad-ide-slcore-bots
+      slackChannel: squad-ide
