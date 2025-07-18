@@ -85,6 +85,8 @@ public class TelemetryLocalStorage {
   private int hotspotInvestigatedLocallyCount;
   private int hotspotInvestigatedRemotelyCount;
   private int issueInvestigatedLocallyCount;
+  private int dependencyRiskInvestigatedRemotelyCount;
+  private int dependencyRiskInvestigatedLocallyCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -563,6 +565,16 @@ public class TelemetryLocalStorage {
     issueInvestigatedLocallyCount++;
   }
 
+  public void incrementDependencyRiskInvestigatedRemotelyCount() {
+    markSonarLintAsUsedToday();
+    dependencyRiskInvestigatedRemotelyCount++;
+  }
+
+  public void incrementDependencyRiskInvestigatedLocallyCount() {
+    markSonarLintAsUsedToday();
+    dependencyRiskInvestigatedLocallyCount++;
+  }
+
   public int getHotspotInvestigatedRemotelyCount() {
     return hotspotInvestigatedRemotelyCount;
   }
@@ -581,5 +593,13 @@ public class TelemetryLocalStorage {
 
   public int getIssueInvestigatedLocallyCount() {
     return issueInvestigatedLocallyCount;
+  }
+
+  public int getDependencyRiskInvestigatedRemotelyCount() {
+    return dependencyRiskInvestigatedRemotelyCount;
+  }
+
+  public int getDependencyRiskInvestigatedLocallyCount() {
+    return dependencyRiskInvestigatedLocallyCount;
   }
 }

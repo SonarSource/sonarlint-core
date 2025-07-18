@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
+import java.util.UUID;
+
 public class OpenDependencyRiskInBrowserParams {
   private final String configScopeId;
-  private final String dependencyKey;
+  private final UUID dependencyKey;
 
-  public OpenDependencyRiskInBrowserParams(String configScopeId, String dependencyKey) {
+  public OpenDependencyRiskInBrowserParams(String configScopeId, UUID dependencyKey) {
     this.configScopeId = configScopeId;
     this.dependencyKey = dependencyKey;
   }
@@ -32,7 +34,7 @@ public class OpenDependencyRiskInBrowserParams {
     return configScopeId;
   }
 
-  public String getDependencyKey() {
+  public UUID getDependencyKey() {
     return dependencyKey;
   }
 }

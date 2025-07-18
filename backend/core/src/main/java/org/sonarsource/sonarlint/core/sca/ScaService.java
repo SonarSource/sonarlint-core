@@ -110,7 +110,7 @@ public class ScaService {
     };
   }
 
-  public void openDependencyRiskInBrowser(String configurationScopeId, String dependencyKey) {
+  public void openDependencyRiskInBrowser(String configurationScopeId, UUID dependencyKey) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.connectionId()));
     if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
@@ -127,13 +127,12 @@ public class ScaService {
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
-    // TODO: Add SCA-specific telemetry method when available
-    // telemetryService.dependencyRiskOpenedInBrowser();
+    telemetryService.dependencyRiskInvestigatedRemotely();
   }
 
-  static String buildScaBrowseUrl(String projectKey, String branch, String dependencyKey, EndpointParams endpointParams) {
+  static String buildScaBrowseUrl(String projectKey, String branch, UUID dependencyKey, EndpointParams endpointParams) {
     var relativePath = "/dependency-risks/"
-      + UrlUtils.urlEncode(dependencyKey)
+      + UrlUtils.urlEncode(dependencyKey.toString())
       + "/what?id="
       + UrlUtils.urlEncode(projectKey)
       + "&branch="
