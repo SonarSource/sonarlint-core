@@ -401,4 +401,63 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
   }
 
+  @SonarLintTest
+  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException,
+    GitAPIException {
+    var gitRepo = tmp.resolve("git-repo");
+    Files.createDirectory(gitRepo);
+    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+
+    try (var git = GitUtils.createRepository(gitRepo)) {
+      git.remoteAdd()
+        .setName("origin")
+        .setUri(new URIish(REMOTE_URL))
+        .call();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to setup Git repository", e);
+    }
+
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, gitRepo, List.of())
+      .build();
+
+    var sqServer = harness.newFakeSonarQubeServer()
+      .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
+      .start();
+
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
+      .start(fakeClient);
+
+    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"projectBindings\":[{\"projectId\":\"" + PROJECT_ID + "\",\"projectKey\":\"" + SLCORE_PROJECT_KEY + "\"}]}")));
+
+    String expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
+    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedProjectPath))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/x-protobuf")
+        .withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
+          .setComponent(Components.Component.newBuilder()
+            .setKey(SLCORE_PROJECT_KEY)
+            .setName(SLCORE_PROJECT_NAME)
+            .setIsAiCodeFixEnabled(false)
+            .build())
+          .build()))));
+
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
+    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+  }
+
 }
