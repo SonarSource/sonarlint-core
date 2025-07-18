@@ -46,49 +46,97 @@ class ProjectBindingsApiTests {
   }
 
   @Test
-  void should_return_project_id_by_url() {
+  void should_return_project_id_by_url_for_sqc() {
     var url = "https://github.com/foo/bar";
     var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "{\"bindings\":[{\"projectId\":\"proj:123\"}]}");
 
-    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
+    var result = underTest.getSQCProjectBindings(url, new SonarLintCancelMonitor());
 
-    assertThat(result).isEqualTo(new ProjectBindingsResponse("proj:123"));
+    assertThat(result).isEqualTo(new SQCProjectBindingsResponse("proj:123"));
   }
 
   @Test
-  void should_return_empty_when_no_bindings() {
+  void should_return_empty_when_no_bindings_for_sqc() {
     var url = "https://github.com/foo/bar";
     var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "{\"bindings\":[]}");
 
-    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
+    var result = underTest.getSQCProjectBindings(url, new SonarLintCancelMonitor());
 
     assertThat(result).isNull();
   }
 
   @Test
-  void should_return_empty_when_invalid_json() {
+  void should_return_empty_when_invalid_json_for_sqc() {
     var url = "https://github.com/foo/bar";
     var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
     mockServer.addStringResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       "this is not json");
 
-    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
+    var result = underTest.getSQCProjectBindings(url, new SonarLintCancelMonitor());
 
     assertThat(result).isNull();
   }
 
   @Test
-  void should_return_empty_when_request_fails() {
+  void should_return_empty_when_request_fails_for_sqc() {
     var url = "https://github.com/foo/bar";
     var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
     mockServer.addResponse("/dop-translation/project-bindings?url=" + encodedUrl,
       new MockResponse().setResponseCode(500).setBody("Internal error"));
 
-    var result = underTest.getProjectBindings(url, new SonarLintCancelMonitor());
+    var result = underTest.getSQCProjectBindings(url, new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void should_return_project_key_by_url_for_sqs() {
+    var url = "https://github.com/foo/bar";
+    var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+    mockServer.addStringResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
+      "{\"projectBindings\":[{\"projectId\":\"proj:123\",\"projectKey\":\"my-project-key\"}]}");
+
+    var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
+
+    assertThat(result).isEqualTo(new SQSProjectBindingsResponse("proj:123", "my-project-key"));
+  }
+
+  @Test
+  void should_return_empty_when_no_bindings_for_sqs() {
+    var url = "https://github.com/foo/bar";
+    var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+    mockServer.addStringResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
+      "{\"projectBindings\":[]}");
+
+    var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void should_return_empty_when_invalid_json_for_sqs() {
+    var url = "https://github.com/foo/bar";
+    var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+    mockServer.addStringResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
+      "this is not json");
+
+    var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
+
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void should_return_empty_when_request_fails_for_sqs() {
+    var url = "https://github.com/foo/bar";
+    var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
+    mockServer.addResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
+      new MockResponse().setResponseCode(500).setBody("Internal error"));
+
+    var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
 
     assertThat(result).isNull();
   }

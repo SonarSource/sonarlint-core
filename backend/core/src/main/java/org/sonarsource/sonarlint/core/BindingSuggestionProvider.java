@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -47,7 +48,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.serverapi.projectbindings.ProjectBindingsResponse;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
@@ -212,19 +213,33 @@ public class BindingSuggestionProvider {
     }
 
     for (var connectionId : connectionIds) {
-      Optional<ProjectBindingsResponse> projectIdOpt = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
-        api -> Optional.ofNullable(api.projectBindings().getProjectBindings(remoteUrl, cancelMonitor)));
+      var suggestion = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId, api ->
+        getBindingSuggestionByRemoteUrl(cancelMonitor, connectionId, api, remoteUrl));
 
-      if (projectIdOpt.isEmpty()) {
-        LOG.debug("No project ID found for remote URL '{}' on connection '{}'", remoteUrl, connectionId);
-        return;
-      }
-
-      var projectKeyName = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
-        api -> Optional.ofNullable(api.component().searchProjects(projectIdOpt.get().projectId(), cancelMonitor)));
-
-      projectKeyName.ifPresent(keyName -> suggestions.add(new BindingSuggestionDto(connectionId, keyName.projectKey(), keyName.projectName(), false)));
+      suggestion.ifPresent(suggestions::add);
     }
+  }
+
+  @NotNull
+  private static Optional<BindingSuggestionDto> getBindingSuggestionByRemoteUrl(SonarLintCancelMonitor cancelMonitor, String connectionId, ServerApi api, String remoteUrl) {
+    if (api.isSonarCloud()) {
+      var sqcResponse = api.projectBindings().getSQCProjectBindings(remoteUrl, cancelMonitor);
+      if (sqcResponse != null) {
+        var searchResponse = api.component().searchProjects(sqcResponse.projectId(), cancelMonitor);
+        if (searchResponse != null) {
+          return Optional.of(new BindingSuggestionDto(connectionId, searchResponse.projectKey(), searchResponse.projectName(), false));
+        }
+      }
+    } else {
+      var sqsResponse = api.projectBindings().getSQSProjectBindings(remoteUrl, cancelMonitor);
+      if (sqsResponse != null) {
+        var serverProject = api.component().getProject(sqsResponse.projectKey(), cancelMonitor);
+        if (serverProject.isPresent()) {
+          return Optional.of(new BindingSuggestionDto(connectionId, sqsResponse.projectKey(), serverProject.get().name(), false));
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, SonarLintCancelMonitor cancelMonitor) {

@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
 import java.util.List;
 
-public record ProjectBindingsResponseDto(List<Binding> bindings) {
+public record SQSProjectBindingsResponseDto(List<ProjectBinding> projectBindings) {
 
-  public record Binding(String projectId) {
+  public record ProjectBinding(String projectId, String projectKey) {
   }
 }
