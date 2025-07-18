@@ -75,6 +75,7 @@ public class MonitoringService {
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
+    addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.impl\\.LexerException.*");
     sentryOptions.setBeforeSend(MonitoringService::scrubPii);
     sentryOptions.setBeforeSendTransaction(MonitoringService::scrubPii);
     return sentryOptions;
