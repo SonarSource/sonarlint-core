@@ -33,4 +33,39 @@ class BlameParserTests {
 
     assertThat(blameResult.getFileBlameByPath()).isEmpty();
   }
+
+  @Test
+  void shouldSplitBlameOutputCorrectlyWhenLinesContainSplitPattern() {
+    var blameResult = new BlameResult();
+    BlameParser.parseBlameOutput("""
+      5746f09bf53067450843eaddff52ea7b0f16cde3 1 1 2
+      author Some One
+      author-mail <some.one@sonarsource.com>
+      author-time 1553598120
+      author-tz +0100
+      committer Some One
+      committer-mail <some.one@sonarsource.com>
+      committer-time 1554191055
+      committer-tz +0200
+      summary Initial revision
+      previous 35c9ca0b1f41231508e706707d76ca0485b8a3ad file.txt
+      filename file.txt
+              First line with filename in it
+      5746f09bf53067450843eaddff52ea7b0f16cde3 2 2
+      author Some One
+      author-mail <some.one@sonarsource.com>
+      author-time 1553598120
+      author-tz +0100
+      committer Some One
+      committer-mail <some.one@sonarsource.com>
+      committer-time 1554191055
+      committer-tz +0200
+      summary Initial revision
+      previous 35c9ca0b1f41231508e706707d76ca0485b8a3ad file.txt
+      filename file.txt
+              Second line also with filename in it
+      """, "", blameResult);
+
+    assertThat(blameResult.getFileBlameByPath()).hasSize(1);
+  }
 }
