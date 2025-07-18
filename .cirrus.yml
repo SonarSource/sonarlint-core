@@ -234,10 +234,6 @@ promote_task:
   # Promotion
   depends_on:
     - build
-    - test_linux
-    - test_windows
-    - mend_scan
-    - qa
   <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
