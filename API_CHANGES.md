@@ -5,6 +5,11 @@
 * Allow changing status of SCA issues via `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.changeStatus`.
   * Required parameters are `configScopeId`, `issueId` and `transition`.
   * If transition is `ACCEPT`, `FIXED`, or `SAFE`, a `comment` field is mandatory
+* Allow clients to open dependency risk (SCA issues) in browser
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.openDependencyRiskInBrowser` that accepts `configScopeId` and `dependencyRiskKey` (UUID) parameters
+* Allow clients to record interactions with dependency risks (SCA issues) in telemetry
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.dependencyRiskInvestigatedLocally` method
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.dependencyRiskInvestigatedRemotely` method
 * Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.getDependencyRiskDetails`.
 
 # 10.26

@@ -55,9 +55,8 @@ public class ScaService {
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
 
-  public ScaService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    StorageService storageService, SonarQubeClientManager sonarQubeClientManager,
-    SonarProjectBranchTrackingService branchTrackingService, SonarLintRpcClient client, TelemetryService telemetryService) {
+  public ScaService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
+    SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, SonarLintRpcClient client, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.storageService = storageService;
@@ -170,17 +169,17 @@ public class ScaService {
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
-    // TODO: Add SCA-specific telemetry method when available
-    // telemetryService.dependencyRiskOpenedInBrowser();
+    telemetryService.dependencyRiskInvestigatedRemotely();
   }
 
-  static String buildScaBrowseUrl(String projectKey, String branch, String dependencyKey, EndpointParams endpointParams) {
-    var relativePath = "/dependency-risks/"
-      + UrlUtils.urlEncode(dependencyKey)
-      + "/what?id="
-      + UrlUtils.urlEncode(projectKey)
-      + "&branch="
-      + UrlUtils.urlEncode(branch);
+  static String buildScaBrowseUrl(String projectKey, String branch, UUID dependencyKey, EndpointParams endpointParams) {
+    var relativePath = new StringBuilder("/dependency-risks/")
+      .append(UrlUtils.urlEncode(dependencyKey.toString()))
+      .append("/what?id=")
+      .append(UrlUtils.urlEncode(projectKey))
+      .append("&branch=")
+      .append(UrlUtils.urlEncode(branch))
+      .toString();
 
     return ServerApiHelper.concat(endpointParams.getBaseUrl(), relativePath);
   }

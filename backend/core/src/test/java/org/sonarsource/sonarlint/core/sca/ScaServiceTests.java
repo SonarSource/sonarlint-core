@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
@@ -28,8 +29,8 @@ class ScaServiceTests {
 
   @Test
   void testBuildSonarQubeServerScaUrl() {
-    assertThat(ScaService.buildScaBrowseUrl("myProject", "myBranch", "dependencyKey", new EndpointParams("http://foo.com", "", false, null)))
-      .isEqualTo("http://foo.com/dependency-risks/dependencyKey/what?id=myProject&branch=myBranch");
+    var dependencyKey = UUID.randomUUID();
+    assertThat(ScaService.buildScaBrowseUrl("myProject", "myBranch", dependencyKey, new EndpointParams("http://foo.com", "", false, null)))
+      .isEqualTo(String.format("http://foo.com/dependency-risks/%s/what?id=myProject&branch=myBranch", dependencyKey));
   }
-
-} 
+}

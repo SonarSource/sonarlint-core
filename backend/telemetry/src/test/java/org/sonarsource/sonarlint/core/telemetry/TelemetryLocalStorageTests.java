@@ -250,4 +250,35 @@ class TelemetryLocalStorageTests {
     data.clearAfterPing();
     assertThat(data.getFindingsFilteredCountersByType()).isEmpty();
   }
+
+  @Test
+  void should_track_dependency_risk_investigated() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isZero();
+    assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isZero();
+
+    data.incrementDependencyRiskInvestigatedRemotelyCount();
+    data.incrementDependencyRiskInvestigatedLocallyCount();
+    assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isEqualTo(1);
+    assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isEqualTo(1);
+
+    data.incrementDependencyRiskInvestigatedRemotelyCount();
+    data.incrementDependencyRiskInvestigatedLocallyCount();
+    assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isEqualTo(2);
+    assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isEqualTo(2);
+  }
+
+  @Test
+  void should_clear_dependency_risk_investigated_counts_after_ping() {
+    var data = new TelemetryLocalStorage();
+
+    data.incrementDependencyRiskInvestigatedRemotelyCount();
+    data.incrementDependencyRiskInvestigatedLocallyCount();
+    assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isEqualTo(1);
+    assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isEqualTo(1);
+
+    data.clearAfterPing();
+    assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isZero();
+    assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isZero();
+  }
 }
