@@ -28,29 +28,43 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class ScaService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConfigurationRepository configurationRepository;
+  private final ConnectionConfigurationRepository connectionRepository;
   private final StorageService storageService;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SonarProjectBranchTrackingService branchTrackingService;
+  private final SonarLintRpcClient client;
+  private final TelemetryService telemetryService;
 
-  public ScaService(ConfigurationRepository configurationRepository, StorageService storageService, SonarQubeClientManager sonarQubeClientManager,
-    SonarProjectBranchTrackingService branchTrackingService) {
+  public ScaService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
+    StorageService storageService, SonarQubeClientManager sonarQubeClientManager,
+    SonarProjectBranchTrackingService branchTrackingService, SonarLintRpcClient client, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
+    this.connectionRepository = connectionRepository;
     this.storageService = storageService;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.branchTrackingService = branchTrackingService;
+    this.client = client;
+    this.telemetryService = telemetryService;
   }
 
   public void changeStatus(String configurationScopeId, UUID issueReleaseKey, DependencyRiskTransition transition, @CheckForNull String comment,
@@ -137,6 +151,38 @@ public class ScaService {
     return new GetDependencyRiskDetailsResponse(serverResponse.key(), ScaIssueDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
       serverResponse.release().version(), ScaIssueDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
       serverResponse.vulnerability().description(), affectedPackages);
+  }
+
+  public void openDependencyRiskInBrowser(String configurationScopeId, String dependencyKey) {
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.connectionId()));
+    if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
+      LOG.warn("Configuration scope {} is not bound properly, unable to open dependency risk", configurationScopeId);
+      return;
+    }
+    var branchName = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
+    if (branchName.isEmpty()) {
+      LOG.warn("Configuration scope {} has no matching branch, unable to open dependency risk", configurationScopeId);
+      return;
+    }
+
+    var url = buildScaBrowseUrl(effectiveBinding.get().sonarProjectKey(), branchName.get(), dependencyKey, endpointParams.get());
+
+    client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
+
+    // TODO: Add SCA-specific telemetry method when available
+    // telemetryService.dependencyRiskOpenedInBrowser();
+  }
+
+  static String buildScaBrowseUrl(String projectKey, String branch, String dependencyKey, EndpointParams endpointParams) {
+    var relativePath = "/dependency-risks/"
+      + UrlUtils.urlEncode(dependencyKey)
+      + "/what?id="
+      + UrlUtils.urlEncode(projectKey)
+      + "&branch="
+      + UrlUtils.urlEncode(branch);
+
+    return ServerApiHelper.concat(endpointParams.getBaseUrl(), relativePath);
   }
 
   public static class ScaIssueNotFoundException extends RuntimeException {
