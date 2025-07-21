@@ -25,6 +25,5 @@ import javax.annotation.Nullable;
 public record ShareConnectedModePayload(@SerializedName("manual_bindings_count") @Nullable Integer manualAddedBindingsCount,
                                         @SerializedName("imported_bindings_count") @Nullable Integer importedAddedBindingsCount,
                                         @SerializedName("auto_bindings_count") @Nullable Integer autoAddedBindingsCount,
-                                        @SerializedName("exported_connected_mode_count") @Nullable Integer exportedConnectedModeCount,
-                                        @SerializedName("suggested_remote_bindings_count") @Nullable Integer suggestedRemoteBindingsCount) {
+                                        @SerializedName("exported_connected_mode_count") @Nullable Integer exportedConnectedModeCount) {
 }

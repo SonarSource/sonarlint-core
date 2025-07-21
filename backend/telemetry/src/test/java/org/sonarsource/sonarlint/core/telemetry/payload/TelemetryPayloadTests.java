@@ -70,7 +70,7 @@ class TelemetryPayloadTests {
     additionalProps.put("aString", "stringValue");
     additionalProps.put("aBool", false);
     additionalProps.put("aNumber", 1.5);
-    var sharedConnectedModePayload = new ShareConnectedModePayload(3, 2, 1, 4, 1);
+    var sharedConnectedModePayload = new ShareConnectedModePayload(3, 2, 1, 4);
     Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
@@ -107,7 +107,7 @@ class TelemetryPayloadTests {
       + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_snippets\":1,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}],\"was_ai_fix_suggestion_generated_from_ide\":true},{\"suggestion_id\":\"suggestionId2\",\"count_snippets\":2,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":true},{\"suggestion_id\":\"suggestionId3\",\"count_snippets\":3,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":null,\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":false}],"
       + "\"count_issues_with_possible_ai_fix_from_ide\":1,"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
-      + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4,\"suggested_remote_bindings_count\":1},"
+      + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"
@@ -158,7 +158,6 @@ class TelemetryPayloadTests {
     assertThat(m.getShareConnectedModePayload().importedAddedBindingsCount()).isEqualTo(2);
     assertThat(m.getShareConnectedModePayload().autoAddedBindingsCount()).isEqualTo(1);
     assertThat(m.getShareConnectedModePayload().exportedConnectedModeCount()).isEqualTo(4);
-    assertThat(m.getShareConnectedModePayload().suggestedRemoteBindingsCount()).isEqualTo(1);
   }
 
   private static void assertRulesPayload(TelemetryPayload m) {

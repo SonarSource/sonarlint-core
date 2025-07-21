@@ -122,9 +122,9 @@ public class TelemetryHttpClient {
     ShareConnectedModePayload shareConnectedModePayload;
     if (telemetryLiveAttrs.usesConnectedMode()) {
       shareConnectedModePayload = new ShareConnectedModePayload(data.getManualAddedBindingsCount(), data.getImportedAddedBindingsCount(),
-        data.getAutoAddedBindingsCount(), data.getExportedConnectedModeCount(), data.getSuggestedRemoteBindingsCount());
+        data.getAutoAddedBindingsCount(), data.getExportedConnectedModeCount());
     } else {
-      shareConnectedModePayload = new ShareConnectedModePayload(null, null, null, null, null);
+      shareConnectedModePayload = new ShareConnectedModePayload(null, null, null, null);
     }
 
     var mergedAdditionalAttributes = new HashMap<>(telemetryLiveAttrs.getAdditionalAttributes());
