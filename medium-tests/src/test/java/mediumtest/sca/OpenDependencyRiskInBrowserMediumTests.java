@@ -21,7 +21,9 @@ package mediumtest.sca;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -50,7 +52,7 @@ class OpenDependencyRiskInBrowserMediumTests {
       .start(fakeClient);
 
     backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
-      SCOPE_ID, DEPENDENCY_KEY));
+      SCOPE_ID, DEPENDENCY_KEY)).join();
 
     var expectedUrl = String.format("http://localhost:12345/dependency-risks/%s/what?id=%s&branch=%s",
       urlEncode(DEPENDENCY_KEY.toString()), urlEncode(PROJECT_KEY), urlEncode(BRANCH_NAME));
@@ -66,9 +68,11 @@ class OpenDependencyRiskInBrowserMediumTests {
       .withUnboundConfigScope(SCOPE_ID)
       .start(fakeClient);
 
-    backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
+    var result = backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
       SCOPE_ID, DEPENDENCY_KEY));
 
+    assertThat(result).failsWithin(Duration.ofSeconds(2)).withThrowableOfType(ExecutionException.class)
+      .withMessage("org.eclipse.lsp4j.jsonrpc.ResponseErrorException: Configuration scope 'scopeId' is not bound properly, unable to open dependency risk");
     verify(fakeClient, timeout(5000).times(0)).openUrlInBrowser(any(URL.class));
   }
 }

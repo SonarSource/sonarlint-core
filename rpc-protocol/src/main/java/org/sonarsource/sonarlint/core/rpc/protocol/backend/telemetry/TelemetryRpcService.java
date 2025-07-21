@@ -126,8 +126,5 @@ public interface TelemetryRpcService {
   void dependencyRiskInvestigatedLocally();
 
   @JsonNotification
-  void dependencyRiskInvestigatedRemotely();
-
-  @JsonNotification
   void findingsFiltered(FindingsFilteredParams params);
 }

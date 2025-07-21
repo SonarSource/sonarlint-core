@@ -32,14 +32,14 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
-import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -152,17 +152,15 @@ public class ScaService {
       serverResponse.vulnerability().description(), affectedPackages);
   }
 
-  public void openDependencyRiskInBrowser(String configurationScopeId, String dependencyKey) {
+  public void openDependencyRiskInBrowser(String configurationScopeId, UUID dependencyKey) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.connectionId()));
     if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
-      LOG.warn("Configuration scope {} is not bound properly, unable to open dependency risk", configurationScopeId);
-      return;
+      throw new IllegalArgumentException(String.format("Configuration scope '%s' is not bound properly, unable to open dependency risk", configurationScopeId));
     }
     var branchName = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     if (branchName.isEmpty()) {
-      LOG.warn("Configuration scope {} has no matching branch, unable to open dependency risk", configurationScopeId);
-      return;
+      throw new IllegalArgumentException(String.format("Configuration scope %s has no matching branch, unable to open dependency risk", configurationScopeId));
     }
 
     var url = buildScaBrowseUrl(effectiveBinding.get().sonarProjectKey(), branchName.get(), dependencyKey, endpointParams.get());

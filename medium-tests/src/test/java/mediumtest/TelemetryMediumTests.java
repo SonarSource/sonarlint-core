@@ -342,20 +342,14 @@ class TelemetryMediumTests {
   void it_should_accumulate_investigated_dependency_risks(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
-    backend.getTelemetryService().dependencyRiskInvestigatedRemotely();
     backend.getTelemetryService().dependencyRiskInvestigatedLocally();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
-      .extracting(TelemetryLocalStorage::getDependencyRiskInvestigatedRemotelyCount, TelemetryLocalStorage::getDependencyRiskInvestigatedLocallyCount)
-        .containsExactly(1, 1));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getDependencyRiskInvestigatedLocallyCount()).isEqualTo(1));
 
-    backend.getTelemetryService().dependencyRiskInvestigatedRemotely();
     backend.getTelemetryService().dependencyRiskInvestigatedLocally();
     backend.getTelemetryService().dependencyRiskInvestigatedLocally();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
-      .extracting(TelemetryLocalStorage::getDependencyRiskInvestigatedRemotelyCount, TelemetryLocalStorage::getDependencyRiskInvestigatedLocallyCount)
-      .containsExactly(2, 3));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getDependencyRiskInvestigatedLocallyCount()).isEqualTo(3));
   }
 
   @SonarLintTest
