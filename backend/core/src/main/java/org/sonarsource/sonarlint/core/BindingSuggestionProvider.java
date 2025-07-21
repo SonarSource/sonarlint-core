@@ -213,10 +213,14 @@ public class BindingSuggestionProvider {
     }
 
     for (var connectionId : connectionIds) {
-      var suggestion = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId, api ->
-        getBindingSuggestionByRemoteUrl(cancelMonitor, connectionId, api, remoteUrl));
+      try {
+        var suggestion = sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId, api ->
+          getBindingSuggestionByRemoteUrl(cancelMonitor, connectionId, api, remoteUrl));
 
-      suggestion.ifPresent(suggestions::add);
+        suggestion.ifPresent(suggestions::add);
+      } catch (Exception e) {
+        LOG.debug("Failed to get binding suggestion by remote URL for connection '{}': {}", connectionId, e.getMessage());
+      }
     }
   }
 

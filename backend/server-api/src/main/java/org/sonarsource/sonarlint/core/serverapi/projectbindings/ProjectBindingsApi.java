@@ -39,17 +39,6 @@ public class ProjectBindingsApi {
   public SQCProjectBindingsResponse getSQCProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
     var encodedUrl = UrlUtils.urlEncode(url);
 
-    return getSQCBinding(url, cancelMonitor, encodedUrl);
-  }
-
-  @CheckForNull
-  public SQSProjectBindingsResponse getSQSProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
-    var encodedUrl = UrlUtils.urlEncode(url);
-
-    return getSQSBinding(url, cancelMonitor, encodedUrl);
-  }
-
-  private SQCProjectBindingsResponse getSQCBinding(String url, SonarLintCancelMonitor cancelMonitor, String encodedUrl) {
     var path = "/dop-translation/project-bindings?url=" + encodedUrl;
 
     try (var response = serverApiHelper.apiGet(path, cancelMonitor)) {
@@ -71,7 +60,10 @@ public class ProjectBindingsApi {
     return null;
   }
 
-  private SQSProjectBindingsResponse getSQSBinding(String url, SonarLintCancelMonitor cancelMonitor, String encodedUrl) {
+  @CheckForNull
+  public SQSProjectBindingsResponse getSQSProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
+    var encodedUrl = UrlUtils.urlEncode(url);
+
     var path = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
 
     try (var response = serverApiHelper.get(path, cancelMonitor)) {
