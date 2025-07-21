@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.projectbindings.ProjectBindingsResponse;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
@@ -68,10 +69,11 @@ public class BindingSuggestionProvider {
   private final AtomicBoolean enabled = new AtomicBoolean(true);
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ClientFileSystemService clientFs;
+  private final TelemetryService telemetryService;
 
   @Inject
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
-    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFs) {
+    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFs, TelemetryService telemetryService) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
@@ -79,6 +81,7 @@ public class BindingSuggestionProvider {
     this.sonarProjectsCache = sonarProjectsCache;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.clientFs = clientFs;
+    this.telemetryService = telemetryService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Binding Suggestion Provider"));
   }
 
@@ -191,6 +194,9 @@ public class BindingSuggestionProvider {
 
     if (suggestions.isEmpty()) {
       searchByRemoteUrlInConnections(suggestions, checkedConfigScopeId, candidateConnectionIds, cancelMonitor);
+      if (!suggestions.isEmpty()) {
+        telemetryService.suggestedRemoteBinding();
+      }
     }
 
     return suggestions;

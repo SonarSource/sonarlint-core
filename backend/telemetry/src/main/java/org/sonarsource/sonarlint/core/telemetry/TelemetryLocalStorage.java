@@ -73,6 +73,7 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private int suggestedRemoteBindingsCount;
   private long newIssuesFoundCount;
   private long issuesFixedCount;
   private int biggestNumberOfFilesInConfigScope;
@@ -228,6 +229,7 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    suggestedRemoteBindingsCount = 0;
     newIssuesFoundCount = 0;
     issuesFixedCount = 0;
     biggestNumberOfFilesInConfigScope = 0;
@@ -467,8 +469,16 @@ public class TelemetryLocalStorage {
     exportedConnectedModeCount++;
   }
 
+  public void incrementSuggestedRemoteBindingsCount() {
+    suggestedRemoteBindingsCount++;
+  }
+
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
+  }
+
+  public int getSuggestedRemoteBindingsCount() {
+    return suggestedRemoteBindingsCount;
   }
 
   public void addNewlyFoundIssues(long newIssues) {
