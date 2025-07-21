@@ -366,6 +366,7 @@ class BindingSuggestionsMediumTests {
       .withSonarQubeCloudEuRegionApiUri(scServer.baseUrl())
       .withSonarCloudConnection(MYSONAR, "orgKey")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
+      .withTelemetryEnabled()
       .start(fakeClient);
 
     scServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
@@ -396,6 +397,7 @@ class BindingSuggestionsMediumTests {
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
 
     var bindingSuggestions = suggestionCaptor.getValue();
+    assertThat(backend.telemetryFileContent().getSuggestedRemoteBindingsCount()).isEqualTo(1);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -430,6 +432,7 @@ class BindingSuggestionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
+      .withTelemetryEnabled()
       .start(fakeClient);
 
     sqServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
@@ -455,6 +458,7 @@ class BindingSuggestionsMediumTests {
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
 
     var bindingSuggestions = suggestionCaptor.getValue();
+    assertThat(backend.telemetryFileContent().getSuggestedRemoteBindingsCount()).isEqualTo(1);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)

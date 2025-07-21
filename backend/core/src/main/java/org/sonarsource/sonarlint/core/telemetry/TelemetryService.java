@@ -234,6 +234,11 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
 
+  public void suggestedRemoteBinding() {
+    updateTelemetry(TelemetryLocalStorage::incrementSuggestedRemoteBindingsCount);
+  }
+
+
   public void toolCalled(ToolCalledParams params) {
     updateTelemetry(storage -> storage.incrementToolCalledCount(params.getToolName(), params.isSucceeded()));
   }

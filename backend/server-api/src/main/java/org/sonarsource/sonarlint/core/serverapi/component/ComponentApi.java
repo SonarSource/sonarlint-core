@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
 public class ComponentApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String ORGANIZATION_PARAM = "&organization=";
 
   private final ServerApiHelper helper;
 
@@ -56,7 +57,7 @@ public class ComponentApi {
     var url = new StringBuilder();
     url.append("api/components/tree.protobuf?qualifiers=FIL,UTS&");
     url.append("component=").append(UrlUtils.urlEncode(projectKey));
-    helper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(UrlUtils.urlEncode(org)));
+    helper.getOrganizationKey().ifPresent(org -> url.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     return url.toString();
   }
 
@@ -80,7 +81,7 @@ public class ComponentApi {
     var searchUrl = new StringBuilder();
     searchUrl.append("api/components/search.protobuf?qualifiers=TRK");
     helper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     return searchUrl.toString();
   }
 
@@ -93,7 +94,7 @@ public class ComponentApi {
       LOG.warn("Organization key is not set, cannot search projects for ID: {}", projectId);
       return null;
     }
-    var path = "/api/components/search_projects?projectIds=" + encodedProjectId + "&organization=" + organization.get();
+    var path = "/api/components/search_projects?projectIds=" + encodedProjectId + ORGANIZATION_PARAM + organization.get();
 
     try (var response = helper.rawGet(path, cancelMonitor)) {
       if (response.isSuccessful()) {

@@ -89,7 +89,7 @@ class ProjectBindingsApiTests {
       var url = "https://github.com/foo/bar";
       var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
       mockServer.addResponse("/dop-translation/project-bindings?url=" + encodedUrl,
-        new MockResponse().setResponseCode(500).setBody("Internal error"));
+        new MockResponse.Builder().code(500).body("Internal error").build());
 
       var result = underTest.getSQCProjectBindings(url, new SonarLintCancelMonitor());
 
@@ -140,7 +140,7 @@ class ProjectBindingsApiTests {
       var url = "https://github.com/foo/bar";
       var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
       mockServer.addResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
-        new MockResponse().setResponseCode(500).setBody("Internal error"));
+        new MockResponse.Builder().code(500).body("Internal error").build());
 
       var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
 
