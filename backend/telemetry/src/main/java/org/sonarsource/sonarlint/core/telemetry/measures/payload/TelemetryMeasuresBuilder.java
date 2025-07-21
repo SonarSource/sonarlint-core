@@ -85,6 +85,7 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("shared_connected_mode.imported", String.valueOf(storage.getImportedAddedBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(storage.getAutoAddedBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(storage.getExportedConnectedModeCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("shared_connected_mode.remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
 
       values.add(new TelemetryMeasuresValue("bindings.child_count", String.valueOf(liveAttributes.countChildBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(liveAttributes.countSonarQubeServerBindings()), INTEGER, DAILY));

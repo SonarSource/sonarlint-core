@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -82,8 +83,9 @@ class BindingSuggestionProviderTests {
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
   private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
+  private final TelemetryService telemetryService = mock(TelemetryService.class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, sonarQubeClientManager, clientFs);
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, sonarQubeClientManager, clientFs, telemetryService);
 
   @BeforeEach
   public void setup() {
