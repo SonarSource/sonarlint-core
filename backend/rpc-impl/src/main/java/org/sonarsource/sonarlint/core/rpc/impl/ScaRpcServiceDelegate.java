@@ -64,7 +64,16 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   }
 
   @Override
-  public void openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params) {
-    notify(() -> getBean(ScaService.class).openDependencyRiskInBrowser(params.getConfigScopeId(), params.getDependencyKey()), params.getConfigScopeId());
+  public CompletableFuture<Void> openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params) {
+    return runAsync(cancelMonitor -> {
+      try {
+        getBean(ScaService.class).openDependencyRiskInBrowser(
+          params.getConfigScopeId(),
+          params.getDependencyKey());
+      } catch (IllegalArgumentException e) {
+        var error = new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, e.getMessage(), null);
+        throw new ResponseErrorException(error);
+      }
+    }, params.getConfigScopeId());
   }
 }

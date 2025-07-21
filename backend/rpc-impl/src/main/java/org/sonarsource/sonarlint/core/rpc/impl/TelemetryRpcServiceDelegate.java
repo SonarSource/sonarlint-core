@@ -155,11 +155,6 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   }
 
   @Override
-  public void dependencyRiskInvestigatedRemotely() {
-    notify(() -> getBean(TelemetryService.class).dependencyRiskInvestigatedRemotely());
-  }
-
-  @Override
   public void findingsFiltered(FindingsFilteredParams params) {
     notify(() -> getBean(TelemetryService.class).findingsFiltered(params.getFilterType()));
   }
