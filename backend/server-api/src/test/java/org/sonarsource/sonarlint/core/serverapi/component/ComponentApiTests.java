@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 class ComponentApiTests {
   @RegisterExtension
