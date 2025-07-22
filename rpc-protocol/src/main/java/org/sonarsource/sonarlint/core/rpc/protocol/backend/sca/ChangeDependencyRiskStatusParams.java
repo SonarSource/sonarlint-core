@@ -20,21 +20,36 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 import java.util.UUID;
+import javax.annotation.Nullable;
 
-public class OpenDependencyRiskInBrowserParams {
-  private final String configScopeId;
+public class ChangeDependencyRiskStatusParams {
+  private final String configurationScopeId;
   private final UUID dependencyRiskKey;
+  private final DependencyRiskTransition transition;
+  @Nullable
+  private final String comment;
 
-  public OpenDependencyRiskInBrowserParams(String configScopeId, UUID dependencyRiskKey) {
-    this.configScopeId = configScopeId;
+  public ChangeDependencyRiskStatusParams(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @Nullable String comment) {
+    this.configurationScopeId = configurationScopeId;
     this.dependencyRiskKey = dependencyRiskKey;
+    this.transition = transition;
+    this.comment = comment;
   }
 
-  public String getConfigScopeId() {
-    return configScopeId;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
   public UUID getDependencyRiskKey() {
     return dependencyRiskKey;
+  }
+
+  public DependencyRiskTransition getTransition() {
+    return transition;
+  }
+
+  @Nullable
+  public String getComment() {
+    return comment;
   }
 }

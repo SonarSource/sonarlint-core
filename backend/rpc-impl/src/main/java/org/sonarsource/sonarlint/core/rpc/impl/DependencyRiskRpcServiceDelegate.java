@@ -23,32 +23,41 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeScaIssueStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyRiskStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ListAllDependencyRisksResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
-import org.sonarsource.sonarlint.core.sca.ScaService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
+import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
+import org.sonarsource.sonarlint.core.tracking.DependencyRiskTrackingService;
 
-public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements ScaRpcService {
+public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate implements DependencyRiskRpcService {
 
-  public ScaRpcServiceDelegate(SonarLintRpcServerImpl server) {
+  public DependencyRiskRpcServiceDelegate(SonarLintRpcServerImpl server) {
     super(server);
   }
 
   @Override
-  public CompletableFuture<Void> changeStatus(ChangeScaIssueStatusParams params) {
+  public CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params) {
+    return requestAsync(cancelMonitor -> new ListAllDependencyRisksResponse(getBean(DependencyRiskTrackingService.class)
+      .listAll(params.getConfigurationScopeId(), params.shouldRefresh(), cancelMonitor)));
+  }
+
+  @Override
+  public CompletableFuture<Void> changeStatus(ChangeDependencyRiskStatusParams params) {
     return runAsync(cancelMonitor -> {
       try {
-        getBean(ScaService.class).changeStatus(
+        getBean(DependencyRiskService.class).changeStatus(
           params.getConfigurationScopeId(),
-          params.getIssueReleaseKey(),
+          params.getDependencyRiskKey(),
           params.getTransition(),
           params.getComment(),
           cancelMonitor);
-      } catch (ScaService.ScaIssueNotFoundException e) {
+      } catch (DependencyRiskService.DependencyRiskNotFoundException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND,
-          "Dependency Risk with key " + e.getIssueKey() + " was not found", e.getIssueKey());
+          "Dependency Risk with key " + e.getKey() + " was not found", e.getKey());
         throw new ResponseErrorException(error);
       } catch (IllegalArgumentException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, e.getMessage(), null);
@@ -59,7 +68,7 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params) {
-    return requestAsync(cancelMonitor -> getBean(ScaService.class)
+    return requestAsync(cancelMonitor -> getBean(DependencyRiskService.class)
       .getDependencyRiskDetails(params.getConfigurationScopeId(), params.getDependencyRiskKey(), cancelMonitor), params.getConfigurationScopeId());
   }
 
@@ -67,9 +76,9 @@ public class ScaRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   public CompletableFuture<Void> openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params) {
     return runAsync(cancelMonitor -> {
       try {
-        getBean(ScaService.class).openDependencyRiskInBrowser(
+        getBean(DependencyRiskService.class).openDependencyRiskInBrowser(
           params.getConfigScopeId(),
-          params.getDependencyKey());
+          params.getDependencyRiskKey());
       } catch (IllegalArgumentException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, e.getMessage(), null);
         throw new ResponseErrorException(error);

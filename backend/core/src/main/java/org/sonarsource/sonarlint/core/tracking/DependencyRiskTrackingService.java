@@ -25,22 +25,22 @@ import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.event.ScaIssuesSynchronizedEvent;
+import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.springframework.context.event.EventListener;
 
 /**
- * Service responsible for tracking SCA (Software Composition Analysis) issues.
- * This service provides functionality to list and manage SCA issues for bound configuration scopes,
- * integrating with SonarQube servers to synchronize and retrieve issue data.
+ * Service responsible for tracking dependency risks (from Software Composition Analysis).
+ * This service provides functionality to list and manage dependency risks for bound configuration scopes,
+ * integrating with SonarQube servers to synchronize and retrieve data.
  */
-public class ScaIssueTrackingService {
+public class DependencyRiskTrackingService {
   private final ConfigurationRepository configurationRepository;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final ScaSynchronizationService scaSynchronizationService;
@@ -48,7 +48,7 @@ public class ScaIssueTrackingService {
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SonarLintRpcClient client;
 
-  public ScaIssueTrackingService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
+  public DependencyRiskTrackingService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
     ScaSynchronizationService scaSynchronizationService, StorageService storageService, SonarQubeClientManager sonarQubeClientManager, SonarLintRpcClient client) {
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
@@ -58,28 +58,28 @@ public class ScaIssueTrackingService {
     this.client = client;
   }
 
-  public List<ScaIssueDto> listAll(String configurationScopeId, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
+  public List<DependencyRiskDto> listAll(String configurationScopeId, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> loadScaIssues(configurationScopeId, binding, shouldRefresh, cancelMonitor))
+      .map(binding -> loadDependencyRisks(configurationScopeId, binding, shouldRefresh, cancelMonitor))
       .orElseGet(Collections::emptyList);
   }
 
   @EventListener
-  public void onScaIssuesSynchronized(ScaIssuesSynchronizedEvent event) {
+  public void onDependencyRisksSynchronized(DependencyRisksSynchronizedEvent event) {
     var summary = event.summary();
     var connectionId = event.connectionId();
     var sonarProjectKey = event.sonarProjectKey();
     configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, sonarProjectKey)
-      .forEach(boundScope -> client.didChangeScaIssues(new DidChangeScaIssuesParams(boundScope.getConfigScopeId(), summary.deletedItemIds(),
+      .forEach(boundScope -> client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(boundScope.getConfigScopeId(), summary.deletedItemIds(),
         summary.addedItems().stream()
-          .map(ScaIssueTrackingService::toDto)
+          .map(DependencyRiskTrackingService::toDto)
           .toList(),
         summary.updatedItems().stream()
-          .map(ScaIssueTrackingService::toDto)
+          .map(DependencyRiskTrackingService::toDto)
           .toList())));
   }
 
-  private List<ScaIssueDto> loadScaIssues(String configurationScopeId, Binding binding, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
+  private List<DependencyRiskDto> loadDependencyRisks(String configurationScopeId, Binding binding, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
     return branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId)
       .map(matchedBranch -> {
         if (shouldRefresh) {
@@ -87,22 +87,22 @@ public class ScaIssueTrackingService {
             serverApi -> scaSynchronizationService.synchronize(serverApi, binding.connectionId(), binding.sonarProjectKey(), matchedBranch, cancelMonitor));
         }
         var projectStorage = storageService.binding(binding);
-        return projectStorage.findings().loadScaIssues(matchedBranch)
-          .stream().map(ScaIssueTrackingService::toDto)
+        return projectStorage.findings().loadDependencyRisks(matchedBranch)
+          .stream().map(DependencyRiskTrackingService::toDto)
           .toList();
       }).orElseGet(Collections::emptyList);
   }
 
-  private static ScaIssueDto toDto(ServerScaIssue serverScaIssue) {
-    return new ScaIssueDto(
-      serverScaIssue.key(),
-      ScaIssueDto.Type.valueOf(serverScaIssue.type().name()),
-      ScaIssueDto.Severity.valueOf(serverScaIssue.severity().name()),
-      ScaIssueDto.Status.valueOf(serverScaIssue.status().name()),
-      serverScaIssue.packageName(),
-      serverScaIssue.packageVersion(),
-      serverScaIssue.transitions().stream()
-        .map(transition -> ScaIssueDto.Transition.valueOf(transition.name()))
+  private static DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
+    return new DependencyRiskDto(
+      serverDependencyRisk.key(),
+      DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
+      DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
+      DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
+      serverDependencyRisk.packageName(),
+      serverDependencyRisk.packageVersion(),
+      serverDependencyRisk.transitions().stream()
+        .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
         .toList());
   }
 }

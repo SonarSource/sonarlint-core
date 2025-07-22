@@ -1,15 +1,20 @@
 # 10.27
 
+## Breaking changes
+
+* Merge `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskTrackingRpcService` into `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService`.
+* Rename `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeScaIssues` to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeDependencyRisks`.
+
 ## New features
 
-* Allow changing status of SCA issues via `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.changeStatus`.
-  * Required parameters are `configScopeId`, `issueId` and `transition`.
+* Allow changing status of dependency risks (SCA issues) via `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.changeStatus`.
+  * Required parameters are `configScopeId`, `dependencyRiskKey` and `transition`.
   * If transition is `ACCEPT`, `FIXED`, or `SAFE`, a `comment` field is mandatory
-* Allow clients to open dependency risk (SCA issues) in browser
-  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.openDependencyRiskInBrowser` that accepts `configScopeId` and `dependencyRiskKey` (UUID) parameters
-* Allow clients to record interactions with dependency risks (SCA issues) in telemetry
+* Allow clients to open dependency risk in browser
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.openDependencyRiskInBrowser` that accepts `configScopeId` and `dependencyRiskKey` (UUID) parameters
+* Allow clients to record interactions with dependency risks in telemetry
   * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.dependencyRiskInvestigatedLocally` method
-* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService.getDependencyRiskDetails`.
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails`.
 
 # 10.26
 
@@ -17,6 +22,7 @@
 
 * Add a new `SCA_SYNCHRONIZATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
 * Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService` service and a `listAll` method
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeScaIssues` notification.
 
 # 10.25
 

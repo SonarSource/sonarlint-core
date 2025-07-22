@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.sca;
 
 import com.google.gson.Gson;
+import jakarta.annotation.Nullable;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -66,14 +67,14 @@ public class ScaApi {
     }
   }
 
-  public void changeStatus(UUID issueReleaseKey, String transitionKey, String comment, SonarLintCancelMonitor cancelMonitor) {
+  public void changeStatus(UUID issueReleaseKey, String transitionKey, @Nullable String comment, SonarLintCancelMonitor cancelMonitor) {
     var body = new ChangeStatusRequestBody(issueReleaseKey.toString(), transitionKey, comment);
     var url = "/api/v2/sca/issues-releases/change-status";
 
     serverApiHelper.post(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
   }
 
-  private record ChangeStatusRequestBody(String issueReleaseKey, String transitionKey, String comment) {
+  private record ChangeStatusRequestBody(String issueReleaseKey, String transitionKey, @Nullable String comment) {
     public String toJson() {
       return new Gson().toJson(this);
     }

@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.sync;
 
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.event.ScaIssuesSynchronizedEvent;
+import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -53,48 +53,48 @@ public class ScaSynchronizationService {
     if (!isScaSupported(serverApi, connectionId)) {
       return;
     }
-    LOG.info("[SYNC] Synchronizing SCA issues for project '{}' on branch '{}'", sonarProjectKey, branchName);
+    LOG.info("[SYNC] Synchronizing dependency risks for project '{}' on branch '{}'", sonarProjectKey, branchName);
 
-    var summary = updateServerScaIssuesForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
+    var summary = updateServerDependencyRisksForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
     if (summary.hasAnythingChanged()) {
-      eventPublisher.publishEvent(new ScaIssuesSynchronizedEvent(connectionId, sonarProjectKey, branchName, summary));
+      eventPublisher.publishEvent(new DependencyRisksSynchronizedEvent(connectionId, sonarProjectKey, branchName, summary));
     }
   }
 
-  private UpdateSummary<ServerScaIssue> updateServerScaIssuesForProject(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName,
+  private UpdateSummary<ServerDependencyRisk> updateServerDependencyRisksForProject(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName,
     SonarLintCancelMonitor cancelMonitor) {
     var issuesReleases = serverApi.sca().getIssuesReleases(sonarProjectKey, branchName, cancelMonitor);
     var findingsStore = storageService.connection(connectionId).project(sonarProjectKey).findings();
 
-    var previousScaIssues = findingsStore.loadScaIssues(branchName);
-    var previousScaIssueKeys = previousScaIssues.stream().map(ServerScaIssue::key).collect(toSet());
+    var previousDependencyRisks = findingsStore.loadDependencyRisks(branchName);
+    var previousDependencyRiskKeys = previousDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
 
-    var scaIssues = issuesReleases.issuesReleases().stream()
-      .map(issueRelease -> new ServerScaIssue(
+    var serverDependencyRisks = issuesReleases.issuesReleases().stream()
+      .map(issueRelease -> new ServerDependencyRisk(
         issueRelease.key(),
-        ServerScaIssue.Type.valueOf(issueRelease.type().name()),
-        ServerScaIssue.Severity.valueOf(issueRelease.severity().name()),
-        ServerScaIssue.Status.valueOf(issueRelease.status().name()),
+        ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
+        ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name()),
+        ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
         issueRelease.release().packageName(),
         issueRelease.release().version(),
-        issueRelease.transitions().stream().map(Enum::name).map(ServerScaIssue.Transition::valueOf).toList()))
+        issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList()))
       .toList();
 
-    findingsStore.replaceAllScaIssuesOfBranch(branchName, scaIssues);
+    findingsStore.replaceAllDependencyRisksOfBranch(branchName, serverDependencyRisks);
 
-    var newScaIssueKeys = scaIssues.stream().map(ServerScaIssue::key).collect(toSet());
-    var deletedScaIssueIds = previousScaIssues.stream()
-      .map(ServerScaIssue::key)
-      .filter(key -> !newScaIssueKeys.contains(key))
+    var newDependencyRiskKeys = serverDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
+    var deletedDependencyRiskIds = previousDependencyRisks.stream()
+      .map(ServerDependencyRisk::key)
+      .filter(key -> !newDependencyRiskKeys.contains(key))
       .collect(toSet());
-    var addedScaIssues = scaIssues.stream()
-      .filter(issue -> !previousScaIssueKeys.contains(issue.key()))
+    var addedDependencyRisks = serverDependencyRisks.stream()
+      .filter(issue -> !previousDependencyRiskKeys.contains(issue.key()))
       .toList();
-    var updatedScaIssues = scaIssues.stream()
-      .filter(issue -> previousScaIssueKeys.contains(issue.key()))
+    var updatedDependencyRisks = serverDependencyRisks.stream()
+      .filter(issue -> previousDependencyRiskKeys.contains(issue.key()))
       .toList();
 
-    return new UpdateSummary<>(deletedScaIssueIds, addedScaIssues, updatedScaIssues);
+    return new UpdateSummary<>(deletedDependencyRiskIds, addedDependencyRisks, updatedDependencyRisks);
   }
 
   private boolean isScaSupported(ServerApi serverApi, String connectionId) {

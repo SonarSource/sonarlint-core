@@ -69,7 +69,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
@@ -101,14 +101,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
   private static final String HOTSPOT_ENTITY_TYPE = "Hotspot";
-  private static final String SCA_ISSUE_ENTITY_TYPE = "ScaIssue";
+  private static final String DEPENDENCY_RISK_ENTITY_TYPE = "DependencyRisk";
   private static final String SCHEMA_ENTITY_TYPE = "Schema";
 
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
   private static final String BRANCH_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
-  private static final String BRANCH_TO_SCA_ISSUES_LINK_NAME = "scaIssues";
+  private static final String BRANCH_TO_DEPENDENCY_RISKS_LINK_NAME = "dependencyRisks";
   private static final String TAINT_ISSUE_TO_BRANCH_LINK_NAME = "branch";
-  private static final String SCA_ISSUE_TO_BRANCH_LINK_NAME = "branch";
+  private static final String DEPENDENCY_RISK_TO_BRANCH_LINK_NAME = "branch";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String FILE_TO_HOTSPOTS_LINK_NAME = "hotspots";
@@ -842,52 +842,52 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public List<ServerScaIssue> loadScaIssues(String branchName) {
+  public List<ServerDependencyRisk> loadDependencyRisks(String branchName) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
-      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME).spliterator(), false)
-        .map(XodusServerIssueStore::adaptScaIssue)
+      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_DEPENDENCY_RISKS_LINK_NAME).spliterator(), false)
+        .map(XodusServerIssueStore::adaptDependencyRisk)
         .toList())
       .orElseGet(Collections::emptyList));
   }
 
   @Override
-  public void replaceAllScaIssuesOfBranch(String branchName, List<ServerScaIssue> scaIssues) {
-    timed(wroteMessage(scaIssues.size(), "SCA issues"), () -> entityStore.executeInTransaction(txn -> {
+  public void replaceAllDependencyRisksOfBranch(String branchName, List<ServerDependencyRisk> serverDependencyRisks) {
+    timed(wroteMessage(serverDependencyRisks.size(), "Dependency risks"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
-      deleteAllScaIssuesOfBranch(branch);
+      deleteAllDependencyRisksOfBranch(branch);
       txn.flush();
-      scaIssues.forEach(issue -> updateOrCreateScaIssue(branch, issue, txn));
+      serverDependencyRisks.forEach(dependencyRisk -> updateOrCreateDependencyRisk(branch, dependencyRisk, txn));
       txn.flush();
     }));
   }
 
-  private static ServerScaIssue adaptScaIssue(Entity storedIssue) {
+  private static ServerDependencyRisk adaptDependencyRisk(Entity storedIssue) {
     var key = UUID.fromString((String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)));
-    var type = ServerScaIssue.Type.valueOf((String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)));
-    var severity = ServerScaIssue.Severity.valueOf((String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)));
-    var status = ServerScaIssue.Status.valueOf((String) requireNonNull(storedIssue.getProperty(STATUS_PROPERTY_NAME)));
+    var type = ServerDependencyRisk.Type.valueOf((String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)));
+    var severity = ServerDependencyRisk.Severity.valueOf((String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)));
+    var status = ServerDependencyRisk.Status.valueOf((String) requireNonNull(storedIssue.getProperty(STATUS_PROPERTY_NAME)));
     var packageName = (String) requireNonNull(storedIssue.getProperty(PACKAGE_NAME_PROPERTY_NAME));
     var packageVersion = (String) requireNonNull(storedIssue.getProperty(PACKAGE_VERSION_PROPERTY_NAME));
     var transitionsString = (String) requireNonNull(storedIssue.getProperty(TRANSITIONS_PROPERTY_NAME));
-    var transitions = transitionsString.trim().isEmpty() ? List.<ServerScaIssue.Transition>of()
-      : Stream.of(transitionsString.split(",")).map(ServerScaIssue.Transition::valueOf).toList();
-    return new ServerScaIssue(key, type, severity, status, packageName, packageVersion, transitions);
+    var transitions = transitionsString.trim().isEmpty() ? List.<ServerDependencyRisk.Transition>of()
+      : Stream.of(transitionsString.split(",")).map(ServerDependencyRisk.Transition::valueOf).toList();
+    return new ServerDependencyRisk(key, type, severity, status, packageName, packageVersion, transitions);
   }
 
-  private static void deleteAllScaIssuesOfBranch(Entity branchEntity) {
-    branchEntity.getLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME).forEach(Entity::delete);
-    branchEntity.deleteLinks(BRANCH_TO_SCA_ISSUES_LINK_NAME);
+  private static void deleteAllDependencyRisksOfBranch(Entity branchEntity) {
+    branchEntity.getLinks(BRANCH_TO_DEPENDENCY_RISKS_LINK_NAME).forEach(Entity::delete);
+    branchEntity.deleteLinks(BRANCH_TO_DEPENDENCY_RISKS_LINK_NAME);
   }
 
-  private static void updateOrCreateScaIssue(Entity branchEntity, ServerScaIssue issue, StoreTransaction transaction) {
-    var issueEntity = findUnique(transaction, SCA_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issue.key().toString())
-      .orElseGet(() -> transaction.newEntity(SCA_ISSUE_ENTITY_TYPE));
-    updateScaIssueEntity(issue, issueEntity);
-    branchEntity.addLink(BRANCH_TO_SCA_ISSUES_LINK_NAME, issueEntity);
-    issueEntity.setLink(SCA_ISSUE_TO_BRANCH_LINK_NAME, branchEntity);
+  private static void updateOrCreateDependencyRisk(Entity branchEntity, ServerDependencyRisk dependencyRisk, StoreTransaction transaction) {
+    var riskEntity = findUnique(transaction, DEPENDENCY_RISK_ENTITY_TYPE, KEY_PROPERTY_NAME, dependencyRisk.key().toString())
+      .orElseGet(() -> transaction.newEntity(DEPENDENCY_RISK_ENTITY_TYPE));
+    updateDependencyRiskEntity(dependencyRisk, riskEntity);
+    branchEntity.addLink(BRANCH_TO_DEPENDENCY_RISKS_LINK_NAME, riskEntity);
+    riskEntity.setLink(DEPENDENCY_RISK_TO_BRANCH_LINK_NAME, branchEntity);
   }
 
-  private static void updateScaIssueEntity(ServerScaIssue issue, Entity issueEntity) {
+  private static void updateDependencyRiskEntity(ServerDependencyRisk issue, Entity issueEntity) {
     issueEntity.setProperty(KEY_PROPERTY_NAME, issue.key().toString());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.type().name());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.severity().name());

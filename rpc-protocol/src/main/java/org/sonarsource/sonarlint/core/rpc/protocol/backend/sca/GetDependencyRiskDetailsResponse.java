@@ -21,19 +21,19 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 import java.util.List;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
 public class GetDependencyRiskDetailsResponse {
   private final String key;
-  private final ScaIssueDto.Severity severity;
+  private final DependencyRiskDto.Severity severity;
   private final String packageName;
   private final String version;
-  private final ScaIssueDto.Type type;
+  private final DependencyRiskDto.Type type;
   private final String vulnerabilityId;
   private final String description;
   private final List<AffectedPackageDto> affectedPackages;
 
-  public GetDependencyRiskDetailsResponse(String key, ScaIssueDto.Severity severity, String packageName, String version, ScaIssueDto.Type type, String vulnerabilityId,
+  public GetDependencyRiskDetailsResponse(String key, DependencyRiskDto.Severity severity, String packageName, String version, DependencyRiskDto.Type type, String vulnerabilityId,
     String description, List<AffectedPackageDto> affectedPackages) {
     this.key = key;
     this.severity = severity;
@@ -49,7 +49,7 @@ public class GetDependencyRiskDetailsResponse {
     return key;
   }
 
-  public ScaIssueDto.Severity getSeverity() {
+  public DependencyRiskDto.Severity getSeverity() {
     return severity;
   }
 
@@ -61,7 +61,7 @@ public class GetDependencyRiskDetailsResponse {
     return version;
   }
 
-  public ScaIssueDto.Type getType() {
+  public DependencyRiskDto.Type getType() {
     return type;
   }
 

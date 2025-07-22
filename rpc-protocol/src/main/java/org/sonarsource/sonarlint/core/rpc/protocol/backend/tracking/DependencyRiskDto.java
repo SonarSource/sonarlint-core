@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 import java.util.List;
 import java.util.UUID;
 
-public class ScaIssueDto {
+public class DependencyRiskDto {
   private final UUID id;
   private final Type type;
   private final Severity severity;
@@ -31,7 +31,7 @@ public class ScaIssueDto {
   private final String packageVersion;
   private final List<Transition> transitions;
 
-  public ScaIssueDto(UUID id, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+  public DependencyRiskDto(UUID id, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
     this.id = id;
     this.type = type;
     this.severity = severity;

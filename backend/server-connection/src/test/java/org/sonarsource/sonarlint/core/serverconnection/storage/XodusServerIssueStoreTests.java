@@ -48,7 +48,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
@@ -61,7 +61,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerHots
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aBatchServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aFileLevelServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerScaIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerDependencyRisk;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class XodusServerIssueStoreTests {
@@ -885,195 +885,195 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_save_a_sca_issue() {
-    var scaIssue = aServerScaIssue();
+  void should_save_a_dependency_risk() {
+    var dependencyRisk = aServerDependencyRisk();
 
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue));
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk));
 
-    var savedIssues = store.loadScaIssues("branch");
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(1);
     var savedIssue = savedIssues.get(0);
-    assertThat(savedIssue.key()).isEqualTo(scaIssue.key());
-    assertThat(savedIssue.type()).isEqualTo(ServerScaIssue.Type.VULNERABILITY);
-    assertThat(savedIssue.severity()).isEqualTo(ServerScaIssue.Severity.HIGH);
+    assertThat(savedIssue.key()).isEqualTo(dependencyRisk.key());
+    assertThat(savedIssue.type()).isEqualTo(ServerDependencyRisk.Type.VULNERABILITY);
+    assertThat(savedIssue.severity()).isEqualTo(ServerDependencyRisk.Severity.HIGH);
     assertThat(savedIssue.packageName()).isEqualTo("com.example.vulnerable");
-    assertThat(savedIssue.status()).isEqualTo(ServerScaIssue.Status.OPEN);
+    assertThat(savedIssue.status()).isEqualTo(ServerDependencyRisk.Status.OPEN);
     assertThat(savedIssue.packageVersion()).isEqualTo("1.0.0");
     assertThat(savedIssue.transitions()).containsExactly(
-      ServerScaIssue.Transition.CONFIRM,
-      ServerScaIssue.Transition.REOPEN);
+      ServerDependencyRisk.Transition.CONFIRM,
+      ServerDependencyRisk.Transition.REOPEN);
   }
 
   @Test
-  void should_return_empty_sca_issues_when_branch_unknown() {
-    var scaIssues = store.loadScaIssues("unknownBranch");
+  void should_return_empty_dependency_risks_when_branch_unknown() {
+    var dependencyRisks = store.loadDependencyRisks("unknownBranch");
 
-    assertThat(scaIssues).isEmpty();
+    assertThat(dependencyRisks).isEmpty();
   }
 
   @Test
-  void should_load_all_sca_issues_of_a_branch() {
-    var scaIssue1 = new ServerScaIssue(
+  void should_load_all_dependency_risks_of_a_branch() {
+    var dependencyRisk1 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.HIGH,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
-      List.of(ServerScaIssue.Transition.CONFIRM));
-    var scaIssue2 = new ServerScaIssue(
+      List.of(ServerDependencyRisk.Transition.CONFIRM));
+    var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.PROHIBITED_LICENSE,
-      ServerScaIssue.Severity.BLOCKER,
-      ServerScaIssue.Status.CONFIRM,
+      ServerDependencyRisk.Type.PROHIBITED_LICENSE,
+      ServerDependencyRisk.Severity.BLOCKER,
+      ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
-      List.of(ServerScaIssue.Transition.ACCEPT));
+      List.of(ServerDependencyRisk.Transition.ACCEPT));
 
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue1, scaIssue2));
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk1, dependencyRisk2));
 
-    var savedIssues = store.loadScaIssues("branch");
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(2);
     assertThat(savedIssues)
-      .extracting(ServerScaIssue::key)
-      .containsExactlyInAnyOrder(scaIssue1.key(), scaIssue2.key());
+      .extracting(ServerDependencyRisk::key)
+      .containsExactlyInAnyOrder(dependencyRisk1.key(), dependencyRisk2.key());
   }
 
   @Test
-  void should_load_sca_issues_of_the_right_branch() {
-    var scaIssue1 = new ServerScaIssue(
+  void should_load_dependency_risks_of_the_right_branch() {
+    var dependencyRisk1 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.HIGH,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
       List.of());
-    var scaIssue2 = new ServerScaIssue(
+    var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.PROHIBITED_LICENSE,
-      ServerScaIssue.Severity.MEDIUM,
-      ServerScaIssue.Status.SAFE,
+      ServerDependencyRisk.Type.PROHIBITED_LICENSE,
+      ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.Status.SAFE,
       "com.example.prohibited",
       "2.0.0",
-      List.of(ServerScaIssue.Transition.SAFE));
+      List.of(ServerDependencyRisk.Transition.SAFE));
 
-    store.replaceAllScaIssuesOfBranch("branch1", List.of(scaIssue1));
-    store.replaceAllScaIssuesOfBranch("branch2", List.of(scaIssue2));
+    store.replaceAllDependencyRisksOfBranch("branch1", List.of(dependencyRisk1));
+    store.replaceAllDependencyRisksOfBranch("branch2", List.of(dependencyRisk2));
 
-    var branch1Issues = store.loadScaIssues("branch1");
+    var branch1Issues = store.loadDependencyRisks("branch1");
     assertThat(branch1Issues).hasSize(1);
-    assertThat(branch1Issues.get(0).key()).isEqualTo(scaIssue1.key());
+    assertThat(branch1Issues.get(0).key()).isEqualTo(dependencyRisk1.key());
 
-    var branch2Issues = store.loadScaIssues("branch2");
+    var branch2Issues = store.loadDependencyRisks("branch2");
     assertThat(branch2Issues).hasSize(1);
-    assertThat(branch2Issues.get(0).key()).isEqualTo(scaIssue2.key());
+    assertThat(branch2Issues.get(0).key()).isEqualTo(dependencyRisk2.key());
   }
 
   @Test
-  void should_replace_all_sca_issues_of_branch() {
-    var scaIssue1 = new ServerScaIssue(
+  void should_replace_all_dependency_risks_of_branch() {
+    var dependencyRisk1 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.HIGH,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
       List.of());
-    var scaIssue2 = new ServerScaIssue(
+    var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.PROHIBITED_LICENSE,
-      ServerScaIssue.Severity.MEDIUM,
-      ServerScaIssue.Status.ACCEPT,
+      ServerDependencyRisk.Type.PROHIBITED_LICENSE,
+      ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.Status.ACCEPT,
       "com.example.prohibited",
       "2.0.0",
       List.of());
 
     // First store some issues
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue1));
-    assertThat(store.loadScaIssues("branch")).hasSize(1);
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk1));
+    assertThat(store.loadDependencyRisks("branch")).hasSize(1);
 
     // Replace with different issues
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue2));
-    var savedIssues = store.loadScaIssues("branch");
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk2));
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(1);
-    assertThat(savedIssues.get(0).key()).isEqualTo(scaIssue2.key());
+    assertThat(savedIssues.get(0).key()).isEqualTo(dependencyRisk2.key());
   }
 
   @Test
-  void should_save_sca_issues_with_different_types_and_severities() {
-    var vulnerabilityIssue = new ServerScaIssue(
+  void should_save_dependency_risks_with_different_types_and_severities() {
+    var vulnerabilityIssue = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.HIGH,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
       List.of());
-    var licenseIssue = new ServerScaIssue(
+    var licenseIssue = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.PROHIBITED_LICENSE,
-      ServerScaIssue.Severity.BLOCKER,
-      ServerScaIssue.Status.CONFIRM,
+      ServerDependencyRisk.Type.PROHIBITED_LICENSE,
+      ServerDependencyRisk.Severity.BLOCKER,
+      ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
       List.of());
 
-    store.replaceAllScaIssuesOfBranch("branch", List.of(vulnerabilityIssue, licenseIssue));
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(vulnerabilityIssue, licenseIssue));
 
-    var savedIssues = store.loadScaIssues("branch");
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(2);
     assertThat(savedIssues)
-      .extracting(ServerScaIssue::type, ServerScaIssue::severity)
+      .extracting(ServerDependencyRisk::type, ServerDependencyRisk::severity)
       .containsExactlyInAnyOrder(
-        tuple(ServerScaIssue.Type.VULNERABILITY, ServerScaIssue.Severity.HIGH),
-        tuple(ServerScaIssue.Type.PROHIBITED_LICENSE, ServerScaIssue.Severity.BLOCKER));
+        tuple(ServerDependencyRisk.Type.VULNERABILITY, ServerDependencyRisk.Severity.HIGH),
+        tuple(ServerDependencyRisk.Type.PROHIBITED_LICENSE, ServerDependencyRisk.Severity.BLOCKER));
   }
 
   @Test
-  void should_save_sca_issues_with_empty_transitions() {
-    var scaIssue = new ServerScaIssue(
+  void should_save_dependency_risks_with_empty_transitions() {
+    var dependencyRisk = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.LOW,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.LOW,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.minimal",
       "0.1.0",
       List.of());
 
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue));
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk));
 
-    var savedIssues = store.loadScaIssues("branch");
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(1);
     assertThat(savedIssues.get(0).transitions()).isEmpty();
   }
 
   @Test
-  void should_save_sca_issues_with_all_transition_types() {
-    var scaIssue = new ServerScaIssue(
+  void should_save_dependency_risks_with_all_transition_types() {
+    var dependencyRisk = new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.MEDIUM,
-      ServerScaIssue.Status.CONFIRM,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.Status.CONFIRM,
       "com.example.transitions",
       "1.5.0",
       List.of(
-        ServerScaIssue.Transition.CONFIRM,
-        ServerScaIssue.Transition.REOPEN,
-        ServerScaIssue.Transition.SAFE,
-        ServerScaIssue.Transition.FIXED,
-        ServerScaIssue.Transition.ACCEPT));
+        ServerDependencyRisk.Transition.CONFIRM,
+        ServerDependencyRisk.Transition.REOPEN,
+        ServerDependencyRisk.Transition.SAFE,
+        ServerDependencyRisk.Transition.FIXED,
+        ServerDependencyRisk.Transition.ACCEPT));
 
-    store.replaceAllScaIssuesOfBranch("branch", List.of(scaIssue));
+    store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk));
 
-    var savedIssues = store.loadScaIssues("branch");
+    var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(1);
     assertThat(savedIssues.get(0).transitions()).containsExactly(
-      ServerScaIssue.Transition.CONFIRM,
-      ServerScaIssue.Transition.REOPEN,
-      ServerScaIssue.Transition.SAFE,
-      ServerScaIssue.Transition.FIXED,
-      ServerScaIssue.Transition.ACCEPT);
+      ServerDependencyRisk.Transition.CONFIRM,
+      ServerDependencyRisk.Transition.REOPEN,
+      ServerDependencyRisk.Transition.SAFE,
+      ServerDependencyRisk.Transition.FIXED,
+      ServerDependencyRisk.Transition.ACCEPT);
   }
 
   @Test

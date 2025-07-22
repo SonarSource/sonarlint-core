@@ -22,20 +22,28 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 
-@JsonSegment("sca")
-public interface ScaRpcService {
+@JsonSegment("dependencyRisk")
+public interface DependencyRiskRpcService {
+
+  /**
+   * Returns the list of dependency risks detected for the given configuration scopes.
+   */
+  @JsonRequest
+  CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params);
+
     /**
    * <p> It changes a status of a Dependency Risk (SCA finding) that exists on the server. In detail, it is responsible for:
    * <ul>
-   *   <li>Changes the status of a Dependency Risk (identified by {@link ChangeScaIssueStatusParams#getIssueReleaseKey()} )}</li>
+   *   <li>Changes the status of a Dependency Risk (identified by {@link ChangeDependencyRiskStatusParams#getDependencyRiskKey()})</li>
    *   <li>Updates the Dependency Risk status in the local storage</li>
    *   <li>Calls the server to update the Dependency Risk status</li>
    * </ul>
    *</p>
    * It returns a failed future if:
    * <ul>
-   *   <li>the provided configuration scope (identified by {@link ChangeScaIssueStatusParams#getConfigurationScopeId()} is unknown</li>
+   *   <li>the provided configuration scope (identified by {@link ChangeDependencyRiskStatusParams#getConfigurationScopeId()} is unknown</li>
    *   <li>the connection bound to the configuration scope is unknown</li>
    *   <li>the issueReleaseKey is not found in the local storage</li>
    *   <li>the Dependency Risk is not found either on the server or in the local storage for issues</li>
@@ -45,7 +53,7 @@ public interface ScaRpcService {
    * </p>
    */  
   @JsonRequest
-  CompletableFuture<Void> changeStatus(ChangeScaIssueStatusParams params);
+  CompletableFuture<Void> changeStatus(ChangeDependencyRiskStatusParams params);
 
   /**
    * Returns the details of a dependency risk including description and affected packages.

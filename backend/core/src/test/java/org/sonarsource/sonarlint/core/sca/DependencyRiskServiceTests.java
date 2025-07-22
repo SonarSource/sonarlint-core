@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
+package org.sonarsource.sonarlint.core.sca;
 
-import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
-public class ListAllScaIssuesResponse {
-  private final List<ScaIssueDto> scaIssues;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public ListAllScaIssuesResponse(List<ScaIssueDto> scaIssues) {
-    this.scaIssues = scaIssues;
-  }
+class DependencyRiskServiceTests {
 
-  public List<ScaIssueDto> getScaIssues() {
-    return scaIssues;
+  @Test
+  void testBuildSonarQubeServerScaUrl() {
+    var dependencyKey = UUID.randomUUID();
+    assertThat(DependencyRiskService.buildDependencyRiskBrowseUrl("myProject", "myBranch", dependencyKey, new EndpointParams("http://foo.com", "", false, null)))
+      .isEqualTo(String.format("http://foo.com/dependency-risks/%s/what?id=myProject&branch=myBranch", dependencyKey));
   }
 }

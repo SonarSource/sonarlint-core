@@ -36,9 +36,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 
 public interface SonarLintRpcServer {
@@ -86,9 +85,6 @@ public interface SonarLintRpcServer {
   TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService();
 
   @JsonDelegate
-  ScaIssueTrackingRpcService getScaIssueTrackingService();
-
-  @JsonDelegate
   DogfoodingRpcService getDogfoodingService();
 
   @JsonDelegate
@@ -98,7 +94,7 @@ public interface SonarLintRpcServer {
   TaskProgressRpcService getTaskProgressRpcService();
 
   @JsonDelegate
-  ScaRpcService getScaService();
+  DependencyRiskRpcService getDependencyRiskService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
