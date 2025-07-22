@@ -19,22 +19,23 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>5.6</sonar.apiVersion>
+    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <sonar.testing-harness>9.9.0.65466</sonar.testing-harness>
     <jdk.min.version>11</jdk.min.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
+      <groupId>org.sonarsource.api.plugin</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonar.apiVersion}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- packaged with the plugin -->
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.6</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.18.0</version>
     </dependency>
 
 
@@ -42,13 +43,13 @@
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-testing-harness</artifactId>
-      <version>${sonar.apiVersion}</version>
+      <version>${sonar.testing-harness}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

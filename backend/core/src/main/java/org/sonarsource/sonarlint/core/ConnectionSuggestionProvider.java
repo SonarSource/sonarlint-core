@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
@@ -47,7 +48,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConn
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.springframework.context.event.EventListener;
 
-import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.sonarsource.sonarlint.core.BindingClueProvider.ALL_BINDING_CLUE_FILENAMES;
 
 public class ConnectionSuggestionProvider {
@@ -159,7 +159,7 @@ public class ConnectionSuggestionProvider {
       var serverUrl = sonarQubeBindingClue.getServerUrl();
       var connection = connectionRepository.findByUrl(serverUrl);
       if (connection.isEmpty()) {
-        return Optional.of(Either.forLeft(removeEnd(serverUrl, "/")));
+        return Optional.of(Either.forLeft(Strings.CS.removeEnd(serverUrl, "/")));
       }
     } else {
       LOG.debug("Found an invalid binding clue for connection suggestion");

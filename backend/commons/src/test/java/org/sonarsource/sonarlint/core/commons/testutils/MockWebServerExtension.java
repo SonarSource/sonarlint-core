@@ -27,6 +27,7 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
 import okio.Buffer;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -50,12 +51,13 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     server = new MockWebServer();
     responsesByPath.clear();
     final Dispatcher dispatcher = new Dispatcher() {
+      @NotNull
       @Override
       public MockResponse dispatch(RecordedRequest request) {
         if (responsesByPath.containsKey(request.getPath())) {
           return responsesByPath.get(request.getPath());
         }
-        return new MockResponse().setResponseCode(404);
+        return new MockResponse.Builder().code(404).build();
       }
     };
     server.setDispatcher(dispatcher);
@@ -80,7 +82,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   }
 
   public void addStringResponse(String path, String body) {
-    responsesByPath.put(path, new MockResponse().setBody(body));
+    responsesByPath.put(path, new MockResponse.Builder().body(body).build());
   }
 
   public void removeResponse(String path) {
@@ -110,7 +112,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   public void addResponseFromResource(String path, String responseResourcePath) {
     try (var b = new Buffer()) {
-      responsesByPath.put(path, new MockResponse().setBody(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))));
+      responsesByPath.put(path, new MockResponse.Builder().body(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))).build());
     } catch (IOException e) {
       fail(e);
     }

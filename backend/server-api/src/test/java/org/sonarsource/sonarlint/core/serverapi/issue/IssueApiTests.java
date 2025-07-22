@@ -75,7 +75,7 @@ class IssueApiTests {
 
   @Test
   void should_return_no_batch_issue_if_download_is_forbidden() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(403));
+    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse.Builder().code(403).build());
 
     var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
@@ -84,7 +84,7 @@ class IssueApiTests {
 
   @Test
   void should_return_no_batch_issue_if_endpoint_is_not_found() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse.Builder().code(404).build());
 
     var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
@@ -93,7 +93,7 @@ class IssueApiTests {
 
   @Test
   void should_throw_an_error_if_batch_issue_download_fails() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(500));
+    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse.Builder().code(500).build());
 
     var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor()));
 

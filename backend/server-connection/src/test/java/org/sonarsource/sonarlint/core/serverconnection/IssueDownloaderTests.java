@@ -356,7 +356,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_fail_other_codes() {
-    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
+    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse.Builder().code(503).build());
 
     var cancelMonitor = new SonarLintCancelMonitor();
     var thrown = assertThrows(ServerErrorException.class,
@@ -366,7 +366,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_return_empty_if_404() {
-    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse.Builder().code(404).build());
 
     var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).isEmpty();
