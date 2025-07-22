@@ -340,22 +340,22 @@ public class ProjectStorageFixture {
                 });
             });
 
-          branch.serverScaIssues.stream()
-            .map(ServerScaIssueFixtures.ServerScaIssueBuilder::build)
-            .forEach(scaIssue -> {
-              var scaIssueEntity = txn.newEntity("ScaIssue");
-              scaIssueEntity.setProperty("key", scaIssue.key().toString());
-              scaIssueEntity.setProperty("type", scaIssue.type().name());
-              scaIssueEntity.setProperty("severity", scaIssue.severity().name());
-              scaIssueEntity.setProperty("status", scaIssue.status().name());
-              scaIssueEntity.setProperty("packageName", scaIssue.packageName());
-              scaIssueEntity.setProperty("packageVersion", scaIssue.packageVersion());
-              scaIssueEntity.setProperty("transitions", scaIssue.transitions().stream()
+          branch.serverDependencyRisks.stream()
+            .map(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder::build)
+            .forEach(dependencyRisk -> {
+              var dependencyRiskEntity = txn.newEntity("DependencyRisk");
+              dependencyRiskEntity.setProperty("key", dependencyRisk.key().toString());
+              dependencyRiskEntity.setProperty("type", dependencyRisk.type().name());
+              dependencyRiskEntity.setProperty("severity", dependencyRisk.severity().name());
+              dependencyRiskEntity.setProperty("status", dependencyRisk.status().name());
+              dependencyRiskEntity.setProperty("packageName", dependencyRisk.packageName());
+              dependencyRiskEntity.setProperty("packageVersion", dependencyRisk.packageVersion());
+              dependencyRiskEntity.setProperty("transitions", dependencyRisk.transitions().stream()
                 .map(Enum::name)
                 .collect(Collectors.joining(",")));
 
-              branchEntity.addLink("scaIssues", scaIssueEntity);
-              scaIssueEntity.setLink("branch", branchEntity);
+              branchEntity.addLink("dependencyRisks", dependencyRiskEntity);
+              dependencyRiskEntity.setLink("branch", branchEntity);
             });
         });
       });
@@ -392,7 +392,7 @@ public class ProjectStorageFixture {
     public static class BranchBuilder {
       private final List<ServerIssueFixtures.ServerIssueBuilder> serverIssues = new ArrayList<>();
       private final List<ServerTaintIssueFixtures.ServerTaintIssueBuilder> serverTaintIssues = new ArrayList<>();
-      private final List<ServerScaIssueFixtures.ServerScaIssueBuilder> serverScaIssues = new ArrayList<>();
+      private final List<ServerDependencyRiskFixtures.ServerDependencyRiskBuilder> serverDependencyRisks = new ArrayList<>();
       private final List<ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder> serverHotspots = new ArrayList<>();
       private final String name;
       private final boolean isMain;
@@ -412,8 +412,8 @@ public class ProjectStorageFixture {
         return this;
       }
 
-      public BranchBuilder withScaIssue(ServerScaIssueFixtures.ServerScaIssueBuilder serverScaIssueBuilder) {
-        serverScaIssues.add(serverScaIssueBuilder);
+      public BranchBuilder withDependencyRisk(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder serverDependencyRiskBuilder) {
+        serverDependencyRisks.add(serverDependencyRiskBuilder);
         return this;
       }
 

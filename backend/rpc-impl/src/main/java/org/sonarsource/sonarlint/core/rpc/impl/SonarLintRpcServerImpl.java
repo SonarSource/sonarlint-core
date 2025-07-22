@@ -63,9 +63,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ScaRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -224,11 +223,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   @Override
-  public ScaIssueTrackingRpcService getScaIssueTrackingService() {
-    return new ScaIssueTrackingRpcServiceDelegate(this);
-  }
-
-  @Override
   public DogfoodingRpcService getDogfoodingService() {
     return new DogfoodingRpcServiceDelegate(this);
   }
@@ -244,8 +238,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   @Override
-  public ScaRpcService getScaService() {
-    return new ScaRpcServiceDelegate(this);
+  public DependencyRiskRpcService getDependencyRiskService() {
+    return new DependencyRiskRpcServiceDelegate(this);
   }
 
   @Override

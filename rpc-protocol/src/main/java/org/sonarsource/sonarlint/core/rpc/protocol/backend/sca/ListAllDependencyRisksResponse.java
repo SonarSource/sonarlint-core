@@ -19,37 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
-import java.util.UUID;
-import javax.annotation.Nullable;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
-public class ChangeScaIssueStatusParams {
-  private final String configurationScopeId;
-  private final UUID issueReleaseKey;
-  private final DependencyRiskTransition transition;
-  @Nullable
-  private final String comment;
+public class ListAllDependencyRisksResponse {
+  private final List<DependencyRiskDto> dependencyRisks;
 
-  public ChangeScaIssueStatusParams(String configurationScopeId, UUID issueReleaseKey, DependencyRiskTransition transition, @Nullable String comment) {
-    this.configurationScopeId = configurationScopeId;
-    this.issueReleaseKey = issueReleaseKey;
-    this.transition = transition;
-    this.comment = comment;
+  public ListAllDependencyRisksResponse(List<DependencyRiskDto> dependencyRisks) {
+    this.dependencyRisks = dependencyRisks;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public UUID getIssueReleaseKey() {
-    return issueReleaseKey;
-  }
-
-  public DependencyRiskTransition getTransition() {
-    return transition;
-  }
-
-  @Nullable
-  public String getComment() {
-    return comment;
+  public List<DependencyRiskDto> getDependencyRisks() {
+    return dependencyRisks;
   }
 }

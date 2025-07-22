@@ -22,35 +22,35 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.sca;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
-public class DidChangeScaIssuesParams {
+public class DidChangeDependencyRisksParams {
   private final String configurationScopeId;
-  private final Set<UUID> closedScaIssueIds;
-  private final List<ScaIssueDto> addedScaIssues;
-  private final List<ScaIssueDto> updatedScaIssues;
+  private final Set<UUID> closedDependencyRiskIds;
+  private final List<DependencyRiskDto> addedDependencyRisks;
+  private final List<DependencyRiskDto> updatedDependencyRisks;
 
-  public DidChangeScaIssuesParams(String configurationScopeId, Set<UUID> closedScaIssueIds, List<ScaIssueDto> addedScaIssues,
-    List<ScaIssueDto> updatedScaIssues) {
+  public DidChangeDependencyRisksParams(String configurationScopeId, Set<UUID> closedDependencyRiskIds, List<DependencyRiskDto> addedDependencyRisks,
+    List<DependencyRiskDto> updatedDependencyRisks) {
     this.configurationScopeId = configurationScopeId;
-    this.closedScaIssueIds = closedScaIssueIds;
-    this.addedScaIssues = addedScaIssues;
-    this.updatedScaIssues = updatedScaIssues;
+    this.closedDependencyRiskIds = closedDependencyRiskIds;
+    this.addedDependencyRisks = addedDependencyRisks;
+    this.updatedDependencyRisks = updatedDependencyRisks;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public Set<UUID> getClosedScaIssueIds() {
-    return closedScaIssueIds;
+  public Set<UUID> getClosedDependencyRiskIds() {
+    return closedDependencyRiskIds;
   }
 
-  public List<ScaIssueDto> getAddedScaIssues() {
-    return addedScaIssues;
+  public List<DependencyRiskDto> getAddedDependencyRisks() {
+    return addedDependencyRisks;
   }
 
-  public List<ScaIssueDto> getUpdatedScaIssues() {
-    return updatedScaIssues;
+  public List<DependencyRiskDto> getUpdatedDependencyRisks() {
+    return updatedDependencyRisks;
   }
 }

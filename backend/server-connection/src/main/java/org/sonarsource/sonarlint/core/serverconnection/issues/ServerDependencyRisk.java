@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.sca;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public record ServerDependencyRisk(UUID key, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+  public enum Severity {
+    INFO, LOW, MEDIUM, HIGH, BLOCKER
+  }
 
-class ScaServiceTests {
+  public enum Type {
+    VULNERABILITY, PROHIBITED_LICENSE
+  }
 
-  @Test
-  void testBuildSonarQubeServerScaUrl() {
-    var dependencyKey = UUID.randomUUID();
-    assertThat(ScaService.buildScaBrowseUrl("myProject", "myBranch", dependencyKey, new EndpointParams("http://foo.com", "", false, null)))
-      .isEqualTo(String.format("http://foo.com/dependency-risks/%s/what?id=myProject&branch=myBranch", dependencyKey));
+  public enum Status {
+    OPEN, CONFIRM, ACCEPT, SAFE
+  }
+
+  public enum Transition {
+    CONFIRM, REOPEN, SAFE, FIXED, ACCEPT
   }
 }

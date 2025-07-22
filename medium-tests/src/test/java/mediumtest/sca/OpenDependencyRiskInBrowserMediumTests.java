@@ -51,7 +51,7 @@ class OpenDependencyRiskInBrowserMediumTests {
       .withTelemetryEnabled()
       .start(fakeClient);
 
-    backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
+    backend.getDependencyRiskService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
       SCOPE_ID, DEPENDENCY_KEY)).join();
 
     var expectedUrl = String.format("http://localhost:12345/dependency-risks/%s/what?id=%s&branch=%s",
@@ -68,7 +68,7 @@ class OpenDependencyRiskInBrowserMediumTests {
       .withUnboundConfigScope(SCOPE_ID)
       .start(fakeClient);
 
-    var result = backend.getScaService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
+    var result = backend.getDependencyRiskService().openDependencyRiskInBrowser(new OpenDependencyRiskInBrowserParams(
       SCOPE_ID, DEPENDENCY_KEY));
 
     assertThat(result).failsWithin(Duration.ofSeconds(2)).withThrowableOfType(ExecutionException.class)

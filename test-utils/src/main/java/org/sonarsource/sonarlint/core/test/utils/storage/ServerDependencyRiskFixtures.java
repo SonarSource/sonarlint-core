@@ -21,64 +21,64 @@ package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.util.List;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 
-public class ServerScaIssueFixtures {
+public class ServerDependencyRiskFixtures {
 
-  private ServerScaIssueFixtures() {
+  private ServerDependencyRiskFixtures() {
     // utility class
   }
 
-  public static ServerScaIssueBuilder aServerScaIssue() {
-    return new ServerScaIssueBuilder();
+  public static ServerDependencyRiskBuilder aServerDependencyRisk() {
+    return new ServerDependencyRiskBuilder();
   }
 
-  public static class ServerScaIssueBuilder {
+  public static class ServerDependencyRiskBuilder {
     private UUID key = UUID.randomUUID();
-    private ServerScaIssue.Type type = ServerScaIssue.Type.VULNERABILITY;
-    private ServerScaIssue.Severity severity = ServerScaIssue.Severity.HIGH;
-    private ServerScaIssue.Status status = ServerScaIssue.Status.OPEN;
+    private ServerDependencyRisk.Type type = ServerDependencyRisk.Type.VULNERABILITY;
+    private ServerDependencyRisk.Severity severity = ServerDependencyRisk.Severity.HIGH;
+    private ServerDependencyRisk.Status status = ServerDependencyRisk.Status.OPEN;
     private String packageName = "com.example.vulnerable";
     private String packageVersion = "1.0.0";
-    private List<ServerScaIssue.Transition> transitions = List.of(ServerScaIssue.Transition.CONFIRM, ServerScaIssue.Transition.ACCEPT);
+    private List<ServerDependencyRisk.Transition> transitions = List.of(ServerDependencyRisk.Transition.CONFIRM, ServerDependencyRisk.Transition.ACCEPT);
 
-    public ServerScaIssueBuilder withKey(UUID key) {
+    public ServerDependencyRiskBuilder withKey(UUID key) {
       this.key = key;
       return this;
     }
 
-    public ServerScaIssueBuilder withType(ServerScaIssue.Type type) {
+    public ServerDependencyRiskBuilder withType(ServerDependencyRisk.Type type) {
       this.type = type;
       return this;
     }
 
-    public ServerScaIssueBuilder withSeverity(ServerScaIssue.Severity severity) {
+    public ServerDependencyRiskBuilder withSeverity(ServerDependencyRisk.Severity severity) {
       this.severity = severity;
       return this;
     }
 
-    public ServerScaIssueBuilder withStatus(ServerScaIssue.Status status) {
+    public ServerDependencyRiskBuilder withStatus(ServerDependencyRisk.Status status) {
       this.status = status;
       return this;
     }
 
-    public ServerScaIssueBuilder withPackageName(String packageName) {
+    public ServerDependencyRiskBuilder withPackageName(String packageName) {
       this.packageName = packageName;
       return this;
     }
 
-    public ServerScaIssueBuilder withPackageVersion(String packageVersion) {
+    public ServerDependencyRiskBuilder withPackageVersion(String packageVersion) {
       this.packageVersion = packageVersion;
       return this;
     }
 
-    public ServerScaIssueBuilder withTransitions(List<ServerScaIssue.Transition> transitions) {
+    public ServerDependencyRiskBuilder withTransitions(List<ServerDependencyRisk.Transition> transitions) {
       this.transitions = transitions;
       return this;
     }
 
-    public ServerScaIssue build() {
-      return new ServerScaIssue(key, type, severity, status, packageName, packageVersion, transitions);
+    public ServerDependencyRisk build() {
+      return new ServerDependencyRisk(key, type, severity, status, packageName, packageVersion, transitions);
     }
   }
 }

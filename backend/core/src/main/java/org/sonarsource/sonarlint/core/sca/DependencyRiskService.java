@@ -34,17 +34,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
-public class ScaService {
+public class DependencyRiskService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConfigurationRepository configurationRepository;
@@ -55,7 +55,7 @@ public class ScaService {
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
 
-  public ScaService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
+  public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
     SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, SonarLintRpcClient client, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
@@ -66,7 +66,7 @@ public class ScaService {
     this.telemetryService = telemetryService;
   }
 
-  public void changeStatus(String configurationScopeId, UUID issueReleaseKey, DependencyRiskTransition transition, @CheckForNull String comment,
+  public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,
     SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverConnection = sonarQubeClientManager.getClientOrThrow(binding.connectionId());
@@ -77,17 +77,17 @@ public class ScaService {
       throw new IllegalArgumentException("Could not determine matched branch for configuration scope " + configurationScopeId);
     }
 
-    var scaIssues = projectServerIssueStore.loadScaIssues(branchName.get());
-    var dependencyRiskOpt = scaIssues.stream().filter(issue -> issue.key().equals(issueReleaseKey)).findFirst();
+    var dependencyRisks = projectServerIssueStore.loadDependencyRisks(branchName.get());
+    var dependencyRiskOpt = dependencyRisks.stream().filter(risk -> risk.key().equals(dependencyRiskKey)).findFirst();
 
     if (dependencyRiskOpt.isEmpty()) {
-      throw new ScaIssueNotFoundException("Dependency Risk with key " + issueReleaseKey.toString() + " was not found", issueReleaseKey.toString());
+      throw new DependencyRiskNotFoundException("Dependency Risk with key " + dependencyRiskKey + " was not found", dependencyRiskKey.toString());
     }
 
     var dependencyRisk = dependencyRiskOpt.get();
 
     if (!dependencyRisk.transitions().contains(adaptTransition(transition))) {
-      throw new IllegalArgumentException("Transition " + transition + " is not allowed for this SCA issue");
+      throw new IllegalArgumentException("Transition " + transition + " is not allowed for this dependency risk");
     }
 
     if ((transition == DependencyRiskTransition.ACCEPT || transition == DependencyRiskTransition.SAFE || transition == DependencyRiskTransition.FIXED)
@@ -95,9 +95,9 @@ public class ScaService {
       throw new IllegalArgumentException("Comment is required for ACCEPT, FIXED, and SAFE transitions");
     }
 
-    LOG.info("Changing SCA issue status for issue {} to {} with comment: {}", issueReleaseKey, transition, comment);
+    LOG.info("Changing status for dependency risk {} to {} with comment: {}", dependencyRiskKey, transition, comment);
 
-    serverConnection.withClientApi(serverApi -> serverApi.sca().changeStatus(issueReleaseKey, transition.name(), comment, cancelMonitor));
+    serverConnection.withClientApi(serverApi -> serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor));
   }
 
   public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, String dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
@@ -117,13 +117,13 @@ public class ScaService {
     return convertToRpcResponse(serverResponse);
   }
 
-  private static ServerScaIssue.Transition adaptTransition(DependencyRiskTransition transition) {
+  private static ServerDependencyRisk.Transition adaptTransition(DependencyRiskTransition transition) {
     return switch (transition) {
-      case REOPEN -> ServerScaIssue.Transition.REOPEN;
-      case CONFIRM -> ServerScaIssue.Transition.CONFIRM;
-      case ACCEPT -> ServerScaIssue.Transition.ACCEPT;
-      case SAFE -> ServerScaIssue.Transition.SAFE;
-      case FIXED -> ServerScaIssue.Transition.FIXED;
+      case REOPEN -> ServerDependencyRisk.Transition.REOPEN;
+      case CONFIRM -> ServerDependencyRisk.Transition.CONFIRM;
+      case ACCEPT -> ServerDependencyRisk.Transition.ACCEPT;
+      case SAFE -> ServerDependencyRisk.Transition.SAFE;
+      case FIXED -> ServerDependencyRisk.Transition.FIXED;
     };
   }
 
@@ -147,8 +147,8 @@ public class ScaService {
         .build())
       .toList();
 
-    return new GetDependencyRiskDetailsResponse(serverResponse.key(), ScaIssueDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
-      serverResponse.release().version(), ScaIssueDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
+    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
+      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
       serverResponse.vulnerability().description(), affectedPackages);
   }
 
@@ -163,14 +163,14 @@ public class ScaService {
       throw new IllegalArgumentException(String.format("Configuration scope %s has no matching branch, unable to open dependency risk", configurationScopeId));
     }
 
-    var url = buildScaBrowseUrl(effectiveBinding.get().sonarProjectKey(), branchName.get(), dependencyKey, endpointParams.get());
+    var url = buildDependencyRiskBrowseUrl(effectiveBinding.get().sonarProjectKey(), branchName.get(), dependencyKey, endpointParams.get());
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
     telemetryService.dependencyRiskInvestigatedRemotely();
   }
 
-  static String buildScaBrowseUrl(String projectKey, String branch, UUID dependencyKey, EndpointParams endpointParams) {
+  static String buildDependencyRiskBrowseUrl(String projectKey, String branch, UUID dependencyKey, EndpointParams endpointParams) {
     var relativePath = new StringBuilder("/dependency-risks/")
       .append(UrlUtils.urlEncode(dependencyKey.toString()))
       .append("/what?id=")
@@ -182,16 +182,16 @@ public class ScaService {
     return ServerApiHelper.concat(endpointParams.getBaseUrl(), relativePath);
   }
 
-  public static class ScaIssueNotFoundException extends RuntimeException {
-    private final String issueKey;
+  public static class DependencyRiskNotFoundException extends RuntimeException {
+    private final String key;
 
-    public ScaIssueNotFoundException(String message, String issueKey) {
+    public DependencyRiskNotFoundException(String message, String key) {
       super(message);
-      this.issueKey = issueKey;
+      this.key = key;
     }
 
-    public String getIssueKey() {
-      return issueKey;
+    public String getKey() {
+      return key;
     }
   }
 }

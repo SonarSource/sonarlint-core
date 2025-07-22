@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static java.util.Optional.ofNullable;
@@ -60,7 +60,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, Map<Path, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastTaintSyncByBranch = new HashMap<>();
   private final Map<String, ServerTaintIssue> taintIssuesByKey = new HashMap<>();
-  private final Map<String, List<ServerScaIssue>> scaIssuesByBranch = new HashMap<>();
+  private final Map<String, List<ServerDependencyRisk>> dependencyRisksByBranch = new HashMap<>();
 
   @Override
   public void replaceAllIssuesOfFile(String branchName, Path serverFilePath, List<ServerIssue<?>> issues) {
@@ -329,12 +329,12 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllScaIssuesOfBranch(String branchName, List<ServerScaIssue> scaIssues) {
-    scaIssuesByBranch.put(branchName, new ArrayList<>(scaIssues));
+  public void replaceAllDependencyRisksOfBranch(String branchName, List<ServerDependencyRisk> serverDependencyRisks) {
+    dependencyRisksByBranch.put(branchName, new ArrayList<>(serverDependencyRisks));
   }
 
   @Override
-  public List<ServerScaIssue> loadScaIssues(String branchName) {
-    return scaIssuesByBranch.getOrDefault(branchName, Collections.emptyList());
+  public List<ServerDependencyRisk> loadDependencyRisks(String branchName) {
+    return dependencyRisksByBranch.getOrDefault(branchName, Collections.emptyList());
   }
 }

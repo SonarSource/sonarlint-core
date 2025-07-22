@@ -365,7 +365,7 @@ public class ServerFixture {
         return this;
       }
 
-      public record ServerScaIssue(
+      public record ServerDependencyRisk(
         String id,
         String type,
         String severity,
@@ -379,7 +379,7 @@ public class ServerFixture {
         protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
         protected final Collection<ServerIssue> issues = new ArrayList<>();
         private final Collection<ServerIssue> taintIssues = new ArrayList<>();
-        private final Collection<ServerScaIssue> scaIssues = new ArrayList<>();
+        private final Collection<ServerDependencyRisk> dependencyRisks = new ArrayList<>();
         protected final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
 
         public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
@@ -429,18 +429,9 @@ public class ServerFixture {
           return this;
         }
 
-        public ServerProjectBranchBuilder withScaIssue(ServerScaIssue scaIssue) {
-          this.scaIssues.add(scaIssue);
+        public ServerProjectBranchBuilder withDependencyRisk(ServerDependencyRisk dependencyRisk) {
+          this.dependencyRisks.add(dependencyRisk);
           return this;
-        }
-
-        public void setScaIssues(Collection<ServerScaIssue> newScaIssues) {
-          this.scaIssues.clear();
-          this.scaIssues.addAll(newScaIssues);
-        }
-
-        public void clearScaIssues() {
-          this.scaIssues.clear();
         }
 
         private static class ServerHotspot {
@@ -1529,7 +1520,7 @@ public class ServerFixture {
 
     private void registerScaApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var scaIssuesJson = branch.scaIssues.stream()
+        var dependencyRisksJson = branch.dependencyRisks.stream()
           .map(issue -> String.format("""
             {
               "key": "%s",
@@ -1554,7 +1545,7 @@ public class ServerFixture {
               "total": %d
             }
           }
-          """, scaIssuesJson, branch.scaIssues.size(), branch.scaIssues.size());
+          """, dependencyRisksJson, branch.dependencyRisks.size(), branch.dependencyRisks.size());
 
         mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "&pageSize=500&pageIndex=1")
           .willReturn(jsonResponse(responseJson, responseCodes.statusCode)));

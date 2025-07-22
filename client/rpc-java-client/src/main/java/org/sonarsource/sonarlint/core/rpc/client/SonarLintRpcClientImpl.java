@@ -82,7 +82,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtra
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -351,9 +351,9 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public void didChangeScaIssues(DidChangeScaIssuesParams params) {
-    notify(() -> delegate.didChangeScaIssues(params.getConfigurationScopeId(), params.getClosedScaIssueIds(), params.getAddedScaIssues(),
-      params.getUpdatedScaIssues()));
+  public void didChangeDependencyRisks(DidChangeDependencyRisksParams params) {
+    notify(() -> delegate.didChangeDependencyRisks(params.getConfigurationScopeId(), params.getClosedDependencyRiskIds(), params.getAddedDependencyRisks(),
+      params.getUpdatedDependencyRisks()));
   }
 
   @Override

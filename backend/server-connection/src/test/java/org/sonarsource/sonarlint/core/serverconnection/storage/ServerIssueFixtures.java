@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerScaIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 public class ServerIssueFixtures {
@@ -95,17 +95,17 @@ public class ServerIssueFixtures {
         .setFlows(List.of(aServerTaintIssueFlow()));
   }
 
-  public static ServerScaIssue aServerScaIssue() {
-    return new ServerScaIssue(
+  public static ServerDependencyRisk aServerDependencyRisk() {
+    return new ServerDependencyRisk(
       UUID.randomUUID(),
-      ServerScaIssue.Type.VULNERABILITY,
-      ServerScaIssue.Severity.HIGH,
-      ServerScaIssue.Status.OPEN,
+      ServerDependencyRisk.Type.VULNERABILITY,
+      ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
       List.of(
-        ServerScaIssue.Transition.CONFIRM,
-        ServerScaIssue.Transition.REOPEN
+        ServerDependencyRisk.Transition.CONFIRM,
+        ServerDependencyRisk.Transition.REOPEN
       )
     );
   }

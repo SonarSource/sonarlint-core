@@ -71,7 +71,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigu
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -93,7 +93,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeScaIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
@@ -653,7 +653,7 @@ public class SonarLintBackendFixture {
     private final boolean printLogsToStdOut;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
-    private final List<DidChangeScaIssuesParams> scaIssueChanges = new CopyOnWriteArrayList<>();
+    private final List<DidChangeDependencyRisksParams> dependencyRiskChanges = new CopyOnWriteArrayList<>();
     private final Map<String, String> matchedBranchPerScopeId;
     private final Map<String, Path> baseDirsByConfigScope;
     private final Map<String, Set<String>> fileExclusionsByConfigScope;
@@ -836,10 +836,10 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didChangeScaIssues(String configurationScopeId, Set<UUID> closedScaIssueIds, List<ScaIssueDto> addedScaIssues,
-      List<ScaIssueDto> updatedScaIssues) {
-      this.scaIssueChanges
-        .add(new DidChangeScaIssuesParams(configurationScopeId, closedScaIssueIds, addedScaIssues, updatedScaIssues));
+    public void didChangeDependencyRisks(String configurationScopeId, Set<UUID> closedDependencyRiskIds, List<DependencyRiskDto> addedDependencyRisks,
+      List<DependencyRiskDto> updatedDependencyRisks) {
+      this.dependencyRiskChanges
+        .add(new DidChangeDependencyRisksParams(configurationScopeId, closedDependencyRiskIds, addedDependencyRisks, updatedDependencyRisks));
     }
 
     @Override
@@ -942,8 +942,8 @@ public class SonarLintBackendFixture {
       return taintVulnerabilityChanges;
     }
 
-    public List<DidChangeScaIssuesParams> getScaIssueChanges() {
-      return scaIssueChanges;
+    public List<DidChangeDependencyRisksParams> getDependencyRiskChanges() {
+      return dependencyRiskChanges;
     }
 
     public void clearLogs() {
