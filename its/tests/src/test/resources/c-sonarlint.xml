@@ -8,6 +8,13 @@
       <key>S3805</key>
       <priority>MAJOR</priority>
     </rule>
+    <!-- Lowercase 'l' in literal suffix -->
+    <!-- Only registered with MISRA early access enabled -->
+    <rule>
+      <repositoryKey>c</repositoryKey>
+      <key>M23_037</key>
+      <priority>MINOR</priority>
+    </rule>
     <!-- single point of exit -->
     <rule>
       <repositoryKey>c</repositoryKey>
