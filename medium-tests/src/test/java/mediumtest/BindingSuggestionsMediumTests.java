@@ -53,8 +53,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -339,9 +337,6 @@ class BindingSuggestionsMediumTests {
   void should_suggest_binding_by_remote_url_when_no_other_suggestions_found(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
-    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -359,6 +354,9 @@ class BindingSuggestionsMediumTests {
     var scServer = harness.newFakeSonarCloudServer()
       .withOrganization("orgKey", organization ->
         organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
+      .withDopTranslation(dop -> dop
+        .withProjectBinding(REMOTE_URL, PROJECT_ID, SLCORE_PROJECT_KEY)
+        .withSearchProjectsResponse("orgKey", PROJECT_ID, 200, "{\"components\":[{\"key\":\"" + SLCORE_PROJECT_KEY + "\",\"name\":\"" + SLCORE_PROJECT_NAME + "\"}]}\n"))
       .start();
 
     var backend = harness.newBackend()
@@ -368,30 +366,6 @@ class BindingSuggestionsMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .withTelemetryEnabled()
       .start(fakeClient);
-
-    scServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"bindings\":[{\"projectId\":\"" + PROJECT_ID + "\"}]}")));
-
-    scServer.getMockServer().stubFor(get(urlEqualTo(expectedSearchProjectsPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"components\":[{\"key\":\"" + SLCORE_PROJECT_KEY + "\",\"name\":\"" + SLCORE_PROJECT_NAME + "\"}]}\n")));
-
-    scServer.getMockServer().stubFor(get(urlPathMatching("/api/components/search\\.protobuf"))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/x-protobuf")
-        .withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
-          .addComponents(Components.Component.newBuilder()
-            .setKey("my-project-key")
-            .setName("My Project")
-            .build())
-          .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-          .build()))));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -409,8 +383,6 @@ class BindingSuggestionsMediumTests {
     GitAPIException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -426,7 +398,9 @@ class BindingSuggestionsMediumTests {
       .build();
 
     var sqServer = harness.newFakeSonarQubeServer()
-      .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
+      .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main").withProjectName(SLCORE_PROJECT_NAME))
+      .withDopTranslation(dop -> dop
+        .withProjectBinding(REMOTE_URL, PROJECT_ID, SLCORE_PROJECT_KEY))
       .start();
 
     var backend = harness.newBackend()
@@ -434,25 +408,6 @@ class BindingSuggestionsMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .withTelemetryEnabled()
       .start(fakeClient);
-
-    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"projectBindings\":[{\"projectId\":\"" + PROJECT_ID + "\",\"projectKey\":\"" + SLCORE_PROJECT_KEY + "\"}]}")));
-
-    String expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
-    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedProjectPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/x-protobuf")
-        .withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
-          .setComponent(Components.Component.newBuilder()
-            .setKey(SLCORE_PROJECT_KEY)
-            .setName(SLCORE_PROJECT_NAME)
-            .setIsAiCodeFixEnabled(false)
-            .build())
-          .build()))));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -486,6 +441,7 @@ class BindingSuggestionsMediumTests {
     var scServer = harness.newFakeSonarCloudServer()
       .withOrganization("orgKey", organization ->
         organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
+      .withCustomEndpointResponse(expectedPath, 500, "text/plain", "Internal Server Error")
       .start();
 
     var backend = harness.newBackend()
@@ -494,11 +450,6 @@ class BindingSuggestionsMediumTests {
       .withSonarCloudConnection(MYSONAR, "orgKey")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
-
-    scServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(500)
-        .withBody("Internal Server Error")));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -528,17 +479,13 @@ class BindingSuggestionsMediumTests {
 
     var sqServer = harness.newFakeSonarQubeServer()
       .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
+      .withCustomEndpointResponse(expectedPath, 500, "text/plain", "Internal Server Error")
       .start();
 
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
-
-    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(500)
-        .withBody("Internal Server Error")));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -552,9 +499,6 @@ class BindingSuggestionsMediumTests {
   void should_return_empty_when_sqc_search_response_is_null(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
-    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -570,6 +514,9 @@ class BindingSuggestionsMediumTests {
     var scServer = harness.newFakeSonarCloudServer()
       .withOrganization("orgKey", organization ->
         organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
+      .withDopTranslation(dop -> dop
+        .withProjectBinding(REMOTE_URL, PROJECT_ID, SLCORE_PROJECT_KEY)
+        .withSearchProjectsResponse("orgKey", PROJECT_ID, 500, "Internal Server Error"))
       .start();
 
     var backend = harness.newBackend()
@@ -578,17 +525,6 @@ class BindingSuggestionsMediumTests {
       .withSonarCloudConnection(MYSONAR, "orgKey")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
-
-    scServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"bindings\":[{\"projectId\":\"" + PROJECT_ID + "\"}]}")));
-
-    scServer.getMockServer().stubFor(get(urlEqualTo(expectedSearchProjectsPath))
-      .willReturn(aResponse()
-        .withStatus(500)
-        .withBody("Internal Server Error")));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -602,9 +538,6 @@ class BindingSuggestionsMediumTests {
   void should_return_empty_when_sqs_server_project_is_not_present(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
-    String expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -619,23 +552,15 @@ class BindingSuggestionsMediumTests {
 
     var sqServer = harness.newFakeSonarQubeServer()
       .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
+      .withDopTranslation(dop -> dop
+        .withProjectBinding(REMOTE_URL, PROJECT_ID, SLCORE_PROJECT_KEY)
+        .withComponentShowStatus(SLCORE_PROJECT_KEY, 404, "Project not found"))
       .start();
 
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
-
-    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedPath))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("{\"projectBindings\":[{\"projectId\":\"" + PROJECT_ID + "\",\"projectKey\":\"" + SLCORE_PROJECT_KEY + "\"}]}")));
-
-    sqServer.getMockServer().stubFor(get(urlEqualTo(expectedProjectPath))
-      .willReturn(aResponse()
-        .withStatus(404)
-        .withBody("Project not found")));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
