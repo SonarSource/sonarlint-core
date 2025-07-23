@@ -92,6 +92,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
+import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -99,13 +100,11 @@ import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
-import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
-import org.sonarsource.sonarlint.core.tracking.DependencyRiskTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
@@ -169,7 +168,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   NewCodeService.class,
   RequestHandlerBindingAssistant.class,
   TaintVulnerabilityTrackingService.class,
-  DependencyRiskTrackingService.class,
   SonarProjectBranchesSynchronizationService.class,
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,

@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 public enum DependencyRiskTransition {
-    REOPEN, CONFIRM, ACCEPT, SAFE, FIXED
+    REOPEN, CONFIRM, ACCEPT, SAFE
 }

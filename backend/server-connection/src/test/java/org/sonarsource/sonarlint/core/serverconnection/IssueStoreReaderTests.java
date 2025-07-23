@@ -20,14 +20,14 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
-import java.util.Collections;
+import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
-import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -38,7 +38,7 @@ class IssueStoreReaderTests {
   private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
-  private final ProjectServerIssueStore issueStore = new InMemoryIssueStore();
+  private final ProjectServerIssueStore issueStore = mock(ProjectServerIssueStore.class);
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
   @BeforeEach
@@ -53,7 +53,7 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModule() {
     // setup issues
-    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
+    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
 
     // test
 
@@ -73,7 +73,7 @@ class IssueStoreReaderTests {
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
+    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path1")))
       .isEmpty();
   }
@@ -83,7 +83,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("sq/src/path1")));
+    when(issueStore.load("branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -98,7 +98,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
+    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
 
     // test
 
@@ -113,7 +113,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("sq/src/path1")));
+    when(issueStore.load("branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
 
     // test
 

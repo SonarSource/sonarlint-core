@@ -19,14 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -37,13 +42,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPack
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.RecommendationDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.springframework.context.event.EventListener;
 
 public class DependencyRiskService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -53,18 +61,69 @@ public class DependencyRiskService {
   private final StorageService storageService;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SonarProjectBranchTrackingService branchTrackingService;
+  private final ScaSynchronizationService scaSynchronizationService;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
 
   public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
-    SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, SonarLintRpcClient client, TelemetryService telemetryService) {
+    SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, ScaSynchronizationService scaSynchronizationService,
+    SonarLintRpcClient client, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.storageService = storageService;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.branchTrackingService = branchTrackingService;
+    this.scaSynchronizationService = scaSynchronizationService;
     this.client = client;
     this.telemetryService = telemetryService;
+  }
+
+  public List<DependencyRiskDto> listAll(String configurationScopeId, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
+    return configurationRepository.getEffectiveBinding(configurationScopeId)
+      .map(binding -> loadDependencyRisks(configurationScopeId, binding, shouldRefresh, cancelMonitor))
+      .orElseGet(Collections::emptyList);
+  }
+
+  @EventListener
+  public void onDependencyRisksSynchronized(DependencyRisksSynchronizedEvent event) {
+    var summary = event.summary();
+    var connectionId = event.connectionId();
+    var sonarProjectKey = event.sonarProjectKey();
+    configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, sonarProjectKey)
+      .forEach(boundScope -> client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(boundScope.getConfigScopeId(), summary.deletedItemIds(),
+        summary.addedItems().stream()
+          .map(DependencyRiskService::toDto)
+          .toList(),
+        summary.updatedItems().stream()
+          .map(DependencyRiskService::toDto)
+          .toList())));
+  }
+
+  private List<DependencyRiskDto> loadDependencyRisks(String configurationScopeId, Binding binding, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
+    return branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId)
+      .map(matchedBranch -> {
+        if (shouldRefresh) {
+          sonarQubeClientManager.withActiveClient(binding.connectionId(),
+            serverApi -> scaSynchronizationService.synchronize(serverApi, binding.connectionId(), binding.sonarProjectKey(), matchedBranch, cancelMonitor));
+        }
+        var projectStorage = storageService.binding(binding);
+        return projectStorage.findings().loadDependencyRisks(matchedBranch)
+          .stream().map(DependencyRiskService::toDto)
+          .toList();
+      }).orElseGet(Collections::emptyList);
+  }
+
+  private static DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
+    return new DependencyRiskDto(
+      serverDependencyRisk.key(),
+      DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
+      DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
+      DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
+      serverDependencyRisk.packageName(),
+      serverDependencyRisk.packageVersion(),
+      serverDependencyRisk.transitions().stream()
+        .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
+        .toList());
   }
 
   public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,
@@ -91,14 +150,26 @@ public class DependencyRiskService {
       throw new IllegalArgumentException("Transition " + transition + " is not allowed for this dependency risk");
     }
 
-    if ((transition == DependencyRiskTransition.ACCEPT || transition == DependencyRiskTransition.SAFE || transition == DependencyRiskTransition.FIXED)
+    if ((transition == DependencyRiskTransition.ACCEPT || transition == DependencyRiskTransition.SAFE)
       && (comment == null || comment.isBlank())) {
-      throw new IllegalArgumentException("Comment is required for ACCEPT, FIXED, and SAFE transitions");
+      throw new IllegalArgumentException("Comment is required for ACCEPT and SAFE transitions");
     }
 
     LOG.info("Changing status for dependency risk {} to {} with comment: {}", dependencyRiskKey, transition, comment);
 
-    serverConnection.withClientApi(serverApi -> serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor));
+    var newStatus = switch (transition) {
+      case ACCEPT -> ServerDependencyRisk.Status.ACCEPT;
+      case SAFE -> ServerDependencyRisk.Status.SAFE;
+      case REOPEN -> ServerDependencyRisk.Status.OPEN;
+      case CONFIRM -> ServerDependencyRisk.Status.CONFIRM;
+    };
+    var updatedDependencyRisk = dependencyRisk.withStatus(newStatus);
+
+    serverConnection.withClientApi(serverApi -> {
+      serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor);
+      projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus);
+      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(), List.of(toDto(updatedDependencyRisk))));
+    });
   }
 
   public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, UUID dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
@@ -124,7 +195,6 @@ public class DependencyRiskService {
       case CONFIRM -> ServerDependencyRisk.Transition.CONFIRM;
       case ACCEPT -> ServerDependencyRisk.Transition.ACCEPT;
       case SAFE -> ServerDependencyRisk.Transition.SAFE;
-      case FIXED -> ServerDependencyRisk.Transition.FIXED;
     };
   }
 
