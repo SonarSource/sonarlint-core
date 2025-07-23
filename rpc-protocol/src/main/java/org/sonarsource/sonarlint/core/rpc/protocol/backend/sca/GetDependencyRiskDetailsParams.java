@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
+import java.util.UUID;
+
 public class GetDependencyRiskDetailsParams {
   private final String configurationScopeId;
-  private final String dependencyRiskKey;
+  private final UUID dependencyRiskKey;
 
-  public GetDependencyRiskDetailsParams(String configurationScopeId, String dependencyRiskKey) {
+  public GetDependencyRiskDetailsParams(String configurationScopeId, UUID dependencyRiskKey) {
     this.configurationScopeId = configurationScopeId;
     this.dependencyRiskKey = dependencyRiskKey;
   }
@@ -32,7 +34,7 @@ public class GetDependencyRiskDetailsParams {
     return configurationScopeId;
   }
 
-  public String getDependencyRiskKey() {
+  public UUID getDependencyRiskKey() {
     return dependencyRiskKey;
   }
 }

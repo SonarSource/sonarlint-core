@@ -19,7 +19,10 @@
  */
 package its;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.http.HttpMethod;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
@@ -68,6 +71,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.RecommendationDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -97,9 +105,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
   private static final String PROJECT_KEY_CUSTOM_SECRETS = "sample-custom-secrets";
+  private static final String PROJECT_KEY_SCA = "sample-sca";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+    .setServerProperty("sonar.sca.enabled", "true")
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
@@ -348,6 +358,52 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
   }
 
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @OnlyOnSonarQube(from = "2025.4")
+  class Sca {
+    @BeforeAll
+    void prepare() throws IOException {
+      startBackend(Map.of());
+    }
+
+    @Test
+    void should_return_risk_dependency_details() {
+      String configScopeId = "should_honor_the_web_api_contract";
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
+      analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
+      bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
+      var firstDependencyRiskKey = getFirstDependencyRiskKey(PROJECT_KEY_SCA);
+
+      var riskDetailsResponse = backend.getDependencyRiskService().getDependencyRiskDetails(new GetDependencyRiskDetailsParams(configScopeId, firstDependencyRiskKey)).join();
+
+      assertThat(riskDetailsResponse)
+        .usingRecursiveComparison()
+        .isEqualTo(new GetDependencyRiskDetailsResponse(firstDependencyRiskKey, DependencyRiskDto.Severity.MEDIUM, "com.fasterxml.woodstox:woodstox-core", "6.2.7",
+          DependencyRiskDto.Type.VULNERABILITY, "CVE-2022-40152",
+          "Those using Woodstox to parse XML data may be vulnerable to Denial of Service attacks (DOS) if DTD support is enabled. If the parser is running on user supplied input, an attacker may supply content that causes the parser to crash by stackoverflow. This effect may support a denial of service attack.",
+          List.of(new AffectedPackageDto("pkg:maven/com.fasterxml.woodstox/woodstox-core", "upgrade",
+            RecommendationDetailsDto.builder().impactDescription("Vulnerability occurs if attacker can provide specifically crafted XML document with DTD reference.")
+              .impactScore(5).realIssue(true).visibility("external").build()))));
+    }
+
+    private UUID getFirstDependencyRiskKey(String projectKey) {
+      var response = ORCHESTRATOR.getServer()
+        .newHttpCall("/api/v2/sca/issues-releases")
+        .setMethod(HttpMethod.GET)
+        .setAdminCredentials()
+        .setParam("projectKey", projectKey)
+        .setParam("branchName", MAIN_BRANCH_NAME)
+        .execute();
+      if (!response.isSuccessful()) {
+        throw new IllegalStateException("Unexpected response code: " + response);
+      }
+      var jsonObject = new Gson().fromJson(response.getBodyAsString(), JsonObject.class);
+      return UUID.fromString(jsonObject.getAsJsonArray("issuesReleases").get(0).getAsJsonObject().get("key").getAsString());
+    }
+  }
+
   private static void bindProject(String configScopeId, String projectName, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto(configScopeId, null, true, projectName,
@@ -361,12 +417,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
       List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
       List.of(),
-      List.of()
-    ));
+      List.of()));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())
-    ).join();
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
@@ -420,14 +474,14 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var languages = Set.of(JAVA, COBOL, C, TSQL, APEX, SECRETS, JCL);
       var featureFlags = new FeatureFlagsDto(true, true, true, false, true, false, false, true, false, true, false);
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
-            sonarUserHome.resolve("storage"),
-            sonarUserHome.resolve("work"),
-            emptySet(),
-            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(), emptySet(),
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
-            sonarUserHome.toString(),
-            Map.of(), false, null, false, null))
+        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
+          sonarUserHome.resolve("storage"),
+          sonarUserHome.resolve("work"),
+          emptySet(),
+          connectedModeEmbeddedPluginPathsByKey, languages, emptySet(), emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
+          sonarUserHome.toString(),
+          Map.of(), false, null, false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
