@@ -30,10 +30,10 @@ import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 
 public interface ProjectServerIssueStore {
   boolean wasEverUpdated();
@@ -207,4 +207,6 @@ public interface ProjectServerIssueStore {
    * Load all dependency risks stored for a branch.
    */
   List<ServerDependencyRisk> loadDependencyRisks(String branchName);
+
+  void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus);
 }

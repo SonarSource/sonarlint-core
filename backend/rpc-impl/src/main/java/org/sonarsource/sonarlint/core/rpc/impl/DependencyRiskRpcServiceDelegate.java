@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ListAllDependency
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
-import org.sonarsource.sonarlint.core.tracking.DependencyRiskTrackingService;
 
 public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate implements DependencyRiskRpcService {
 
@@ -41,7 +40,7 @@ public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate
 
   @Override
   public CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params) {
-    return requestAsync(cancelMonitor -> new ListAllDependencyRisksResponse(getBean(DependencyRiskTrackingService.class)
+    return requestAsync(cancelMonitor -> new ListAllDependencyRisksResponse(getBean(DependencyRiskService.class)
       .listAll(params.getConfigurationScopeId(), params.shouldRefresh(), cancelMonitor)));
   }
 

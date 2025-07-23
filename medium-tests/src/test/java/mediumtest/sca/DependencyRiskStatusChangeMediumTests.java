@@ -22,12 +22,15 @@ package mediumtest.sca;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyRiskStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -37,6 +40,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerDependencyRiskFixtures.aServerDependencyRisk;
@@ -90,6 +94,82 @@ class DependencyRiskStatusChangeMediumTests {
           .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
+  }
+
+  @SonarLintTest
+  void it_should_update_the_status_in_the_local_storage_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+    var dependencyRiskKey = UUID.randomUUID();
+    var dependencyRisk = aServerDependencyRisk()
+      .withKey(dependencyRiskKey)
+      .withType(ServerDependencyRisk.Type.VULNERABILITY)
+      .withSeverity(ServerDependencyRisk.Severity.HIGH)
+      .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withPackageName("com.example.vulnerable")
+      .withPackageVersion("1.0.0")
+      .withTransitions(List.of(
+        ServerDependencyRisk.Transition.CONFIRM,
+        ServerDependencyRisk.Transition.REOPEN
+      ));
+
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
+        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch.withDependencyRisk(dependencyRisk))))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var comment = "I confirm this is a risk";
+    var response = backend.getDependencyRiskService().changeStatus(new ChangeDependencyRiskStatusParams(CONFIGURATION_SCOPE_ID, dependencyRiskKey,
+      DependencyRiskTransition.CONFIRM, comment));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    var issueStorage = backend.getIssueStorageService().connection(CONNECTION_ID).project(PROJECT_KEY).findings();
+    var storedDependencyRisk = issueStorage.loadDependencyRisks(BRANCH_NAME).stream().filter(risk -> risk.key().equals(dependencyRiskKey)).findFirst();
+    assertThat(storedDependencyRisk)
+      .map(ServerDependencyRisk::status)
+      .contains(ServerDependencyRisk.Status.CONFIRM);
+
+
+  }
+
+  @SonarLintTest
+  void it_should_notify_the_client_with_updated_dependency_risk_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+    var dependencyRiskKey = UUID.randomUUID();
+    var dependencyRisk = aServerDependencyRisk()
+      .withKey(dependencyRiskKey)
+      .withType(ServerDependencyRisk.Type.VULNERABILITY)
+      .withSeverity(ServerDependencyRisk.Severity.HIGH)
+      .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withPackageName("com.example.vulnerable")
+      .withPackageVersion("1.0.0")
+      .withTransitions(List.of(
+        ServerDependencyRisk.Transition.CONFIRM,
+        ServerDependencyRisk.Transition.REOPEN
+      ));
+
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
+        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch.withDependencyRisk(dependencyRisk))))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start(fakeClient);
+
+    var comment = "I confirm this is a risk";
+    var response = backend.getDependencyRiskService().changeStatus(new ChangeDependencyRiskStatusParams(CONFIGURATION_SCOPE_ID, dependencyRiskKey,
+      DependencyRiskTransition.CONFIRM, comment));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(fakeClient.getDependencyRiskChanges())
+      .extracting(DidChangeDependencyRisksParams::getAddedDependencyRisks, DidChangeDependencyRisksParams::getClosedDependencyRiskIds)
+      .containsExactly(tuple(List.of(), Set.of()));
+    assertThat(fakeClient.getDependencyRiskChanges().get(0).getUpdatedDependencyRisks())
+      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getStatus)
+      .containsExactly(tuple(dependencyRiskKey, DependencyRiskDto.Status.CONFIRM));
   }
 
   @SonarLintTest
@@ -178,40 +258,7 @@ class DependencyRiskStatusChangeMediumTests {
       .failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseExactlyInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Comment is required for ACCEPT, FIXED, and SAFE transitions");
-  }
-
-  @SonarLintTest
-  void it_should_throw_when_fixed_transition_has_no_comment(SonarLintTestHarness harness) {
-    var dependencyRiskKey = UUID.randomUUID();
-    var dependencyRisk = aServerDependencyRisk()
-      .withKey(dependencyRiskKey)
-      .withType(ServerDependencyRisk.Type.VULNERABILITY)
-      .withSeverity(ServerDependencyRisk.Severity.HIGH)
-      .withStatus(ServerDependencyRisk.Status.OPEN)
-      .withPackageName("com.example.vulnerable")
-      .withPackageVersion("1.0.0")
-      .withTransitions(List.of(
-        ServerDependencyRisk.Transition.FIXED
-      ));
-
-    var server = harness.newFakeSonarQubeServer()
-      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME))
-      .start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
-        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch.withDependencyRisk(dependencyRisk))))
-      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .start();
-
-    var params = new ChangeDependencyRiskStatusParams(CONFIGURATION_SCOPE_ID, dependencyRiskKey, DependencyRiskTransition.FIXED, null);
-    var scaService = backend.getDependencyRiskService();
-
-    assertThat(scaService.changeStatus(params))
-      .failsWithin(2, TimeUnit.SECONDS)
-      .withThrowableOfType(ExecutionException.class)
-      .withCauseExactlyInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Comment is required for ACCEPT, FIXED, and SAFE transitions");
+      .withMessageContaining("Comment is required for ACCEPT and SAFE transitions");
   }
 
   @SonarLintTest
@@ -244,7 +291,7 @@ class DependencyRiskStatusChangeMediumTests {
       .failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseExactlyInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Comment is required for ACCEPT, FIXED, and SAFE transitions");
+      .withMessageContaining("Comment is required for ACCEPT and SAFE transitions");
   }
 
   @SonarLintTest
@@ -473,7 +520,7 @@ class DependencyRiskStatusChangeMediumTests {
       .failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseExactlyInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Comment is required for ACCEPT, FIXED, and SAFE transitions");
+      .withMessageContaining("Comment is required for ACCEPT and SAFE transitions");
   }
 
   @SonarLintTest
@@ -506,7 +553,7 @@ class DependencyRiskStatusChangeMediumTests {
       .failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseExactlyInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Comment is required for ACCEPT, FIXED, and SAFE transitions");
+      .withMessageContaining("Comment is required for ACCEPT and SAFE transitions");
   }
 
   @SonarLintTest
@@ -723,4 +770,4 @@ class DependencyRiskStatusChangeMediumTests {
       .withCauseExactlyInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Transition CONFIRM is not allowed for this dependency risk");
   }
-} 
+}

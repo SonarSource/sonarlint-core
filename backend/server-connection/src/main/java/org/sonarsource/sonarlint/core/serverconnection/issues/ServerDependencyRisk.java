@@ -23,6 +23,11 @@ import java.util.List;
 import java.util.UUID;
 
 public record ServerDependencyRisk(UUID key, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+
+  public ServerDependencyRisk withStatus(Status newStatus) {
+    return new ServerDependencyRisk(key, type, severity, newStatus, packageName, packageVersion, transitions);
+  }
+
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
   }
@@ -32,7 +37,7 @@ public record ServerDependencyRisk(UUID key, Type type, Severity severity, Statu
   }
 
   public enum Status {
-    OPEN, CONFIRM, ACCEPT, SAFE
+    OPEN, CONFIRM, ACCEPT, SAFE, FIXED
   }
 
   public enum Transition {

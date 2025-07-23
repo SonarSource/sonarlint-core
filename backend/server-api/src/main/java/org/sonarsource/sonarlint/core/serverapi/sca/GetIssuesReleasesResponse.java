@@ -36,7 +36,7 @@ public record GetIssuesReleasesResponse(List<IssuesRelease> issuesReleases, Page
     }
 
     public enum Status {
-      OPEN, CONFIRM, ACCEPT, SAFE
+      OPEN, CONFIRM, ACCEPT, SAFE, FIXED
     }
 
     public enum Transition {
