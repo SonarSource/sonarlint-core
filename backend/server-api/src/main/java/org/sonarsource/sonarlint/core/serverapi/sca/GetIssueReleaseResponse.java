@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.sca;
 
+import jakarta.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 
-public record GetIssueReleaseResponse(String key, Severity severity, Release release, Type type, Vulnerability vulnerability, List<AffectedPackage> affectedPackages) {
+public record GetIssueReleaseResponse(UUID key, Severity severity, Release release, Type type, Vulnerability vulnerability) {
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
   }
@@ -33,13 +35,13 @@ public record GetIssueReleaseResponse(String key, Severity severity, Release rel
     VULNERABILITY, PROHIBITED_LICENSE
   }
 
-  public record Vulnerability(String vulnerabilityId, String description) {
+  public record Vulnerability(String vulnerabilityId, String description, List<AffectedPackage> affectedPackages) {
   }
 
   public record AffectedPackage(
     String purl,
     String recommendation,
-    RecommendationDetails recommendationDetails) {
+    @Nullable RecommendationDetails recommendationDetails) {
   }
 
   public record RecommendationDetails(

@@ -20,11 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 import java.util.List;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
 public class GetDependencyRiskDetailsResponse {
-  private final String key;
+  private final UUID key;
   private final DependencyRiskDto.Severity severity;
   private final String packageName;
   private final String version;
@@ -33,7 +34,7 @@ public class GetDependencyRiskDetailsResponse {
   private final String description;
   private final List<AffectedPackageDto> affectedPackages;
 
-  public GetDependencyRiskDetailsResponse(String key, DependencyRiskDto.Severity severity, String packageName, String version, DependencyRiskDto.Type type, String vulnerabilityId,
+  public GetDependencyRiskDetailsResponse(UUID key, DependencyRiskDto.Severity severity, String packageName, String version, DependencyRiskDto.Type type, String vulnerabilityId,
     String description, List<AffectedPackageDto> affectedPackages) {
     this.key = key;
     this.severity = severity;
@@ -45,7 +46,7 @@ public class GetDependencyRiskDetailsResponse {
     this.affectedPackages = affectedPackages;
   }
 
-  public String getKey() {
+  public UUID getKey() {
     return key;
   }
 

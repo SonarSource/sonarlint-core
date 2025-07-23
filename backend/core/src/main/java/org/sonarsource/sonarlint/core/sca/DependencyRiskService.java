@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.RecommendationDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -100,7 +101,7 @@ public class DependencyRiskService {
     serverConnection.withClientApi(serverApi -> serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor));
   }
 
-  public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, String dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
+  public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, UUID dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
     var configScope = configurationRepository.getConfigurationScope(configurationScopeId);
     if (configScope == null) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configurationScopeId, configurationScopeId);
@@ -128,23 +129,27 @@ public class DependencyRiskService {
   }
 
   private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
-    var affectedPackages = serverResponse.affectedPackages().stream()
-      .map(pkg -> AffectedPackageDto.builder()
-        .purl(pkg.purl())
-        .recommendation(pkg.recommendation())
-        .impactScore(pkg.recommendationDetails().impactScore())
-        .impactDescription(pkg.recommendationDetails().impactDescription())
-        .realIssue(pkg.recommendationDetails().realIssue())
-        .falsePositiveReason(pkg.recommendationDetails().falsePositiveReason())
-        .includesDev(pkg.recommendationDetails().includesDev())
-        .specificMethodsAffected(pkg.recommendationDetails().specificMethodsAffected())
-        .specificMethodsDescription(pkg.recommendationDetails().specificMethodsDescription())
-        .otherConditions(pkg.recommendationDetails().otherConditions())
-        .otherConditionsDescription(pkg.recommendationDetails().otherConditionsDescription())
-        .workaroundAvailable(pkg.recommendationDetails().workaroundAvailable())
-        .workaroundDescription(pkg.recommendationDetails().workaroundDescription())
-        .visibility(pkg.recommendationDetails().visibility())
-        .build())
+    var affectedPackages = serverResponse.vulnerability().affectedPackages().stream()
+      .map(pkg -> {
+        var recommendationDetails = pkg.recommendationDetails();
+        RecommendationDetailsDto recommendationDetailsDto = null;
+        if (recommendationDetails != null) {
+          recommendationDetailsDto = RecommendationDetailsDto.builder()
+            .impactScore(recommendationDetails.impactScore())
+            .impactDescription(recommendationDetails.impactDescription())
+            .realIssue(recommendationDetails.realIssue())
+            .falsePositiveReason(recommendationDetails.falsePositiveReason())
+            .includesDev(recommendationDetails.includesDev())
+            .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
+            .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
+            .otherConditions(recommendationDetails.otherConditions())
+            .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
+            .workaroundAvailable(recommendationDetails.workaroundAvailable())
+            .workaroundDescription(recommendationDetails.workaroundDescription())
+            .visibility(recommendationDetails.visibility()).build();
+        }
+        return new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto);
+      })
       .toList();
 
     return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
