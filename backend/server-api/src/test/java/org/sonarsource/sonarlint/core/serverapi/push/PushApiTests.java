@@ -63,12 +63,15 @@ class PushApiTests {
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_simple_setting() {
     var mockResponse = new MockResponse.Builder()
-      .body("event: SettingChanged\n" +
-        "data: {" +
-        "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-        "\"key\": \"key1\"," +
-        "\"value\": \"value1\"" +
-        "}\n\n")
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "value": "value1"
+        }
+    
+        """)
       .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
@@ -84,12 +87,15 @@ class PushApiTests {
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_multi_values_setting() {
     var mockResponse = new MockResponse.Builder()
-      .body("event: SettingChanged\n" +
-        "data: {" +
-        "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-        "\"key\": \"key1\"," +
-        "\"values\": [\"value1\",\"value2\"]" +
-        "}\n\n")
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "values": ["value1","value2"]
+        }
+    
+        """)
       .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
@@ -105,19 +111,24 @@ class PushApiTests {
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_field_values_setting() {
     var mockResponse = new MockResponse.Builder()
-      .body("event: SettingChanged\n" +
-        "data: {" +
-        "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-        "\"key\": \"key1\"," +
-        "\"fieldValues\": [{" +
-        "\"key2\": \"value2\"," +
-        "\"key3\": \"value3\"" +
-        "}," +
-        "{" +
-        "\"key4\": \"value4\"," +
-        "\"key5\": \"value5\"" +
-        "}]" +
-        "}\n\n")
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "fieldValues": [
+            {
+              "key2": "value2",
+              "key3": "value3"
+            },
+            {
+              "key4": "value4",
+              "key5": "value5"
+            }
+          ]
+        }
+    
+        """)
       .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 

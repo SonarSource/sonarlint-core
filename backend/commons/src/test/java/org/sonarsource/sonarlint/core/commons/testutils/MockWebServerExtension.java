@@ -27,7 +27,6 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
 import okio.Buffer;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -51,7 +50,6 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     server = new MockWebServer();
     responsesByPath.clear();
     final Dispatcher dispatcher = new Dispatcher() {
-      @NotNull
       @Override
       public MockResponse dispatch(RecordedRequest request) {
         if (responsesByPath.containsKey(request.getPath())) {
