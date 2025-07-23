@@ -65,12 +65,14 @@ class PluginSynchronizationMediumTests {
       .start();
 
     waitAtMost(20, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
+      assertThat(getPluginsStorageFolder(backend))
+        .isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
       assertThat(getPluginReferencesFilePath(backend))
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java")
+            .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
     });
   }
 
@@ -110,12 +112,14 @@ class PluginSynchronizationMediumTests {
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
+      assertThat(getPluginsStorageFolder(backend))
+        .isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
       assertThat(getPluginReferencesFilePath(backend))
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java")
+            .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is up-to-date. Skip downloading it.");
     });
   }
@@ -138,7 +142,8 @@ class PluginSynchronizationMediumTests {
       .exists()
       .extracting(this::readPluginReferences, as(MAP))
       .containsOnly(
-        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
+        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java")
+          .setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
   }
 
   @SonarLintTest
@@ -289,13 +294,16 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.PHP)
       .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
+    client.waitForSynchronization();
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
-        .extracting(File::getName)
-        .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString());
-      assertThat(client.getLogMessages()).contains("Cleaning up the plugins storage " + getPluginsStorageFolder(backend) + ", removing 1 unknown files:");
-    });
+    assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
+      .extracting(File::getName)
+      .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString());
+    assertThat(client.getLogMessages()).contains("Cleaning up the plugins storage " + getPluginsStorageFolder(backend) + ", removing 1 unknown files:");
+    assertThat(getPluginReferencesFilePath(backend))
+      .exists()
+      .extracting(this::readPluginReferences, as(MAP))
+      .containsOnlyKeys("php");
   }
 
   @NotNull

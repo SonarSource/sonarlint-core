@@ -121,7 +121,14 @@ public class PluginsStorage {
 
   public void cleanUpUnknownPlugins(List<ServerPlugin> serverPluginsExpectedInStorage) {
     var expectedPluginPaths = serverPluginsExpectedInStorage.stream().map(plugin -> rootPath.resolve(plugin.getFilename())).collect(Collectors.toSet());
-    rwLock.write(() -> deleteFiles(getUnknownFiles(expectedPluginPaths)));
+    var pluginsByKey = serverPluginsExpectedInStorage.stream().collect(Collectors.toMap(ServerPlugin::getKey, PluginsStorage::adapt));
+    var currentReferences = Sonarlint.PluginReferences.newBuilder();
+    currentReferences.putAllPluginsByKey(pluginsByKey);
+    rwLock.write(() -> {
+      var unknownFiles = getUnknownFiles(expectedPluginPaths);
+      deleteFiles(unknownFiles);
+      ProtobufFileUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
+    });
   }
 
   private void deleteFiles(List<File> unknownFiles) {
