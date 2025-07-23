@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -178,7 +179,7 @@ public class ServerApiHelper {
   }
 
   public static String concat(String baseUrl, String relativePath) {
-    return StringUtils.appendIfMissing(baseUrl, "/") +
+    return Strings.CS.appendIfMissing(baseUrl, "/") +
       (relativePath.startsWith("/") ? relativePath.substring(1) : relativePath);
   }
 
@@ -188,8 +189,12 @@ public class ServerApiHelper {
         return new UnauthorizedException("Not authorized. Please check server credentials.");
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
-        // Details are in response content
-        return new ForbiddenException(tryParseAsJsonError(failedResponse));
+        // Details are in the response content
+        var error = tryParseAsJsonError(failedResponse);
+        if (error == null) {
+          error = "Access denied";
+        }
+        return new ForbiddenException(error);
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));

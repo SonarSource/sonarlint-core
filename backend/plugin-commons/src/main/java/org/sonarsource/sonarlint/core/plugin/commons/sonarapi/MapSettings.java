@@ -26,6 +26,7 @@ import java.util.Optional;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.config.PropertyDefinitions;
@@ -305,7 +306,7 @@ public class MapSettings extends Settings {
   @Override
   public List<String> getKeysStartingWith(String prefix) {
     return getProperties().keySet().stream()
-      .filter(key -> StringUtils.startsWith(key, prefix))
+      .filter(key -> Strings.CS.startsWith(key, prefix))
       .toList();
   }
 
