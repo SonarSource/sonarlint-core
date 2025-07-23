@@ -74,7 +74,7 @@ class WebSocketMediumTests {
   void prepare() {
     webSocketServerEU = new WebSocketServer();
     webSocketServerEU.start();
-    webSocketServerUS = new WebSocketServer(WebSocketServer.DEFAULT_PORT + 1);
+    webSocketServerUS = new WebSocketServer();
     webSocketServerUS.start();
   }
 
@@ -512,9 +512,9 @@ class WebSocketMediumTests {
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
-      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create WebSocket connection for ws://localhost:54321/endpoint"));
+      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create WebSocket connection for " + webSocketServerEU.getUri()));
 
-      webSocketServerEU.start();
+      webSocketServerEU.restart();
       // Emulate a change on the connection to force WebSocket service to reconnect
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
@@ -1493,8 +1493,8 @@ class WebSocketMediumTests {
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
     return harness.newBackend()
       .withBackendCapability(SERVER_SENT_EVENTS)
-      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServerEU.getUrl())
-      .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUrl());
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServerEU.getUri())
+      .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUri());
   }
 
   public static class WebSocketPayloadBuilder {

@@ -163,14 +163,14 @@ public class SonarLintBackendFixture {
     @Nullable
     private String euRegionApiUri;
     @Nullable
-    private String euRegionWebSocketUri;
+    private URI euRegionWebSocketUri;
 
     @Nullable
     private String usRegionUri;
     @Nullable
     private String usRegionApiUri;
     @Nullable
-    private String usRegionWebSocketUri;
+    private URI usRegionWebSocketUri;
 
     private Duration responseTimeout;
     private Path keyStorePath;
@@ -256,7 +256,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudEuRegionWebSocketUri(String euRegionWebSocketUri) {
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionWebSocketUri(URI euRegionWebSocketUri) {
       this.euRegionWebSocketUri = euRegionWebSocketUri;
       return this;
     }
@@ -271,7 +271,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(String usRegionWebSocketUri) {
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(URI usRegionWebSocketUri) {
       this.usRegionWebSocketUri = usRegionWebSocketUri;
       return this;
     }
@@ -527,9 +527,9 @@ public class SonarLintBackendFixture {
         // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
         var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
           SonarCloudRegion.EU,
-          new SonarQubeCloudRegionDto(createUriFromString(euRegionUri), createUriFromString(euRegionApiUri), createUriFromString(euRegionWebSocketUri)),
+          new SonarQubeCloudRegionDto(createUriFromString(euRegionUri), createUriFromString(euRegionApiUri), euRegionWebSocketUri),
           SonarCloudRegion.US,
-          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), createUriFromString(usRegionWebSocketUri))));
+          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), usRegionWebSocketUri)));
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
         var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);
