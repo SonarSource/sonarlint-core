@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -65,6 +64,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.sanitizeAgainstRTLO;
 import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils.getServerUrlForSonarCloud;
 
@@ -303,7 +303,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     public FixSuggestionPayload(FileEditPayload fileEdit, String suggestionId, String explanation) {
       this.fileEdit = fileEdit;
       this.suggestionId = suggestionId;
-      this.explanation = StringEscapeUtils.escapeHtml(explanation);
+      this.explanation = escapeHtml4(explanation);
     }
 
     public boolean isValid() {

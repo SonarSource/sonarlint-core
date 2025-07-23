@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -32,6 +31,8 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 public class TextRangeUtils {
 
@@ -83,7 +84,7 @@ public class TextRangeUtils {
 
   private static String getLineContent(ClientInputFile file, TextRange textRange) {
     var fileContent = getFileContentOrEmptyString(file);
-    if (StringUtils.isEmpty(fileContent)) return "";
+    if (isEmpty(fileContent)) return "";
     var lines = fileContent.lines().toList();
     if (lines.size() < textRange.getStartLine()) return "";
     var line = lines.get(textRange.getStartLine() - 1);

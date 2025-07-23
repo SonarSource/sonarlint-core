@@ -22,11 +22,10 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.net.URI;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-
-import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
@@ -47,7 +46,7 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
 
   @Override
   public EndpointParams getEndpointParams() {
-    return new EndpointParams(getUrl(), removeEnd(apiUri.toString(), "/"), true, organization);
+    return new EndpointParams(getUrl(), Strings.CS.removeEnd(apiUri.toString(), "/"), true, organization);
   }
 
   public SonarCloudRegion getRegion() {

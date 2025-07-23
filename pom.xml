@@ -58,17 +58,17 @@
     <maven.compiler.release>17</maven.compiler.release>
 
     <sonar-plugin-api.version>12.0.0.2960</sonar-plugin-api.version>
-    <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
+    <sonar-markdown.version>25.3.0.104237</sonar-markdown.version>
     <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
     <protobuf.version>4.28.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.0.0-alpha.10</okhttp.version>
+    <okhttp.version>5.0.0-alpha.16</okhttp.version>
     <junit.jupiter.version>5.13.1</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.10</gson.version>
     <mockito.version>5.8.0</mockito.version>
-    <kotlin.version>1.6.21</kotlin.version>
+    <kotlin.version>1.9.21</kotlin.version>
     <lsp4j.version>0.22.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
     <logback.version>1.5.17</logback.version>
@@ -130,7 +130,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.17.0</version>
+        <version>3.18.0</version>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-text</artifactId>
+          <version>1.13.1</version>
       </dependency>
       <!-- This dependency is imported by the SLLS, ping them when it is modified -->
       <dependency>
@@ -229,7 +234,7 @@
       <dependency>
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock-jetty12</artifactId>
-        <version>3.12.1</version>
+        <version>3.13.1</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

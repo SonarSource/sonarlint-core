@@ -62,13 +62,17 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_simple_setting() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("event: SettingChanged\n" +
-      "data: {" +
-      "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-      "\"key\": \"key1\"," +
-      "\"value\": \"value1\"" +
-      "}\n\n");
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "value": "value1"
+        }
+    
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -82,13 +86,17 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_multi_values_setting() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("event: SettingChanged\n" +
-      "data: {" +
-      "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-      "\"key\": \"key1\"," +
-      "\"values\": [\"value1\",\"value2\"]" +
-      "}\n\n");
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "values": ["value1","value2"]
+        }
+    
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -102,20 +110,26 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_field_values_setting() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("event: SettingChanged\n" +
-      "data: {" +
-      "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
-      "\"key\": \"key1\"," +
-      "\"fieldValues\": [{" +
-      "\"key2\": \"value2\"," +
-      "\"key3\": \"value3\"" +
-      "}," +
-      "{" +
-      "\"key4\": \"value4\"," +
-      "\"key5\": \"value5\"" +
-      "}]" +
-      "}\n\n");
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: SettingChanged
+        data: {
+          "projects": ["projectKey1", "projectKey2"],
+          "key": "key1",
+          "fieldValues": [
+            {
+              "key2": "value2",
+              "key3": "value3"
+            },
+            {
+              "key4": "value4",
+              "key5": "value5"
+            }
+          ]
+        }
+    
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -130,23 +144,24 @@ class PushApiTests {
 
   @Test
   void should_notify_rule_set_changed_event_without_impacts() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: RuleSetChanged
-      data: {\
-        "projects": ["projectKey1", "projectKey2"],\
-        "activatedRules": [{\
-          "key": "java:S0000",\
-          "severity": "MAJOR",\
-          "params": [{\
-            "key": "key1",\
-            "value": "value1"\
-          }]\
-        }],\
-        "deactivatedRules": ["java:S4321"]\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: RuleSetChanged
+        data: {\
+          "projects": ["projectKey1", "projectKey2"],\
+          "activatedRules": [{\
+            "key": "java:S0000",\
+            "severity": "MAJOR",\
+            "params": [{\
+              "key": "key1",\
+              "value": "value1"\
+            }]\
+          }],\
+          "deactivatedRules": ["java:S4321"]\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -167,28 +182,29 @@ class PushApiTests {
 
   @Test
   void should_notify_rule_set_changed_event() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: RuleSetChanged
-      data: {\
-        "projects": ["projectKey1", "projectKey2"],\
-        "activatedRules": [{\
-          "key": "java:S0000",\
-          "severity": "MAJOR",\
-          "params": [{\
-            "key": "key1",\
-            "value": "value1"\
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: RuleSetChanged
+        data: {\
+          "projects": ["projectKey1", "projectKey2"],\
+          "activatedRules": [{\
+            "key": "java:S0000",\
+            "severity": "MAJOR",\
+            "params": [{\
+              "key": "key1",\
+              "value": "value1"\
+            }],\
+            "templateKey": "templateKey",\
+            "impacts": [{\
+              "softwareQuality": "SECURITY",\
+              "severity": "HIGH"\
+            }]\
           }],\
-          "templateKey": "templateKey",\
-          "impacts": [{\
-            "softwareQuality": "SECURITY",\
-            "severity": "HIGH"\
-          }]\
-        }],\
-        "deactivatedRules": ["java:S4321"]\
-      }
-      
-      """);
+          "deactivatedRules": ["java:S4321"]\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -209,13 +225,14 @@ class PushApiTests {
 
   @Test
   void should_not_notify_while_event_is_incomplete() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: RuleSetChanged
-      data: {\
-        "projects": ["projectKey1", "projectKey2"],\
-        "activatedRules":
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: RuleSetChanged
+        data: {\
+          "projects": ["projectKey1", "projectKey2"],\
+          "activatedRules":
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -226,22 +243,23 @@ class PushApiTests {
 
   @Test
   void should_ignore_events_without_project_keys() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: RuleSetChanged
-      data: {\
-        "activatedRules": ["java:S1234"],\
-        "deactivatedRules": ["java:S4321"],\
-        "changedRules": [{\
-          "key": "java:S0000",\
-          "overriddenSeverity": "MAJOR",\
-          "params": [{\
-            "key": "key1",\
-            "value": "value1"\
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: RuleSetChanged
+        data: {\
+          "activatedRules": ["java:S1234"],\
+          "deactivatedRules": ["java:S4321"],\
+          "changedRules": [{\
+            "key": "java:S0000",\
+            "overriddenSeverity": "MAJOR",\
+            "params": [{\
+              "key": "key1",\
+              "value": "value1"\
+            }]\
           }]\
-        }]\
-      }
-      """);
+        }
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -252,12 +270,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_unknown_events() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: UnknownEvent
-      data: "plop"
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: UnknownEvent
+        data: "plop"
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -268,12 +287,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_ruleset_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: RuleSetChanged
-      data: {]
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: RuleSetChanged
+        data: {]
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -284,12 +304,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_setting_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: SettingChanged
-      data: {]
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: SettingChanged
+        data: {]
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -300,18 +321,19 @@ class PushApiTests {
 
   @Test
   void should_ignore_invalid_setting_changed_events() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: SettingChanged
-      data: {\
-        "projects": ["projectKey1", "projectKey2"],\
-        "key": "key1",\
-        "value": "",\
-        "values": [],\
-        "fieldValues": []\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: SettingChanged
+        data: {\
+          "projects": ["projectKey1", "projectKey2"],\
+          "key": "key1",\
+          "value": "",\
+          "values": [],\
+          "fieldValues": []\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -322,20 +344,21 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_resolved_status_changed() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: IssueChanged
-      data: {\
-        "projectKey": "projectKey1",\
-        "issues": [{\
-          "issueKey": "key1",\
-          "branchName": "master",\
-          "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" } ]\
-        }],\
-        "resolved": true\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: IssueChanged
+        data: {\
+          "projectKey": "projectKey1",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "master",\
+            "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" } ]\
+          }],\
+          "resolved": true\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -355,19 +378,20 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_severity_changed() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: IssueChanged
-      data: {\
-        "projectKey": "projectKey1",\
-        "issues": [{\
-          "issueKey": "key1",\
-          "branchName": "master"\
-        }],\
-        "userSeverity": "MAJOR"\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: IssueChanged
+        data: {\
+          "projectKey": "projectKey1",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "master"\
+          }],\
+          "userSeverity": "MAJOR"\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -387,19 +411,20 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_type_changed() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: IssueChanged
-      data: {\
-        "projectKey": "projectKey1",\
-        "issues": [{\
-          "issueKey": "key1",\
-          "branchName": "master"\
-        }],\
-        "userType": "BUG"\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: IssueChanged
+        data: {\
+          "projectKey": "projectKey1",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "master"\
+          }],\
+          "userType": "BUG"\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -419,18 +444,19 @@ class PushApiTests {
 
   @Test
   void should_not_notify_issue_changed_event_when_no_change_is_present() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: IssueChangedEvent
-      data: {\
-        "projectKey": "projectKey1",\
-        "issues": [{\
-          "issueKey": "key1",\
-          "branchName": "master"\
-        }]\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: IssueChangedEvent
+        data: {\
+          "projectKey": "projectKey1",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "master"\
+          }]\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -441,55 +467,56 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_raised_event() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: TaintVulnerabilityRaised
-      data: {\
-        "key": "taintKey",\
-        "projectKey": "projectKey1",\
-        "branch": "branch",\
-        "creationDate": 123456789,\
-        "ruleKey": "javasecurity:S123",\
-        "severity": "MAJOR",\
-        "type": "VULNERABILITY",\
-        "mainLocation": {\
-          "filePath": "functions/taint.js",\
-          "message": "blah blah",\
-          "textRange": {\
-            "startLine": 17,\
-            "startLineOffset": 10,\
-            "endLine": 3,\
-            "endLineOffset": 2,\
-            "hash": "hash"\
-          }\
-        },\
-        "flows": [{\
-          "locations": [{\
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: TaintVulnerabilityRaised
+        data: {\
+          "key": "taintKey",\
+          "projectKey": "projectKey1",\
+          "branch": "branch",\
+          "creationDate": 123456789,\
+          "ruleKey": "javasecurity:S123",\
+          "severity": "MAJOR",\
+          "type": "VULNERABILITY",\
+          "mainLocation": {\
             "filePath": "functions/taint.js",\
-            "message": "sink: tainted value is used to perform a security-sensitive operation",\
+            "message": "blah blah",\
             "textRange": {\
               "startLine": 17,\
               "startLineOffset": 10,\
               "endLine": 3,\
               "endLineOffset": 2,\
-              "hash": "hash1"\
+              "hash": "hash"\
             }\
           },\
-          {\
-            "filePath": "functions/taint2.js",\
-            "message": "sink: tainted value is used to perform a security-sensitive operation",\
-            "textRange": {\
-              "startLine": 18,\
-              "startLineOffset": 11,\
-              "endLine": 4,\
-              "endLineOffset": 3,\
-              "hash": "hash2"\
-            }\
+          "flows": [{\
+            "locations": [{\
+              "filePath": "functions/taint.js",\
+              "message": "sink: tainted value is used to perform a security-sensitive operation",\
+              "textRange": {\
+                "startLine": 17,\
+                "startLineOffset": 10,\
+                "endLine": 3,\
+                "endLineOffset": 2,\
+                "hash": "hash1"\
+              }\
+            },\
+            {\
+              "filePath": "functions/taint2.js",\
+              "message": "sink: tainted value is used to perform a security-sensitive operation",\
+              "textRange": {\
+                "startLine": 18,\
+                "startLineOffset": 11,\
+                "endLine": 4,\
+                "endLineOffset": 3,\
+                "hash": "hash2"\
+              }\
+            }]\
           }]\
-        }]\
-      }
-      
-      """);
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -513,58 +540,59 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_raised_event_with_cct() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: TaintVulnerabilityRaised
-      data: {\
-        "key": "taintKey",\
-        "projectKey": "projectKey1",\
-        "branch": "branch",\
-        "creationDate": 123456789,\
-        "ruleKey": "javasecurity:S123",\
-        "severity": "MAJOR",\
-        "type": "VULNERABILITY",\
-        "cleanCodeAttribute": "TRUSTWORTHY",\
-        "impacts": [ { "softwareQuality": "SECURITY", "severity": "HIGH" } ],\
-        "type": "VULNERABILITY",\
-        "mainLocation": {\
-          "filePath": "functions/taint.js",\
-          "message": "blah blah",\
-          "textRange": {\
-            "startLine": 17,\
-            "startLineOffset": 10,\
-            "endLine": 3,\
-            "endLineOffset": 2,\
-            "hash": "hash"\
-          }\
-        },\
-        "flows": [{\
-          "locations": [{\
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: TaintVulnerabilityRaised
+        data: {\
+          "key": "taintKey",\
+          "projectKey": "projectKey1",\
+          "branch": "branch",\
+          "creationDate": 123456789,\
+          "ruleKey": "javasecurity:S123",\
+          "severity": "MAJOR",\
+          "type": "VULNERABILITY",\
+          "cleanCodeAttribute": "TRUSTWORTHY",\
+          "impacts": [ { "softwareQuality": "SECURITY", "severity": "HIGH" } ],\
+          "type": "VULNERABILITY",\
+          "mainLocation": {\
             "filePath": "functions/taint.js",\
-            "message": "sink: tainted value is used to perform a security-sensitive operation",\
+            "message": "blah blah",\
             "textRange": {\
               "startLine": 17,\
               "startLineOffset": 10,\
               "endLine": 3,\
               "endLineOffset": 2,\
-              "hash": "hash1"\
+              "hash": "hash"\
             }\
           },\
-          {\
-            "filePath": "functions/taint2.js",\
-            "message": "sink: tainted value is used to perform a security-sensitive operation",\
-            "textRange": {\
-              "startLine": 18,\
-              "startLineOffset": 11,\
-              "endLine": 4,\
-              "endLineOffset": 3,\
-              "hash": "hash2"\
-            }\
+          "flows": [{\
+            "locations": [{\
+              "filePath": "functions/taint.js",\
+              "message": "sink: tainted value is used to perform a security-sensitive operation",\
+              "textRange": {\
+                "startLine": 17,\
+                "startLineOffset": 10,\
+                "endLine": 3,\
+                "endLineOffset": 2,\
+                "hash": "hash1"\
+              }\
+            },\
+            {\
+              "filePath": "functions/taint2.js",\
+              "message": "sink: tainted value is used to perform a security-sensitive operation",\
+              "textRange": {\
+                "startLine": 18,\
+                "startLineOffset": 11,\
+                "endLine": 4,\
+                "endLineOffset": 3,\
+                "hash": "hash2"\
+              }\
+            }]\
           }]\
-        }]\
-      }
-      
-      """);
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -577,15 +605,16 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_closed_event() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: TaintVulnerabilityClosed
-      data: {\
-        "projectKey": "projectKey1",\
-        "key": "taintKey"\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: TaintVulnerabilityClosed
+        data: {\
+          "projectKey": "projectKey1",\
+          "key": "taintKey"\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
@@ -598,20 +627,21 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_software_impacts_changed() {
-    var mockResponse = new MockResponse();
-    mockResponse.setBody("""
-      event: IssueChanged
-      data: {\
-        "projectKey": "projectKey1",\
-        "issues": [{\
-          "issueKey": "key1",\
-          "branchName": "master",\
-          "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" } ]\
-        }],\
-        "resolved": true\
-      }
-      
-      """);
+    var mockResponse = new MockResponse.Builder()
+      .body("""
+        event: IssueChanged
+        data: {\
+          "projectKey": "projectKey1",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "master",\
+            "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" } ]\
+          }],\
+          "resolved": true\
+        }
+        
+        """)
+      .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();

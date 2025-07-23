@@ -42,8 +42,8 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.trimToNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
 public class BindingClueProvider {

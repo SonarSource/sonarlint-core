@@ -64,7 +64,7 @@ class AuthenticationApiTests {
 
   @Test
   void test_connection_issue() {
-    mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse().setResponseCode(500).setBody("Foo"));
+    mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse.Builder().code(500).body("Foo").build());
 
     var validationResult = underTest.validate(new SonarLintCancelMonitor());
 

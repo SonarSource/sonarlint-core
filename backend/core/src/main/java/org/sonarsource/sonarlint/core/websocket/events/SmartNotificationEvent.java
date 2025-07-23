@@ -19,14 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.websocket.events;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
+
+import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 
 public record SmartNotificationEvent(String message, String link, String project, String date,
                                      String category) implements SonarServerEvent {
 
   public SmartNotificationEvent(String message, String link, String project, String date, String category) {
-    this.message = StringEscapeUtils.escapeHtml(message);
+    this.message = escapeHtml4(message);
     this.link = link;
     this.project = project;
     this.date = date;

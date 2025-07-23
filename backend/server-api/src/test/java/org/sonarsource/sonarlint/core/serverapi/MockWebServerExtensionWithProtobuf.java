@@ -37,7 +37,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   public void addProtobufResponse(String path, Message m) {
     try (var b = new Buffer()) {
       m.writeTo(b.outputStream());
-      responsesByPath.put(path, new MockResponse().setBody(b));
+      responsesByPath.put(path, new MockResponse.Builder().body(b).build());
     } catch (IOException e) {
       fail(e);
     }
@@ -46,7 +46,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   public void addProtobufResponseDelimited(String path, Message... m) {
     try (var b = new Buffer()) {
       writeMessages(b.outputStream(), Arrays.asList(m).iterator());
-      responsesByPath.put(path, new MockResponse().setBody(b));
+      responsesByPath.put(path, new MockResponse.Builder().body(b).build());
     }
   }
 

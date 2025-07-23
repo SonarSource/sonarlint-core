@@ -25,11 +25,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
+import static com.github.tomakehurst.wiremock.common.Strings.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
@@ -154,7 +154,7 @@ class EmbeddedServerMediumTests {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
-      .header("Origin", RandomStringUtils.randomAlphabetic(10))
+      .header("Origin", randomAlphabetic(10))
       .GET().build();
     for (int i = 0; i < 15; i++) {
       java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -190,7 +190,7 @@ class EmbeddedServerMediumTests {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
-      .header("Origin", RandomStringUtils.randomAlphabetic(10))
+      .header("Origin", randomAlphabetic(10))
       .GET().build();
     for (int i = 0; i < 15; i++) {
       java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());

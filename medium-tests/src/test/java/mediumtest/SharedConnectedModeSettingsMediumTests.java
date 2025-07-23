@@ -22,13 +22,13 @@ package mediumtest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileResponse;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SharedConnectedModeSettingsMediumTests {
@@ -116,7 +116,7 @@ class SharedConnectedModeSettingsMediumTests {
       {
           "sonarQubeUri": "%s",
           "projectKey": "%s"
-      }""", removeEnd(server.baseUrl(), "/"), projectKey);
+      }""", Strings.CS.removeEnd(server.baseUrl(), "/"), projectKey);
 
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server)

@@ -55,7 +55,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
         if (responsesByPath.containsKey(request.getPath())) {
           return responsesByPath.get(request.getPath());
         }
-        return new MockResponse().setResponseCode(404);
+        return new MockResponse.Builder().code(404).build();
       }
     };
     server.setDispatcher(dispatcher);
@@ -80,7 +80,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   }
 
   public void addStringResponse(String path, String body) {
-    responsesByPath.put(path, new MockResponse().setBody(body));
+    responsesByPath.put(path, new MockResponse.Builder().body(body).build());
   }
 
   public void removeResponse(String path) {
@@ -110,7 +110,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   public void addResponseFromResource(String path, String responseResourcePath) {
     try (var b = new Buffer()) {
-      responsesByPath.put(path, new MockResponse().setBody(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))));
+      responsesByPath.put(path, new MockResponse.Builder().body(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))).build());
     } catch (IOException e) {
       fail(e);
     }

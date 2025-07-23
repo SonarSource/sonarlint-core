@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -49,6 +48,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+
+import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 
 public class RequestHandlerBindingAssistant {
 
@@ -220,7 +221,7 @@ public class RequestHandlerBindingAssistant {
     var configScopeCandidates = bindingCandidatesFinder.findConfigScopesToBind(connectionId, projectKey, cancelMonitor);
     // For now, we decided to only support automatic binding if there is only one clear candidate
     if (configScopeCandidates.size() != 1) {
-      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(StringEscapeUtils.escapeHtml(projectKey), isSonarCloud));
+      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(escapeHtml4(projectKey), isSonarCloud));
       return new NewBinding(connectionId, null);
     }
     var bindableConfig = configScopeCandidates.iterator().next();

@@ -19,10 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ProtocolException;
-
-import static org.apache.commons.lang3.StringUtils.removeEnd;
 
 public class RequestHandlerUtils {
 
@@ -33,6 +32,6 @@ public class RequestHandlerUtils {
   public static String getServerUrlForSonarCloud(ClassicHttpRequest request) throws ProtocolException {
     var originUrl = request.getHeader("Origin").getValue();
     // Since the 'isSonarCloud' check passed, we are sure that the region will be there
-    return removeEnd(originUrl, "/");
+    return Strings.CS.removeEnd(originUrl, "/");
   }
 }

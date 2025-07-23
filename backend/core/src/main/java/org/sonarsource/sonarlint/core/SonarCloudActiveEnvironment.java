@@ -23,9 +23,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 
-import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
   private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
@@ -75,18 +75,18 @@ public class SonarCloudActiveEnvironment {
     
     throw new IllegalArgumentException("URI should be a known SonarCloud URI");
   }
-  
+
   private Optional<SonarCloudRegion> getRegionByUri(String uri) {
-    var cleanedUri = removeEnd(uri, "/");
+    var cleanedUri = Strings.CS.removeEnd(uri, "/");
     for (var entry : alternativeRegionUris.entrySet()) {
-      var regionDto = entry.getValue();
-      if (regionDto.getUri() != null && removeEnd(regionDto.getUri().toString(), "/").equals(cleanedUri)) {
+      var regionUri = entry.getValue().getUri();
+      if (regionUri != null && Strings.CS.removeEnd(regionUri.toString(), "/").equals(cleanedUri)) {
         return Optional.of(entry.getKey());
       }
     }
 
     for (var region : SonarCloudRegion.values()) {
-      if (removeEnd(region.getProductionUri().toString(), "/").equals(cleanedUri)) {
+      if (Strings.CS.removeEnd(region.getProductionUri().toString(), "/").equals(cleanedUri)) {
         return Optional.of(region);
       }
     }

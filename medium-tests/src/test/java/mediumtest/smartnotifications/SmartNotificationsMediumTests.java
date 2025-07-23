@@ -116,7 +116,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_notification_for_two_config_scope_with_same_binding(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -139,7 +139,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_notification_for_two_config_scope_with_inherited_binding(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -162,8 +162,8 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_notification_for_different_bindings(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
-    mockWebServerExtension2.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
+    mockWebServerExtension2.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     var timestamp = UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "," + PROJECT_KEY_3 + "," + PROJECT_KEY_4 + "&from=" +
       timestamp + "," + timestamp + "," + timestamp, THREE_EVENTS_P1_P3_P4);
@@ -206,7 +206,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_not_send_notification_with_unbound_config_scope(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -228,7 +228,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_notification_after_adding_removing_binding(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -257,7 +257,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_notification_handled_by_sonarcloud_websocket_as_fallback(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -281,7 +281,7 @@ class SmartNotificationsMediumTests {
     webSocketServer.start();
     var fakeClient = harness.newFakeClient().withToken(CONNECTION_ID, "token")
       .build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
@@ -310,7 +310,7 @@ class SmartNotificationsMediumTests {
   @SonarLintTest
   void it_should_send_sonarqube_notification(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 

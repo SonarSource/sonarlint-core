@@ -24,8 +24,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
-import org.apache.commons.lang.ArrayUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static org.apache.commons.lang3.ArrayUtils.reverse;
 
 public class WindowsShortcutUtils {
   // Based on Windows specification the magic number is 0x0000004C that must be tested with both big and little endian
@@ -66,7 +67,7 @@ public class WindowsShortcutUtils {
       }
 
       // Check little endian
-      ArrayUtils.reverse(magicNumber);
+      reverse(magicNumber);
       return Arrays.equals(WINDOWS_SHORTCUT_MAGIC_NUMBER, magicNumber);
     } catch (IOException err) {
       SonarLintLogger.get().debug("Cannot check whether '" + uri + "' is a Windows shortcut, assuming it is not.");

@@ -461,7 +461,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   private void fakeServerWithWrongBody(String issueKey) {
-    mockWebServerExtension.addResponse(apiIssueSearchPath(issueKey, null), new MockResponse().setBody("wrong body"));
+    mockWebServerExtension.addResponse(apiIssueSearchPath(issueKey, null), new MockResponse.Builder().code(200).body("wrong body").build());
   }
 
   private static String apiIssueSearchPath(String issueKey, @Nullable String orgKey) {

@@ -22,10 +22,9 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
+import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-
-import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public abstract class AbstractConnectionConfiguration {
 
@@ -42,7 +41,7 @@ public abstract class AbstractConnectionConfiguration {
     this.connectionId = connectionId;
     this.kind = kind;
     this.disableNotifications = disableNotifications;
-    this.url = removeEnd(url, "/");
+    this.url = Strings.CS.removeEnd(url, "/");
   }
 
   public String getConnectionId() {
@@ -67,8 +66,8 @@ public abstract class AbstractConnectionConfiguration {
     URI myUri;
     URI otherUri;
     try {
-      myUri = new URI(removeEnd(url, "/"));
-      otherUri = new URI(removeEnd(otherUrl, "/"));
+      myUri = new URI(Strings.CS.removeEnd(url, "/"));
+      otherUri = new URI(Strings.CS.removeEnd(otherUrl, "/"));
     } catch (URISyntaxException e) {
       return false;
     }

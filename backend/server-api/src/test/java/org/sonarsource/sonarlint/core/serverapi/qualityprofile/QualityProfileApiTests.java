@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
 import mockwebserver3.MockResponse;
+import okhttp3.Headers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -44,7 +45,7 @@ class QualityProfileApiTests {
   void should_throw_when_the_endpoint_is_not_found() {
     var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
-    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse(404, Headers.EMPTY, ""));
 
     var cancelMonitor = new SonarLintCancelMonitor();
     assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
@@ -54,7 +55,7 @@ class QualityProfileApiTests {
   void should_throw_when_a_server_error_occurs() {
     var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
-    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(503));
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse(503, Headers.EMPTY, ""));
 
     var cancelMonitor = new SonarLintCancelMonitor();
     assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
