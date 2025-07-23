@@ -287,7 +287,7 @@ class SmartNotificationsMediumTests {
 
     harness.newBackend()
       .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
-      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl())
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUri())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(SMART_NOTIFICATIONS, SERVER_SENT_EVENTS)

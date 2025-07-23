@@ -20,33 +20,35 @@
 package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
 import java.io.File;
+import java.net.URI;
 import java.util.List;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.startup.Tomcat;
+import org.sonarsource.sonarlint.core.test.utils.server.NetworkUtils;
 
 public class WebSocketServer {
 
-  public static final int DEFAULT_PORT = 54321;
   public static final String CONNECTION_REPOSITORY_ATTRIBUTE_KEY = "connectionRepository";
   private Tomcat tomcat;
   private WebSocketConnectionRepository connectionRepository;
-  private final int port;
-
-  public WebSocketServer(int port) {
-    this.port = port;
-  }
-
-  public WebSocketServer() {
-    this(DEFAULT_PORT);
-  }
+  private int port = -1;
 
   public void start() {
+    start(NetworkUtils.getNextAvailablePort());
+  }
+
+  public void restart() {
+    start(port);
+  }
+
+  private void start(int port) {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
       tomcat.setPort(port);
+      this.port = port;
       var context = tomcat.addContext("", baseDir);
       connectionRepository = new WebSocketConnectionRepository();
       context.getServletContext().setAttribute(CONNECTION_REPOSITORY_ATTRIBUTE_KEY, connectionRepository);
@@ -69,8 +71,8 @@ public class WebSocketServer {
     }
   }
 
-  public String getUrl() {
-    return "ws://localhost:" + port + "/endpoint";
+  public URI getUri() {
+    return URI.create("ws://localhost:" + port + "/endpoint");
   }
 
   public List<WebSocketConnection> getConnections() {
