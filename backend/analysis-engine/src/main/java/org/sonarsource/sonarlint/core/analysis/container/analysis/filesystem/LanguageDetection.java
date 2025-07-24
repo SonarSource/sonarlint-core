@@ -21,20 +21,18 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.net.URI;
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * Detect language of a source file based on its suffix and configured patterns.
@@ -95,13 +93,11 @@ public class LanguageDetection {
   }
 
   private String getDetails(SonarLanguage detectedLanguage) {
-    return detectedLanguage + ": "
-      + Arrays.stream(extensionsByLanguage.get(detectedLanguage))
-        .collect(joining(","));
+    return detectedLanguage + ": " + String.join(",", extensionsByLanguage.get(detectedLanguage));
   }
 
   public static String sanitizeExtension(String suffix) {
-    return StringUtils.lowerCase(StringUtils.removeStart(suffix, "."));
+    return StringUtils.lowerCase(Strings.CS.removeStart(suffix, "."));
   }
 
 }

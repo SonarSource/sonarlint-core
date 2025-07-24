@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.code.NewSignificantCode;
@@ -119,7 +119,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     return inputComponent.isFile()
       && textRange != null
       && ((SonarLintInputFile) inputComponent).hasNoSonarAt(textRange.start().line())
-      && !StringUtils.containsIgnoreCase(issue.ruleKey().rule(), "nosonar");
+      && !Strings.CI.contains(issue.ruleKey().rule(), "nosonar");
   }
 
   private static List<org.sonarsource.sonarlint.core.analysis.api.Flow> mapFlows(List<Flow> flows) {

@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
+import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.PathUtils;
 import org.sonar.api.utils.WildcardPattern;
@@ -71,7 +73,7 @@ public class SonarLintPathPattern {
     if (!caseSensitiveFileExtension) {
       var extension = sanitizeExtension(FilenameUtils.getExtension(path));
       if (StringUtils.isNotBlank(extension)) {
-        path = StringUtils.removeEndIgnoreCase(path, extension);
+        path = Strings.CI.removeEnd(path, extension);
         path = path + extension;
       }
     }
@@ -83,7 +85,7 @@ public class SonarLintPathPattern {
     return pattern.toString();
   }
 
-  static String sanitizeExtension(String suffix) {
-    return StringUtils.lowerCase(StringUtils.removeStart(suffix, "."));
+  static String sanitizeExtension(@Nullable String suffix) {
+    return StringUtils.lowerCase(Strings.CS.removeStart(suffix, "."));
   }
 }

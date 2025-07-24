@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.lang3.Strings;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
@@ -31,7 +32,6 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMessageForma
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
-import static org.apache.commons.lang3.StringUtils.replace;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
 public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLocation {
@@ -60,7 +60,7 @@ public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLoc
   }
 
   @Override
-  public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormattings) {
+  public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormatting) {
     // ignore formatting for now
     return message(message);
   }
@@ -71,7 +71,7 @@ public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLoc
   }
 
   private static String sanitizeNulls(String message) {
-    return replace(message, "\u0000", "[NULL]");
+    return Strings.CS.replace(message, "\u0000", "[NULL]");
   }
 
   @Override
