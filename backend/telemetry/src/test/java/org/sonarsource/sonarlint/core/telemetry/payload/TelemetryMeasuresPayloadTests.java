@@ -63,7 +63,7 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"shared_connected_mode.imported\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.auto\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.exported\",\"value\":\"4\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"shared_connected_mode.remote_url\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"binding_suggestion_clue.remote_url\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.child_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.server_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_eu_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
@@ -89,7 +89,8 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("shared_connected_mode.imported", String.valueOf(2), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(3), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(4), INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("shared_connected_mode.remote_url", String.valueOf(5), INTEGER, DAILY));
+
+    values.add(new TelemetryMeasuresValue("binding_suggestion_clue.remote_url", String.valueOf(5), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("bindings.child_count", String.valueOf(1), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(2), INTEGER, DAILY));
@@ -111,7 +112,7 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("shared_connected_mode.imported", "2", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.auto", "3", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.exported", "4", INTEGER, DAILY))
-      .contains(tuple("shared_connected_mode.remote_url", "5", INTEGER, DAILY))
+      .contains(tuple("binding_suggestion_clue.remote_url", "5", INTEGER, DAILY))
       .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY))
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY));
   }
