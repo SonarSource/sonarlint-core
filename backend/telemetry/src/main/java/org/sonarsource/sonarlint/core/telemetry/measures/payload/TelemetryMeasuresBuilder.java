@@ -48,6 +48,8 @@ public class TelemetryMeasuresBuilder {
 
     addConnectedModeMeasures(values);
 
+    addBindingSuggestionClueMeasures(values);
+
     addHelpAndFeedbackMeasures(values);
 
     addAnalysisReportingMeasures(values);
@@ -91,13 +93,16 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("shared_connected_mode.imported", String.valueOf(storage.getImportedAddedBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(storage.getAutoAddedBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(storage.getExportedConnectedModeCount()), INTEGER, DAILY));
-      values.add(new TelemetryMeasuresValue("shared_connected_mode.remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
 
       values.add(new TelemetryMeasuresValue("bindings.child_count", String.valueOf(liveAttributes.countChildBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(liveAttributes.countSonarQubeServerBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(liveAttributes.countSonarQubeCloudEUBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(liveAttributes.countSonarQubeCloudUSBindings()), INTEGER, DAILY));
     }
+  }
+
+  private void addBindingSuggestionClueMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("binding_suggestion_clue.remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
   }
 
   private void addHelpAndFeedbackMeasures(List<TelemetryMeasuresValue> values) {
