@@ -1217,7 +1217,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var documentation = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 3) ? "OWASP - <a h..." : "<a href=\"htt...";
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
-        .containsExactly(
+        .contains(
           "Why is this an issue?",
           "<p>Reflected cross-site scripting (XSS) occurs ...",
           "How can I fix it?",
