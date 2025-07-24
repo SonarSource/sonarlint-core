@@ -27,6 +27,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.matching.AnythingPattern;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -775,6 +776,7 @@ public class ServerFixture {
     private final boolean serverSentEventsEnabled;
     private final Set<String> features;
     private SSEServer sseServer;
+    private URI sseServerUri;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
@@ -800,7 +802,7 @@ public class ServerFixture {
       mockServer.start();
       if (serverSentEventsEnabled) {
         sseServer = new SSEServer();
-        sseServer.start();
+        sseServerUri = sseServer.start();
       }
       registerWebApiResponses();
     }
@@ -1508,7 +1510,7 @@ public class ServerFixture {
         .withQueryParam("languages", new AnythingPattern())
         .willReturn(aResponse()
           .withStatus(302)
-          .withHeader("Location", sseServer.getUrl())));
+          .withHeader("Location", sseServerUri.toString())));
     }
 
     private void registerFeaturesApiResponses() {
