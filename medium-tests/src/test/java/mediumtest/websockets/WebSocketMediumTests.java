@@ -512,10 +512,10 @@ class WebSocketMediumTests {
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
-      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create websocket connection for ws://localhost:54321/endpoint"));
+      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create WebSocket connection for ws://localhost:54321/endpoint"));
 
       webSocketServerEU.start();
-      // Emulate a change on the connection to force websocket service to reconnect
+      // Emulate a change on the connection to force WebSocket service to reconnect
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServerEU.getConnections())
