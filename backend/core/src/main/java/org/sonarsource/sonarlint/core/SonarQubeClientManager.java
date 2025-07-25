@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.connection.SonarQubeClient;
@@ -69,16 +70,9 @@ public class SonarQubeClientManager {
    * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
    */
   public SonarQubeClient getClientOrThrow(String connectionId) {
-    return clientsByConnectionId.computeIfAbsent(connectionId, connId -> {
-      var connection = connectionRepository.getConnectionById(connectionId);
-      if (connection == null) {
-        var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
-        throw new ResponseErrorException(error);
-      }
-      var endpointParams = connection.getEndpointParams();
-      var isBearerSupported = checkIfBearerIsSupported(endpointParams);
-      return new SonarQubeClient(connectionId, new ServerApi(endpointParams, awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported)), client);
-    });
+    return clientsByConnectionId.computeIfAbsent(connectionId, connId ->
+      Optional.ofNullable(getSonarQubeClient(connId))
+        .orElseThrow(() -> new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId))));
   }
 
   public void withActiveClient(String connectionId, Consumer<ServerApi> serverApiConsumer) {
@@ -94,24 +88,38 @@ public class SonarQubeClientManager {
   }
 
   private Optional<SonarQubeClient> getValidClient(String connectionId) {
-    return Optional.ofNullable(
-      clientsByConnectionId.computeIfAbsent(connectionId, connId -> {
-        var connection = connectionRepository.getConnectionById(connectionId);
-        if (connection == null) {
-          LOG.debug("Connection '{}' is gone", connectionId);
-          return null;
-        }
-        var endpointParams = connection.getEndpointParams();
-        var isBearerSupported = checkIfBearerIsSupported(endpointParams);
-        return new SonarQubeClient(connectionId, new ServerApi(endpointParams, awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported)), client);
-      }))
-      .filter(connection -> {
-        var isValid = connection.isActive();
-        if (!isValid) {
-          LOG.debug("Connection '{}' is invalid", connectionId);
-        }
-        return isValid;
-      });
+    return Optional.ofNullable(clientsByConnectionId.computeIfAbsent(connectionId, this::getSonarQubeClient))
+      .filter(connection -> isConnectionActive(connectionId, connection));
+  }
+
+  @Nullable
+  private SonarQubeClient getSonarQubeClient(String connectionId) {
+    var connection = connectionRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      LOG.debug("Connection '{}' is gone", connectionId);
+      return null;
+    }
+    var endpointParams = connection.getEndpointParams();
+    var isBearerSupported = checkIfBearerIsSupported(endpointParams);
+    var serverApi = getServerApi(connectionId, endpointParams, isBearerSupported);
+    return new SonarQubeClient(connectionId, serverApi, client);
+  }
+
+  private static boolean isConnectionActive(String connectionId, SonarQubeClient connection) {
+    var isValid = connection.isActive();
+    if (!isValid) {
+      LOG.debug("Connection '{}' is invalid", connectionId);
+    }
+    return isValid;
+  }
+
+  @Nullable
+  private ServerApi getServerApi(String connectionId, EndpointParams endpointParams, boolean isBearerSupported) {
+    try {
+      return new ServerApi(endpointParams, awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported));
+    } catch (IllegalStateException e) {
+      return null;
+    }
   }
 
   public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
