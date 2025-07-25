@@ -19,13 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 public record ServerDependencyRisk(UUID key, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
 
   public ServerDependencyRisk withStatus(Status newStatus) {
-    return new ServerDependencyRisk(key, type, severity, newStatus, packageName, packageVersion, transitions);
+    var newTransitions = new ArrayList<>(Arrays.asList(Transition.values()));
+    newTransitions.remove(Transition.FIXED);
+    newTransitions.remove(newStatus.equals(Status.OPEN) ? Transition.REOPEN : Transition.valueOf(newStatus.name()));
+    return new ServerDependencyRisk(key, type, severity, newStatus, packageName, packageVersion, newTransitions);
   }
 
   public enum Severity {
