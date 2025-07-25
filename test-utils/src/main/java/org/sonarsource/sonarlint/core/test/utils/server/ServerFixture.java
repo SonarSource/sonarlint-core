@@ -82,6 +82,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -142,6 +143,8 @@ public class ServerFixture {
     protected Set<String> features = new HashSet<>();
     private final List<SmartNotifications> smartNotifications = new ArrayList<>();
     private final Map<String, String> globalSettings = new HashMap<>();
+    private DopTranslationBuilder dopTranslation = new DopTranslationBuilder();
+    private final Map<String, CustomEndpointResponse> customEndpointResponses = new HashMap<>();
 
     protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
@@ -185,12 +188,56 @@ public class ServerFixture {
       return (T) this;
     }
 
+    public T withDopTranslation(UnaryOperator<DopTranslationBuilder> dopTranslationBuilder) {
+      this.dopTranslation = dopTranslationBuilder.apply(new DopTranslationBuilder());
+      return (T) this;
+    }
+
+    public T withCustomEndpointResponse(String endpoint, int statusCode, String contentType, String body) {
+      this.customEndpointResponses.put(endpoint, new CustomEndpointResponse(statusCode, contentType, body));
+      return (T) this;
+    }
+
     record SmartNotifications(List<String> projects, String events) {
+    }
+
+    record CustomEndpointResponse(int statusCode, String contentType, Object body) {
+    }
+
+    public static class DopTranslationBuilder {
+      private final Map<String, ProjectBinding> projectBindings = new HashMap<>();
+      private final Map<String, ComponentShowResponse> componentShowResponses = new HashMap<>();
+      private final Map<String, SearchProjectsResponse> searchProjectsResponses = new HashMap<>();
+
+      public DopTranslationBuilder withProjectBinding(String repositoryUrl, String projectId, String projectKey) {
+        this.projectBindings.put(repositoryUrl, new ProjectBinding(projectId, projectKey));
+        return this;
+      }
+
+      public DopTranslationBuilder withComponentShowStatus(String projectKey, int statusCode, String response) {
+        this.componentShowResponses.put(projectKey, new ComponentShowResponse(statusCode, response));
+        return this;
+      }
+
+      public DopTranslationBuilder withSearchProjectsResponse(String organizationKey, String projectIds, int statusCode, String response) {
+        String key = organizationKey + ":" + projectIds;
+        this.searchProjectsResponses.put(key, new SearchProjectsResponse(statusCode, response));
+        return this;
+      }
+
+      record ProjectBinding(String projectId, String projectKey) {
+      }
+
+      record ComponentShowResponse(int statusCode, String response) {
+      }
+
+      record SearchProjectsResponse(int statusCode, String response) {
+      }
     }
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, responseCodes.build(),
-        aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications, globalSettings);
+        aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications, globalSettings, dopTranslation, customEndpointResponses);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -314,12 +361,6 @@ public class ServerFixture {
 
       public ServerProjectBuilder withProjectName(String projectName) {
         this.projectName = projectName;
-        return this;
-      }
-
-      public ServerProjectBuilder withEmptyBranch(String branchName) {
-        var builder = new ServerProjectBranchBuilder();
-        this.branchesByName.put(branchName, builder);
         return this;
       }
 
@@ -757,6 +798,9 @@ public class ServerFixture {
   public static class Server {
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.from(ZoneOffset.UTC));
+    public static final String API_COMPONENTS_SHOW_PROTOBUF_COMPONENT = "/api/components/show.protobuf?component=";
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String APPLICATION_JSON = "application/json";
 
     private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
 
@@ -774,13 +818,16 @@ public class ServerFixture {
     private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
     private final Set<String> features;
+    private final AbstractServerBuilder.DopTranslationBuilder dopTranslation;
+    private final Map<String, AbstractServerBuilder.CustomEndpointResponse> customEndpointResponses;
     private SSEServer sseServer;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
       AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules, boolean serverSentEventsEnabled, Set<String> features,
-      List<AbstractServerBuilder.SmartNotifications> smartNotifications, Map<String, String> globalSettings) {
+      List<AbstractServerBuilder.SmartNotifications> smartNotifications, Map<String, String> globalSettings, AbstractServerBuilder.DopTranslationBuilder dopTranslation,
+      Map<String, AbstractServerBuilder.CustomEndpointResponse> customEndpointResponses) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
@@ -794,6 +841,8 @@ public class ServerFixture {
       this.features = features;
       this.smartNotifications = smartNotifications;
       this.globalSettings = globalSettings;
+      this.dopTranslation = dopTranslation;
+      this.customEndpointResponses = customEndpointResponses;
     }
 
     public void start() {
@@ -825,13 +874,15 @@ public class ServerFixture {
         registerPushApiResponses();
         registerFeaturesApiResponses();
         registerScaApiResponses();
+        registerDopTranslationApiResponses();
+        registerCustomEndpointResponses();
       }
     }
 
     private void registerComponentApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         if (project.projectName != null) {
-          mockServer.stubFor(get("/api/components/show.protobuf?component=" + projectKey)
+          mockServer.stubFor(get(API_COMPONENTS_SHOW_PROTOBUF_COMPONENT + UrlUtils.urlEncode(projectKey))
             .willReturn(aResponse().withResponseBody(protobufBody(
               Components.ShowWsResponse.newBuilder()
                 .setComponent(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build()).build()))));
@@ -1395,7 +1446,7 @@ public class ServerFixture {
 
     private void registerComponentsShowApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
-        var url = "/api/components/show.protobuf?component=" + projectKey;
+        var url = API_COMPONENTS_SHOW_PROTOBUF_COMPONENT + projectKey;
         var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey))
           .map(entry -> Components.Component.newBuilder()
             .setKey(entry.getKey())
@@ -1578,6 +1629,59 @@ public class ServerFixture {
 
     public WireMockServer getMockServer() {
       return mockServer;
+    }
+
+    private void registerDopTranslationApiResponses() {
+      dopTranslation.projectBindings.forEach((repositoryUrl, projectBinding) -> {
+        String encodedUrl = UrlUtils.urlEncode(repositoryUrl);
+        if (serverKind == ServerKind.SONARCLOUD) {
+          String endpoint = "/dop-translation/project-bindings?url=" + encodedUrl;
+          String responseBody = "{\"bindings\":[{\"projectId\":\"" + projectBinding.projectId() + "\"}]}";
+          mockServer.stubFor(get(urlEqualTo(endpoint))
+            .willReturn(aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+              .withBody(responseBody)));
+        } else {
+          String endpoint = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+          String responseBody = "{\"projectBindings\":[{\"projectId\":\"" + projectBinding.projectId() + "\",\"projectKey\":\"" + projectBinding.projectKey() + "\"}]}";
+          mockServer.stubFor(get(urlEqualTo(endpoint))
+            .willReturn(aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+              .withBody(responseBody)));
+        }
+      });
+
+      dopTranslation.componentShowResponses.forEach((projectKey, componentShowResponse) -> {
+        String endpoint = API_COMPONENTS_SHOW_PROTOBUF_COMPONENT + UrlUtils.urlEncode(projectKey);
+        mockServer.stubFor(get(urlEqualTo(endpoint))
+          .willReturn(aResponse()
+            .withStatus(componentShowResponse.statusCode())
+            .withBody(componentShowResponse.response() != null ? componentShowResponse.response() : "")));
+      });
+
+      dopTranslation.searchProjectsResponses.forEach((key, searchProjectsResponse) -> {
+        String[] parts = key.split(":", 2);
+        String organizationKey = parts[0];
+        String projectIds = parts[1];
+        String endpoint = "/api/components/search_projects?projectIds=" + projectIds + "&organization=" + organizationKey;
+        mockServer.stubFor(get(urlEqualTo(endpoint))
+          .willReturn(aResponse()
+            .withStatus(searchProjectsResponse.statusCode())
+            .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+            .withBody(searchProjectsResponse.response())));
+      });
+    }
+
+    private void registerCustomEndpointResponses() {
+      customEndpointResponses.forEach((endpoint, response) -> {
+        mockServer.stubFor(get(urlEqualTo(endpoint))
+          .willReturn(aResponse()
+            .withStatus(response.statusCode())
+            .withHeader(CONTENT_TYPE, response.contentType())
+            .withBody(response.body().toString())));
+      });
     }
   }
 }
