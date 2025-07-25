@@ -50,6 +50,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.S
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
@@ -169,6 +171,9 @@ public class ConnectionService {
   public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     SonarLintCancelMonitor cancelMonitor) {
     try {
+      if (isAnonymousConnection(transientConnection)) {
+        return new ValidateConnectionResponse(false, "No credentials provided for connection");
+      }
       var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
       var serverChecker = new ServerVersionAndStatusChecker(serverApi);
       serverChecker.checkVersionAndStatus(cancelMonitor);
@@ -232,4 +237,13 @@ public class ConnectionService {
     return projectNamesByKey;
   }
 
+  private boolean isAnonymousConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+    Either<TokenDto, UsernamePasswordDto> credentials = transientConnection
+      .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials);
+
+    boolean isTokenEmpty = credentials.getLeft() == null || credentials.getLeft().getToken() == null || credentials.getLeft().getToken().isEmpty();
+    boolean isUserPassEmpty = credentials.getRight() == null || credentials.getRight().getUsername() == null || credentials.getRight().getPassword() == null;
+
+    return isTokenEmpty && isUserPassEmpty;
+  }
 }
