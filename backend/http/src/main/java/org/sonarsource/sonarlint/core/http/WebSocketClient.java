@@ -51,7 +51,15 @@ public class WebSocketClient {
       .build();
   }
 
-  public CompletableFuture<WebSocket> createWebSocketConnection(URI uri, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
+  public CompletableFuture<WebSocket> createWebSocketConnection(@Nullable URI uri, Consumer<String> messageConsumer,
+    Runnable onClosedRunnable) {
+    // Validate URI before attempting connection
+    if (uri == null || (!"ws".equals(uri.getScheme()) && !"wss".equals(uri.getScheme()))) {
+      var future = new CompletableFuture<WebSocket>();
+      future.completeExceptionally(new IllegalArgumentException("WebSocket URI must use 'ws' or 'wss' scheme: " + uri));
+      return future;
+    }
+
     // TODO handle handshake or other errors
     var currentThreadOutput = SonarLintLogger.get().getTargetForCopy();
     return httpClient
@@ -61,16 +69,8 @@ public class WebSocketClient {
       .buildAsync(uri, new MessageConsumerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
   }
 
-  private static class MessageConsumerWrapper implements WebSocket.Listener {
-    private final Consumer<String> messageConsumer;
-    private final Runnable onWebSocketInputClosedRunnable;
-    private final LogOutput currentThreadOutput;
-
-    public MessageConsumerWrapper(Consumer<String> messageConsumer, Runnable onWebSocketInputClosedRunnable, @Nullable LogOutput currentThreadOutput) {
-      this.messageConsumer = messageConsumer;
-      this.onWebSocketInputClosedRunnable = onWebSocketInputClosedRunnable;
-      this.currentThreadOutput = currentThreadOutput;
-    }
+  private record MessageConsumerWrapper(Consumer<String> messageConsumer, Runnable onWebSocketInputClosedRunnable,
+                                        @Nullable LogOutput currentThreadOutput) implements WebSocket.Listener {
 
     @Override
     public void onOpen(WebSocket webSocket) {

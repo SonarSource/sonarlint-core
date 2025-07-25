@@ -25,6 +25,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.channels.UnresolvedAddressException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
@@ -83,10 +84,10 @@ public class SonarCloudWebSocket {
     Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
     var currentThreadOutput = SonarLintLogger.get().getTargetForCopy();
-    LOG.info("Creating websocket connection to " + webSocketsEndpointUri);
+    LOG.info("Creating WebSocket connection to " + webSocketsEndpointUri);
     webSocket.wsFuture = webSocketClient.createWebSocketConnection(webSocketsEndpointUri, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), () -> {
       webSocket.webSocketInputClosed.complete(null);
-      // Don't call the callback if the closing has been triggered by the client
+      // Don't call the callback if the client has triggered the closing
       if (!webSocket.closingInitiated.get()) {
         connectionEndedRunnable.run();
       }
@@ -99,7 +100,7 @@ public class SonarCloudWebSocket {
     });
     webSocket.wsFuture.exceptionally(t -> {
       SonarLintLogger.get().setTarget(currentThreadOutput);
-      LOG.error("Error while trying to create websocket connection for " + webSocketsEndpointUri, t);
+      LOG.error("Error while trying to create WebSocket connection for " + webSocketsEndpointUri, t);
       return null;
     });
     return webSocket;
@@ -187,7 +188,16 @@ public class SonarCloudWebSocket {
     if (this.wsFuture != null) {
       // output could already be closed if an error occurred
       try {
-        this.wsFuture.thenAccept(ws -> close(ws, this.webSocketInputClosed)).get();
+        // Check if the future completed exceptionally before trying to get the result
+        if (this.wsFuture.isCompletedExceptionally()) {
+          LOG.debug("WebSocket connection was already closed, skipping close operation");
+        } else if (this.wsFuture.isDone()) {
+          this.wsFuture.thenAccept(ws -> close(ws, this.webSocketInputClosed)).get();
+        } else {
+          // Future is still pending, cancel it
+          this.wsFuture.cancel(true);
+          LOG.debug("WebSocket connection was still pending, cancelled");
+        }
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (ExecutionException e) {
@@ -211,29 +221,40 @@ public class SonarCloudWebSocket {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (ExecutionException e) {
-        // This might fail with a "java.io.IOException: Output closed" in case the WebSocket was closed by the server or reached EOL which
-        // is fine and should not throw an error message to the user misleading them that something is not working correctly.
-        if (!(e.getCause() instanceof IOException) || !e.getCause().getMessage().contains("Output closed")) {
-          LOG.error("Cannot close the WebSocket output", e);
-        }
+        handleExecutionException(e);
       } catch (TimeoutException e) {
-        LOG.error("The WebSocket input did not close in a timely manner", e);
-        if (!ws.isInputClosed()) {
-          // close input
-          ws.abort();
-        }
+        handleTimeoutException(ws, e);
       }
     }
 
   }
 
+  private static void handleExecutionException(ExecutionException e) {
+    // This might fail with an "IOException: Output closed" in case the WebSocket was closed by the server or reached EOL which
+    // is fine and should not throw an error message to the user misleading them that something is not working correctly.
+    var cause = e.getCause();
+    if (cause instanceof UnresolvedAddressException || (cause instanceof IOException
+      && (cause.getMessage().contains("Output closed") || cause.getMessage().contains("closed output")))) {
+      LOG.debug("WebSocket could not be closed gracefully", e);
+    } else {
+      LOG.error("Cannot close the WebSocket output", e);
+    }
+  }
+
+  private static void handleTimeoutException(WebSocket ws, TimeoutException e) {
+    LOG.error("The WebSocket input did not close in a timely manner", e);
+    if (!ws.isInputClosed()) {
+      // close input
+      ws.abort();
+    }
+  }
+
   public boolean isOpen() {
-    return wsFuture != null
-      && wsFuture.isDone()
-      && !wsFuture.isCompletedExceptionally()
-      && !wsFuture.isCancelled()
-      && !wsFuture.getNow(null).isInputClosed()
-      && !wsFuture.getNow(null).isOutputClosed();
+    if (wsFuture == null || !wsFuture.isDone() || wsFuture.isCompletedExceptionally() || wsFuture.isCancelled()) {
+      return false;
+    }
+    var ws = wsFuture.getNow(null);
+    return ws != null && !ws.isInputClosed() && !ws.isOutputClosed();
   }
 
   private static class WebSocketEvent {
