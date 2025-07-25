@@ -33,12 +33,12 @@ public class SonarLintCoreVersion {
     if (packageInfo != null && packageInfo.getImplementationVersion() != null) {
       version = packageInfo.getImplementationVersion();
     } else {
-      version = getLibraryVersionFallback();
+      version = getLibraryVersion();
     }
     return version;
   }
 
-  static String getLibraryVersionFallback() {
+  public static String getLibraryVersion() {
     var version = "unknown";
     var resource = SonarLintCoreVersion.class.getResourceAsStream("/sl_core_version.txt");
     if (resource != null) {
