@@ -57,7 +57,8 @@ public class RulesApi {
     SonarLanguage.PHP, "phpsecurity",
     SonarLanguage.PYTHON, "pythonsecurity",
     SonarLanguage.CS, "roslyn.sonaranalyzer.security.cs",
-    SonarLanguage.TS, "tssecurity");
+    SonarLanguage.TS, "tssecurity",
+    SonarLanguage.VBNET, "vbnetsecurity");
 
   public static final Set<String> TAINT_REPOS = Set.copyOf(TAINT_REPOS_BY_LANGUAGE.values());
 
