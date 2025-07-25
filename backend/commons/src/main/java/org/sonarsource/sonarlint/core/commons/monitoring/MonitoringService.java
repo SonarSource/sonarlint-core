@@ -65,7 +65,7 @@ public class MonitoringService {
   SentryOptions getSentryConfiguration() {
     var sentryOptions = new SentryOptions();
     sentryOptions.setDsn(getDsn());
-    sentryOptions.setRelease(SonarLintCoreVersion.get());
+    sentryOptions.setRelease(SonarLintCoreVersion.getLibraryVersion());
     sentryOptions.setEnvironment("dogfood");
     sentryOptions.setTag("productKey", initializeParams.getProductKey());
     sentryOptions.setTag("sonarQubeForIDEVersion", initializeParams.getSonarQubeForIdeVersion());

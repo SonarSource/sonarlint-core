@@ -28,7 +28,7 @@ class SonarLintCoreVersionTests {
 
   @Test
   void testVersionFallback() {
-    var version = SonarLintCoreVersion.getLibraryVersionFallback();
+    var version = SonarLintCoreVersion.getLibraryVersion();
     assertThat(isVersion(version)).isTrue();
   }
 
