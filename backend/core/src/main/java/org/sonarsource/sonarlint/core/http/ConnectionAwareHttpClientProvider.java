@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.http;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -40,10 +41,15 @@ public class ConnectionAwareHttpClientProvider {
   }
 
   public HttpClient getHttpClient(String connectionId, boolean shouldUseBearer) {
-    return queryClientForConnectionCredentials(connectionId)
-      .map(
+    try {
+      var credentials = queryClientForConnectionCredentials(connectionId);
+      return credentials.map(
         tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), shouldUseBearer),
         userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+    } catch (IllegalStateException e) {
+      client.invalidToken(new InvalidTokenParams(connectionId));
+      throw e;
+    }
   }
 
   public WebSocketClient getWebSocketClient(String connectionId) {
@@ -58,6 +64,11 @@ public class ConnectionAwareHttpClientProvider {
   private Either<TokenDto, UsernamePasswordDto> queryClientForConnectionCredentials(String connectionId) {
     var response = client.getCredentials(new GetCredentialsParams(connectionId)).join();
     var credentials = response.getCredentials();
+    validateCredentials(connectionId, credentials);
+    return credentials;
+  }
+
+  private static void validateCredentials(String connectionId, @Nullable Either<TokenDto, UsernamePasswordDto> credentials) {
     if (credentials == null) {
       throw new IllegalStateException("No credentials for connection " + connectionId);
     }
@@ -65,7 +76,7 @@ public class ConnectionAwareHttpClientProvider {
       if(isNullOrEmpty(credentials.getLeft().getToken())) {
         throw new IllegalStateException("No token for connection " + connectionId);
       }
-      return credentials;
+      return;
     }
     var right = credentials.getRight();
     if (right == null) {
@@ -77,7 +88,6 @@ public class ConnectionAwareHttpClientProvider {
     if (isNullOrEmpty(right.getPassword())) {
       throw new IllegalStateException("No password for connection " + connectionId);
     }
-    return credentials;
   }
 
   private static boolean isNullOrEmpty(@Nullable String s) {
