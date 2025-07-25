@@ -70,6 +70,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
  */
 public interface SonarLintRpcClientDelegate {
 
+  /**
+   * Suggest a list of binding suggestions for each eligible configuration scope,
+   * based on registered connections, config scope, binding clues, and git remote URL.
+   * Scopes without any available suggestions are automatically excluded from the results.
+   */
   void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope);
 
   void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope);
