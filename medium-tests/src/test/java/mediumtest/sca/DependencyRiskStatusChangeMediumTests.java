@@ -146,8 +146,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
-        ServerDependencyRisk.Transition.REOPEN
-      ));
+        ServerDependencyRisk.Transition.REOPEN));
 
     var fakeClient = harness.newFakeClient().build();
     var server = harness.newFakeSonarQubeServer()
@@ -168,8 +167,45 @@ class DependencyRiskStatusChangeMediumTests {
       .extracting(DidChangeDependencyRisksParams::getAddedDependencyRisks, DidChangeDependencyRisksParams::getClosedDependencyRiskIds)
       .containsExactly(tuple(List.of(), Set.of()));
     assertThat(fakeClient.getDependencyRiskChanges().get(0).getUpdatedDependencyRisks())
-      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getStatus)
-      .containsExactly(tuple(dependencyRiskKey, DependencyRiskDto.Status.CONFIRM));
+      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getStatus, DependencyRiskDto::getTransitions)
+      .containsExactly(tuple(dependencyRiskKey, DependencyRiskDto.Status.CONFIRM, List.of(DependencyRiskDto.Transition.REOPEN, DependencyRiskDto.Transition.SAFE, DependencyRiskDto.Transition.ACCEPT)));
+  }
+
+  @SonarLintTest
+  void it_should_notify_the_client_with_updated_dependency_risk_when_reopening_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+    var dependencyRiskKey = UUID.randomUUID();
+    var dependencyRisk = aServerDependencyRisk()
+      .withKey(dependencyRiskKey)
+      .withType(ServerDependencyRisk.Type.VULNERABILITY)
+      .withSeverity(ServerDependencyRisk.Severity.HIGH)
+      .withStatus(ServerDependencyRisk.Status.ACCEPT)
+      .withPackageName("com.example.vulnerable")
+      .withPackageVersion("1.0.0")
+      .withTransitions(List.of(
+        ServerDependencyRisk.Transition.REOPEN));
+
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
+        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch.withDependencyRisk(dependencyRisk))))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start(fakeClient);
+
+    var comment = "I confirm this is a risk";
+    var response = backend.getDependencyRiskService().changeStatus(new ChangeDependencyRiskStatusParams(CONFIGURATION_SCOPE_ID, dependencyRiskKey,
+      DependencyRiskTransition.REOPEN, comment));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(fakeClient.getDependencyRiskChanges())
+      .extracting(DidChangeDependencyRisksParams::getAddedDependencyRisks, DidChangeDependencyRisksParams::getClosedDependencyRiskIds)
+      .containsExactly(tuple(List.of(), Set.of()));
+    assertThat(fakeClient.getDependencyRiskChanges().get(0).getUpdatedDependencyRisks())
+      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getStatus, DependencyRiskDto::getTransitions)
+      .containsExactly(tuple(dependencyRiskKey, DependencyRiskDto.Status.OPEN,
+        List.of(DependencyRiskDto.Transition.CONFIRM, DependencyRiskDto.Transition.SAFE, DependencyRiskDto.Transition.ACCEPT)));
   }
 
   @SonarLintTest
