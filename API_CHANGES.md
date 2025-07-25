@@ -16,10 +16,6 @@
   * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.dependencyRiskInvestigatedLocally` method
 * Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails`.
 
-## Binding Suggestions
-
-* Binding suggestions for a specific configuration scope are no longer reported by `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#suggestBinding` when the list of suggestions is empty
-
 # 10.26
 
 ## New features
