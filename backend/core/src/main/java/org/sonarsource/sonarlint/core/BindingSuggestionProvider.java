@@ -154,13 +154,15 @@ public class BindingSuggestionProvider {
       return emptyMap();
     }
 
-    Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = new HashMap<>();
+    var suggestionsByConfigScope = new HashMap<String, List<BindingSuggestionDto>>();
 
     for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
       cancelMonitor.checkCanceled();
       var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, cancelMonitor);
       LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion"), configScopeId);
-      suggestionsByConfigScope.put(configScopeId, scopeSuggestions);
+      if (!scopeSuggestions.isEmpty()) {
+        suggestionsByConfigScope.put(configScopeId, scopeSuggestions);
+      }
     }
 
     return suggestionsByConfigScope;

@@ -60,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
@@ -97,12 +97,8 @@ class BindingSuggestionsMediumTests {
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
 
-    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
-
-    var bindingSuggestions = suggestionCaptor.getValue();
-    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
   }
 
   @SonarLintTest
@@ -230,7 +226,8 @@ class BindingSuggestionsMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
-    verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
 
     // Now add a binding clue to the FS
     var clue = tmp.resolve("sonar-project.properties");
@@ -244,9 +241,9 @@ class BindingSuggestionsMediumTests {
     ));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000).times(2)).suggestBinding(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
 
-    var bindingSuggestions = suggestionCaptor.getAllValues().get(1);
+    var bindingSuggestions = suggestionCaptor.getAllValues().get(0);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
@@ -311,7 +308,8 @@ class BindingSuggestionsMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
-    verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
 
     // Now add a binding clue to the FS
     var sonarlintDir = tmp.resolve(".sonarlint/");
@@ -326,9 +324,9 @@ class BindingSuggestionsMediumTests {
     );
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000).times(2)).suggestBinding(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
 
-    var bindingSuggestions = suggestionCaptor.getAllValues().get(1);
+    var bindingSuggestions = suggestionCaptor.getAllValues().get(0);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
@@ -336,12 +334,12 @@ class BindingSuggestionsMediumTests {
   }
 
   @SonarLintTest
-  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException {
+  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
-    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
+    var expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -405,12 +403,11 @@ class BindingSuggestionsMediumTests {
   }
 
   @SonarLintTest
-  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException,
-    GitAPIException {
+  void should_suggest_binding_by_remote_url_when_no_other_suggestions_found_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -441,7 +438,7 @@ class BindingSuggestionsMediumTests {
         .withHeader("Content-Type", "application/json")
         .withBody("{\"projectBindings\":[{\"projectId\":\"" + PROJECT_ID + "\",\"projectKey\":\"" + SLCORE_PROJECT_KEY + "\"}]}")));
 
-    String expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
+    var expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
     sqServer.getMockServer().stubFor(get(urlEqualTo(expectedProjectPath))
       .willReturn(aResponse()
         .withStatus(200)
@@ -469,8 +466,8 @@ class BindingSuggestionsMediumTests {
   void should_return_empty_when_sqc_project_bindings_is_null(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -488,7 +485,7 @@ class BindingSuggestionsMediumTests {
         organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
       .start();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarQubeCloudEuRegionApiUri(scServer.baseUrl())
       .withSonarCloudConnection(MYSONAR, "orgKey")
@@ -500,20 +497,16 @@ class BindingSuggestionsMediumTests {
         .withStatus(500)
         .withBody("Internal Server Error")));
 
-    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
-
-    var bindingSuggestions = suggestionCaptor.getValue();
-    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
   }
 
   @SonarLintTest
   void should_return_empty_when_sqs_project_bindings_is_null(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -530,7 +523,7 @@ class BindingSuggestionsMediumTests {
       .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
       .start();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
@@ -540,21 +533,17 @@ class BindingSuggestionsMediumTests {
         .withStatus(500)
         .withBody("Internal Server Error")));
 
-    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
-
-    var bindingSuggestions = suggestionCaptor.getValue();
-    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
   }
 
   @SonarLintTest
   void should_return_empty_when_sqc_search_response_is_null(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
-    String expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/dop-translation/project-bindings?url=" + encodedUrl;
+    var expectedSearchProjectsPath = "/api/components/search_projects?projectIds=" + PROJECT_ID + "&organization=orgKey";
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -572,7 +561,7 @@ class BindingSuggestionsMediumTests {
         organization.withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main")))
       .start();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarQubeCloudEuRegionApiUri(scServer.baseUrl())
       .withSonarCloudConnection(MYSONAR, "orgKey")
@@ -590,21 +579,17 @@ class BindingSuggestionsMediumTests {
         .withStatus(500)
         .withBody("Internal Server Error")));
 
-    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
-
-    var bindingSuggestions = suggestionCaptor.getValue();
-    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
   }
 
   @SonarLintTest
   void should_return_empty_when_sqs_server_project_is_not_present(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException, URISyntaxException {
     var gitRepo = tmp.resolve("git-repo");
     Files.createDirectory(gitRepo);
-    String encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
-    String expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
-    String expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
+    var encodedUrl = UrlUtils.urlEncode(REMOTE_URL);
+    var expectedPath = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+    var expectedProjectPath = "/api/components/show.protobuf?component=" + UrlUtils.urlEncode(SLCORE_PROJECT_KEY);
 
     try (var git = GitUtils.createRepository(gitRepo)) {
       git.remoteAdd()
@@ -621,7 +606,7 @@ class BindingSuggestionsMediumTests {
       .withProject(SLCORE_PROJECT_KEY, project -> project.withBranch("main"))
       .start();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sqServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "unmatched-project-name")
       .start(fakeClient);
@@ -637,11 +622,7 @@ class BindingSuggestionsMediumTests {
         .withStatus(404)
         .withBody("Project not found")));
 
-    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
-
-    var bindingSuggestions = suggestionCaptor.getValue();
-    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Found 0 suggestions for configuration scope '" + CONFIG_SCOPE_ID + "'"));
+    verify(fakeClient, never()).suggestBinding(any());
   }
 }

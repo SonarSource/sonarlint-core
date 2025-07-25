@@ -83,7 +83,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryCli
 public interface SonarLintRpcClient {
 
   /**
-   * Suggest some bindings to the client, based on registered connections, config scope, and binding clues.
+   * Suggest a list of binding suggestions for each eligible configuration scope,
+   * based on registered connections, config scope, binding clues, and git remote URL.
+   * Scopes without any available suggestions are automatically excluded from the results.
    */
   @JsonNotification
   void suggestBinding(SuggestBindingParams params);
