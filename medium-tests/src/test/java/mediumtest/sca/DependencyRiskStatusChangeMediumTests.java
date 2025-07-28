@@ -42,6 +42,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerDependencyRiskFixtures.aServerDependencyRisk;
 
@@ -163,6 +166,7 @@ class DependencyRiskStatusChangeMediumTests {
       DependencyRiskTransition.CONFIRM, comment));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    verify(fakeClient, timeout(2000).times(1)).didChangeDependencyRisks(any(), any(), any(), any());
     assertThat(fakeClient.getDependencyRiskChanges())
       .extracting(DidChangeDependencyRisksParams::getAddedDependencyRisks, DidChangeDependencyRisksParams::getClosedDependencyRiskIds)
       .containsExactly(tuple(List.of(), Set.of()));
@@ -199,6 +203,7 @@ class DependencyRiskStatusChangeMediumTests {
       DependencyRiskTransition.REOPEN, comment));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    verify(fakeClient, timeout(2000).times(1)).didChangeDependencyRisks(any(), any(), any(), any());
     assertThat(fakeClient.getDependencyRiskChanges())
       .extracting(DidChangeDependencyRisksParams::getAddedDependencyRisks, DidChangeDependencyRisksParams::getClosedDependencyRiskIds)
       .containsExactly(tuple(List.of(), Set.of()));
