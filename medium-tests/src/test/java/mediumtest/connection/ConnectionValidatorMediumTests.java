@@ -40,10 +40,23 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 
 class ConnectionValidatorMediumTests {
 
+  public static final Either<TokenDto, UsernamePasswordDto> A_TOKEN = Either.forLeft(new TokenDto("aToken"));
+
   @RegisterExtension
   static WireMockExtension serverMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
+
+  @SonarLintTest
+  void test_connection_without_credentials_fail(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+  }
 
   @SonarLintTest
   void test_connection_ok(SonarLintTestHarness harness) {
@@ -55,7 +68,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), A_TOKEN))).join();
 
     assertThat(response.isSuccess()).isTrue();
   }
@@ -72,7 +85,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
       .willReturn(aResponse().withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", A_TOKEN, SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("No organizations found for key: myOrg");
@@ -97,7 +110,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=2")
       .willReturn(aResponse().withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", A_TOKEN, SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isTrue();
   }
@@ -111,7 +124,7 @@ class ConnectionValidatorMediumTests {
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, A_TOKEN, SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isTrue();
   }
@@ -124,7 +137,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}")));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), A_TOKEN))).join();
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 9.9");
