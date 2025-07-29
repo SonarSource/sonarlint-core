@@ -55,17 +55,17 @@ class ConnectionAwareHttpClientProviderTests {
     String connectionId = "test-connection";
     boolean shouldUseBearer = true;
 
-    Either<TokenDto, UsernamePasswordDto> nullToken = Either.forLeft(new TokenDto(null));
-    GetCredentialsResponse response = new GetCredentialsResponse(nullToken);
+    var nullToken = Either.<TokenDto, UsernamePasswordDto> forLeft(new TokenDto(null));
+    var response = new GetCredentialsResponse(nullToken);
     when(client.getCredentials(any(GetCredentialsParams.class)))
       .thenReturn(CompletableFuture.completedFuture(response));
 
     assertThatThrownBy(() -> underTest.getHttpClient(connectionId, shouldUseBearer))
       .isInstanceOf(IllegalStateException.class)
       .hasMessage("No token for connection " + connectionId);
-    ArgumentCaptor<InvalidTokenParams> paramsCaptor = ArgumentCaptor.forClass(InvalidTokenParams.class);
+    var paramsCaptor = ArgumentCaptor.forClass(InvalidTokenParams.class);
     verify(client).invalidToken(paramsCaptor.capture());
-    InvalidTokenParams capturedParams = paramsCaptor.getValue();
+    var capturedParams = paramsCaptor.getValue();
     assertThat(capturedParams.getConnectionId()).isEqualTo(connectionId);
   }
 } 

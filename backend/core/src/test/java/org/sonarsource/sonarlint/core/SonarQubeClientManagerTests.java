@@ -84,7 +84,7 @@ class SonarQubeClientManagerTests {
 
   @Test
   void getClientOrThrow_for_sonarcloud_with_trailing_slash_notConnected() {
-    URI uriWithSlash = URI.create(SonarCloudRegion.EU.getProductionUri() + "/");
+    var uriWithSlash = URI.create(SonarCloudRegion.EU.getProductionUri() + "/");
     setupCloudConnection("sqc-with-slash", uriWithSlash, SonarCloudRegion.EU.getApiProductionUri());
 
     var connection = underTest.getClientOrThrow("sqc-with-slash");
