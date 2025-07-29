@@ -34,7 +34,8 @@ public class MonitoringService {
   private static final String DSN_DEFAULT = "https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152";
 
   public static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
-  private static final double TRACES_SAMPLE_RATE_DEFAULT = 0.01D;
+  private static final double TRACES_SAMPLE_RATE_DEFAULT = 0.0001D;
+  private static final double TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT = 0.01D;
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -90,15 +91,19 @@ public class MonitoringService {
     return System.getProperty(DSN_PROPERTY, DSN_DEFAULT);
   }
 
-  private static double getTracesSampleRate() {
+  private double getTracesSampleRate() {
     try {
       var sampleRateFromSystemProperty = System.getProperty(TRACES_SAMPLE_RATE_PROPERTY);
       var parsedSampleRate = Double.parseDouble(sampleRateFromSystemProperty);
       LOG.debug("Overriding trace sample rate with value from system property: {}", parsedSampleRate);
       return parsedSampleRate;
     } catch (RuntimeException e) {
-      LOG.debug("Using default trace sample rate: {}", TRACES_SAMPLE_RATE_DEFAULT);
-      return TRACES_SAMPLE_RATE_DEFAULT;
+      var sampleRate = TRACES_SAMPLE_RATE_DEFAULT;
+      if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+        sampleRate = TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT;
+      }
+      LOG.debug("Using default trace sample rate: {}", sampleRate);
+      return sampleRate;
     }
   }
 
