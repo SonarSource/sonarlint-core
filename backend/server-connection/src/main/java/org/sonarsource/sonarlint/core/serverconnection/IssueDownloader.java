@@ -106,7 +106,7 @@ public class IssueDownloader {
       .filter(i -> i.getMainLocation().hasFilePath())
       .filter(not(IssueLite::getClosed))
       .map(IssueDownloader::convertLiteIssue)
-      .toList();
+      .collect(Collectors.toList());
     var closedIssueKeys = apiResult.getIssues()
       .stream()
       // Ignore project level issues

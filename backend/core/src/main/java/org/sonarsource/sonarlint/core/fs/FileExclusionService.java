@@ -108,6 +108,10 @@ public class FileExclusionService {
       return false;
     }
     var storage = storageService.connection(effectiveBindingOpt.get().connectionId());
+    if (!storage.plugins().isValid()) {
+      LOG.warn("Unable to read settings in local storage, plugin storage is not ready");
+      return false;
+    }
     AnalyzerConfiguration analyzerConfig;
     try {
       analyzerConfig = storage.project(effectiveBindingOpt.get().sonarProjectKey()).analyzerConfiguration().read();
