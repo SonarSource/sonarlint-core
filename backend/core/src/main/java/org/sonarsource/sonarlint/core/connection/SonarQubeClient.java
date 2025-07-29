@@ -33,24 +33,21 @@ public class SonarQubeClient {
 
   private static final Period WRONG_TOKEN_NOTIFICATION_INTERVAL = Period.ofDays(1);
   private final String connectionId;
+  @Nullable
   private final ServerApi serverApi;
   private final SonarLintRpcClient client;
   private SonarQubeClientState state = SonarQubeClientState.ACTIVE;
   @Nullable
   private Instant lastNotificationTime;
 
-  public SonarQubeClient(String connectionId, ServerApi serverApi, SonarLintRpcClient client) {
+  public SonarQubeClient(String connectionId, @Nullable ServerApi serverApi, SonarLintRpcClient client) {
     this.connectionId = connectionId;
     this.serverApi = serverApi;
     this.client = client;
   }
 
-  public boolean isSonarCloud() {
-    return serverApi.isSonarCloud();
-  }
-
   public boolean isActive() {
-    return state == SonarQubeClientState.ACTIVE;
+    return serverApi != null && state == SonarQubeClientState.ACTIVE;
   }
 
   public <T> T withClientApiAndReturn(Function<ServerApi, T> serverApiConsumer) {

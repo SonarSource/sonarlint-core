@@ -231,5 +231,4 @@ public class ConnectionService {
     });
     return projectNamesByKey;
   }
-
 }
