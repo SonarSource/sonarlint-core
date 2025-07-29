@@ -111,7 +111,7 @@ public class FileExclusionService {
       .project(effectiveBindingOpt.get().sonarProjectKey())
       .analyzerConfiguration();
     if (!analyzerStorage.isValid()) {
-      LOG.warn("Unable to read settings in local storage, plugin storage is not ready");
+      LOG.warn("Unable to read settings in local storage, analysis storage is not ready");
       return false;
     }
     AnalyzerConfiguration analyzerConfig;
