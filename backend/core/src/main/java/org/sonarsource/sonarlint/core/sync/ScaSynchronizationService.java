@@ -74,6 +74,7 @@ public class ScaSynchronizationService {
         issueRelease.key(),
         ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
         ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name()),
+        ServerDependencyRisk.SoftwareQuality.valueOf(issueRelease.quality().name()),
         ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
         issueRelease.release().packageName(),
         issueRelease.release().version(),

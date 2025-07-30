@@ -24,17 +24,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-public record ServerDependencyRisk(UUID key, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+public record ServerDependencyRisk(UUID key, Type type, Severity severity, SoftwareQuality quality,
+                                   Status status, String packageName, String packageVersion, List<Transition> transitions) {
 
   public ServerDependencyRisk withStatus(Status newStatus) {
     var newTransitions = new ArrayList<>(Arrays.asList(Transition.values()));
     newTransitions.remove(Transition.FIXED);
     newTransitions.remove(newStatus.equals(Status.OPEN) ? Transition.REOPEN : Transition.valueOf(newStatus.name()));
-    return new ServerDependencyRisk(key, type, severity, newStatus, packageName, packageVersion, newTransitions);
+    return new ServerDependencyRisk(key, type, severity, quality, newStatus, packageName, packageVersion, newTransitions);
   }
 
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
+  }
+
+  public enum SoftwareQuality {
+    MAINTAINABILITY,
+    RELIABILITY,
+    SECURITY
   }
 
   public enum Type {

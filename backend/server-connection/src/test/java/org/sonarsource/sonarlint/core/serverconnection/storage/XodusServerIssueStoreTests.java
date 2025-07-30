@@ -917,6 +917,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
@@ -925,6 +926,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.PROHIBITED_LICENSE,
       ServerDependencyRisk.Severity.BLOCKER,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
@@ -945,6 +947,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
@@ -953,6 +956,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.PROHIBITED_LICENSE,
       ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.SoftwareQuality.RELIABILITY,
       ServerDependencyRisk.Status.SAFE,
       "com.example.prohibited",
       "2.0.0",
@@ -976,6 +980,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
@@ -984,6 +989,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.PROHIBITED_LICENSE,
       ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.ACCEPT,
       "com.example.prohibited",
       "2.0.0",
@@ -1001,11 +1007,12 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_save_dependency_risks_with_different_types_and_severities() {
+  void should_save_dependency_risks_with_different_types_and_severities_and_qualities() {
     var vulnerabilityIssue = new ServerDependencyRisk(
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
@@ -1014,6 +1021,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.PROHIBITED_LICENSE,
       ServerDependencyRisk.Severity.BLOCKER,
+      ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY,
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
@@ -1024,10 +1032,10 @@ class XodusServerIssueStoreTests {
     var savedIssues = store.loadDependencyRisks("branch");
     assertThat(savedIssues).hasSize(2);
     assertThat(savedIssues)
-      .extracting(ServerDependencyRisk::type, ServerDependencyRisk::severity)
+      .extracting(ServerDependencyRisk::type, ServerDependencyRisk::severity, ServerDependencyRisk::quality)
       .containsExactlyInAnyOrder(
-        tuple(ServerDependencyRisk.Type.VULNERABILITY, ServerDependencyRisk.Severity.HIGH),
-        tuple(ServerDependencyRisk.Type.PROHIBITED_LICENSE, ServerDependencyRisk.Severity.BLOCKER));
+        tuple(ServerDependencyRisk.Type.VULNERABILITY, ServerDependencyRisk.Severity.HIGH, ServerDependencyRisk.SoftwareQuality.SECURITY),
+        tuple(ServerDependencyRisk.Type.PROHIBITED_LICENSE, ServerDependencyRisk.Severity.BLOCKER, ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY));
   }
 
   @Test
@@ -1036,6 +1044,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.LOW,
+      ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.minimal",
       "0.1.0",
@@ -1054,6 +1063,7 @@ class XodusServerIssueStoreTests {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.MEDIUM,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.transitions",
       "1.5.0",

@@ -100,6 +100,7 @@ public class ServerIssueFixtures {
       UUID.randomUUID(),
       ServerDependencyRisk.Type.VULNERABILITY,
       ServerDependencyRisk.Severity.HIGH,
+      ServerDependencyRisk.SoftwareQuality.SECURITY,
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",

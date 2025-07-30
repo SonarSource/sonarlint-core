@@ -26,15 +26,17 @@ public class DependencyRiskDto {
   private final UUID id;
   private final Type type;
   private final Severity severity;
+  private final SoftwareQuality quality;
   private final Status status;
   private final String packageName;
   private final String packageVersion;
   private final List<Transition> transitions;
 
-  public DependencyRiskDto(UUID id, Type type, Severity severity, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+  public DependencyRiskDto(UUID id, Type type, Severity severity, SoftwareQuality quality, Status status, String packageName, String packageVersion, List<Transition> transitions) {
     this.id = id;
     this.type = type;
     this.severity = severity;
+    this.quality = quality;
     this.status = status;
     this.packageName = packageName;
     this.packageVersion = packageVersion;
@@ -51,6 +53,10 @@ public class DependencyRiskDto {
 
   public Severity getSeverity() {
     return severity;
+  }
+
+  public SoftwareQuality getQuality() {
+    return quality;
   }
 
   public Status getStatus() {
@@ -71,6 +77,12 @@ public class DependencyRiskDto {
 
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
+  }
+
+  public enum SoftwareQuality {
+    MAINTAINABILITY,
+    RELIABILITY,
+    SECURITY
   }
 
   public enum Type {

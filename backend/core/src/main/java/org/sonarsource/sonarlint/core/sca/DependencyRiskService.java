@@ -118,6 +118,7 @@ public class DependencyRiskService {
       serverDependencyRisk.key(),
       DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
       DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
+      DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()),
       DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
       serverDependencyRisk.packageName(),
       serverDependencyRisk.packageVersion(),

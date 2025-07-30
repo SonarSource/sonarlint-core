@@ -128,6 +128,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String USER_SEVERITY_PROPERTY_NAME = "userSeverity";
   private static final String SEVERITY_PROPERTY_NAME = "severity";
+  private static final String QUALITY_PROPERTY_NAME = "quality";
   private static final String VULNERABILITY_PROBABILITY_PROPERTY_NAME = "vulnerabilityProbability";
   private static final String TYPE_PROPERTY_NAME = "type";
   private static final String PATH_PROPERTY_NAME = "path";
@@ -876,13 +877,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var key = UUID.fromString((String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)));
     var type = ServerDependencyRisk.Type.valueOf((String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)));
     var severity = ServerDependencyRisk.Severity.valueOf((String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)));
+    var quality = ServerDependencyRisk.SoftwareQuality.valueOf((String) requireNonNull(storedIssue.getProperty(QUALITY_PROPERTY_NAME)));
     var status = ServerDependencyRisk.Status.valueOf((String) requireNonNull(storedIssue.getProperty(STATUS_PROPERTY_NAME)));
     var packageName = (String) requireNonNull(storedIssue.getProperty(PACKAGE_NAME_PROPERTY_NAME));
     var packageVersion = (String) requireNonNull(storedIssue.getProperty(PACKAGE_VERSION_PROPERTY_NAME));
     var transitionsString = (String) requireNonNull(storedIssue.getProperty(TRANSITIONS_PROPERTY_NAME));
     var transitions = transitionsString.trim().isEmpty() ? List.<ServerDependencyRisk.Transition>of()
       : Stream.of(transitionsString.split(",")).map(ServerDependencyRisk.Transition::valueOf).toList();
-    return new ServerDependencyRisk(key, type, severity, status, packageName, packageVersion, transitions);
+    return new ServerDependencyRisk(key, type, severity, quality, status, packageName, packageVersion, transitions);
   }
 
   private static void deleteAllDependencyRisksOfBranch(Entity branchEntity) {
@@ -902,6 +904,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setProperty(KEY_PROPERTY_NAME, issue.key().toString());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.type().name());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.severity().name());
+    issueEntity.setProperty(QUALITY_PROPERTY_NAME, issue.quality().name());
     issueEntity.setProperty(STATUS_PROPERTY_NAME, issue.status().name());
     issueEntity.setProperty(PACKAGE_NAME_PROPERTY_NAME, issue.packageName());
     issueEntity.setProperty(PACKAGE_VERSION_PROPERTY_NAME, issue.packageVersion());
