@@ -57,24 +57,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServe
 
 public class ProjectStorageFixture {
 
-  public static class ProjectStorage {
-    private final Path path;
-
-    public ProjectStorage(Path path) {
-      this.path = path;
-    }
-
-    public Path getPath() {
-      return path;
-    }
-
-    public void setSettings(Map<String, String> settings) {
-      var configFile = path.resolve("analyzer_config.pb");
-      var analyzerConfiguration = ProtobufFileUtil.readFile(configFile, Sonarlint.AnalyzerConfiguration.parser());
-      ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder(analyzerConfiguration)
-        .clearSettings()
-        .putAllSettings(settings).build(), configFile);
-    }
+  public record ProjectStorage(Path path) {
   }
 
   public static class ProjectStorageBuilder {
@@ -347,6 +330,7 @@ public class ProjectStorageFixture {
               dependencyRiskEntity.setProperty("key", dependencyRisk.key().toString());
               dependencyRiskEntity.setProperty("type", dependencyRisk.type().name());
               dependencyRiskEntity.setProperty("severity", dependencyRisk.severity().name());
+              dependencyRiskEntity.setProperty("quality", dependencyRisk.quality().name());
               dependencyRiskEntity.setProperty("status", dependencyRisk.status().name());
               dependencyRiskEntity.setProperty("packageName", dependencyRisk.packageName());
               dependencyRiskEntity.setProperty("packageVersion", dependencyRisk.packageVersion());
@@ -423,18 +407,7 @@ public class ProjectStorageFixture {
       }
     }
 
-    private static class ActiveRule {
-      private final String ruleKey;
-      private final String severity;
-      private final String templateKey;
-      private final Map<String, String> params;
-
-      private ActiveRule(String ruleKey, String severity, @Nullable String templateKey, Map<String, String> params) {
-        this.ruleKey = ruleKey;
-        this.severity = severity;
-        this.templateKey = templateKey;
-        this.params = params;
-      }
+    private record ActiveRule(String ruleKey, String severity, @Nullable String templateKey, Map<String, String> params) {
     }
   }
 }

@@ -37,6 +37,7 @@ public class ServerDependencyRiskFixtures {
     private UUID key = UUID.randomUUID();
     private ServerDependencyRisk.Type type = ServerDependencyRisk.Type.VULNERABILITY;
     private ServerDependencyRisk.Severity severity = ServerDependencyRisk.Severity.HIGH;
+    private ServerDependencyRisk.SoftwareQuality quality = ServerDependencyRisk.SoftwareQuality.SECURITY;
     private ServerDependencyRisk.Status status = ServerDependencyRisk.Status.OPEN;
     private String packageName = "com.example.vulnerable";
     private String packageVersion = "1.0.0";
@@ -54,6 +55,11 @@ public class ServerDependencyRiskFixtures {
 
     public ServerDependencyRiskBuilder withSeverity(ServerDependencyRisk.Severity severity) {
       this.severity = severity;
+      return this;
+    }
+
+    public ServerDependencyRiskBuilder withQuality(ServerDependencyRisk.SoftwareQuality quality) {
+      this.quality = quality;
       return this;
     }
 
@@ -78,7 +84,7 @@ public class ServerDependencyRiskFixtures {
     }
 
     public ServerDependencyRisk build() {
-      return new ServerDependencyRisk(key, type, severity, status, packageName, packageVersion, transitions);
+      return new ServerDependencyRisk(key, type, severity, quality, status, packageName, packageVersion, transitions);
     }
   }
 }
