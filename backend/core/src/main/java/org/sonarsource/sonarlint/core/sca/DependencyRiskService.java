@@ -223,7 +223,8 @@ public class DependencyRiskService {
       })
       .toList();
 
-    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
+    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
+      DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
       serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
       serverResponse.vulnerability().description(), affectedPackages);
   }

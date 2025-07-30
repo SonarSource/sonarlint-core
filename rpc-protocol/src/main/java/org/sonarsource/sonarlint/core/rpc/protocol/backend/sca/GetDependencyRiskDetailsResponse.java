@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRi
 public class GetDependencyRiskDetailsResponse {
   private final UUID key;
   private final DependencyRiskDto.Severity severity;
+  private final DependencyRiskDto.SoftwareQuality quality;
   private final String packageName;
   private final String version;
   private final DependencyRiskDto.Type type;
@@ -34,10 +35,11 @@ public class GetDependencyRiskDetailsResponse {
   private final String description;
   private final List<AffectedPackageDto> affectedPackages;
 
-  public GetDependencyRiskDetailsResponse(UUID key, DependencyRiskDto.Severity severity, String packageName, String version, DependencyRiskDto.Type type, String vulnerabilityId,
-    String description, List<AffectedPackageDto> affectedPackages) {
+  public GetDependencyRiskDetailsResponse(UUID key, DependencyRiskDto.Severity severity, DependencyRiskDto.SoftwareQuality quality, String packageName,
+    String version, DependencyRiskDto.Type type, String vulnerabilityId, String description, List<AffectedPackageDto> affectedPackages) {
     this.key = key;
     this.severity = severity;
+    this.quality = quality;
     this.packageName = packageName;
     this.version = version;
     this.type = type;
@@ -52,6 +54,10 @@ public class GetDependencyRiskDetailsResponse {
 
   public DependencyRiskDto.Severity getSeverity() {
     return severity;
+  }
+
+  public DependencyRiskDto.SoftwareQuality getQuality() {
+    return quality;
   }
 
   public String getPackageName() {
