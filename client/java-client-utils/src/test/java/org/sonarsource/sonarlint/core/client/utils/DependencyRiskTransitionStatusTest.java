@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.utils;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DependencyRiskTransitionStatusTest {
@@ -31,5 +32,16 @@ class DependencyRiskTransitionStatusTest {
       var converted = DependencyRiskTransitionStatus.fromDto(rpcEnum);
       assertEquals(rpcEnum.name(), converted.name());
     }
+  }
+
+  @Test
+  void should_get_title() {
+    assertThat(DependencyRiskTransitionStatus.SAFE.getTitle()).isEqualTo("Safe");
+  }
+
+  @Test
+  void should_get_description() {
+    assertThat(DependencyRiskTransitionStatus.FIXED.getDescription())
+      .isEqualTo("This finding has been fixed.");
   }
 }
