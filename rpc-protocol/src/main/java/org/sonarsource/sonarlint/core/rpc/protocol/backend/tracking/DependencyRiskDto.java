@@ -90,7 +90,7 @@ public class DependencyRiskDto {
   }
 
   public enum Status {
-    OPEN, CONFIRM, ACCEPT, SAFE, FIXED
+    FIXED, OPEN, CONFIRM, ACCEPT, SAFE
   }
 
   public enum Transition {
