@@ -369,6 +369,7 @@ public class ServerFixture {
         String id,
         String type,
         String severity,
+        String quality,
         String status,
         String packageName,
         String packageVersion,
@@ -1160,7 +1161,7 @@ public class ServerFixture {
     }
 
     private void registerHotspotsShowApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) ->
         branch.hotspots.forEach(hotspot -> {
           var textRange = hotspot.textRange;
           var reviewStatus = hotspot.status;
@@ -1186,8 +1187,7 @@ public class ServerFixture {
           }
           mockServer.stubFor(get("/api/hotspots/show.protobuf?hotspot=" + hotspot.hotspotKey)
             .willReturn(aResponse().withResponseBody(protobufBody(builder.build()))));
-        });
-      }));
+        })));
     }
 
     private void registerHotspotsStatusChangeApiResponses() {
@@ -1526,6 +1526,7 @@ public class ServerFixture {
               "key": "%s",
               "type": "%s",
               "severity": "%s",
+              "quality": "%s",
               "status": "%s",
               "release": {
                 "packageName": "%s",
@@ -1533,7 +1534,8 @@ public class ServerFixture {
               },
               "transitions": [%s]
             }
-            """, issue.id(), issue.type(), issue.severity(), issue.status(), issue.packageName(), issue.packageVersion(), String.join(", ", issue.transitions())))
+            """, issue.id(), issue.type(), issue.severity(), issue.quality(), issue.status(), issue.packageName(), issue.packageVersion()
+            , String.join(", ", issue.transitions())))
           .collect(Collectors.joining(","));
 
         var responseJson = String.format("""

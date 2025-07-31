@@ -129,8 +129,8 @@ class DependencyRisksMediumTests {
         project -> project.withBranch("main",
           branch -> branch
             .withDependencyRisk(
-              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "PROHIBITED_LICENSE", "HIGH", "OPEN", "com.example.vulnerable",
-                "2.1.0", List.of("CONFIRM")))))
+              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "PROHIBITED_LICENSE",
+                "HIGH", "MAINTAINABILITY", "OPEN", "com.example.vulnerable", "2.1.0", List.of("CONFIRM")))))
       .start();
     var backend = harness.newBackend()
       .withBackendCapability(SCA_SYNCHRONIZATION)
@@ -144,11 +144,11 @@ class DependencyRisksMediumTests {
     var refresheddependencyRisks = refreshAndListAllDependencyRisks(backend, CONFIG_SCOPE_ID);
 
     assertThat(refresheddependencyRisks)
-      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getType, DependencyRiskDto::getSeverity, DependencyRiskDto::getStatus, DependencyRiskDto::getTransitions, DependencyRiskDto::getPackageName,
-        DependencyRiskDto::getPackageVersion)
+      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getType, DependencyRiskDto::getSeverity, DependencyRiskDto::getQuality, DependencyRiskDto::getStatus,
+        DependencyRiskDto::getTransitions, DependencyRiskDto::getPackageName, DependencyRiskDto::getPackageVersion)
       .containsExactly(
-        tuple(dependencyRiskKey, DependencyRiskDto.Type.PROHIBITED_LICENSE, DependencyRiskDto.Severity.HIGH, DependencyRiskDto.Status.OPEN, List.of(DependencyRiskDto.Transition.CONFIRM),
-          "com.example.vulnerable", "2.1.0"));
+        tuple(dependencyRiskKey, DependencyRiskDto.Type.PROHIBITED_LICENSE, DependencyRiskDto.Severity.HIGH, DependencyRiskDto.SoftwareQuality.MAINTAINABILITY,
+          DependencyRiskDto.Status.OPEN, List.of(DependencyRiskDto.Transition.CONFIRM), "com.example.vulnerable", "2.1.0"));
   }
 
   @SonarLintTest
@@ -160,8 +160,8 @@ class DependencyRisksMediumTests {
         project -> project.withBranch("main",
           branch -> branch
             .withDependencyRisk(
-              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "HIGH", "OPEN", "com.example.vulnerable",
-                "2.1.0", List.of("CONFIRM")))))
+              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "HIGH",
+                "SECURITY", "OPEN", "com.example.vulnerable", "2.1.0", List.of("CONFIRM")))))
       .start();
     var client = harness.newFakeClient().build();
     harness.newBackend()
@@ -186,6 +186,7 @@ class DependencyRisksMediumTests {
           assertThat(dependencyRisk.getPackageVersion()).isEqualTo("2.1.0");
           assertThat(dependencyRisk.getType()).isEqualTo(DependencyRiskDto.Type.VULNERABILITY);
           assertThat(dependencyRisk.getSeverity()).isEqualTo(DependencyRiskDto.Severity.HIGH);
+          assertThat(dependencyRisk.getQuality()).isEqualTo(DependencyRiskDto.SoftwareQuality.SECURITY);
         });
       assertThat(change.getUpdatedDependencyRisks()).isEmpty();
     });
@@ -232,8 +233,8 @@ class DependencyRisksMediumTests {
         project -> project.withBranch("main",
           branch -> branch
             .withDependencyRisk(
-              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "LOW", "ACCEPT", "com.example.vulnerable",
-                "2.1.0", List.of("REOPEN")))))
+              new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "LOW",
+                "RELIABILITY", "ACCEPT", "com.example.vulnerable", "2.1.0", List.of("REOPEN")))))
       .start();
     var client = harness.newFakeClient().build();
     harness.newBackend()
@@ -246,6 +247,7 @@ class DependencyRisksMediumTests {
               .withPackageVersion("0.1.2")
               .withType(Type.PROHIBITED_LICENSE)
               .withSeverity(Severity.HIGH)
+              .withQuality(ServerDependencyRisk.SoftwareQuality.RELIABILITY)
               .withStatus(Status.OPEN)
               .withTransitions(List.of(ServerDependencyRisk.Transition.REOPEN))))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -318,6 +320,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"
@@ -400,6 +403,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"
@@ -500,6 +504,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"
@@ -572,6 +577,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"
@@ -650,6 +656,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"
@@ -702,6 +709,7 @@ class DependencyRisksMediumTests {
             {
               "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
               "severity": "BLOCKER",
+              "quality": "SECURITY",
               "release": {
                 "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
                 "version": "9.0.70"

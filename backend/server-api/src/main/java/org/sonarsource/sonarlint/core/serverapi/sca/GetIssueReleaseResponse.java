@@ -23,9 +23,15 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-public record GetIssueReleaseResponse(UUID key, Severity severity, Release release, Type type, Vulnerability vulnerability) {
+public record GetIssueReleaseResponse(UUID key, Severity severity, SoftwareQuality quality, Release release, Type type, Vulnerability vulnerability) {
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
+  }
+
+  public enum SoftwareQuality {
+    MAINTAINABILITY,
+    RELIABILITY,
+    SECURITY
   }
 
   public record Release(String packageName, String version) {

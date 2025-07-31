@@ -118,6 +118,7 @@ public class DependencyRiskService {
       serverDependencyRisk.key(),
       DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
       DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
+      DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()),
       DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
       serverDependencyRisk.packageName(),
       serverDependencyRisk.packageVersion(),
@@ -222,7 +223,8 @@ public class DependencyRiskService {
       })
       .toList();
 
-    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()), serverResponse.release().packageName(),
+    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
+      DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
       serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
       serverResponse.vulnerability().description(), affectedPackages);
   }

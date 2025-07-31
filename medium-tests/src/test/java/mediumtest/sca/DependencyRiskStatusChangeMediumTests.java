@@ -63,6 +63,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -107,6 +108,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -145,6 +147,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -183,6 +186,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.ACCEPT)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -243,6 +247,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -277,6 +282,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.RELIABILITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -310,6 +316,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -343,6 +350,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -386,6 +394,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -429,6 +438,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -464,6 +474,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable1")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -539,6 +550,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -572,6 +584,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -605,6 +618,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.critical")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -653,6 +667,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -698,6 +713,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -746,6 +762,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
@@ -789,6 +806,7 @@ class DependencyRiskStatusChangeMediumTests {
       .withType(ServerDependencyRisk.Type.VULNERABILITY)
       .withSeverity(ServerDependencyRisk.Severity.HIGH)
       .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
       .withTransitions(List.of()); // No transitions available
