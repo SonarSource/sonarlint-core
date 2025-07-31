@@ -19,42 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.client.utils;
 
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
-public enum DependencyRiskResolutionStatus {
-  OPEN("Open", "This finding has not yet been reviewed."),
-  CONFIRM("Confirmed", "This finding has been reviewed and the risk is valid."),
-  ACCEPT("Accepted", "This finding is valid, but it may not be fixed for a while."),
-  SAFE("Safe", "This finding does not pose a risk. No fix is needed.");
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-  private final String title;
-  private final String description;
-
-  DependencyRiskResolutionStatus(String title, String description) {
-    this.title = title;
-    this.description = description;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public static DependencyRiskResolutionStatus fromDto(DependencyRiskDto.Status status) {
-    switch (status) {
-      case OPEN:
-        return OPEN;
-      case CONFIRM:
-        return CONFIRM;
-      case ACCEPT:
-        return ACCEPT;
-      case SAFE:
-        return SAFE;
-      default:
-        throw new IllegalArgumentException("Unknown status: " + status);
+class DependencyRiskTransitionStatusTest {
+  @Test
+  void should_convert_all_enum_values() {
+    for (var rpcEnum : DependencyRiskDto.Transition.values()) {
+      var converted = DependencyRiskTransitionStatus.fromDto(rpcEnum);
+      assertEquals(rpcEnum.name(), converted.name());
     }
   }
 }
