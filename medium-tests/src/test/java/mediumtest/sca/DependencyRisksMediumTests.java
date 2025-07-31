@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
+import org.assertj.core.groups.Tuple;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
@@ -119,6 +120,30 @@ class DependencyRisksMediumTests {
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(dependencyRisks)
       .extracting(DependencyRiskDto::getId)
       .containsOnly(dependencyRiskKey));
+  }
+
+  @SonarLintTest
+  void it_should_return_the_stored_fixed_dependency_risks(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch("main"))
+      .start();
+    var dependencyRiskKey = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+    var backend = harness.newBackend()
+      .withBackendCapability(SCA_SYNCHRONIZATION)
+      .withSonarQubeConnection(CONNECTION_ID, server,
+        storage -> storage.withProject(PROJECT_KEY,
+          project -> project.withMainBranch("main",
+            branch -> branch.withDependencyRisk(aServerDependencyRisk()
+              .withKey(dependencyRiskKey)
+              .withStatus(Status.FIXED)))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var dependencyRisks = listAllDependencyRisks(backend, CONFIG_SCOPE_ID);
+
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(dependencyRisks)
+      .extracting(DependencyRiskDto::getId, DependencyRiskDto::getStatus)
+      .containsOnly(Tuple.tuple(dependencyRiskKey, DependencyRiskDto.Status.FIXED)));
   }
 
   @SonarLintTest
