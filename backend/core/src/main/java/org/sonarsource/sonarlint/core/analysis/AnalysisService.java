@@ -297,16 +297,7 @@ public class AnalysisService {
       var binding = bindingOpt.get();
       var analyzerConfig = storageService.binding(binding).analyzerConfiguration();
       if (analyzerConfig.isValid()) {
-        var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
-          () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
-        var analysisProperties = new HashMap<>(serverProperties);
-        analysisProperties.putAll(userAnalysisProperties);
-        var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
-          () -> buildConnectedActiveRules(binding, hotspotsOnly));
-        var connectedPluginPaths = startChild(trace, "getConnectedPluginPaths", GET_ANALYSIS_CFG,
-          () -> pluginsService.getConnectedPluginPaths(binding.connectionId()));
-        return new GetAnalysisConfigResponse(connectedActiveRules, analysisProperties, nodeJsDetailsDto,
-          Set.copyOf(connectedPluginPaths));
+        return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, nodeJsDetailsDto, trace);
       } else {
         // This can happen when a standalone analysis was scheduled and a synchronization happened in between.
         // The config scope is bound, but the config file is not yet created.
@@ -315,6 +306,25 @@ public class AnalysisService {
         LOG.warn("Could not retrieve connected analysis configuration, falling back to standalone configuration");
       }
     }
+    return getStandaloneAnalysisConfig(userAnalysisProperties, nodeJsDetailsDto, trace);
+  }
+
+  public GetAnalysisConfigResponse getConnectedAnalysisConfig(Binding binding, boolean hotspotsOnly,
+    Map<String, String> userAnalysisProperties, @Nullable NodeJsDetailsDto nodeJsDetailsDto, @Nullable Trace trace) {
+    var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
+      () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
+    var analysisProperties = new HashMap<>(serverProperties);
+    analysisProperties.putAll(userAnalysisProperties);
+    var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
+      () -> buildConnectedActiveRules(binding, hotspotsOnly));
+    var connectedPluginPaths = startChild(trace, "getConnectedPluginPaths", GET_ANALYSIS_CFG,
+      () -> pluginsService.getConnectedPluginPaths(binding.connectionId()));
+    return new GetAnalysisConfigResponse(connectedActiveRules, analysisProperties, nodeJsDetailsDto,
+      Set.copyOf(connectedPluginPaths));
+  }
+
+  public GetAnalysisConfigResponse getStandaloneAnalysisConfig(Map<String, String> userAnalysisProperties,
+    @Nullable NodeJsDetailsDto nodeJsDetailsDto, @Nullable Trace trace) {
     var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, this::buildStandaloneActiveRules);
     var embeddedPluginPaths = startChild(trace, "getEmbeddedPluginPaths", GET_ANALYSIS_CFG, pluginsService::getEmbeddedPluginPaths);
     return new GetAnalysisConfigResponse(standaloneActiveRules, userAnalysisProperties, nodeJsDetailsDto, Set.copyOf(embeddedPluginPaths));
