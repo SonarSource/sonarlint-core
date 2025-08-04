@@ -49,6 +49,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -251,6 +253,36 @@ class TelemetryLocalStorageManagerTests {
 
     var data = storage.tryRead();
     assertThat(data.getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(3);
+  }
+
+  @Test
+  void should_increment_reported_issues_as_override() {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsOverride(ReportIssuesAsOverrideLevel.ERROR, "java:S123"));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsOverride(ReportIssuesAsOverrideLevel.ERROR, "java:S123"));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsOverride(ReportIssuesAsOverrideLevel.WARNING, "php:S123"));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsOverride(ReportIssuesAsOverrideLevel.WARNING, "javascript:S123"));
+
+    var data = storage.tryRead();
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.ERROR)).hasSize(1);
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.ERROR).get(0).getRuleKey()).isEqualTo("java:S123");
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.ERROR).get(0).getCount()).isEqualTo(2);
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.WARNING)).hasSize(2);
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.WARNING).get(0).getCount()).isEqualTo(1);
+    assertThat(data.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.WARNING).get(1).getCount()).isEqualTo(1);
+  }
+
+  @Test
+  void should_increment_reported_issues_as_error_level() {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel.NONE));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE));
+
+    var data = storage.tryRead();
+    assertThat(data.getReportedIssuesAsErrorCountPerLevel().get(ReportIssuesAsErrorLevel.NONE)).isEqualTo(1);
+    assertThat(data.getReportedIssuesAsErrorCountPerLevel().get(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE)).isEqualTo(2);
+    assertThat(data.getReportedIssuesAsErrorCountPerLevel().get(ReportIssuesAsErrorLevel.ALL)).isNull();
   }
 
   @Test
