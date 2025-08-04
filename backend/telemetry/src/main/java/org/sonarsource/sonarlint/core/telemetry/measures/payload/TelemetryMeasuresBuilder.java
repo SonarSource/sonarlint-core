@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.GlobalIssuesLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IssueLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLiveAttributes;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryOverrideIssueLevel;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryReportIssuesAsOverride;
 
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
@@ -69,7 +69,7 @@ public class TelemetryMeasuresBuilder {
 
     addFindingInvestigationMeasures(values);
 
-    add0verrideLevelCountMeasures(values);
+    addReportIssuesAsErrorMeasures(values);
 
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
@@ -92,13 +92,13 @@ public class TelemetryMeasuresBuilder {
       String.valueOf(storage.getDependencyRiskInvestigatedRemotelyCount()), INTEGER, DAILY));
   }
 
-  private void add0verrideLevelCountMeasures(ArrayList<TelemetryMeasuresValue> values) {
-    addOverrideAllIssuesLevelCount(values, GlobalIssuesLevel.NONE);
-    addOverrideAllIssuesLevelCount(values, GlobalIssuesLevel.MEDIUM_AND_ABOVE);
-    addOverrideAllIssuesLevelCount(values, GlobalIssuesLevel.ALL);
+  private void addReportIssuesAsErrorMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    addReportIssuesAsErrorLevelCount(values, ReportIssuesAsErrorLevel.NONE);
+    addReportIssuesAsErrorLevelCount(values, ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE);
+    addReportIssuesAsErrorLevelCount(values, ReportIssuesAsErrorLevel.ALL);
 
-    addOverrideIssueLevelCount(values, IssueLevel.WARNING);
-    addOverrideIssueLevelCount(values, IssueLevel.ERROR);
+    addReportIssuesAsOverrideCount(values, ReportIssuesAsOverrideLevel.WARNING);
+    addReportIssuesAsOverrideCount(values, ReportIssuesAsOverrideLevel.ERROR);
   }
 
   private void addConnectedModeMeasures(ArrayList<TelemetryMeasuresValue> values) {
@@ -119,11 +119,11 @@ public class TelemetryMeasuresBuilder {
     values.add(new TelemetryMeasuresValue("binding_suggestion_clue.remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
   }
 
-  private void addOverrideAllIssuesLevelCount(List<TelemetryMeasuresValue> values, GlobalIssuesLevel level) {
-    storage.getOverrideAllIssuesLevel().entrySet().stream()
+  private void addReportIssuesAsErrorLevelCount(List<TelemetryMeasuresValue> values, ReportIssuesAsErrorLevel level) {
+    storage.getReportedIssuesAsErrorCountPerLevel().entrySet().stream()
       .filter(e -> e.getValue() > 0 && e.getKey() == level)
       .map(e -> new TelemetryMeasuresValue(
-        "override_all_issues_level." + level.name().toLowerCase(Locale.ROOT),
+        "reported_issues_as_error_level." + level.name().toLowerCase(Locale.ROOT),
         String.valueOf(e.getValue()),
         INTEGER,
         DAILY
@@ -131,17 +131,17 @@ public class TelemetryMeasuresBuilder {
       .forEach(values::add);
   }
 
-  private void addOverrideIssueLevelCount(List<TelemetryMeasuresValue> values, IssueLevel level) {
-    storage.getOverrideIssueLevel().entrySet().stream()
+  private void addReportIssuesAsOverrideCount(List<TelemetryMeasuresValue> values, ReportIssuesAsOverrideLevel level) {
+    storage.getReportedIssuesAsOverridePerLevel().entrySet().stream()
       .filter(e -> e.getKey() == level)
       .forEach(entry -> {
-        var allOverrideCount = entry.getValue().stream().map(TelemetryOverrideIssueLevel::getCount)
+        var allOverrideCount = entry.getValue().stream().map(TelemetryReportIssuesAsOverride::getCount)
           .mapToInt(Integer::intValue)
           .sum();
 
         if (allOverrideCount > 0) {
           values.add(new TelemetryMeasuresValue(
-            "override_issue_level." + level.name().toLowerCase(Locale.ROOT),
+            "reported_issues_as_override." + level.name().toLowerCase(Locale.ROOT),
             Integer.toString(allOverrideCount),
             INTEGER,
             DAILY

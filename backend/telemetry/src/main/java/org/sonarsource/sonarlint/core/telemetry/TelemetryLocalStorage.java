@@ -37,8 +37,8 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.GlobalIssuesLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IssueLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -68,8 +68,8 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryFindingsFilteredCounter> findingsFilteredCountersByType;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
-  private final Map<GlobalIssuesLevel, Integer> overrideAllIssuesLevel;
-  private final Map<IssueLevel, List<TelemetryOverrideIssueLevel>> overrideIssueLevel;
+  private final Map<ReportIssuesAsErrorLevel, Integer> reportedIssuesAsErrorCountPerLevel;
+  private final Map<ReportIssuesAsOverrideLevel, List<TelemetryReportIssuesAsOverride>> reportedIssuesAsOverridePerLevel;
   private final Map<String, ToolCallCounter> calledToolsByName;
   private final Set<UUID> issuesUuidAiFixableSeen;
   private boolean isFocusOnNewCode;
@@ -107,8 +107,8 @@ public class TelemetryLocalStorage {
     findingsFilteredCountersByType = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
-    overrideAllIssuesLevel = new LinkedHashMap<>();
-    overrideIssueLevel = new LinkedHashMap<>();
+    reportedIssuesAsErrorCountPerLevel = new LinkedHashMap<>();
+    reportedIssuesAsOverridePerLevel = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
     calledToolsByName = new HashMap<>();
   }
@@ -191,12 +191,12 @@ public class TelemetryLocalStorage {
     return fixSuggestionResolved;
   }
 
-  public Map<GlobalIssuesLevel, Integer> getOverrideAllIssuesLevel() {
-    return overrideAllIssuesLevel;
+  public Map<ReportIssuesAsErrorLevel, Integer> getReportedIssuesAsErrorCountPerLevel() {
+    return reportedIssuesAsErrorCountPerLevel;
   }
 
-  public Map<IssueLevel, List<TelemetryOverrideIssueLevel>> getOverrideIssueLevel() {
-    return overrideIssueLevel;
+  public Map<ReportIssuesAsOverrideLevel, List<TelemetryReportIssuesAsOverride>> getReportedIssuesAsOverridePerLevel() {
+    return reportedIssuesAsOverridePerLevel;
   }
 
   public int getCountIssuesWithPossibleAiFixFromIde() {
@@ -247,8 +247,8 @@ public class TelemetryLocalStorage {
     findingsFilteredCountersByType.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
-    overrideAllIssuesLevel.clear();
-    overrideIssueLevel.clear();
+    reportedIssuesAsErrorCountPerLevel.clear();
+    reportedIssuesAsOverridePerLevel.clear();
     issuesUuidAiFixableSeen.clear();
     codeFocusChangedCount = 0;
     manualAddedBindingsCount = 0;
@@ -387,19 +387,19 @@ public class TelemetryLocalStorage {
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
   }
 
-  public void overrideAllIssuesLevel(GlobalIssuesLevel level) {
+  public void reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel level) {
     markSonarLintAsUsedToday();
-    var currentCountForLevel = this.overrideAllIssuesLevel.getOrDefault(level, 0);
-    this.overrideAllIssuesLevel.put(level, currentCountForLevel + 1);
+    var currentCountForLevel = this.reportedIssuesAsErrorCountPerLevel.getOrDefault(level, 0);
+    this.reportedIssuesAsErrorCountPerLevel.put(level, currentCountForLevel + 1);
   }
 
-  public void overrideIssueLevel(IssueLevel level, String ruleKey) {
+  public void reportIssuesAsOverride(ReportIssuesAsOverrideLevel level, String ruleKey) {
     markSonarLintAsUsedToday();
-    var currentCountForRules = this.overrideIssueLevel.getOrDefault(level, new ArrayList<>());
+    var currentCountForRules = this.reportedIssuesAsOverridePerLevel.getOrDefault(level, new ArrayList<>());
     currentCountForRules.stream()
       .filter(e -> e.getRuleKey().equals(ruleKey)).findFirst()
-      .ifPresentOrElse(TelemetryOverrideIssueLevel::increment, () -> currentCountForRules.add(new TelemetryOverrideIssueLevel(ruleKey)));
-    this.overrideIssueLevel.put(level, currentCountForRules);
+      .ifPresentOrElse(TelemetryReportIssuesAsOverride::increment, () -> currentCountForRules.add(new TelemetryReportIssuesAsOverride(ruleKey)));
+    this.reportedIssuesAsOverridePerLevel.put(level, currentCountForRules);
   }
 
   public void addIssuesWithPossibleAiFixFromIde(Set<UUID> issues) {

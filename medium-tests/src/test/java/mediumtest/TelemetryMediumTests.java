@@ -49,11 +49,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.GlobalIssuesLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IssueLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideAllIssuesLevelParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideIssueLevelParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevelParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -412,38 +412,38 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
-  void it_should_record_overrideAllIssuesLevel(SonarLintTestHarness harness) {
+  void it_should_record_reportIssuesAsErrorLevel(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
-    backend.getTelemetryService().overrideAllIssuesLevel(new OverrideAllIssuesLevelParams(GlobalIssuesLevel.NONE));
-    backend.getTelemetryService().overrideAllIssuesLevel(new OverrideAllIssuesLevelParams(GlobalIssuesLevel.MEDIUM_AND_ABOVE));
-    backend.getTelemetryService().overrideAllIssuesLevel(new OverrideAllIssuesLevelParams(GlobalIssuesLevel.MEDIUM_AND_ABOVE));
-    backend.getTelemetryService().overrideAllIssuesLevel(new OverrideAllIssuesLevelParams(GlobalIssuesLevel.ALL));
+    backend.getTelemetryService().reportIssuesAsErrorLevel(new ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel.NONE));
+    backend.getTelemetryService().reportIssuesAsErrorLevel(new ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE));
+    backend.getTelemetryService().reportIssuesAsErrorLevel(new ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE));
+    backend.getTelemetryService().reportIssuesAsErrorLevel(new ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel.ALL));
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getOverrideAllIssuesLevel())
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getReportedIssuesAsErrorCountPerLevel())
       .extractingFromEntries(Map.Entry::getKey, Map.Entry::getValue)
       .containsOnly(
-        tuple(GlobalIssuesLevel.NONE, 1),
-        tuple(GlobalIssuesLevel.MEDIUM_AND_ABOVE, 2),
-        tuple(GlobalIssuesLevel.ALL, 1)));
+        tuple(ReportIssuesAsErrorLevel.NONE, 1),
+        tuple(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE, 2),
+        tuple(ReportIssuesAsErrorLevel.ALL, 1)));
   }
 
   @SonarLintTest
-  void it_should_record_overrideIssueLevel(SonarLintTestHarness harness) {
+  void it_should_record_reportIssuesAsOverride(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
-    backend.getTelemetryService().overrideIssueLevel(new OverrideIssueLevelParams(IssueLevel.WARNING, "java:s123"));
-    backend.getTelemetryService().overrideIssueLevel(new OverrideIssueLevelParams(IssueLevel.WARNING, "java:s123"));
-    backend.getTelemetryService().overrideIssueLevel(new OverrideIssueLevelParams(IssueLevel.WARNING, "php:s123"));
-    backend.getTelemetryService().overrideIssueLevel(new OverrideIssueLevelParams(IssueLevel.ERROR, "java:s456"));
+    backend.getTelemetryService().reportIssuesAsOverride(new ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel.WARNING, "java:s123"));
+    backend.getTelemetryService().reportIssuesAsOverride(new ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel.WARNING, "java:s123"));
+    backend.getTelemetryService().reportIssuesAsOverride(new ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel.WARNING, "php:s123"));
+    backend.getTelemetryService().reportIssuesAsOverride(new ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel.ERROR, "java:s456"));
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getOverrideIssueLevel())
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getReportedIssuesAsOverridePerLevel())
       .extractingFromEntries(Map.Entry::getKey,
         e -> e.getValue().stream()
           .map(override -> tuple(override.getRuleKey(), override.getCount())).toList())
       .containsOnly(
-        tuple(IssueLevel.WARNING, List.of(tuple("java:s123", 2), tuple("php:s123", 1))),
-        tuple(IssueLevel.ERROR, List.of(tuple("java:s456", 1)))));
+        tuple(ReportIssuesAsOverrideLevel.WARNING, List.of(tuple("java:s123", 2), tuple("php:s123", 1))),
+        tuple(ReportIssuesAsOverrideLevel.ERROR, List.of(tuple("java:s456", 1)))));
   }
 
   @SonarLintTest
