@@ -78,6 +78,7 @@ public class PluginsLoader {
     var allowedPluginsIds = new HashSet<String>();
     allowedPluginsIds.add("textdeveloper");
     allowedPluginsIds.add("textenterprise");
+    allowedPluginsIds.add("sqvsroslyn");
     allowedPluginsIds.add("omnisharp");
     allowedPluginsIds.add("iacenterprise");
     allowedPluginsIds.add("goenterprise");
