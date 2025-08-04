@@ -19,6 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public enum IssueLevel {
-  ERROR, WARNING
+public class ReportIssuesAsErrorLevelParams {
+  private final ReportIssuesAsErrorLevel level;
+
+  public ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel level) {
+    this.level = level;
+  }
+
+  public ReportIssuesAsErrorLevel getLevel() {
+    return level;
+  }
 }

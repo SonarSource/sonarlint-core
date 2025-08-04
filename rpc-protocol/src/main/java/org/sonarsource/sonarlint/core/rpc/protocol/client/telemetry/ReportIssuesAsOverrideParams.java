@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-
-public class TelemetryOverrideIssueLevel {
+public class ReportIssuesAsOverrideParams {
+  private final ReportIssuesAsOverrideLevel level;
   private final String ruleKey;
-  private int count;
 
-  public TelemetryOverrideIssueLevel(String ruleKey) {
+  public ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel level, String ruleKey) {
+    this.level = level;
     this.ruleKey = ruleKey;
-    this.count = 1;
   }
 
-  public void increment() {
-    count++;
-  }
-
-  public int getCount() {
-    return count;
+  public ReportIssuesAsOverrideLevel getLevel() {
+    return level;
   }
 
   public String getRuleKey() {

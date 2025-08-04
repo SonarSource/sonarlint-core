@@ -32,8 +32,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideAllIssuesLevelParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideIssueLevelParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevelParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 
 @JsonSegment("telemetry")
@@ -101,18 +101,18 @@ public interface TelemetryRpcService {
   void fixSuggestionResolved(FixSuggestionResolvedParams params);
 
   /**
-   * Increment count of overrides on all issues per level
+   * Increment count of issues reported as error per level
    * Should only be used if the feature is available on the client side
    */
   @JsonNotification
-  void overrideAllIssuesLevel(OverrideAllIssuesLevelParams params);
+  void reportIssuesAsErrorLevel(ReportIssuesAsErrorLevelParams params);
 
   /**
    * Increment count of overrides for a specific issue (rule key), per level
    * Should only be used if the feature is available on the client side
    */
   @JsonNotification
-  void overrideIssueLevel(OverrideIssueLevelParams params);
+  void reportIssuesAsOverride(ReportIssuesAsOverrideParams params);
 
   @JsonNotification
   void addedManualBindings();

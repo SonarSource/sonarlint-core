@@ -71,11 +71,11 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"analysis_reporting.trigger_count_vcs_changed_files\",\"value\":\"7\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"performance.biggest_size_config_scope_files\",\"value\":\"12345\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"override_all_issues_level.none\",\"value\":\"23\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"override_all_issues_level.medium_and_above\",\"value\":\"45\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"override_all_issues_level.all\",\"value\":\"67\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"override_issue_level.warning\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"override_issue_level.error\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"reported_issues_as_error_level.none\",\"value\":\"23\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"reported_issues_as_error_level.medium_and_above\",\"value\":\"45\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"reported_issues_as_error_level.all\",\"value\":\"67\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"reported_issues_as_override.warning\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"reported_issues_as_override.error\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -107,12 +107,12 @@ class TelemetryMeasuresPayloadTests {
 
     values.add(new TelemetryMeasuresValue("performance.biggest_size_config_scope_files", String.valueOf(12345), INTEGER, DAILY));
 
-    values.add(new TelemetryMeasuresValue("override_all_issues_level.none", String.valueOf(23), INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("override_all_issues_level.medium_and_above", String.valueOf(45), INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("override_all_issues_level.all", String.valueOf(67), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("reported_issues_as_error_level.none", String.valueOf(23), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("reported_issues_as_error_level.medium_and_above", String.valueOf(45), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("reported_issues_as_error_level.all", String.valueOf(67), INTEGER, DAILY));
 
-    values.add(new TelemetryMeasuresValue("override_issue_level.warning", String.valueOf(2), INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("override_issue_level.error", String.valueOf(3), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("reported_issues_as_override.warning", String.valueOf(2), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("reported_issues_as_override.error", String.valueOf(3), INTEGER, DAILY));
 
     return values;
   }
@@ -126,11 +126,11 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("binding_suggestion_clue.remote_url", "5", INTEGER, DAILY))
       .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY))
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY))
-      .contains(tuple("override_all_issues_level.none", "23", INTEGER, DAILY))
-      .contains(tuple("override_all_issues_level.medium_and_above", "45", INTEGER, DAILY))
-      .contains(tuple("override_all_issues_level.all", "67", INTEGER, DAILY))
-      .contains(tuple("override_issue_level.warning", "2", INTEGER, DAILY))
-      .contains(tuple("override_issue_level.error", "3", INTEGER, DAILY));
+      .contains(tuple("reported_issues_as_error_level.none", "23", INTEGER, DAILY))
+      .contains(tuple("reported_issues_as_error_level.medium_and_above", "45", INTEGER, DAILY))
+      .contains(tuple("reported_issues_as_error_level.all", "67", INTEGER, DAILY))
+      .contains(tuple("reported_issues_as_override.warning", "2", INTEGER, DAILY))
+      .contains(tuple("reported_issues_as_override.error", "3", INTEGER, DAILY));
   }
 
 }

@@ -855,10 +855,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   public void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus) {
     entityStore.executeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, DEPENDENCY_RISK_ENTITY_TYPE, KEY_PROPERTY_NAME, key.toString());
-      if (optionalEntity.isPresent()) {
-        var issueEntity = optionalEntity.get();
-        issueEntity.setProperty(STATUS_PROPERTY_NAME, newStatus.name());
-      }
+      optionalEntity.ifPresent(issueEntity -> issueEntity.setProperty(STATUS_PROPERTY_NAME, newStatus.name()));
     });
   }
 

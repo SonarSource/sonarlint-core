@@ -36,8 +36,8 @@ import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.GlobalIssuesLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IssueLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static java.util.Collections.emptyMap;
@@ -212,8 +212,8 @@ class TelemetryManagerTests {
       .isEqualTo(data.getHelpAndFeedbackLinkClickedCounter().get(SUGGEST_FEATURE).getHelpAndFeedbackLinkClickedCount());
     assertThat(reloaded.getAnalysisReportingCountersByType().get(PRE_COMMIT_ANALYSIS_TYPE).getAnalysisReportingCount())
       .isEqualTo(data.getAnalysisReportingCountersByType().get(PRE_COMMIT_ANALYSIS_TYPE).getAnalysisReportingCount());
-    assertThat(reloaded.getOverrideAllIssuesLevel().get(GlobalIssuesLevel.MEDIUM_AND_ABOVE)).isEqualTo(1);
-    assertThat(reloaded.getOverrideIssueLevel().get(IssueLevel.WARNING).get(0).getCount()).isEqualTo(1);
+    assertThat(reloaded.getReportedIssuesAsErrorCountPerLevel().get(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE)).isEqualTo(1);
+    assertThat(reloaded.getReportedIssuesAsOverridePerLevel().get(ReportIssuesAsOverrideLevel.WARNING).get(0).getCount()).isEqualTo(1);
   }
 
   @Test
@@ -238,8 +238,8 @@ class TelemetryManagerTests {
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
       data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
-      data.getOverrideAllIssuesLevel().put(GlobalIssuesLevel.MEDIUM_AND_ABOVE, 1);
-      data.getOverrideIssueLevel().put(IssueLevel.WARNING, List.of(new TelemetryOverrideIssueLevel("java:S123")));
+      data.getReportedIssuesAsErrorCountPerLevel().put(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE, 1);
+      data.getReportedIssuesAsOverridePerLevel().put(ReportIssuesAsOverrideLevel.WARNING, List.of(new TelemetryReportIssuesAsOverride("java:S123")));
       data.findingsFiltered("severity");
     });
 
@@ -260,8 +260,8 @@ class TelemetryManagerTests {
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
     assertThat(reloaded.getAnalysisReportingCountersByType()).isEmpty();
     assertThat(reloaded.getFindingsFilteredCountersByType()).isEmpty();
-    assertThat(reloaded.getOverrideAllIssuesLevel()).isEmpty();
-    assertThat(reloaded.getOverrideIssueLevel()).isEmpty();
+    assertThat(reloaded.getReportedIssuesAsErrorCountPerLevel()).isEmpty();
+    assertThat(reloaded.getReportedIssuesAsOverridePerLevel()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
@@ -274,8 +274,8 @@ class TelemetryManagerTests {
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
       data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
-      data.getOverrideAllIssuesLevel().put(GlobalIssuesLevel.MEDIUM_AND_ABOVE, 1);
-      data.getOverrideIssueLevel().put(IssueLevel.WARNING, List.of(new TelemetryOverrideIssueLevel("java:S123")));
+      data.getReportedIssuesAsErrorCountPerLevel().put(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE, 1);
+      data.getReportedIssuesAsOverridePerLevel().put(ReportIssuesAsOverrideLevel.WARNING, List.of(new TelemetryReportIssuesAsOverride("java:S123")));
     });
   }
 

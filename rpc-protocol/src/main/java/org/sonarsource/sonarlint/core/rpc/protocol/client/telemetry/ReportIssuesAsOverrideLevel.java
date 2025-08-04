@@ -19,20 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public class OverrideIssueLevelParams {
-  private final IssueLevel level;
-  private final String ruleKey;
-
-  public OverrideIssueLevelParams(IssueLevel level, String ruleKey) {
-    this.level = level;
-    this.ruleKey = ruleKey;
-  }
-
-  public IssueLevel getLevel() {
-    return level;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
+public enum ReportIssuesAsOverrideLevel {
+  ERROR, WARNING
 }
