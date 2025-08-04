@@ -30,6 +30,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideAllIssuesLevelParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.OverrideIssueLevelParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -107,6 +109,16 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     notify(() -> getBean(TelemetryService.class).fixSuggestionResolved(params));
+  }
+
+  @Override
+  public void overrideAllIssuesLevel(OverrideAllIssuesLevelParams params) {
+    notify(() -> getBean(TelemetryService.class).overrideAllIssuesLevel(params));
+  }
+
+  @Override
+  public void overrideIssueLevel(OverrideIssueLevelParams params) {
+    notify(() -> getBean(TelemetryService.class).overrideIssueLevel(params));
   }
 
   @Override

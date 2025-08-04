@@ -32,6 +32,8 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.GlobalIssuesLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IssueLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -118,6 +120,9 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.incrementToolCalledCount("tool_name", false);
     telemetryLocalStorage.addFixedIssues(2);
     telemetryLocalStorage.findingsFiltered("severity");
+    telemetryLocalStorage.overrideAllIssuesLevel(GlobalIssuesLevel.MEDIUM_AND_ABOVE);
+    telemetryLocalStorage.overrideAllIssuesLevel(GlobalIssuesLevel.MEDIUM_AND_ABOVE);
+    telemetryLocalStorage.overrideIssueLevel(IssueLevel.ERROR, "java:S102");
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -139,7 +144,9 @@ class TelemetryHttpClientTests {
             {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
-            {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"}
+            {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
+            {"key":"override_all_issues_level.medium_and_above","value":"2","type":"integer","granularity":"daily"},
+            {"key":"override_issue_level.error","value":"1","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));
