@@ -168,7 +168,7 @@ public class DependencyRiskService {
 
     serverConnection.withClientApi(serverApi -> {
       serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor);
-      projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus);
+      projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus, updatedDependencyRisk.transitions());
       client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(), List.of(toDto(updatedDependencyRisk))));
     });
   }
