@@ -852,10 +852,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus) {
+  public void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus, List<ServerDependencyRisk.Transition> transitions) {
     entityStore.executeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, DEPENDENCY_RISK_ENTITY_TYPE, KEY_PROPERTY_NAME, key.toString());
-      optionalEntity.ifPresent(issueEntity -> issueEntity.setProperty(STATUS_PROPERTY_NAME, newStatus.name()));
+      optionalEntity.ifPresent(issueEntity -> {
+        issueEntity.setProperty(STATUS_PROPERTY_NAME, newStatus.name());
+        setTransitions(issueEntity, transitions);
+      });
     });
   }
 
@@ -905,7 +908,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setProperty(STATUS_PROPERTY_NAME, issue.status().name());
     issueEntity.setProperty(PACKAGE_NAME_PROPERTY_NAME, issue.packageName());
     issueEntity.setProperty(PACKAGE_VERSION_PROPERTY_NAME, issue.packageVersion());
-    issueEntity.setProperty(TRANSITIONS_PROPERTY_NAME, issue.transitions().stream()
+    setTransitions(issueEntity, issue.transitions());
+  }
+
+  private static void setTransitions(Entity issueEntity, List<ServerDependencyRisk.Transition> transitions) {
+    issueEntity.setProperty(TRANSITIONS_PROPERTY_NAME, transitions.stream()
       .map(Enum::name)
       .collect(Collectors.joining(",")));
   }
