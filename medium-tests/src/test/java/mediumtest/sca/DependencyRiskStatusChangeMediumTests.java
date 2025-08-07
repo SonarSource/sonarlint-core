@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyRiskStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
@@ -101,7 +102,7 @@ class DependencyRiskStatusChangeMediumTests {
   }
 
   @SonarLintTest
-  void it_should_update_the_status_in_the_local_storage_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+  void it_should_update_the_status_and_transitions_in_the_local_storage_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
     var dependencyRiskKey = UUID.randomUUID();
     var dependencyRisk = aServerDependencyRisk()
       .withKey(dependencyRiskKey)
@@ -113,7 +114,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withPackageVersion("1.0.0")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
-        ServerDependencyRisk.Transition.REOPEN
+        ServerDependencyRisk.Transition.SAFE,
+        ServerDependencyRisk.Transition.ACCEPT
       ));
 
     var server = harness.newFakeSonarQubeServer()
@@ -135,8 +137,15 @@ class DependencyRiskStatusChangeMediumTests {
     assertThat(storedDependencyRisk)
       .map(ServerDependencyRisk::status)
       .contains(ServerDependencyRisk.Status.CONFIRM);
-
-
+    assertThat(storedDependencyRisk)
+      .map(ServerDependencyRisk::transitions)
+      .get()
+      .asInstanceOf(InstanceOfAssertFactories.list(ServerDependencyRisk.Transition.class))
+      .containsExactlyInAnyOrder(
+        ServerDependencyRisk.Transition.SAFE,
+        ServerDependencyRisk.Transition.REOPEN,
+        ServerDependencyRisk.Transition.ACCEPT
+      );
   }
 
   @SonarLintTest

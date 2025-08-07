@@ -208,5 +208,5 @@ public interface ProjectServerIssueStore {
    */
   List<ServerDependencyRisk> loadDependencyRisks(String branchName);
 
-  void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus);
+  void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus, List<ServerDependencyRisk.Transition> transitions);
 }
