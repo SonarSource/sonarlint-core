@@ -43,6 +43,7 @@ public enum Language {
   RUBY("Ruby"),
   SCALA("Scala"),
   SECRETS("Secrets"),
+  TEXT("Text"),
   SWIFT("Swift"),
   TSQL("T-SQL"),
   TS("TypeScript"),
@@ -114,6 +115,8 @@ public enum Language {
         return SCALA;
       case SECRETS:
         return SECRETS;
+      case TEXT:
+        return TEXT;
       case SWIFT:
         return SWIFT;
       case TSQL:

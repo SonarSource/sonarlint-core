@@ -51,6 +51,7 @@ public enum Language {
   RUBY,
   SCALA,
   SECRETS,
+  TEXT,
   SWIFT,
   TERRAFORM,
   TS,

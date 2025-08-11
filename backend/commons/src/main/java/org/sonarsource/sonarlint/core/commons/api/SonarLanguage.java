@@ -53,6 +53,7 @@ public enum SonarLanguage {
   RUBY("ruby", "ruby", new String[]{".rb"}, "sonar.ruby.file.suffixes"),
   SCALA("scala", "sonarscala", new String[]{".scala"}, "sonar.scala.file.suffixes"),
   SECRETS("secrets", "text", new String[0], "sonar.secrets.file.suffixes"),
+  TEXT("text", "text", new String[0], "sonar.text.file.suffixes"),
   SWIFT("swift", "swift", new String[]{".swift"}, "sonar.swift.file.suffixes"),
   TSQL("tsql", "tsql", new String[]{".tsql"}, "sonar.tsql.file.suffixes"),
   TS("ts", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".ts", ".tsx"},
