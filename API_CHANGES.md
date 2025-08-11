@@ -1,3 +1,10 @@
+# 10.28
+
+## New features
+
+* Add `TEXT` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+  * Enabling this language allows detecting [text issues](https://rules.sonarsource.com/text/)
+
 # 10.27
 
 ## Breaking changes
