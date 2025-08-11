@@ -82,6 +82,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -142,6 +143,7 @@ public class ServerFixture {
     protected Set<String> features = new HashSet<>();
     private final List<SmartNotifications> smartNotifications = new ArrayList<>();
     private final Map<String, String> globalSettings = new HashMap<>();
+    protected DopTranslationBuilder dopTranslation = new DopTranslationBuilder();
 
     protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
@@ -185,12 +187,30 @@ public class ServerFixture {
       return (T) this;
     }
 
+    public T withDopTranslation(UnaryOperator<DopTranslationBuilder> dopTranslationBuilder) {
+      this.dopTranslation = dopTranslationBuilder.apply(new DopTranslationBuilder());
+      return (T) this;
+    }
+
+    public static class DopTranslationBuilder {
+      private final Map<String, ProjectBinding> projectBindings = new HashMap<>();
+
+      public DopTranslationBuilder withProjectBinding(String repositoryUrl, String projectId, String projectKey) {
+        this.projectBindings.put(repositoryUrl, new ProjectBinding(projectId, projectKey));
+        return this;
+      }
+
+      record ProjectBinding(String projectId, String projectKey) {
+      }
+
+    }
+
     record SmartNotifications(List<String> projects, String events) {
     }
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, responseCodes.build(),
-        aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications, globalSettings);
+        aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications, globalSettings, dopTranslation);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -293,13 +313,18 @@ public class ServerFixture {
       private String projectName;
       private AiCodeFixSuggestionBuilder aiCodeFixSuggestion;
       private boolean aiCodeFixEnabled;
+      private final DopTranslationBuilder dopTranslation;
+      private final String projectKey;
+      private String projectId;
 
       private ServerProjectBuilder() {
-        this(null);
+        this(null, null, null);
       }
 
-      private ServerProjectBuilder(@Nullable String organizationKey) {
+      private ServerProjectBuilder(@Nullable String organizationKey, @Nullable DopTranslationBuilder dopTranslation, @Nullable String projectKey) {
         this.organizationKey = organizationKey;
+        this.dopTranslation = dopTranslation;
+        this.projectKey = projectKey;
         this.branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
       }
 
@@ -314,12 +339,6 @@ public class ServerFixture {
 
       public ServerProjectBuilder withProjectName(String projectName) {
         this.projectName = projectName;
-        return this;
-      }
-
-      public ServerProjectBuilder withEmptyBranch(String branchName) {
-        var builder = new ServerProjectBranchBuilder();
-        this.branchesByName.put(branchName, builder);
         return this;
       }
 
@@ -362,6 +381,19 @@ public class ServerFixture {
 
       public ServerProjectBuilder withAiCodeFixEnabled(boolean enabled) {
         this.aiCodeFixEnabled = enabled;
+        return this;
+      }
+
+      public ServerProjectBuilder withId(UUID id) {
+        this.projectId = id.toString();
+        return this;
+      }
+
+      public ServerProjectBuilder withBinding(String repositoryUrl) {
+        if (this.projectId == null) {
+          throw new IllegalStateException("withBinding() requires project id to be set via withId(UUID) beforehand");
+        }
+        this.dopTranslation.withProjectBinding(repositoryUrl, this.projectId, this.projectKey);
         return this;
       }
 
@@ -670,7 +702,7 @@ public class ServerFixture {
     }
 
     public SonarQubeServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
-      var builder = new ServerProjectBuilder();
+      var builder = new ServerProjectBuilder(null, this.dopTranslation, projectKey);
       this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
       return this;
     }
@@ -703,7 +735,7 @@ public class ServerFixture {
     }
 
     public SonarQubeCloudBuilder withOrganization(String organizationKey, UnaryOperator<SonarQubeCloudOrganizationBuilder> organizationBuilder) {
-      var builder = new SonarQubeCloudOrganizationBuilder(organizationKey, qualityProfilesByKey, projectByProjectKey);
+      var builder = new SonarQubeCloudOrganizationBuilder(organizationKey, qualityProfilesByKey, projectByProjectKey, this.dopTranslation);
       this.organizationsByKey.put(organizationKey, organizationBuilder.apply(builder));
       return this;
     }
@@ -718,12 +750,14 @@ public class ServerFixture {
       private final UUID uuidV4 = UUID.randomUUID();
       private AbstractServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
       private boolean isCurrentUserMember = true;
+      private final DopTranslationBuilder dopTranslation;
 
       public SonarQubeCloudOrganizationBuilder(String organizationKey, Map<String, ServerQualityProfileBuilder> qualityProfilesByKey,
-        Map<String, ServerProjectBuilder> projectByProjectKey) {
+        Map<String, ServerProjectBuilder> projectByProjectKey, DopTranslationBuilder dopTranslation) {
         this.organizationKey = organizationKey;
         this.qualityProfilesByKey = qualityProfilesByKey;
         this.projectByProjectKey = projectByProjectKey;
+        this.dopTranslation = dopTranslation;
       }
 
       public SonarQubeCloudOrganizationBuilder withQualityProfile(String qualityProfileKey, UnaryOperator<ServerQualityProfileBuilder> qualityProfileBuilder) {
@@ -737,7 +771,7 @@ public class ServerFixture {
       }
 
       public SonarQubeCloudOrganizationBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
-        var builder = new ServerProjectBuilder(organizationKey);
+        var builder = new ServerProjectBuilder(organizationKey, dopTranslation, projectKey);
         this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
         return this;
       }
@@ -758,6 +792,9 @@ public class ServerFixture {
   public static class Server {
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.from(ZoneOffset.UTC));
+    public static final String API_COMPONENTS_SHOW_PROTOBUF_COMPONENT = "/api/components/show.protobuf?component=";
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String APPLICATION_JSON = "application/json";
 
     private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
 
@@ -774,6 +811,7 @@ public class ServerFixture {
     private final Map<String, String> globalSettings;
     private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
+    private final AbstractServerBuilder.DopTranslationBuilder dopTranslation;
     private final Set<String> features;
     private SSEServer sseServer;
 
@@ -781,7 +819,7 @@ public class ServerFixture {
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
       AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules, boolean serverSentEventsEnabled, Set<String> features,
-      List<AbstractServerBuilder.SmartNotifications> smartNotifications, Map<String, String> globalSettings) {
+      List<AbstractServerBuilder.SmartNotifications> smartNotifications, Map<String, String> globalSettings, AbstractServerBuilder.DopTranslationBuilder dopTranslation) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
@@ -795,6 +833,7 @@ public class ServerFixture {
       this.features = features;
       this.smartNotifications = smartNotifications;
       this.globalSettings = globalSettings;
+      this.dopTranslation = dopTranslation;
     }
 
     public void start() {
@@ -826,13 +865,14 @@ public class ServerFixture {
         registerPushApiResponses();
         registerFeaturesApiResponses();
         registerScaApiResponses();
+        registerDopTranslationApiResponses();
       }
     }
 
     private void registerComponentApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         if (project.projectName != null) {
-          mockServer.stubFor(get("/api/components/show.protobuf?component=" + projectKey)
+          mockServer.stubFor(get(API_COMPONENTS_SHOW_PROTOBUF_COMPONENT + UrlUtils.urlEncode(projectKey))
             .willReturn(aResponse().withResponseBody(protobufBody(
               Components.ShowWsResponse.newBuilder()
                 .setComponent(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build()).build()))));
@@ -1364,6 +1404,32 @@ public class ServerFixture {
       registerComponentsSearchApiResponses();
       registerComponentsShowApiResponses();
       registerComponentsTreeApiResponses();
+
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        var organizationKey = project.organizationKey;
+        if (organizationKey == null) {
+          return;
+        }
+        var projectName = project.name;
+        if (projectName == null) {
+          return;
+        }
+
+        dopTranslation.projectBindings.entrySet().stream()
+          .filter(e -> projectKey.equals(e.getValue().projectKey()))
+          .forEach(e -> {
+            var projectBinding = e.getValue();
+            var endpoint = "/api/components/search_projects?projectIds=" + projectBinding.projectId() + "&organization=" + organizationKey;
+            var body = """
+              {"components":[{"key":"%s","name":"%s"}]}
+              """.formatted(projectKey, projectName);
+            mockServer.stubFor(get(urlEqualTo(endpoint))
+              .willReturn(aResponse()
+                .withStatus(responseCodes.statusCode)
+                .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                .withBody(body)));
+          });
+      });
     }
 
     private void registerComponentsSearchApiResponses() {
@@ -1395,7 +1461,7 @@ public class ServerFixture {
 
     private void registerComponentsShowApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
-        var url = "/api/components/show.protobuf?component=" + projectKey;
+        var url = API_COMPONENTS_SHOW_PROTOBUF_COMPONENT + projectKey;
         var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey))
           .map(entry -> Components.Component.newBuilder()
             .setKey(entry.getKey())
@@ -1580,6 +1646,33 @@ public class ServerFixture {
 
     public WireMockServer getMockServer() {
       return mockServer;
+    }
+
+    private void registerDopTranslationApiResponses() {
+      dopTranslation.projectBindings.forEach((repositoryUrl, projectBinding) -> {
+        var encodedUrl = UrlUtils.urlEncode(repositoryUrl);
+        if (serverKind == ServerKind.SONARCLOUD) {
+          var endpoint = "/dop-translation/project-bindings?url=" + encodedUrl;
+          var responseBody = """
+            {"bindings":[{"projectId":"%s"}]}
+            """.formatted(projectBinding.projectId());
+          mockServer.stubFor(get(urlEqualTo(endpoint))
+            .willReturn(aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+              .withBody(responseBody)));
+        } else {
+          var endpoint = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
+          var responseBody = """
+            {"projectBindings":[{"projectId":"%s","projectKey":"%s"}]}
+            """.formatted(projectBinding.projectId(), projectBinding.projectKey());
+          mockServer.stubFor(get(urlEqualTo(endpoint))
+            .willReturn(aResponse()
+              .withStatus(200)
+              .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+              .withBody(responseBody)));
+        }
+      });
     }
   }
 }
