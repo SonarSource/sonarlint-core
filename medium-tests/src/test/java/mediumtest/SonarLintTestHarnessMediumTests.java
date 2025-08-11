@@ -221,7 +221,7 @@ class SonarLintTestHarnessShutdownTest {
     private boolean shutdownCalled = false;
 
     public TestServer() {
-      super(null, null, null, null, null, null, null, null, null, false, null, null, null);
+      super(null, null, null, null, null, null, null, null, null, false, null, null, null, null);
     }
 
     @Override
@@ -238,7 +238,7 @@ class SonarLintTestHarnessShutdownTest {
     private final RuntimeException exceptionToThrow;
 
     ThrowingTestServer(RuntimeException exceptionToThrow) {
-      super(null, null, null, null, null, null, null, null, null, false, null, null, null);
+      super(null, null, null, null, null, null, null, null, null, false, null, null, null, null);
       this.exceptionToThrow = exceptionToThrow;
     }
 
