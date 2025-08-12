@@ -33,6 +33,7 @@ public enum Language {
   CSS,
   DOCKER,
   GO,
+  GITHUBACTIONS,
   HTML,
   IPYTHON,
   JAVA,

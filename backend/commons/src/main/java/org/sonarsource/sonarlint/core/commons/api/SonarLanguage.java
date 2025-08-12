@@ -64,12 +64,13 @@ public enum SonarLanguage {
   YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".yml", "yaml"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   JSON("json", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".json"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   GO("go", "go", new String[]{".go"}, "sonar.go.file.suffixes"),
-  CLOUDFORMATION("cloudformation", "iac", new String[0], "sonar.cloudformation.file.suffixes"),
-  DOCKER("docker", "iac", new String[0], "sonar.docker.file.suffixes"),
-  KUBERNETES("kubernetes", "iac", new String[0], "sonar.kubernetes.file.suffixes"),
+  CLOUDFORMATION("cloudformation", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  DOCKER("docker", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  KUBERNETES("kubernetes", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   TERRAFORM("terraform", "iac", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
   AZURERESOURCEMANAGER("azureresourcemanager", "iac", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  ANSIBLE("ansible", "iacenterprise", new String[0], "sonar.ansible.file.suffixes");
+  ANSIBLE("ansible", "iacenterprise", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  GITHUBACTIONS("githubactions", "iacenterprise", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
   private final String sonarLanguageKey;
 
   /**
