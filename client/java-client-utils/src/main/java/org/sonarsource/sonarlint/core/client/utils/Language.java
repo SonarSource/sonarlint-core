@@ -58,7 +58,8 @@ public enum Language {
   KUBERNETES("Kubernetes"),
   TERRAFORM("Terraform"),
   AZURERESOURCEMANAGER("AzureResourceManager"),
-  ANSIBLE("Ansible");
+  ANSIBLE("Ansible"),
+  GITHUBACTIONS("GitHub Actions");
   private final String label;
 
   Language(String label) {
@@ -87,6 +88,8 @@ public enum Language {
         return OBJC;
       case COBOL:
         return COBOL;
+      case GITHUBACTIONS:
+        return GITHUBACTIONS;
       case HTML:
         return HTML;
       case IPYTHON:

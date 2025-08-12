@@ -9,6 +9,8 @@
 
 * Add `TEXT` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
   * Enabling this language allows detecting [text issues](https://rules.sonarsource.com/text/)
+* Add `GITHUBACTIONS` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+  * Enabling this language allows detecting [issues on GitHub Actions](https://rules.sonarsource.com/githubactions/)
 
 ## SCA
 
