@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class DependencyRiskDto {
   private final UUID id;
@@ -30,9 +32,14 @@ public class DependencyRiskDto {
   private final Status status;
   private final String packageName;
   private final String packageVersion;
+  @Nullable
+  private final String vulnerabilityId;
+  @Nullable
+  private final String cvssScore;
   private final List<Transition> transitions;
 
-  public DependencyRiskDto(UUID id, Type type, Severity severity, SoftwareQuality quality, Status status, String packageName, String packageVersion, List<Transition> transitions) {
+  public DependencyRiskDto(UUID id, Type type, Severity severity, SoftwareQuality quality, Status status, String packageName,
+    String packageVersion, @Nullable String vulnerabilityId, @Nullable String cvssScore, List<Transition> transitions) {
     this.id = id;
     this.type = type;
     this.severity = severity;
@@ -40,6 +47,8 @@ public class DependencyRiskDto {
     this.status = status;
     this.packageName = packageName;
     this.packageVersion = packageVersion;
+    this.vulnerabilityId = vulnerabilityId;
+    this.cvssScore = cvssScore;
     this.transitions = transitions;
   }
 
@@ -69,6 +78,16 @@ public class DependencyRiskDto {
 
   public String getPackageVersion() {
     return packageVersion;
+  }
+
+  @CheckForNull
+  public String getVulnerabilityId() {
+    return vulnerabilityId;
+  }
+
+  @CheckForNull
+  public String getCvssScore() {
+    return cvssScore;
   }
 
   public List<Transition> getTransitions() {

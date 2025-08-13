@@ -78,6 +78,8 @@ public class ScaSynchronizationService {
         ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
         issueRelease.release().packageName(),
         issueRelease.release().version(),
+        issueRelease.vulnerabilityId(),
+        issueRelease.cvssScore(),
         issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList()))
       .toList();
 

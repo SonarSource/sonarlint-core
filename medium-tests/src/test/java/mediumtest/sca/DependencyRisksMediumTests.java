@@ -110,6 +110,8 @@ class DependencyRisksMediumTests {
               .withKey(dependencyRiskKey)
               .withPackageName("com.example.vulnerable")
               .withPackageVersion("2.1.0")
+              .withVulnerabilityId("CVE-1234")
+              .withCvssScore("7.5")
               .withType(Type.VULNERABILITY)
               .withSeverity(Severity.HIGH)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -155,7 +157,8 @@ class DependencyRisksMediumTests {
           branch -> branch
             .withDependencyRisk(
               new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "PROHIBITED_LICENSE",
-                "HIGH", "MAINTAINABILITY", "OPEN", "com.example.vulnerable", "2.1.0", List.of("CONFIRM")))))
+                "HIGH", "MAINTAINABILITY", "OPEN", "com.example.vulnerable", "2.1.0",
+                null, null, List.of("CONFIRM")))))
       .start();
     var backend = harness.newBackend()
       .withBackendCapability(SCA_SYNCHRONIZATION)
@@ -186,7 +189,8 @@ class DependencyRisksMediumTests {
           branch -> branch
             .withDependencyRisk(
               new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "HIGH",
-                "SECURITY", "OPEN", "com.example.vulnerable", "2.1.0", List.of("CONFIRM")))))
+                "SECURITY", "OPEN", "com.example.vulnerable", "2.1.0",
+                "CVE-1234", "7.5", List.of("CONFIRM")))))
       .start();
     var client = harness.newFakeClient().build();
     harness.newBackend()
@@ -209,6 +213,8 @@ class DependencyRisksMediumTests {
           assertThat(dependencyRisk.getId()).isEqualTo(dependencyRiskKey);
           assertThat(dependencyRisk.getPackageName()).isEqualTo("com.example.vulnerable");
           assertThat(dependencyRisk.getPackageVersion()).isEqualTo("2.1.0");
+          assertThat(dependencyRisk.getVulnerabilityId()).isEqualTo("CVE-1234");
+          assertThat(dependencyRisk.getCvssScore()).isEqualTo("7.5");
           assertThat(dependencyRisk.getType()).isEqualTo(DependencyRiskDto.Type.VULNERABILITY);
           assertThat(dependencyRisk.getSeverity()).isEqualTo(DependencyRiskDto.Severity.HIGH);
           assertThat(dependencyRisk.getQuality()).isEqualTo(DependencyRiskDto.SoftwareQuality.SECURITY);
@@ -233,6 +239,8 @@ class DependencyRisksMediumTests {
               .withKey(dependencyRiskKey)
               .withPackageName("com.example.vulnerable")
               .withPackageVersion("2.1.0")
+              .withVulnerabilityId("CVE-1234")
+              .withCvssScore("7.5")
               .withType(Type.VULNERABILITY)
               .withSeverity(Severity.HIGH)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -259,7 +267,8 @@ class DependencyRisksMediumTests {
           branch -> branch
             .withDependencyRisk(
               new ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerDependencyRisk(dependencyRiskKey.toString(), "VULNERABILITY", "LOW",
-                "RELIABILITY", "ACCEPT", "com.example.vulnerable", "2.1.0", List.of("REOPEN")))))
+                "RELIABILITY", "ACCEPT", "com.example.vulnerable", "2.1.0", "CVE-1234",
+                "7.5", List.of("REOPEN")))))
       .start();
     var client = harness.newFakeClient().build();
     harness.newBackend()
@@ -288,11 +297,12 @@ class DependencyRisksMediumTests {
       assertThat(change.getClosedDependencyRiskIds()).isEmpty();
       assertThat(change.getAddedDependencyRisks()).isEmpty();
       assertThat(change.getUpdatedDependencyRisks())
-        .extracting(DependencyRiskDto::getId, DependencyRiskDto::getType, DependencyRiskDto::getSeverity, DependencyRiskDto::getStatus, DependencyRiskDto::getTransitions, DependencyRiskDto::getPackageName,
-          DependencyRiskDto::getPackageVersion)
+        .extracting(DependencyRiskDto::getId, DependencyRiskDto::getType, DependencyRiskDto::getSeverity, DependencyRiskDto::getStatus,
+          DependencyRiskDto::getTransitions, DependencyRiskDto::getPackageName, DependencyRiskDto::getPackageVersion,
+          DependencyRiskDto::getVulnerabilityId, DependencyRiskDto::getCvssScore)
         .containsExactly(
           tuple(dependencyRiskKey, DependencyRiskDto.Type.VULNERABILITY, DependencyRiskDto.Severity.LOW, DependencyRiskDto.Status.ACCEPT, List.of(DependencyRiskDto.Transition.REOPEN), "com.example.vulnerable",
-            "2.1.0"));
+            "2.1.0", "CVE-1234", "7.5"));
     });
   }
 

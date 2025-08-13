@@ -23,15 +23,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 public record ServerDependencyRisk(UUID key, Type type, Severity severity, SoftwareQuality quality,
-                                   Status status, String packageName, String packageVersion, List<Transition> transitions) {
+                                   Status status, String packageName, String packageVersion, @Nullable String vulnerabilityId,
+                                   @Nullable String cvssScore, List<Transition> transitions) {
 
   public ServerDependencyRisk withStatus(Status newStatus) {
     var newTransitions = new ArrayList<>(Arrays.asList(Transition.values()));
     newTransitions.remove(Transition.FIXED);
     newTransitions.remove(newStatus.equals(Status.OPEN) ? Transition.REOPEN : Transition.valueOf(newStatus.name()));
-    return new ServerDependencyRisk(key, type, severity, quality, newStatus, packageName, packageVersion, newTransitions);
+    return new ServerDependencyRisk(key, type, severity, quality, newStatus, packageName, packageVersion,
+      vulnerabilityId, cvssScore, newTransitions);
   }
 
   public enum Severity {

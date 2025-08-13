@@ -334,6 +334,12 @@ public class ProjectStorageFixture {
               dependencyRiskEntity.setProperty("status", dependencyRisk.status().name());
               dependencyRiskEntity.setProperty("packageName", dependencyRisk.packageName());
               dependencyRiskEntity.setProperty("packageVersion", dependencyRisk.packageVersion());
+              if (dependencyRisk.vulnerabilityId() != null) {
+                dependencyRiskEntity.setProperty("vulnerabilityId", dependencyRisk.vulnerabilityId());
+              }
+              if (dependencyRisk.cvssScore() != null) {
+                dependencyRiskEntity.setProperty("cvssScore", dependencyRisk.cvssScore());
+              }
               dependencyRiskEntity.setProperty("transitions", dependencyRisk.transitions().stream()
                 .map(Enum::name)
                 .collect(Collectors.joining(",")));

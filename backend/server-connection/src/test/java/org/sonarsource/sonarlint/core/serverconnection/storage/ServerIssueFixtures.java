@@ -104,6 +104,8 @@ public class ServerIssueFixtures {
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
+      "CVE-1234",
+      "7.5",
       List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.REOPEN
