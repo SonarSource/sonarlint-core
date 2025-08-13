@@ -281,4 +281,27 @@ class TelemetryLocalStorageTests {
     assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isZero();
     assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isZero();
   }
+
+  @Test
+  void should_track_remote_url_binding_suggestion_accepted_count() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getRemoteUrlBindingSuggestionAcceptedCount()).isZero();
+
+    data.incrementRemoteUrlBindingSuggestionAcceptedCount();
+    assertThat(data.getRemoteUrlBindingSuggestionAcceptedCount()).isEqualTo(1);
+
+    data.incrementRemoteUrlBindingSuggestionAcceptedCount();
+    assertThat(data.getRemoteUrlBindingSuggestionAcceptedCount()).isEqualTo(2);
+  }
+
+  @Test
+  void should_clear_remote_url_binding_suggestion_accepted_count_after_ping() {
+    var data = new TelemetryLocalStorage();
+
+    data.incrementRemoteUrlBindingSuggestionAcceptedCount();
+    assertThat(data.getRemoteUrlBindingSuggestionAcceptedCount()).isEqualTo(1);
+
+    data.clearAfterPing();
+    assertThat(data.getRemoteUrlBindingSuggestionAcceptedCount()).isZero();
+  }
 }

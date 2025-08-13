@@ -82,6 +82,11 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   }
 
   @Override
+  public void remoteUrlBindingSuggestionAccepted() {
+    notify(() -> getBean(TelemetryService.class).remoteUrlBindingSuggestionAccepted());
+  }
+
+  @Override
   public void addReportedRules(AddReportedRulesParams params) {
     notify(() -> getBean(TelemetryService.class).addReportedRules(params.getRuleKeys()));
   }

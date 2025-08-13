@@ -117,6 +117,8 @@ public class TelemetryMeasuresBuilder {
 
   private void addBindingSuggestionClueMeasures(ArrayList<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("binding_suggestion_clue.remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("binding_suggestion_clue.remote_url_accepted_count",
+      String.valueOf(storage.getRemoteUrlBindingSuggestionAcceptedCount()), INTEGER, DAILY));
   }
 
   private void addReportIssuesAsErrorLevelCount(List<TelemetryMeasuresValue> values, ReportIssuesAsErrorLevel level) {

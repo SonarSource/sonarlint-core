@@ -281,6 +281,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementDependencyRiskInvestigatedLocallyCount);
   }
 
+  public void remoteUrlBindingSuggestionAccepted() {
+    updateTelemetry(TelemetryLocalStorage::incrementRemoteUrlBindingSuggestionAcceptedCount);
+  }
+
   public void findingsFiltered(String filterType) {
     updateTelemetry(localStorage -> localStorage.findingsFiltered(filterType));
   }

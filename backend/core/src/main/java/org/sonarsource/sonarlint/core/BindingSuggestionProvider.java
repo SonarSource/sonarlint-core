@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -178,8 +179,13 @@ public class BindingSuggestionProvider {
       for (var connectionId : bindingClueWithConnections.getConnectionIds()) {
         sonarProjectsCache
           .getSonarProject(connectionId, sonarProjectKey, cancelMonitor)
-          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.name(),
-            bindingClueWithConnections.getBindingClue().isFromSharedConfiguration())));
+          .ifPresent(serverProject -> {
+            var origin = bindingClueWithConnections.getBindingClue().isFromSharedConfiguration()
+              ? BindingSuggestionOrigin.SHARED_CONFIGURATION
+              : BindingSuggestionOrigin.UNKNOWN;
+            suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.name(),
+              bindingClueWithConnections.getBindingClue().isFromSharedConfiguration(), origin));
+          });
       }
     }
     if (suggestions.isEmpty()) {
@@ -239,7 +245,7 @@ public class BindingSuggestionProvider {
       if (sqcResponse != null) {
         var searchResponse = api.component().searchProjects(sqcResponse.projectId(), cancelMonitor);
         if (searchResponse != null) {
-          return Optional.of(new BindingSuggestionDto(connectionId, searchResponse.projectKey(), searchResponse.projectName(), false));
+          return Optional.of(new BindingSuggestionDto(connectionId, searchResponse.projectKey(), searchResponse.projectName(), false, BindingSuggestionOrigin.REMOTE_URL));
         }
       }
     } else {
@@ -247,7 +253,7 @@ public class BindingSuggestionProvider {
       if (sqsResponse != null) {
         var serverProject = api.component().getProject(sqsResponse.projectKey(), cancelMonitor);
         if (serverProject.isPresent()) {
-          return Optional.of(new BindingSuggestionDto(connectionId, sqsResponse.projectKey(), serverProject.get().name(), false));
+          return Optional.of(new BindingSuggestionDto(connectionId, sqsResponse.projectKey(), serverProject.get().name(), false, BindingSuggestionOrigin.REMOTE_URL));
         }
       }
     }
@@ -265,7 +271,8 @@ public class BindingSuggestionProvider {
           break;
         }
         bestScore = serverProjectScoreEntry.getValue();
-        suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().key(), serverProjectScoreEntry.getKey().name(), false));
+        suggestions.add(new BindingSuggestionDto(connectionId,
+          serverProjectScoreEntry.getKey().key(), serverProjectScoreEntry.getKey().name(), false, BindingSuggestionOrigin.UNKNOWN));
       }
       LOG.debug("Best score = {}", String.format(Locale.ENGLISH, "%,.2f", bestScore));
     }

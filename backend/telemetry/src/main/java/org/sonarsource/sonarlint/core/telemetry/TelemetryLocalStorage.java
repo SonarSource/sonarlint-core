@@ -92,6 +92,7 @@ public class TelemetryLocalStorage {
   private int issueInvestigatedLocallyCount;
   private int dependencyRiskInvestigatedRemotelyCount;
   private int dependencyRiskInvestigatedLocallyCount;
+  private int remoteUrlBindingSuggestionAcceptedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -262,6 +263,7 @@ public class TelemetryLocalStorage {
     calledToolsByName.clear();
     dependencyRiskInvestigatedLocallyCount = 0;
     dependencyRiskInvestigatedRemotelyCount = 0;
+    remoteUrlBindingSuggestionAcceptedCount = 0;
   }
 
   public long numUseDays() {
@@ -618,6 +620,11 @@ public class TelemetryLocalStorage {
     dependencyRiskInvestigatedLocallyCount++;
   }
 
+  public void incrementRemoteUrlBindingSuggestionAcceptedCount() {
+    markSonarLintAsUsedToday();
+    remoteUrlBindingSuggestionAcceptedCount++;
+  }
+
   public int getHotspotInvestigatedRemotelyCount() {
     return hotspotInvestigatedRemotelyCount;
   }
@@ -640,6 +647,10 @@ public class TelemetryLocalStorage {
 
   public int getDependencyRiskInvestigatedRemotelyCount() {
     return dependencyRiskInvestigatedRemotelyCount;
+  }
+
+  public int getRemoteUrlBindingSuggestionAcceptedCount() {
+    return remoteUrlBindingSuggestionAcceptedCount;
   }
 
   public int getDependencyRiskInvestigatedLocallyCount() {

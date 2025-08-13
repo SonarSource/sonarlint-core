@@ -73,6 +73,9 @@ public interface TelemetryRpcService {
   @JsonNotification
   void taintVulnerabilitiesInvestigatedRemotely();
 
+  @JsonNotification
+  void remoteUrlBindingSuggestionAccepted();
+
   /**
    * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
    * it is still used by VS because of the C# analysis handled on the client side

@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
@@ -125,8 +126,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false, BindingSuggestionOrigin.UNKNOWN));
   }
 
   @SonarLintTest
@@ -157,8 +158,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false, BindingSuggestionOrigin.UNKNOWN));
   }
 
   @SonarLintTest
@@ -195,8 +196,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false, BindingSuggestionOrigin.UNKNOWN));
   }
 
   @SonarLintTest
@@ -244,8 +245,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getAllValues().get(0);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false, BindingSuggestionOrigin.UNKNOWN));
   }
 
   @SonarLintTest
@@ -277,8 +278,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = bindingParamsCompletableFuture.get().getSuggestions();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false, BindingSuggestionOrigin.UNKNOWN));
   }
 
   @SonarLintTest
@@ -327,8 +328,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getAllValues().get(0);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, true));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration, BindingSuggestionDto::getOrigin)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, true, BindingSuggestionOrigin.SHARED_CONFIGURATION));
   }
 
   @SonarLintTest

@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -424,7 +425,7 @@ class BindingSuggestionProviderTests {
       gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
 
       when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SC_1_ID), any()))
-        .thenReturn(Optional.of(new BindingSuggestionDto(SC_1_ID, PROJECT_KEY_1, "Project 1", false)));
+        .thenReturn(Optional.of(new BindingSuggestionDto(SC_1_ID, PROJECT_KEY_1, "Project 1", false, BindingSuggestionOrigin.REMOTE_URL)));
 
       var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SC_1_ID, cancelMonitor);
 
@@ -456,7 +457,7 @@ class BindingSuggestionProviderTests {
       gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
 
       when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
-        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false)));
+        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false, BindingSuggestionOrigin.REMOTE_URL)));
 
       var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
 

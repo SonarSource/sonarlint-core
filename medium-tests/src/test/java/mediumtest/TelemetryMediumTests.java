@@ -261,6 +261,19 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
+  void it_should_accumulate_remote_url_binding_suggestion_accepted(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().remoteUrlBindingSuggestionAccepted();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getRemoteUrlBindingSuggestionAcceptedCount()).isEqualTo(1));
+
+    backend.getTelemetryService().remoteUrlBindingSuggestionAccepted();
+    backend.getTelemetryService().remoteUrlBindingSuggestionAccepted();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getRemoteUrlBindingSuggestionAcceptedCount()).isEqualTo(3));
+  }
+
+  @SonarLintTest
   void it_should_enable_disabled_telemetry(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 

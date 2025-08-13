@@ -24,13 +24,16 @@ public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
+  @Deprecated(forRemoval = true)
   private final boolean isFromSharedConfiguration;
+  private final BindingSuggestionOrigin origin;
 
-  public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName, boolean isFromSharedConfiguration) {
+  public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName, boolean isFromSharedConfiguration, BindingSuggestionOrigin origin) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.sonarProjectName = sonarProjectName;
     this.isFromSharedConfiguration = isFromSharedConfiguration;
+    this.origin = origin;
   }
 
   public String getConnectionId() {
@@ -47,5 +50,9 @@ public class BindingSuggestionDto {
 
   public boolean isFromSharedConfiguration() {
     return isFromSharedConfiguration;
+  }
+
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
   }
 }
