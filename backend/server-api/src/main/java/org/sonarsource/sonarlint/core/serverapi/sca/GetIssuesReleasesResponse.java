@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.serverapi.sca;
 
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 public record GetIssuesReleasesResponse(List<IssuesRelease> issuesReleases, Page page) {
-  public record IssuesRelease(UUID key, Type type, Severity severity, SoftwareQuality quality, Status status, Release release, List<Transition> transitions) {
+  public record IssuesRelease(UUID key, Type type, Severity severity, SoftwareQuality quality, Status status, Release release,
+                              @Nullable String vulnerabilityId, @Nullable String cvssScore, List<Transition> transitions) {
     public record Release(String packageName, String version) {
     }
 

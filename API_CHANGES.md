@@ -5,6 +5,12 @@
 * Add `TEXT` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
   * Enabling this language allows detecting [text issues](https://rules.sonarsource.com/text/)
 
+## SCA
+
+* Introduce new fields `vulnerabilityId` and `cvssScore` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto`
+  * The `vulnerabilityId` is a unique identifier for the vulnerability such as `CVE-1234`, and the `cvssScore` is the Common Vulnerability Scoring System score for the vulnerability
+  * They are null in case the dependency risk is of type `PROHIBITED_LICENSE`
+
 # 10.27
 
 ## Breaking changes

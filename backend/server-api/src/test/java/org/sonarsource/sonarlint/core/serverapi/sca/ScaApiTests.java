@@ -76,6 +76,8 @@ class ScaApiTests {
             "type": "VULNERABILITY",
             "severity": "HIGH",
             "quality": "MAINTAINABILITY",
+            "vulnerabilityId": "CVE-2023-12345",
+            "cvssScore": "7.5",
             "release": {
               "packageName": "com.example.vulnerable",
               "version": "1.0.0"
@@ -100,6 +102,8 @@ class ScaApiTests {
     assertThat(issueRelease.type()).isEqualTo(IssuesRelease.Type.VULNERABILITY);
     assertThat(issueRelease.severity()).isEqualTo(IssuesRelease.Severity.HIGH);
     assertThat(issueRelease.quality()).isEqualTo(IssuesRelease.SoftwareQuality.MAINTAINABILITY);
+    assertThat(issueRelease.vulnerabilityId()).isEqualTo("CVE-2023-12345");
+    assertThat(issueRelease.cvssScore()).isEqualTo("7.5");
     assertThat(issueRelease.release().packageName()).isEqualTo("com.example.vulnerable");
     assertThat(issueRelease.release().version()).isEqualTo("1.0.0");
     assertThat(issueRelease.transitions()).containsExactly(
@@ -118,6 +122,8 @@ class ScaApiTests {
             "type": "PROHIBITED_LICENSE",
             "severity": "BLOCKER",
             "quality": "SECURITY",
+            "vulnerabilityId": null,
+            "cvssScore": null,
             "release": {
               "packageName": "com.example.prohibited",
               "version": "2.1.0"
@@ -142,6 +148,8 @@ class ScaApiTests {
     assertThat(issueRelease.type()).isEqualTo(IssuesRelease.Type.PROHIBITED_LICENSE);
     assertThat(issueRelease.severity()).isEqualTo(IssuesRelease.Severity.BLOCKER);
     assertThat(issueRelease.quality()).isEqualTo(IssuesRelease.SoftwareQuality.SECURITY);
+    assertThat(issueRelease.vulnerabilityId()).isNull();
+    assertThat(issueRelease.cvssScore()).isNull();
     assertThat(issueRelease.release().packageName()).isEqualTo("com.example.prohibited");
     assertThat(issueRelease.release().version()).isEqualTo("2.1.0");
     assertThat(issueRelease.transitions()).containsExactly(
@@ -161,6 +169,8 @@ class ScaApiTests {
             "type": "VULNERABILITY",
             "severity": "MEDIUM",
             "quality": "RELIABILITY",
+            "vulnerabilityId": "CVE-2023-12345",
+            "cvssScore": "7.5",
             "release": {
               "packageName": "com.example.first",
               "version": "1.0.0"
@@ -172,6 +182,8 @@ class ScaApiTests {
             "type": "PROHIBITED_LICENSE",
             "severity": "LOW",
             "quality": "MAINTAINABILITY",
+            "vulnerabilityId": null,
+            "cvssScore": null,
             "release": {
               "packageName": "com.example.second",
               "version": "2.0.0"
@@ -197,6 +209,8 @@ class ScaApiTests {
     assertThat(firstIssue.type()).isEqualTo(IssuesRelease.Type.VULNERABILITY);
     assertThat(firstIssue.severity()).isEqualTo(IssuesRelease.Severity.MEDIUM);
     assertThat(firstIssue.quality()).isEqualTo(IssuesRelease.SoftwareQuality.RELIABILITY);
+    assertThat(firstIssue.vulnerabilityId()).isEqualTo("CVE-2023-12345");
+    assertThat(firstIssue.cvssScore()).isEqualTo("7.5");
     assertThat(firstIssue.release().packageName()).isEqualTo("com.example.first");
     assertThat(firstIssue.release().version()).isEqualTo("1.0.0");
     assertThat(firstIssue.transitions()).containsExactly(IssuesRelease.Transition.CONFIRM);
@@ -206,6 +220,8 @@ class ScaApiTests {
     assertThat(secondIssue.type()).isEqualTo(IssuesRelease.Type.PROHIBITED_LICENSE);
     assertThat(secondIssue.severity()).isEqualTo(IssuesRelease.Severity.LOW);
     assertThat(secondIssue.quality()).isEqualTo(IssuesRelease.SoftwareQuality.MAINTAINABILITY);
+    assertThat(secondIssue.vulnerabilityId()).isNull();
+    assertThat(secondIssue.cvssScore()).isNull();
     assertThat(secondIssue.release().packageName()).isEqualTo("com.example.second");
     assertThat(secondIssue.release().version()).isEqualTo("2.0.0");
     assertThat(secondIssue.transitions()).containsExactly(

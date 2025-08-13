@@ -67,6 +67,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.REOPEN
@@ -112,6 +114,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.SAFE,
@@ -159,6 +163,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.REOPEN));
@@ -198,6 +204,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.REOPEN));
 
@@ -259,6 +267,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.MAINTAINABILITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM
         // ACCEPT is not in the allowed transitions
@@ -294,6 +304,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.RELIABILITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -328,6 +340,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.SAFE
       ));
@@ -362,6 +376,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -406,6 +422,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.SAFE
       ));
@@ -450,6 +468,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM
       ));
@@ -486,6 +506,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable1")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.REOPEN
@@ -562,6 +584,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -596,6 +620,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -630,6 +656,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.critical")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.ACCEPT
@@ -679,6 +707,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -725,6 +755,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -774,6 +806,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of(
         ServerDependencyRisk.Transition.ACCEPT
       ));
@@ -818,6 +852,8 @@ class DependencyRiskStatusChangeMediumTests {
       .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
       .withPackageName("com.example.vulnerable")
       .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
       .withTransitions(List.of()); // No transitions available
 
     var server = harness.newFakeSonarQubeServer()

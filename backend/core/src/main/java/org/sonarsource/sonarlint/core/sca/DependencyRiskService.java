@@ -122,6 +122,8 @@ public class DependencyRiskService {
       DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
       serverDependencyRisk.packageName(),
       serverDependencyRisk.packageVersion(),
+      serverDependencyRisk.vulnerabilityId(),
+      serverDependencyRisk.cvssScore(),
       serverDependencyRisk.transitions().stream()
         .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
         .toList());

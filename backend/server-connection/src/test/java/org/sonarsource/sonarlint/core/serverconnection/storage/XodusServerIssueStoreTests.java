@@ -899,6 +899,8 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.packageName()).isEqualTo("com.example.vulnerable");
     assertThat(savedIssue.status()).isEqualTo(ServerDependencyRisk.Status.OPEN);
     assertThat(savedIssue.packageVersion()).isEqualTo("1.0.0");
+    assertThat(savedIssue.vulnerabilityId()).isEqualTo("CVE-1234");
+    assertThat(savedIssue.cvssScore()).isEqualTo("7.5");
     assertThat(savedIssue.transitions()).containsExactly(
       ServerDependencyRisk.Transition.CONFIRM,
       ServerDependencyRisk.Transition.REOPEN);
@@ -921,6 +923,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
+      "CVE-1234",
+      "7.5",
       List.of(ServerDependencyRisk.Transition.CONFIRM));
     var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
@@ -930,6 +934,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
+      null,
+      null,
       List.of(ServerDependencyRisk.Transition.ACCEPT));
 
     store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk1, dependencyRisk2));
@@ -951,6 +957,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
+      "CVE-1234",
+      "7.5",
       List.of());
     var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
@@ -960,6 +968,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.SAFE,
       "com.example.prohibited",
       "2.0.0",
+      null,
+      null,
       List.of(ServerDependencyRisk.Transition.SAFE));
 
     store.replaceAllDependencyRisksOfBranch("branch1", List.of(dependencyRisk1));
@@ -984,6 +994,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
+      "CVE-1234",
+      "7.5",
       List.of());
     var dependencyRisk2 = new ServerDependencyRisk(
       UUID.randomUUID(),
@@ -993,6 +1005,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.ACCEPT,
       "com.example.prohibited",
       "2.0.0",
+      null,
+      null,
       List.of());
 
     // First store some issues
@@ -1016,6 +1030,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.OPEN,
       "com.example.vulnerable",
       "1.0.0",
+      "CVE-1234",
+      "7.5",
       List.of());
     var licenseIssue = new ServerDependencyRisk(
       UUID.randomUUID(),
@@ -1025,6 +1041,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.prohibited",
       "2.0.0",
+      null,
+      null,
       List.of());
 
     store.replaceAllDependencyRisksOfBranch("branch", List.of(vulnerabilityIssue, licenseIssue));
@@ -1048,6 +1066,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.OPEN,
       "com.example.minimal",
       "0.1.0",
+      "CVE-1234",
+      "7.5",
       List.of());
 
     store.replaceAllDependencyRisksOfBranch("branch", List.of(dependencyRisk));
@@ -1067,6 +1087,8 @@ class XodusServerIssueStoreTests {
       ServerDependencyRisk.Status.CONFIRM,
       "com.example.transitions",
       "1.5.0",
+      "CVE-1234",
+      "7.5",
       List.of(
         ServerDependencyRisk.Transition.CONFIRM,
         ServerDependencyRisk.Transition.REOPEN,

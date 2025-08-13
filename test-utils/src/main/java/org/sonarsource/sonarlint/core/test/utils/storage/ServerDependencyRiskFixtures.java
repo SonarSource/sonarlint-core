@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 
 public class ServerDependencyRiskFixtures {
@@ -41,6 +42,10 @@ public class ServerDependencyRiskFixtures {
     private ServerDependencyRisk.Status status = ServerDependencyRisk.Status.OPEN;
     private String packageName = "com.example.vulnerable";
     private String packageVersion = "1.0.0";
+    @Nullable
+    private String vulnerabilityId = null;
+    @Nullable
+    private String cvssScore = null;
     private List<ServerDependencyRisk.Transition> transitions = List.of(ServerDependencyRisk.Transition.CONFIRM, ServerDependencyRisk.Transition.ACCEPT);
 
     public ServerDependencyRiskBuilder withKey(UUID key) {
@@ -78,13 +83,24 @@ public class ServerDependencyRiskFixtures {
       return this;
     }
 
+    public ServerDependencyRiskBuilder withVulnerabilityId(String vulnerabilityId) {
+      this.vulnerabilityId = vulnerabilityId;
+      return this;
+    }
+
+    public ServerDependencyRiskBuilder withCvssScore(String cvssScore) {
+      this.cvssScore = cvssScore;
+      return this;
+    }
+
     public ServerDependencyRiskBuilder withTransitions(List<ServerDependencyRisk.Transition> transitions) {
       this.transitions = transitions;
       return this;
     }
 
     public ServerDependencyRisk build() {
-      return new ServerDependencyRisk(key, type, severity, quality, status, packageName, packageVersion, transitions);
+      return new ServerDependencyRisk(key, type, severity, quality, status, packageName, packageVersion,
+        vulnerabilityId, cvssScore, transitions);
     }
   }
 }

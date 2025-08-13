@@ -405,6 +405,10 @@ public class ServerFixture {
         String status,
         String packageName,
         String packageVersion,
+        @Nullable
+        String vulnerabilityId,
+        @Nullable
+        String cvssScore,
         List<String> transitions) {
       }
 
@@ -1598,10 +1602,12 @@ public class ServerFixture {
                 "packageName": "%s",
                 "version": "%s"
               },
+              "vulnerabilityId": "%s",
+              "cvssScore": "%s",
               "transitions": [%s]
             }
             """, issue.id(), issue.type(), issue.severity(), issue.quality(), issue.status(), issue.packageName(), issue.packageVersion()
-            , String.join(", ", issue.transitions())))
+            , issue.vulnerabilityId(), issue.cvssScore(), String.join(", ", issue.transitions())))
           .collect(Collectors.joining(","));
 
         var responseJson = String.format("""
