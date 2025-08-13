@@ -23,7 +23,7 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-public record GetIssueReleaseResponse(UUID key, Severity severity, SoftwareQuality quality, Release release, Type type, Vulnerability vulnerability) {
+public record GetIssueReleaseResponse(UUID key, Severity severity, SoftwareQuality quality, Release release, Type type, @Nullable Vulnerability vulnerability) {
   public enum Severity {
     INFO, LOW, MEDIUM, HIGH, BLOCKER
   }

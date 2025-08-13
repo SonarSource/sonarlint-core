@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -202,33 +203,40 @@ public class DependencyRiskService {
   }
 
   private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
-    var affectedPackages = serverResponse.vulnerability().affectedPackages().stream()
-      .map(pkg -> {
-        var recommendationDetails = pkg.recommendationDetails();
-        RecommendationDetailsDto recommendationDetailsDto = null;
-        if (recommendationDetails != null) {
-          recommendationDetailsDto = RecommendationDetailsDto.builder()
-            .impactScore(recommendationDetails.impactScore())
-            .impactDescription(recommendationDetails.impactDescription())
-            .realIssue(recommendationDetails.realIssue())
-            .falsePositiveReason(recommendationDetails.falsePositiveReason())
-            .includesDev(recommendationDetails.includesDev())
-            .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
-            .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
-            .otherConditions(recommendationDetails.otherConditions())
-            .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
-            .workaroundAvailable(recommendationDetails.workaroundAvailable())
-            .workaroundDescription(recommendationDetails.workaroundDescription())
-            .visibility(recommendationDetails.visibility()).build();
-        }
-        return new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto);
-      })
-      .toList();
+    var affectedPackages = new ArrayList<AffectedPackageDto>();
+    String vulnerabilityId = null;
+    String description = null;
+    if (serverResponse.vulnerability() != null) {
+      serverResponse.vulnerability().affectedPackages()
+        .forEach(pkg -> {
+          var recommendationDetails = pkg.recommendationDetails();
+          RecommendationDetailsDto recommendationDetailsDto = null;
+          if (recommendationDetails != null) {
+            recommendationDetailsDto = RecommendationDetailsDto.builder()
+              .impactScore(recommendationDetails.impactScore())
+              .impactDescription(recommendationDetails.impactDescription())
+              .realIssue(recommendationDetails.realIssue())
+              .falsePositiveReason(recommendationDetails.falsePositiveReason())
+              .includesDev(recommendationDetails.includesDev())
+              .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
+              .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
+              .otherConditions(recommendationDetails.otherConditions())
+              .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
+              .workaroundAvailable(recommendationDetails.workaroundAvailable())
+              .workaroundDescription(recommendationDetails.workaroundDescription())
+              .visibility(recommendationDetails.visibility()).build();
+          }
+          affectedPackages.add(new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto));
+        });
+
+      vulnerabilityId = serverResponse.vulnerability().vulnerabilityId();
+      description = serverResponse.vulnerability().description();
+    }
 
     return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
       DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
-      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
-      serverResponse.vulnerability().description(), affectedPackages);
+      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), vulnerabilityId,
+      description, affectedPackages);
   }
 
   public void openDependencyRiskInBrowser(String configurationScopeId, UUID dependencyKey) {

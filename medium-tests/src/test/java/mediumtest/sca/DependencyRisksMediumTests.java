@@ -497,6 +497,7 @@ class DependencyRisksMediumTests {
     var response = getDependencyRiskDetails(backend, CONFIG_SCOPE_ID, dependencyRiskKey);
 
     assertThat(response).isNotNull();
+    assertThat(response.getDescription()).isNotNull();
     assertThat(response.getDescription()).isEqualTo("Deserialization of untrusted data vulnerability in Apache Commons Collections.");
     assertThat(response.getAffectedPackages())
       .hasSize(2)
@@ -768,6 +769,45 @@ class DependencyRisksMediumTests {
     assertThat(response).isNotNull();
     assertThat(response.getDescription()).isEqualTo("Risk with no affected packages.");
     assertThat(response.getAffectedPackages()).isEmpty();
+  }
+
+  @SonarLintTest
+  void it_should_handle_dependency_risk_details_for_prohibited_license(SonarLintTestHarness harness) {
+    var dependencyRiskKey = UUID.randomUUID();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(PROJECT_KEY, project -> project.withBranch("main"))
+      .start();
+
+    server.getMockServer().stubFor(
+      get(urlEqualTo("/api/v2/sca/issues-releases/" + dependencyRiskKey))
+        .willReturn(aResponse()
+          .withStatus(200)
+          .withHeader("Content-Type", "application/json")
+          .withBody("""
+            {
+              "key": "589a534f-53e0-4eca-9987-b91bb42146d6",
+              "severity": "BLOCKER",
+              "quality": "SECURITY",
+              "release": {
+                "packageName": "org.apache.tomcat.embed:tomcat-embed-core",
+                "version": "9.0.70"
+              },
+              "type": "PROHIBITED_LICENSE",
+              "vulnerability": null
+            }
+            """)));
+
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var response = getDependencyRiskDetails(backend, CONFIG_SCOPE_ID, dependencyRiskKey);
+
+    assertThat(response).isNotNull();
+    assertThat(response.getType()).isEqualTo(DependencyRiskDto.Type.PROHIBITED_LICENSE);
+    assertThat(response.getDescription()).isNull();
+    assertThat(response.getVulnerabilityId()).isNull();
   }
 
   private List<DependencyRiskDto> listAllDependencyRisks(SonarLintTestRpcServer backend, String configScopeId) {
