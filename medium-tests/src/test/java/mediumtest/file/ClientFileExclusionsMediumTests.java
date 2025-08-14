@@ -46,7 +46,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static utils.AnalysisUtils.getPublishedIssues;
 
@@ -69,7 +68,8 @@ class ClientFileExclusionsMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
     await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+      .untilAsserted(() -> verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @SonarLintTest
@@ -110,7 +110,8 @@ class ClientFileExclusionsMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
     await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+      .untilAsserted(() -> verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @SonarLintTest
@@ -223,7 +224,8 @@ class ClientFileExclusionsMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
     await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+      .untilAsserted(() -> verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @SonarLintTest
