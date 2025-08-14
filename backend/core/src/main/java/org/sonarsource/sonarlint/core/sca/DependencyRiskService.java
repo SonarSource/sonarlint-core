@@ -203,35 +203,30 @@ public class DependencyRiskService {
   }
 
   private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
-    var affectedPackages = new ArrayList<AffectedPackageDto>();
-    String vulnerabilityId = null;
-    String description = null;
-    if (serverResponse.vulnerability() != null) {
-      serverResponse.vulnerability().affectedPackages()
-        .forEach(pkg -> {
-          var recommendationDetails = pkg.recommendationDetails();
-          RecommendationDetailsDto recommendationDetailsDto = null;
-          if (recommendationDetails != null) {
-            recommendationDetailsDto = RecommendationDetailsDto.builder()
-              .impactScore(recommendationDetails.impactScore())
-              .impactDescription(recommendationDetails.impactDescription())
-              .realIssue(recommendationDetails.realIssue())
-              .falsePositiveReason(recommendationDetails.falsePositiveReason())
-              .includesDev(recommendationDetails.includesDev())
-              .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
-              .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
-              .otherConditions(recommendationDetails.otherConditions())
-              .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
-              .workaroundAvailable(recommendationDetails.workaroundAvailable())
-              .workaroundDescription(recommendationDetails.workaroundDescription())
-              .visibility(recommendationDetails.visibility()).build();
-          }
-          affectedPackages.add(new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto));
-        });
-
-      vulnerabilityId = serverResponse.vulnerability().vulnerabilityId();
-      description = serverResponse.vulnerability().description();
-    }
+    var vulnerability = serverResponse.vulnerability();
+    var affectedPackages = vulnerability == null ? List.<AffectedPackageDto>of() : vulnerability.affectedPackages()
+      .stream().map(pkg -> {
+        var recommendationDetails = pkg.recommendationDetails();
+        RecommendationDetailsDto recommendationDetailsDto = null;
+        if (recommendationDetails != null) {
+          recommendationDetailsDto = RecommendationDetailsDto.builder()
+            .impactScore(recommendationDetails.impactScore())
+            .impactDescription(recommendationDetails.impactDescription())
+            .realIssue(recommendationDetails.realIssue())
+            .falsePositiveReason(recommendationDetails.falsePositiveReason())
+            .includesDev(recommendationDetails.includesDev())
+            .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
+            .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
+            .otherConditions(recommendationDetails.otherConditions())
+            .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
+            .workaroundAvailable(recommendationDetails.workaroundAvailable())
+            .workaroundDescription(recommendationDetails.workaroundDescription())
+            .visibility(recommendationDetails.visibility()).build();
+        }
+        return new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto);
+      }).toList();
+    var vulnerabilityId = vulnerability == null ? null : vulnerability.vulnerabilityId();
+    var description = vulnerability == null ? null : vulnerability.description();
 
     return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
       DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
