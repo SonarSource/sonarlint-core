@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
