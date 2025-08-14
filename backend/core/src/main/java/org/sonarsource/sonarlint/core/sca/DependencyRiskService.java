@@ -202,8 +202,9 @@ public class DependencyRiskService {
   }
 
   private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
-    var affectedPackages = serverResponse.vulnerability().affectedPackages().stream()
-      .map(pkg -> {
+    var vulnerability = serverResponse.vulnerability();
+    var affectedPackages = vulnerability == null ? List.<AffectedPackageDto>of() : vulnerability.affectedPackages()
+      .stream().map(pkg -> {
         var recommendationDetails = pkg.recommendationDetails();
         RecommendationDetailsDto recommendationDetailsDto = null;
         if (recommendationDetails != null) {
@@ -222,13 +223,14 @@ public class DependencyRiskService {
             .visibility(recommendationDetails.visibility()).build();
         }
         return new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto);
-      })
-      .toList();
+      }).toList();
+    var vulnerabilityId = vulnerability == null ? null : vulnerability.vulnerabilityId();
+    var description = vulnerability == null ? null : vulnerability.description();
 
     return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
       DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
-      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), serverResponse.vulnerability().vulnerabilityId(),
-      serverResponse.vulnerability().description(), affectedPackages);
+      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), vulnerabilityId,
+      description, affectedPackages);
   }
 
   public void openDependencyRiskInBrowser(String configurationScopeId, UUID dependencyKey) {

@@ -1,5 +1,10 @@
 # 10.28
 
+## Breaking changes
+
+* Fields `vulnerabilityId` and `description` from `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse` are now nullable.
+  * Dependency risks of type `PROHIBITED_LICENSE` do not have a vulnerability ID or description.
+
 ## New features
 
 * Add `TEXT` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
