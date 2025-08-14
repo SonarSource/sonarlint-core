@@ -63,4 +63,18 @@ public interface DependencyRiskRpcService {
 
   @JsonRequest
   CompletableFuture<Void> openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params);
+
+  /**
+   * Checks if the Dependency Risk feature is supported for the given configuration scope.
+   * Reasons for not being supported include:
+   * <ul>
+   *   <li></li>
+   *   <li>Not using version 2025.4 or higher</li>
+   *   <li>Not using edition Enterprise or higher</li>
+   *   <li>Not using Advanced Security (SCA not enabled)</li>
+   * </ul>
+   */
+  @JsonRequest
+  CompletableFuture<CheckDependencyRiskSupportedResponse> checkSupported(CheckDependencyRiskSupportedParams params);
+
 }
