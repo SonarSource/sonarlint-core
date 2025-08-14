@@ -144,14 +144,14 @@ public class AnalyzeCommand extends Command {
   }
 
   void doExecute(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration analysisConfig) {
-    if (analysisConfig.inputFiles().isEmpty()) {
-      LOG.info("No file to analyze");
-      futureResult.complete(new AnalysisResults());
-      return;
-    }
     try {
       LOG.info("Starting analysis with configuration: {}", analysisConfig);
       var analysisResults = doRunAnalysis(moduleRegistry, progressIndicator, analysisConfig);
+      if (analysisConfig.inputFiles().isEmpty()) {
+        LOG.info("No file to analyze");
+        futureResult.complete(new AnalysisResults());
+        return;
+      }
       futureResult.complete(analysisResults);
     } catch (CompletionException e) {
       handleAnalysisFailed(e.getCause());

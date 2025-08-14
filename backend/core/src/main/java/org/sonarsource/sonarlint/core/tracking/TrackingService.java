@@ -139,13 +139,11 @@ public class TrackingService {
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
     var analysisId = event.getAnalysisId();
     var matchingSession = matchingSessionByAnalysisId.remove(analysisId);
-    var configurationScopeId = event.getConfigurationScopeId();
     if (matchingSession == null) {
-      // Analysis finished without being started (e.g., no analyzable files). Notify client with empty results.
-      reportingService.reportTrackedFindings(configurationScopeId, analysisId, Map.of(), Map.of());
-      eventPublisher.publishEvent(new MatchingSessionEndedEvent(0, 0));
+      // a not-started analysis finished, this normally shouldn't happen
       return;
     }
+    var configurationScopeId = event.getConfigurationScopeId();
     if (event.shouldFetchServerIssues()) {
       findingsSynchronizationService.refreshServerFindings(configurationScopeId, matchingSession.getRelativePathsInvolved());
     }
