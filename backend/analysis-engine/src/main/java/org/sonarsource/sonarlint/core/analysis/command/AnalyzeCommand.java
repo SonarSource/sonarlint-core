@@ -147,11 +147,6 @@ public class AnalyzeCommand extends Command {
     try {
       LOG.info("Starting analysis with configuration: {}", analysisConfig);
       var analysisResults = doRunAnalysis(moduleRegistry, progressIndicator, analysisConfig);
-      if (analysisConfig.inputFiles().isEmpty()) {
-        LOG.info("No file to analyze");
-        futureResult.complete(new AnalysisResults());
-        return;
-      }
       futureResult.complete(analysisResults);
     } catch (CompletionException e) {
       handleAnalysisFailed(e.getCause());
@@ -168,6 +163,11 @@ public class AnalyzeCommand extends Command {
   private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration configuration) {
     var startTime = System.currentTimeMillis();
     analysisStarted.accept(configuration.inputFiles());
+    if (configuration.inputFiles().isEmpty()) {
+      LOG.info("No file to analyze");
+      futureResult.complete(new AnalysisResults());
+      return new AnalysisResults();
+    }
     var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     if (moduleContainer == null) {
       moduleContainer = startChild(trace, "createTransientContainer", null,
