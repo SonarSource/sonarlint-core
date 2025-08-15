@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -61,6 +62,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.PROJECT_NAME;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.REMOTE_URL;
 
 class BindingSuggestionProviderTests {
   @RegisterExtension
@@ -201,7 +204,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
-      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, false), Set.of(SQ_1_ID))));
+      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.of(SERVER_PROJECT_1));
 
@@ -234,7 +237,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
-      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, false), Set.of(SQ_1_ID))));
+      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
@@ -272,7 +275,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
-      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, false), Set.of(SQ_1_ID))));
+      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
@@ -308,7 +311,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
     when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), cancelMonitor))
       .thenReturn(List.of(
-        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null, false), Set.of(SQ_1_ID))));
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null, PROJECT_NAME), Set.of(SQ_1_ID))));
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
     when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID, cancelMonitor)).thenReturn(searchIndex);
@@ -334,7 +337,7 @@ class BindingSuggestionProviderTests {
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(
-        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, false), Set.of(SQ_1_ID, SC_1_ID))));
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID, SC_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
@@ -370,8 +373,8 @@ class BindingSuggestionProviderTests {
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(
-        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, false), Set.of(SQ_1_ID, SC_1_ID)),
-        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarCloudBindingClue(null, null,  null,false), Set.of(SC_1_ID))));
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID, SC_1_ID)),
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarCloudBindingClue(null, null,  null, PROJECT_NAME), Set.of(SC_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
@@ -424,7 +427,7 @@ class BindingSuggestionProviderTests {
       gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
 
       when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SC_1_ID), any()))
-        .thenReturn(Optional.of(new BindingSuggestionDto(SC_1_ID, PROJECT_KEY_1, "Project 1", false)));
+        .thenReturn(Optional.of(new BindingSuggestionDto(SC_1_ID, PROJECT_KEY_1, "Project 1", false, REMOTE_URL)));
 
       var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SC_1_ID, cancelMonitor);
 
@@ -456,7 +459,7 @@ class BindingSuggestionProviderTests {
       gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
 
       when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
-        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false)));
+        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false, REMOTE_URL)));
 
       var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
 

@@ -147,7 +147,7 @@ class ConfigurationServiceTests {
     // Ignore add event
     Mockito.reset(eventPublisher);
 
-    underTest.didUpdateBinding("id1", BINDING_DTO_2);
+    underTest.didUpdateBinding("id1", BINDING_DTO_2, null, null);
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -170,7 +170,7 @@ class ConfigurationServiceTests {
   void update_binding_config_for_unknown_config_scope_should_log() {
     underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
 
-    underTest.didUpdateBinding("id2", BINDING_DTO_2);
+    underTest.didUpdateBinding("id2", BINDING_DTO_2, null, null);
 
     assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
   }
