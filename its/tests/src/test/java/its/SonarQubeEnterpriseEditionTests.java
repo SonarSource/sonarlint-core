@@ -74,6 +74,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
@@ -112,10 +113,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_MISRA = "sample-misra";
   private static final String PROJECT_KEY_SCA = "sample-sca";
   public static final String SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY = "sonar.earlyAccess.misra.enabled";
+  public static final String SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.enabled";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
-    .setServerProperty("sonar.sca.enabled", "true")
+    .setServerProperty(SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY, "true")
     .setServerProperty(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY, "true")
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
@@ -148,6 +150,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     // we have to set it again via API because the server property value is not returned by api/settings/values
+    adminWsClient.settings().set(new SetRequest().setKey(SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY).setValue("true"));
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY).setValue("true"));
 
     removeGroupPermission("anyone", "scan");
@@ -411,7 +414,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void should_return_risk_dependency_details() {
-      String configScopeId = "should_honor_the_web_api_contract";
+      var configScopeId = "should_honor_the_web_api_contract";
       provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
       analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
       bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
@@ -428,6 +431,18 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
           List.of(new AffectedPackageDto("pkg:maven/com.fasterxml.woodstox/woodstox-core", "upgrade",
             RecommendationDetailsDto.builder().impactDescription("Vulnerability occurs if attacker can provide specifically crafted XML document with DTD reference.")
               .impactScore(5).realIssue(true).visibility("external").build()))));
+    }
+
+    @Test
+    void sca_feature_should_be_enabled() {
+      var configScopeId = "should_honor_the_web_api_contract";
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
+      bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
+
+      var supportedResponse = backend.getDependencyRiskService().checkSupported(new CheckDependencyRiskSupportedParams(configScopeId)).join();
+
+      assertThat(supportedResponse.isSupported()).isTrue();
+      assertThat(supportedResponse.getReason()).isNull();
     }
 
     private UUID getFirstDependencyRiskKey(String projectKey) {

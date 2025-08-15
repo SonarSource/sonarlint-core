@@ -115,35 +115,30 @@ public class DependencyRiskService {
       return new CheckDependencyRiskSupportedResponse(false, "The project is not bound, please bind it to SonarQube Server Enterprise 2025.4 or higher");
     }
     var connectionId = effectiveBinding.get().connectionId();
-    if (connectionRepository.getConnectionById(connectionId) == null) {
+    var connection = connectionRepository.getConnectionById(connectionId);
+    if (connection == null) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
         connectionId);
       throw new ResponseErrorException(error);
     }
-    return sonarQubeClientManager.withActiveClientAndReturn(effectiveBinding.get().connectionId(), serverApi -> {
-      if (serverApi.isSonarCloud()) {
-        return new CheckDependencyRiskSupportedResponse(false, "SonarQube Cloud does not yet support dependency risks");
-      }
-      var optServerInfo = storageService.connection(connectionId).serverInfo().read();
-      if (optServerInfo.isEmpty()) {
-        var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Could not retrieve server information for connection",
-          connectionId);
-        throw new ResponseErrorException(error);
-      }
-      var serverInfo = optServerInfo.get();
-      if (!serverInfo.version().satisfiesMinRequirement(SCA_MIN_SQ_VERSION)) {
-        return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server version is lower than the minimum supported version 2025.4");
-      }
-      var scaEnabled = serverInfo.globalSettings().getAsBoolean(SCA_ENABLED).orElse(false);
-      if (Boolean.FALSE.equals(scaEnabled)) {
-        return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
-      }
-      return new CheckDependencyRiskSupportedResponse(true, null);
-    }).orElseThrow(() -> {
-      var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
+    if (connection.getEndpointParams().isSonarCloud()) {
+      return new CheckDependencyRiskSupportedResponse(false, "SonarQube Cloud does not yet support dependency risks");
+    }
+    var optServerInfo = storageService.connection(connectionId).serverInfo().read();
+    if (optServerInfo.isEmpty()) {
+      var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Could not retrieve server information for connection",
         connectionId);
-      return new ResponseErrorException(error);
-    });
+      throw new ResponseErrorException(error);
+    }
+    var serverInfo = optServerInfo.get();
+    if (!serverInfo.version().satisfiesMinRequirement(SCA_MIN_SQ_VERSION)) {
+      return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server version is lower than the minimum supported version 2025.4");
+    }
+    var scaEnabled = serverInfo.globalSettings().getAsBoolean(SCA_ENABLED).orElse(false);
+    if (Boolean.FALSE.equals(scaEnabled)) {
+      return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
+    }
+    return new CheckDependencyRiskSupportedResponse(true, null);
   }
 
   private List<DependencyRiskDto> loadDependencyRisks(String configurationScopeId, Binding binding, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {

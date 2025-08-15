@@ -65,10 +65,10 @@ public interface DependencyRiskRpcService {
   CompletableFuture<Void> openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params);
 
   /**
-   * Checks if the Dependency Risk feature is supported for the given configuration scope.
+   * Checks if the dependency risk feature is supported for the given configuration scope.
    * Reasons for not being supported include:
    * <ul>
-   *   <li></li>
+   *   <li>Invalid connection or binding</li>
    *   <li>Not using version 2025.4 or higher</li>
    *   <li>Not using edition Enterprise or higher</li>
    *   <li>Not using Advanced Security (SCA not enabled)</li>

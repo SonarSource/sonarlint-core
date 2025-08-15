@@ -89,8 +89,8 @@ public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate
 
   @Override
   public CompletableFuture<CheckDependencyRiskSupportedResponse> checkSupported(CheckDependencyRiskSupportedParams params) {
-    return requestAsync(cancelMonitor -> getBean(DependencyRiskService.class)
-      .checkSupported(params.getConfigurationScopeId()), params.getConfigurationScopeId());
+    return requestAsync(cancelMonitor ->
+      getBean(DependencyRiskService.class).checkSupported(params.getConfigurationScopeId()), params.getConfigurationScopeId());
   }
 
 }
