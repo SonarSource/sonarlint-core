@@ -437,6 +437,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     void sca_feature_should_be_enabled() {
       var configScopeId = "should_honor_the_web_api_contract";
       provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
+      analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
       bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
 
       var supportedResponse = backend.getDependencyRiskService().checkSupported(new CheckDependencyRiskSupportedParams(configScopeId)).join();
