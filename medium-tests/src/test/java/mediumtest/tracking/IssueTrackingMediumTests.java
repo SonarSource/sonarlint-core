@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -772,7 +773,7 @@ class IssueTrackingMediumTests {
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true)).join();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var requests = server.getMockServer().getServeEvents().getRequests();
@@ -884,17 +885,39 @@ class IssueTrackingMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
     backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true))
       .join();
 
     verify(client, timeout(300)).raiseIssues(eq(CONFIG_SCOPE_ID), eq(Map.of(fileUri, List.of())), eq(false), any());
     verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
   }
 
+  @SonarLintTest
+  void it_should_notify_client_when_analysis_finishes_without_starting(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Ignored.foo", "irrelevant");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/Ignored.foo"))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .start(client);
+
+    var analysisId = UUID.randomUUID();
+    backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true))
+      .join();
+
+    verify(client, timeout(300)).raiseIssues(CONFIG_SCOPE_ID, Map.of(), false, analysisId);
+    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
+  }
+
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true))
       .join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
@@ -906,7 +929,7 @@ class IssueTrackingMediumTests {
   private List<RaisedIssueDto> analyzeFileAndGetAllIssues(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true)).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
@@ -916,7 +939,7 @@ class IssueTrackingMediumTests {
   private RaisedIssueDto analyzeFileAndGetIssue(SonarLintTestRpcServer backend, SonarLintRpcClientDelegate client, URI fileUri) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true)).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
