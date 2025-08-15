@@ -281,4 +281,54 @@ class TelemetryLocalStorageTests {
     assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isZero();
     assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isZero();
   }
+
+  @Test
+  void should_increment_new_bindings_counters_per_origin() {
+    var data = new TelemetryLocalStorage();
+
+    assertThat(data.getNewBindingsManualCount()).isZero();
+    assertThat(data.getNewBindingsPropertiesFileCount()).isZero();
+    assertThat(data.getNewBindingsRemoteUrlCount()).isZero();
+    assertThat(data.getNewBindingsProjectNameCount()).isZero();
+    assertThat(data.getNewBindingsSharedConfigurationCount()).isZero();
+
+    data.incrementNewBindingsManualCount();
+    data.incrementNewBindingsPropertiesFileCount();
+    data.incrementNewBindingsRemoteUrlCount();
+    data.incrementNewBindingsProjectNameCount();
+    data.incrementNewBindingsSharedConfigurationCount();
+
+    assertThat(data.getNewBindingsManualCount()).isEqualTo(1);
+    assertThat(data.getNewBindingsPropertiesFileCount()).isEqualTo(1);
+    assertThat(data.getNewBindingsRemoteUrlCount()).isEqualTo(1);
+    assertThat(data.getNewBindingsProjectNameCount()).isEqualTo(1);
+    assertThat(data.getNewBindingsSharedConfigurationCount()).isEqualTo(1);
+  }
+
+  @Test
+  void should_reset_new_bindings_counters_on_clear_after_ping() {
+    var data = new TelemetryLocalStorage();
+    data.incrementNewBindingsManualCount();
+    data.incrementNewBindingsPropertiesFileCount();
+    data.incrementNewBindingsRemoteUrlCount();
+    data.incrementNewBindingsProjectNameCount();
+    data.incrementNewBindingsSharedConfigurationCount();
+
+    data.clearAfterPing();
+
+    assertThat(data.getNewBindingsManualCount()).isZero();
+    assertThat(data.getNewBindingsPropertiesFileCount()).isZero();
+    assertThat(data.getNewBindingsRemoteUrlCount()).isZero();
+    assertThat(data.getNewBindingsProjectNameCount()).isZero();
+    assertThat(data.getNewBindingsSharedConfigurationCount()).isZero();
+  }
+
+  @Test
+  void should_increment_suggested_remote_bindings_count() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getSuggestedRemoteBindingsCount()).isZero();
+    data.incrementSuggestedRemoteBindingsCount();
+    data.incrementSuggestedRemoteBindingsCount();
+    assertThat(data.getSuggestedRemoteBindingsCount()).isEqualTo(2);
+  }
 }

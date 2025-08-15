@@ -245,7 +245,7 @@ public class TelemetryService {
 
   public void addedNewBinding(BindingMode bindingMode, @Nullable BindingSuggestionOrigin bindingSuggestionOrigin) {
     if (bindingMode.equals(BindingMode.MANUAL)) {
-      updateTelemetry(TelemetryLocalStorage::incrementAutoAddedBindingsCount);
+      updateTelemetry(TelemetryLocalStorage::incrementNewBindingsManualCount);
     } else {
       if (bindingSuggestionOrigin == null) return;
 

@@ -471,6 +471,94 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
+  void should_set_origin_remote_url_on_remote_url_based_suggestion() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    Path baseDir = Path.of("repo");
+
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1))
+      .thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Some project"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of());
+
+    when(clientFs.getBaseDir(CONFIG_SCOPE_ID_1)).thenReturn(baseDir);
+
+    try (var gitServiceMock = mockStatic(GitService.class)) {
+      gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
+
+      when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
+        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false, REMOTE_URL)));
+
+      var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
+
+      var suggestions = result.get(CONFIG_SCOPE_ID_1);
+      assertThat(suggestions).hasSize(1);
+      assertThat(suggestions.get(0).getOrigin()).isEqualTo(REMOTE_URL);
+    }
+  }
+
+  @Test
+  void legacy_isFromSharedConfiguration_boolean_remains_false_for_remote_url() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    Path baseDir = Path.of("repo");
+
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1))
+      .thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Some project"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of());
+
+    when(clientFs.getBaseDir(CONFIG_SCOPE_ID_1)).thenReturn(baseDir);
+
+    try (var gitServiceMock = mockStatic(GitService.class)) {
+      gitServiceMock.when(() -> GitService.getRemoteUrl(baseDir)).thenReturn("git@github.com:myorg/myproj.git");
+
+      when(sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(eq(SQ_1_ID), any()))
+        .thenReturn(Optional.of(new BindingSuggestionDto(SQ_1_ID, PROJECT_KEY_1, "Project 1", false, REMOTE_URL)));
+
+      var result = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
+
+      var suggestions = result.get(CONFIG_SCOPE_ID_1);
+      assertThat(suggestions).hasSize(1);
+      assertThat(suggestions.get(0).isFromSharedConfiguration()).isFalse();
+    }
+  }
+
+  @Test
+  void should_set_origin_project_name_on_project_name_based_suggestion() {
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
+      .thenReturn(List.of(
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID))));
+
+    var searchIndex = new TextSearchIndex<ServerProject>();
+    searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
+    when(sonarProjectsCache.getTextSearchIndex(eq(SQ_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
+
+    var suggestionsMap = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, new SonarLintCancelMonitor());
+
+    var suggestions = suggestionsMap.get(CONFIG_SCOPE_ID_1);
+    assertThat(suggestions).isNotEmpty();
+    assertThat(suggestions)
+      .extracting(BindingSuggestionDto::getOrigin)
+      .containsOnly(PROJECT_NAME);
+  }
+
+  @Test
   void search_by_remote_url_should_do_nothing_when_no_remote_url() {
     var cancelMonitor = new SonarLintCancelMonitor();
     var baseDir = Path.of("repo");

@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -127,6 +128,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.PROJECT_NAME);
   }
 
   @SonarLintTest
@@ -159,6 +161,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.PROJECT_NAME);
   }
 
   @SonarLintTest
@@ -246,6 +249,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.PROPERTIES_FILE);
   }
 
   @SonarLintTest
@@ -329,6 +333,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, true));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
   @SonarLintTest
@@ -375,6 +380,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.REMOTE_URL);
   }
 
   @SonarLintTest
@@ -418,6 +424,7 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.REMOTE_URL);
   }
 
   @SonarLintTest
