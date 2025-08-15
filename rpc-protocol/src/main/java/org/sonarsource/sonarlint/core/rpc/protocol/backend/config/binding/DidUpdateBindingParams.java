@@ -19,15 +19,39 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
+import javax.annotation.Nullable;
+
 public class DidUpdateBindingParams {
 
   private final String configScopeId;
   private final BindingConfigurationDto updatedBinding;
+  @Nullable
+  private final BindingMode bindingMode;
+  @Nullable
+  private final BindingSuggestionOrigin origin;
 
+
+  public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding,BindingMode bindingMode, BindingSuggestionOrigin origin) {
+    this.configScopeId = configScopeId;
+    this.updatedBinding = updatedBinding;
+    this.bindingMode = bindingMode;
+    this.origin = origin;
+  }
 
   public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
+    this.bindingMode = null;
+    this.origin = null;
+  }
+
+
+  public BindingMode getBindingMode() {
+    return bindingMode;
+  }
+
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
   }
 
   public String getConfigScopeId() {

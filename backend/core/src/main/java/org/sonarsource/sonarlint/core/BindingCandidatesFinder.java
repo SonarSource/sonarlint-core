@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -76,7 +77,8 @@ public class BindingCandidatesFinder {
 
 
     if (!cluesWithMatchingProjectKey.isEmpty()) {
-      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(c -> c.getBindingClue().isFromSharedConfiguration());
+      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(
+        c -> c.getBindingClue().getBindingSuggestionOrigin() == BindingSuggestionOrigin.SHARED_CONFIGURATION);
       return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
     }
     var configScopeName = scope.name();

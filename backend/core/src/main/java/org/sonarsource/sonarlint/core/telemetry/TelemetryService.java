@@ -33,11 +33,14 @@ import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
@@ -240,6 +243,30 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementAutoAddedBindingsCount);
   }
 
+  public void addedNewBinding(BindingMode bindingMode, @Nullable BindingSuggestionOrigin bindingSuggestionOrigin) {
+    if (bindingMode.equals(BindingMode.MANUAL)) {
+      updateTelemetry(TelemetryLocalStorage::incrementNewBindingsManualCount);
+    } else {
+      if (bindingSuggestionOrigin == null) return;
+
+      if (bindingSuggestionOrigin.equals(BindingSuggestionOrigin.REMOTE_URL)) {
+        updateTelemetry(TelemetryLocalStorage::incrementNewBindingsRemoteUrlCount);
+      }
+
+      if (bindingSuggestionOrigin.equals(BindingSuggestionOrigin.PROJECT_NAME)) {
+        updateTelemetry(TelemetryLocalStorage::incrementNewBindingsProjectNameCount);
+      }
+
+      if (bindingSuggestionOrigin.equals(BindingSuggestionOrigin.SHARED_CONFIGURATION)) {
+        updateTelemetry(TelemetryLocalStorage::incrementNewBindingsSharedConfigurationCount);
+      }
+
+      if (bindingSuggestionOrigin.equals(BindingSuggestionOrigin.PROPERTIES_FILE)) {
+        updateTelemetry(TelemetryLocalStorage::incrementNewBindingsPropertiesFileCount);
+      }
+    }
+  }
+
   public void exportedConnectedMode() {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
@@ -291,6 +318,15 @@ public class TelemetryService {
       telemetryLocalStorage.addNewlyFoundIssues(event.newIssuesFound());
       telemetryLocalStorage.addFixedIssues(event.issuesFixed());
     });
+  }
+
+  @EventListener
+  public void onBind(BindingConfigChangedEvent event) {
+    var bindingMode = event.bindingMode();
+
+    if (bindingMode != null) {
+      addedNewBinding(bindingMode, event.origin());
+    }
   }
 
   @EventListener
