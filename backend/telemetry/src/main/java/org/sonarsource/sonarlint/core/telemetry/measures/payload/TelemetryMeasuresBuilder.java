@@ -122,7 +122,8 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("new_bindings.manual", String.valueOf(storage.getNewBindingsManualCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("new_bindings.accepted_suggestion_remote_url", String.valueOf(storage.getSuggestedRemoteBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("new_bindings.accepted_suggestion_properties_file", String.valueOf(storage.getNewBindingsPropertiesFileCount()), INTEGER, DAILY));
-      values.add(new TelemetryMeasuresValue("new_bindings.accepted_suggestion_shared_config_file", String.valueOf(storage.getNewBindingsSharedConfigurationCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("new_bindings.accepted_suggestion_shared_config_file",
+        String.valueOf(storage.getNewBindingsSharedConfigurationCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("new_bindings.accepted_suggestion_project_name", String.valueOf(storage.getNewBindingsProjectNameCount()), INTEGER, DAILY));
     }
   }

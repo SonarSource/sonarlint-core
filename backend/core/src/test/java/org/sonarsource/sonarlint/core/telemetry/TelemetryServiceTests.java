@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.EnumSet;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class TelemetryServiceTests {
 
