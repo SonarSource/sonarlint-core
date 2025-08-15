@@ -1,3 +1,20 @@
+# 10.29
+## New features
+* Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
+* Added `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` and allowed clients to provide this information when calling `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` which will trigger telemetry events for binding updates. Clients no longer need to call separate telemetry methods while adding bindings.
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#getOrigin` instead.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` constructor. Use the other one.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#getOrigin` instead.
+* Deprecate `isFromSharedConfiguration` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams` constructor. Use the other one.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor. Use the other one.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedImportedBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedAutomaticBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+
 # 10.28
 
 ## Breaking changes

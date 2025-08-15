@@ -78,6 +78,11 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private int newBindingsManualCount;
+  private int newBindingsPropertiesFileCount;
+  private int newBindingsRemoteUrlCount;
+  private int newBindingsProjectNameCount;
+  private int newBindingsSharedConfigurationCount;
   private int suggestedRemoteBindingsCount;
   private long newIssuesFoundCount;
   private long issuesFixedCount;
@@ -255,6 +260,11 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    newBindingsManualCount = 0;
+    newBindingsPropertiesFileCount = 0;
+    newBindingsRemoteUrlCount = 0;
+    newBindingsProjectNameCount = 0;
+    newBindingsSharedConfigurationCount = 0;
     suggestedRemoteBindingsCount = 0;
     newIssuesFoundCount = 0;
     issuesFixedCount = 0;
@@ -517,12 +527,57 @@ public class TelemetryLocalStorage {
     exportedConnectedModeCount++;
   }
 
+  public void incrementNewBindingsManualCount() {
+    markSonarLintAsUsedToday();
+    newBindingsManualCount++;
+  }
+
+  public void incrementNewBindingsPropertiesFileCount() {
+    markSonarLintAsUsedToday();
+    newBindingsPropertiesFileCount++;
+  }
+
+  public void incrementNewBindingsRemoteUrlCount() {
+    markSonarLintAsUsedToday();
+    newBindingsRemoteUrlCount++;
+  }
+
+  public void incrementNewBindingsProjectNameCount() {
+    markSonarLintAsUsedToday();
+    newBindingsProjectNameCount++;
+  }
+
+  public void incrementNewBindingsSharedConfigurationCount() {
+    markSonarLintAsUsedToday();
+    newBindingsSharedConfigurationCount++;
+  }
+
   public void incrementSuggestedRemoteBindingsCount() {
     suggestedRemoteBindingsCount++;
   }
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
+  }
+
+  public int getNewBindingsManualCount() {
+    return newBindingsManualCount;
+  }
+
+  public int getNewBindingsPropertiesFileCount() {
+    return newBindingsPropertiesFileCount;
+  }
+
+  public int getNewBindingsRemoteUrlCount() {
+    return newBindingsRemoteUrlCount;
+  }
+
+  public int getNewBindingsProjectNameCount() {
+    return newBindingsProjectNameCount;
+  }
+
+  public int getNewBindingsSharedConfigurationCount() {
+    return newBindingsSharedConfigurationCount;
   }
 
   public int getSuggestedRemoteBindingsCount() {

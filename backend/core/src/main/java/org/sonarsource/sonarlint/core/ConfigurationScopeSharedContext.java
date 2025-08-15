@@ -20,23 +20,24 @@
 package org.sonarsource.sonarlint.core;
 
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 
 public class ConfigurationScopeSharedContext {
 
   private final ConfigurationScope configurationScope;
-  private final boolean isFromSharedConfiguration;
+  private final BindingSuggestionOrigin origin;
 
-  ConfigurationScopeSharedContext(ConfigurationScope configurationScope, boolean isFromSharedConfiguration) {
+  ConfigurationScopeSharedContext(ConfigurationScope configurationScope, BindingSuggestionOrigin origin) {
     this.configurationScope = configurationScope;
-    this.isFromSharedConfiguration = isFromSharedConfiguration;
+    this.origin = origin;
   }
 
   public ConfigurationScope getConfigurationScope() {
     return configurationScope;
   }
 
-  public boolean isFromSharedConfiguration() {
-    return isFromSharedConfiguration;
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
   }
 
 }

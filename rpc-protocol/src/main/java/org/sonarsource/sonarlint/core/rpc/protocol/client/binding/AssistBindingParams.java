@@ -19,17 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.binding;
 
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
+
 public class AssistBindingParams {
   private final String connectionId;
   private final String projectKey;
   private final String configScopeId;
+  @Deprecated(forRemoval = true)
   private final boolean isFromSharedConfiguration;
+  private final BindingSuggestionOrigin origin;
 
-  public AssistBindingParams(String connectionId, String projectKey, String configScopeId, boolean isFromSharedConfiguration) {
+  public AssistBindingParams(String connectionId, String projectKey, String configScopeId, BindingSuggestionOrigin origin) {
     this.connectionId = connectionId;
     this.projectKey = projectKey;
     this.configScopeId = configScopeId;
-    this.isFromSharedConfiguration = isFromSharedConfiguration;
+    this.isFromSharedConfiguration = origin == BindingSuggestionOrigin.SHARED_CONFIGURATION;
+    this.origin = origin;
   }
 
   public String getConnectionId() {
@@ -40,10 +45,18 @@ public class AssistBindingParams {
     return projectKey;
   }
 
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
+  }
+
   public String getConfigScopeId() {
     return configScopeId;
   }
 
+  /**
+   * @deprecated Will be removed in a future version, use {@link #getOrigin()} instead.
+   */
+  @Deprecated(forRemoval = true)
   public boolean isFromSharedConfiguration() {
     return isFromSharedConfiguration;
   }

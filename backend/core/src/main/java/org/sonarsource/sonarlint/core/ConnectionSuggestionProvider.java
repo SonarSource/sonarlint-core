@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionSuggestionDto;
@@ -134,11 +135,11 @@ public class ConnectionSuggestionProvider {
           handleBindingClue(bindingClue).ifPresentOrElse(clue -> clue.map(
             serverUrl -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
               .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(serverUrl, projectKey),
-                bindingClue.isFromSharedConfiguration())),
+                bindingClue.getOrigin() == BindingSuggestionOrigin.SHARED_CONFIGURATION)),
             organization -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
               .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey,
                 ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getRegion()),
-                bindingClue.isFromSharedConfiguration()))),
+                bindingClue.getOrigin() == BindingSuggestionOrigin.SHARED_CONFIGURATION))),
             () -> bindingSuggestionsForConfigScopeIds.add(configScopeId));
         }
       }

@@ -226,7 +226,7 @@ public class RequestHandlerBindingAssistant {
     }
     var bindableConfig = configScopeCandidates.iterator().next();
     var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey, bindableConfig.getConfigurationScope().id(),
-      bindableConfig.isFromSharedConfiguration()));
+      bindableConfig.getOrigin()));
     cancelMonitor.onCancel(() -> future.cancel(true));
     var response = future.join();
     return new NewBinding(connectionId, response.getConfigurationScopeId());

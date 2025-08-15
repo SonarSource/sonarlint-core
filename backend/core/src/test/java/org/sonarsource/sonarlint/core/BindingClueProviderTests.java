@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -261,6 +262,37 @@ class BindingClueProviderTests {
     var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null, null, true);
 
     assertThat(file.isSonarlintConfigurationFile()).isFalse();
+  }
+
+  @Test
+  void should_set_origin_properties_file_when_clue_created_from_properties() {
+    mockFindFileByNamesInScope(List.of(
+      buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)
+    ));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var cluesWithConn = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(cluesWithConn).hasSize(1);
+    var clue = cluesWithConn.get(0).getBindingClue();
+    assertThat(clue.getOrigin()).isEqualTo(BindingSuggestionOrigin.PROPERTIES_FILE);
+  }
+
+  @Test
+  void should_set_origin_shared_configuration_when_clue_created_from_shared_config() {
+    // Simulate a shared configuration file
+    var file = new ClientFile(URI.create("file:///path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Paths.get("/path/to/.sonarlint/connectedMode.json"), false, null, null, null, true);
+    file.setDirty("{\"projectKey\": \"" + PROJECT_KEY_1 + "\", \"sonarQubeUri\": \"http://mysonarqube.org\"}");
+    mockFindSonarlintConfigurationFilesByScope(List.of(file));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var cluesWithConn = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(cluesWithConn).hasSize(1);
+    var clue = cluesWithConn.get(0).getBindingClue();
+    assertThat(clue.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
   private ClientFile buildClientFile(String filename, String relativePath, String content) {
