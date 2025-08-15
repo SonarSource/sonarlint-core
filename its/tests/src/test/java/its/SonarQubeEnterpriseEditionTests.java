@@ -410,12 +410,12 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     @BeforeAll
     void prepare() throws IOException {
       startBackend(Map.of());
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
     }
 
     @Test
     void should_return_risk_dependency_details() {
       var configScopeId = "should_honor_the_web_api_contract";
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
       analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
       bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
       var firstDependencyRiskKey = getFirstDependencyRiskKey(PROJECT_KEY_SCA);
@@ -435,8 +435,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void sca_feature_should_be_enabled() {
-      var configScopeId = "should_honor_the_web_api_contract";
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCA, "Sample SCA");
+      var configScopeId = "sca_check_enabled";
       analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
       bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
 
