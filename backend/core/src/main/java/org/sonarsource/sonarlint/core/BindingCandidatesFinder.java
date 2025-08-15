@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -76,12 +77,23 @@ public class BindingCandidatesFinder {
 
 
     if (!cluesWithMatchingProjectKey.isEmpty()) {
-      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(c -> c.getBindingClue().isFromSharedConfiguration());
-      return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
+      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(
+        c -> c.getBindingClue().getOrigin() == BindingSuggestionOrigin.SHARED_CONFIGURATION);
+      if (isFromSharedConfiguration) {
+        return Optional.of(new ConfigurationScopeSharedContext(scope, BindingSuggestionOrigin.SHARED_CONFIGURATION));
+      }
+      var isFromPropertiesFile = cluesWithMatchingProjectKey.stream().anyMatch(
+        c -> c.getBindingClue().getOrigin() == BindingSuggestionOrigin.PROPERTIES_FILE);
+      if (isFromPropertiesFile) {
+        return Optional.of(new ConfigurationScopeSharedContext(scope, BindingSuggestionOrigin.PROPERTIES_FILE));
+      }
+
+      var firstOrigin = cluesWithMatchingProjectKey.get(0).getBindingClue().getOrigin();
+      return Optional.of(new ConfigurationScopeSharedContext(scope, firstOrigin));
     }
     var configScopeName = scope.name();
     if (isNotBlank(configScopeName) && isConfigScopeNameCloseEnoughToSonarProject(configScopeName, connectionId, projectKey, cancelMonitor)) {
-      return Optional.of(new ConfigurationScopeSharedContext(scope, false));
+      return Optional.of(new ConfigurationScopeSharedContext(scope, BindingSuggestionOrigin.PROJECT_NAME));
     }
     return Optional.empty();
   }

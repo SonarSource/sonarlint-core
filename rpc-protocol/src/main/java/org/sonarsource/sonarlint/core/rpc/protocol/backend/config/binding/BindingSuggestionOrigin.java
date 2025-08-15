@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
-
-public record BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig, @Nullable BindingMode bindingMode,
-                                        @Nullable BindingSuggestionOrigin origin) {
-
-  public BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
-    this(configScopeId, previousConfig, newConfig, null, null);
-  }
-
+public enum BindingSuggestionOrigin {
+  REMOTE_URL,
+  SHARED_CONFIGURATION,
+  PROPERTIES_FILE,
+  PROJECT_NAME
 }

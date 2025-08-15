@@ -19,15 +19,51 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
+import javax.annotation.Nullable;
+
 public class DidUpdateBindingParams {
 
   private final String configScopeId;
   private final BindingConfigurationDto updatedBinding;
+  /**
+   * Temporarily nullable till all the clients are migrated to use the new constructor.
+   */
+  @Nullable
+  private final BindingMode bindingMode;
+  /**
+   * This value should only be set if the bindingMode is:
+   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode#FROM_SUGGESTION}
+   */
+  @Nullable
+  private final BindingSuggestionOrigin origin;
 
 
+  public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding, BindingMode bindingMode, @Nullable BindingSuggestionOrigin origin) {
+    this.configScopeId = configScopeId;
+    this.updatedBinding = updatedBinding;
+    this.bindingMode = bindingMode;
+    this.origin = origin;
+  }
+
+  /**
+   * @deprecated avoid calling this constructor if possible, since it will be removed once all the clients are migrated.
+   * Rely on the constructor with origin and bindingMode params instead.
+   */
+  @Deprecated(forRemoval = true)
   public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
+    this.bindingMode = null;
+    this.origin = null;
+  }
+
+
+  public BindingMode getBindingMode() {
+    return bindingMode;
+  }
+
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
   }
 
   public String getConfigScopeId() {
