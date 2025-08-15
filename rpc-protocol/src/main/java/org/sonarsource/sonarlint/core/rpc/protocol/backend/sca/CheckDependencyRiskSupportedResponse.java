@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.sca;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
-import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class CheckDependencyRiskSupportedResponse {
 
-class DependencyRiskServiceTests {
+  private final boolean supported;
+  private final String reason;
 
-  @Test
-  void testBuildSonarQubeServerScaUrl() {
-    var dependencyKey = UUID.randomUUID();
-    assertThat(DependencyRiskService.buildDependencyRiskBrowseUrl("myProject", "myBranch", dependencyKey, new EndpointParams("http://foo.com", "", false, null)))
-      .isEqualTo(String.format("http://foo.com/dependency-risks/%s/what?id=myProject&branch=myBranch", dependencyKey));
+  public CheckDependencyRiskSupportedResponse(boolean supported, @Nullable String reason) {
+    this.supported = supported;
+    this.reason = reason;
+  }
+
+  public boolean isSupported() {
+    return supported;
+  }
+
+  @CheckForNull
+  public String getReason() {
+    return reason;
   }
 
 }

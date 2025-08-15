@@ -11,6 +11,8 @@
   * Enabling this language allows detecting [text issues](https://rules.sonarsource.com/text/)
 * Add `GITHUBACTIONS` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
   * Enabling this language allows detecting [issues on GitHub Actions](https://rules.sonarsource.com/githubactions/)
+* Add new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService#checkSupported` to check if dependency risks are supported by the server
+  * It returns the reason in case the server does not support dependency risks
 
 ## SCA
 

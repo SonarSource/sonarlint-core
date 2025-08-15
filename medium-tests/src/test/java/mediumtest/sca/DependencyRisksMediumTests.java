@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionException;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
@@ -810,6 +812,60 @@ class DependencyRisksMediumTests {
     assertThat(response.getVulnerabilityId()).isNull();
   }
 
+  @SonarLintTest
+  void it_should_check_for_supported_sca(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server,
+        storage -> storage
+          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerVersion("2025.4"))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var response = checkSupported(backend, CONFIG_SCOPE_ID);
+
+    assertThat(response.isSupported()).isTrue();
+    assertThat(response.getReason()).isNull();
+  }
+
+  @SonarLintTest
+  void it_should_not_be_supported_if_old_version(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server,
+        storage -> storage
+          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerVersion("2025.3"))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var response = checkSupported(backend, CONFIG_SCOPE_ID);
+
+    assertThat(response.isSupported()).isFalse();
+    assertThat(response.getReason()).isEqualTo("The connected SonarQube Server version is lower than the minimum supported version 2025.4");
+  }
+
+  @SonarLintTest
+  void it_should_not_be_supported_if_sca_disabled(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server,
+        storage -> storage
+          .withGlobalSettings(Map.of("sonar.sca.enabled", "false"))
+          .withServerVersion("2025.4"))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var response = checkSupported(backend, CONFIG_SCOPE_ID);
+
+    assertThat(response.isSupported()).isFalse();
+    assertThat(response.getReason()).isEqualTo("The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
+  }
+
   private List<DependencyRiskDto> listAllDependencyRisks(SonarLintTestRpcServer backend, String configScopeId) {
     return backend.getDependencyRiskService().listAll(new ListAllParams(configScopeId)).join().getDependencyRisks();
   }
@@ -820,5 +876,9 @@ class DependencyRisksMediumTests {
 
   private GetDependencyRiskDetailsResponse getDependencyRiskDetails(SonarLintTestRpcServer backend, String configScopeId, UUID dependencyRiskKey) {
     return backend.getDependencyRiskService().getDependencyRiskDetails(new GetDependencyRiskDetailsParams(configScopeId, dependencyRiskKey)).join();
+  }
+
+  private CheckDependencyRiskSupportedResponse checkSupported(SonarLintTestRpcServer backend, String configScopeId) {
+    return backend.getDependencyRiskService().checkSupported(new CheckDependencyRiskSupportedParams(configScopeId)).join();
   }
 }

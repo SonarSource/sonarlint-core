@@ -55,8 +55,8 @@ public class HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube (Server, Cloud)";
-
   private static final String REVIEW_STATUS_UPDATE_PERMISSION_MISSING_REASON = "Changing a hotspot's status requires the 'Administer Security Hotspot' permission.";
+
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
