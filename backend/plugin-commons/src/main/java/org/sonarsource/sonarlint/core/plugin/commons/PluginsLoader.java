@@ -79,6 +79,7 @@ public class PluginsLoader {
     allowedPluginsIds.add("textdeveloper");
     allowedPluginsIds.add("textenterprise");
     allowedPluginsIds.add("omnisharp");
+    allowedPluginsIds.add("sqvsroslyn");
     allowedPluginsIds.add("iacenterprise");
     allowedPluginsIds.add("goenterprise");
     allowedPluginsIds.addAll(maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection));
