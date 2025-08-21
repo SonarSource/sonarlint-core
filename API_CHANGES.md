@@ -1,12 +1,18 @@
 # 10.29
 ## New features
-* Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
+* Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto`, `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.connection.ConnectionSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
 * Added `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` and allowed clients to provide this information when calling `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` which will trigger telemetry events for binding updates. Clients no longer need to call separate telemetry methods while adding bindings.
+
+## Potential breaking changes
+
+* Clients are normally not expected to use following constructors directly, but if they do perhaps in their tests, it's a potential breaking change.
+* Removed the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` constructor with `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#isFromSharedConfiguration` parameter. Clients should use the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#origin` parameter if it is used in their tests.
+* Removed the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto` constructor with `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#isFromSharedConfiguration` parameter. Clients should use the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#origin` parameter if it is used in their tests.
 
 ## Deprecation
 
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#getOrigin` instead.
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#getOrigin` instead.
-* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` constructor. Use the other one.
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#getOrigin` instead.
 * Deprecate `isFromSharedConfiguration` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams` constructor. Use the other one.
