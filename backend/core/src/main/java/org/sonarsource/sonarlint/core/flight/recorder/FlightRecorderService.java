@@ -20,18 +20,22 @@
 package org.sonarsource.sonarlint.core.flight.recorder;
 
 import jakarta.annotation.PostConstruct;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.commons.util.git.NativeGitWrapper;
 
 public class FlightRecorderService {
 
   public static final String SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY = "sonarlint.internal.flight.recorder.interval.seconds";
   private static final int DEFAULT_15_MINUTES = 900;
+  private static final String UNKNOWN = "unknown";
 
   private final FlightRecorderStorageService persister;
+  private final NativeGitWrapper nativeGit = new NativeGitWrapper();
   private final ScheduledExecutorService flightRecorder = FailSafeExecutors.newSingleThreadScheduledExecutor("Flight Recorder");
 
   public FlightRecorderService(FlightRecorderStorageService persister) {
@@ -40,7 +44,10 @@ public class FlightRecorderService {
 
   @PostConstruct
   public void launch() {
-    persister.populateSessionInitData(Map.of("param", "1"));
+    var initData = Map.of("param", "1",
+      "git.version", nativeGit.gitVersion(Path.of("/")).orElse(UNKNOWN),
+      "git.history.length", nativeGit.gitHistoryLength(Path.of("/")).orElse(UNKNOWN));
+    persister.populateSessionInitData(initData);
     flightRecorder.scheduleAtFixedRate(this::update, 0,
       Integer.getInteger(SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY, DEFAULT_15_MINUTES), TimeUnit.SECONDS);
   }

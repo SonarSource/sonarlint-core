@@ -22,13 +22,17 @@ package mediumtest.flight.recorder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.util.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderStorageService;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -39,12 +43,42 @@ import static org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderServi
 
 class FlightRecorderMediumTests {
 
+  private static final String CONFIG_SCOPE_ID = "configScopeId";
   private final Path logFolder = SonarLintUserHome.get().resolve("log");
 
   @AfterEach
   void tearDown() throws IOException{
     FileUtils.delete(logFolder.toFile(), FileUtils.RECURSIVE);
     System.clearProperty(SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY);
+  }
+
+  @SonarLintTest
+  void test_git_data_added_to_file(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException, GitAPIException {
+    var gitRepo = tmp.resolve("git-repo");
+    Files.createDirectory(gitRepo);
+
+    try (var git = GitUtils.createRepository(gitRepo)) {
+      GitUtils.createFile(gitRepo, "file1");
+      GitUtils.commit(git, "file1");
+      GitUtils.createFile(gitRepo, "file2");
+      GitUtils.commit(git, "file2");
+      GitUtils.createFile(gitRepo, "file3");
+      GitUtils.commit(git, "file3");
+    }
+
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, gitRepo, List.of())
+      .build();
+
+    harness.newBackend()
+      .start(fakeClient);
+
+    var file = getFlightRecorderFile();
+    assertThat(file)
+      .isPresent()
+      .get(InstanceOfAssertFactories.PATH)
+      .content()
+      .contains("git.history.length=3", "git.version=");
   }
 
   @SonarLintTest

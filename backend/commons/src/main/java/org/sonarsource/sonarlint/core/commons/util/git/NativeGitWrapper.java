@@ -71,14 +71,18 @@ public class NativeGitWrapper {
   }
 
   private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
-    var gitVersion = whitespaceRegex
+    var gitVersion = retrieveVersionFromGitOutput(gitVersionCommandOutput);
+
+    var formattedGitVersion = formatGitSemanticVersion(gitVersion);
+    return Version.create(formattedGitVersion).compareToIgnoreQualifier(Version.create(MINIMUM_REQUIRED_GIT_VERSION)) >= 0;
+  }
+
+  private static String retrieveVersionFromGitOutput(String gitVersionCommandOutput) {
+    return whitespaceRegex
       .splitAsStream(gitVersionCommandOutput)
       .skip(2)
       .findFirst()
       .orElse("");
-
-    var formattedGitVersion = formatGitSemanticVersion(gitVersion);
-    return Version.create(formattedGitVersion).compareToIgnoreQualifier(Version.create(MINIMUM_REQUIRED_GIT_VERSION)) >= 0;
   }
 
   private static String formatGitSemanticVersion(String version) {
@@ -119,9 +123,19 @@ public class NativeGitWrapper {
   }
 
   public boolean checkIfNativeGitEnabled(Path projectBaseDir) {
-    return getNativeGitExecutable().map(gitExecutable -> {
-      var output = executeGitCommand(projectBaseDir, gitExecutable, "--version");
-      return output.map(out -> out.contains("git version") && isCompatibleGitVersion(out)).orElse(false);
-    }).orElse(false);
+    return gitVersion(projectBaseDir)
+      .map(out -> out.contains("git version") && isCompatibleGitVersion(out))
+      .orElse(false);
+  }
+
+  public Optional<String> gitVersion(Path projectBaseDir) {
+    return getNativeGitExecutable()
+      .flatMap(gitExecutable -> executeGitCommand(projectBaseDir, gitExecutable, "--version"))
+      .map(NativeGitWrapper::retrieveVersionFromGitOutput);
+  }
+
+  public Optional<String> gitHistoryLength(Path projectBaseDir) {
+    return getGitExecutable()
+      .flatMap(gitExecutable -> executeGitCommand(projectBaseDir, gitExecutable, "rev-list", "--count", "HEAD"));
   }
 }
