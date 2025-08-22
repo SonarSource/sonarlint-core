@@ -113,10 +113,13 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_MISRA = "sample-misra";
   private static final String PROJECT_KEY_SCA = "sample-sca";
   public static final String SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY = "sonar.earlyAccess.misra.enabled";
-  public static final String SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.enabled";
+  public static final String SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.enabled";
+  public static final String SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.featureEnabled";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+    // for versions up to 2025.4
+    .setServerProperty(SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY, "true")
     .setServerProperty(SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY, "true")
     .setServerProperty(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY, "true")
     .setEdition(Edition.ENTERPRISE)
@@ -150,7 +153,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     // we have to set it again via API because the server property value is not returned by api/settings/values
-    adminWsClient.settings().set(new SetRequest().setKey(SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY).setValue("true"));
+    adminWsClient.settings().set(new SetRequest().setKey(SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY).setValue("true"));
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY).setValue("true"));
 
     removeGroupPermission("anyone", "scan");
