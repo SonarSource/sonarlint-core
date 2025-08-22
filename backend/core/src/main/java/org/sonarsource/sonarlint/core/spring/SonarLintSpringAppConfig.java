@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
+import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService;
+import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderStorageService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
@@ -195,6 +197,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ClientAwareTaskManager.class,
   ScaSynchronizationService.class,
   DependencyRiskService.class,
+  FlightRecorderService.class,
+  FlightRecorderStorageService.class,
 })
 public class SonarLintSpringAppConfig {
 
