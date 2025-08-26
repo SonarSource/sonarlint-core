@@ -41,7 +41,6 @@ import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionSuggestionDto;
