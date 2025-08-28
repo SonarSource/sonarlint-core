@@ -67,7 +67,7 @@ public class FlightRecorderStorageService {
       LOG.error("Failed to write to a flight recorder file.", e);
     }
   }
-  
+
   private HashMap<String, String> populateWithInitialData(Map<String, String> data) {
     var populated = new HashMap<>(sessionInitData);
     populated.putAll(data);

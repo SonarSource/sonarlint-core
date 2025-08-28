@@ -31,4 +31,5 @@ public enum BackendCapability {
   MONITORING,
   ISSUE_STREAMING,
   SCA_SYNCHRONIZATION,
+  FLIGHT_RECORDER,
 }
