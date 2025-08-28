@@ -19,45 +19,78 @@
  */
 package org.sonarsource.sonarlint.core.flight.recorder;
 
-import com.google.common.util.concurrent.MoreExecutors;
+import io.sentry.Attachment;
+import io.sentry.Hint;
+import io.sentry.Sentry;
+import io.sentry.SentryEvent;
+import io.sentry.SentryLevel;
+import io.sentry.protocol.Message;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.time.Clock;
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
 
 public class FlightRecorderService {
 
-  public static final String SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY = "sonarlint.internal.flight.recorder.interval.seconds";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final int DEFAULT_15_MINUTES = 900;
 
-  private final FlightRecorderStorageService persister;
-  private final ScheduledExecutorService flightRecorder = FailSafeExecutors.newSingleThreadScheduledExecutor("Flight Recorder");
+  private final boolean enabled;
+  private final FlightRecorderSession session;
+  private final SonarLintRpcClient client;
 
-  public FlightRecorderService(FlightRecorderStorageService persister) {
-    this.persister = persister;
+  public FlightRecorderService(InitializeParams initializeParams, FlightRecorderSession session, MonitoringService monitoringService, SonarLintRpcClient client) {
+    this.enabled = initializeParams.getBackendCapabilities().contains(BackendCapability.FLIGHT_RECORDER);
+    this.session = session;
+    this.client = client;
   }
 
   @PostConstruct
   public void launch() {
-    persister.populateSessionInitData(Map.of("param", "1"));
-    flightRecorder.scheduleAtFixedRate(this::update, 0,
-      Integer.getInteger(SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY, DEFAULT_15_MINUTES), TimeUnit.SECONDS);
+    if (!enabled) {
+      LOG.debug("Not starting Flight Recorder service");
+      return;
+    }
+
+    LOG.info("Starting Flight Recorder service for session ", session);
+
+    sendInfoEvent("Flight recorder started");
+
+    client.flightRecorderStarted(new FlightRecorderStartedParams(session.sessionId().toString()));
   }
 
   @PreDestroy
   public void shutdown() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(flightRecorder, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop flight recorder executor service in a timely manner");
-    }
+    sendInfoEvent("Flight recorder stopped");
   }
 
-  private void update() {
-    // todo actual data https://sonarsource.atlassian.net/browse/SLCORE-1565
-    persister.appendData(Clock.systemDefaultZone(), Map.of("param", "1"));
+  public void captureThreadDump() {
+    var threadDump = new StringBuilder();
+    var threadBean = ManagementFactory.getThreadMXBean();
+    Arrays.stream(threadBean.dumpAllThreads(true, true))
+      .forEach(t -> threadDump.append(t.toString()).append(System.lineSeparator()));
+    var threadDumpAttachment = new Attachment(threadDump.toString().getBytes(StandardCharsets.UTF_8), "threads.txt");
+
+    Sentry.captureEvent(newInfoEvent("Captured thread dump"), Hint.withAttachment(threadDumpAttachment));
+  }
+
+  private static void sendInfoEvent(String message) {
+    var flightRecorderStarted = newInfoEvent(message);
+    Sentry.captureEvent(flightRecorderStarted);
+  }
+
+  private static SentryEvent newInfoEvent(String eventMessage) {
+    var flightRecorderStarted = new SentryEvent();
+    flightRecorderStarted.setLevel(SentryLevel.INFO);
+    var message = new Message();
+    message.setMessage(eventMessage);
+    flightRecorderStarted.setMessage(message);
+    return flightRecorderStarted;
   }
 }
