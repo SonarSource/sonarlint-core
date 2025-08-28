@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -68,6 +67,7 @@ public class PluginsService {
   private final CSharpSupport csharpSupport;
   private final Set<String> disabledPluginKeysForAnalysis;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
+  private final InitializeParams initializeParams;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
   private final boolean enableDataflowBugDetection;
@@ -81,36 +81,24 @@ public class PluginsService {
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getBackendCapabilities().contains(DATAFLOW_BUG_DETECTION);
+    this.initializeParams = params;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
   }
 
+  @NotNull
+  private static List<SkippedPlugin> getSkippedPlugins(PluginsLoadResult result) {
+    return result.getPluginCheckResultByKeys().values().stream()
+      .filter(PluginRequirementsCheckResult::isSkipped)
+      .map(plugin -> new SkippedPlugin(plugin.getPlugin().getKey(), plugin.getSkipReason().get()))
+      .toList();
+  }
+
   public LoadedPlugins reloadPluginsFromStorage(String connectionId) {
     pluginsRepository.unload(connectionId);
     return getPlugins(connectionId);
-  }
-
-  static class CSharpSupport {
-    final Path csharpOssPluginPath;
-    final Path csharpEnterprisePluginPath;
-
-    CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
-      if (languageSpecificRequirements == null) {
-        csharpOssPluginPath = null;
-        csharpEnterprisePluginPath = null;
-      } else {
-        var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
-        if (omnisharpRequirements == null) {
-          csharpOssPluginPath = null;
-          csharpEnterprisePluginPath = null;
-        } else {
-          csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
-          csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
-        }
-      }
-    }
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -126,14 +114,6 @@ public class PluginsService {
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
     }
     return loadedEmbeddedPlugins;
-  }
-
-  @NotNull
-  private static List<SkippedPlugin> getSkippedPlugins(PluginsLoadResult result) {
-    return result.getPluginCheckResultByKeys().values().stream()
-      .filter(PluginRequirementsCheckResult::isSkipped)
-      .map(plugin -> new SkippedPlugin(plugin.getPlugin().getKey(), plugin.getSkipReason().get()))
-      .toList();
   }
 
   public LoadedPlugins getPlugins(String connectionId) {
@@ -226,6 +206,10 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+  }
+
+  private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
     if (isSonarCloud) {
@@ -236,19 +220,29 @@ public class PluginsService {
       if (serverInfo.isEmpty()) {
         return false;
       } else {
-        // For SQ versions older than 10.8, enterprise C# analyzer was packaged in all editions.
+        // For SQ versions older than 10.8, enterprise C# and VB.NET analyzers were packaged in all editions.
         // For newer versions, we need to check if enterprise plugin is present on the server
         var serverVersion = serverInfo.get().version();
         var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
-        var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch("csharpenterprise"::equals);
+        var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch(analyzerName::equals);
         return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
       }
     }
   }
 
-  @CheckForNull
-  public Path getEffectivePathToCsharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath : csharpSupport.csharpOssPluginPath;
+  public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+  }
+
+  public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
+    if (connectionId == null) {
+      return new DotnetSupport(initializeParams, csharpSupport.csharpOssPluginPath, false, false);
+    }
+    var actualCsharpAnalyzerPath = shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath :
+      csharpSupport.csharpOssPluginPath;
+    var shouldUseCsharpEnterprise = shouldUseEnterpriseCSharpAnalyzer(connectionId);
+    var shouldUseVbEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
+    return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbEnterprise);
   }
 
   @PreDestroy
@@ -257,6 +251,27 @@ public class PluginsService {
       pluginsRepository.unloadAllPlugins();
     } catch (Exception e) {
       SonarLintLogger.get().error("Error shutting down plugins service", e);
+    }
+  }
+
+  static class CSharpSupport {
+    final Path csharpOssPluginPath;
+    final Path csharpEnterprisePluginPath;
+
+    CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
+      if (languageSpecificRequirements == null) {
+        csharpOssPluginPath = null;
+        csharpEnterprisePluginPath = null;
+      } else {
+        var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
+        if (omnisharpRequirements == null) {
+          csharpOssPluginPath = null;
+          csharpEnterprisePluginPath = null;
+        } else {
+          csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
+          csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
+        }
+      }
     }
   }
 }
