@@ -142,7 +142,7 @@ public class AnalysisSchedulerCache {
       .build();
   }
 
-  private void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
+  private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
     if (dotnetSupport.getActualCsharpAnalyzerPath() != null) {
       fullExtraProperties.put("sonar.cs.internal.analyzerPath", dotnetSupport.getActualCsharpAnalyzerPath().toString());
     }

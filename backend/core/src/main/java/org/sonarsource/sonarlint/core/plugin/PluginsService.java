@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -243,7 +242,6 @@ public class PluginsService {
     return shouldUseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
   }
 
-  @CheckForNull
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
     if (connectionId == null) {
       return new DotnetSupport(initializeParams, csharpSupport.csharpOssPluginPath, false, false);
