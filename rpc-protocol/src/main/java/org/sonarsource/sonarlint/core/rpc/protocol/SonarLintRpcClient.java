@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
@@ -351,5 +352,9 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   default void invalidToken(InvalidTokenParams params) {
+  }
+
+  @JsonNotification
+  default void flightRecorderStarted(FlightRecorderStartedParams params) {
   }
 }
