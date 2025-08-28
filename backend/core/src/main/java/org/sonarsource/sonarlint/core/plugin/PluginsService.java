@@ -214,10 +214,10 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
   }
 
-  private boolean shouldUseDotNetAnalyzer(String connectionId, String analyzerName) {
+  private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
     if (isSonarCloud) {
@@ -239,7 +239,7 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
