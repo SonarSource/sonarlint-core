@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder;
 
-import java.util.UUID;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
-public record MonitoringInitializationParams(boolean monitoringEnabled, boolean flightRecorderEnabled, UUID flightRecorderSessionId, String productKey, String sonarQubeForIdeVersion, String ideVersion) {}
+@JsonSegment("dependencyRisk")
+public interface FlightRecordingRpcService {
+
+  @JsonNotification
+  void captureThreadDump();
+}

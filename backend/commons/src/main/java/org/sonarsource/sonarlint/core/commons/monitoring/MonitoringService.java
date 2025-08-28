@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
 import io.sentry.Hint;
+import io.sentry.ScopeType;
 import io.sentry.Sentry;
 import io.sentry.SentryBaseEvent;
 import io.sentry.SentryOptions;
+import io.sentry.protocol.User;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
@@ -36,6 +38,7 @@ public class MonitoringService {
   public static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
   private static final double TRACES_SAMPLE_RATE_DEFAULT = 0.0001D;
   private static final double TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT = 0.01D;
+  private static final double TRACES_SAMPLE_RATE_FLIGHT_RECORDER = 1D;
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -53,13 +56,14 @@ public class MonitoringService {
   public void init() {
     var sentryConfiguration = getSentryConfiguration();
 
-    if (!initializeParams.isEnabled()) {
+    if (!initializeParams.monitoringEnabled()) {
       LOG.info("Monitoring is disabled by feature flag.");
       return;
     }
-    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+    if (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) {
       LOG.info("Initializing Sentry");
       Sentry.init(sentryConfiguration);
+      configureFlightRecorderSession();
     }
   }
 
@@ -67,24 +71,39 @@ public class MonitoringService {
     var sentryOptions = new SentryOptions();
     sentryOptions.setDsn(getDsn());
     sentryOptions.setRelease(SonarLintCoreVersion.getLibraryVersion());
-    sentryOptions.setEnvironment("dogfood");
-    sentryOptions.setTag("productKey", initializeParams.getProductKey());
-    sentryOptions.setTag("sonarQubeForIDEVersion", initializeParams.getSonarQubeForIdeVersion());
-    sentryOptions.setTag("ideVersion", initializeParams.getIdeVersion());
+    sentryOptions.setEnvironment(getEnvironment());
+    sentryOptions.setTag("productKey", initializeParams.productKey());
+    sentryOptions.setTag("sonarQubeForIDEVersion", initializeParams.sonarQubeForIdeVersion());
+    sentryOptions.setTag("ideVersion", initializeParams.ideVersion());
     sentryOptions.setTag("platform", SystemUtils.OS_NAME);
     sentryOptions.setTag("architecture", SystemUtils.OS_ARCH);
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.impl\\.LexerException.*");
-    sentryOptions.setBeforeSend(MonitoringService::scrubPii);
-    sentryOptions.setBeforeSendTransaction(MonitoringService::scrubPii);
+    sentryOptions.setBeforeSend(MonitoringService::beforeSend);
+    sentryOptions.setBeforeSendTransaction(MonitoringService::beforeSend);
     return sentryOptions;
   }
 
-  private static <T extends SentryBaseEvent> T scrubPii(T event, Hint hint) {
+  private String getEnvironment() {
+    if (initializeParams.flightRecorderEnabled()) {
+      return "flight_recorder";
+    }
+    return "dogfood";
+  }
+
+  private static <T extends SentryBaseEvent> T beforeSend(T event, Hint hint) {
     event.setServerName(null);
     return event;
+  }
+
+  private void configureFlightRecorderSession() {
+    if (initializeParams.flightRecorderEnabled()) {
+      var user = new User();
+      user.setId(initializeParams.flightRecorderSessionId().toString());
+      Sentry.configureScope(ScopeType.GLOBAL, scope -> scope.setUser(user));
+    }
   }
 
   private static String getDsn() {
@@ -101,6 +120,9 @@ public class MonitoringService {
       var sampleRate = TRACES_SAMPLE_RATE_DEFAULT;
       if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
         sampleRate = TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT;
+      }
+      if (initializeParams.flightRecorderEnabled()) {
+        sampleRate = TRACES_SAMPLE_RATE_FLIGHT_RECORDER;
       }
       LOG.debug("Using default trace sample rate: {}", sampleRate);
       return sampleRate;
