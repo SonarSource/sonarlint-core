@@ -81,6 +81,8 @@ public class PluginsLoader {
     allowedPluginsIds.add("omnisharp");
     allowedPluginsIds.add("iacenterprise");
     allowedPluginsIds.add("goenterprise");
+    allowedPluginsIds.add("security");
+    allowedPluginsIds.add("securityjavafrontend");
     allowedPluginsIds.addAll(maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection));
     return Collections.unmodifiableSet(allowedPluginsIds);
   }
