@@ -21,4 +21,11 @@ package org.sonarsource.sonarlint.core.commons.monitoring;
 
 import java.util.UUID;
 
-public record MonitoringInitializationParams(boolean monitoringEnabled, boolean flightRecorderEnabled, UUID flightRecorderSessionId, String productKey, String sonarQubeForIdeVersion, String ideVersion) {}
+public record MonitoringInitializationParams(
+  boolean monitoringEnabled,
+  boolean flightRecorderEnabled,
+  UUID flightRecorderSessionId,
+  String productKey,
+  String sonarQubeForIdeVersion,
+  String ideVersion
+) {}
