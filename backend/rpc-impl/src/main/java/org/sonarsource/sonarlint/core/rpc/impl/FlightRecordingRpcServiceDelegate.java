@@ -19,22 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyRiskStatusParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ListAllDependencyRisksResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
-import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 
 public class FlightRecordingRpcServiceDelegate extends AbstractRpcServiceDelegate implements FlightRecordingRpcService {
 
