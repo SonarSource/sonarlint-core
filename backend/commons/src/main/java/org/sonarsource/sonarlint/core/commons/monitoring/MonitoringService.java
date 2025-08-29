@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.commons.monitoring;
 import io.sentry.Hint;
 import io.sentry.ScopeType;
 import io.sentry.Sentry;
+import io.sentry.SentryAttributeType;
 import io.sentry.SentryBaseEvent;
+import io.sentry.SentryLogEventAttributeValue;
 import io.sentry.SentryOptions;
 import io.sentry.protocol.User;
 import jakarta.inject.Inject;
@@ -72,6 +74,14 @@ public class MonitoringService {
     sentryOptions.setDsn(getDsn());
     sentryOptions.setRelease(SonarLintCoreVersion.getLibraryVersion());
     sentryOptions.setEnvironment(getEnvironment());
+    if (initializeParams.flightRecorderEnabled()) {
+      sentryOptions.getLogs().setEnabled(true);
+      var sessionId = new SentryLogEventAttributeValue(SentryAttributeType.STRING, initializeParams.flightRecorderSessionId().toString());
+      sentryOptions.getLogs().setBeforeSend(logEvent -> {
+        logEvent.getAttributes().put("user.id", sessionId);
+        return logEvent;
+      });
+    }
     sentryOptions.setTag("productKey", initializeParams.productKey());
     sentryOptions.setTag("sonarQubeForIDEVersion", initializeParams.sonarQubeForIdeVersion());
     sentryOptions.setTag("ideVersion", initializeParams.ideVersion());
