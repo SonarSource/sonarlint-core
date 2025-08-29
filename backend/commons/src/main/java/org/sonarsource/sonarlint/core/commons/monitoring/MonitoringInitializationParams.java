@@ -19,32 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
-public class MonitoringInitializationParams {
-  private final boolean enabled;
-  private final String productKey;
-  private final String sonarQubeForIdeVersion;
-  private final String ideVersion;
+import java.util.UUID;
 
-  public MonitoringInitializationParams(boolean enabled, String productKey, String sonarQubeForIdeVersion, String ideVersion) {
-    this.enabled = enabled;
-    this.productKey = productKey;
-    this.sonarQubeForIdeVersion = sonarQubeForIdeVersion;
-    this.ideVersion = ideVersion;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public String getProductKey() {
-    return productKey;
-  }
-
-  public String getSonarQubeForIdeVersion() {
-    return sonarQubeForIdeVersion;
-  }
-
-  public String getIdeVersion() {
-    return ideVersion;
-  }
-}
+public record MonitoringInitializationParams(
+  boolean monitoringEnabled,
+  boolean flightRecorderEnabled,
+  UUID flightRecorderSessionId,
+  String productKey,
+  String sonarQubeForIdeVersion,
+  String ideVersion
+) {}

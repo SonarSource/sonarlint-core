@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.log;
 
 import io.sentry.Sentry;
+import io.sentry.SentryLogLevel;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -166,6 +167,7 @@ public class SonarLintLogger {
     });
     if (output != null) {
       output.log(formattedMessage, level, stackTrace);
+      Sentry.logger().log(SentryLogLevel.valueOf(level.name()), formattedMessage);
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - RPC Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.impl;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
+import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService;
+
+public class FlightRecordingRpcServiceDelegate extends AbstractRpcServiceDelegate implements FlightRecordingRpcService {
+
+  public FlightRecordingRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
+  }
+
+  @Override
+  public void captureThreadDump() {
+    notify(() -> getBean(FlightRecorderService.class).captureThreadDump());
+  }
+
 }

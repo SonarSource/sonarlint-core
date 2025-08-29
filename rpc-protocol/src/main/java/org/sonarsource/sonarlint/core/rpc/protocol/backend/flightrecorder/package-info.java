@@ -17,19 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-}
+import javax.annotation.ParametersAreNonnullByDefault;
+

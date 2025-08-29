@@ -19,83 +19,104 @@
  */
 package mediumtest.flight.recorder;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderStorageService;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import utils.TestPlugin;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService.SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FLIGHT_RECORDER;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
+import static utils.AnalysisUtils.analyzeFileAndGetIssues;
+import static utils.AnalysisUtils.createFile;
 
+@ExtendWith(SystemStubsExtension.class)
 class FlightRecorderMediumTests {
 
-  private Path logFolder;
+  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private WireMockServer sentryServer;
+
+  @BeforeEach
+  void setup() {
+    sentryServer = new WireMockServer(wireMockConfig().dynamicPort());
+    sentryServer.start();
+    System.setProperty(MonitoringService.DSN_PROPERTY, createValidSentryDsn(sentryServer));
+    setupSentryStubs();
+  }
 
   @AfterEach
-  void tearDown() throws IOException {
-    FileUtils.delete(logFolder.toFile(), FileUtils.RECURSIVE);
-    System.clearProperty(SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY);
+  void tearDown() {
+    sentryServer.stop();
+  }
+
+  private String createValidSentryDsn(WireMockServer server) {
+    return "http://fake-public-key@localhost:" + server.port() + "/12345";
+  }
+
+  private void setupSentryStubs() {
+    // Stub the Sentry project endpoint (where events are sent)
+    sentryServer.stubFor(post(urlPathMatching("/api/\\d+/store/"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("{\"id\": \"event-id-12345\"}")));
+
+    // Stub the Sentry envelope endpoint (used for transactions, etc.)
+    sentryServer.stubFor(post(urlPathMatching("/api/\\d+/envelope/"))
+      .willReturn(aResponse()
+        .withStatus(200)));
   }
 
   @SonarLintTest
-  void test_create_flight_recorder_folder_if_it_does_not_exist(SonarLintTestHarness harness) {
-    var backend = harness.newBackend()
-      .start();
-    logFolder = logFolder(backend);
+  void simplePhpWithFlightRecorder(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var inputFile = createFile(baseDir, "foo.php", """
+      <?php
+      function writeMsg($fname) {
+          $i = 0; // NOSONAR
+          echo "Hello world!";
+      }
+      ?>
+      """);
 
-    assertThat(logFolder).exists();
-  }
-
-  @SonarLintTest
-  void test_create_flight_recorder_file(SonarLintTestHarness harness) {
-    var backend = harness.newBackend()
-      .start();
-    logFolder = logFolder(backend);
-
-    assertThat(logFolder).isDirectoryContaining("glob:**flight-recording-session-*");
-  }
-
-  @SonarLintTest
-  void test_scheduled_updates(SonarLintTestHarness harness) {
-    System.setProperty(SONARLINT_FLIGHT_RECORDER_PERIOD_PROPERTY, "1");
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
 
     var backend = harness.newBackend()
-      .start();
-    logFolder = logFolder(backend);
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
+      .withBackendCapability(MONITORING)
+      .withBackendCapability(FLIGHT_RECORDER)
+      .start(client);
 
-    assertThat(logFolder).isDirectoryContaining("glob:**flight-recording-session-*");
-    await().atMost(3, TimeUnit.SECONDS)
-        .untilAsserted(this::fileContainsMultipleUpdates);
-  }
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-  private void fileContainsMultipleUpdates() throws IOException {
-    var flightRecorderFile = getFlightRecorderFile();
-    assertThat(flightRecorderFile)
-      .isPresent()
-      .get(InstanceOfAssertFactories.PATH)
-      .content()
-      .containsSubsequence("param=1", "param=1");
-  }
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine()).contains(tuple("php:S1172", 2));
 
-  private Optional<Path> getFlightRecorderFile() throws IOException {
-    try (var files = Files.list(logFolder)) {
-      return files
-          .filter(path -> path.getFileName().toString().startsWith("flight-recording-session-"))
-          .map(path -> path.resolve(FlightRecorderStorageService.FILE_NAME))
-          .findFirst();
-    }
-  }
+    backend.getFlightRecordingService().captureThreadDump();
 
-  private static Path logFolder(SonarLintTestRpcServer backend) {
-    return backend.getUserHome().resolve("log");
+    // The mock Sentry server receives 3 payloads:
+    // * start of recording
+    // * analysis trace
+    // * thread dump
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(3));
   }
 }

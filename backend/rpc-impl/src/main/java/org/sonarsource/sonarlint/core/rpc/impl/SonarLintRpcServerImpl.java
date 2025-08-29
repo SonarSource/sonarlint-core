@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationR
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
@@ -240,6 +241,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public DependencyRiskRpcService getDependencyRiskService() {
     return new DependencyRiskRpcServiceDelegate(this);
+  }
+
+  @Override
+  public FlightRecordingRpcService getFlightRecordingService() {
+    return new FlightRecordingRpcServiceDelegate(this);
   }
 
   @Override
