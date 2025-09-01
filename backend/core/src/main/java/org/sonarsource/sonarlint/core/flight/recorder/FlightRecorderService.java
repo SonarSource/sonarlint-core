@@ -30,6 +30,10 @@ import jakarta.annotation.PreDestroy;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -40,6 +44,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightR
 public class FlightRecorderService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private static final String[] PROXY_PROPERTIES = {
+    "java.net.useSystemProxies",
+    "http.proxyHost",
+    "http.proxyPort",
+    "https.proxyHost",
+    "https.proxyPort",
+    "http.nonProxyHosts"
+  };
 
   private final boolean enabled;
   private final FlightRecorderSession session;
@@ -61,7 +74,18 @@ public class FlightRecorderService {
 
     LOG.info("Starting Flight Recorder service for session ", session);
 
-    sendInfoEvent("Flight recorder started");
+    var startEvent = newInfoEvent("Flight recorder started");
+    var defaultLocale = Locale.getDefault();
+    startEvent.getContexts().put("Default Locale", Map.of(
+      "Display Name", defaultLocale.getDisplayName(),
+      "Language", defaultLocale.getLanguage(),
+      "Country", defaultLocale.getCountry()
+    ));
+    var proxyProperties = getProxyProperties();
+    if (!proxyProperties.isEmpty()) {
+      startEvent.getContexts().put("Proxy Settings", getProxyProperties());
+    }
+    Sentry.captureEvent(startEvent);
 
     client.flightRecorderStarted(new FlightRecorderStartedParams(session.sessionId().toString()));
   }
@@ -93,5 +117,16 @@ public class FlightRecorderService {
     message.setMessage(eventMessage);
     flightRecorderStarted.setMessage(message);
     return flightRecorderStarted;
+  }
+
+  private static Map<String, String> getProxyProperties() {
+    var proxySettings = new LinkedHashMap<String, String>();
+    Stream.of(PROXY_PROPERTIES).forEach(propKey -> {
+      var propValue = System.getProperty(propKey);
+      if (propValue != null) {
+        proxySettings.put(propKey, propValue);
+      }
+    });
+    return proxySettings;
   }
 }

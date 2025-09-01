@@ -78,7 +78,7 @@
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
     <jgit6.version>6.10.1.202505221210-r</jgit6.version>
     <jgit7.version>7.2.1.202505142326-r</jgit7.version>
-    <sentry.version>8.13.2</sentry.version>
+    <sentry.version>8.20.0</sentry.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
     <version.shade.plugin>3.6.0</version.shade.plugin>
