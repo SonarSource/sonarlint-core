@@ -58,6 +58,7 @@ class FlightRecorderMediumTests {
     sentryServer = new WireMockServer(wireMockConfig().dynamicPort());
     sentryServer.start();
     System.setProperty(MonitoringService.DSN_PROPERTY, createValidSentryDsn(sentryServer));
+    System.setProperty("java.net.useSystemProxies", "false");
     setupSentryStubs();
   }
 
@@ -118,5 +119,7 @@ class FlightRecorderMediumTests {
     // * analysis trace
     // * thread dump
     await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(3));
+
+    sentryServer.getAllServeEvents().stream().map(e -> e.getRequest().getBodyAsString()).forEach(System.err::println);
   }
 }
