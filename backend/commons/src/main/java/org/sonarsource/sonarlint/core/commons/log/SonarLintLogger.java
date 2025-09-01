@@ -167,7 +167,16 @@ public class SonarLintLogger {
     });
     if (output != null) {
       output.log(formattedMessage, level, stackTrace);
-      Sentry.logger().log(SentryLogLevel.valueOf(level.name()), formattedMessage);
+      Sentry.logger().log(getSentryLogLevel(level), formattedMessage);
+    }
+  }
+
+  private static SentryLogLevel getSentryLogLevel(Level level) {
+    try {
+      return SentryLogLevel.valueOf(level.name());
+    } catch (IllegalArgumentException notSupported) {
+      // Current log levels map nicely almost 1:1, but this may change later
+      return SentryLogLevel.ERROR;
     }
   }
 

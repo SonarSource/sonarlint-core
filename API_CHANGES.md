@@ -1,3 +1,11 @@
+# 10.31
+
+## New features
+
+* Add a new `FLIGHT_RECORDER` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Important note: the `MONITORING` capability is also required by this feature.
+* Add a new optional backend-to-client notification `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#flightRecorderStarted`. Clients can implement this notification to inform end users about a starting flight recorder session.
+* Add a new service  to the backend API: `org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService` can be used to interact with the flight recorder (e.g. to capture a thread dump of the current backend process)
+
 # 10.29
 ## New features
 * Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto`, `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.connection.ConnectionSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
