@@ -47,6 +47,8 @@ public class MonitoringService {
   private final MonitoringInitializationParams initializeParams;
   private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
 
+  private boolean active;
+
   @Inject
   public MonitoringService(MonitoringInitializationParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
     this.initializeParams = initializeParams;
@@ -66,7 +68,12 @@ public class MonitoringService {
       LOG.info("Initializing Sentry");
       Sentry.init(sentryConfiguration);
       configureFlightRecorderSession();
+      active = true;
     }
+  }
+
+  public boolean isActive() {
+    return active;
   }
 
   SentryOptions getSentryConfiguration() {
