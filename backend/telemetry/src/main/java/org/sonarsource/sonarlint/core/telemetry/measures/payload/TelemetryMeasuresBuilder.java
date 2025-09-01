@@ -23,13 +23,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideLevel;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLiveAttributes;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryReportIssuesAsOverride;
 
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.BOOLEAN;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
 
 public class TelemetryMeasuresBuilder {
@@ -72,6 +73,8 @@ public class TelemetryMeasuresBuilder {
     addFindingInvestigationMeasures(values);
 
     addReportIssuesAsErrorMeasures(values);
+
+    addAutomaticAnalysisMeasures(values);
 
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
@@ -230,5 +233,10 @@ public class TelemetryMeasuresBuilder {
         DAILY
       ))
       .forEach(values::add);
+  }
+
+  private void addAutomaticAnalysisMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("automatic_analysis.enabled", String.valueOf(storage.isAutomaticAnalysisEnabled()), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(storage.getAutomaticAnalysisToggledCount()), INTEGER, DAILY));
   }
 }
