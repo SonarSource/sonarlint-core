@@ -46,7 +46,8 @@ public class FlightRecorderService {
   private final SonarLintRpcClient client;
 
   public FlightRecorderService(InitializeParams initializeParams, FlightRecorderSession session, MonitoringService monitoringService, SonarLintRpcClient client) {
-    this.enabled = initializeParams.getBackendCapabilities().contains(BackendCapability.FLIGHT_RECORDER);
+    this.enabled = initializeParams.getBackendCapabilities().contains(BackendCapability.FLIGHT_RECORDER)
+      && monitoringService.isActive();
     this.session = session;
     this.client = client;
   }

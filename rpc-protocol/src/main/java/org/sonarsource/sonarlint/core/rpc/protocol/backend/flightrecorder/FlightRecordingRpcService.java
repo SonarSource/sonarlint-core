@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
-@JsonSegment("dependencyRisk")
+@JsonSegment("flightRecording")
 public interface FlightRecordingRpcService {
 
   @JsonNotification
