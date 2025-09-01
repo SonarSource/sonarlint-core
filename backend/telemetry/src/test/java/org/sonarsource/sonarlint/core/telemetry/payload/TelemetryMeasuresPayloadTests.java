@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasur
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.BOOLEAN;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
 
 class TelemetryMeasuresPayloadTests {
@@ -80,7 +81,9 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"reported_issues_as_error_level.medium_and_above\",\"value\":\"45\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"reported_issues_as_error_level.all\",\"value\":\"67\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"reported_issues_as_override.warning\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"reported_issues_as_override.error\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"reported_issues_as_override.error\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"automatic_analysis.enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"automatic_analysis.toggled_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -125,6 +128,9 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("reported_issues_as_override.warning", String.valueOf(2), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("reported_issues_as_override.error", String.valueOf(3), INTEGER, DAILY));
 
+    values.add(new TelemetryMeasuresValue("automatic_analysis.enabled", String.valueOf(true), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(1), INTEGER, DAILY));
+
     return values;
   }
 
@@ -146,7 +152,9 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("reported_issues_as_error_level.medium_and_above", "45", INTEGER, DAILY))
       .contains(tuple("reported_issues_as_error_level.all", "67", INTEGER, DAILY))
       .contains(tuple("reported_issues_as_override.warning", "2", INTEGER, DAILY))
-      .contains(tuple("reported_issues_as_override.error", "3", INTEGER, DAILY));
+      .contains(tuple("reported_issues_as_override.error", "3", INTEGER, DAILY))
+      .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))
+      .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY));
   }
 
 }

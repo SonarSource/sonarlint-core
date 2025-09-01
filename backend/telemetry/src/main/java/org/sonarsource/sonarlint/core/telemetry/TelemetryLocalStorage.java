@@ -97,6 +97,8 @@ public class TelemetryLocalStorage {
   private int issueInvestigatedLocallyCount;
   private int dependencyRiskInvestigatedRemotelyCount;
   private int dependencyRiskInvestigatedLocallyCount;
+  private boolean isAutomaticAnalysisEnabled;
+  private int automaticAnalysisToggledCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -272,6 +274,7 @@ public class TelemetryLocalStorage {
     calledToolsByName.clear();
     dependencyRiskInvestigatedLocallyCount = 0;
     dependencyRiskInvestigatedRemotelyCount = 0;
+    automaticAnalysisToggledCount = 0;
   }
 
   public long numUseDays() {
@@ -699,5 +702,24 @@ public class TelemetryLocalStorage {
 
   public int getDependencyRiskInvestigatedLocallyCount() {
     return dependencyRiskInvestigatedLocallyCount;
+  }
+
+  public boolean isAutomaticAnalysisEnabled() {
+    return isAutomaticAnalysisEnabled;
+  }
+
+  public int getAutomaticAnalysisToggledCount() {
+    return automaticAnalysisToggledCount;
+  }
+
+  public void setInitialAutomaticAnalysisEnablement(boolean automaticAnalysisEnabled) {
+    markSonarLintAsUsedToday();
+    this.isAutomaticAnalysisEnabled = automaticAnalysisEnabled;
+  }
+
+  public void incrementAutomaticAnalysisToggledCount() {
+    markSonarLintAsUsedToday();
+    this.isAutomaticAnalysisEnabled = !this.isAutomaticAnalysisEnabled;
+    automaticAnalysisToggledCount++;
   }
 }

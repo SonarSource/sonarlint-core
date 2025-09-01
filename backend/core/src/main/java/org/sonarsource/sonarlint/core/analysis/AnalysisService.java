@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
-import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -74,6 +73,7 @@ import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -713,8 +713,12 @@ public class AnalysisService {
   public void didChangeAutomaticAnalysisSetting(boolean enabled) {
     var previouslyEnabled = this.automaticAnalysisEnabled;
     this.automaticAnalysisEnabled = enabled;
-    if (!previouslyEnabled) {
-      triggerAnalysisForOpenFiles();
+    if (previouslyEnabled != enabled) {
+      LOG.debug("Automatic analysis setting changed to: {}", enabled);
+      eventPublisher.publishEvent(new AutomaticAnalysisSettingChangedEvent(enabled));
+      if (enabled) {
+        triggerAnalysisForOpenFiles();
+      }
     }
   }
 

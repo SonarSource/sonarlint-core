@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandalon
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
@@ -300,6 +301,40 @@ class AnalysisTriggeringMediumTests {
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
         .extracting(RaisedIssueDto::getPrimaryMessage)
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
+  }
+
+  @SonarLintTest
+  void it_should_save_automatic_analysis_setting_and_trigger_telemetry_on_toggle(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withAutomaticAnalysisEnabled(false)
+      .withTelemetryEnabled()
+      .start();
+
+    backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(true));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isAutomaticAnalysisEnabled, TelemetryLocalStorage::getAutomaticAnalysisToggledCount)
+      .containsExactly(true, 1));
+
+    backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(false));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isAutomaticAnalysisEnabled, TelemetryLocalStorage::getAutomaticAnalysisToggledCount)
+      .containsExactly(false, 2));
+  }
+
+  @SonarLintTest
+  void it_should_not_update_automatic_analysis_setting_if_not_changed(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withAutomaticAnalysisEnabled(true)
+      .withTelemetryEnabled()
+      .start();
+
+    backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(true));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::isAutomaticAnalysisEnabled, TelemetryLocalStorage::getAutomaticAnalysisToggledCount)
+      .containsExactly(true, 0));
   }
 
   @SonarLintTest

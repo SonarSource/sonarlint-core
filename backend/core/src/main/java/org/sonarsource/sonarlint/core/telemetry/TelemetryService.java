@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
+import org.sonarsource.sonarlint.core.analysis.AutomaticAnalysisSettingChangedEvent;
 import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -85,7 +86,10 @@ public class TelemetryService {
       LOG.info("Telemetry disabled on server startup");
       return;
     }
-    updateTelemetry(localStorage -> localStorage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode()));
+    updateTelemetry(localStorage -> {
+      localStorage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode());
+      localStorage.setInitialAutomaticAnalysisEnablement(initializeParams.isAutomaticAnalysisEnabled());
+    });
     var initialDelay = Integer.parseInt(System.getProperty("sonarlint.internal.telemetry.initialDelay", "1"));
     scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
   }
@@ -312,6 +316,10 @@ public class TelemetryService {
     updateTelemetry(localStorage -> localStorage.findingsFiltered(filterType));
   }
 
+  public void automaticAnalysisSettingToggled() {
+    updateTelemetry(TelemetryLocalStorage::incrementAutomaticAnalysisToggledCount);
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {
@@ -367,6 +375,11 @@ public class TelemetryService {
       .map(RaisedFindingDto::getId)
       .collect(Collectors.toSet());
     updateTelemetry(localStorage -> localStorage.addIssuesWithPossibleAiFixFromIde(issuesToReport));
+  }
+
+  @EventListener
+  public void onAutomaticAnalysisSettingChanged(AutomaticAnalysisSettingChangedEvent event) {
+    automaticAnalysisSettingToggled();
   }
 
   @PreDestroy
