@@ -76,6 +76,8 @@ public class TelemetryMeasuresBuilder {
 
     addAutomaticAnalysisMeasures(values);
 
+    addFlightRecorderMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -215,7 +217,7 @@ public class TelemetryMeasuresBuilder {
     }
   }
 
-  private void addToolsMeasures(ArrayList<TelemetryMeasuresValue> values) {
+  private void addToolsMeasures(List<TelemetryMeasuresValue> values) {
     var calledToolsByName = storage.getCalledToolsByName();
     calledToolsByName.forEach((key, toolCallCounter) -> {
       values.add(new TelemetryMeasuresValue("tools." + key + "_success_count", Integer.toString(toolCallCounter.getSuccess()), INTEGER, DAILY));
@@ -223,7 +225,7 @@ public class TelemetryMeasuresBuilder {
     });
   }
 
-  private void addFindingsFilteredMeasures(ArrayList<TelemetryMeasuresValue> values) {
+  private void addFindingsFilteredMeasures(List<TelemetryMeasuresValue> values) {
     storage.getFindingsFilteredCountersByType().entrySet().stream()
       .filter(e -> e.getValue().getFindingsFilteredCount() > 0)
       .map(e -> new TelemetryMeasuresValue(
@@ -235,8 +237,15 @@ public class TelemetryMeasuresBuilder {
       .forEach(values::add);
   }
 
-  private void addAutomaticAnalysisMeasures(ArrayList<TelemetryMeasuresValue> values) {
+  private void addAutomaticAnalysisMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("automatic_analysis.enabled", String.valueOf(storage.isAutomaticAnalysisEnabled()), BOOLEAN, DAILY));
     values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(storage.getAutomaticAnalysisToggledCount()), INTEGER, DAILY));
+  }
+
+  private void addFlightRecorderMeasures(List<TelemetryMeasuresValue> values) {
+    var flightRecorderSessionsCount = storage.getFlightRecorderSessionsCount();
+    if (flightRecorderSessionsCount > 0) {
+      values.add(new TelemetryMeasuresValue("flight_recorder.sessions_count", String.valueOf(flightRecorderSessionsCount), INTEGER, DAILY));
+    }
   }
 }

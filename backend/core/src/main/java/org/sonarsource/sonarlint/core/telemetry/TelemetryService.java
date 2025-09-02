@@ -320,6 +320,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementAutomaticAnalysisToggledCount);
   }
 
+  public void flightRecorderStarted() {
+    updateTelemetry(TelemetryLocalStorage::incrementFlightRecorderSessionsCount);
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {

@@ -331,4 +331,14 @@ class TelemetryLocalStorageTests {
     data.incrementSuggestedRemoteBindingsCount();
     assertThat(data.getSuggestedRemoteBindingsCount()).isEqualTo(2);
   }
+
+  @Test
+  void should_increment_flight_recorder_sessions_count() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getFlightRecorderSessionsCount()).isZero();
+    data.incrementFlightRecorderSessionsCount();
+    data.incrementFlightRecorderSessionsCount();
+    data.incrementFlightRecorderSessionsCount();
+    assertThat(data.getFlightRecorderSessionsCount()).isEqualTo(3);
+  }
 }
