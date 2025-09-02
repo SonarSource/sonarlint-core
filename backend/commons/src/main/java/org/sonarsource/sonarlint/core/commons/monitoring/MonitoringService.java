@@ -42,6 +42,9 @@ public class MonitoringService {
   private static final double TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT = 0.01D;
   private static final double TRACES_SAMPLE_RATE_FLIGHT_RECORDER = 1D;
 
+  private static final String ENVIRONMENT_FLIGHT_RECORDER = "flight_recorder";
+  private static final String ENVIRONMENT_DOGFOOD = "dogfood";
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final MonitoringInitializationParams initializeParams;
@@ -58,18 +61,24 @@ public class MonitoringService {
   }
 
   public void init() {
-    var sentryConfiguration = getSentryConfiguration();
-
     if (!initializeParams.monitoringEnabled()) {
       LOG.info("Monitoring is disabled by feature flag.");
       return;
     }
-    if (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) {
+
+    if (shouldInitializeSentry()) {
+      var sentryConfiguration = getSentryConfiguration();
       LOG.info("Initializing Sentry");
       Sentry.init(sentryConfiguration);
-      configureFlightRecorderSession();
       active = true;
+      if (initializeParams.flightRecorderEnabled()) {
+        configureFlightRecorderSession();
+      }
     }
+  }
+
+  private boolean shouldInitializeSentry() {
+    return dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled();
   }
 
   public boolean isActive() {
@@ -105,9 +114,9 @@ public class MonitoringService {
 
   private String getEnvironment() {
     if (initializeParams.flightRecorderEnabled()) {
-      return "flight_recorder";
+      return ENVIRONMENT_FLIGHT_RECORDER;
     }
-    return "dogfood";
+    return ENVIRONMENT_DOGFOOD;
   }
 
   private static <T extends SentryBaseEvent> T beforeSend(T event, Hint hint) {
@@ -116,11 +125,9 @@ public class MonitoringService {
   }
 
   private void configureFlightRecorderSession() {
-    if (initializeParams.flightRecorderEnabled()) {
-      var user = new User();
-      user.setId(initializeParams.flightRecorderSessionId().toString());
-      Sentry.configureScope(ScopeType.GLOBAL, scope -> scope.setUser(user));
-    }
+    var user = new User();
+    user.setId(initializeParams.flightRecorderSessionId().toString());
+    Sentry.configureScope(ScopeType.GLOBAL, scope -> scope.setUser(user));
   }
 
   private static String getDsn() {
