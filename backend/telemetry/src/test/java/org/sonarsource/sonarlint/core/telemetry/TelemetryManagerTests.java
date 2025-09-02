@@ -241,6 +241,7 @@ class TelemetryManagerTests {
       data.getReportedIssuesAsErrorCountPerLevel().put(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE, 1);
       data.getReportedIssuesAsOverridePerLevel().put(ReportIssuesAsOverrideLevel.WARNING, List.of(new TelemetryReportIssuesAsOverride("java:S123")));
       data.findingsFiltered("severity");
+      data.incrementFlightRecorderSessionsCount();
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -262,6 +263,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.getFindingsFilteredCountersByType()).isEmpty();
     assertThat(reloaded.getReportedIssuesAsErrorCountPerLevel()).isEmpty();
     assertThat(reloaded.getReportedIssuesAsOverridePerLevel()).isEmpty();
+    assertThat(reloaded.getFlightRecorderSessionsCount()).isZero();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
