@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class FlightRecorderService {
 
@@ -56,12 +57,15 @@ public class FlightRecorderService {
 
   private final boolean enabled;
   private final FlightRecorderSession session;
+  private final TelemetryService telemetryService;
   private final SonarLintRpcClient client;
 
-  public FlightRecorderService(InitializeParams initializeParams, FlightRecorderSession session, MonitoringService monitoringService, SonarLintRpcClient client) {
+  public FlightRecorderService(InitializeParams initializeParams, FlightRecorderSession session, MonitoringService monitoringService, TelemetryService telemetryService,
+    SonarLintRpcClient client) {
     this.enabled = initializeParams.getBackendCapabilities().contains(BackendCapability.FLIGHT_RECORDER)
       && monitoringService.isActive();
     this.session = session;
+    this.telemetryService = telemetryService;
     this.client = client;
   }
 
@@ -73,6 +77,7 @@ public class FlightRecorderService {
     }
 
     LOG.info("Starting Flight Recorder service for session ", session);
+    telemetryService.flightRecorderStarted();
 
     var startEvent = newInfoEvent("Flight recorder started");
     var defaultLocale = Locale.getDefault();

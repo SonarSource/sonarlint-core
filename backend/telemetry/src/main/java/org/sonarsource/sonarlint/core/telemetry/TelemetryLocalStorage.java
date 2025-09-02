@@ -99,6 +99,7 @@ public class TelemetryLocalStorage {
   private int dependencyRiskInvestigatedLocallyCount;
   private boolean isAutomaticAnalysisEnabled;
   private int automaticAnalysisToggledCount;
+  private int flightRecorderSessionsCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -275,6 +276,7 @@ public class TelemetryLocalStorage {
     dependencyRiskInvestigatedLocallyCount = 0;
     dependencyRiskInvestigatedRemotelyCount = 0;
     automaticAnalysisToggledCount = 0;
+    flightRecorderSessionsCount = 0;
   }
 
   public long numUseDays() {
@@ -721,5 +723,14 @@ public class TelemetryLocalStorage {
     markSonarLintAsUsedToday();
     this.isAutomaticAnalysisEnabled = !this.isAutomaticAnalysisEnabled;
     automaticAnalysisToggledCount++;
+  }
+
+  public void incrementFlightRecorderSessionsCount() {
+    markSonarLintAsUsedToday();
+    flightRecorderSessionsCount ++;
+  }
+
+  public int getFlightRecorderSessionsCount() {
+    return flightRecorderSessionsCount;
   }
 }

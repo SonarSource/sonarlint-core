@@ -123,6 +123,7 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE);
     telemetryLocalStorage.reportIssuesAsErrorLevel(ReportIssuesAsErrorLevel.MEDIUM_AND_ABOVE);
     telemetryLocalStorage.reportIssuesAsOverride(ReportIssuesAsOverrideLevel.ERROR, "java:S102");
+    telemetryLocalStorage.incrementFlightRecorderSessionsCount();
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -146,7 +147,8 @@ class TelemetryHttpClientTests {
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
             {"key":"reported_issues_as_error_level.medium_and_above","value":"2","type":"integer","granularity":"daily"},
-            {"key":"reported_issues_as_override.error","value":"1","type":"integer","granularity":"daily"}
+            {"key":"reported_issues_as_override.error","value":"1","type":"integer","granularity":"daily"},
+            {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));
