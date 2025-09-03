@@ -1,0 +1,78 @@
+name: automated-release
+# TODO how to test? Jira sandbox?
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 83.0.0.2369'
+        required: true
+      branch:
+        description: 'The branch from which to check the releasability status.'
+        required: false
+        default: 'master'
+      short-description:
+        description: 'A short description for the release ticket'
+        required: true
+
+jobs:
+  release:
+    runs-on: github-ubuntu-latest-s
+    permissions:
+      id-token: write
+      contents: write
+      actions: write
+
+    steps:
+      - name: Check releasability
+        uses: SonarSource/release-github-actions/check-releasability-status@master
+        with:
+          branch: ${{ inputs.branch }}
+
+      - name: Get Release notes
+        id: jira-notes
+        uses: SonarSource/release-github-actions/get-jira-release-notes@master
+        with:
+          jira-project-key: 'SLCORE'
+          jira-version-name: ${{ inputs.version }} #      TODO Cut build number and sometimes minor, maybe some existing functionality?
+          use-jira-sandbox: true
+
+      - name: Create Jira Release Ticket
+        id: release-ticket
+        uses: SonarSource/release-github-actions/create-jira-release-ticket@master
+        with:
+          jira-project-key: 'SLCORE'
+          # TODO What jira-project-key is for?
+          project-name: 'SonarLint Core'
+          version: ${{ inputs.version }}
+          short-description: ${{ inputs.short-description }}
+          sq-compatibility: '[9.9, LATEST_RELEASE]'
+          jira-release-url: ${{ steps.jira-notes.outputs.jira-release-url }}
+          start-progress: true
+          use-jira-sandbox: true
+
+# TODO Why is it managing the full release? release-workflow
+      - name: Publish GitHub Release
+        uses: SonarSource/release-github-actions/publish-github-release@master
+        with:
+          release-version: ${{ inputs.version }}
+          branch: ${{ inputs.branch }}
+          release-notes: For full release notes, see [JIRA](${{ steps.jira-notes.outputs.jira-release-url }})
+          draft: false
+
+        # TODO STEP bump release PR
+
+      - name: Release Jira Version
+        uses: SonarSource/release-github-actions/release-jira-version@master
+        with:
+          jira-project-key: 'SLCORE'
+          jira-version-name: ${{ inputs.version }}
+          use-jira-sandbox: true
+          # TODO did we lose the token parameter?
+
+      - name: Update Release Ticket Status
+        uses: SonarSource/release-github-actions/update-release-ticket-status@master
+        with:
+          release-ticket-key: ${{ steps.release-ticket.outputs.release-ticket-key }}
+          status: 'Technical Release Done'
+          assignee: fake@mail.com # TODO Vault for this one?
+          use-jira-sandbox: true
