@@ -5,6 +5,7 @@
 * Add a new `FLIGHT_RECORDER` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Important note: the `MONITORING` capability is also required by this feature.
 * Add a new optional backend-to-client notification `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#flightRecorderStarted`. Clients can implement this notification to inform end users about a starting flight recorder session.
 * Add a new service  to the backend API: `org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService` can be used to interact with the flight recorder (e.g. to capture a thread dump of the current backend process)
+* Add a new `CURRENT_FILE_ANALYSIS_TYPE` to the `org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType` enum. This value can be used when reporting telemetry for forced analysis of currently open file.
 
 # 10.29
 ## New features
