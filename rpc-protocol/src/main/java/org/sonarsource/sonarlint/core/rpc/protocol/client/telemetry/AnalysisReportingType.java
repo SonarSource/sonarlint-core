@@ -23,6 +23,7 @@ public enum AnalysisReportingType {
   VCS_CHANGED_ANALYSIS_TYPE("trigger_count_vcs_changed_files"),
   ALL_FILES_ANALYSIS_TYPE("trigger_count_all_project_files"),
   PRE_COMMIT_ANALYSIS_TYPE("trigger_count_pre_commit"),
+  CURRENT_FILE_ANALYSIS_TYPE("trigger_count_current_file_ignoring_exclusions"),
   WHOLE_FOLDER_HOTSPOTS_SCAN_TYPE("trigger_count_whole_folder_hotspots_scan");
 
   private final String id;
