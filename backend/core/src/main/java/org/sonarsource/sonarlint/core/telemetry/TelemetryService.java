@@ -49,8 +49,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsErrorLevelParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ReportIssuesAsOverrideParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
@@ -182,14 +180,6 @@ public class TelemetryService {
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
-  }
-
-  public void reportIssuesAsErrorLevel(ReportIssuesAsErrorLevelParams params) {
-    updateTelemetry(localStorage -> localStorage.reportIssuesAsErrorLevel(params.getLevel()));
-  }
-
-  public void reportIssuesAsOverride(ReportIssuesAsOverrideParams params) {
-    updateTelemetry(localStorage -> localStorage.reportIssuesAsOverride(params.getLevel(), params.getRuleKey()));
   }
 
   public void smartNotificationsReceived(String eventType) {
