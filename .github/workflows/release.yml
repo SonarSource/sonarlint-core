@@ -4,6 +4,7 @@ on:
   release:
     types:
       - published
+#      - TODO trigger on workflow
 
 jobs:
   release:
@@ -15,3 +16,16 @@ jobs:
       publishToBinaries: false
       mavenCentralSync: true
       slackChannel: squad-ide
+
+
+# TODO for VSCode:
+#workflow_call:
+#  inputs:
+#    version:
+#      description: The new version
+#      required: true
+#      type: string
+
+#version: ${{ inputs.version }}
+#  releaseId: ${{ inputs.releaseId }}
+#  dryRun: ${{ inputs.dryRun }}

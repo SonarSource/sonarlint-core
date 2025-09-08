@@ -1,10 +1,11 @@
 name: automated-release
-# TODO how to test? Jira sandbox?
+# TODO how to test? Jira sandbox? Github draft release? https://sonarsource-sandbox-608.atlassian.net/
+# TODO need to have at least workflow file to be able to run it
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release, e.g. 83.0.0.2369'
+        description: 'Version to release, e.g. 83.0.0.2369' # TODO can be done through "Get Release Version" / "Get Jira Version"
         required: true
       branch:
         description: 'The branch from which to check the releasability status.'
@@ -33,15 +34,15 @@ jobs:
         uses: SonarSource/release-github-actions/get-jira-release-notes@master
         with:
           jira-project-key: 'SLCORE'
-          jira-version-name: ${{ inputs.version }} #      TODO Cut build number and sometimes minor, maybe some existing functionality?
+          jira-version-name: ${{ inputs.version }}
           use-jira-sandbox: true
 
       - name: Create Jira Release Ticket
         id: release-ticket
         uses: SonarSource/release-github-actions/create-jira-release-ticket@master
         with:
+          # TODO What jira-project-key is for? Not needed as long as we use jira-release-url
           jira-project-key: 'SLCORE'
-          # TODO What jira-project-key is for?
           project-name: 'SonarLint Core'
           version: ${{ inputs.version }}
           short-description: ${{ inputs.short-description }}
@@ -50,7 +51,6 @@ jobs:
           start-progress: true
           use-jira-sandbox: true
 
-# TODO Why is it managing the full release? release-workflow
       - name: Publish GitHub Release
         uses: SonarSource/release-github-actions/publish-github-release@master
         with:
@@ -59,7 +59,8 @@ jobs:
           release-notes: For full release notes, see [JIRA](${{ steps.jira-notes.outputs.jira-release-url }})
           draft: false
 
-        # TODO STEP bump release PR
+        # TODO STEP bump release PR: Separate workflow, different in each repo
+        # TODO STEP download/upload arbitrary artifact: to be investigated
 
       - name: Release Jira Version
         uses: SonarSource/release-github-actions/release-jira-version@master
@@ -67,7 +68,6 @@ jobs:
           jira-project-key: 'SLCORE'
           jira-version-name: ${{ inputs.version }}
           use-jira-sandbox: true
-          # TODO did we lose the token parameter?
 
       - name: Update Release Ticket Status
         uses: SonarSource/release-github-actions/update-release-ticket-status@master
