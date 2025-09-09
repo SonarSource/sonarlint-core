@@ -19,7 +19,7 @@ jobs:
           version: 2025.7.12
       - uses: SonarSource/ci-github-actions/build-maven@master # dogfood
         with:
-          maven-opts: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${GITHUB_WORKSPACE}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+          maven-opts: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
           run-shadow-scans: true
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
