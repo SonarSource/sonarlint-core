@@ -27,11 +27,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.function.UnaryOperator.identity;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty.parseAsCsv;
 import static org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty.trimFieldsAndRemoveEmptyFields;
+import static org.sonarsource.sonarlint.core.plugin.commons.Utils.randomAlphanumeric;
 
 class MultivaluePropertyTests {
   private static final String[] EMPTY_STRING_ARRAY = {};

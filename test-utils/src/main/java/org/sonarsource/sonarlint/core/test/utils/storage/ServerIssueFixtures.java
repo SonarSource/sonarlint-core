@@ -151,8 +151,8 @@ public class ServerIssueFixtures {
     public final String lineHash;
     public final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, TextRangeWithHash textRangeWithHash,
-      Map<SoftwareQuality, ImpactSeverity> impacts) {
+    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType,
+      TextRangeWithHash textRangeWithHash, Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
       this.ruleKey = ruleKey;

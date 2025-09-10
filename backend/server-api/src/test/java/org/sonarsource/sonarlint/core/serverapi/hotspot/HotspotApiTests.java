@@ -328,7 +328,7 @@ class HotspotApiTests {
         .build())
       .build());
 
-    var hotspots = underTest.getAll("p", "branch", new SonarLintCancelMonitor());
+    underTest.getAll("p", "branch", new SonarLintCancelMonitor());
 
     assertThat(logTester.logs())
       .contains("Error while fetching security hotspots, the component 'component:path' is missing");

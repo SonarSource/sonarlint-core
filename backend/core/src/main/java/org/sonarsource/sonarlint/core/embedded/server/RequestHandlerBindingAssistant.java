@@ -31,7 +31,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -62,17 +61,15 @@ public class RequestHandlerBindingAssistant {
   private final ExecutorServiceShutdownWatchable<?> executorService;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final ConnectionConfigurationRepository repository;
-  private final SonarQubeClientManager sonarQubeClientManager;
 
   public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder,
     SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionConfigurationRepository repository, SonarQubeClientManager sonarQubeClientManager) {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionConfigurationRepository repository) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.bindingCandidatesFinder = bindingCandidatesFinder;
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.sonarQubeClientManager = sonarQubeClientManager;
     this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Show Issue or Hotspot Request Handler"));
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.repository = repository;

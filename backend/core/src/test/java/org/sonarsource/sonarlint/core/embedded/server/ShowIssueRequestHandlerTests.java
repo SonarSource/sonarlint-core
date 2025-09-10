@@ -125,7 +125,7 @@ class ShowIssueRequestHandlerTests {
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(
       sonarLintRpcClient, connectionManager, telemetryService, new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
-        connectionConfigurationRepository, configurationRepository, sonarCloudActiveEnvironment, connectionConfiguration, connectionManager),
+        connectionConfigurationRepository, configurationRepository, sonarCloudActiveEnvironment, connectionConfiguration),
       pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 

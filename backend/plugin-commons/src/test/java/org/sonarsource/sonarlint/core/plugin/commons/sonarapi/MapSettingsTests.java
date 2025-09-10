@@ -34,9 +34,9 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.sonarsource.sonarlint.core.plugin.commons.Utils.randomAlphanumeric;
 
 class MapSettingsTests {
 

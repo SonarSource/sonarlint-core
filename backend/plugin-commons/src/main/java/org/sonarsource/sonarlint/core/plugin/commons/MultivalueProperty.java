@@ -48,7 +48,7 @@ public class MultivalueProperty {
       .setSkipHeaderRecord(true)
       .setIgnoreEmptyLines(true)
       .setIgnoreSurroundingSpaces(true)
-      .build()
+      .get()
       .parse(new StringReader(cleanValue))) {
       List<CSVRecord> records = csvParser.getRecords();
       if (records.isEmpty()) {

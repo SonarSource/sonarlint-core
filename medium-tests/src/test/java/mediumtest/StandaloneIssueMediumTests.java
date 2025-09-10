@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
@@ -77,7 +76,6 @@ import static utils.AnalysisUtils.createFile;
 class StandaloneIssueMediumTests {
   private static final String A_JAVA_FILE_PATH = "Foo.java";
   private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
-  private static final List<String> logs = new CopyOnWriteArrayList<>();
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;

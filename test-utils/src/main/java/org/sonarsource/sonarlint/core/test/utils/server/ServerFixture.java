@@ -1059,7 +1059,7 @@ public class ServerFixture {
               }
               return builder.build();
             }, toList())));
-        var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+        var branchParameter = branchName == null ? "" : ("&branch=" + urlEncode(branchName));
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
             .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -1176,7 +1176,7 @@ public class ServerFixture {
 
     private void registerApiHotspotsPullResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
+        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
         var timestamp = Hotspots.HotspotPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var hotspotsArray = branch.hotspots.stream().map(hotspot -> Hotspots.HotspotLite.newBuilder()
           .setKey(hotspot.hotspotKey)
@@ -1190,7 +1190,7 @@ public class ServerFixture {
             .setEndLine(hotspot.textRange.getEndLine())
             .setEndLineOffset(hotspot.textRange.getEndLineOffset())
             .setHash("hash"))
-          .setCreationDate(123456789L)
+          .setCreationDate(123_456_789L)
           .build()).toArray(Hotspots.HotspotLite[]::new);
         var messages = new Message[hotspotsArray.length + 1];
         messages[0] = timestamp;
@@ -1292,7 +1292,7 @@ public class ServerFixture {
 
     private void registerApiIssuesPullResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
+        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var issuesArray = branch.issues.stream().map(issue -> Issues.IssueLite.newBuilder()
           .setKey(issue.issueKey)
@@ -1306,7 +1306,7 @@ public class ServerFixture {
               .setEndLine(issue.textRange.getEndLine())
               .setEndLineOffset(issue.textRange.getEndLineOffset())
               .setHash("hash")))
-          .setCreationDate(123456789L)
+          .setCreationDate(123_456_789L)
           .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
             .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
             .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
@@ -1324,7 +1324,7 @@ public class ServerFixture {
 
     private void registerApiIssuesPullTaintResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
+        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
         var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var issuesArray = branch.taintIssues.stream().map(issue -> Issues.TaintVulnerabilityLite.newBuilder()
           .setKey(issue.issueKey)
