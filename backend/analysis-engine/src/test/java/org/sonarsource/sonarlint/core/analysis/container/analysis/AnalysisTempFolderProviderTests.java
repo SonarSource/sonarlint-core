@@ -31,7 +31,7 @@ class AnalysisTempFolderProviderTests {
     var tempFolder = underTest.provide();
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
-      .isThrownBy(() -> tempFolder.newDir())
+      .isThrownBy(tempFolder::newDir)
       .withMessage("Don't create temp folders during analysis");
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
@@ -39,7 +39,7 @@ class AnalysisTempFolderProviderTests {
       .withMessage("Don't create temp folders during analysis");
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
-      .isThrownBy(() -> tempFolder.newFile())
+      .isThrownBy(tempFolder::newFile)
       .withMessage("Don't create temp files during analysis");
 
     assertThatExceptionOfType(UnsupportedOperationException.class)

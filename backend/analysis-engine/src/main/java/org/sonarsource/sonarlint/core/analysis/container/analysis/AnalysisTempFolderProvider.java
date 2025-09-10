@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
 import java.io.File;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.TempFolder;
 import org.springframework.context.annotation.Bean;
 
@@ -58,7 +59,7 @@ public class AnalysisTempFolderProvider {
     }
 
     @Override
-    public File newFile(String prefix, String suffix) {
+    public File newFile(@Nullable String prefix, @Nullable String suffix) {
       throw throwUOEFiles();
     }
 

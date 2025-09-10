@@ -1053,50 +1053,7 @@ public class SonarLintBackendFixture {
       }
     }
 
-    public static class ProgressStep {
-      @CheckForNull
-      private final String message;
-      @CheckForNull
-      private final Integer percentage;
-
-      public ProgressStep(@Nullable String message, @Nullable Integer percentage) {
-        this.message = message;
-        this.percentage = percentage;
-      }
-
-      @CheckForNull
-      public String getMessage() {
-        return message;
-      }
-
-      @CheckForNull
-      public Integer getPercentage() {
-        return percentage;
-      }
-
-      @Override
-      public boolean equals(Object o) {
-        if (this == o)
-          return true;
-        if (o == null || getClass() != o.getClass())
-          return false;
-        ProgressStep that = (ProgressStep) o;
-        return Objects.equals(message, that.message) && Objects.equals(percentage, that.percentage);
-      }
-
-      @Override
-      public int hashCode() {
-        return Objects.hash(message, percentage);
-      }
-
-      @Override
-      public String toString() {
-        return "ProgressStep{" +
-          "message='" + message + '\'' +
-          ", percentage=" + percentage +
-          '}';
-      }
+    public record ProgressStep(@Nullable String message, @Nullable Integer percentage) {
     }
-
   }
 }

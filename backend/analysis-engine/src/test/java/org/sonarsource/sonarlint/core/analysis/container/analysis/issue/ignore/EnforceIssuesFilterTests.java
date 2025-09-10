@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
@@ -130,10 +129,9 @@ class EnforceIssuesFilterTests {
   }
 
   @Test
-  void shouldRefuseIssueIfRuleMatchesAndNotFile() throws IOException {
+  void shouldRefuseIssueIfRuleMatchesAndNotFile() {
     var rule = "rule";
     var path = "org/sonar/api/Issue.java";
-    var componentKey = "org.sonar.api.Issue";
     var ruleKey = mock(RuleKey.class);
     when(ruleKey.toString()).thenReturn(rule);
     when(issue.ruleKey()).thenReturn(ruleKey);

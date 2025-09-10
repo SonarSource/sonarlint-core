@@ -120,7 +120,8 @@ public class RuleDetails {
       serverRule.getCleanCodeAttribute(),
       serverRule.getHtmlNote(), Collections.emptyList(),
       serverRule.getEducationPrincipleKeys(),
-      null); // TODO get vulnerability probability from storage?
+      // TODO get vulnerability probability from storage?
+      null);
   }
 
   public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin, boolean skipCleanCodeTaxonomy) {

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Rule Extractor
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,32 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rule.extractor;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
-import java.io.File;
-import javax.annotation.Nullable;
-import org.sonar.api.utils.TempFolder;
+import static org.apache.commons.lang3.RandomStringUtils.insecure;
 
-public class NoopTempFolder implements TempFolder {
-
-  @Override
-  public File newDir() {
-    throw new UnsupportedOperationException("newDir");
+public class Utils {
+  private Utils() {
+    // utility class
   }
 
-  @Override
-  public File newDir(String name) {
-    throw new UnsupportedOperationException("newDir");
+  public static String randomAlphanumeric(int count) {
+    return insecure().nextAlphanumeric(count);
   }
-
-  @Override
-  public File newFile() {
-    throw new UnsupportedOperationException("newFile");
-  }
-
-  @Override
-  public File newFile(@Nullable String prefix, @Nullable String suffix) {
-    throw new UnsupportedOperationException("newFile");
-  }
-
 }

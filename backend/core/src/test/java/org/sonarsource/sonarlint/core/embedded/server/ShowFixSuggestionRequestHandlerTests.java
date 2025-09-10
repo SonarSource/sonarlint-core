@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
-import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
@@ -100,7 +99,7 @@ class ShowFixSuggestionRequestHandlerTests {
 
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
-        sonarCloudActiveEnvironment, connectionConfiguration, mock(SonarQubeClientManager.class)),
+        sonarCloudActiveEnvironment, connectionConfiguration),
       pathTranslationService, sonarCloudActiveEnvironment, clientFs);
   }
 

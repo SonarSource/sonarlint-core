@@ -145,7 +145,7 @@ public class ProjectStorageFixture {
     }
 
     private void createNewCodeDefinition(Path projectFolder) {
-      if(newCodeDefinition != null) {
+      if (newCodeDefinition != null) {
         ProtobufFileUtil.writeToFile(newCodeDefinition, projectFolder.resolve("new_code_definition.pb"));
       }
     }
@@ -169,13 +169,12 @@ public class ProjectStorageFixture {
       Map<String, Sonarlint.RuleSet> protoRuleSets = new HashMap<>();
       ruleSets.forEach(ruleSet -> {
         var ruleSetBuilder = Sonarlint.RuleSet.newBuilder();
-        ruleSet.activeRules.forEach(activeRule ->
-          ruleSetBuilder.addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
-            .setRuleKey(activeRule.ruleKey)
-            .setSeverity(activeRule.severity)
-            .setTemplateKey(trimToEmpty(activeRule.templateKey))
-            .putAllParams(activeRule.params)
-            .build()));
+        ruleSet.activeRules.forEach(activeRule -> ruleSetBuilder.addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
+          .setRuleKey(activeRule.ruleKey)
+          .setSeverity(activeRule.severity)
+          .setTemplateKey(trimToEmpty(activeRule.templateKey))
+          .putAllParams(activeRule.params)
+          .build()));
         protoRuleSets.put(ruleSet.languageKey, ruleSetBuilder.build());
       });
       var analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder()

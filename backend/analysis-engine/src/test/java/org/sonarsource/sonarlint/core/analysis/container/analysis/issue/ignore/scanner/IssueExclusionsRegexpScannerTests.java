@@ -33,12 +33,9 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata.Metadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.scanner.IssueExclusionsLoader.DoubleRegexpMatcher;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.OnDiskTestClientInputFile;
@@ -52,9 +49,6 @@ class IssueExclusionsRegexpScannerTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private SonarLintInputFile javaFile;
 
-  @Mock
-  private IssueExclusionPatternInitializer patternsInitializer;
-
   private List<Pattern> allFilePatterns;
   private List<DoubleRegexpMatcher> blockPatterns;
   private IssueExclusionsRegexpScanner regexpScanner;
@@ -62,8 +56,6 @@ class IssueExclusionsRegexpScannerTests {
 
   @BeforeEach
   void init() {
-    MockitoAnnotations.initMocks(this);
-
     blockPatterns = Arrays.asList(new DoubleRegexpMatcher(Pattern.compile("// SONAR-OFF"), Pattern.compile("// SONAR-ON")),
       new DoubleRegexpMatcher(Pattern.compile("// FOO-OFF"), Pattern.compile("// FOO-ON")));
     allFilePatterns = Collections.singletonList(Pattern.compile("@SONAR-IGNORE-ALL"));
