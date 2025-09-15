@@ -50,7 +50,7 @@ public class ScaSynchronizationService {
     if (!isScaSynchronizationEnabled) {
       return;
     }
-    if (!isScaSupported(serverApi, connectionId)) {
+    if (!isScaSupported(connectionId)) {
       return;
     }
     LOG.info("[SYNC] Synchronizing dependency risks for project '{}' on branch '{}'", sonarProjectKey, branchName);
@@ -100,10 +100,7 @@ public class ScaSynchronizationService {
     return new UpdateSummary<>(deletedDependencyRiskIds, addedDependencyRisks, updatedDependencyRisks);
   }
 
-  private boolean isScaSupported(ServerApi serverApi, String connectionId) {
-    if (serverApi.isSonarCloud()) {
-      return false;
-    }
+  private boolean isScaSupported(String connectionId) {
     var serverInfo = storageService.connection(connectionId).serverInfo().read();
     return serverInfo.map(info -> info.hasFeature(Feature.SCA)).orElse(false);
   }

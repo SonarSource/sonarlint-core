@@ -246,16 +246,33 @@ public class ServerApiHelper {
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker, String pageFieldName,
     String pageSizeFieldName) {
+    var baseUrl = buildEndpointUrl(relativeUrlWithoutPaginationParams);
+    getPaginatedBaseUrl(baseUrl, responseParser, getPagingTotal, itemExtractor,
+      itemConsumer, limitToTwentyPages, cancelChecker, pageFieldName,
+      pageSizeFieldName);
+  }
+
+  public <G, F> void apiGetPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker, String pageFieldName,
+    String pageSizeFieldName) {
+    getPaginatedBaseUrl(buildApiEndpointUrl(relativeUrlWithoutPaginationParams), responseParser, getPagingTotal, itemExtractor,
+      itemConsumer, limitToTwentyPages, cancelChecker, pageFieldName,
+      pageSizeFieldName);
+  }
+
+  private <G, F> void getPaginatedBaseUrl(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker, String pageFieldName,
+    String pageSizeFieldName) {
     var page = new AtomicInteger(0);
     var stop = new AtomicBoolean(false);
     var loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      String fullUrl = relativeUrlWithoutPaginationParams + (relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?") +
+      String fullUrl = baseUrl + (baseUrl.contains("?") ? "&" : "?") +
         pageSizeFieldName + "=" + PAGE_SIZE + "&" + pageFieldName + "=" + page;
       ServerApiHelper.consumeTimed(
-        () -> rawGet(fullUrl, cancelChecker),
-        response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
+        () -> rawGetUrl(fullUrl, cancelChecker),
+        response -> processPage(baseUrl, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
     } while (!stop.get() && !cancelChecker.isCanceled());

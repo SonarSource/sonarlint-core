@@ -120,9 +120,6 @@ public class DependencyRiskService {
         connectionId);
       throw new ResponseErrorException(error);
     }
-    if (connection.getEndpointParams().isSonarCloud()) {
-      return new CheckDependencyRiskSupportedResponse(false, "SonarQube Cloud does not yet support dependency risks");
-    }
     var optServerInfo = storageService.connection(connectionId).serverInfo().read();
     if (optServerInfo.isEmpty()) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Could not retrieve server information for connection",
@@ -130,7 +127,7 @@ public class DependencyRiskService {
       throw new ResponseErrorException(error);
     }
     var serverInfo = optServerInfo.get();
-    if (!serverInfo.version().satisfiesMinRequirement(SCA_MIN_SQ_VERSION)) {
+    if (!connection.getEndpointParams().isSonarCloud() && !serverInfo.version().satisfiesMinRequirement(SCA_MIN_SQ_VERSION)) {
       return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server version is lower than the minimum supported version 2025.4");
     }
     if (!serverInfo.hasFeature(Feature.SCA)) {
