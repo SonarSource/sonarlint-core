@@ -25,7 +25,6 @@ import java.util.Optional;
 public record ServerSettings(Map<String, String> globalSettings) {
   public static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   public static final String EARLY_ACCESS_MISRA_ENABLED = "sonar.earlyAccess.misra.enabled";
-  public static final String SCA_ENABLED = "sonar.sca.enabled";
 
   public Optional<Boolean> getAsBoolean(String settingKey) {
     return Optional.ofNullable(globalSettings.get(settingKey))

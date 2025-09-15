@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 
 import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.MQR_MODE_SETTING;
 
-public record StoredServerInfo(Version version, ServerSettings globalSettings) {
+public record StoredServerInfo(Version version, Set<Feature> features, ServerSettings globalSettings) {
   private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
   private static final String MQR_MODE_SETTING_MIN_VERSION = "10.8";
 
@@ -34,5 +36,9 @@ public record StoredServerInfo(Version version, ServerSettings globalSettings) {
     }
     // if no setting is present, MQR mode should be used for 10.2+, otherwise standard mode should be used
     return version.satisfiesMinRequirement(Version.create(MIN_MQR_MODE_SUPPORT_VERSION));
+  }
+
+  public boolean hasFeature(Feature feature) {
+    return features.contains(feature);
   }
 }

@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 
 public class ServerInfoSynchronizer {
   private final ConnectionStorage storage;
@@ -42,6 +44,7 @@ public class ServerInfoSynchronizer {
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
     var globalSettings = serverApi.settings().getGlobalSettings(cancelMonitor);
-    storage.serverInfo().store(serverStatus, globalSettings);
+    var supportedFeatures = serverApi.isSonarCloud() ? Set.<Feature>of() : serverApi.features().list(cancelMonitor);
+    storage.serverInfo().store(serverStatus, supportedFeatures, globalSettings);
   }
 }

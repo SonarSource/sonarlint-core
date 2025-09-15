@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -74,6 +76,7 @@ class ServerInfoSynchronizerTests {
   @Test
   void it_should_synchronize_version_and_settings() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    mockServer.addStringResponse("/api/features/list", "[\"sca\"]");
     mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
         .setKey("sonar.multi-quality-mode.enabled")
@@ -87,8 +90,9 @@ class ServerInfoSynchronizerTests {
       new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::version, StoredServerInfo::globalSettings)
-      .containsExactly(Version.create("9.9"), new ServerSettings(Map.of("sonar.multi-quality-mode.enabled", "true", "sonar.earlyAccess.misra.enabled", "true")));
+      .extracting(StoredServerInfo::version, StoredServerInfo::features, StoredServerInfo::globalSettings)
+      .containsExactly(Version.create("9.9"), Set.of(Feature.SCA),
+        new ServerSettings(Map.of("sonar.multi-quality-mode.enabled", "true", "sonar.earlyAccess.misra.enabled", "true")));
   }
 
   @Test

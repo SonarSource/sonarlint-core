@@ -33,6 +33,7 @@ message ServerInfo {
   // deprecated, store in the settings map below
   optional bool misraEarlyAccessRulesEnabled = 3 [deprecated=true];
   map<string, string> globalSettings = 4;
+  repeated string supportedFeatures = 5;
 }
 
 message PluginReferences {

@@ -25,13 +25,13 @@ import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toSet;
-import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.SCA_ENABLED;
 
 public class ScaSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -105,6 +105,6 @@ public class ScaSynchronizationService {
       return false;
     }
     var serverInfo = storageService.connection(connectionId).serverInfo().read();
-    return serverInfo.flatMap(info -> info.globalSettings().getAsBoolean(SCA_ENABLED)).orElse(false);
+    return serverInfo.map(info -> info.hasFeature(Feature.SCA)).orElse(false);
   }
 }
