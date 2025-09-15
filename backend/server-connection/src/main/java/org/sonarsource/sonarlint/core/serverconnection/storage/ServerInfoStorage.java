@@ -24,8 +24,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
@@ -46,9 +49,9 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerStatusInfo serverStatus, Map<String, String> globalSettings) {
+  public void store(ServerStatusInfo serverStatus, Set<Feature> features, Map<String, String> globalSettings) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverStatus, globalSettings);
+    var serverInfoToStore = adapt(serverStatus, features, globalSettings);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
     LOG.debug("Stored server info");
@@ -59,10 +62,11 @@ public class ServerInfoStorage {
       : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, Map<String, String> globalSettings) {
+  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, Set<Feature> features, Map<String, String> globalSettings) {
     return Sonarlint.ServerInfo.newBuilder()
       .setVersion(serverStatus.version())
       .putAllGlobalSettings(globalSettings)
+      .addAllSupportedFeatures(features.stream().map(Feature::getKey).toList())
       .build();
   }
 
@@ -76,7 +80,8 @@ public class ServerInfoStorage {
       }
       globalSettings.put(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(serverInfo.getMisraEarlyAccessRulesEnabled()));
     }
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()), new ServerSettings(globalSettings));
+    return new StoredServerInfo(Version.create(serverInfo.getVersion()),
+      serverInfo.getSupportedFeaturesList().stream().map(Feature::fromKey).flatMap(Optional::stream).collect(Collectors.toSet()), new ServerSettings(globalSettings));
   }
 
 }

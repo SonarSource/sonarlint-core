@@ -19,12 +19,12 @@
  */
 package mediumtest.sca;
 
-import java.util.Map;
 import java.util.concurrent.CompletionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -104,7 +104,7 @@ class CheckDependencyRisksSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withServerVersion("2025.3"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -122,25 +122,6 @@ class CheckDependencyRisksSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "false"))
-          .withServerVersion("2025.4"))
-      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .start();
-
-    var response = checkSupported(backend, CONFIG_SCOPE_ID);
-
-    assertThat(response.isSupported()).isFalse();
-    assertThat(response.getReason()).contains("does not have Advanced Security enabled");
-  }
-
-  @SonarLintTest
-  void it_should_fail_when_sca_setting_missing() {
-    var harness = new SonarLintTestHarness();
-    var server = harness.newFakeSonarQubeServer().start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, server,
-        storage -> storage
-          .withGlobalSettings(Map.of()) // No SCA setting
           .withServerVersion("2025.4"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -177,7 +158,7 @@ class CheckDependencyRisksSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withServerVersion("2025.4"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -195,7 +176,7 @@ class CheckDependencyRisksSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withServerVersion("2025.5"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();

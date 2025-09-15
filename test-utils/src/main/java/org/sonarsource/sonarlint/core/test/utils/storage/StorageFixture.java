@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
@@ -63,6 +64,7 @@ public class StorageFixture {
 
   public static class StorageBuilder {
     private final String connectionId;
+    private final List<Feature> supportedFeatures = new ArrayList<>();
     private final List<Plugin> plugins = new ArrayList<>();
     private final List<ProjectStorageFixture.ProjectStorageBuilder> projectBuilders = new ArrayList<>();
     private AiCodeFixFixtures.Builder aiCodeFixBuilder;
@@ -80,6 +82,11 @@ public class StorageFixture {
 
     public StorageBuilder withServerVersion(String serverVersion) {
       this.serverVersion = serverVersion;
+      return this;
+    }
+
+    public StorageBuilder withServerFeature(Feature feature) {
+      this.supportedFeatures.add(feature);
       return this;
     }
 
@@ -144,10 +151,14 @@ public class StorageFixture {
     }
 
     private void createServerInfo(Path connectionStorage) {
-      if (serverVersion != null || globalSettings != null) {
+      if (serverVersion != null || globalSettings != null || !supportedFeatures.isEmpty()) {
         var version = serverVersion == null ? "0.0.0" : serverVersion;
         var settings = globalSettings == null ? Map.<String, String>of() : globalSettings;
-        ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion(version).putAllGlobalSettings(settings).build(),
+        ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder()
+            .setVersion(version)
+            .addAllSupportedFeatures(supportedFeatures.stream().map(Feature::getKey).toList())
+            .putAllGlobalSettings(settings)
+            .build(),
           connectionStorage.resolve("server_info.pb"));
       }
     }

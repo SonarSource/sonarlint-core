@@ -21,7 +21,6 @@ package mediumtest.sca;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
@@ -35,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRisk
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -166,14 +166,14 @@ class DependencyRisksMediumTests {
       .withBackendCapability(SCA_SYNCHRONIZATION)
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withProject(PROJECT_KEY, project -> project.withMainBranch("main")))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
 
-    var refresheddependencyRisks = refreshAndListAllDependencyRisks(backend, CONFIG_SCOPE_ID);
+    var refreshedDependencyRisks = refreshAndListAllDependencyRisks(backend, CONFIG_SCOPE_ID);
 
-    assertThat(refresheddependencyRisks)
+    assertThat(refreshedDependencyRisks)
       .extracting(DependencyRiskDto::getId, DependencyRiskDto::getType, DependencyRiskDto::getSeverity, DependencyRiskDto::getQuality, DependencyRiskDto::getStatus,
         DependencyRiskDto::getTransitions, DependencyRiskDto::getPackageName, DependencyRiskDto::getPackageVersion)
       .containsExactly(
@@ -185,7 +185,7 @@ class DependencyRisksMediumTests {
   void it_should_notify_client_when_new_dependency_risks_are_added(SonarLintTestHarness harness) {
     var dependencyRiskKey = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     var server = harness.newFakeSonarQubeServer()
-      .withGlobalSetting("sonar.sca.enabled", "true")
+      .withFeature("sca")
       .withProject(PROJECT_KEY,
         project -> project.withBranch("main",
           branch -> branch
@@ -229,7 +229,7 @@ class DependencyRisksMediumTests {
   void it_should_notify_client_when_dependency_risks_are_removed(SonarLintTestHarness harness) {
     var dependencyRiskKey = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     var server = harness.newFakeSonarQubeServer()
-      .withGlobalSetting("sonar.sca.enabled", "true")
+      .withFeature("sca")
       .withProject(PROJECT_KEY, project -> project.withBranch("main"))
       .start();
     var client = harness.newFakeClient().build();
@@ -263,7 +263,7 @@ class DependencyRisksMediumTests {
   void it_should_notify_client_when_dependency_risks_are_updated(SonarLintTestHarness harness) {
     var dependencyRiskKey = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
     var server = harness.newFakeSonarQubeServer()
-      .withGlobalSetting("sonar.sca.enabled", "true")
+      .withFeature("sca")
       .withProject(PROJECT_KEY,
         project -> project.withBranch("main",
           branch -> branch
@@ -819,7 +819,7 @@ class DependencyRisksMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withServerVersion("2025.4"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -837,7 +837,7 @@ class DependencyRisksMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "true"))
+          .withServerFeature(Feature.SCA)
           .withServerVersion("2025.3"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
@@ -855,7 +855,6 @@ class DependencyRisksMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage
-          .withGlobalSettings(Map.of("sonar.sca.enabled", "false"))
           .withServerVersion("2025.4"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();

@@ -23,7 +23,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum Feature {
-  AI_CODE_FIX("fix-suggestions");
+  AI_CODE_FIX("fix-suggestions"),
+  SCA("sca");
 
   public static Optional<Feature> fromKey(String key) {
     return Arrays.stream(values()).filter(f -> f.key.equals(key)).findFirst();

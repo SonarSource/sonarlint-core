@@ -48,14 +48,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependenc
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.event.EventListener;
-
-import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.SCA_ENABLED;
 
 public class DependencyRiskService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -134,8 +133,7 @@ public class DependencyRiskService {
     if (!serverInfo.version().satisfiesMinRequirement(SCA_MIN_SQ_VERSION)) {
       return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server version is lower than the minimum supported version 2025.4");
     }
-    var scaEnabled = serverInfo.globalSettings().getAsBoolean(SCA_ENABLED).orElse(false);
-    if (Boolean.FALSE.equals(scaEnabled)) {
+    if (!serverInfo.hasFeature(Feature.SCA)) {
       return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
     }
     return new CheckDependencyRiskSupportedResponse(true, null);
