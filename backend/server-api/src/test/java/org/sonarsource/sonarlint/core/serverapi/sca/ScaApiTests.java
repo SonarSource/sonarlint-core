@@ -58,7 +58,7 @@ class ScaApiTests {
 
   @Test
   void should_get_issues_releases_with_empty_response() {
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=my-project&branchName=main&pageSize=500&pageIndex=1", EMPTY_ISSUES_RELEASES_JSON);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=my-project&branchKey=main&pageSize=500&pageIndex=1", EMPTY_ISSUES_RELEASES_JSON);
 
     var response = scaApi.getIssuesReleases("my-project", "main", new SonarLintCancelMonitor());
 
@@ -92,7 +92,7 @@ class ScaApiTests {
         }
       }
       """, uuid);
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=test-project&branchName=feature%2Fmy-branch&pageSize=500&pageIndex=1", jsonResponse);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=test-project&branchKey=feature%2Fmy-branch&pageSize=500&pageIndex=1", jsonResponse);
 
     var response = scaApi.getIssuesReleases("test-project", "feature/my-branch", new SonarLintCancelMonitor());
 
@@ -138,7 +138,7 @@ class ScaApiTests {
         }
       }
       """, uuid);
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=license-project&branchName=develop&pageSize=500&pageIndex=1", jsonResponse);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=license-project&branchKey=develop&pageSize=500&pageIndex=1", jsonResponse);
 
     var response = scaApi.getIssuesReleases("license-project", "develop", new SonarLintCancelMonitor());
 
@@ -198,7 +198,7 @@ class ScaApiTests {
         }
       }
       """, uuid1, uuid2);
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=multi-project&branchName=master&pageSize=500&pageIndex=1", jsonResponse);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=multi-project&branchKey=master&pageSize=500&pageIndex=1", jsonResponse);
 
     var response = scaApi.getIssuesReleases("multi-project", "master", new SonarLintCancelMonitor());
 
@@ -232,7 +232,7 @@ class ScaApiTests {
 
   @Test
   void should_handle_special_characters_in_project_key_and_branch_name() {
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=my%3Aproject%2Bkey&branchName=feature%2Fmy-branch%3Atest&pageSize=500&pageIndex=1", EMPTY_ISSUES_RELEASES_JSON);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=my%3Aproject%2Bkey&branchKey=feature%2Fmy-branch%3Atest&pageSize=500&pageIndex=1", EMPTY_ISSUES_RELEASES_JSON);
 
     var response = scaApi.getIssuesReleases("my:project+key", "feature/my-branch:test", new SonarLintCancelMonitor());
 
@@ -271,7 +271,7 @@ class ScaApiTests {
         }
       }
       """, uuid);
-    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=minimal-project&branchName=main&pageSize=500&pageIndex=1", jsonResponse);
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=minimal-project&branchKey=main&pageSize=500&pageIndex=1", jsonResponse);
 
     var response = scaApi.getIssuesReleases("minimal-project", "main", new SonarLintCancelMonitor());
 

@@ -1621,7 +1621,7 @@ public class ServerFixture {
           }
           """, dependencyRisksJson, branch.dependencyRisks.size(), branch.dependencyRisks.size());
 
-        mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchName=" + branchName + "&pageSize=500&pageIndex=1")
+        mockServer.stubFor(get("/api/v2/sca/issues-releases?projectKey=" + projectKey + "&branchKey=" + branchName + "&pageSize=500&pageIndex=1")
           .willReturn(jsonResponse(responseJson, responseCodes.statusCode)));
         mockServer.stubFor(post("/api/v2/sca/issues-releases/change-status")
           .willReturn(aResponse().withStatus(200)));

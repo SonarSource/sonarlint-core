@@ -84,17 +84,18 @@ class CheckDependencyRisksSupportedMediumTests {
   }
 
   @SonarLintTest
-  void it_should_fail_on_sonarcloud() {
+  void it_should_succeed_on_sonarcloud() {
     var harness = new SonarLintTestHarness();
     var backend = harness.newBackend()
-      .withSonarCloudConnection(CONNECTION_ID)
+      .withSonarCloudConnection(CONNECTION_ID, storage -> storage
+        .withServerFeature(Feature.SCA))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
 
     var response = checkSupported(backend, CONFIG_SCOPE_ID);
 
-    assertThat(response.isSupported()).isFalse();
-    assertThat(response.getReason()).contains("SonarQube Cloud does not yet support dependency risks");
+    assertThat(response.isSupported()).isTrue();
+    assertThat(response.getReason()).isNull();
   }
 
   @SonarLintTest
