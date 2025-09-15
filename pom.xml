@@ -228,8 +228,8 @@
       </dependency>
       <dependency>
         <groupId>io.github.hakky54</groupId>
-        <artifactId>sslcontext-kickstart</artifactId>
-        <version>9.0.0</version>
+        <artifactId>ayza</artifactId>
+        <version>10.0.0</version>
       </dependency>
       <!-- Use the Jetty 12 variant that supports Servlet 6, to not conflict with Tomcat -->
       <dependency>
