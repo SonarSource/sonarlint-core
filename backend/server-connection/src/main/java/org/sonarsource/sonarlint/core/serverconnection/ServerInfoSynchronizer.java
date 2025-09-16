@@ -44,7 +44,11 @@ public class ServerInfoSynchronizer {
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
     var globalSettings = serverApi.settings().getGlobalSettings(cancelMonitor);
-    var supportedFeatures = serverApi.isSonarCloud() ? Set.<Feature>of() : serverApi.features().list(cancelMonitor);
+    var supportedFeatures = serverApi.isSonarCloud() ? getSupportedFeaturesForSonarQubeCloud(serverApi, cancelMonitor) : serverApi.features().list(cancelMonitor);
     storage.serverInfo().store(serverStatus, supportedFeatures, globalSettings);
+  }
+
+  private static Set<Feature> getSupportedFeaturesForSonarQubeCloud(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    return serverApi.sca().isScaEnabled(cancelMonitor).enabled() ? Set.of(Feature.SCA) : Set.of();
   }
 }

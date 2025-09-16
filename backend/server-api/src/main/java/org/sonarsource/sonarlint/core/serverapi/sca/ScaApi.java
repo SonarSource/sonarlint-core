@@ -39,24 +39,38 @@ public class ScaApi {
     this.serverApiHelper = serverApiHelper;
   }
 
-  public GetIssuesReleasesResponse getIssuesReleases(String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var url = "/api/v2/sca/issues-releases?projectKey=" +
+  public GetIssuesReleasesResponse getIssuesReleases(String projectKey, String branchKey, SonarLintCancelMonitor cancelMonitor) {
+    var urlPrefix = serverApiHelper.isSonarCloud() ? "" : "/api/v2";
+    var url = urlPrefix + "/sca/issues-releases?projectKey=" +
       UrlUtils.urlEncode(projectKey) +
-      "&branchName=" +
-      UrlUtils.urlEncode(branchName);
+      "&branchKey=" +
+      UrlUtils.urlEncode(branchKey);
 
     var allIssuesReleases = new ArrayList<GetIssuesReleasesResponse.IssuesRelease>();
 
-    serverApiHelper.getPaginated(
-      url,
-      response -> new Gson().fromJson(new InputStreamReader(response, StandardCharsets.UTF_8), GetIssuesReleasesResponse.class),
-      r -> r.page().total(),
-      GetIssuesReleasesResponse::issuesReleases,
-      allIssuesReleases::add,
-      false,
-      cancelMonitor,
-      "pageIndex",
-      "pageSize");
+    if (serverApiHelper.isSonarCloud()) {
+      serverApiHelper.apiGetPaginated(
+        url,
+        response -> new Gson().fromJson(new InputStreamReader(response, StandardCharsets.UTF_8), GetIssuesReleasesResponse.class),
+        r -> r.page().total(),
+        GetIssuesReleasesResponse::issuesReleases,
+        allIssuesReleases::add,
+        false,
+        cancelMonitor,
+        "pageIndex",
+        "pageSize");
+    } else {
+      serverApiHelper.getPaginated(
+        url,
+        response -> new Gson().fromJson(new InputStreamReader(response, StandardCharsets.UTF_8), GetIssuesReleasesResponse.class),
+        r -> r.page().total(),
+        GetIssuesReleasesResponse::issuesReleases,
+        allIssuesReleases::add,
+        false,
+        cancelMonitor,
+        "pageIndex",
+        "pageSize");
+    }
     return new GetIssuesReleasesResponse(allIssuesReleases, new GetIssuesReleasesResponse.Page(allIssuesReleases.size()));
   }
 
@@ -69,14 +83,31 @@ public class ScaApi {
 
   public void changeStatus(UUID issueReleaseKey, String transitionKey, @Nullable String comment, SonarLintCancelMonitor cancelMonitor) {
     var body = new ChangeStatusRequestBody(issueReleaseKey.toString(), transitionKey, comment);
-    var url = "/api/v2/sca/issues-releases/change-status";
+    var urlPrefix = serverApiHelper.isSonarCloud() ? "" : "/api/v2";
+    var url = urlPrefix + "/sca/issues-releases/change-status";
 
-    serverApiHelper.post(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+    if (serverApiHelper.isSonarCloud()) {
+      serverApiHelper.apiPost(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+    } else {
+      serverApiHelper.post(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+    }
   }
 
   private record ChangeStatusRequestBody(String issueReleaseKey, String transitionKey, @Nullable String comment) {
     public String toJson() {
       return new Gson().toJson(this);
+    }
+  }
+
+  public GetScaEnablementResponse isScaEnabled(SonarLintCancelMonitor cancelMonitor) {
+    var organizationKey = serverApiHelper.getOrganizationKey();
+    if (organizationKey.isEmpty()) {
+      return new GetScaEnablementResponse(false);
+    }
+    try (var response = serverApiHelper.apiGet("/sca/feature-enabled?organization=" + UrlUtils.urlEncode(organizationKey.get()), cancelMonitor)) {
+      return new Gson().fromJson(new InputStreamReader(response.bodyAsStream(), StandardCharsets.UTF_8), GetScaEnablementResponse.class);
+    } catch (Exception e) {
+      return new GetScaEnablementResponse(false);
     }
   }
 

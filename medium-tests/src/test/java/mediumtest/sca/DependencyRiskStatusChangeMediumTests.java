@@ -57,7 +57,7 @@ class DependencyRiskStatusChangeMediumTests {
   private static final String BRANCH_NAME = "main";
 
   @SonarLintTest
-  void it_should_update_the_status_on_sonarqube_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+  void it_should_update_the_status_on_sonarqube_server_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
     var dependencyRiskKey = UUID.randomUUID();
     var dependencyRisk = aServerDependencyRisk()
       .withKey(dependencyRiskKey)
@@ -98,6 +98,56 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
+          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withRequestBody(equalToJson(expectedJson)));
+    });
+  }
+
+  @SonarLintTest
+  void it_should_update_the_status_on_sonarqube_cloud_when_changing_the_status_on_a_server_matched_dependency_risk(SonarLintTestHarness harness) {
+    var dependencyRiskKey = UUID.randomUUID();
+    var dependencyRisk = aServerDependencyRisk()
+      .withKey(dependencyRiskKey)
+      .withType(ServerDependencyRisk.Type.VULNERABILITY)
+      .withSeverity(ServerDependencyRisk.Severity.HIGH)
+      .withStatus(ServerDependencyRisk.Status.OPEN)
+      .withQuality(ServerDependencyRisk.SoftwareQuality.SECURITY)
+      .withPackageName("com.example.vulnerable")
+      .withPackageVersion("1.0.0")
+      .withVulnerabilityId("CVE-1234")
+      .withCvssScore("7.5")
+      .withTransitions(List.of(
+        ServerDependencyRisk.Transition.CONFIRM,
+        ServerDependencyRisk.Transition.REOPEN
+      ));
+
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("org", org ->
+        org.withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME)))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, "org", true, storage -> storage
+        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch.withDependencyRisk(dependencyRisk))))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var comment = "I confirm this is a risk";
+    var response = backend.getDependencyRiskService().changeStatus(new ChangeDependencyRiskStatusParams(CONFIGURATION_SCOPE_ID, dependencyRiskKey,
+      DependencyRiskTransition.CONFIRM, comment));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    var expectedJson = String.format("""
+        {
+          "issueReleaseKey":"%s",
+          "transitionKey":"CONFIRM",
+          "comment":"%s"
+        }
+      """, dependencyRiskKey, comment);
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/sca/issues-releases/change-status"))
           .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
