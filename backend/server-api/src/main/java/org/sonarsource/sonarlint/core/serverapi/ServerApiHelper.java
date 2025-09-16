@@ -269,7 +269,7 @@ public class ServerApiHelper {
     var loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      String fullUrl = baseUrl + (baseUrl.contains("?") ? "&" : "?") +
+      var fullUrl = baseUrl + (baseUrl.contains("?") ? "&" : "?") +
         pageSizeFieldName + "=" + PAGE_SIZE + "&" + pageFieldName + "=" + page;
       ServerApiHelper.consumeTimed(
         () -> rawGetUrl(fullUrl, cancelChecker),

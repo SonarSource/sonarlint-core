@@ -39,12 +39,12 @@ public class ScaApi {
     this.serverApiHelper = serverApiHelper;
   }
 
-  public GetIssuesReleasesResponse getIssuesReleases(String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
+  public GetIssuesReleasesResponse getIssuesReleases(String projectKey, String branchKey, SonarLintCancelMonitor cancelMonitor) {
     var urlPrefix = serverApiHelper.isSonarCloud() ? "" : "/api/v2";
     var url = urlPrefix + "/sca/issues-releases?projectKey=" +
       UrlUtils.urlEncode(projectKey) +
       "&branchKey=" +
-      UrlUtils.urlEncode(branchName);
+      UrlUtils.urlEncode(branchKey);
 
     var allIssuesReleases = new ArrayList<GetIssuesReleasesResponse.IssuesRelease>();
 
@@ -104,7 +104,7 @@ public class ScaApi {
     if (organizationKey.isEmpty()) {
       return new GetScaEnablementResponse(false);
     }
-    try(var response = serverApiHelper.apiGet("/sca/feature-enabled?organization=" + UrlUtils.urlEncode(organizationKey.get()), cancelMonitor)) {
+    try (var response = serverApiHelper.apiGet("/sca/feature-enabled?organization=" + UrlUtils.urlEncode(organizationKey.get()), cancelMonitor)) {
       return new Gson().fromJson(new InputStreamReader(response.bodyAsStream(), StandardCharsets.UTF_8), GetScaEnablementResponse.class);
     } catch (Exception e) {
       return new GetScaEnablementResponse(false);
