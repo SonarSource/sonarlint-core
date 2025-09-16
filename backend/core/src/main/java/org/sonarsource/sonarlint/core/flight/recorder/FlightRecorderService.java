@@ -97,10 +97,19 @@ public class FlightRecorderService {
 
   @PreDestroy
   public void shutdown() {
+    if (!enabled) {
+      return;
+    }
+
     sendInfoEvent("Flight recorder stopped");
   }
 
   public void captureThreadDump() {
+    if (!enabled) {
+      LOG.debug("Ignoring thread dump capture request, not in a flight recording session");
+      return;
+    }
+
     var threadDump = new StringBuilder();
     var threadBean = ManagementFactory.getThreadMXBean();
     Arrays.stream(threadBean.dumpAllThreads(true, true))
