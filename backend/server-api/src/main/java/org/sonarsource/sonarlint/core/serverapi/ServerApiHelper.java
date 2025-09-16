@@ -255,7 +255,8 @@ public class ServerApiHelper {
   public <G, F> void apiGetPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker, String pageFieldName,
     String pageSizeFieldName) {
-    getPaginatedBaseUrl(buildApiEndpointUrl(relativeUrlWithoutPaginationParams), responseParser, getPagingTotal, itemExtractor,
+    var baseUrl = buildApiEndpointUrl(relativeUrlWithoutPaginationParams);
+    getPaginatedBaseUrl(baseUrl, responseParser, getPagingTotal, itemExtractor,
       itemConsumer, limitToTwentyPages, cancelChecker, pageFieldName,
       pageSizeFieldName);
   }
