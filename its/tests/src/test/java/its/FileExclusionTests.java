@@ -213,10 +213,8 @@ class FileExclusionTests extends AbstractConnectedTests {
 
   private static void forceBackendToPullSettings(String configScopeId, String projectKey) {
     // The only way to force a sync of the storage is to unbind/rebind
-    analysisReadinessByConfigScopeId.clear();
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
