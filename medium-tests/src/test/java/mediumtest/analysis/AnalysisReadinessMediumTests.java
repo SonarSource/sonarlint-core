@@ -29,9 +29,13 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -43,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -108,6 +113,74 @@ class AnalysisReadinessMediumTests {
 
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).containsOnlyKeys(fileUri);
+  }
+
+  @SonarLintTest
+  void it_should_reanalyse_open_files_after_unbinding(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
+      .withProject("projectKey", project -> project.withQualityProfile("qp"))
+      .withProject("projectKey2", project -> project.withQualityProfile("qp2"))
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .withQualityProfile("qp2")
+      .start();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+
+    verify(client, never()).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true);
+
+    // File opened but not analyzed since analysis is not ready yet
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+
+    client.waitForSynchronization();
+
+    // analysis is ready
+    await().atMost(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues).containsOnlyKeys(fileUri);
+    clearInvocations(client);
+
+    // bind to 2nd project
+    backend.getConfigurationService()
+      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey2", true), BindingMode.MANUAL, null));
+
+    // analysis becomes not ready after binding change
+    verify(client, timeout(200)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), false);
+
+    client.waitForSynchronization();
+
+    // analysis is ready, no issues are raised by the second QP
+    await().atMost(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
+
+    // bind again to 1st project that should be ready
+    backend.getConfigurationService()
+      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true), BindingMode.MANUAL, null));
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID))
+      .extracting(RaisedFindingDto::getRuleKey).containsExactly("xml:S3421"));
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
