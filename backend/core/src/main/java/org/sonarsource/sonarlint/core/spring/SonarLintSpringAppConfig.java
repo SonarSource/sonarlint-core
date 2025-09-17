@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.embedded.server.AnalyzeListFilesRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
@@ -202,6 +203,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   DependencyRiskService.class,
   FlightRecorderService.class,
   FlightRecorderStorageService.class,
+  AnalyzeListFilesRequestHandler.class
 })
 public class SonarLintSpringAppConfig {
 
