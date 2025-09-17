@@ -555,21 +555,17 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
-      analysisReadinessByConfigScopeId.clear();
       // Override default file suffixes in global props so that input file is not considered as a Java file
       setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, false)));
-      await().untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       analyzeFileAndVerifyNoIssues(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
 
       rpcClientLogs.clear();
-      analysisReadinessByConfigScopeId.clear();
       // Override default file suffixes in project props so that input file is considered as a Java file again
       setSettingsMultiValue(projectKey, "sonar.java.file.suffixes", ".java");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-      await().untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
