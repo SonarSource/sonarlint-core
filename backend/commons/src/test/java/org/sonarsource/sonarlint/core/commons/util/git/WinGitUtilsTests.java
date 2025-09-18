@@ -39,8 +39,8 @@ class WinGitUtilsTests {
   @EnabledOnOs(WINDOWS)
   @ParameterizedTest
   @MethodSource("gitLocations")
-  void should_return_first_git_location(ProcessWrapperFactory.ProcessExecutionResult whereToolResult, Optional<String> expectedLocation) {
-    var location = WinGitUtils.locateGitOnWindows(() -> whereToolResult);
+  void should_return_first_git_location(TestData testData, Optional<String> expectedLocation) {
+    var location = WinGitUtils.locateGitOnWindows(testData.whereToolResult, testData.lines());
 
     assertThat(location).isEqualTo(expectedLocation);
   }
@@ -55,7 +55,10 @@ class WinGitUtilsTests {
     );
   }
 
-  private static ProcessWrapperFactory.ProcessExecutionResult result(int code, String output) {
-    return new ProcessWrapperFactory.ProcessExecutionResult(code, output);
+  private static TestData result(int code, String output) {
+    return new TestData(new ProcessWrapperFactory.ProcessExecutionResult(code), output);
+  }
+
+  private record TestData(ProcessWrapperFactory.ProcessExecutionResult whereToolResult, String lines) {
   }
 }

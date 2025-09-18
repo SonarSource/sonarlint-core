@@ -22,25 +22,26 @@ package org.sonarsource.sonarlint.core.commons;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
-import org.sonar.scm.git.blame.BlameResult;
+import org.sonarsource.sonarlint.core.commons.util.git.BlameResult;
 
 import static java.util.Objects.isNull;
 
-public class SonarLintBlameResult {
+public class MultiFileBlameResult {
 
-  private final BlameResult blameResult;
+  private final Map<String, BlameResult> blameResultPerFile;
   private final Path gitRepoRelativeProjectBaseDir;
 
-  public SonarLintBlameResult(BlameResult blameResult, Path gitRepoRelativeProjectBaseDir) {
-    this.blameResult = blameResult;
+  public MultiFileBlameResult(Map<String, BlameResult> blameResultPerFile, Path gitRepoRelativeProjectBaseDir) {
+    this.blameResultPerFile = blameResultPerFile;
     this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
   }
 
-  public static SonarLintBlameResult withEmptyBlameResult(Path gitRepoRelativeProjectBaseDir) {
-    return new SonarLintBlameResult(new BlameResult(), gitRepoRelativeProjectBaseDir);
+  public static MultiFileBlameResult empty(Path gitRepoRelativeProjectBaseDir) {
+    return new MultiFileBlameResult(Map.of(), gitRepoRelativeProjectBaseDir);
   }
 
   /**
@@ -50,27 +51,22 @@ public class SonarLintBlameResult {
    */
   public Optional<Instant> getLatestChangeDateForLinesInFile(Path projectDirRelativeFilePath, Collection<Integer> lineNumbers) {
     validateLineNumbersArgument(lineNumbers);
-    var fileBlameByPath = blameResult.getFileBlameByPath();
 
     return Optional.of(projectDirRelativeFilePath.toString())
       .map(gitRepoRelativeProjectBaseDir::resolve)
       .map(Path::toString)
       .map(FilenameUtils::separatorsToUnix)
-      .map(fileBlameByPath::get)
+      .map(blameResultPerFile::get)
       .map(fileBlame -> getTheLatestChange(fileBlame, lineNumbers));
   }
 
-  public boolean isEmpty() {
-    return blameResult.getFileBlameByPath().isEmpty();
-  }
-
-  private static Instant getTheLatestChange(BlameResult.FileBlame blameForFile, Collection<Integer> lineNumbers) {
+  private static Instant getTheLatestChange(BlameResult blameForFile, Collection<Integer> lineNumbers) {
     Instant latestDate = null;
     for (var lineNumber : lineNumbers) {
-      if (lineNumber > blameForFile.lines()) {
+      if (lineNumber > blameForFile.lineCommitDates().size()) {
         continue;
       }
-      var dateForLine = blameForFile.getCommitDates()[lineNumber - 1];
+      var dateForLine = blameForFile.lineCommitDates().get(lineNumber - 1);
       if (isLineModified(dateForLine)) {
         return null;
       }
