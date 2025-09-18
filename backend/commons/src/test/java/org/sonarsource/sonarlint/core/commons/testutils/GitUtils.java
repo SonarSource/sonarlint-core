@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.ZoneId;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -71,10 +72,14 @@ public class GitUtils {
   }
 
   public static Instant commit(Git git, String... paths) throws GitAPIException {
-    return commitObject(git, paths).getCommitterIdent().getWhenAsInstant();
+    return commit(git, Instant.now(), paths);
   }
 
-  public static RevCommit commitObject(Git git, String... paths) throws GitAPIException {
+  public static Instant commit(Git git, Instant commitDate, String... paths) throws GitAPIException {
+    return commitObject(git, commitDate, paths).getCommitterIdent().getWhenAsInstant();
+  }
+
+  private static RevCommit commitObject(Git git, Instant commitDate, String... paths) throws GitAPIException {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
@@ -82,7 +87,7 @@ public class GitUtils {
       }
       add.call();
     }
-    return git.commit().setCommitter("joe", "email@email.com").setMessage("msg").call();
+    return git.commit().setCommitter(new PersonIdent("joe", "email@email.com", commitDate, ZoneId.systemDefault())).setMessage("msg").call();
   }
 
   public static Instant commitAtDate(Git git, Instant commitDate, String... paths) throws GitAPIException {

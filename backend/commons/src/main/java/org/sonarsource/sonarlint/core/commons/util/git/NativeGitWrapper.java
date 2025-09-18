@@ -23,20 +23,20 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.Period;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.sonar.scm.git.blame.BlameResult;
-import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
 import static java.lang.String.format;
-import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
 import static org.sonarsource.sonarlint.core.commons.util.git.WinGitUtils.locateGitOnWindows;
 
 public class NativeGitWrapper {
@@ -53,8 +53,8 @@ public class NativeGitWrapper {
     return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : Optional.of("git");
   }
 
-  public SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDateFromNewCodeDefinition) {
-    var blameResult = new BlameResult();
+  public MultiFileBlameResult blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDateFromNewCodeDefinition) {
+    var blamePerFile = new HashMap<String, BlameResult>();
     getNativeGitExecutable().ifPresent(gitExecutable -> {
       for (var fileUri : fileUris) {
         var filePath = FileUtils.getFilePathFromUri(fileUri).toAbsolutePath().toString();
@@ -62,12 +62,15 @@ public class NativeGitWrapper {
         var yearAgo = Instant.now().minus(blameHistoryWindow);
         var thresholdDate = thresholdDateFromNewCodeDefinition.isAfter(yearAgo) ? yearAgo : thresholdDateFromNewCodeDefinition;
         var blameHistoryThresholdCondition = "--since='" + thresholdDate + "'";
-        var command = new String[]{gitExecutable, "blame", blameHistoryThresholdCondition, filePath, "--line-porcelain", "--encoding=UTF-8"};
-        executeGitCommand(projectBaseDir, command)
-          .ifPresent(blameOutput -> parseBlameOutput(blameOutput, filePathUnix, blameResult));
+        var command = new String[] {gitExecutable, "blame", blameHistoryThresholdCondition, filePath, "--line-porcelain", "--encoding=UTF-8"};
+        var blameReader = new GitBlameReader();
+        var success = executeGitCommand(projectBaseDir, blameReader::readLine, command);
+        if (success) {
+          blamePerFile.put(filePathUnix, blameReader.getResult());
+        }
       }
     });
-    return new SonarLintBlameResult(blameResult, projectBaseDir);
+    return new MultiFileBlameResult(blamePerFile, projectBaseDir);
   }
 
   private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
@@ -88,15 +91,15 @@ public class NativeGitWrapper {
       .collect(Collectors.joining("."));
   }
 
-  public Optional<String> executeGitCommand(Path workingDir, String... command) {
+  public boolean executeGitCommand(Path workingDir, Consumer<String> lineConsumer, String... command) {
     var output = new ProcessWrapperFactory()
-      .create(workingDir, command)
+      .create(workingDir, lineConsumer, command)
       .execute();
     if (output.exitCode() == 0) {
-      return Optional.of(output.output());
+      return true;
     }
-    LOG.debug(format("Command failed with code: %d and output %s", output.exitCode(), output.output()));
-    return Optional.empty();
+    LOG.debug(format("Command failed with code: %d", output.exitCode()));
+    return false;
   }
 
   /**
@@ -108,7 +111,8 @@ public class NativeGitWrapper {
       return Optional.ofNullable(nativeGitExecutable);
     }
     return getGitExecutable().map(git -> {
-      var result = new ProcessWrapperFactory().create(null, git, "--version").execute();
+      var result = new ProcessWrapperFactory().create(null, line -> {
+      }, git, "--version").execute();
       var exitCode = result.exitCode();
       if (exitCode == 0) {
         nativeGitExecutable = git;
@@ -120,8 +124,13 @@ public class NativeGitWrapper {
 
   public boolean checkIfNativeGitEnabled(Path projectBaseDir) {
     return getNativeGitExecutable().map(gitExecutable -> {
-      var output = executeGitCommand(projectBaseDir, gitExecutable, "--version");
-      return output.map(out -> out.contains("git version") && isCompatibleGitVersion(out)).orElse(false);
+      var output = new StringBuilder();
+      var success = executeGitCommand(projectBaseDir, line -> output.append(line).append("\n"), gitExecutable, "--version");
+      if (success) {
+        var result = output.toString().trim();
+        return result.contains("git version") && isCompatibleGitVersion(result);
+      }
+      return false;
     }).orElse(false);
   }
 }

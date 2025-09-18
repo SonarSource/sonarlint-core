@@ -161,9 +161,8 @@ class NativeGitWrapperTests {
     var fileAStr = "fileA";
     var fileA = projectDirPath.resolve(fileAStr);
 
-    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(fileA.toUri()), Instant.now());
+    underTest.blameFromNativeCommand(projectDirPath, Set.of(fileA.toUri()), Instant.now());
 
-    assertThat(logTester.logs()).contains("Command failed with code: 128 and output fatal: no such path 'fileA' in HEAD");
-    assertThat(blameResult.isEmpty()).isTrue();
+    assertThat(logTester.logs()).contains("fatal: no such path 'fileA' in HEAD", "Command failed with code: 128");
   }
 }

@@ -262,7 +262,8 @@ class IssueTrackingMediumTests {
         package sonar;
         public interface Foobar
         {}""");
-    var commitDate = commit(repository, filePath.getFileName().toString());
+    var commitInstant = Instant.ofEpochSecond(556437600);
+    commit(repository, commitInstant, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
@@ -274,7 +275,7 @@ class IssueTrackingMediumTests {
 
     var issue = analyzeFileAndGetIssue(backend, client, fileUri);
 
-    assertThat(issue.getIntroductionDate()).isEqualTo(commitDate);
+    assertThat(issue.getIntroductionDate()).isEqualTo(commitInstant);
   }
 
   @SonarLintTest

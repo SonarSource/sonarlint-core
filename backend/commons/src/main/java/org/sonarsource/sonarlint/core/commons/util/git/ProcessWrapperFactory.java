@@ -19,14 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.git;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Scanner;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -42,46 +39,41 @@ public class ProcessWrapperFactory {
     // nothing to do
   }
 
-  public ProcessWrapper create(@Nullable Path baseDir, String... command) {
-    return new ProcessWrapper(baseDir, Map.of(), command);
+  public ProcessWrapper create(@Nullable Path baseDir, Consumer<String> lineConsumer, String... command) {
+    return new ProcessWrapper(baseDir, lineConsumer, command);
   }
 
-  public ProcessWrapper create(@Nullable Path baseDir, Map<String, String> envVariables, String... command) {
-    return new ProcessWrapper(baseDir, envVariables, command);
-  }
-
-  static class ProcessWrapper {
+  public static class ProcessWrapper {
 
     private final Path baseDir;
+    private final Consumer<String> lineConsumer;
     private final String[] command;
-    private final Map<String, String> envVariables = new HashMap<>();
 
-    ProcessWrapper(@Nullable Path baseDir, Map<String, String> envVariables, String... command) {
+    ProcessWrapper(@Nullable Path baseDir, Consumer<String> lineConsumer, String... command) {
       this.baseDir = baseDir;
-      this.envVariables.putAll(envVariables);
+      this.lineConsumer = lineConsumer;
       this.command = command;
     }
 
-    void processInputStream(InputStream inputStream, Consumer<String> stringConsumer) {
-      try (var scanner = new Scanner(new InputStreamReader(inputStream, UTF_8))) {
-        scanner.useDelimiter("\n");
-        while (scanner.hasNext()) {
-          stringConsumer.accept(scanner.next());
+    void processInputStream(InputStream inputStream, Consumer<String> stringConsumer) throws IOException {
+      try (var reader = new BufferedReader(new InputStreamReader(inputStream, UTF_8))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          stringConsumer.accept(line);
         }
       }
     }
 
     public ProcessExecutionResult execute() {
       Process p;
-      var output = new LinkedList<String>();
       try {
         p = createProcess();
       } catch (IOException e) {
         LOG.warn(format("Could not execute command: [%s]", join(" ", command)), e);
-        return new ProcessExecutionResult(-2, join(System.lineSeparator(), output));
+        return new ProcessExecutionResult(-2);
       }
       try {
-        return runProcessAndGetOutput(p, output);
+        return runProcessAndGetOutput(p);
       } catch (InterruptedException e) {
         LOG.warn(format("Command [%s] interrupted", join(" ", command)), e);
         Thread.currentThread().interrupt();
@@ -90,35 +82,28 @@ public class ProcessWrapperFactory {
       } finally {
         p.destroy();
       }
-      return new ProcessExecutionResult(-1, join(System.lineSeparator(), output));
+      return new ProcessExecutionResult(-1);
     }
 
     Process createProcess() throws IOException {
-      var processBuilder = new ProcessBuilder()
+      return new ProcessBuilder()
         .command(command)
-        .directory(baseDir != null ? baseDir.toFile() : null);
-      envVariables.forEach(processBuilder.environment()::put);
-      processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
-      processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
-      processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
-
-      return processBuilder.start();
+        .directory(baseDir != null ? baseDir.toFile() : null)
+        .start();
     }
 
-    ProcessExecutionResult runProcessAndGetOutput(Process p, LinkedList<String> output) throws InterruptedException {
-      processInputStream(p.getInputStream(), output::add);
+    ProcessExecutionResult runProcessAndGetOutput(Process p) throws InterruptedException, IOException {
+      processInputStream(p.getInputStream(), lineConsumer);
       processInputStream(p.getErrorStream(), line -> {
         if (!line.isBlank()) {
-          output.add(line);
           LOG.debug(line);
         }
       });
       int exit = p.waitFor();
-      var commandOutput = join(System.lineSeparator(), output);
-      return new ProcessExecutionResult(exit, join(System.lineSeparator(), commandOutput));
+      return new ProcessExecutionResult(exit);
     }
   }
 
-  public record ProcessExecutionResult(int exitCode, String output) {
+  public record ProcessExecutionResult(int exitCode) {
   }
 }

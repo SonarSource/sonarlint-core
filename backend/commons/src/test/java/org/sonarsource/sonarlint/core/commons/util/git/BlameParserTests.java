@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.git;
 
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
-import org.sonar.scm.git.blame.BlameResult;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -28,16 +28,17 @@ class BlameParserTests {
 
   @Test
   void shouldNotPopulateGitBlameResultForEmptyBlameOutput() {
-    var blameResult = new BlameResult();
-    BlameParser.parseBlameOutput("", "", blameResult);
+    var gitBlameReader = new GitBlameReader();
 
-    assertThat(blameResult.getFileBlameByPath()).isEmpty();
+    gitBlameReader.readLine("");
+
+    assertThat(gitBlameReader.getResult().lineCommitDates())
+      .isEmpty();
   }
 
   @Test
   void shouldSplitBlameOutputCorrectlyWhenLinesContainSplitPattern() {
-    var blameResult = new BlameResult();
-    BlameParser.parseBlameOutput("""
+    var blameOutput = """
       5746f09bf53067450843eaddff52ea7b0f16cde3 1 1 2
       author Some One
       author-mail <some.one@sonarsource.com>
@@ -58,14 +59,21 @@ class BlameParserTests {
       author-tz +0100
       committer Some One
       committer-mail <some.one@sonarsource.com>
-      committer-time 1554191055
+      committer-time 1554191057
       committer-tz +0200
       summary Initial revision
       previous 35c9ca0b1f41231508e706707d76ca0485b8a3ad file.txt
       filename file.txt
               Second line also with filename in it
-      """, "", blameResult);
+      """;
+    var gitBlameReader = new GitBlameReader();
+    var blameLines = blameOutput.split("\\n");
 
-    assertThat(blameResult.getFileBlameByPath()).hasSize(1);
+    for (String blameLine : blameLines) {
+      gitBlameReader.readLine(blameLine);
+    }
+
+    assertThat(gitBlameReader.getResult().lineCommitDates())
+      .containsExactly(Instant.ofEpochSecond(1554191055), Instant.ofEpochSecond(1554191057));
   }
 }
