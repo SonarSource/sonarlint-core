@@ -41,6 +41,8 @@ public class PluginsSynchronizer {
   public static final Version ENTERPRISE_GO_MIN_SQ_VERSION = Version.create("2025.2");
   public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
   private static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
+  private static final String SECURITY_PLUGIN_ID = "security";
+  private static final String SECURITY_JAVA_FRONTEND_PLUGIN_ID = "securityjavafrontend";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
@@ -57,6 +59,10 @@ public class PluginsSynchronizer {
     if (enabledLanguages.contains(SonarLanguage.CS)) {
       // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
       this.notSonarLintSupportedPluginsToSynchronize.add(CSHARP_ENTERPRISE_PLUGIN_ID);
+    }
+    if (enabledLanguages.contains(SonarLanguage.JAVA)) {
+      this.notSonarLintSupportedPluginsToSynchronize.add(SECURITY_PLUGIN_ID);
+      this.notSonarLintSupportedPluginsToSynchronize.add(SECURITY_JAVA_FRONTEND_PLUGIN_ID);
     }
     this.storage = storage;
     this.embeddedPluginKeys = embeddedPluginKeys;

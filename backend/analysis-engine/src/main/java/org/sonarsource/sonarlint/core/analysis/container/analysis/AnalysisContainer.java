@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.Sensors
 import org.sonarsource.sonarlint.core.analysis.container.analysis.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpAnalysisWarnings;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpFileLinesContextFactory;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
@@ -65,6 +66,7 @@ public class AnalysisContainer extends SpringComponentContainer {
 
   private void addCoreComponents() {
     add(
+      new NoOpAnalysisWarnings(),
       cancelMonitor,
       SonarLintInputProject.class,
       NoOpFileLinesContextFactory.class,
