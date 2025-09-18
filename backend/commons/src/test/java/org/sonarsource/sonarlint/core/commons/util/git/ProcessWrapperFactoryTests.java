@@ -39,53 +39,58 @@ class ProcessWrapperFactoryTests {
   @Test
   void it_should_execute_git(@TempDir Path baseDir) {
     assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
-    var result = new ProcessWrapperFactory().create(baseDir, "git", "--version").execute();
+    var lines = new StringBuilder();
+    var result = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version").execute();
 
     assertThat(result.exitCode()).isZero();
-    assertThat(result.output()).contains("git version ");
+    assertThat(lines).contains("git version ");
   }
 
   @Test
   void it_should_return_output_for_invalid_command(@TempDir Path baseDir) {
     assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "-version");
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, l -> {
+    }, "git", "-version");
     var result = processWrapper.execute();
     assertThat(result.exitCode()).isEqualTo(129);
-    assertThat(result.output()).contains("unknown option: -version");
+    assertThat(logTester.logs()).contains("unknown option: -version");
   }
 
   @Test
-  void it_should_gracefully_return_output_for_interrupted_exception(@TempDir Path baseDir) throws InterruptedException {
+  void it_should_gracefully_return_output_for_interrupted_exception(@TempDir Path baseDir) throws InterruptedException, IOException {
     assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var lines = new StringBuilder();
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version");
     var spy = spy(processWrapper);
-    doThrow(InterruptedException.class).when(spy).runProcessAndGetOutput(any(), any());
+    doThrow(InterruptedException.class).when(spy).runProcessAndGetOutput(any());
     var result = spy.execute();
 
     assertThat(result.exitCode()).isEqualTo(-1);
-    assertThat(result.output()).contains("");
+    assertThat(lines).contains("");
   }
 
   @Test
-  void it_should_gracefully_return_output_for_exception(@TempDir Path baseDir) throws InterruptedException {
+  void it_should_gracefully_return_output_for_exception(@TempDir Path baseDir) throws InterruptedException, IOException {
     assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var lines = new StringBuilder();
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version");
     var spy = spy(processWrapper);
-    doThrow(RuntimeException.class).when(spy).runProcessAndGetOutput(any(), any());
+    doThrow(RuntimeException.class).when(spy).runProcessAndGetOutput(any());
     var result = spy.execute();
 
     assertThat(result.exitCode()).isEqualTo(-1);
-    assertThat(result.output()).contains("");
+    assertThat(lines).contains("");
   }
 
   @Test
   void it_should_gracefully_return_output_when_not_able_to_create_process(@TempDir Path baseDir) throws IOException {
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var lines = new StringBuilder();
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version");
     var spy = spy(processWrapper);
     doThrow(IOException.class).when(spy).createProcess();
     var result = spy.execute();
 
     assertThat(result.exitCode()).isEqualTo(-2);
-    assertThat(result.output()).contains("");
+    assertThat(lines).contains("");
   }
 }
