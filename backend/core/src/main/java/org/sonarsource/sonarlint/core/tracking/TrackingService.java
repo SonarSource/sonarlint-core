@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
@@ -308,14 +308,11 @@ public class TrackingService {
     }
   }
 
-  private static Instant determineIntroductionDate(Path path, Collection<Integer> lineNumbers, SonarLintBlameResult sonarLintBlameResult) {
-    if (sonarLintBlameResult.isEmpty()) {
-      return Instant.now();
-    }
-    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers).orElse(Instant.now());
+  private static Instant determineIntroductionDate(Path path, Collection<Integer> lineNumbers, MultiFileBlameResult multiFileBlameResult) {
+    return multiFileBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers).orElse(Instant.now());
   }
 
   private record MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport,
-                                       Map<Path, List<TrackedIssue>> hotspotsToReport) {
+    Map<Path, List<TrackedIssue>> hotspotsToReport) {
   }
 }

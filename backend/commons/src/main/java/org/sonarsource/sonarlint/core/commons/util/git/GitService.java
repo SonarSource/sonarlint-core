@@ -27,6 +27,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -48,7 +50,7 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
-import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
@@ -68,10 +70,6 @@ public class GitService {
 
   public static GitService create() {
     return new GitService(new NativeGitWrapper());
-  }
-
-  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {
-    return blameWithFilesGitCommand(baseDir, gitRelativePath, null);
   }
 
   // Could be optimized to only fetch VCS changed files matching the base dir
@@ -110,10 +108,8 @@ public class GitService {
       return null;
     }
 
-    try {
-      var gitRepo = buildGitRepository(baseDir);
+    try (var gitRepo = buildGitRepository(baseDir)) {
       var config = gitRepo.getConfig();
-
       return config.getString("remote", "origin", "url");
     } catch (GitRepoNotFoundException e) {
       LOG.debug("Git repository not found for {}", baseDir);
@@ -124,7 +120,7 @@ public class GitService {
     }
   }
 
-  public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+  public static MultiFileBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
     var gitRepo = buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
@@ -144,10 +140,12 @@ public class GitService {
 
     try {
       var blameResult = blameCommand.call();
-      return new SonarLintBlameResult(blameResult, gitRepoRelativeProjectBaseDir);
+      return new MultiFileBlameResult(
+        blameResult.getFileBlameByPath().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> new BlameResult(Arrays.asList(e.getValue().getCommitDates())))),
+        gitRepoRelativeProjectBaseDir);
     } catch (NoHeadException e) {
       // it means that the repository has no commits, so we can't get any blame information
-      return SonarLintBlameResult.withEmptyBlameResult(gitRepoRelativeProjectBaseDir);
+      return MultiFileBlameResult.empty(gitRepoRelativeProjectBaseDir);
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
@@ -258,12 +256,12 @@ public class GitService {
     }
   }
 
-  public SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
+  public MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
     @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
     return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, nativeGit::checkIfNativeGitEnabled, thresholdDate);
   }
 
-  SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
+  MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
     Predicate<Path> isNativeBlameSupported, Instant thresholdDate) {
     if (isNativeBlameSupported.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
