@@ -61,17 +61,13 @@ public class AutomaticAnalysisEnablementRequestHandler implements HttpRequestHan
         .getQueryParams()
         .forEach(p -> params.put(p.getName(), p.getValue()));
     } catch (URISyntaxException e) {
-      response.setCode(HttpStatus.SC_BAD_REQUEST);
-      var errorResponse = new AutomaticAnalysisEnablementResponse(false, "Invalid URI");
-      response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
+      handleError(response,  "Invalid URI");
       return;
     }
 
     var enabledParam = params.get("enabled");
     if (enabledParam == null) {
-      response.setCode(HttpStatus.SC_BAD_REQUEST);
-      var errorResponse = new AutomaticAnalysisEnablementResponse(false, "Missing 'enabled' query parameter");
-      response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
+      handleError(response, "Missing 'enabled' query parameter");
       return;
     }
 
@@ -79,32 +75,28 @@ public class AutomaticAnalysisEnablementRequestHandler implements HttpRequestHan
     try {
       enabled = Boolean.parseBoolean(enabledParam);
     } catch (Exception e) {
-      response.setCode(HttpStatus.SC_BAD_REQUEST);
-      var errorResponse = new AutomaticAnalysisEnablementResponse(false, "Invalid 'enabled' parameter value");
-      response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
+      handleError(response, "Invalid 'enabled' parameter value");
       return;
     }
 
     try {
-      var result = handleAutomaticAnalysisEnablement(enabled);
+      analysisService.didChangeAutomaticAnalysisSetting(enabled);
       response.setCode(HttpStatus.SC_OK);
-      response.setEntity(new StringEntity(gson.toJson(result), ContentType.APPLICATION_JSON));
     } catch (Exception e) {
       LOG.error("Failed to change automatic analysis", e);
       response.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-      var errorResponse = new AutomaticAnalysisEnablementResponse(false, "Failed to change automatic analysis: " + e.getMessage());
+      var errorResponse = new ErrorMessage("Failed to change automatic analysis: " + e.getMessage());
       response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
     }
   }
 
-  private AutomaticAnalysisEnablementResponse handleAutomaticAnalysisEnablement(boolean enabled) {
-    LOG.info("Setting automatic analysis to {}", enabled);
-    analysisService.didChangeAutomaticAnalysisSetting(enabled);
-    var message = String.format("Automatic analysis %s", enabled ? "enabled" : "disabled");
-    return new AutomaticAnalysisEnablementResponse(true, message);
+  private void handleError(ClassicHttpResponse response, String clientMessage) {
+    response.setCode(HttpStatus.SC_BAD_REQUEST);
+    var errorResponse = new ErrorMessage(clientMessage);
+    response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
   }
 
-  public record AutomaticAnalysisEnablementResponse(boolean success, String message) {
+  public record ErrorMessage(String message) {
   }
 
 }

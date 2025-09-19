@@ -38,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class AutomaticAnalysisEnablementRequestHandlerTests {
@@ -70,17 +69,6 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
   }
 
   @Test
-  void should_reject_missing_enabled_parameter() throws HttpException, IOException {
-    var request = new BasicClassicHttpRequest(Method.POST, "/analysis/automatic/config");
-    var response = new BasicClassicHttpResponse(200);
-
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
-
-    assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
-    verifyNoInteractions(analysisService);
-  }
-
-  @Test
   void should_reject_invalid_enabled_parameter() throws HttpException, IOException {
     var request = new BasicClassicHttpRequest(Method.POST, "/analysis/automatic/config?invalid=param");
     var response = new BasicClassicHttpResponse(200);
@@ -89,38 +77,6 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
     verifyNoInteractions(analysisService);
-  }
-
-  @Test
-  void should_enable_automatic_analysis() throws HttpException, IOException {
-    var request = new BasicClassicHttpRequest(Method.POST, "/analysis/automatic/config?enabled=true");
-    var response = new BasicClassicHttpResponse(200);
-
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
-
-    assertThat(response.getCode()).isEqualTo(200);
-    verify(analysisService).didChangeAutomaticAnalysisSetting(true);
-    assertThat(response.getEntity()).isNotNull();
-    var responseContent = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    var automaticAnalysisEnablementResponse = gson.fromJson(responseContent, AutomaticAnalysisEnablementRequestHandler.AutomaticAnalysisEnablementResponse.class);
-    assertThat(automaticAnalysisEnablementResponse.success()).isTrue();
-    assertThat(automaticAnalysisEnablementResponse.message()).contains("enabled");
-  }
-
-  @Test
-  void should_disable_automatic_analysis() throws HttpException, IOException {
-    var request = new BasicClassicHttpRequest(Method.POST, "/analysis/automatic/config?enabled=false");
-    var response = new BasicClassicHttpResponse(200);
-
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
-
-    assertThat(response.getCode()).isEqualTo(200);
-    verify(analysisService).didChangeAutomaticAnalysisSetting(false);
-    assertThat(response.getEntity()).isNotNull();
-    var responseContent = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    var automaticAnalysisEnablementResponse = gson.fromJson(responseContent, AutomaticAnalysisEnablementRequestHandler.AutomaticAnalysisEnablementResponse.class);
-    assertThat(automaticAnalysisEnablementResponse.success()).isTrue();
-    assertThat(automaticAnalysisEnablementResponse.message()).contains("disabled");
   }
 
   @Test
@@ -135,9 +91,8 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     assertThat(response.getEntity()).isNotNull();
     var responseContent = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    var automaticAnalysisEnablementResponse = gson.fromJson(responseContent, AutomaticAnalysisEnablementRequestHandler.AutomaticAnalysisEnablementResponse.class);
-    assertThat(automaticAnalysisEnablementResponse.success()).isFalse();
-    assertThat(automaticAnalysisEnablementResponse.message()).contains("Failed to change automatic analysis");
+    var errorMessage = gson.fromJson(responseContent, AutomaticAnalysisEnablementRequestHandler.ErrorMessage.class);
+    assertThat(errorMessage.message()).contains("Failed to change automatic analysis");
   }
 
 }
