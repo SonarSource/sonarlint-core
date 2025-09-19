@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
+import org.sonarsource.sonarlint.core.MCPServerSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -186,6 +187,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   OrganizationsCache.class,
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
+  MCPServerSettingsProvider.class,
   AnalysisSchedulerCache.class,
   PromotionService.class,
   KnownFindingsStorageService.class,

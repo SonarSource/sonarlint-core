@@ -133,4 +133,10 @@ public interface ConnectionRpcService {
    */
   @JsonRequest
   CompletableFuture<GetConnectionSuggestionsResponse> getConnectionSuggestions(GetConnectionSuggestionsParams params);
+
+  /**
+   * Generate MCP server settings JSON based on the requested Connection ID.
+   */
+  @JsonRequest
+  CompletableFuture<GetMCPServerSettingsResponse> getMCPServerSettings(GetMCPServerSettingsParams params);
 }
