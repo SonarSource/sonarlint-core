@@ -314,6 +314,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementFlightRecorderSessionsCount);
   }
 
+  public void mcpServerSettingsRequested() {
+    updateTelemetry(TelemetryLocalStorage::incrementMcpServerSettingsRequestedCount);
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {

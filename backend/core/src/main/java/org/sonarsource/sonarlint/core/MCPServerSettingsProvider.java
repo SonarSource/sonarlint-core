@@ -24,6 +24,7 @@ import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static java.lang.String.format;
 
@@ -71,14 +72,17 @@ public class MCPServerSettingsProvider {
     """;
 
   private final ConnectionConfigurationRepository connectionRepository;
+  private final TelemetryService telemetryService;
 
-  public MCPServerSettingsProvider(ConnectionConfigurationRepository connectionRepository) {
+  public MCPServerSettingsProvider(ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService) {
     this.connectionRepository = connectionRepository;
+    this.telemetryService = telemetryService;
   }
 
   public String getMCPServerSettingsJSON(String connectionId, String token) {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection != null) {
+      telemetryService.mcpServerSettingsRequested();
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var sonarCloudConnection = (SonarCloudConnectionConfiguration) connection;
         var organization = sonarCloudConnection.getOrganization();
