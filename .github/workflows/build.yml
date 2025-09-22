@@ -60,3 +60,32 @@ jobs:
           path: '**/target/surefire-reports/TEST-*.xml'
           list-suites: failed
           list-tests: failed
+
+  test-windows:
+    needs: [ build ]
+    runs-on: github-windows-latest-s
+    name: Test (Windows)
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.9.12
+      - uses: SonarSource/ci-github-actions/build-maven@v1
+        with:
+          deploy-pull-request: false
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-opts: -Xmx4G -Dcommercial -Dmaven.test.redirectTestOutputToFile=false
+          maven-args: -B -e -V
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
+        with:
+          name: QA Windows Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml'
+          list-suites: failed
+          list-tests: failed
