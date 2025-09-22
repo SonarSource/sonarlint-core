@@ -21,13 +21,42 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
-          version: 2025.9.12
+          version: 2025.7.12
       - uses: SonarSource/ci-github-actions/build-maven@v1
         with:
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
           maven-opts: -Dmaven.test.skip=true -Dsonar.skip=true
           maven-args: -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64
+
+  test-linux:
+    needs: [ build ]
+    runs-on: github-ubuntu-latest-s
+    name: Test (Linux, Sonar Next)
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.9.12
+      - uses: SonarSource/ci-github-actions/build-maven@v1
+        with:
+          deploy-pull-request: false
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-opts: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+          maven-args: -P-deploy-sonarsource,-release,-sign
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
+        with:
+          name: QA Linux Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml'
+          list-suites: failed
+          list-tests: failed
