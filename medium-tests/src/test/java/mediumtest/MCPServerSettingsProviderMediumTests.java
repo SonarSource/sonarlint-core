@@ -83,7 +83,7 @@ class MCPServerSettingsProviderMediumTests {
 
     Assertions.assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     Assertions.assertThat(result.get().getJsonSettings()).isEqualTo(expectedSettings);
-//    Assertions.assertThat(backend.telemetryFileContent().getExportedConnectedModeCount()).isEqualTo(1);
+    Assertions.assertThat(backend.telemetryFileContent().getMcpServerSettingsRequestedCount()).isEqualTo(1);
   }
 
   @SonarLintTest
@@ -128,7 +128,7 @@ class MCPServerSettingsProviderMediumTests {
 
     Assertions.assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     Assertions.assertThat(result.get().getJsonSettings()).isEqualTo(expectedSettings);
-//    Assertions.assertThat(backend.telemetryFileContent().getExportedConnectedModeCount()).isEqualTo(1);
+    Assertions.assertThat(backend.telemetryFileContent().getMcpServerSettingsRequestedCount()).isEqualTo(1);
   }
 
   private CompletableFuture<GetMCPServerSettingsResponse> getSettings(SonarLintTestRpcServer backend, String connectionId, String token) {
