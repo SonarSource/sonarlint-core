@@ -2,7 +2,7 @@ SonarLint Core
 ==============
 The core library to run SonarQube for IDE analysis (used by SonarQube for IDE Eclipse, IntelliJ and VS), as well as the SonarQube for IDE language server (used by SonarQube for IDE VSCode) with the goal of helping developers deliver [integrated code quality and security](https://www.sonarsource.com/solutions/for-developers/).
 
-[![Build Status](https://api.cirrus-ci.com/github/SonarSource/sonarlint-core.svg)](https://cirrus-ci.com/github/SonarSource/sonarlint-core)
+[![Build Status](https://github.com/SonarSource/sonarlint-core/actions/workflows/build.yml/badge.svg)](https://github.com/SonarSource/sonarlint-core/actions)
 [![Quality Gate Status](https://next.sonarqube.com/sonarqube/api/project_badges/measure?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent&metric=alert_status)](https://next.sonarqube.com/sonarqube/dashboard?id=org.sonarsource.sonarlint.core%3Asonarlint-core-parent)
 
 Have Questions or Feedback?
