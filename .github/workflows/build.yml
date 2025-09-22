@@ -1,0 +1,287 @@
+name: Build
+on:
+  push:
+    branches:
+      - master
+      - branch-*
+      - dogfood-*
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: github-ubuntu-latest-m
+    name: Build
+    permissions:
+      id-token: write
+      contents: write
+    outputs:
+      build_number: ${{ steps.build.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.7.12
+      - uses: SonarSource/ci-github-actions/build-maven@v1
+        id: build
+        with:
+          deploy-pull-request: true
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-args: -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
+      - name: Config Maven (cache setup)
+        run: |
+          mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
+
+  test-linux:
+    needs: [ build ]
+    runs-on: github-ubuntu-latest-m
+    name: Test (Linux, Sonar Next)
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.9.12
+      - uses: SonarSource/ci-github-actions/build-maven@v1
+        with:
+          deploy-pull-request: false
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-args: -P-deploy-sonarsource,-release,-sign -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
+        with:
+          name: QA Linux Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+
+  test-windows:
+    needs: [ build ]
+    runs-on: github-windows-latest-m
+    name: Test (Windows)
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.9.12
+      - uses: SonarSource/ci-github-actions/build-maven@v1
+        env:
+          MAVEN_OPTS: -Xmx4g
+        with:
+          deploy-pull-request: false
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-args: -B -e -V -Dcommercial -Dmaven.test.redirectTestOutputToFile=false
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
+        with:
+          name: QA Windows Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+
+  qa:
+    needs: [ build ]
+    runs-on: github-ubuntu-latest-m
+    name: QA (${{ matrix.name }})
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SonarCloudEU
+            sq_version: SonarCloudEU
+            category: "-Dgroups=SonarCloud"
+            sc: true
+            sc_token_path: sonarcloud-it
+            region: EU
+          - name: SonarCloudUS
+            sq_version: SonarCloudUS
+            category: "-Dgroups=SonarCloud"
+            sc: true
+            sc_token_path: sonarcloud-it-US
+            region: US
+          - name: SQDogfood
+            sq_version: DEV
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQLatest
+            sq_version: LATEST_RELEASE
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQLts99
+            sq_version: "LATEST_RELEASE[9.9]"
+            category: "-DexcludedGroups=SonarCloud"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+        with:
+          version: 2025.9.12
+      - name: Compute month key
+        id: month
+        shell: bash
+        run: |
+          THIS_MONTH="$(date +%Y-%m)"
+          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
+          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
+          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
+          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+          mkdir -p "${ORCHESTRATOR_HOME}"
+      - uses: SonarSource/ci-github-actions/cache@v1
+        with:
+          path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
+          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}
+          restore-keys: |
+            cache-${{ runner.os }}
+      - name: Vault (SonarCloud IT token)
+        if: ${{ matrix.sc == true }}
+        id: secrets-sc
+        uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # v3.1.0
+        with:
+          secrets: |
+            development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
+      - name: Vault (GITHUB Token)
+        id: secrets-gh
+        uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # v3.1.0
+        with:
+          secrets: |
+            development/github/token/licenses-ro token | GITHUB_TOKEN;
+
+      - uses: SonarSource/ci-github-actions/config-maven@v1
+        with:
+          artifactory-reader-role: private-reader
+      - name: Run QA
+        if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
+        env:
+          MAVEN_OPTS: -Xmx4g
+          SONARCLOUD_IT_TOKEN: ${{ steps.secrets-sc.outputs.vault && fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
+          SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
+          BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+        run: |
+          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+      - name: Generate QA test report on failure
+        if: failure()
+        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3
+        with:
+          name: QA ${{ matrix.name }} Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: debug
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Listing surefire-reports contents ==="
+          find ./its/tests/target/surefire-reports -type f || true
+          echo "=== Checking if directory is empty ==="
+          [ -d ./its/tests/target/surefire-reports ] && ls -la ./its/tests/target/surefire-reports/ || echo "Directory doesn't exist"
+      - name: Debug orchestrator cache
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Listing orchestrator cache contents ==="
+          CACHE_DIR="${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}"
+          if [ -d "${CACHE_DIR}" ]; then
+            echo "Directory exists: ${CACHE_DIR}"
+            ls -lah "${CACHE_DIR}"
+            echo ""
+            echo "=== Detailed file tree ==="
+            find "${CACHE_DIR}" -type f -ls || true
+          else
+            echo "Directory does not exist: ${CACHE_DIR}"
+          fi
+
+  inspect-orchestrator-cache:
+    needs: [ build, qa ]
+    runs-on: github-ubuntu-latest-s
+    name: Inspect Orchestrator Cache
+    permissions:
+      contents: read
+    steps:
+      - name: Compute month key
+        id: month
+        shell: bash
+        run: |
+          THIS_MONTH="$(date +%Y-%m)"
+          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
+          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
+          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
+          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+          mkdir -p "${ORCHESTRATOR_HOME}"
+      - uses: SonarSource/ci-github-actions/cache@v1
+        with:
+          path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
+          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}
+          restore-keys: |
+            cache-${{ runner.os }}
+      - name: Inspect cache directory
+        shell: bash
+        run: |
+          echo "Inspecting cache ${ORCHESTRATOR_HOME}..."
+          cd "${ORCHESTRATOR_HOME}"
+          ls -l
+          find .
+          echo "Inspecting cache done."
+
+  promote:
+    needs: [ build, qa, test-linux, test-windows ]
+    runs-on: github-ubuntu-latest-s
+    name: Promote
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: SonarSource/ci-github-actions/promote@v1
+        with:
+          promote-pull-request: true
+
+
+  notify:
+    runs-on: github-ubuntu-latest-s # Public GH runner is required, runners starting with sonar-* do not support this action
+    needs: [ build, qa, test-windows, test-linux, promote ]
+    if: ${{ always() && contains(join(needs.*.result, ','), 'failure') }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Vault Secrets
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@v3
+        with:
+          secrets: |
+            development/kv/data/slack token | SLACK_BOT_TOKEN;
+      - name: Slack Notification rtCamp
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661  # v2.3.3
+        env:
+          SLACK_TOKEN: >-
+            ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: squad-ide-slcore-bots
+          SLACK_TITLE: Build Failed
+          SLACK_MESSAGE: |
+            Workflow failed in ${{ github.repository }} 🚨
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Branch: ${{ github.head_ref || github.ref_name }}
+            Author: ${{ github.event.pull_request.user.login }}
+          SLACK_USERNAME: BuildBot
+          SLACK_COLOR: danger
