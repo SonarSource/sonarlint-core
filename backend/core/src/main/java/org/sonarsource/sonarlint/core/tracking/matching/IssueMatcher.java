@@ -53,14 +53,19 @@ public class IssueMatcher<LEFT, RIGHT> {
     LineHashMatchingCriterion::new);
 
   private final Map<MatchingCriterionFactory, Map<MatchingCriterion, List<RIGHT>>> rightIssuesByCriterion = new HashMap<>();
+  private final MatchingAttributesMapper<RIGHT> rightMapper;
+  private final Collection<RIGHT> rightIssues;
 
   public IssueMatcher(MatchingAttributesMapper<RIGHT> rightMapper, Collection<RIGHT> rightIssues) {
+    this.rightMapper = rightMapper;
+    this.rightIssues = new ArrayList<>(rightIssues);
     for (var matchingCriterion : MATCHING_CRITERIA) {
       var issuesByCriterion = new HashMap<MatchingCriterion, List<RIGHT>>();
       for (RIGHT right : rightIssues) {
         var criterionAppliedToIssue = matchingCriterion.build(right, rightMapper);
         issuesByCriterion.computeIfAbsent(criterionAppliedToIssue, k -> new ArrayList<>()).add(right);
       }
+
       rightIssuesByCriterion.put(matchingCriterion, issuesByCriterion);
     }
   }
@@ -81,15 +86,29 @@ public class IssueMatcher<LEFT, RIGHT> {
   private void matchWithCriterion(MatchingResult<LEFT, RIGHT> result, MatchingAttributesMapper<LEFT> leftMapper, MatchingCriterionFactory criterionFactory) {
     for (LEFT left : result.getUnmatchedLefts()) {
       var leftKey = criterionFactory.build(left, leftMapper);
-      var rightsCandidates = rightIssuesByCriterion.get(criterionFactory).get(leftKey);
-      if (rightsCandidates != null && !rightsCandidates.isEmpty()) {
+      var rightCandidates = rightIssuesByCriterion.get(criterionFactory).get(leftKey);
+      if (rightCandidates != null && !rightCandidates.isEmpty()) {
         // TODO taking the first one. Could be improved if there are more than 2 issues on the same line.
         // Message could be checked to take the best one.
-        var match = rightsCandidates.iterator().next();
+        var match = rightCandidates.iterator().next();
         result.recordMatch(left, match);
-        MATCHING_CRITERIA.forEach(criterion -> rightIssuesByCriterion.get(criterion).remove(criterion.build(left, leftMapper)));
+        removeRight(match);
       }
     }
+  }
+
+  private void removeRight(RIGHT right) {
+    rightIssues.remove(right);
+    MATCHING_CRITERIA.forEach(criterion -> {
+      var rights = rightIssuesByCriterion.get(criterion).get(criterion.build(right, rightMapper));
+      if (rights != null) {
+        rights.remove(right);
+      }
+    });
+  }
+
+  public int getUnmatchedIssuesCount() {
+    return rightIssues.size();
   }
 
   private interface MatchingCriterion {
