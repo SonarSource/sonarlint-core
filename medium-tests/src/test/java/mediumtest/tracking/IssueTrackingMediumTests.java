@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -913,6 +914,42 @@ class IssueTrackingMediumTests {
 
     verify(client, timeout(300)).raiseIssues(CONFIG_SCOPE_ID, Map.of(), false, analysisId);
     verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
+  }
+
+  @SonarLintTest
+  void it_should_not_match_the_same_issue_twice(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, baseDir.resolve("file.py").toString(),
+      """
+        # TODO try this
+        # TODO try that
+        """);
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(client);
+
+    var raisedIssueDtos = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    assertThat(raisedIssueDtos).hasSize(2);
+
+    changeFileContent(baseDir, filePath.getFileName().toString(), """
+        # TODO try that
+      """);
+    raisedIssueDtos = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    assertThat(raisedIssueDtos).hasSize(1);
+
+    changeFileContent(baseDir, filePath.getFileName().toString(), """
+        # TODO try this
+        # TODO try that
+      """);
+    raisedIssueDtos = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    assertThat(raisedIssueDtos)
+      .hasSize(2);
+    assertThat(raisedIssueDtos.stream().map(RaisedFindingDto::getId).collect(Collectors.toSet()))
+      .hasSize(2);
   }
 
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
