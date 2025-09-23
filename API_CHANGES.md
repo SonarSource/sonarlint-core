@@ -1,14 +1,14 @@
 # 10.33
 
-## New Features
+## New features
 
 * Add a new endpoint `/sonarlint/api/analysis/automatic/config` in the embedded server to globally disable or enable the automatic analysis.
   * This endpoint should be used by external clients such as MCP servers.
 * Add a new endpoint `/sonarlint/api/analysis/files` in our embedded server to analyze a list of files and return the issues, hotspots and taints found. 
   * This endpoint should be used by external clients such as MCP servers.
 * Add a new `getMCPServerConfiguration` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
-    * It accepts `connectionId` and `token` as parameters
-    * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
+  * It accepts `connectionId` and `token` as parameters
+  * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
 
 # 10.31
 

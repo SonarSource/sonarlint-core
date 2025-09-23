@@ -84,7 +84,7 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
       return;
     }
 
-    if (analysisRequest == null || analysisRequest.fileList == null || analysisRequest.fileList.isEmpty()) {
+    if (analysisRequest == null || analysisRequest.fileAbsolutePaths == null || analysisRequest.fileAbsolutePaths.isEmpty()) {
       LOG.warn("Empty or invalid file list in analyze request");
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
@@ -100,7 +100,7 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
 
   private AnalyzeListFilesResult analyze(AnalyzeListFilesRequest request) {
     var cancelMonitor = new SonarLintCancelMonitor();
-    var filePaths = request.fileList.stream()
+    var filePaths = request.fileAbsolutePaths.stream()
       .map(path -> Paths.get(path).toUri().normalize())
       .collect(Collectors.toSet());
 
@@ -159,7 +159,7 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
       .get();
   }
 
-  public record AnalyzeListFilesRequest(List<String> fileList) {
+  public record AnalyzeListFilesRequest(List<String> fileAbsolutePaths) {
   }
 
   public record AnalyzeListFilesResult(List<RawFindingResponse> findings) {

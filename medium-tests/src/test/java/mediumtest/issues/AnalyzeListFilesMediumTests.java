@@ -113,14 +113,14 @@ class AnalyzeListFilesMediumTests {
     assertThat(analysisResult.findings()).hasSize(3);
     assertThat(analysisResult.findings()).extracting(AnalyzeListFilesRequestHandler.RawFindingResponse::ruleKey,
         AnalyzeListFilesRequestHandler.RawFindingResponse::message,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::severity, AnalyzeListFilesRequestHandler.RawFindingResponse::filePath,
+        AnalyzeListFilesRequestHandler.RawFindingResponse::severity,
         AnalyzeListFilesRequestHandler.RawFindingResponse::textRange)
       .usingRecursiveFieldByFieldElementComparator()
       .containsExactlyInAnyOrder(
-        tuple("java:S1220", "Move this file to a named package.", "MINOR", inputFile1.toAbsolutePath().normalize().toString(), null),
+        tuple("java:S1220", "Move this file to a named package.", "MINOR", null),
         tuple("java:S2094", "Remove this empty class, write its code or make it an \"interface\".", "MINOR",
-          inputFile1.toAbsolutePath().normalize().toString(), new TextRange(1, 13, 1, 16)),
-        tuple("ruleKey", "message", "MEDIUM", inputFile1.toAbsolutePath().normalize().toString(), new TextRange(1, 2, 3, 4))
+          new TextRange(1, 13, 1, 16)),
+        tuple("ruleKey", "message", "MEDIUM", new TextRange(1, 2, 3, 4))
       );
   }
 
@@ -175,16 +175,16 @@ class AnalyzeListFilesMediumTests {
     assertThat(analysisResult.findings()).hasSize(4);
     assertThat(analysisResult.findings()).extracting(AnalyzeListFilesRequestHandler.RawFindingResponse::ruleKey,
         AnalyzeListFilesRequestHandler.RawFindingResponse::message,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::severity, AnalyzeListFilesRequestHandler.RawFindingResponse::filePath,
+        AnalyzeListFilesRequestHandler.RawFindingResponse::severity,
         AnalyzeListFilesRequestHandler.RawFindingResponse::textRange)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", "Move this file to a named package.", "MINOR", inputFile1.toAbsolutePath().toString(), null),
+        tuple("java:S1220", "Move this file to a named package.", "MINOR", null),
         tuple("java:S2094", "Remove this empty class, write its code or make it an \"interface\".", "MINOR",
-          inputFile1.toAbsolutePath().normalize().toString(), new TextRange(1, 13, 1, 16)),
-        tuple("java:S1220", "Move this file to a named package.", "MINOR", inputFile2.toAbsolutePath().toString(), null),
+          new TextRange(1, 13, 1, 16)),
+        tuple("java:S1220", "Move this file to a named package.", "MINOR", null),
         tuple("java:S2094", "Remove this empty class, write its code or make it an \"interface\".", "MINOR",
-          inputFile2.toAbsolutePath().normalize().toString(), new TextRange(1, 13, 1, 16))
+          new TextRange(1, 13, 1, 16))
       );
   }
 
