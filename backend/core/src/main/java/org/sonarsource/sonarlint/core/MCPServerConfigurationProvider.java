@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static java.lang.String.format;
 
-public class MCPServerSettingsProvider {
+public class MCPServerConfigurationProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONARCLOUD_MCP_CONFIG = """
     {
@@ -41,8 +41,7 @@ public class MCPServerSettingsProvider {
         "SONARQUBE_TOKEN",
         "-e",
         "SONARQUBE_ORG",
-        "mcp/sonarqube",
-        "stdio"
+        "mcp/sonarqube"
       ],
       "env": {
         "SONARQUBE_ORG": "%s",
@@ -61,8 +60,7 @@ public class MCPServerSettingsProvider {
         "SONARQUBE_TOKEN",
         "-e",
         "SONARQUBE_URL",
-        "mcp/sonarqube",
-        "stdio"
+        "mcp/sonarqube"
       ],
       "env": {
         "SONARQUBE_URL": "%s",
@@ -74,15 +72,15 @@ public class MCPServerSettingsProvider {
   private final ConnectionConfigurationRepository connectionRepository;
   private final TelemetryService telemetryService;
 
-  public MCPServerSettingsProvider(ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService) {
+  public MCPServerConfigurationProvider(ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService) {
     this.connectionRepository = connectionRepository;
     this.telemetryService = telemetryService;
   }
 
-  public String getMCPServerSettingsJSON(String connectionId, String token) {
+  public String getMCPServerConfigurationJSON(String connectionId, String token) {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection != null) {
-      telemetryService.mcpServerSettingsRequested();
+      telemetryService.mcpServerConfigurationRequested();
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var sonarCloudConnection = (SonarCloudConnectionConfiguration) connection;
         var organization = sonarCloudConnection.getOrganization();

@@ -345,9 +345,9 @@ class TelemetryLocalStorageTests {
   @Test
   void should_increment_mcp_server_settings_requested_count() {
     var data = new TelemetryLocalStorage();
-    assertThat(data.getMcpServerSettingsRequestedCount()).isZero();
-    data.incrementMcpServerSettingsRequestedCount();
-    data.incrementMcpServerSettingsRequestedCount();
-    assertThat(data.getMcpServerSettingsRequestedCount()).isEqualTo(2);
+    assertThat(data.getMcpServerConfigurationRequestedCount()).isZero();
+    data.incrementMcpServerConfigurationRequestedCount();
+    data.incrementMcpServerConfigurationRequestedCount();
+    assertThat(data.getMcpServerConfigurationRequestedCount()).isEqualTo(2);
   }
 }

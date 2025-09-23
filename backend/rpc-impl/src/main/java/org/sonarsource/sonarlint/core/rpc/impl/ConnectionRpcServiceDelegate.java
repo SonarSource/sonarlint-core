@@ -24,15 +24,15 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
-import org.sonarsource.sonarlint.core.MCPServerSettingsProvider;
+import org.sonarsource.sonarlint.core.MCPServerConfigurationProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetConnectionSuggestionsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerSettingsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerSettingsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerConfigurationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
@@ -123,11 +123,11 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   }
 
   @Override
-  public CompletableFuture<GetMCPServerSettingsResponse> getMCPServerSettings(GetMCPServerSettingsParams params) {
+  public CompletableFuture<GetMCPServerConfigurationResponse> getMCPServerConfiguration(GetMCPServerConfigurationParams params) {
     return requestAsync(cancelMonitor -> {
       try {
-        return new GetMCPServerSettingsResponse(
-          getBean(MCPServerSettingsProvider.class).getMCPServerSettingsJSON(params.getConnectionId(), params.getToken()));
+        return new GetMCPServerConfigurationResponse(
+          getBean(MCPServerConfigurationProvider.class).getMCPServerConfigurationJSON(params.getConnectionId(), params.getToken()));
       } catch (SonarLintException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, e.getMessage(), params.getConnectionId());
         throw new ResponseErrorException(error);
