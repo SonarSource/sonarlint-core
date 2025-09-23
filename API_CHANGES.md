@@ -2,7 +2,7 @@
 
 ## New features
 
-* Add a new `getMCPServerSettings` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
+* Add a new `getMCPServerConfiguration` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
   * It accepts `connectionId` and `token` as parameters
   * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
 

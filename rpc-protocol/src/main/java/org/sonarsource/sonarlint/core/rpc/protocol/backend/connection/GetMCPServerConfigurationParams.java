@@ -19,14 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection;
 
-public class GetMCPServerSettingsResponse {
-  private final String jsonSettings;
+public class GetMCPServerConfigurationParams {
+  private String connectionId;
+  private String token;
 
-  public GetMCPServerSettingsResponse(String jsonSettings) {
-    this.jsonSettings = jsonSettings;
+  public GetMCPServerConfigurationParams(String connectionId, String token) {
+    this.connectionId = connectionId;
+    this.token = token;
   }
 
-  public String getJsonSettings() {
-    return jsonSettings;
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public void setConnectionId(String connectionId) {
+    this.connectionId = connectionId;
+  }
+
+  public String getToken() {
+    return token;
+  }
+
+  public void setToken(String token) {
+    this.token = token;
   }
 }

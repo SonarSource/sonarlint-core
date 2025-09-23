@@ -138,5 +138,5 @@ public interface ConnectionRpcService {
    * Generate MCP server settings JSON based on the requested Connection ID.
    */
   @JsonRequest
-  CompletableFuture<GetMCPServerSettingsResponse> getMCPServerSettings(GetMCPServerSettingsParams params);
+  CompletableFuture<GetMCPServerConfigurationResponse> getMCPServerConfiguration(GetMCPServerConfigurationParams params);
 }

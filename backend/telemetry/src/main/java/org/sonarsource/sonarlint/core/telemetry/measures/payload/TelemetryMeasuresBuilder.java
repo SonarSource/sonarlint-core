@@ -207,6 +207,6 @@ public class TelemetryMeasuresBuilder {
   }
 
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
-    values.add(new TelemetryMeasuresValue("mcp.settings_requested", String.valueOf(storage.getMcpServerSettingsRequestedCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
   }
 }

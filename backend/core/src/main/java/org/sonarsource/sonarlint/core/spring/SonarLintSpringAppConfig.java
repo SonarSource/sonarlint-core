@@ -33,9 +33,9 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
+import org.sonarsource.sonarlint.core.MCPServerConfigurationProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
-import org.sonarsource.sonarlint.core.MCPServerSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -50,8 +50,8 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
-import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.AutomaticAnalysisEnablementRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
@@ -187,7 +187,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   OrganizationsCache.class,
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
-  MCPServerSettingsProvider.class,
+  MCPServerConfigurationProvider.class,
   AnalysisSchedulerCache.class,
   PromotionService.class,
   KnownFindingsStorageService.class,

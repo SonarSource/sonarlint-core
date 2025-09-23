@@ -21,16 +21,15 @@ package mediumtest;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.Assertions;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerSettingsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerSettingsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerConfigurationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.GetMCPServerConfigurationResponse;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-class MCPServerSettingsProviderMediumTests {
+class MCPServerConfigurationProviderMediumTests {
 
   @SonarLintTest
   void should_throw_when_connection_does_not_exist(SonarLintTestHarness harness) {
@@ -61,8 +60,7 @@ class MCPServerSettingsProviderMediumTests {
           "SONARQUBE_TOKEN",
           "-e",
           "SONARQUBE_ORG",
-          "mcp/sonarqube",
-          "stdio"
+          "mcp/sonarqube"
         ],
         "env": {
           "SONARQUBE_ORG": "%s",
@@ -81,9 +79,9 @@ class MCPServerSettingsProviderMediumTests {
 
     var result = getSettings(backend, connectionId, token);
 
-    Assertions.assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
-    Assertions.assertThat(result.get().getJsonSettings()).isEqualTo(expectedSettings);
-    Assertions.assertThat(backend.telemetryFileContent().getMcpServerSettingsRequestedCount()).isEqualTo(1);
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    assertThat(result.get().getJsonConfiguration()).isEqualTo(expectedSettings);
+    assertThat(backend.telemetryFileContent().getMcpServerConfigurationRequestedCount()).isEqualTo(1);
   }
 
   @SonarLintTest
@@ -105,8 +103,7 @@ class MCPServerSettingsProviderMediumTests {
           "SONARQUBE_TOKEN",
           "-e",
           "SONARQUBE_URL",
-          "mcp/sonarqube",
-          "stdio"
+          "mcp/sonarqube"
         ],
         "env": {
           "SONARQUBE_URL": "%s",
@@ -126,13 +123,13 @@ class MCPServerSettingsProviderMediumTests {
 
     var result = getSettings(backend, connectionId2, token);
 
-    Assertions.assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
-    Assertions.assertThat(result.get().getJsonSettings()).isEqualTo(expectedSettings);
-    Assertions.assertThat(backend.telemetryFileContent().getMcpServerSettingsRequestedCount()).isEqualTo(1);
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    assertThat(result.get().getJsonConfiguration()).isEqualTo(expectedSettings);
+    assertThat(backend.telemetryFileContent().getMcpServerConfigurationRequestedCount()).isEqualTo(1);
   }
 
-  private CompletableFuture<GetMCPServerSettingsResponse> getSettings(SonarLintTestRpcServer backend, String connectionId, String token) {
-    return backend.getConnectionService().getMCPServerSettings(new GetMCPServerSettingsParams(connectionId, token));
+  private CompletableFuture<GetMCPServerConfigurationResponse> getSettings(SonarLintTestRpcServer backend, String connectionId, String token) {
+    return backend.getConnectionService().getMCPServerConfiguration(new GetMCPServerConfigurationParams(connectionId, token));
   }
 
 }
