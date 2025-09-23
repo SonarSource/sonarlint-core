@@ -79,6 +79,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSugge
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
@@ -663,6 +664,7 @@ public class SonarLintBackendFixture {
     Map<String, Map<String, String>> inferredAnalysisPropertiesByScopeId = new HashMap<>();
     Map<String, Boolean> analysisReadinessPerScopeId = new HashMap<>();
     Map<String, Integer> invalidTokenNotificationsCountPerConnectionId = new HashMap<>();
+    int embeddedServerStartedPort = -1;
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
       Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope,
@@ -891,6 +893,11 @@ public class SonarLintBackendFixture {
       return inferredAnalysisPropertiesByScopeId.getOrDefault(configurationScopeId, new HashMap<>());
     }
 
+    @Override
+    public void embeddedServerStarted(EmbeddedServerStartedParams params) {
+      this.embeddedServerStartedPort = params.getPort();
+    }
+
     public void setInferredAnalysisProperties(String configurationScopeId, Map<String, String> inferredAnalysisProperties) {
       inferredAnalysisPropertiesByScopeId.put(configurationScopeId, inferredAnalysisProperties);
     }
@@ -956,6 +963,10 @@ public class SonarLintBackendFixture {
 
     public Integer getConnectionIdsWithInvalidToken(String connectionId) {
       return invalidTokenNotificationsCountPerConnectionId.getOrDefault(connectionId, 0);
+    }
+
+    public int getEmbeddedServerPort() {
+      return embeddedServerStartedPort;
     }
 
     public static class ProgressReport {
