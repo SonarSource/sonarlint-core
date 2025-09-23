@@ -48,6 +48,7 @@ class MCPServerConfigurationProviderMediumTests {
     var connectionId = "scConnection";
     var organizationKey = "myOrg";
     var token = "token123";
+    var embeddedServerPort = 0;
 
     var expectedSettings = String.format("""
       {
@@ -60,14 +61,17 @@ class MCPServerConfigurationProviderMediumTests {
           "SONARQUBE_TOKEN",
           "-e",
           "SONARQUBE_ORG",
+          "-e",
+          "SONARQUBE_IDE_PORT",
           "mcp/sonarqube"
         ],
         "env": {
           "SONARQUBE_ORG": "%s",
-          "SONARQUBE_TOKEN": "%s"
+          "SONARQUBE_TOKEN": "%s",
+          "SONARQUBE_IDE_PORT": "%s"
         }
       }
-      """, organizationKey, token);
+      """, organizationKey, token, embeddedServerPort);
 
     var server = harness.newFakeSonarCloudServer().start();
 
@@ -91,6 +95,7 @@ class MCPServerConfigurationProviderMediumTests {
     var connectionId2 = "sqConnection";
     var serverUrl = "http://my-sonarqube";
     var token = "token123";
+    var embeddedServerPort = 0;
 
     var expectedSettings = String.format("""
       {
@@ -103,14 +108,17 @@ class MCPServerConfigurationProviderMediumTests {
           "SONARQUBE_TOKEN",
           "-e",
           "SONARQUBE_URL",
+          "-e",
+          "SONARQUBE_IDE_PORT",
           "mcp/sonarqube"
         ],
         "env": {
           "SONARQUBE_URL": "%s",
-          "SONARQUBE_TOKEN": "%s"
+          "SONARQUBE_TOKEN": "%s",
+          "SONARQUBE_IDE_PORT": "%s"
         }
       }
-      """, serverUrl, token);
+      """, serverUrl, token, embeddedServerPort);
 
     var server = harness.newFakeSonarCloudServer().start();
 
