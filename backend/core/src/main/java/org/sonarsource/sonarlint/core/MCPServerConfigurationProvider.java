@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -41,11 +42,14 @@ public class MCPServerConfigurationProvider {
         "SONARQUBE_TOKEN",
         "-e",
         "SONARQUBE_ORG",
+        "-e",
+        "SONARQUBE_IDE_PORT",
         "mcp/sonarqube"
       ],
       "env": {
         "SONARQUBE_ORG": "%s",
-        "SONARQUBE_TOKEN": "%s"
+        "SONARQUBE_TOKEN": "%s",
+        "SONARQUBE_IDE_PORT": "%s"
       }
     }
     """;
@@ -60,21 +64,26 @@ public class MCPServerConfigurationProvider {
         "SONARQUBE_TOKEN",
         "-e",
         "SONARQUBE_URL",
+        "-e",
+        "SONARQUBE_IDE_PORT",
         "mcp/sonarqube"
       ],
       "env": {
         "SONARQUBE_URL": "%s",
-        "SONARQUBE_TOKEN": "%s"
+        "SONARQUBE_TOKEN": "%s",
+        "SONARQUBE_IDE_PORT": "%s"
       }
     }
     """;
 
   private final ConnectionConfigurationRepository connectionRepository;
   private final TelemetryService telemetryService;
+  private final EmbeddedServer embeddedServer;
 
-  public MCPServerConfigurationProvider(ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService) {
+  public MCPServerConfigurationProvider(ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService, EmbeddedServer embeddedServer) {
     this.connectionRepository = connectionRepository;
     this.telemetryService = telemetryService;
+    this.embeddedServer = embeddedServer;
   }
 
   public String getMCPServerConfigurationJSON(String connectionId, String token) {
@@ -85,11 +94,11 @@ public class MCPServerConfigurationProvider {
         var sonarCloudConnection = (SonarCloudConnectionConfiguration) connection;
         var organization = sonarCloudConnection.getOrganization();
 
-        return format(SONARCLOUD_MCP_CONFIG, organization, token);
+        return format(SONARCLOUD_MCP_CONFIG, organization, token, embeddedServer.getPort());
       } else {
         var url = connection.getUrl();
 
-        return format(SONARQUBE_MCP_CONFIG, url, token);
+        return format(SONARQUBE_MCP_CONFIG, url, token, embeddedServer.getPort());
       }
     } else {
       LOG.warn("Request for generating MCP server settings JSON failed; Connection not found for '{}'", connectionId);
