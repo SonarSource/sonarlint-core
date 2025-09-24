@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
@@ -188,5 +189,22 @@ class SonarProjectsCacheTests {
 
     assertThat(searchIndex1.isEmpty()).isTrue();
     verify(serverApi.component(), times(1)).getAllProjects(any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_search_by_both_key_and_name_splitting_by_underscore() {
+    var project1 = new ServerProject("mySearchTerm", "project", false);
+    var project2 = new ServerProject("key", "searchTerm__00", false);
+    var projectNotFound = new ServerProject("SonarSource_peachee-dotnet", "DriAutomation.NET", false);
+    var projectFound = new ServerProject("SonarSource_sonarsource-infra-peach", "sonarsource-infra-peach", false);
+    when(serverApi.component().getAllProjects(any()))
+      .thenReturn(List.of(project1, project2, projectNotFound, projectFound));
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "peach", new SonarLintCancelMonitor());
+
+    assertThat(actual).containsExactlyInAnyOrder(
+      new SonarProjectDto("SonarSource_peachee-dotnet", "DriAutomation.NET"),
+      new SonarProjectDto("SonarSource_sonarsource-infra-peach", "sonarsource-infra-peach")
+    );
   }
 }

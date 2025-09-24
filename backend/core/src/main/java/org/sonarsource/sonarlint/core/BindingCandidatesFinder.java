@@ -36,7 +36,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class BindingCandidatesFinder {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String SPLIT_PATTERN = "[\\W_]+";
   private final ConfigurationRepository configRepository;
   private final BindingClueProvider bindingClueProvider;
   private final SonarProjectsCache sonarProjectsCache;
@@ -57,7 +56,8 @@ public class BindingCandidatesFinder {
     var goodConfigScopeCandidates = new HashSet<ConfigurationScopeSharedContext>();
 
     for (var scope : configScopeCandidates) {
-      checkIfScopeIsGoodCandidateForBinding(scope, connectionId, projectKey, cancelMonitor).ifPresent(goodConfigScopeCandidates::add);
+      checkIfScopeIsGoodCandidateForBinding(scope, connectionId, projectKey, cancelMonitor)
+        .ifPresent(goodConfigScopeCandidates::add);
     }
 
     // if both a parent and a child configuration scope are candidates, preference should be given to the higher scope in the hierarchy
@@ -114,7 +114,7 @@ public class BindingCandidatesFinder {
       LOG.debug("Unable to find SonarProject with key '{}' on connection '{}' in the cache", projectKey, connectionId);
       return false;
     }
-    TextSearchIndex<ServerProject> index = new TextSearchIndex<>(SPLIT_PATTERN);
+    TextSearchIndex<ServerProject> index = new TextSearchIndex<>();
     var p = sonarProjectOpt.get();
     index.index(p, p.key() + " " + p.name());
     var searchResult = index.search(configScopeName);
