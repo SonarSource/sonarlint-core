@@ -38,7 +38,7 @@ class ProcessWrapperFactoryTests {
 
   @Test
   void it_should_execute_git(@TempDir Path baseDir) {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    assumeTrue(new NativeGitLocator().getNativeGitExecutable().isPresent());
     var lines = new StringBuilder();
     var result = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version").execute();
 
@@ -48,7 +48,7 @@ class ProcessWrapperFactoryTests {
 
   @Test
   void it_should_return_output_for_invalid_command(@TempDir Path baseDir) {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    assumeTrue(new NativeGitLocator().getNativeGitExecutable().isPresent());
     var processWrapper = new ProcessWrapperFactory().create(baseDir, l -> {
     }, "git", "-version");
     var result = processWrapper.execute();
@@ -58,7 +58,7 @@ class ProcessWrapperFactoryTests {
 
   @Test
   void it_should_gracefully_return_output_for_interrupted_exception(@TempDir Path baseDir) throws InterruptedException, IOException {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    assumeTrue(new NativeGitLocator().getNativeGitExecutable().isPresent());
     var lines = new StringBuilder();
     var processWrapper = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version");
     var spy = spy(processWrapper);
@@ -71,7 +71,7 @@ class ProcessWrapperFactoryTests {
 
   @Test
   void it_should_gracefully_return_output_for_exception(@TempDir Path baseDir) throws InterruptedException, IOException {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    assumeTrue(new NativeGitLocator().getNativeGitExecutable().isPresent());
     var lines = new StringBuilder();
     var processWrapper = new ProcessWrapperFactory().create(baseDir, lines::append, "git", "--version");
     var spy = spy(processWrapper);
