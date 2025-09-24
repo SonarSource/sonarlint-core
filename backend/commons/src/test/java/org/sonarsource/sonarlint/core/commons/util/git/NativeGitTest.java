@@ -26,32 +26,28 @@ import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 
-class NativeGitWrapperTests {
+class NativeGitTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
-  private static NativeGitWrapper underTest;
+
   @TempDir
   private Path projectDirPath;
   private Git git;
@@ -59,24 +55,13 @@ class NativeGitWrapperTests {
   @BeforeEach
   void prepare() throws Exception {
     git = createRepository(projectDirPath);
-    underTest = spy(new NativeGitWrapper());
-  }
-
-  @AfterEach
-  void cleanup() throws IOException {
-    org.eclipse.jgit.util.FileUtils.delete(projectDirPath.toFile(), RECURSIVE);
-  }
-
-  @Test
-  void shouldConsiderNativeGitNotAvailableOnNull() {
-    doReturn(Optional.empty()).when(underTest).getGitExecutable();
-
-    assertThat(underTest.checkIfNativeGitEnabled(Path.of(""))).isFalse();
   }
 
   @Test
   void it_should_default_to_instant_now_git_blame_history_limit_if_older_than_one_year() throws IOException, GitAPIException {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var nativeGitExecutable = new NativeGitLocator().getNativeGitExecutable();
+    assumeTrue(nativeGitExecutable.isPresent());
+    var underTest = nativeGitExecutable.get();
     var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     calendar.add(Calendar.YEAR, -2);
     var fileAStr = "fileA";
@@ -102,7 +87,7 @@ class NativeGitWrapperTests {
     commitAtDate(git, oneYearAndFourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now());
+    var blameResult = underTest.blame(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now());
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -115,7 +100,9 @@ class NativeGitWrapperTests {
 
   @Test
   void it_should_blame_file_since_effective_blame_period() throws IOException, GitAPIException {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var nativeGitExecutable = new NativeGitLocator().getNativeGitExecutable();
+    assumeTrue(nativeGitExecutable.isPresent());
+    var underTest = nativeGitExecutable.get();
     var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     calendar.add(Calendar.MONTH, -18);
     var fileAStr = "fileA";
@@ -141,7 +128,7 @@ class NativeGitWrapperTests {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now().minus(Period.ofDays(180)));
+    var blameResult = underTest.blame(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now().minus(Period.ofDays(180)));
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -157,12 +144,21 @@ class NativeGitWrapperTests {
 
   @Test
   void it_should_not_blame_file_on_git_command_error() {
-    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var nativeGitExecutable = new NativeGitLocator().getNativeGitExecutable();
+    assumeTrue(nativeGitExecutable.isPresent());
+    var underTest = nativeGitExecutable.get();
     var fileAStr = "fileA";
     var fileA = projectDirPath.resolve(fileAStr);
 
-    underTest.blameFromNativeCommand(projectDirPath, Set.of(fileA.toUri()), Instant.now());
+    underTest.blame(projectDirPath, Set.of(fileA.toUri()), Instant.now());
 
     assertThat(logTester.logs()).contains("fatal: no such path 'fileA' in HEAD", "Command failed with code: 128");
+  }
+
+  @Test
+  void it_should_successfully_parse_windows_like_output() {
+    var version = NativeGit.parseGitVersionOutput(List.of("git version 2.49.0.windows.1"));
+
+    assertThat(version).contains(Version.create("2.49"));
   }
 }

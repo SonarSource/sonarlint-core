@@ -23,18 +23,39 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class WinGitUtils {
+public class NativeGitLocator {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  // So we only have to make the expensive call once (or at most twice) to get the native Git executable
+  private boolean checkedForNativeGitExecutable = false;
+  private NativeGit nativeGitExecutable = null;
 
-  private WinGitUtils() {
-    // utils
+  /**
+   * Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
+   * to not run these expensive processes more than once (or twice in case of Windows).
+   */
+  public Optional<NativeGit> getNativeGitExecutable() {
+    if (checkedForNativeGitExecutable) {
+      return Optional.ofNullable(nativeGitExecutable);
+    }
+
+    var nativeGit = getGitExecutable()
+      .map(NativeGit::new)
+      .filter(NativeGit::isSupportedVersion);
+    checkedForNativeGitExecutable = true;
+    nativeGitExecutable = nativeGit.orElse(null);
+    return nativeGit;
   }
 
-  public static Optional<String> locateGitOnWindows() {
+  Optional<String> getGitExecutable() {
+    return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : Optional.of("git");
+  }
+
+  private static Optional<String> locateGitOnWindows() {
     var lines = new ArrayList<String>();
-    var result = WinGitUtils.callWhereTool(lines::add);
+    var result = callWhereTool(lines::add);
     return locateGitOnWindows(result, String.join("\n", lines));
   }
 

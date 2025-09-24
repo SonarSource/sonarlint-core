@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,14 +61,21 @@ import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 public class GitService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final NativeGitWrapper nativeGit;
+  private final NativeGitLocator nativeGitLocator;
 
-  GitService(NativeGitWrapper nativeGit) {
-    this.nativeGit = nativeGit;
+  GitService(NativeGitLocator nativeGitLocator) {
+    this.nativeGitLocator = nativeGitLocator;
   }
 
   public static GitService create() {
-    return new GitService(new NativeGitWrapper());
+    return new GitService(new NativeGitLocator());
+  }
+
+  public MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
+    Instant thresholdDate) {
+    return nativeGitLocator.getNativeGitExecutable()
+      .map(nativeGit -> nativeGit.blame(projectBaseDir, fileUris, thresholdDate))
+      .orElseGet(() -> blameWithGitFilesBlameLibrary(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider));
   }
 
   // Could be optimized to only fetch VCS changed files matching the base dir
@@ -120,7 +126,9 @@ public class GitService {
     }
   }
 
-  public static MultiFileBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+  public static MultiFileBlameResult blameWithGitFilesBlameLibrary(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
+    @Nullable UnaryOperator<String> fileContentProvider) {
+    LOG.debug("Falling back to JGit");
     var gitRepo = buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
@@ -156,7 +164,7 @@ public class GitService {
     return repoDir.toPath().relativize(projectBaseDir);
   }
 
-  public static Repository buildGitRepository(Path basedir) {
+  private static Repository buildGitRepository(Path basedir) {
     try {
       var repositoryBuilder = new RepositoryBuilder()
         .findGitDir(basedir.toFile());
@@ -253,22 +261,6 @@ public class GitService {
 
         return Optional.of(repository.open(treeWalk.getObjectId(0)));
       }
-    }
-  }
-
-  public MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
-    @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
-    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, nativeGit::checkIfNativeGitEnabled, thresholdDate);
-  }
-
-  MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
-    Predicate<Path> isNativeBlameSupported, Instant thresholdDate) {
-    if (isNativeBlameSupported.test(projectBaseDir)) {
-      LOG.debug("Using native git blame");
-      return nativeGit.blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
-    } else {
-      LOG.debug("Falling back to JGit");
-      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
 
