@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
+import java.util.Objects;
+
 public class SonarProjectDto {
   private final String key;
   private final String name;
@@ -34,5 +36,25 @@ public class SonarProjectDto {
 
   public String getName() {
     return name;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    SonarProjectDto that = (SonarProjectDto) o;
+    return Objects.equals(key, that.key) && Objects.equals(name, that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key, name);
+  }
+
+  @Override
+  public String toString() {
+    return "SonarProjectDto{" +
+      "key='" + key + '\'' +
+      ", name='" + name + '\'' +
+      '}';
   }
 }
