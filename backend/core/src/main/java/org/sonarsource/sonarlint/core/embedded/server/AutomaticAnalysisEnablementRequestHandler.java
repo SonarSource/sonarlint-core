@@ -50,6 +50,8 @@ public class AutomaticAnalysisEnablementRequestHandler implements HttpRequestHan
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
+    LOG.debug("Received request for automatic analysis enablement change");
+
     if (!Method.POST.isSame(request.getMethod())) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;

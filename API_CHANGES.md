@@ -2,6 +2,10 @@
 
 ## New features
 
+* Add a new endpoint `/sonarlint/api/analysis/automatic/config` in the embedded server to globally disable or enable the automatic analysis.
+  * This endpoint should be used by external clients such as MCP servers.
+* Add a new endpoint `/sonarlint/api/analysis/files` in our embedded server to analyze a list of files and return the issues, hotspots and taints found. 
+  * This endpoint should be used by external clients such as MCP servers.
 * Add a new `getMCPServerConfiguration` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
   * It accepts `connectionId` and `token` as parameters
   * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
@@ -16,6 +20,7 @@
 * Add a new `CURRENT_FILE_ANALYSIS_TYPE` to the `org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType` enum. This value can be used when reporting telemetry for forced analysis of currently open file.
 
 # 10.29
+
 ## New features
 * Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto`, `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.connection.ConnectionSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
 * Added `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` and allowed clients to provide this information when calling `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` which will trigger telemetry events for binding updates. Clients no longer need to call separate telemetry methods while adding bindings.
