@@ -341,4 +341,13 @@ class TelemetryLocalStorageTests {
     data.incrementFlightRecorderSessionsCount();
     assertThat(data.getFlightRecorderSessionsCount()).isEqualTo(3);
   }
+
+  @Test
+  void should_increment_mcp_server_settings_requested_count() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getMcpServerConfigurationRequestedCount()).isZero();
+    data.incrementMcpServerConfigurationRequestedCount();
+    data.incrementMcpServerConfigurationRequestedCount();
+    assertThat(data.getMcpServerConfigurationRequestedCount()).isEqualTo(2);
+  }
 }

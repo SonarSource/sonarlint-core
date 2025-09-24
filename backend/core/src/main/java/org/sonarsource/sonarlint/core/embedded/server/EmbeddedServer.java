@@ -65,10 +65,11 @@ public class EmbeddedServer {
   private final ShowIssueRequestHandler showIssueRequestHandler;
   private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private final AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler;
+  private final AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler;
 
   public EmbeddedServer(InitializeParams params, SonarLintRpcClient client, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
-    AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler) {
+    AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler, AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
     this.client = client;
     this.statusRequestHandler = statusRequestHandler;
@@ -77,6 +78,7 @@ public class EmbeddedServer {
     this.showIssueRequestHandler = showIssueRequestHandler;
     this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
     this.automaticAnalysisEnablementRequestHandler = automaticAnalysisEnablementRequestHandler;
+    this.analyzeListFilesRequestHandler = analyzeListFilesRequestHandler;
   }
 
   @PostConstruct
@@ -113,6 +115,7 @@ public class EmbeddedServer {
           .register("/sonarlint/api/issues/show", showIssueRequestHandler)
           .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
           .register("/sonarlint/api/analysis/automatic/config", automaticAnalysisEnablementRequestHandler)
+          .register("/sonarlint/api/analysis/files", analyzeListFilesRequestHandler)
           .addFilterLast("CSP", new CspFilter())
           .create();
         startedServer.start();

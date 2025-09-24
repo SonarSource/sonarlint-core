@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,7 +54,6 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
@@ -140,7 +138,7 @@ class GitServiceTests {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")));
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")), null);
     assertThat(IntStream.of(1, 2, 3)
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
@@ -172,17 +170,6 @@ class GitServiceTests {
   }
 
   @Test
-  void it_should_return_empty_blame_result_if_no_files() {
-    Set<Path> files = Set.of();
-    Set<URI> uris = Set.of();
-
-    var now = Instant.now();
-
-    var blameResult = underTest.getBlameResult(projectDirPath, files, uris, null, path -> true, now);
-    assertThat(blameResult.isEmpty()).isTrue();
-  }
-
-  @Test
   void it_should_blame_with_given_contents_within_inner_dir() throws IOException, GitAPIException {
     var deepFilePath = Path.of("innerDir").resolve("fileA").toString();
     createFile(projectDirPath, deepFilePath, "SonarQube", "SonarCloud", "SonarLint");
@@ -204,7 +191,7 @@ class GitServiceTests {
     createFile(projectDirPath, deepFilePath, "line1", "line2", "line3");
     var c1 = commit(git, deepFilePath);
 
-    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of(deepFilePath)));
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of(deepFilePath)), null);
     var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(deepFilePath), List.of(1, 2, 3));
     assertThat(latestChangeDate).isPresent().contains(c1);
   }
@@ -216,7 +203,7 @@ class GitServiceTests {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, git.getRepository().getWorkTree().toPath().relativize(projectDirPath).resolve("fileA").toString());
 
-    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")));
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")), null);
     assertThat(IntStream.of(1, 2, 3)
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
@@ -413,7 +400,7 @@ class GitServiceTests {
 
   @Test
   void git_blame_works_for_bare_repos_too() {
-    var sonarLintBlameResult = blameWithFilesGitCommand(bareRepoPath, Stream.of("fileA", "fileB").map(Path::of).collect(Collectors.toSet()));
+    var sonarLintBlameResult = blameWithFilesGitCommand(bareRepoPath, Stream.of("fileA", "fileB").map(Path::of).collect(Collectors.toSet()), null);
 
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent();
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3))).isEmpty();
@@ -428,9 +415,9 @@ class GitServiceTests {
       createFile(projectDirPath, "fileA", "line1", "line2", "line3");
       var filePath = Path.of("fileA");
 
-      var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(filePath));
+      var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(filePath), null);
 
-      assertTrue(sonarLintBlameResult.isEmpty());
+      assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1))).isEmpty();
     }
   }
 

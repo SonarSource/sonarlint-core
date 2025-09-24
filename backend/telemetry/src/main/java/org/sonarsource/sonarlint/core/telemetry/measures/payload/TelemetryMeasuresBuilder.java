@@ -73,6 +73,8 @@ public class TelemetryMeasuresBuilder {
 
     addFlightRecorderMeasures(values);
 
+    addMCPMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -202,5 +204,9 @@ public class TelemetryMeasuresBuilder {
     if (flightRecorderSessionsCount > 0) {
       values.add(new TelemetryMeasuresValue("flight_recorder.sessions_count", String.valueOf(flightRecorderSessionsCount), INTEGER, DAILY));
     }
+  }
+
+  private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
   }
 }

@@ -76,9 +76,9 @@ public class RulesRepository {
   }
 
   private synchronized void lazyInit(String connectionId) {
-    var serverSettings = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::globalSettings);
     var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
     if (rulesByKey == null) {
+      var serverSettings = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::globalSettings);
       setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId, serverSettings.map(ServerSettings::globalSettings).orElseGet(Map::of)));
     }
   }

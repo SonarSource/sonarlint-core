@@ -96,6 +96,7 @@ public class TelemetryLocalStorage {
   private boolean isAutomaticAnalysisEnabled;
   private int automaticAnalysisToggledCount;
   private int flightRecorderSessionsCount;
+  private int mcpServerConfigurationRequestedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -261,6 +262,7 @@ public class TelemetryLocalStorage {
     dependencyRiskInvestigatedRemotelyCount = 0;
     automaticAnalysisToggledCount = 0;
     flightRecorderSessionsCount = 0;
+    mcpServerConfigurationRequestedCount = 0;
   }
 
   public long numUseDays() {
@@ -701,5 +703,14 @@ public class TelemetryLocalStorage {
 
   public int getFlightRecorderSessionsCount() {
     return flightRecorderSessionsCount;
+  }
+
+  public void incrementMcpServerConfigurationRequestedCount() {
+    markSonarLintAsUsedToday();
+    mcpServerConfigurationRequestedCount++;
+  }
+
+  public int getMcpServerConfigurationRequestedCount() {
+    return mcpServerConfigurationRequestedCount;
   }
 }

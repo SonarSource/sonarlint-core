@@ -709,6 +709,10 @@ public class ServerFixture {
       return this;
     }
 
+    public SonarQubeServerBuilder withQualityProfile(String qualityProfileKey) {
+      return withQualityProfile(qualityProfileKey, UnaryOperator.identity());
+    }
+
     public SonarQubeServerBuilder withQualityProfile(String qualityProfileKey, UnaryOperator<ServerQualityProfileBuilder> qualityProfileBuilder) {
       var builder = new ServerQualityProfileBuilder(null);
       this.qualityProfilesByKey.put(qualityProfileKey, qualityProfileBuilder.apply(builder));
