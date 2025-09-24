@@ -20,12 +20,15 @@ jobs:
     permissions:
       id-token: write
       contents: write
+    outputs:
+      build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.7.12
       - uses: SonarSource/ci-github-actions/build-maven@v1
+        id: build
         with:
           deploy-pull-request: true
           artifactory-reader-role: private-reader
@@ -127,8 +130,9 @@ jobs:
         env:
           SONARCLOUD_IT_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN }}
           SONARCLOUD_REGION: ${{ matrix.region }}
+          BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
         with:
-          deploy-pull-request: true
+          deploy-pull-request: false
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
           maven-opts: -Xmx4G -Dcommercial
@@ -149,7 +153,7 @@ jobs:
         if: ${{ matrix.sc == true && !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@v1
         env:
-          SONARCLOUD_IT_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN }}
+          SONARCLOUD_IT_TOKEN: ${{steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.region }}
         with:
           deploy-pull-request: false
@@ -161,7 +165,7 @@ jobs:
         if: ${{ matrix.sc != true && (github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@v1
         with:
-          deploy-pull-request: true
+          deploy-pull-request: false
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
           maven-opts: -Xmx4G -Dcommercial
@@ -184,6 +188,13 @@ jobs:
           artifactory-deployer-role: qa-deployer
           maven-opts: -Xmx4G -Dcommercial
           maven-args: -rf its -Pits -B -e -V verify surefire-report:report -Dmaven.source.skip=true -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }}
+      - name: debug
+        if: failure()
+        shell: bash
+        run: |
+          ls -la */target/surefire-reports/TEST-*.xml
+          ls -la . */target
+          find . -name surefire-reports -type d
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
