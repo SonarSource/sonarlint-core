@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.filter;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.HttpException;
@@ -30,6 +30,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
 
 public class RateLimitFilter implements HttpFilterHandler {
 
@@ -50,6 +51,7 @@ public class RateLimitFilter implements HttpFilterHandler {
         var response = new BasicClassicHttpResponse(HttpStatus.SC_TOO_MANY_REQUESTS);
         responseTrigger.submitResponse(response);
       } else {
+        context.setAttribute(AttributeUtils.ORIGIN_ATTRIBUTE, origin);
         chain.proceed(request, responseTrigger, context);
       }
     }

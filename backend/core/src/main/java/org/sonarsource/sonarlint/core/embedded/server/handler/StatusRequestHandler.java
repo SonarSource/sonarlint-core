@@ -17,22 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import java.io.IOException;
-import java.util.Optional;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
@@ -57,10 +56,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
       return;
     }
 
-    boolean trustedServer = Optional.ofNullable(request.getHeader("Origin"))
-      .map(Header::getValue)
-      .map(this::isTrustedServer)
-      .orElse(false);
+    boolean trustedServer = isTrustedServer(AttributeUtils.getOrigin(context));
 
     var description = getDescription(trustedServer);
     var capabilities = new CapabilitiesResponse(true);

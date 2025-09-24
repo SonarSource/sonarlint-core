@@ -75,11 +75,11 @@ public class RequestHandlerBindingAssistant {
     this.repository = repository;
   }
 
-  interface Callback {
+  public interface Callback {
     void andThen(String connectionId, Collection<String> boundScopes, @Nullable String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
   }
 
-  void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, String origin, Callback callback) {
+  public void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, String origin, Callback callback) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
     executorService.execute(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, origin, callback, cancelMonitor));

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +34,7 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.Method;
-import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +47,8 @@ import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -83,10 +84,12 @@ class ShowIssueRequestHandlerTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
+
+  private ShowIssueRequestHandler showIssueRequestHandler;
+
   private ConnectionConfigurationRepository connectionConfigurationRepository;
   private ConfigurationRepository configurationRepository;
   private SonarLintRpcClient sonarLintRpcClient;
-  private ShowIssueRequestHandler showIssueRequestHandler;
   private ProjectBranchesStorage branchesStorage;
   private IssueApi issueApi;
   private TelemetryService telemetryService;
@@ -204,11 +207,18 @@ class ShowIssueRequestHandlerTests {
   @Test
   void should_trigger_telemetry() throws HttpException, IOException, URISyntaxException {
     var request = mock(ClassicHttpRequest.class);
+    var params = Map.of("project", "pk",
+      "issue", "ik",
+      "branch", "b",
+      "server", "s");
     when(request.getUri()).thenReturn(URI.create("http://localhost:8000/issue?project=pk&issue=ik&branch=b&server=s"));
-    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", "s"));
     when(request.getMethod()).thenReturn(Method.GET.name());
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
+    when(context.getAttribute(AttributeUtils.PARAMS_ATTRIBUTE))
+      .thenReturn(params);
+    when(context.getAttribute(AttributeUtils.ORIGIN_ATTRIBUTE))
+      .thenReturn("s");
     when(issueApi.getCodeSnippet(eq("comp"), any(), any(), any(), any())).thenReturn(Optional.of("snippet"));
 
     showIssueRequestHandler.handle(request, response, context);
@@ -218,14 +228,17 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_sq_request_with_branch() throws ProtocolException {
-    var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
-      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
-      "&organizationKey=sample-organization" +
-      "&tokenValue=123" +
-      "&branch=branch"));
+  void should_extract_query_from_sq_request_with_branch() {
+    var params = Map.of("server", "https://next.sonarqube.com/sonarqube",
+      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "tokenName", "abc",
+      "organizationKey", "sample-organization",
+      "tokenValue", "123",
+      "branch", "branch");
+
+    var issueQuery = showIssueRequestHandler.extractQuery("https://next.sonarqube.com/", params);
+
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -236,12 +249,14 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_sq_request_without_token() throws ProtocolException {
-    var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
-      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr" +
-      "&organizationKey=sample-organization"));
+  void should_extract_query_from_sq_request_without_token() {
+    var params = Map.of("server", "https://next.sonarqube.com/sonarqube",
+      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "organizationKey", "sample-organization");
+
+    var issueQuery = showIssueRequestHandler.extractQuery("https://next.sonarqube.com/", params);
+
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -252,13 +267,16 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_sq_request_with_token() throws ProtocolException {
-    var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
-      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
-      "&organizationKey=sample-organization" +
-      "&tokenValue=123"));
+  void should_extract_query_from_sq_request_with_token() {
+    var params = Map.of("server", "https://next.sonarqube.com/sonarqube",
+      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "tokenName", "abc",
+      "organizationKey", "sample-organization",
+      "tokenValue", "123");
+
+    var issueQuery = showIssueRequestHandler.extractQuery("https://next.sonarqube.com/", params);
+
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -269,13 +287,13 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_sc_request_without_token() throws ProtocolException {
-    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr" +
-      "&organizationKey=sample-organization");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
-    var issueQuery = showIssueRequestHandler.extractQuery(request);
+  void should_extract_query_from_sc_request_without_token() {
+    var params = Map.of(      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "organizationKey", "sample-organization");
+
+    var issueQuery = showIssueRequestHandler.extractQuery(SonarCloudRegion.EU.getProductionUri().toString(), params);
+
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -286,14 +304,14 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_sc_request_with_token() throws ProtocolException {
-    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
-      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
-      "&organizationKey=sample-organization" +
-      "&tokenValue=123");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
-    var issueQuery = showIssueRequestHandler.extractQuery(request);
+  void should_extract_query_from_sc_request_with_token() {
+    var params = Map.of("project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr", "tokenName", "abc",
+      "organizationKey", "sample-organization",
+      "tokenValue", "123");
+
+    var issueQuery = showIssueRequestHandler.extractQuery( SonarCloudRegion.EU.getProductionUri().toString(), params);
+
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -354,9 +372,18 @@ class ShowIssueRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
+    var params = Map.of("server", "https://next.sonarqube.com/sonarqube",
+      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "tokenName", "abc",
+      "organizationKey", "sample-organization",
+      "tokenValue", "123");
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
+    when(context.getAttribute(AttributeUtils.PARAMS_ATTRIBUTE))
+      .thenReturn(params);
+    when(context.getAttribute(AttributeUtils.ORIGIN_ATTRIBUTE))
+      .thenReturn(SonarCloudRegion.EU.getProductionUri().toString());
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
@@ -383,9 +410,18 @@ class ShowIssueRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
+    var params = Map.of("server", "https://next.sonarqube.com/sonarqube",
+      "project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "tokenName", "abc",
+      "organizationKey", "sample-organization",
+      "tokenValue", "123");
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
+    when(context.getAttribute(AttributeUtils.PARAMS_ATTRIBUTE))
+      .thenReturn(params);
+    when(context.getAttribute(AttributeUtils.ORIGIN_ATTRIBUTE))
+      .thenReturn(SonarCloudRegion.EU.getProductionUri().toString());
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
@@ -418,5 +454,4 @@ class ShowIssueRequestHandlerTests {
 
     verifyNoMoreInteractions(sonarLintRpcClient);
   }
-
 }

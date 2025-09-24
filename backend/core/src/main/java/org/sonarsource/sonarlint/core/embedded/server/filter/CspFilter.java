@@ -17,49 +17,38 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.filter;
 
 import java.io.IOException;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
-import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
-import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
-class CorsFilter implements HttpFilterHandler {
+public class CspFilter implements HttpFilterHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, HttpFilterChain.ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain)
     throws HttpException, IOException {
-    var origin = request.getHeader("Origin");
-
-    if (Method.OPTIONS.name().equalsIgnoreCase(request.getMethod())) {
-      var response = new BasicClassicHttpResponse(HttpStatus.SC_OK);
-      if (origin != null) {
-        response.addHeader("Access-Control-Allow-Origin", origin.getValue());
+    chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
+      @Override
+      public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
+        responseTrigger.sendInformation(classicHttpResponse);
       }
-      response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      response.addHeader("Access-Control-Allow-Private-Network", true);
-      responseTrigger.submitResponse(response);
-    } else {
-      chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
-        @Override
-        public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
-          responseTrigger.sendInformation(classicHttpResponse);
-        }
 
-        @Override
-        public void submitResponse(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
-          if (origin != null) {
-            classicHttpResponse.addHeader("Access-Control-Allow-Origin", origin.getValue());
-          }
-          responseTrigger.submitResponse(classicHttpResponse);
+      @Override
+      public void submitResponse(ClassicHttpResponse response) throws HttpException, IOException {
+        if (response.getCode() >= HttpStatus.SC_BAD_REQUEST) {
+          responseTrigger.submitResponse(response);
+          return;
         }
-      }, context);
-    }
+        var port = request.getAuthority().getPort();
+        response.setHeader("Content-Security-Policy-Report-Only", "connect-src 'self' http://localhost:" + port + ";");
+        responseTrigger.submitResponse(response);
+      }
+    }, context);
   }
 }

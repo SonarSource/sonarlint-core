@@ -17,12 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -32,10 +30,11 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -69,10 +68,9 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    var originHeader = request.getHeader("Origin");
-    var origin = originHeader != null ? originHeader.getValue() : null;
-    var showHotspotQuery = extractQuery(request);
-    if (origin == null || !Method.GET.isSame(request.getMethod()) || !showHotspotQuery.isValid()) {
+    var origin = AttributeUtils.getOrigin(context);
+    var showHotspotQuery = extractQuery(AttributeUtils.getParams(context));
+    if (!Method.GET.isSame(request.getMethod()) || !showHotspotQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
@@ -135,15 +133,7 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
-  private static ShowHotspotQuery extractQuery(ClassicHttpRequest request) {
-    var params = new HashMap<String, String>();
-    try {
-      new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
-        .getQueryParams()
-        .forEach(p -> params.put(p.getName(), p.getValue()));
-    } catch (URISyntaxException e) {
-      // Ignored
-    }
+  private static ShowHotspotQuery extractQuery(Map<String, String> params) {
     return new ShowHotspotQuery(params.get("server"), params.get("project"), params.get("hotspot"));
   }
 
@@ -152,7 +142,5 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     public boolean isValid() {
       return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(hotspotKey);
     }
-
   }
-
 }

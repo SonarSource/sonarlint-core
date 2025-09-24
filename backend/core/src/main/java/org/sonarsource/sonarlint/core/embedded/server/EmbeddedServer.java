@@ -32,6 +32,17 @@ import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.embedded.server.filter.CorsFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.CspFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.ParseParamsFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.RateLimitFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.ValidationFilter;
+import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
@@ -47,6 +58,7 @@ public class EmbeddedServer {
   private HttpServer server;
   private int port;
   private final boolean enabled;
+  private final SonarLintRpcClient client;
   private final StatusRequestHandler statusRequestHandler;
   private final GeneratedUserTokenHandler generatedUserTokenHandler;
   private final ShowHotspotRequestHandler showHotspotRequestHandler;
@@ -54,10 +66,11 @@ public class EmbeddedServer {
   private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private final AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler;
 
-  public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
+  public EmbeddedServer(InitializeParams params, SonarLintRpcClient client, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
     AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
+    this.client = client;
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;
@@ -92,6 +105,8 @@ public class EmbeddedServer {
           .setSocketConfig(socketConfig)
           .addFilterFirst("RateLimiter", new RateLimitFilter())
           .addFilterAfter("RateLimiter", "CORS", new CorsFilter())
+          .addFilterAfter("CORS", "Params", new ParseParamsFilter())
+          .addFilterAfter("Params", "Validation", new ValidationFilter(client))
           .register("/sonarlint/api/status", statusRequestHandler)
           .register("/sonarlint/api/token", generatedUserTokenHandler)
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)

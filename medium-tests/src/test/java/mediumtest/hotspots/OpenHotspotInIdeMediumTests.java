@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -227,6 +228,42 @@ class OpenHotspotInIdeMediumTests {
     var statusCode = requestPostOpenHotspotWithParams(backend, serverWithoutHotspot, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
+  }
+
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+
+    var statusCode = requestGetOpenHotspotWithParams(backend, "server="
+        + urlEncode(SonarCloudRegion.EU.getProductionUri().toString()),
+      "someOrigin");
+
+    assertThat(statusCode).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud_us(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+
+    var statusCode = requestGetOpenHotspotWithParams(backend, "server="
+        + urlEncode(SonarCloudRegion.US.getProductionUri().toString()),
+      "someOrigin");
+
+    assertThat(statusCode).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
   }
 
   private int requestGetOpenHotspotWithParams(SonarLintTestRpcServer backend, String query, String baseUrl) {

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import com.google.gson.Gson;
 import java.io.IOException;
@@ -33,6 +33,8 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 
 import static java.util.function.Predicate.not;
@@ -59,12 +61,7 @@ public class GeneratedUserTokenHandler implements HttpRequestHandler {
       return;
     }
 
-    var originHeader = request.getHeader("Origin");
-    var origin = originHeader != null ? originHeader.getValue() : null;
-    if (origin == null) {
-      response.setCode(HttpStatus.SC_BAD_REQUEST);
-      return;
-    }
+    var origin = AttributeUtils.getOrigin(context);
 
     awaitingUserTokenFutureRepository.consumeFutureResponse(origin)
       .filter(not(CompletableFuture::isCancelled))
