@@ -33,7 +33,9 @@ import org.eclipse.jgit.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
@@ -44,10 +46,12 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAt
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitService.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.blameWithGitFilesBlameLibrary;
 
 class MultiFileBlameResultTest {
 
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private Git git;
   @TempDir
   private Path projectDir;
@@ -80,7 +84,7 @@ class MultiFileBlameResultTest {
     createFile(projectDir, "fileC", "line1", "line2", "line3");
     commit(git, "fileC");
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")), null);
 
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(2, 3))).isPresent().contains(c1);
@@ -94,12 +98,12 @@ class MultiFileBlameResultTest {
     createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isPresent().contains(c1);
 
     modifyFile(projectDir.resolve("fileA"), "new line1", "new line2", "new line3");
 
-    results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
@@ -109,12 +113,12 @@ class MultiFileBlameResultTest {
     var now = Instant.now();
     var c1 = commitAtDate(git, now.minus(1, ChronoUnit.DAYS), "fileA");
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isPresent().contains(c1);
     modifyFile(projectDir.resolve("fileA"), "line1", "line2", "new line3");
     commitAtDate(git, now, "fileA");
 
-    results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     var result = results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3));
 
     assertThat(result).isPresent();
@@ -126,12 +130,12 @@ class MultiFileBlameResultTest {
     createFile(projectDir, "fileA", "line1", "line2");
     var c1 = commit(git, "fileA");
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
 
     appendFile(projectDir.resolve("fileA"), "new line3", "new line4");
 
-    results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
+    results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA")), null);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
@@ -140,7 +144,7 @@ class MultiFileBlameResultTest {
     createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")), null);
 
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
       IntStream.rangeClosed(1, 100).boxed().toList())).isPresent().contains(c1);
@@ -154,7 +158,7 @@ class MultiFileBlameResultTest {
     commit(git, "fileA");
 
     var fileA = Path.of("fileA");
-    var results = blameWithFilesGitCommand(projectDir, Set.of(fileA), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(fileA), null);
     var invalidLineNumbers = List.of(0, 1, 2);
     assertThrows(IllegalArgumentException.class, () -> results.getLatestChangeDateForLinesInFile(fileA, invalidLineNumbers));
   }
@@ -165,7 +169,7 @@ class MultiFileBlameResultTest {
     createFile(projectDir, deepFilePath, "line1", "line2", "line3");
     var c1 = commit(git, deepFilePath);
 
-    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of(deepFilePath)), null);
+    var results = blameWithGitFilesBlameLibrary(projectDir, Set.of(Path.of(deepFilePath)), null);
     assertThat(results.getLatestChangeDateForLinesInFile(
       Path.of(deepFilePath),
       IntStream.rangeClosed(1, 100).boxed().toList()))

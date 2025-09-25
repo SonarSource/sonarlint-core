@@ -85,6 +85,7 @@ public class TrackingService {
   private final FindingsSynchronizationService findingsSynchronizationService;
   private final NewCodeService newCodeService;
   private final ApplicationEventPublisher eventPublisher;
+  private final GitService gitService;
 
   public TrackingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
     PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, StorageService storageService,
@@ -102,6 +103,7 @@ public class TrackingService {
     this.findingsSynchronizationService = findingsSynchronizationService;
     this.newCodeService = newCodeService;
     this.eventPublisher = eventPublisher;
+    this.gitService = GitService.create();
   }
 
   @EventListener
@@ -284,7 +286,6 @@ public class TrackingService {
       try {
         var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId);
         var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(NewCodeDefinition.withAlwaysNew().getThresholdDate());
-        var gitService = GitService.create();
         var blameResult = gitService.getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, blameResult);
       } catch (GitException e) {
