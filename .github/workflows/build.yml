@@ -128,6 +128,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         uses: SonarSource/ci-github-actions/build-maven@v1
         env:
+          SONARSOURCE_REPOSITORY_URL: https://repox.jfrog.io/artifactory/sonarsource-qa
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
@@ -141,6 +142,7 @@ jobs:
         if: ${{ !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@master
         env:
+          SONARSOURCE_REPOSITORY_URL: https://repox.jfrog.io/artifactory/sonarsource-qa
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
         with:
@@ -153,6 +155,7 @@ jobs:
         if: ${{ !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@master
         env:
+          SONARSOURCE_REPOSITORY_URL: https://repox.jfrog.io/artifactory/sonarsource-qa
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
