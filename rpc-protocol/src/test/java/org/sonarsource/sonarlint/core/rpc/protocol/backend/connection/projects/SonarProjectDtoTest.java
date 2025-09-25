@@ -19,42 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
-import java.util.Objects;
+import org.junit.jupiter.api.Test;
 
-public class SonarProjectDto {
-  private final String key;
-  private final String name;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public SonarProjectDto(String key, String name) {
-    this.key = key;
-    this.name = name;
-  }
+class SonarProjectDtoTest {
 
-  public String getKey() {
-    return key;
-  }
+  @Test
+  void should_have_object_methods() {
+    var one = new SonarProjectDto("mySearchTerm", "project");
+    var other = new SonarProjectDto("mySearchTerm", "project");
 
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == null || getClass() != o.getClass()) return false;
-    SonarProjectDto that = (SonarProjectDto) o;
-    return Objects.equals(key, that.key) && Objects.equals(name, that.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(key, name);
-  }
-
-  @Override
-  public String toString() {
-    return "SonarProjectDto{" +
-      "key='" + key + '\'' +
-      ", name='" + name + '\'' +
-      '}';
+    assertThat(one)
+      .isEqualTo(other)
+      .hasSameHashCodeAs(other)
+      .hasToString("SonarProjectDto{key='mySearchTerm', name='project'}");
   }
 }

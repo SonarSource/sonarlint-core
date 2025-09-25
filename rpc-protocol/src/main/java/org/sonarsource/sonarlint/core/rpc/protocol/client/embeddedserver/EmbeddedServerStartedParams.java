@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver;
 
-import org.junit.jupiter.api.Test;
+public class EmbeddedServerStartedParams {
+  private final int port;
 
-import static org.assertj.core.api.Assertions.assertThat;
+  public EmbeddedServerStartedParams(int port) {
+    this.port = port;
+  }
 
-class TextSearchIndexTest {
-  @Test
-  void splits_strings_based_on_provided_split_pattern() {
-    TextSearchIndex<String> index = new TextSearchIndex<>("[\\W_]+");
-    index.index("text", "a-b-c_d");
-    var searchResult = index.search("d");
-    assertThat(searchResult).isNotEmpty();
+  public int getPort() {
+    return port;
   }
 }

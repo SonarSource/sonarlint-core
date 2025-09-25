@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -45,18 +45,18 @@ import java.util.stream.Collectors;
  * Performance of search: O(log N) on the number of indexed terms + O(N) on the number of results
  */
 public class TextSearchIndex<T> {
-  private static final String DEFAULT_SPLIT_PATTERN = "\\W";
-  private final String splitPattern;
-  private TreeMap<String, List<DictEntry>> termToObj;
-  private Map<T, Integer> objToWordFrequency;
+
+  /**
+   * Any non-letter, non-digit symbols in a row. Unlike [\W]+ dos include underscore as many relevant strings use it as a separator.
+   */
+  private static final String DEFAULT_SPLIT_PATTERN = "[^a-zA-Z0-9]+";
+  private final Pattern splitPattern = Pattern.compile(DEFAULT_SPLIT_PATTERN);
+  private final TreeMap<String, List<DictEntry>> termToObj;
+  private final Map<T, Integer> objToWordFrequency;
 
   public TextSearchIndex() {
-    this(DEFAULT_SPLIT_PATTERN);
-  }
-
-  public TextSearchIndex(String splitPattern) {
-    this.splitPattern = splitPattern;
-    clear();
+    termToObj = new TreeMap<>();
+    objToWordFrequency = new HashMap<>();
   }
 
   public int size() {
@@ -83,7 +83,7 @@ public class TextSearchIndex<T> {
 
   /**
    * Search for indexed objects based on a query. Results will be sorted by score (highest first).
-   * Score is in the interval ]0,1].
+   * Score is in the interval [0,1].
    *
    * @return A map of results reverse-sorted by value (score). Can be empty, but never null
    */
@@ -169,25 +169,13 @@ public class TextSearchIndex<T> {
     return entries;
   }
 
-  public void clear() {
-    termToObj = new TreeMap<>();
-    objToWordFrequency = new HashMap<>();
-  }
-
-  /**
-   * @return Can be empty, but never null
-   */
-  public Set<String> getTokens() {
-    return Collections.unmodifiableSet(termToObj.keySet());
-  }
-
   private void addToDictionary(String token, int tokenIndex, T obj) {
     var entries = termToObj.computeIfAbsent(token, t -> new LinkedList<>());
     entries.add(new DictEntry(obj, tokenIndex));
   }
 
   private List<String> tokenize(String text) {
-    var split = text.split(splitPattern);
+    var split = splitPattern.split(text);
     List<String> terms = new ArrayList<>(split.length);
 
     for (String s : split) {

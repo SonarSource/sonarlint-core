@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSugge
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
@@ -231,5 +232,8 @@ public interface SonarLintRpcClientDelegate {
   }
 
   default void flightRecorderStarted(FlightRecorderStartedParams params) {
+  }
+
+  default void embeddedServerStarted(EmbeddedServerStartedParams params) {
   }
 }

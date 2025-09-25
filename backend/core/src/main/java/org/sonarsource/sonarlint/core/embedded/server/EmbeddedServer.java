@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHa
 import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
@@ -58,7 +59,6 @@ public class EmbeddedServer {
   private HttpServer server;
   private int port;
   private final boolean enabled;
-  private final SonarLintRpcClient client;
   private final StatusRequestHandler statusRequestHandler;
   private final GeneratedUserTokenHandler generatedUserTokenHandler;
   private final ShowHotspotRequestHandler showHotspotRequestHandler;
@@ -66,12 +66,12 @@ public class EmbeddedServer {
   private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private final AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler;
   private final AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler;
+  private final SonarLintRpcClient client;
 
-  public EmbeddedServer(InitializeParams params, SonarLintRpcClient client, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
+  public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
-    AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler, AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler) {
+    AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler, AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler, SonarLintRpcClient client) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
-    this.client = client;
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;
@@ -79,6 +79,7 @@ public class EmbeddedServer {
     this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
     this.automaticAnalysisEnablementRequestHandler = automaticAnalysisEnablementRequestHandler;
     this.analyzeListFilesRequestHandler = analyzeListFilesRequestHandler;
+    this.client = client;
   }
 
   @PostConstruct
@@ -130,6 +131,7 @@ public class EmbeddedServer {
     }
     if (port > 0) {
       LOG.info("Started embedded server on port " + port);
+      client.embeddedServerStarted(new EmbeddedServerStartedParams(port));
       server = startedServer;
     } else {
       LOG.error("Unable to start request handler");

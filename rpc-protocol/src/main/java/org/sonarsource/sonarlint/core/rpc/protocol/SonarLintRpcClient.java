@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
@@ -71,10 +72,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -356,5 +357,9 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   default void flightRecorderStarted(FlightRecorderStartedParams params) {
+  }
+
+  @JsonNotification
+  default void embeddedServerStarted(EmbeddedServerStartedParams params) {
   }
 }
