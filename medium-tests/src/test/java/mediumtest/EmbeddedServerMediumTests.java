@@ -201,4 +201,16 @@ class EmbeddedServerMediumTests {
     });
   }
 
+  @SonarLintTest
+  void it_should_notify_client_when_started(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").start(fakeClient);
+
+    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+      var startedPort = fakeClient.getEmbeddedServerPort();
+      assertThat(startedPort).isGreaterThan(0);
+      assertThat(startedPort).isEqualTo(backend.getEmbeddedServerPort());
+    });
+  }
+
 }
