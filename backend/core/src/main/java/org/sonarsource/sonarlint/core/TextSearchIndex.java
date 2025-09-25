@@ -46,7 +46,10 @@ import java.util.stream.Collectors;
  */
 public class TextSearchIndex<T> {
 
-  private static final String DEFAULT_SPLIT_PATTERN = "[\\W_]+";
+  /**
+   * Any non-letter, non-digit symbols in a row. Unlike [\W]+ dos include underscore as many relevant strings use it as a separator.
+   */
+  private static final String DEFAULT_SPLIT_PATTERN = "[^a-zA-Z0-9]+";
   private final Pattern splitPattern = Pattern.compile(DEFAULT_SPLIT_PATTERN);
   private final TreeMap<String, List<DictEntry>> termToObj;
   private final Map<T, Integer> objToWordFrequency;
