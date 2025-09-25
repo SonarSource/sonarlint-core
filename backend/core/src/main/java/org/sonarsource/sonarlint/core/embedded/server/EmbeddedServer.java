@@ -32,6 +32,16 @@ import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.embedded.server.filter.CorsFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.CspFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.ParseParamsFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.RateLimitFilter;
+import org.sonarsource.sonarlint.core.embedded.server.filter.ValidationFilter;
+import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
@@ -98,6 +108,8 @@ public class EmbeddedServer {
           .setSocketConfig(socketConfig)
           .addFilterFirst("RateLimiter", new RateLimitFilter())
           .addFilterAfter("RateLimiter", "CORS", new CorsFilter())
+          .addFilterAfter("CORS", "Params", new ParseParamsFilter())
+          .addFilterAfter("Params", "Validation", new ValidationFilter(client))
           .register("/sonarlint/api/status", statusRequestHandler)
           .register("/sonarlint/api/token", generatedUserTokenHandler)
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)

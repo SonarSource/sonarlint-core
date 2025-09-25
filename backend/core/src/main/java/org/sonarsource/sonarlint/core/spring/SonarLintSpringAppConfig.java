@@ -54,12 +54,12 @@ import org.sonarsource.sonarlint.core.embedded.server.AutomaticAnalysisEnablemen
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeListFilesRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
-import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
-import org.sonarsource.sonarlint.core.embedded.server.ShowFixSuggestionRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
 import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService;

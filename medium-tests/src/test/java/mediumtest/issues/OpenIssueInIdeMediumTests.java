@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -42,6 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -349,6 +351,42 @@ class OpenIssueInIdeMediumTests {
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, "", "", "");
 
     assertThat(statusCode).isEqualTo(400);
+  }
+
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    HttpRequest request = openIssueRequest(backend,
+      SonarCloudRegion.EU.getProductionUri().toString());
+
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud_us(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    HttpRequest request = openIssueRequest(backend,
+      SonarCloudRegion.US.getProductionUri().toString());
+
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
   }
 
   private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch)

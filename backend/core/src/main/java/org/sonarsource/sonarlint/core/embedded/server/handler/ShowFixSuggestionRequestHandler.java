@@ -17,20 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -41,9 +39,10 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -66,7 +65,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.sanitizeAgainstRTLO;
-import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils.getServerUrlForSonarCloud;
 
 public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
@@ -92,11 +90,10 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    var originHeader = request.getHeader("Origin");
-    var origin = originHeader != null ? originHeader.getValue() : null;
-    var showFixSuggestionQuery = extractQuery(request, origin);
+    var origin = AttributeUtils.getOrigin(context);
+    var showFixSuggestionQuery = extractQuery(request, origin, AttributeUtils.getParams(context));
 
-    if (origin == null || !Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid()) {
+    if (!Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
@@ -153,12 +150,6 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     }
   }
 
-  private boolean isSonarCloud(@Nullable String origin) {
-    return Optional.ofNullable(origin)
-      .map(sonarCloudActiveEnvironment::isSonarQubeCloud)
-      .orElse(false);
-  }
-
   private void showFixSuggestionForScope(String configScopeId, String issueKey, FixSuggestionPayload fixSuggestion) {
     pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> {
       var fixSuggestionDto = new FixSuggestionDto(
@@ -179,20 +170,12 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   }
 
   @VisibleForTesting
-  ShowFixSuggestionQuery extractQuery(ClassicHttpRequest request, @Nullable String origin) throws HttpException, IOException {
-    var params = new HashMap<String, String>();
-    try {
-      new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
-        .getQueryParams()
-        .forEach(p -> params.put(p.getName(), p.getValue()));
-    } catch (URISyntaxException e) {
-      // Ignored
-    }
+  ShowFixSuggestionQuery extractQuery(ClassicHttpRequest request, String origin, Map<String, String> params) throws HttpException, IOException {
     var payload = extractAndValidatePayload(request);
-    boolean isSonarCloud = isSonarCloud(origin);
+    boolean isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(origin);
     String serverUrl;
     if (isSonarCloud) {
-      serverUrl = getServerUrlForSonarCloud(request);
+      serverUrl = Strings.CS.removeEnd(origin, "/");
     } else {
       serverUrl = params.get("server");
     }

@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
@@ -344,6 +345,45 @@ class OpenFixSuggestionInIdeMediumTests {
       .containsAnyOf("The origin 'malicious' is not trusted, this could be a malicious request");
   }
 
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    HttpRequest request = openFixSuggestionRequest(backend,
+      "",
+      org.sonarsource.sonarlint.core.SonarCloudRegion.EU.getProductionUri().toString(),
+      "someOrigin");
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud_us(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    HttpRequest request = openFixSuggestionRequest(backend,
+      "",
+      org.sonarsource.sonarlint.core.SonarCloudRegion.US.getProductionUri().toString(),
+      "someOrigin");
+
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(400);
+    verify(client).showMessage(MessageType.ERROR,
+      "Invalid request to SonarQube backend. " +
+        "server: " +
+        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+  }
+
   private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey,
     String branchName, String orgKey,
     String tokenName, String tokenValue) throws IOException, InterruptedException {
@@ -362,11 +402,16 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   private HttpRequest openFixSuggestionRequest(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String... params) {
+    return openFixSuggestionRequest(backend, payload, scServer.baseUrl(), scServer.baseUrl(), params);
+  }
+
+  private static HttpRequest openFixSuggestionRequest(SonarLintTestRpcServer backend, String payload, String server, String origin, String... params) {
     return HttpRequest.newBuilder()
       .uri(URI.create(
-        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + String.join("", params)))
-      .header("Origin", scServer.baseUrl())
-      .POST(HttpRequest.BodyPublishers.ofString(payload)).build();
+        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + server + String.join("", params)))
+      .POST(HttpRequest.BodyPublishers.ofString(payload))
+      .header("Origin", origin)
+      .build();
   }
 
   private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,

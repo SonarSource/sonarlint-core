@@ -20,10 +20,16 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
+import java.util.Arrays;
 
 public enum SonarCloudRegion {
   EU("https://sonarcloud.io", "https://api.sonarcloud.io", "wss://events-api.sonarcloud.io/"),
   US("https://sonarqube.us", "https://api.sonarqube.us", "wss://events-api.sonarqube.us/");
+
+  public static final String[] CLOUD_URLS = Arrays.stream(values())
+    .map(SonarCloudRegion::getProductionUri)
+    .map(Object::toString)
+    .toArray(String[]::new);
 
   private final URI productionUri;
   private final URI apiProductionUri;

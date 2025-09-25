@@ -17,38 +17,40 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.filter;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.net.URIBuilder;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
 
-class CspFilter implements HttpFilterHandler {
+public class ParseParamsFilter implements HttpFilterHandler {
 
   @Override
-  public void handle(ClassicHttpRequest request, HttpFilterChain.ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain)
-    throws HttpException, IOException {
-    chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
-      @Override
-      public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
-        responseTrigger.sendInformation(classicHttpResponse);
-      }
+  public void handle(ClassicHttpRequest request, HttpFilterChain.ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain) throws HttpException, IOException {
+    context.setAttribute(AttributeUtils.PARAMS_ATTRIBUTE, parseParams(request));
+    chain.proceed(request, responseTrigger, context);
+  }
 
-      @Override
-      public void submitResponse(ClassicHttpResponse response) throws HttpException, IOException {
-        if (response.getCode() >= HttpStatus.SC_BAD_REQUEST) {
-          responseTrigger.submitResponse(response);
-          return;
-        }
-        var port = request.getAuthority().getPort();
-        response.setHeader("Content-Security-Policy-Report-Only", "connect-src 'self' http://localhost:" + port + ";");
-        responseTrigger.submitResponse(response);
-      }
-    }, context);
+  private static Map<String, String> parseParams(ClassicHttpRequest request) {
+    try {
+      return new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
+          .getQueryParams()
+          .stream()
+          .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    } catch (URISyntaxException e) {
+      // Ignored
+    }
+    return new HashMap<>();
   }
 }

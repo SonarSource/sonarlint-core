@@ -17,31 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.Method;
-import org.apache.hc.core5.http.NameValuePair;
-import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -64,7 +62,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils.getServerUrlForSonarCloud;
 
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
@@ -90,10 +87,9 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    var originHeader = request.getHeader("Origin");
-    var origin = originHeader != null ? originHeader.getValue() : null;
-    var showIssueQuery = extractQuery(request);
-    if (origin == null || !Method.GET.isSame(request.getMethod()) || !showIssueQuery.isValid()) {
+    var origin = AttributeUtils.getOrigin(context);
+    var showIssueQuery = extractQuery(origin, AttributeUtils.getParams(context));
+    if (!Method.GET.isSame(request.getMethod()) || !showIssueQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
@@ -128,13 +124,6 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue,
         org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.valueOf(query.getRegion().name())))
       : new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
-  }
-
-  private boolean isSonarCloud(ClassicHttpRequest request) throws ProtocolException {
-    return Optional.ofNullable(request.getHeader("Origin"))
-      .map(NameValuePair::getValue)
-      .map(sonarCloudActiveEnvironment::isSonarQubeCloud)
-      .orElse(false);
   }
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
@@ -191,20 +180,12 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   }
 
   @VisibleForTesting
-  ShowIssueQuery extractQuery(ClassicHttpRequest request) throws ProtocolException {
-    var params = new HashMap<String, String>();
-    try {
-      new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
-        .getQueryParams()
-        .forEach(p -> params.put(p.getName(), p.getValue()));
-    } catch (URISyntaxException e) {
-      // Ignored
-    }
-    boolean isSonarCloud = isSonarCloud(request);
+  ShowIssueQuery extractQuery(String origin, Map<String, String> params) {
+    boolean isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(origin);
     String serverUrl;
     SonarCloudRegion region = null;
     if (isSonarCloud) {
-      serverUrl = getServerUrlForSonarCloud(request);
+      serverUrl = Strings.CS.removeEnd(origin, "/");
       region = sonarCloudActiveEnvironment.getRegionOrThrow(serverUrl);
     } else {
       serverUrl = params.get("server");
@@ -215,6 +196,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   @VisibleForTesting
   public static class ShowIssueQuery {
+
     private final String serverUrl;
     private final String projectKey;
     private final String issueKey;

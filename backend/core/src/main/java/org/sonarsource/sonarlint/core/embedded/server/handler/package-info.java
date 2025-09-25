@@ -17,21 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.embedded.server;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.embedded.server.handler;
 
-import org.apache.commons.lang3.Strings;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ProtocolException;
-
-public class RequestHandlerUtils {
-
-  private RequestHandlerUtils() {
-    // util
-  }
-
-  public static String getServerUrlForSonarCloud(ClassicHttpRequest request) throws ProtocolException {
-    var originUrl = request.getHeader("Origin").getValue();
-    // Since the 'isSonarCloud' check passed, we are sure that the region will be there
-    return Strings.CS.removeEnd(originUrl, "/");
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;
