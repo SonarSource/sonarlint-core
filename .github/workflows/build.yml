@@ -124,12 +124,12 @@ jobs:
         with:
           secrets: |
             development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
-      - name: Run QA (SonarCloud)
-        if: ${{ matrix.sc == true && (github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
+      - name: Run QA (direct)
+        if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         uses: SonarSource/ci-github-actions/build-maven@v1
         env:
-          SONARCLOUD_IT_TOKEN: ${{steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
-          SONARCLOUD_REGION: ${{ matrix.region }}
+          SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
+          SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
         with:
           deploy-pull-request: false
@@ -137,42 +137,12 @@ jobs:
           artifactory-deployer-role: qa-deployer
           maven-opts: -Xmx4G -Dcommercial
           maven-args: -f its/pom.xml -B -e -V verify surefire-report:report -Dmaven.source.skip=true -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }}
-      - name: Run QA (SonarCloud, staged install)
-        if: ${{ matrix.sc == true && !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
-        uses: SonarSource/ci-github-actions/build-maven@master
-        env:
-          SONARCLOUD_IT_TOKEN: ${{steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
-          SONARCLOUD_REGION: ${{ matrix.region }}
-        with:
-          deploy-pull-request: false
-          artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
-          maven-opts: -Xmx4G -Dcommercial
-          maven-args: clean install -DskipTests -Dmaven.source.skip=true
-      - name: Run QA (SonarCloud, staged ITs)
-        if: ${{ matrix.sc == true && !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
-        uses: SonarSource/ci-github-actions/build-maven@master
-        env:
-          SONARCLOUD_IT_TOKEN: ${{steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
-          SONARCLOUD_REGION: ${{ matrix.region }}
-        with:
-          deploy-pull-request: false
-          artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
-          maven-opts: -Xmx4G -Dcommercial
-          maven-args: -rf its -Pits -B -e -V verify surefire-report:report -Dmaven.source.skip=true -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }}
-      - name: Run QA
-        if: ${{ matrix.sc != true && (github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
-        uses: SonarSource/ci-github-actions/build-maven@master
-        with:
-          deploy-pull-request: false
-          artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
-          maven-opts: -Xmx4G -Dcommercial
-          maven-args: -f its/pom.xml -B -e -V verify surefire-report:report -Dmaven.source.skip=true -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }}
       - name: Run QA (staged install)
-        if: ${{ matrix.sc != true && !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
+        if: ${{ !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@master
+        env:
+          SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
+          SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
         with:
           deploy-pull-request: false
           artifactory-reader-role: private-reader
@@ -180,8 +150,12 @@ jobs:
           maven-opts: -Xmx4G -Dcommercial
           maven-args: clean install -DskipTests -Dmaven.source.skip=true
       - name: Run QA (staged ITs)
-        if: ${{ matrix.sc != true && !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
+        if: ${{ !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         uses: SonarSource/ci-github-actions/build-maven@master
+        env:
+          SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
+          SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
+          BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
         with:
           deploy-pull-request: false
           artifactory-reader-role: private-reader
