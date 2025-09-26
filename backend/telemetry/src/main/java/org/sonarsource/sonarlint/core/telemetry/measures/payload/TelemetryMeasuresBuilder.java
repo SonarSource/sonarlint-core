@@ -75,6 +75,8 @@ public class TelemetryMeasuresBuilder {
 
     addMCPMeasures(values);
 
+    addMcpIntegrationMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -209,4 +211,10 @@ public class TelemetryMeasuresBuilder {
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
   }
+
+  private void addMcpIntegrationMeasures(List<TelemetryMeasuresValue> values) {
+    var isMcpIntegrationEnabled = storage.isMcpIntegrationEnabled();
+    values.add(new TelemetryMeasuresValue("mcp.integration_enabled", Boolean.toString(isMcpIntegrationEnabled), BOOLEAN, DAILY));
+  }
+
 }

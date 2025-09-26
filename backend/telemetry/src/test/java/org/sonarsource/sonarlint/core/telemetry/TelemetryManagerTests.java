@@ -235,6 +235,7 @@ class TelemetryManagerTests {
       data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
       data.findingsFiltered("severity");
       data.incrementFlightRecorderSessionsCount();
+      data.setMcpIntegrationEnabled(true);
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -255,6 +256,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.getAnalysisReportingCountersByType()).isEmpty();
     assertThat(reloaded.getFindingsFilteredCountersByType()).isEmpty();
     assertThat(reloaded.getFlightRecorderSessionsCount()).isZero();
+    assertThat(reloaded.isMcpIntegrationEnabled()).isFalse();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

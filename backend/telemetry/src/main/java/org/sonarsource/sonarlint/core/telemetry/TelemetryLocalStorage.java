@@ -97,6 +97,7 @@ public class TelemetryLocalStorage {
   private int automaticAnalysisToggledCount;
   private int flightRecorderSessionsCount;
   private int mcpServerConfigurationRequestedCount;
+  private boolean isMcpIntegrationEnabled;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -263,6 +264,7 @@ public class TelemetryLocalStorage {
     automaticAnalysisToggledCount = 0;
     flightRecorderSessionsCount = 0;
     mcpServerConfigurationRequestedCount = 0;
+    isMcpIntegrationEnabled = false;
   }
 
   public long numUseDays() {
@@ -576,6 +578,14 @@ public class TelemetryLocalStorage {
 
   public long getIssuesFixedCount() {
     return issuesFixedCount;
+  }
+
+  public void setMcpIntegrationEnabled(boolean isMcpIntegrationEnabled) {
+    this.isMcpIntegrationEnabled = isMcpIntegrationEnabled;
+  }
+
+  public boolean isMcpIntegrationEnabled() {
+    return isMcpIntegrationEnabled;
   }
 
   public void incrementToolCalledCount(String toolName, boolean succeeded) {

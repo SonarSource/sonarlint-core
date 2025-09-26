@@ -350,4 +350,12 @@ class TelemetryLocalStorageTests {
     data.incrementMcpServerConfigurationRequestedCount();
     assertThat(data.getMcpServerConfigurationRequestedCount()).isEqualTo(2);
   }
+
+  @Test
+  void should_find_mcp_integration_enabled() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.isMcpIntegrationEnabled()).isFalse();
+    data.setMcpIntegrationEnabled(true);
+    assertThat(data.isMcpIntegrationEnabled()).isTrue();
+  }
 }

@@ -119,6 +119,7 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.addFixedIssues(2);
     telemetryLocalStorage.findingsFiltered("severity");
     telemetryLocalStorage.incrementFlightRecorderSessionsCount();
+    telemetryLocalStorage.setMcpIntegrationEnabled(true);
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -141,7 +142,8 @@ class TelemetryHttpClientTests {
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
-            {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"}
+            {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"},
+            {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

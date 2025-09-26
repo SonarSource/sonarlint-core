@@ -95,6 +95,11 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   }
 
   @Override
+  public void mcpIntegrationEnabled() {
+    notify(() -> getBean(TelemetryService.class).mcpIntegrationEnabled());
+  }
+
+  @Override
   public void toolCalled(ToolCalledParams params) {
     notify(() -> getBean(TelemetryService.class).toolCalled(params));
   }

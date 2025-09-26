@@ -269,6 +269,9 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementSuggestedRemoteBindingsCount);
   }
 
+  public void mcpIntegrationEnabled() {
+    updateTelemetry(storage -> storage.setMcpIntegrationEnabled(true));
+  }
 
   public void toolCalled(ToolCalledParams params) {
     updateTelemetry(storage -> storage.incrementToolCalledCount(params.getToolName(), params.isSucceeded()));
