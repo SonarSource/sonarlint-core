@@ -143,27 +143,6 @@ inspect_orchestrator_cache_task:
     find .
     echo "Inspecting cache done."
 
-mend_scan_task:
-  # Run Mend analysis
-  depends_on:
-    - build
-  <<: *ONLY_MAIN_BRANCHES
-  eks_container:
-    <<: *CONTAINER_DEFINITION
-  env:
-    WS_APIKEY: VAULT[development/kv/data/mend data.apikey]
-    JDK_VERSION: "17"
-  <<: *MAVEN_CACHE_DEFINITION
-  whitesource_script:
-    - source cirrus-env QA
-    - source set_maven_build_version $BUILD_NUMBER
-    - mvn clean install -DskipTests
-    - source ws_scan.sh
-  cleanup_before_cache_script: cleanup_maven_repository
-  always:
-    ws_artifacts:
-      path: "whitesource/**/*"
-
 qa_task:
   # Run ITs
   depends_on:
@@ -233,7 +212,6 @@ promote_task:
     - build
     - test_linux
     - test_windows
-    - mend_scan
     - qa
   <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
