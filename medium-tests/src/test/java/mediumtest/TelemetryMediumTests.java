@@ -435,6 +435,15 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
+  void it_should_record_mcpIntegrationEnabled(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().mcpIntegrationEnabled();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().isMcpIntegrationEnabled()).isTrue());
+  }
+
+  @SonarLintTest
   void it_should_record_toolCalled(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 

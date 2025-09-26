@@ -86,6 +86,13 @@ public interface TelemetryRpcService {
   @JsonNotification
   void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
 
+  /**
+   * To be called from SonarQube MCP Server when SQ:IDE integration is enabled and valid
+   * This is tracking if SQ:IDE integration was enabled at least once during the day
+   */
+  @JsonNotification
+  void mcpIntegrationEnabled();
+
   @JsonNotification
   void toolCalled(ToolCalledParams params);
 

@@ -79,7 +79,8 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"performance.biggest_size_config_scope_files\",\"value\":\"12345\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"automatic_analysis.enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
       "{\"key\":\"automatic_analysis.toggled_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"mcp.configuration_requested\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"mcp.configuration_requested\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"mcp.integration_enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -121,6 +122,7 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(1), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(3), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("mcp.integration_enabled", String.valueOf(true), BOOLEAN, DAILY));
 
     return values;
   }
@@ -140,7 +142,8 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY))
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY))
       .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))
-      .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY));
+      .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY))
+      .contains(tuple("mcp.integration_enabled", "true", BOOLEAN, DAILY));
   }
 
 }
