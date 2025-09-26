@@ -58,11 +58,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-class AnalyzeListFilesRequestHandlerTests {
+class AnalyzeFileListRequestHandlerTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
-  private AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler;
+  private AnalyzeFileListRequestHandler analyzeFileListRequestHandler;
   private AnalysisService analysisService;
   private ClientFileSystemService clientFileSystemService;
 
@@ -71,7 +71,7 @@ class AnalyzeListFilesRequestHandlerTests {
     analysisService = mock(AnalysisService.class);
     clientFileSystemService = mock(ClientFileSystemService.class);
     var taintVulnerabilityTrackingService = mock(TaintVulnerabilityTrackingService.class);
-    analyzeListFilesRequestHandler = spy(new AnalyzeListFilesRequestHandler(analysisService, clientFileSystemService, taintVulnerabilityTrackingService));
+    analyzeFileListRequestHandler = spy(new AnalyzeFileListRequestHandler(analysisService, clientFileSystemService, taintVulnerabilityTrackingService));
   }
 
   @Test
@@ -80,7 +80,7 @@ class AnalyzeListFilesRequestHandlerTests {
     var response = new BasicClassicHttpResponse(200);
     var context = mock(HttpContext.class);
 
-    analyzeListFilesRequestHandler.handle(request, response, context);
+    analyzeFileListRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
@@ -92,10 +92,10 @@ class AnalyzeListFilesRequestHandlerTests {
     var response = new BasicClassicHttpResponse(200);
     var context = mock(HttpContext.class);
 
-    analyzeListFilesRequestHandler.handle(request, response, context);
+    analyzeFileListRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
-    assertThat(logTester.logs()).contains("Failed to parse analyze list files request");
+    assertThat(logTester.logs()).contains("Failed to parse analyze file list request");
   }
 
   @Test
@@ -105,27 +105,27 @@ class AnalyzeListFilesRequestHandlerTests {
     var response = new BasicClassicHttpResponse(200);
     var context = mock(HttpContext.class);
 
-    analyzeListFilesRequestHandler.handle(request, response, context);
+    analyzeFileListRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
 
   @Test
   void should_reject_empty_file_list() throws HttpException, IOException {
-    var requestJson = new Gson().toJson(new AnalyzeListFilesRequestHandler.AnalyzeListFilesRequest(Collections.emptyList()));
+    var requestJson = new Gson().toJson(new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(Collections.emptyList()));
     var request = new BasicClassicHttpRequest(Method.POST, "/analyze");
     request.setEntity(new StringEntity(requestJson, StandardCharsets.UTF_8));
     var response = new BasicClassicHttpResponse(200);
     var context = mock(HttpContext.class);
 
-    analyzeListFilesRequestHandler.handle(request, response, context);
+    analyzeFileListRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
 
   @Test
   void should_handle_issues_with_null_severity_and_file_path() throws HttpException, IOException {
-    var analysisRequest = new AnalyzeListFilesRequestHandler.AnalyzeListFilesRequest(List.of("/path/to/file.java"));
+    var analysisRequest = new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(List.of("/path/to/file.java"));
     var requestJson = new Gson().toJson(analysisRequest);
     var request = new BasicClassicHttpRequest(Method.POST, "/analyze");
     request.setEntity(new StringEntity(requestJson, StandardCharsets.UTF_8));
@@ -139,11 +139,11 @@ class AnalyzeListFilesRequestHandlerTests {
     when(analysisService.scheduleAnalysis(anyString(), any(UUID.class), anySet(), anyMap(), 
       anyBoolean(), eq(TriggerType.FORCED), any())).thenReturn(CompletableFuture.completedFuture(scanResults));
 
-    analyzeListFilesRequestHandler.handle(request, response, context);
+    analyzeFileListRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(200);
     var responseContent = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    var analysisResult = new Gson().fromJson(responseContent, AnalyzeListFilesRequestHandler.AnalyzeListFilesResult.class);
+    var analysisResult = new Gson().fromJson(responseContent, AnalyzeFileListRequestHandler.AnalyzeFileListResult.class);
     assertThat(analysisResult.findings()).hasSize(1);
     var issue = analysisResult.findings().get(0);
     assertThat(issue.ruleKey()).isEqualTo("java:S123");

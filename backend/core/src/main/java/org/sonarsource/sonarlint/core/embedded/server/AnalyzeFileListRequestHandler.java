@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 
-public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
+public class AnalyzeFileListRequestHandler implements HttpRequestHandler {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -58,7 +58,7 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
   private final TaintVulnerabilityTrackingService taintService;
   private final Gson gson = new Gson();
 
-  public AnalyzeListFilesRequestHandler(AnalysisService analysisService, ClientFileSystemService clientFileSystemService,
+  public AnalyzeFileListRequestHandler(AnalysisService analysisService, ClientFileSystemService clientFileSystemService,
     TaintVulnerabilityTrackingService taintService) {
     this.analysisService = analysisService;
     this.clientFileSystemService = clientFileSystemService;
@@ -74,19 +74,21 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
       return;
     }
 
-    AnalyzeListFilesRequest analysisRequest;
+    AnalyzeFileListRequest analysisRequest;
     try {
       var requestBody = EntityUtils.toString(request.getEntity(), "UTF-8");
-      analysisRequest = gson.fromJson(requestBody, AnalyzeListFilesRequest.class);
+      analysisRequest = gson.fromJson(requestBody, AnalyzeFileListRequest.class);
     } catch (Exception e) {
-      LOG.warn("Failed to parse analyze list files request", e);
+      LOG.warn("Failed to parse analyze file list request", e);
       response.setCode(HttpStatus.SC_BAD_REQUEST);
+      response.setEntity(new StringEntity("Failed to parse analyze file list request", ContentType.APPLICATION_JSON));
       return;
     }
 
     if (analysisRequest == null || analysisRequest.fileAbsolutePaths == null || analysisRequest.fileAbsolutePaths.isEmpty()) {
       LOG.warn("Empty or invalid file list in analyze request");
       response.setCode(HttpStatus.SC_BAD_REQUEST);
+      response.setEntity(new StringEntity("Empty or invalid file list in analyze request", ContentType.APPLICATION_JSON));
       return;
     }
 
@@ -95,10 +97,11 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
     } catch (Exception e) {
       LOG.error("Failed to analyze files", e);
       response.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+      response.setEntity(new StringEntity("Failed to analyze files, reason: " + e.getMessage(), ContentType.APPLICATION_JSON));
     }
   }
 
-  private AnalyzeListFilesResult analyze(AnalyzeListFilesRequest request) {
+  private AnalyzeFileListResult analyze(AnalyzeFileListRequest request) {
     var cancelMonitor = new SonarLintCancelMonitor();
     var filePaths = request.fileAbsolutePaths.stream()
       .map(path -> Paths.get(path).toUri().normalize())
@@ -107,6 +110,11 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
     LOG.debug("Analyzing {} files: {}", filePaths.size(), filePaths);
 
     var filesByScope = clientFileSystemService.groupFilesByConfigScope(filePaths);
+
+    if (filesByScope.isEmpty()) {
+      LOG.warn("No files belong to any configured scope, skipping analysis");
+      throw new IllegalStateException("No files were found to be indexed by SonarQube for IDE");
+    }
 
     var allIssues = filesByScope.entrySet().stream().flatMap(entry -> {
       var configScopeId = entry.getKey();
@@ -122,7 +130,7 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
       }
     }).toList();
 
-    return new AnalyzeListFilesResult(allIssues);
+    return new AnalyzeFileListResult(allIssues);
   }
 
   private Stream<RawFindingResponse> getTaintsAsRawFindings(String configScopeId, Set<URI> files, SonarLintCancelMonitor cancelMonitor) {
@@ -159,10 +167,10 @@ public class AnalyzeListFilesRequestHandler implements HttpRequestHandler {
       .get();
   }
 
-  public record AnalyzeListFilesRequest(List<String> fileAbsolutePaths) {
+  public record AnalyzeFileListRequest(List<String> fileAbsolutePaths) {
   }
 
-  public record AnalyzeListFilesResult(List<RawFindingResponse> findings) {
+  public record AnalyzeFileListResult(List<RawFindingResponse> findings) {
   }
 
   public record RawFindingResponse(String ruleKey, String message, @Nullable String severity, @Nullable String filePath, @Nullable TextRange textRange) {

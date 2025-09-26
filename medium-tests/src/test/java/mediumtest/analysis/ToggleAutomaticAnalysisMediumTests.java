@@ -28,7 +28,7 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.embedded.server.AutomaticAnalysisEnablementRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
-class AutomaticAnalysisEnablementMediumTests {
+class ToggleAutomaticAnalysisMediumTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
@@ -72,7 +72,7 @@ class AutomaticAnalysisEnablementMediumTests {
 
     var response = executePostAutomaticAnalysisEnablementRequest(backend, "invalid=param");
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(response.statusCode()).isEqualTo(400));
-    var errorMessage = gson.fromJson(response.body(), AutomaticAnalysisEnablementRequestHandler.ErrorMessage.class);
+    var errorMessage = gson.fromJson(response.body(), ToggleAutomaticAnalysisRequestHandler.ErrorMessage.class);
     assertThat(errorMessage.message()).isEqualTo("Missing 'enabled' query parameter");
   }
 
@@ -91,19 +91,19 @@ class AutomaticAnalysisEnablementMediumTests {
 
   private HttpResponse<String> executeGetAutomaticAnalysisEnablementRequest(SonarLintTestRpcServer backend) throws IOException, InterruptedException {
     return HttpClient.newHttpClient().send(
-      executeAutomaticAnalysisEnablementRequest(backend, null).GET().build(),
+      executeToggleAutomaticAnalysisRequest(backend, null).GET().build(),
       HttpResponse.BodyHandlers.ofString()
     );
   }
 
   private HttpResponse<String> executePostAutomaticAnalysisEnablementRequest(SonarLintTestRpcServer backend, String queryParams) throws IOException, InterruptedException {
     return HttpClient.newHttpClient().send(
-      executeAutomaticAnalysisEnablementRequest(backend, queryParams).POST(HttpRequest.BodyPublishers.noBody()).build(),
+      executeToggleAutomaticAnalysisRequest(backend, queryParams).POST(HttpRequest.BodyPublishers.noBody()).build(),
       HttpResponse.BodyHandlers.ofString()
     );
   }
 
-  private HttpRequest.Builder executeAutomaticAnalysisEnablementRequest(SonarLintTestRpcServer backend, String queryParams) {
+  private HttpRequest.Builder executeToggleAutomaticAnalysisRequest(SonarLintTestRpcServer backend, String queryParams) {
     var uri = "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/analysis/automatic/config" + (queryParams != null && !queryParams.isEmpty() ? ("?" + queryParams) : "");
     return HttpRequest.newBuilder()
       .uri(URI.create(uri))

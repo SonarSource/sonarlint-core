@@ -40,21 +40,21 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-class AutomaticAnalysisEnablementRequestHandlerTests {
+class ToggleAutomaticAnalysisRequestHandlerTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   private final Gson gson = new Gson();
   private AnalysisService analysisService;
-  private AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler;
+  private ToggleAutomaticAnalysisRequestHandler toggleAutomaticAnalysisRequestHandler;
   private HttpContext context;
 
   @BeforeEach
   void setup() {
     analysisService = mock(AnalysisService.class);
     context = mock(HttpContext.class);
-    automaticAnalysisEnablementRequestHandler = new AutomaticAnalysisEnablementRequestHandler(analysisService);
+    toggleAutomaticAnalysisRequestHandler = new ToggleAutomaticAnalysisRequestHandler(analysisService);
   }
 
   @Test
@@ -62,7 +62,7 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
     var request = new BasicClassicHttpRequest(Method.GET, "/analysis/automatic/config");
     var response = new BasicClassicHttpResponse(200);
 
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
+    toggleAutomaticAnalysisRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
     verifyNoInteractions(analysisService);
@@ -73,7 +73,7 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
     var request = new BasicClassicHttpRequest(Method.POST, "/analysis/automatic/config?invalid=param");
     var response = new BasicClassicHttpResponse(200);
 
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
+    toggleAutomaticAnalysisRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
     verifyNoInteractions(analysisService);
@@ -86,13 +86,13 @@ class AutomaticAnalysisEnablementRequestHandlerTests {
     var exception = new RuntimeException("Analysis service failed");
     doThrow(exception).when(analysisService).didChangeAutomaticAnalysisSetting(anyBoolean());
 
-    automaticAnalysisEnablementRequestHandler.handle(request, response, context);
+    toggleAutomaticAnalysisRequestHandler.handle(request, response, context);
 
     assertThat(response.getCode()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     assertThat(response.getEntity()).isNotNull();
     var responseContent = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-    var errorMessage = gson.fromJson(responseContent, AutomaticAnalysisEnablementRequestHandler.ErrorMessage.class);
-    assertThat(errorMessage.message()).contains("Failed to change automatic analysis");
+    var errorMessage = gson.fromJson(responseContent, ToggleAutomaticAnalysisRequestHandler.ErrorMessage.class);
+    assertThat(errorMessage.message()).contains("Failed to toggle automatic analysis");
   }
 
 }

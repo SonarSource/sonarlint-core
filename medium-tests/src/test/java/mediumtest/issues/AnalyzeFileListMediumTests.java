@@ -33,7 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.embedded.server.AnalyzeListFilesRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -50,7 +50,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static utils.AnalysisUtils.createFile;
 
-class AnalyzeListFilesMediumTests {
+class AnalyzeFileListMediumTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
@@ -101,20 +101,20 @@ class AnalyzeListFilesMediumTests {
 
     fakeClient.waitForSynchronization();
 
-    var requestBody = gson.toJson(new AnalyzeListFilesRequestHandler.AnalyzeListFilesRequest(
+    var requestBody = gson.toJson(new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(
       List.of(inputFile1.toAbsolutePath().normalize().toString()
       )));
 
     var response = executeAnalyzeRequest(backend, server.baseUrl(), requestBody);
     assertThat(response.statusCode()).isEqualTo(200);
 
-    var analysisResult = gson.fromJson(response.body(), AnalyzeListFilesRequestHandler.AnalyzeListFilesResult.class);
+    var analysisResult = gson.fromJson(response.body(), AnalyzeFileListRequestHandler.AnalyzeFileListResult.class);
     assertThat(analysisResult).isNotNull();
     assertThat(analysisResult.findings()).hasSize(3);
-    assertThat(analysisResult.findings()).extracting(AnalyzeListFilesRequestHandler.RawFindingResponse::ruleKey,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::message,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::severity,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::textRange)
+    assertThat(analysisResult.findings()).extracting(AnalyzeFileListRequestHandler.RawFindingResponse::ruleKey,
+        AnalyzeFileListRequestHandler.RawFindingResponse::message,
+        AnalyzeFileListRequestHandler.RawFindingResponse::severity,
+        AnalyzeFileListRequestHandler.RawFindingResponse::textRange)
       .usingRecursiveFieldByFieldElementComparator()
       .containsExactlyInAnyOrder(
         tuple("java:S1220", "Move this file to a named package.", "MINOR", null),
@@ -162,7 +162,7 @@ class AnalyzeListFilesMediumTests {
 
     fakeClient.waitForSynchronization();
 
-    var requestBody = gson.toJson(new AnalyzeListFilesRequestHandler.AnalyzeListFilesRequest(
+    var requestBody = gson.toJson(new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(
       List.of(inputFile1.toAbsolutePath().normalize().toString(),
         inputFile2.toAbsolutePath().normalize().toString()
       )));
@@ -170,13 +170,13 @@ class AnalyzeListFilesMediumTests {
     var response = executeAnalyzeRequest(backend, server.baseUrl(), requestBody);
     assertThat(response.statusCode()).isEqualTo(200);
 
-    var analysisResult = gson.fromJson(response.body(), AnalyzeListFilesRequestHandler.AnalyzeListFilesResult.class);
+    var analysisResult = gson.fromJson(response.body(), AnalyzeFileListRequestHandler.AnalyzeFileListResult.class);
     assertThat(analysisResult).isNotNull();
     assertThat(analysisResult.findings()).hasSize(4);
-    assertThat(analysisResult.findings()).extracting(AnalyzeListFilesRequestHandler.RawFindingResponse::ruleKey,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::message,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::severity,
-        AnalyzeListFilesRequestHandler.RawFindingResponse::textRange)
+    assertThat(analysisResult.findings()).extracting(AnalyzeFileListRequestHandler.RawFindingResponse::ruleKey,
+        AnalyzeFileListRequestHandler.RawFindingResponse::message,
+        AnalyzeFileListRequestHandler.RawFindingResponse::severity,
+        AnalyzeFileListRequestHandler.RawFindingResponse::textRange)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
         tuple("java:S1220", "Move this file to a named package.", "MINOR", null),
@@ -189,12 +189,56 @@ class AnalyzeListFilesMediumTests {
   }
 
   @SonarLintTest
+  void it_should_return_error_when_no_files_found_to_be_indexed(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
+    var inputFile1 = prepareJavaInputFile(baseDir);
+
+    var fakeClient = harness.newFakeClient().build();
+
+    var server = harness.newFakeSonarQubeServer()
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("java")
+        .withActiveRule("java:S1220", activeRule -> activeRule
+          .withSeverity(IssueSeverity.MINOR))
+        .withActiveRule("java:S2094", activeRule -> activeRule
+          .withSeverity(IssueSeverity.MINOR)))
+      .withProject("projectKey",
+        project -> project
+          .withQualityProfile("qpKey")
+          .withMainBranch("main"))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+
+    var backend = harness.newBackend()
+      .withBackendCapability(FULL_SYNCHRONIZATION, EMBEDDED_SERVER)
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey",
+          project -> project.withMainBranch("main",
+            branch -> branch.withTaintIssue(aServerTaintIssue("key")
+              .withFilePath(inputFile1.toAbsolutePath().toString())
+              .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(JAVA)
+      .withClientName("client")
+      .start(fakeClient);
+
+    fakeClient.waitForSynchronization();
+
+    var requestBody = gson.toJson(new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(
+      List.of(inputFile1.toAbsolutePath().normalize().toString())
+    ));
+
+    var response = executeAnalyzeRequest(backend, server.baseUrl(), requestBody);
+    assertThat(response.statusCode()).isEqualTo(500);
+    assertThat(response.body()).isEqualTo("Failed to analyze files, reason: No files were found to be indexed by SonarQube for IDE");
+  }
+
+  @SonarLintTest
   void it_should_return_bad_request_for_empty_file_list(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start();
 
-    var requestBody = gson.toJson(new AnalyzeListFilesRequestHandler.AnalyzeListFilesRequest(Collections.emptyList()));
+    var requestBody = gson.toJson(new AnalyzeFileListRequestHandler.AnalyzeFileListRequest(Collections.emptyList()));
 
     var response = executeAnalyzeRequest(backend, "", requestBody);
     assertThat(response.statusCode()).isEqualTo(400);

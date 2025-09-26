@@ -64,21 +64,21 @@ public class EmbeddedServer {
   private final ShowHotspotRequestHandler showHotspotRequestHandler;
   private final ShowIssueRequestHandler showIssueRequestHandler;
   private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
-  private final AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler;
-  private final AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler;
+  private final ToggleAutomaticAnalysisRequestHandler toggleAutomaticAnalysisRequestHandler;
+  private final AnalyzeFileListRequestHandler analyzeFileListRequestHandler;
   private final SonarLintRpcClient client;
 
   public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
-    AutomaticAnalysisEnablementRequestHandler automaticAnalysisEnablementRequestHandler, AnalyzeListFilesRequestHandler analyzeListFilesRequestHandler, SonarLintRpcClient client) {
+    ToggleAutomaticAnalysisRequestHandler toggleAutomaticAnalysisRequestHandler, AnalyzeFileListRequestHandler analyzeFileListRequestHandler, SonarLintRpcClient client) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;
     this.showIssueRequestHandler = showIssueRequestHandler;
     this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
-    this.automaticAnalysisEnablementRequestHandler = automaticAnalysisEnablementRequestHandler;
-    this.analyzeListFilesRequestHandler = analyzeListFilesRequestHandler;
+    this.toggleAutomaticAnalysisRequestHandler = toggleAutomaticAnalysisRequestHandler;
+    this.analyzeFileListRequestHandler = analyzeFileListRequestHandler;
     this.client = client;
   }
 
@@ -115,8 +115,8 @@ public class EmbeddedServer {
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
           .register("/sonarlint/api/issues/show", showIssueRequestHandler)
           .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
-          .register("/sonarlint/api/analysis/automatic/config", automaticAnalysisEnablementRequestHandler)
-          .register("/sonarlint/api/analysis/files", analyzeListFilesRequestHandler)
+          .register("/sonarlint/api/analysis/automatic/config", toggleAutomaticAnalysisRequestHandler)
+          .register("/sonarlint/api/analysis/files", analyzeFileListRequestHandler)
           .addFilterLast("CSP", new CspFilter())
           .create();
         startedServer.start();
