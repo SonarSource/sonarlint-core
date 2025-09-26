@@ -9,6 +9,8 @@
 * Add a new `getMCPServerConfiguration` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
   * It accepts `connectionId` and `token` as parameters
   * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService` service and a `getRuleFileContent` method.
+  * Use it to retrieve the content of the rule file to write to provide guidance to the agent when using the SonarQube MCP server.
 * Introduce an RPC notification `embeddedServerStarted` in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`
   * It is sent by the backend to notify the client that the embedded server has started
   * It contains the embedded server port
