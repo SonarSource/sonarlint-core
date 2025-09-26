@@ -37,20 +37,20 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class AutomaticAnalysisEnablementRequestHandler implements HttpRequestHandler {
+public class ToggleAutomaticAnalysisRequestHandler implements HttpRequestHandler {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final AnalysisService analysisService;
   private final Gson gson = new Gson();
 
-  public AutomaticAnalysisEnablementRequestHandler(AnalysisService analysisService) {
+  public ToggleAutomaticAnalysisRequestHandler(AnalysisService analysisService) {
     this.analysisService = analysisService;
   }
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    LOG.debug("Received request for automatic analysis enablement change");
+    LOG.debug("Received request for toggling automatic analysis");
 
     if (!Method.POST.isSame(request.getMethod())) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
@@ -85,9 +85,9 @@ public class AutomaticAnalysisEnablementRequestHandler implements HttpRequestHan
       analysisService.didChangeAutomaticAnalysisSetting(enabled);
       response.setCode(HttpStatus.SC_OK);
     } catch (Exception e) {
-      LOG.error("Failed to change automatic analysis", e);
+      LOG.error("Failed to toggle automatic analysis", e);
       response.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-      var errorResponse = new ErrorMessage("Failed to change automatic analysis: " + e.getMessage());
+      var errorResponse = new ErrorMessage("Failed to toggle automatic analysis: " + e.getMessage());
       response.setEntity(new StringEntity(gson.toJson(errorResponse), ContentType.APPLICATION_JSON));
     }
   }

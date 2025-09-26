@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -226,12 +227,12 @@ public class ClientFileSystemService {
 
   public Map<String, Set<URI>> groupFilesByConfigScope(Set<URI> fileUris) {
     return fileUris.stream()
-      .map(uri -> Map.entry(uri, filesByUri.get(uri)))
-      .filter(entry -> entry.getValue() != null)
+      .map(filesByUri::get)
+      .filter(Objects::nonNull)
       .collect(Collectors.groupingBy(
-        entry -> entry.getValue().getConfigScopeId(),
+        ClientFile::getConfigScopeId,
         Collectors.mapping(
-          Map.Entry::getKey,
+          ClientFile::getUri,
           Collectors.toSet()
         )
       ));

@@ -50,8 +50,8 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
-import org.sonarsource.sonarlint.core.embedded.server.AutomaticAnalysisEnablementRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.AnalyzeListFilesRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
@@ -206,8 +206,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   DependencyRiskService.class,
   FlightRecorderService.class,
   FlightRecorderStorageService.class,
-  AutomaticAnalysisEnablementRequestHandler.class,
-  AnalyzeListFilesRequestHandler.class
+  ToggleAutomaticAnalysisRequestHandler.class,
+  AnalyzeFileListRequestHandler.class
 })
 public class SonarLintSpringAppConfig {
 
