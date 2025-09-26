@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -246,6 +247,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public FlightRecordingRpcService getFlightRecordingService() {
     return new FlightRecordingRpcServiceDelegate(this);
+  }
+
+  @Override
+  public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
+    return new AiAssistedIdeRpcServiceDelegate(this);
   }
 
   @Override

@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -169,6 +170,16 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     return serverUsingRpc.getTaskProgressRpcService();
   }
 
+  @Override
+  public FlightRecordingRpcService getFlightRecordingService() {
+    return serverUsingJava.getFlightRecordingService();
+  }
+
+  @Override
+  public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
+    return serverUsingJava.getAiAssistedIdeRpcService();
+  }
+
   public Path getWorkDir() {
     return workDir;
   }
@@ -240,10 +251,5 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public int getEmbeddedServerPort() {
     return serverUsingJava.getEmbeddedServerPort();
-  }
-
-  @Override
-  public FlightRecordingRpcService getFlightRecordingService() {
-    return serverUsingJava.getFlightRecordingService();
   }
 }

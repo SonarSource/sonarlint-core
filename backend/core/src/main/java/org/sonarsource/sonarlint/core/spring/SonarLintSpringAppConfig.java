@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
+import org.sonarsource.sonarlint.core.ai.ide.AiAssistedIdeService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -207,7 +208,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   FlightRecorderService.class,
   FlightRecorderStorageService.class,
   ToggleAutomaticAnalysisRequestHandler.class,
-  AnalyzeFileListRequestHandler.class
+  AnalyzeFileListRequestHandler.class,
+  AiAssistedIdeService.class
 })
 public class SonarLintSpringAppConfig {
 
