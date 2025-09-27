@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.tracking.matching;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -52,14 +51,16 @@ public class IssueMatcher<LEFT, RIGHT> {
     // 7. match issues with same rule and same line hash
     LineHashMatchingCriterion::new);
 
-  private final Map<MatchingCriterionFactory, Map<MatchingCriterion, List<RIGHT>>> rightIssuesByCriterion = new HashMap<>();
+  private final Map<MatchingCriterionFactory, Map<MatchingCriterion, RIGHT>> rightIssuesByCriterion = new HashMap<>();
+  private final MatchingAttributesMapper<RIGHT> rightMapper;
 
   public IssueMatcher(MatchingAttributesMapper<RIGHT> rightMapper, Collection<RIGHT> rightIssues) {
+    this.rightMapper = rightMapper;
     for (var matchingCriterion : MATCHING_CRITERIA) {
-      var issuesByCriterion = new HashMap<MatchingCriterion, List<RIGHT>>();
+      var issuesByCriterion = new HashMap<MatchingCriterion, RIGHT>();
       for (RIGHT right : rightIssues) {
         var criterionAppliedToIssue = matchingCriterion.build(right, rightMapper);
-        issuesByCriterion.computeIfAbsent(criterionAppliedToIssue, k -> new ArrayList<>()).add(right);
+        issuesByCriterion.put(criterionAppliedToIssue, right);
       }
       rightIssuesByCriterion.put(matchingCriterion, issuesByCriterion);
     }
@@ -81,15 +82,19 @@ public class IssueMatcher<LEFT, RIGHT> {
   private void matchWithCriterion(MatchingResult<LEFT, RIGHT> result, MatchingAttributesMapper<LEFT> leftMapper, MatchingCriterionFactory criterionFactory) {
     for (LEFT left : result.getUnmatchedLefts()) {
       var leftKey = criterionFactory.build(left, leftMapper);
-      var rightsCandidates = rightIssuesByCriterion.get(criterionFactory).get(leftKey);
-      if (rightsCandidates != null && !rightsCandidates.isEmpty()) {
+      var match = rightIssuesByCriterion.get(criterionFactory).get(leftKey);
+      if (match != null) {
         // TODO taking the first one. Could be improved if there are more than 2 issues on the same line.
         // Message could be checked to take the best one.
-        var match = rightsCandidates.iterator().next();
         result.recordMatch(left, match);
-        MATCHING_CRITERIA.forEach(criterion -> rightIssuesByCriterion.get(criterion).remove(criterion.build(left, leftMapper)));
+        MATCHING_CRITERIA.forEach(criterion -> rightIssuesByCriterion.get(criterion).remove(criterion.build(match, rightMapper)));
+        break;
       }
     }
+  }
+
+  public int getUnmatchedIssuesCount() {
+    return rightIssuesByCriterion.entrySet().iterator().next().getValue().size();
   }
 
   private interface MatchingCriterion {
