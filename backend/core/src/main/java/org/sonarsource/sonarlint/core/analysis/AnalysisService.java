@@ -37,6 +37,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -103,6 +104,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
@@ -647,14 +649,19 @@ public class AnalysisService {
     var scopeThatBecameNotReady = new HashSet<String>();
     configurationScopeIds.forEach(configScopeId -> {
       var readyForAnalysis = isReadyForAnalysis(configScopeId);
+      var childrenScopesWithSameReadiness = configurationRepository.getChildrenWithInheritedBinding(configScopeId);
       var wasReady = analysisReadinessByConfigScopeId.put(configScopeId, readyForAnalysis);
+      analysisReadinessByConfigScopeId.putAll(childrenScopesWithSameReadiness.stream().collect(toMap(Function.identity(), k -> readyForAnalysis)));
       if (readyForAnalysis && !Boolean.TRUE.equals(wasReady)) {
         scopeThatBecameReady.add(configScopeId);
+        scopeThatBecameReady.addAll(childrenScopesWithSameReadiness);
       } else if (!readyForAnalysis && Boolean.TRUE.equals(wasReady)) {
         scopeThatBecameNotReady.add(configScopeId);
+        scopeThatBecameNotReady.addAll(childrenScopesWithSameReadiness);
       }
       if (readyForAnalysis) {
         readyConfigScopeIds.add(configScopeId);
+        readyConfigScopeIds.addAll(childrenScopesWithSameReadiness);
       }
     });
     if (!scopeThatBecameReady.isEmpty()) {
