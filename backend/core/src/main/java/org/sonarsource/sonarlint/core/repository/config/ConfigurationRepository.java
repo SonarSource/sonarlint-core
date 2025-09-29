@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,8 +62,7 @@ public class ConfigurationRepository {
 
   public Map<String, BindingConfiguration> removeBindingForConnection(String connectionId) {
     var removedBindingByConfigScope = new HashMap<String, BindingConfiguration>();
-    var configScopeIdsToUnbind =
-      bindingByConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().connectionId())).map(Map.Entry::getKey).collect(toSet());
+    var configScopeIdsToUnbind = bindingByConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().connectionId())).map(Map.Entry::getKey).collect(toSet());
     configScopeIdsToUnbind.forEach(configScopeId -> {
       var removedBindingConfiguration = bindingByConfigScopeId.get(configScopeId);
       if (removedBindingConfiguration != null) {
@@ -172,7 +172,6 @@ public class ConfigurationRepository {
     return effectiveBinding.map(binding -> new BoundScope(configScopeId, binding)).orElse(null);
   }
 
-
   public Collection<BoundScope> getBoundScopesToConnectionAndSonarProject(String connectionId, String projectKey) {
     return getBoundScopesToConnection(connectionId)
       .stream()
@@ -204,4 +203,10 @@ public class ConfigurationRepository {
       .collect(groupingBy(BoundScope::getConnectionId, groupingBy(BoundScope::getSonarProjectKey, Collectors.toCollection(ArrayList::new))));
   }
 
+  public List<String> getChildrenWithInheritedBinding(String parentId) {
+    return configScopeById.values().stream()
+      .filter(scope -> parentId.equals(scope.parentId()) && (!bindingByConfigScopeId.containsKey(scope.id()) || !bindingByConfigScopeId.get(scope.id()).isBound()))
+      .map(ConfigurationScope::id)
+      .toList();
+  }
 }
