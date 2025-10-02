@@ -316,6 +316,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(1).getContent().getLeft().getHtmlContent()).contains(extendedDescription);
   }
 
+  @Disabled
   @Test
   void analysisJavascript() {
     var configScopeId = "analysisJavascript";

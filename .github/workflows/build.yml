@@ -128,6 +128,7 @@ jobs:
         with:
           secrets: |
             development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
+            development/github/token/licenses-ro token | GITHUB_TOKEN;
 
       - uses: SonarSource/ci-github-actions/config-maven@master # dogfood
         with:
@@ -139,6 +140,7 @@ jobs:
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).GITHUB_TOKEN }}
         run: |
           mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Run QA (for else)
@@ -148,6 +150,7 @@ jobs:
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets.outputs.vault && fromJSON(steps.secrets.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).GITHUB_TOKEN }}
         run: |
           mvn clean install -DskipTests
           mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
