@@ -123,11 +123,16 @@ jobs:
             cache-${{ runner.os }}
       - name: Vault (SonarCloud IT token)
         if: ${{ matrix.sc == true }}
-        id: secrets
+        id: secrets-sc
         uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # v3.1.0
         with:
           secrets: |
             development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
+      - name: Vault (GITHUB Token)
+        id: secrets-gh
+        uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # v3.1.0
+        with:
+          secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
       - uses: SonarSource/ci-github-actions/config-maven@master # dogfood
