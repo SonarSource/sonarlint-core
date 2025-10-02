@@ -316,7 +316,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(1).getContent().getLeft().getHtmlContent()).contains(extendedDescription);
   }
 
-  @Disabled
   @Test
   void analysisJavascript() {
     var configScopeId = "analysisJavascript";
@@ -434,7 +433,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(issues).hasSize(1);
   }
 
-  @Disabled
   @Test
   void analysisKotlin() {
     var configScopeId = "analysisKotlin";
