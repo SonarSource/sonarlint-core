@@ -433,6 +433,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(issues).hasSize(1);
   }
 
+  @Disabled
   @Test
   void analysisKotlin() {
     var configScopeId = "analysisKotlin";

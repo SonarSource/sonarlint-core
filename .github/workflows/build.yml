@@ -139,7 +139,7 @@ jobs:
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
         run: |
-          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report #-B -e -V is called by default
+          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report -Xmx4G
       - name: Run QA (for else)
         if: ${{ !(github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-')) }}
         env:
@@ -148,7 +148,7 @@ jobs:
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
         run: |
           mvn clean install -DskipTests
-          mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
+          mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report -Xmx4G
       - name: debug
         if: failure()
         shell: bash
