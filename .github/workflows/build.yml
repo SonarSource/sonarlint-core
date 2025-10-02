@@ -129,6 +129,9 @@ jobs:
           secrets: |
             development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
 
+      - uses: SonarSource/ci-github-actions/config-maven@master # dogfood
+        with:
+          artifactory-reader-role: private-reader
       - name: Run QA (direct)
         if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         env:
