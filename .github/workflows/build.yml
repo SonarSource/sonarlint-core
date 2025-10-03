@@ -170,8 +170,8 @@ jobs:
           name: QA ${{ matrix.name }} Test Report
           reporter: java-junit
           path: |
-            **/target/surefire-reports/TEST-*.xml
-            **/target/failsafe-reports/*.xml
+            its/tests/target/surefire-reports/TEST-*.xml
+            its/tests/target/failsafe-reports/*.xml
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
@@ -179,9 +179,10 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          ls -la */target/surefire-reports/TEST-*.xml || true
-          ls -la . */target || true
-          find . -name surefire-reports -type d || true
+          echo "=== Listing surefire-reports contents ==="
+          find ./its/tests/target/surefire-reports -type f || true
+          echo "=== Checking if directory is empty ==="
+          [ -d ./its/tests/target/surefire-reports ] && ls -la ./its/tests/target/surefire-reports/ || echo "Directory doesn't exist"
 
   test-windows:
     needs: [ build ]
