@@ -33,8 +33,7 @@ jobs:
           deploy-pull-request: true
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
-          maven-opts: -Dmaven.test.skip=true -Dsonar.skip=true
-          maven-args: -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64
+          maven-args: -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
       #- name: Config Maven (cache setup)
       #  run: |
       #    mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
@@ -57,17 +56,14 @@ jobs:
           deploy-pull-request: false
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
-          maven-opts: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
-          maven-args: -P-deploy-sonarsource,-release,-sign
+          maven-args: -P-deploy-sonarsource,-release,-sign -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
         with:
           name: QA Linux Test Report
           reporter: java-junit
-          path: |
-            **/target/surefire-reports/TEST-*.xml
-            **/target/failsafe-reports/*.xml
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
@@ -139,7 +135,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@master # dogfood
+      - uses: SonarSource/ci-github-actions/config-maven@v1
         with:
           artifactory-reader-role: private-reader
       - name: Run QA (direct)
@@ -169,9 +165,7 @@ jobs:
         with:
           name: QA ${{ matrix.name }} Test Report
           reporter: java-junit
-          path: |
-            **/its/tests/target/surefire-reports/TEST-*.xml
-            **/its/tests/target/failsafe-reports/*.xml
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
@@ -209,9 +203,7 @@ jobs:
         with:
           name: QA Windows Test Report
           reporter: java-junit
-          path: |
-            **/target/surefire-reports/TEST-*.xml
-            **/target/failsafe-reports/*.xml
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
