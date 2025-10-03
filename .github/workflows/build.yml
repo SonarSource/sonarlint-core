@@ -159,13 +159,6 @@ jobs:
         run: |
           mvn clean install -DskipTests
           mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
-      - name: debug
-        if: failure()
-        shell: bash
-        run: |
-          ls -la */target/surefire-reports/TEST-*.xml
-          ls -la . */target
-          find . -name surefire-reports -type d
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
@@ -212,7 +205,7 @@ jobs:
           fail-on-empty: false
 
   inspect-orchestrator-cache:
-    needs: [ build ]
+    needs: [ build, qa ]
     runs-on: github-ubuntu-latest-s
     name: Inspect Orchestrator Cache
     permissions:
