@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: github-ubuntu-latest-l
+    runs-on: github-ubuntu-latest-m
     name: Build
     permissions:
       id-token: write
@@ -42,7 +42,7 @@ jobs:
 
   test-linux:
     needs: [ build ]
-    runs-on: github-ubuntu-latest-l
+    runs-on: github-ubuntu-latest-m
     name: Test (Linux, Sonar Next)
     permissions:
       id-token: write
@@ -74,7 +74,7 @@ jobs:
 
   qa:
     needs: [ build ]
-    runs-on: github-ubuntu-latest-l
+    runs-on: github-ubuntu-latest-m
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
@@ -115,6 +115,8 @@ jobs:
         run: | 
           echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
           echo "ORCHESTRATOR_HOME=${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}" >> "$GITHUB_ENV"
+          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+          mkdir -p ${ORCHESTRATOR_HOME}
       - uses: SonarSource/ci-github-actions/cache@v1
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -171,10 +173,17 @@ jobs:
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
+      - name: debug
+        if: failure()
+        shell: bash
+        run: |
+          ls -la */target/surefire-reports/TEST-*.xml || true
+          ls -la . */target || true
+          find . -name surefire-reports -type d || true
 
   test-windows:
     needs: [ build ]
-    runs-on: github-windows-latest-l
+    runs-on: github-windows-latest-m
     name: Test (Windows)
     permissions:
       id-token: write
@@ -217,6 +226,8 @@ jobs:
         run: |
           echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
           echo "ORCHESTRATOR_HOME=${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}" >> "$GITHUB_ENV"
+          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+          mkdir -p ${ORCHESTRATOR_HOME}
       - uses: SonarSource/ci-github-actions/cache@v1
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
