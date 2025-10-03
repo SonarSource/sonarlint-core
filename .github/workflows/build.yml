@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: github-ubuntu-latest-s
+    runs-on: github-ubuntu-latest-l
     name: Build
     permissions:
       id-token: write
@@ -42,7 +42,7 @@ jobs:
 
   test-linux:
     needs: [ build ]
-    runs-on: github-ubuntu-latest-s
+    runs-on: github-ubuntu-latest-l
     name: Test (Linux, Sonar Next)
     permissions:
       id-token: write
@@ -74,7 +74,7 @@ jobs:
 
   qa:
     needs: [ build ]
-    runs-on: github-ubuntu-latest-s
+    runs-on: github-ubuntu-latest-l
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
@@ -174,7 +174,7 @@ jobs:
 
   test-windows:
     needs: [ build ]
-    runs-on: github-windows-latest-s
+    runs-on: github-windows-latest-l
     name: Test (Windows)
     permissions:
       id-token: write
