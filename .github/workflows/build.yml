@@ -234,11 +234,17 @@ jobs:
         shell: bash
         run: |
           echo "Inspecting cache ${ORCHESTRATOR_HOME}..."
-          if [ -d "${ORCHESTRATOR_HOME}" ]; then
-            ls -l "${ORCHESTRATOR_HOME}"
-            echo "--- full listing up to depth 4 ---"
-            find "${ORCHESTRATOR_HOME}" -maxdepth 4 -print
-          else
-            echo "Directory does not exist."
-          fi
+          cd "${ORCHESTRATOR_HOME}"
+          ls -l
+          find .
           echo "Inspecting cache done."
+
+  promote:
+    needs: [ build, qa, test-linux, test-windows ]
+    runs-on: github-ubuntu-latest-s
+    name: Promote
+    steps:
+      - uses: actions/checkout@v5
+      - uses: SonarSource/ci-github-actions/promote@v1
+        with:
+          promote-pull-request: true
