@@ -34,9 +34,9 @@ jobs:
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
           maven-args: -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
-      #- name: Config Maven (cache setup)
-      #  run: |
-      #    mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
+      - name: Config Maven (cache setup)
+        run: |
+          mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
       
 
   test-linux:
