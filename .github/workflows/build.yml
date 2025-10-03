@@ -112,11 +112,13 @@ jobs:
       - name: Compute month key
         id: month
         shell: bash
-        run: | 
-          echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
-          echo "ORCHESTRATOR_HOME=${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}" >> "$GITHUB_ENV"
+        run: |
+          THIS_MONTH="$(date +%Y-%m)"
+          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
+          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
+          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
-          mkdir -p ${ORCHESTRATOR_HOME}
+          mkdir -p "${ORCHESTRATOR_HOME}"
       - uses: SonarSource/ci-github-actions/cache@v1
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -224,10 +226,12 @@ jobs:
         id: month
         shell: bash
         run: |
-          echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
-          echo "ORCHESTRATOR_HOME=${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}" >> "$GITHUB_ENV"
+          THIS_MONTH="$(date +%Y-%m)"
+          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
+          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
+          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
-          mkdir -p ${ORCHESTRATOR_HOME}
+          mkdir -p "${ORCHESTRATOR_HOME}"
       - uses: SonarSource/ci-github-actions/cache@v1
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
