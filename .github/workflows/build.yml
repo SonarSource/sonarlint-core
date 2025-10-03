@@ -210,3 +210,35 @@ jobs:
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
+
+  inspect-orchestrator-cache:
+    needs: [ build ]
+    runs-on: github-ubuntu-latest-s
+    name: Inspect Orchestrator Cache
+    permissions:
+      contents: read
+    steps:
+      - name: Compute month key
+        id: month
+        shell: bash
+        run: |
+          echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
+          echo "ORCHESTRATOR_HOME=${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}" >> "$GITHUB_ENV"
+      - uses: SonarSource/ci-github-actions/cache@v1
+        with:
+          path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
+          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}
+          restore-keys: |
+            cache-${{ runner.os }}
+      - name: Inspect cache directory
+        shell: bash
+        run: |
+          echo "Inspecting cache ${ORCHESTRATOR_HOME}..."
+          if [ -d "${ORCHESTRATOR_HOME}" ]; then
+            ls -l "${ORCHESTRATOR_HOME}"
+            echo "--- full listing up to depth 4 ---"
+            find "${ORCHESTRATOR_HOME}" -maxdepth 4 -print
+          else
+            echo "Directory does not exist."
+          fi
+          echo "Inspecting cache done."
