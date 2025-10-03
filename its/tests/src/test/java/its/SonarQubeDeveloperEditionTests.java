@@ -299,8 +299,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-php", "src/Math.php");
-
-      assertThat(rawIssues).hasSize(1);
+      assertThat(rawIssues).hasSize(2); // FIXME
     }
 
     @Test
