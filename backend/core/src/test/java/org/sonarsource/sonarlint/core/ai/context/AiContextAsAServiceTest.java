@@ -95,7 +95,7 @@ class AiContextAsAServiceTest {
     void should_send_search_request() {
       when(httpClient.get("http://localhost:8080/query?question=Lycos%2C+go+get+it%21"))
         .thenReturn(mockResponse(
-          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\",\"startLine\":1,\"startColumn\":2,\"endLine\":3,\"endColumn\":4}]}"));
+          "{\"text\": \"This is the answer\",\"matches\":[{\"filename\":\"path/file.js\",\"start_row\":1,\"start_column\":2,\"end_row\":3,\"end_column\":4}]}"));
 
       var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
 
@@ -108,7 +108,7 @@ class AiContextAsAServiceTest {
     void should_send_search_request_and_handle_no_range() {
       when(httpClient.get("http://localhost:8080/query?question=Lycos%2C+go+get+it%21"))
         .thenReturn(mockResponse(
-          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\"}]}"));
+          "{\"text\": \"This is the answer\",\"matches\":[{\"filename\":\"path/file.js\"}]}"));
 
       var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
 

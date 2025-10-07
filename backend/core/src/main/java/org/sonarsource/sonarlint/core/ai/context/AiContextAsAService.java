@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.ai.context;
 
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -97,11 +99,13 @@ public class AiContextAsAService {
     }
     try (var response = httpClientProvider.getHttpClient()
       .get(CONTEXT_SERVER_URL + QUERY_API_PATH + "?question=" + UrlUtils.urlEncode(question))) {
-      var responseBody = new Gson().fromJson(response.bodyAsString(), QueryResponseBody.class);
+      var gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+        .create();
+      var responseBody = gson.fromJson(response.bodyAsString(), QueryResponseBody.class);
       return new AskCodebaseQuestionResponse(responseBody.text(), responseBody.matches().stream().map(m -> {
-        var startLine = m.startLine();
-        var textRange = startLine == null ? null : new TextRangeDto(startLine, m.startColumn(), m.endLine(), m.endColumn());
-        return new CodeLocation(m.fileRelativePath(), textRange);
+        var startLine = m.startRow();
+        var textRange = startLine == null ? null : new TextRangeDto(startLine, m.startColumn(), m.endRow(), m.endColumn());
+        return new CodeLocation(m.filename(), textRange);
       }).toList());
     }
   }

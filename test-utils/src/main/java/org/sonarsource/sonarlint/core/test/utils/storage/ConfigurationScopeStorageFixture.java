@@ -90,9 +90,9 @@ public class ConfigurationScopeStorageFixture {
               var textRange = issue.getTextRangeWithHash();
               var lineWithHash = issue.getLineWithHash();
               if (textRange != null) {
-                issueEntity.setProperty("startLine", textRange.getStartLine());
+                issueEntity.setProperty("startRow", textRange.getStartLine());
                 issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                issueEntity.setProperty("endLine", textRange.getEndLine());
+                issueEntity.setProperty("endRow", textRange.getEndLine());
                 issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
                 issueEntity.setProperty("rangeHash", textRange.getHash());
               }

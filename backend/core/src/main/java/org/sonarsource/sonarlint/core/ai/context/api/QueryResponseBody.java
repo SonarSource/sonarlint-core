@@ -23,6 +23,6 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record QueryResponseBody(List<Match> matches, @Nullable String text) {
-  public record Match(String fileRelativePath, @Nullable Integer startLine, @Nullable Integer startColumn, @Nullable Integer endLine, @Nullable Integer endColumn) {
+  public record Match(String filename, @Nullable Integer startRow, @Nullable Integer startColumn, @Nullable Integer endRow, @Nullable Integer endColumn) {
   }
 }
