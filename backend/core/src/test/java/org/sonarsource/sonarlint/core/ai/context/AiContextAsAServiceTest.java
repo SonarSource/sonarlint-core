@@ -84,9 +84,9 @@ class AiContextAsAServiceTest {
   class Search {
     @Test
     void should_send_search_request() {
-      when(httpClient.postAsync("http://localhost:8080/query", "application/json; charset=utf-8", "{\"question\":\"Lycos, go get it!\"}"))
-        .thenReturn(CompletableFuture.completedFuture(mockResponse(
-          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\",\"startLine\":1,\"startColumn\":2,\"endLine\":3,\"endColumn\":4}]}")));
+      when(httpClient.get("http://localhost:8080/query?question=Lycos%2C+go+get+it%21"))
+        .thenReturn(mockResponse(
+          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\",\"startLine\":1,\"startColumn\":2,\"endLine\":3,\"endColumn\":4}]}"));
 
       var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
 
@@ -97,9 +97,9 @@ class AiContextAsAServiceTest {
 
     @Test
     void should_send_search_request_and_handle_no_range() {
-      when(httpClient.postAsync("http://localhost:8080/query", "application/json; charset=utf-8", "{\"question\":\"Lycos, go get it!\"}"))
-        .thenReturn(CompletableFuture.completedFuture(mockResponse(
-          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\"}]}")));
+      when(httpClient.get("http://localhost:8080/query?question=Lycos%2C+go+get+it%21"))
+        .thenReturn(mockResponse(
+          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\"}]}"));
 
       var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
 

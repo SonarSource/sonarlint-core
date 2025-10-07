@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.sonarsource.sonarlint.core.ai.context.api.IndexRequestBody;
-import org.sonarsource.sonarlint.core.ai.context.api.QueryRequestBody;
 import org.sonarsource.sonarlint.core.ai.context.api.QueryResponseBody;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
@@ -37,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext.CodeLocatio
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.springframework.context.event.EventListener;
 
 public class AiContextAsAService {
@@ -87,11 +87,8 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return mockSearch(configurationScopeId, question);
     }
-    var requestBody = new QueryRequestBody(question);
-    var body = new Gson().toJson(requestBody);
     try (var response = httpClientProvider.getHttpClient()
-      .postAsync(CONTEXT_SERVER_URL + QUERY_API_PATH, HttpClient.JSON_CONTENT_TYPE, body)
-      .join()) {
+      .get(CONTEXT_SERVER_URL + QUERY_API_PATH + "?question=" + UrlUtils.urlEncode(question))) {
       var responseBody = new Gson().fromJson(response.bodyAsString(), QueryResponseBody.class);
       return new AskCodebaseQuestionResponse(responseBody.text(), responseBody.matches().stream().map(m -> {
         var startLine = m.startLine();
