@@ -65,12 +65,18 @@ public class AiContextAsAService {
         .map(f -> {
           var detectedLanguage = f.getDetectedLanguage();
           var language = detectedLanguage == null ? null : detectedLanguage.name();
-          return new IndexRequestBody.File(f.getContent(), f.getIdeRelativePath().toString(), new IndexRequestBody.File.Metadata(language));
+          return new IndexRequestBody.File(f.getContent(), f.getClientRelativePath().toString(), new IndexRequestBody.File.Metadata(language));
         }).toList());
     var body = new Gson().toJson(requestBody);
     httpClientProvider.getHttpClient()
       .postAsync(CONTEXT_SERVER_URL + INDEX_API_PATH, HttpClient.JSON_CONTENT_TYPE, body)
-      .thenAccept(response -> LOG.info("Indexed files successfully!"))
+      .thenAccept(response -> {
+        if (response.isSuccessful()) {
+          LOG.info("Indexed files successfully!");
+        } else {
+          LOG.error("Error indexing files: status={}, body={}", response.code(), response.bodyAsString());
+        }
+      })
       .exceptionally(error -> {
         LOG.error("Error when sending the index request", error);
         return null;

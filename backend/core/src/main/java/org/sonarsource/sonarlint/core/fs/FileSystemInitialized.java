@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-public record FileSystemInitialized(List<ClientFileDto> files) {
+public record FileSystemInitialized(List<ClientFile> files) {
 }

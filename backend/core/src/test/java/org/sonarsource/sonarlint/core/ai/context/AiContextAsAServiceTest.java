@@ -28,14 +28,14 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext.CodeLocation;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +73,7 @@ class AiContextAsAServiceTest {
     @Test
     void should_send_index_request_with_single_file() {
       aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(
-        List.of(new ClientFileDto(URI.create("file://path/file.js"), Paths.get("path/file.js"), "configScope", true, null, null, "content", Language.ABAP, false))));
+        List.of(new ClientFile(URI.create("file://path/file.js"), "congifScope", Paths.get("path/file.js"),  false, null, null, SonarLanguage.ABAP, true))));
 
       verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
         "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"path/file.js\",\"metadata\":{\"language\":\"ABAP\"}}]}");
