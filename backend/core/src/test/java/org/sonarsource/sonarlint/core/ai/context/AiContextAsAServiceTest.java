@@ -19,16 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.ai.context;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -46,6 +50,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiContextAsAServiceTest {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private HttpClient httpClient;
   private AiContextAsAService aiContextAsAService;
@@ -65,18 +71,21 @@ class AiContextAsAServiceTest {
   class Index {
     @Test
     void should_send_empty_index_request_if_no_file() {
-      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(List.of()));
+      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope", List.of()));
 
       verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[]}");
     }
 
     @Test
-    void should_send_index_request_with_single_file() {
-      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(
-        List.of(new ClientFile(URI.create("file://path/file.js"), "congifScope", Paths.get("path/file.js"),  false, null, null, SonarLanguage.ABAP, true))));
+    void should_send_index_request_with_single_file(@TempDir Path tempDir) throws IOException {
+      var abapFile = tempDir.resolve("file.abap");
+      Files.createFile(abapFile);
+      Files.writeString(abapFile, "content");
+      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope",
+        List.of(new ClientFile(abapFile.toUri(), "configScope", tempDir.relativize(abapFile), false, null, abapFile, SonarLanguage.ABAP, true))));
 
       verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
-        "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"path/file.js\",\"metadata\":{\"language\":\"ABAP\"}}]}");
+        "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"file.abap\",\"metadata\":{\"language\":\"ABAP\"}}]}");
     }
   }
 
