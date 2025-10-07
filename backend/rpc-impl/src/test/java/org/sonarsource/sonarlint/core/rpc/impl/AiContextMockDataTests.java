@@ -53,9 +53,9 @@ class AiContextMockDataTests {
     
     // Verify each location has valid data
     response.getLocations().forEach(location -> {
-      assertThat(location.getFilePath()).isNotEmpty();
-      assertThat(location.getStartLine()).isPositive();
-      assertThat(location.getEndLine()).isGreaterThanOrEqualTo(location.getStartLine());
+      assertThat(location.getFileRelativePath()).isNotEmpty();
+      assertThat(location.getTextRange().getStartLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isGreaterThanOrEqualTo(location.getTextRange().getStartLine());
     });
   }
 
@@ -72,9 +72,9 @@ class AiContextMockDataTests {
     
     // Verify each location has valid data
     response.getLocations().forEach(location -> {
-      assertThat(location.getFilePath()).isNotEmpty();
-      assertThat(location.getStartLine()).isPositive();
-      assertThat(location.getEndLine()).isGreaterThanOrEqualTo(location.getStartLine());
+      assertThat(location.getFileRelativePath()).isNotEmpty();
+      assertThat(location.getTextRange().getStartLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isGreaterThanOrEqualTo(location.getTextRange().getStartLine());
     });
   }
 
@@ -120,15 +120,15 @@ class AiContextMockDataTests {
     
     // Verify all locations have valid data
     authResponse.getLocations().forEach(location -> {
-      assertThat(location.getFilePath()).isNotEmpty();
-      assertThat(location.getStartLine()).isPositive();
-      assertThat(location.getEndLine()).isGreaterThanOrEqualTo(location.getStartLine());
+      assertThat(location.getFileRelativePath()).isNotEmpty();
+      assertThat(location.getTextRange().getStartLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isGreaterThanOrEqualTo(location.getTextRange().getStartLine());
     });
     
     apiResponse.getLocations().forEach(location -> {
-      assertThat(location.getFilePath()).isNotEmpty();
-      assertThat(location.getStartLine()).isPositive();
-      assertThat(location.getEndLine()).isGreaterThanOrEqualTo(location.getStartLine());
+      assertThat(location.getFileRelativePath()).isNotEmpty();
+      assertThat(location.getTextRange().getStartLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isGreaterThanOrEqualTo(location.getTextRange().getStartLine());
     });
   }
 
@@ -144,7 +144,7 @@ class AiContextMockDataTests {
     
     // Verify file paths look realistic
     response.getLocations().forEach(location -> {
-      String filePath = location.getFilePath();
+      String filePath = location.getFileRelativePath();
       assertThat(filePath).isNotEmpty();
       
       // Should contain realistic path elements
@@ -172,16 +172,16 @@ class AiContextMockDataTests {
     
     // Verify line numbers are realistic
     response.getLocations().forEach(location -> {
-      assertThat(location.getStartLine()).isPositive();
-      assertThat(location.getEndLine()).isPositive();
-      assertThat(location.getEndLine()).isGreaterThanOrEqualTo(location.getStartLine());
+      assertThat(location.getTextRange().getStartLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isPositive();
+      assertThat(location.getTextRange().getEndLine()).isGreaterThanOrEqualTo(location.getTextRange().getStartLine());
       
       // Line numbers should be reasonable (not too large)
-      assertThat(location.getStartLine()).isLessThanOrEqualTo(250);
-      assertThat(location.getEndLine()).isLessThanOrEqualTo(300);
+      assertThat(location.getTextRange().getStartLine()).isLessThanOrEqualTo(250);
+      assertThat(location.getTextRange().getEndLine()).isLessThanOrEqualTo(300);
       
       // Range should be reasonable (not too large)
-      int range = location.getEndLine() - location.getStartLine();
+      int range = location.getTextRange().getEndLine() - location.getTextRange().getStartLine();
       assertThat(range).isLessThanOrEqualTo(50);
     });
   }
