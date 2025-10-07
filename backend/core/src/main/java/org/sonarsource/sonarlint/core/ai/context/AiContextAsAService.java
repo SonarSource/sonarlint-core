@@ -59,6 +59,7 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return;
     }
+    LOG.info("Starting indexing {} files...", event.files().size());
     var requestBody = new IndexRequestBody(
       event.files().stream()
         .map(f -> {
@@ -69,6 +70,7 @@ public class AiContextAsAService {
     var body = new Gson().toJson(requestBody);
     httpClientProvider.getHttpClient()
       .postAsync(CONTEXT_SERVER_URL + INDEX_API_PATH, HttpClient.JSON_CONTENT_TYPE, body)
+      .thenAccept(response -> LOG.info("Indexed files successfully!"))
       .exceptionally(error -> {
         LOG.error("Error when sending the index request", error);
         return null;
