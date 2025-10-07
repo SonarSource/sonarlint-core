@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.chunking.FileChunkingService;
 import org.sonarsource.sonarlint.core.chunking.TextChunk;
+import org.sonarsource.sonarlint.core.chunking.ChunkingStrategy;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -258,7 +259,7 @@ public class ClientFileSystemService {
 
   /**
    * Chunks all files in the given configuration scope into text segments for semantic search.
-   * This method retrieves files and then processes them with the chunking service.
+   * This method retrieves files and then processes them with the chunking service using the default strategy.
    *
    * @param configScopeId The configuration scope ID
    * @return Map where key is file URI and value is list of chunks for that file
@@ -267,9 +268,22 @@ public class ClientFileSystemService {
     var files = getFiles(configScopeId);
     return fileChunkingService.chunkFiles(files);
   }
+  
+  /**
+   * Chunks all files in the given configuration scope into text segments for semantic search.
+   * This method retrieves files and then processes them with the chunking service using the specified strategy.
+   *
+   * @param configScopeId The configuration scope ID
+   * @param strategy The chunking strategy to use
+   * @return Map where key is file URI and value is list of chunks for that file
+   */
+  public Map<URI, List<TextChunk>> chunkFiles(String configScopeId, ChunkingStrategy strategy) {
+    var files = getFiles(configScopeId);
+    return fileChunkingService.chunkFiles(files, strategy);
+  }
 
   /**
-   * Chunks a specific file into text segments.
+   * Chunks a specific file into text segments using the default strategy.
    *
    * @param fileUri The URI of the file to chunk
    * @return List of text chunks, or empty list if file not found
@@ -281,6 +295,22 @@ public class ClientFileSystemService {
       return List.of();
     }
     return fileChunkingService.chunkFile(file);
+  }
+  
+  /**
+   * Chunks a specific file into text segments using the specified strategy.
+   *
+   * @param fileUri The URI of the file to chunk
+   * @param strategy The chunking strategy to use
+   * @return List of text chunks, or empty list if file not found
+   */
+  public List<TextChunk> chunkFile(URI fileUri, ChunkingStrategy strategy) {
+    var file = getClientFile(fileUri);
+    if (file == null) {
+      LOG.warn("File not found for chunking: {}", fileUri);
+      return List.of();
+    }
+    return fileChunkingService.chunkFile(file, strategy);
   }
 
 }

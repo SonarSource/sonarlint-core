@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.chunking;
 import java.util.Objects;
 
 /**
- * Represents a chunk of text with its position in the source file.
+ * Represents a chunk of text with its position in the source file and optional context.
  */
 public class TextChunk {
   
@@ -30,12 +30,34 @@ public class TextChunk {
   private final int endOffset;
   private final String content;
   private final ChunkType type;
+  private final int coreStartOffset;
+  private final int coreEndOffset;
   
+  /**
+   * Creates a simple chunk without context (backward compatibility).
+   */
   public TextChunk(int startOffset, int endOffset, String content, ChunkType type) {
+    this(startOffset, endOffset, content, type, startOffset, endOffset);
+  }
+  
+  /**
+   * Creates a context-aware chunk with core content boundaries.
+   * 
+   * @param startOffset Start of the entire chunk (including context)
+   * @param endOffset End of the entire chunk (including context)
+   * @param content The complete content including context and ellipses
+   * @param type The semantic type of the core chunk
+   * @param coreStartOffset Start of the core content within the original file
+   * @param coreEndOffset End of the core content within the original file
+   */
+  public TextChunk(int startOffset, int endOffset, String content, ChunkType type, 
+                   int coreStartOffset, int coreEndOffset) {
     this.startOffset = startOffset;
     this.endOffset = endOffset;
     this.content = content;
     this.type = type;
+    this.coreStartOffset = coreStartOffset;
+    this.coreEndOffset = coreEndOffset;
   }
   
   public int getStartOffset() {
@@ -58,6 +80,27 @@ public class TextChunk {
     return content.length();
   }
   
+  /**
+   * Returns the start offset of the core content within the original file.
+   */
+  public int getCoreStartOffset() {
+    return coreStartOffset;
+  }
+  
+  /**
+   * Returns the end offset of the core content within the original file.
+   */
+  public int getCoreEndOffset() {
+    return coreEndOffset;
+  }
+  
+  /**
+   * Returns true if this chunk has context (i.e., includes surrounding code).
+   */
+  public boolean hasContext() {
+    return startOffset != coreStartOffset || endOffset != coreEndOffset;
+  }
+  
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -69,18 +112,25 @@ public class TextChunk {
     return startOffset == other.startOffset && 
            endOffset == other.endOffset && 
            Objects.equals(content, other.content) && 
-           type == other.type;
+           type == other.type &&
+           coreStartOffset == other.coreStartOffset &&
+           coreEndOffset == other.coreEndOffset;
   }
   
   @Override
   public int hashCode() {
-    return Objects.hash(startOffset, endOffset, content, type);
+    return Objects.hash(startOffset, endOffset, content, type, coreStartOffset, coreEndOffset);
   }
   
   @Override
   public String toString() {
-    return String.format("TextChunk{type=%s, range=[%d,%d], size=%d}", 
-                        type, startOffset, endOffset, getSize());
+    if (hasContext()) {
+      return String.format("TextChunk{type=%s, range=[%d,%d], core=[%d,%d], size=%d}", 
+                          type, startOffset, endOffset, coreStartOffset, coreEndOffset, getSize());
+    } else {
+      return String.format("TextChunk{type=%s, range=[%d,%d], size=%d}", 
+                          type, startOffset, endOffset, getSize());
+    }
   }
   
   /**

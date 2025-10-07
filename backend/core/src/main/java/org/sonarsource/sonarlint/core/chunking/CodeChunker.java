@@ -28,14 +28,28 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 public interface CodeChunker {
   
   /**
-   * Chunks the given content based on the specified language and maximum chunk size.
+   * Chunks the given content based on the specified language and configuration.
+   *
+   * @param content The source code content to chunk
+   * @param language The detected language of the content
+   * @param maxChunkSize Maximum size of each chunk in characters (ignored for WHOLE_FILE strategy)
+   * @param strategy The chunking strategy to use
+   * @return List of text chunks
+   */
+  List<TextChunk> chunk(String content, SonarLanguage language, int maxChunkSize, ChunkingStrategy strategy);
+  
+  /**
+   * Chunks the given content based on the specified language and maximum chunk size using LARGEST_AST_NODE strategy.
+   * This method is maintained for backward compatibility.
    *
    * @param content The source code content to chunk
    * @param language The detected language of the content
    * @param maxChunkSize Maximum size of each chunk in characters
    * @return List of text chunks that fit within the size limit
    */
-  List<TextChunk> chunk(String content, SonarLanguage language, int maxChunkSize);
+  default List<TextChunk> chunk(String content, SonarLanguage language, int maxChunkSize) {
+    return chunk(content, language, maxChunkSize, ChunkingStrategy.LARGEST_AST_NODE);
+  }
   
   /**
    * Returns the languages supported by this chunker.

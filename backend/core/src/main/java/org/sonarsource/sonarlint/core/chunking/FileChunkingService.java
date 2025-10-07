@@ -45,31 +45,48 @@ public class FileChunkingService {
   private final CodeChunker codeChunker;
   private final Map<URI, List<TextChunk>> chunkCache = new ConcurrentHashMap<>();
   private final int maxChunkSize;
+  private final ChunkingStrategy defaultStrategy;
 
   public FileChunkingService() {
-    this(new TreeSitterCodeChunker(), DEFAULT_MAX_CHUNK_SIZE);
+    this(new TreeSitterCodeChunker(), DEFAULT_MAX_CHUNK_SIZE, ChunkingStrategy.LARGEST_AST_NODE);
   }
   
   public FileChunkingService(CodeChunker codeChunker, int maxChunkSize) {
+    this(codeChunker, maxChunkSize, ChunkingStrategy.LARGEST_AST_NODE);
+  }
+  
+  public FileChunkingService(CodeChunker codeChunker, int maxChunkSize, ChunkingStrategy defaultStrategy) {
     this.codeChunker = codeChunker;
     this.maxChunkSize = maxChunkSize;
+    this.defaultStrategy = defaultStrategy;
   }
 
   /**
-   * Chunks multiple files and returns a map of URI to list of chunks.
+   * Chunks multiple files and returns a map of URI to list of chunks using the default strategy.
    *
    * @param files The files to chunk
    * @return Map where key is file URI and value is list of chunks for that file
    */
   public Map<URI, List<TextChunk>> chunkFiles(List<ClientFile> files) {
+    return chunkFiles(files, defaultStrategy);
+  }
+  
+  /**
+   * Chunks multiple files and returns a map of URI to list of chunks using the specified strategy.
+   *
+   * @param files The files to chunk
+   * @param strategy The chunking strategy to use
+   * @return Map where key is file URI and value is list of chunks for that file
+   */
+  public Map<URI, List<TextChunk>> chunkFiles(List<ClientFile> files, ChunkingStrategy strategy) {
     var result = new HashMap<URI, List<TextChunk>>();
     
     for (var file : files) {
       try {
-        var chunks = chunkFile(file);
+        var chunks = chunkFile(file, strategy);
         if (!chunks.isEmpty()) {
           result.put(file.getUri(), chunks);
-          LOG.debug("Chunked file {} into {} chunks", file.getUri(), chunks.size());
+          LOG.debug("Chunked file {} into {} chunks using strategy {}", file.getUri(), chunks.size(), strategy);
         }
       } catch (Exception e) {
         LOG.error("Failed to chunk file {}", file.getUri(), e);
@@ -80,14 +97,26 @@ public class FileChunkingService {
   }
 
   /**
-   * Chunks a single file into text segments.
+   * Chunks a single file into text segments using the default strategy.
    *
    * @param file The file to chunk
    * @return List of text chunks
    */
   public List<TextChunk> chunkFile(ClientFile file) {
-    // Check cache first
-    var cached = chunkCache.get(file.getUri());
+    return chunkFile(file, defaultStrategy);
+  }
+
+  /**
+   * Chunks a single file into text segments using the specified strategy.
+   *
+   * @param file The file to chunk
+   * @param strategy The chunking strategy to use
+   * @return List of text chunks
+   */
+  public List<TextChunk> chunkFile(ClientFile file, ChunkingStrategy strategy) {
+    // Check cache first (cache key includes strategy)
+    var cacheKey = file.getUri();
+    var cached = chunkCache.get(cacheKey);
     if (cached != null) {
       return cached;
     }
@@ -105,15 +134,21 @@ public class FileChunkingService {
 
       List<TextChunk> chunks;
       if (language != null && codeChunker.getSupportedLanguages().contains(language)) {
-        chunks = codeChunker.chunk(content, language, maxChunkSize);
+        try {
+          chunks = codeChunker.chunk(content, language, maxChunkSize, strategy);
+        } catch (Exception e) {
+          LOG.warn("Error chunking file {} with language {}, falling back to text chunking: {}", 
+                   file.getUri(), language, e.getMessage());
+          chunks = createFallbackChunks(content, strategy);
+        }
       } else {
         LOG.debug("Language {} not supported or detected for file {}, using fallback chunking", 
                  language, file.getUri());
-        chunks = createFallbackChunks(content);
+        chunks = createFallbackChunks(content, strategy);
       }
 
       // Cache the result
-      chunkCache.put(file.getUri(), chunks);
+      chunkCache.put(cacheKey, chunks);
       
       return chunks;
     } catch (Exception e) {
@@ -189,20 +224,40 @@ public class FileChunkingService {
     return fileName.substring(lastDotIndex + 1);
   }
 
-  private List<TextChunk> createFallbackChunks(String content) {
+  private List<TextChunk> createFallbackChunks(String content, ChunkingStrategy strategy) {
+    if (strategy == ChunkingStrategy.WHOLE_FILE) {
+      return List.of(new TextChunk(0, content.length(), content, TextChunk.ChunkType.TEXT, 0, content.length()));
+    }
+    
+    // Use context-aware text chunking for LARGEST_AST_NODE strategy
+    return createContextAwareTextChunks(content);
+  }
+  
+  private List<TextChunk> createContextAwareTextChunks(String content) {
     var chunks = new ArrayList<TextChunk>();
-    var lines = content.split("\n");
+    var lines = content.split("\n", -1); // Keep empty strings to preserve structure
     var currentChunk = new StringBuilder();
     var chunkStartOffset = 0;
     var currentOffset = 0;
     
-    for (var line : lines) {
-      var lineWithNewline = line + "\n";
+    for (int i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var isLastLine = (i == lines.length - 1);
+      var lineWithNewline = isLastLine ? line : line + "\n";
       
-      if (currentChunk.length() + lineWithNewline.length() > maxChunkSize && currentChunk.length() > 0) {
-        // Current chunk would exceed limit, save it and start new one
-        chunks.add(new TextChunk(chunkStartOffset, currentOffset, 
-                                currentChunk.toString().trim(), TextChunk.ChunkType.TEXT));
+      var estimatedContextSize = estimateContextOverhead(chunkStartOffset, 
+                                                        currentOffset + lineWithNewline.length(), 
+                                                        content.length());
+      
+      if (currentChunk.length() + lineWithNewline.length() + estimatedContextSize > maxChunkSize && currentChunk.length() > 0) {
+        // Add context-aware chunk
+        var chunkContent = buildContextAwareChunk(content, chunkStartOffset, currentOffset);
+        var contextStart = Math.max(0, chunkStartOffset - 50);
+        var contextEnd = Math.min(content.length(), currentOffset + 50);
+        
+        chunks.add(new TextChunk(contextStart, contextEnd, chunkContent, TextChunk.ChunkType.TEXT, 
+                                chunkStartOffset, currentOffset));
+        
         currentChunk = new StringBuilder();
         chunkStartOffset = currentOffset;
       }
@@ -213,11 +268,60 @@ public class FileChunkingService {
     
     // Add the last chunk if it has content
     if (currentChunk.length() > 0) {
-      chunks.add(new TextChunk(chunkStartOffset, currentOffset, 
-                              currentChunk.toString().trim(), TextChunk.ChunkType.TEXT));
+      var chunkContent = buildContextAwareChunk(content, chunkStartOffset, currentOffset);
+      var contextStart = Math.max(0, chunkStartOffset - 50);
+      var contextEnd = Math.min(content.length(), currentOffset + 50);
+      
+      chunks.add(new TextChunk(contextStart, contextEnd, chunkContent, TextChunk.ChunkType.TEXT,
+                              chunkStartOffset, currentOffset));
     }
     
     return chunks;
+  }
+  
+  private int estimateContextOverhead(int startOffset, int endOffset, int contentLength) {
+    var overhead = 0;
+    
+    // Add ellipsis overhead if not at beginning/end
+    if (startOffset > 0) overhead += 4; // "...\n"
+    if (endOffset < contentLength) overhead += 4; // "...\n"
+    
+    // Add context buffer overhead
+    if (startOffset > 0) overhead += Math.min(50, startOffset);
+    if (endOffset < contentLength) overhead += Math.min(50, contentLength - endOffset);
+    
+    return overhead;
+  }
+  
+  private String buildContextAwareChunk(String content, int coreStart, int coreEnd) {
+    var result = new StringBuilder();
+    
+    // Add context before
+    if (coreStart > 0) {
+      result.append("...\n");
+      var contextStart = Math.max(0, coreStart - 50);
+      var contextBefore = content.substring(contextStart, coreStart);
+      result.append(contextBefore);
+    }
+    
+    // Add core content
+    result.append(content.substring(coreStart, coreEnd));
+    
+    // Add context after
+    if (coreEnd < content.length()) {
+      var contextEnd = Math.min(content.length(), coreEnd + 50);
+      var contextAfter = content.substring(coreEnd, contextEnd);
+      result.append(contextAfter);
+      result.append("...\n");
+    }
+    
+    // Trim to fit within maxChunkSize if necessary
+    var resultStr = result.toString();
+    if (resultStr.length() > maxChunkSize) {
+      resultStr = resultStr.substring(0, maxChunkSize - 3) + "...";
+    }
+    
+    return resultStr;
   }
 
   /**
