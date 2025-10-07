@@ -21,5 +21,5 @@ package org.sonarsource.sonarlint.core.fs;
 
 import java.util.List;
 
-public record FileSystemInitialized(List<ClientFile> files) {
+public record FileSystemInitialized(String configurationScopeId, List<ClientFile> files) {
 }

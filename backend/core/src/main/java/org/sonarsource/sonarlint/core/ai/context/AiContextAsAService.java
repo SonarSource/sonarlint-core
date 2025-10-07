@@ -59,7 +59,7 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return;
     }
-    LOG.info("Starting indexing {} files...", event.files().size());
+    LOG.info("Starting indexing {} files for {}...", event.files().size(), event.configurationScopeId());
     var requestBody = new IndexRequestBody(
       event.files().stream()
         .map(f -> {
