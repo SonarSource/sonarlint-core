@@ -20,12 +20,21 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class AskCodebaseQuestionResponse {
+  private final String text;
   private final List<CodeLocation> locations;
 
-  public AskCodebaseQuestionResponse(List<CodeLocation> locations) {
+  public AskCodebaseQuestionResponse(@Nullable String text, List<CodeLocation> locations) {
+    this.text = text;
     this.locations = locations;
+  }
+
+  @CheckForNull
+  public String getText() {
+    return text;
   }
 
   public List<CodeLocation> getLocations() {

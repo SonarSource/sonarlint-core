@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext;
+package org.sonarsource.sonarlint.core.ai.context.api;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-
-public class CodeLocation {
-  private final String fileRelativePath;
-  private final TextRangeDto textRange;
-
-  public CodeLocation(String fileRelativePath, @Nullable TextRangeDto textRange) {
-    this.fileRelativePath = fileRelativePath;
-    this.textRange = textRange;
-  }
-
-  public String getFileRelativePath() {
-    return fileRelativePath;
-  }
-
-  @CheckForNull
-  public TextRangeDto getTextRange() {
-    return textRange;
-  }
+public record QueryRequestBody(String question) {
 }

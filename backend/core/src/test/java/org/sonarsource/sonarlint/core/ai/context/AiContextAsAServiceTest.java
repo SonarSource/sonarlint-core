@@ -19,18 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.ai.context;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext.CodeLocation;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,22 +56,86 @@ class AiContextAsAServiceTest {
     httpClient = mock(HttpClient.class);
     when(httpClientProvider.getHttpClient()).thenReturn(httpClient);
     when(httpClient.postAsync(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(null));
-    aiContextAsAService = new AiContextAsAService(httpClientProvider);
+    var initializeParams = mock(InitializeParams.class);
+    when(initializeParams.getBackendCapabilities()).thenReturn(Set.of(BackendCapability.CONTEXT_INDEXING_ENABLED));
+    aiContextAsAService = new AiContextAsAService(httpClientProvider, initializeParams);
   }
 
-  @Test
-  void should_send_empty_index_request_if_no_file() {
-    aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(List.of()));
+  @Nested
+  class Index {
+    @Test
+    void should_send_empty_index_request_if_no_file() {
+      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(List.of()));
 
-    verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[]}");
+      verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[]}");
+    }
+
+    @Test
+    void should_send_index_request_with_single_file() {
+      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(
+        List.of(new ClientFileDto(URI.create("file://path/file.js"), Paths.get("path/file.js"), "configScope", true, null, null, "content", Language.ABAP, false))));
+
+      verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
+        "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"path/file.js\",\"metadata\":{\"language\":\"ABAP\"}}]}");
+    }
   }
 
-  @Test
-  void should_send_index_request_with_single_file() {
-    aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized(
-      List.of(new ClientFileDto(URI.create("file://path/file.js"), Paths.get("path/file.js"), "configScope", true, null, null, "content", Language.ABAP, false))));
+  @Nested
+  class Search {
+    @Test
+    void should_send_search_request() {
+      when(httpClient.postAsync("http://localhost:8080/query", "application/json; charset=utf-8", "{\"question\":\"Lycos, go get it!\"}"))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse(
+          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\",\"startLine\":1,\"startColumn\":2,\"endLine\":3,\"endColumn\":4}]}")));
 
-    verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"path/file.js\",\"metadata\":{\"language\":\"ABAP\"}}]}");
+      var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
+
+      assertThat(response.getText()).isEqualTo("This is the answer");
+      assertThat(response.getLocations()).extracting(CodeLocation::getFileRelativePath, CodeLocation::getTextRange)
+        .containsExactly(tuple("path/file.js", new TextRangeDto(1, 2, 3, 4)));
+    }
+
+    @Test
+    void should_send_search_request_and_handle_no_range() {
+      when(httpClient.postAsync("http://localhost:8080/query", "application/json; charset=utf-8", "{\"question\":\"Lycos, go get it!\"}"))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse(
+          "{\"text\": \"This is the answer\",\"matches\":[{\"fileRelativePath\":\"path/file.js\"}]}")));
+
+      var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
+
+      assertThat(response.getText()).isEqualTo("This is the answer");
+      assertThat(response.getLocations()).extracting(CodeLocation::getFileRelativePath, CodeLocation::getTextRange)
+        .containsExactly(tuple("path/file.js", null));
+    }
+
+    private static HttpClient.Response mockResponse(String body) {
+      return new HttpClient.Response() {
+
+        @Override
+        public int code() {
+          return 200;
+        }
+
+        @Override
+        public String bodyAsString() {
+          return body;
+        }
+
+        @Override
+        public InputStream bodyAsStream() {
+          return null;
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public String url() {
+          return "";
+        }
+      };
+    }
   }
-
 }

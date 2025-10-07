@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
+import java.util.Objects;
+
 public class TextRangeDto {
   private final int startLine;
   private final int startLineOffset;
@@ -46,5 +48,17 @@ public class TextRangeDto {
 
   public int getEndLineOffset() {
     return endLineOffset;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    TextRangeDto that = (TextRangeDto) o;
+    return startLine == that.startLine && startLineOffset == that.startLineOffset && endLine == that.endLine && endLineOffset == that.endLineOffset;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(startLine, startLineOffset, endLine, endLineOffset);
   }
 }
