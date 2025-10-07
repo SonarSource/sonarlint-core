@@ -19,18 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.chunking;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-
 import ch.usi.si.seart.treesitter.Language;
 import ch.usi.si.seart.treesitter.LibraryLoader;
 import ch.usi.si.seart.treesitter.Node;
 import ch.usi.si.seart.treesitter.Parser;
-import ch.usi.si.seart.treesitter.Tree;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Tree-sitter based code chunker that parses code into AST and extracts meaningful chunks.
@@ -74,10 +71,8 @@ public class TreeSitterCodeChunker implements CodeChunker {
       return fallbackTextChunking(content, maxChunkSize);
     }
 
-    try (var parser = new Parser()) {
-      parser.setLanguage(tsLanguage);
-      
-      try (var tree = parser.parseString(content)) {
+    try (var parser = Parser.getFor(tsLanguage)) {
+      try (var tree = parser.parse(content)) {
         return extractChunks(tree.getRootNode(), content, language, maxChunkSize);
       }
     } catch (Exception e) {

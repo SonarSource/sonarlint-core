@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.chunking;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

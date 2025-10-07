@@ -30,8 +30,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.sonarsource.sonarlint.core.chunking.FileChunkingService;
 import org.sonarsource.sonarlint.core.chunking.TextChunk;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
@@ -81,11 +82,10 @@ class ClientFileSystemServiceChunkingTest {
       Path.of("/path/to/test.java"),
       "public class Test {}",
       Language.JAVA,
-      false
-    );
+      false);
 
-    service = new ClientFileSystemService(rpcClient, eventPublisher, openFilesRepository, 
-                                         telemetryService, fileChunkingService);
+    service = new ClientFileSystemService(rpcClient, eventPublisher, openFilesRepository,
+      telemetryService, fileChunkingService);
   }
 
   @Test
@@ -97,8 +97,7 @@ class ClientFileSystemServiceChunkingTest {
 
     // Setup chunking response
     var expectedChunks = List.of(
-      new TextChunk(0, 19, "public class Test {}", TextChunk.ChunkType.CLASS)
-    );
+      new TextChunk(0, 19, "public class Test {}", TextChunk.ChunkType.CLASS));
     when(fileChunkingService.chunkFiles(any()))
       .thenReturn(java.util.Map.of(testFileUri, expectedChunks));
 
@@ -117,8 +116,7 @@ class ClientFileSystemServiceChunkingTest {
       .thenReturn(CompletableFuture.completedFuture(listFilesResponse));
 
     var expectedChunks = List.of(
-      new TextChunk(0, 19, "public class Test {}", TextChunk.ChunkType.CLASS)
-    );
+      new TextChunk(0, 19, "public class Test {}", TextChunk.ChunkType.CLASS));
     when(fileChunkingService.chunkFile(any(ClientFile.class)))
       .thenReturn(expectedChunks);
 
@@ -151,13 +149,12 @@ class ClientFileSystemServiceChunkingTest {
       Path.of("/path/to/test.java"),
       "public class UpdatedTest {}",
       Language.JAVA,
-      false
-    );
+      false);
 
     var params = new DidUpdateFileSystemParams(
       List.of(), // removed
       List.of(), // added
-      List.of(updatedFileDto) // changed
+      List.of(updatedFileDto.getUri()) // changed
     );
 
     service.didUpdateFileSystem(params);
@@ -177,8 +174,7 @@ class ClientFileSystemServiceChunkingTest {
       Path.of("/path/to/new.java"),
       "public class New {}",
       Language.JAVA,
-      false
-    );
+      false);
 
     var params = new DidUpdateFileSystemParams(
       List.of(), // removed
@@ -197,12 +193,12 @@ class ClientFileSystemServiceChunkingTest {
     var listFilesResponse = new ListFilesResponse(List.of(testFileDto));
     when(rpcClient.listFiles(any(ListFilesParams.class)))
       .thenReturn(CompletableFuture.completedFuture(listFilesResponse));
-    
+
     // Initialize file system
     service.getFiles("testScope");
 
     var params = new DidUpdateFileSystemParams(
-      List.of(testFileUri), // removed
+      List.of(testFileDto), // removed
       List.of(), // added
       List.of() // changed
     );
@@ -218,11 +214,11 @@ class ClientFileSystemServiceChunkingTest {
     var listFilesResponse = new ListFilesResponse(List.of(testFileDto));
     when(rpcClient.listFiles(any(ListFilesParams.class)))
       .thenReturn(CompletableFuture.completedFuture(listFilesResponse));
-    
+
     // Initialize file system
     service.getFiles("testScope");
 
-    var event = new ConfigurationScopeRemovedEvent("testScope");
+    var event = new ConfigurationScopeRemovedEvent(new ConfigurationScope("testScope", null, true, "scope"), new BindingConfiguration(null, null, false));
     service.onConfigurationScopeRemoved(event);
 
     verify(fileChunkingService).clearCache(eq(List.of(testFileUri)));
@@ -239,21 +235,19 @@ class ClientFileSystemServiceChunkingTest {
   void should_handle_multiple_file_operations_in_batch() {
     var file2Uri = URI.create("file:///test2.java");
     var file3Uri = URI.create("file:///test3.java");
-    
+
     var file2Dto = new ClientFileDto(
       file2Uri, Path.of("test2.java"), "testScope", false, "UTF-8",
-      Path.of("/path/to/test2.java"), "public class Test2 {}", Language.JAVA, false
-    );
-    
+      Path.of("/path/to/test2.java"), "public class Test2 {}", Language.JAVA, false);
+
     var file3Dto = new ClientFileDto(
       file3Uri, Path.of("test3.java"), "testScope", false, "UTF-8",
-      Path.of("/path/to/test3.java"), "public class Test3 {}", Language.JAVA, false
-    );
+      Path.of("/path/to/test3.java"), "public class Test3 {}", Language.JAVA, false);
 
     var params = new DidUpdateFileSystemParams(
-      List.of(testFileUri), // removed
+      List.of(testFileDto), // removed
       List.of(file2Dto), // added
-      List.of(file3Dto) // changed
+      List.of(file3Dto.getUri()) // changed
     );
 
     service.didUpdateFileSystem(params);
@@ -280,16 +274,14 @@ class ClientFileSystemServiceChunkingTest {
   void should_handle_files_with_different_languages() {
     var jsFileUri = URI.create("file:///test.js");
     var xmlFileUri = URI.create("file:///config.xml");
-    
+
     var jsFileDto = new ClientFileDto(
       jsFileUri, Path.of("test.js"), "testScope", false, "UTF-8",
-      Path.of("/path/to/test.js"), "function test() {}", Language.JS, false
-    );
-    
+      Path.of("/path/to/test.js"), "function test() {}", Language.JS, false);
+
     var xmlFileDto = new ClientFileDto(
       xmlFileUri, Path.of("config.xml"), "testScope", false, "UTF-8",
-      Path.of("/path/to/config.xml"), "<root></root>", Language.XML, false
-    );
+      Path.of("/path/to/config.xml"), "<root></root>", Language.XML, false);
 
     // Setup file listing response
     var listFilesResponse = new ListFilesResponse(List.of(testFileDto, jsFileDto, xmlFileDto));
@@ -300,13 +292,12 @@ class ClientFileSystemServiceChunkingTest {
     var javaChunks = List.of(new TextChunk(0, 19, "public class Test {}", TextChunk.ChunkType.CLASS));
     var jsChunks = List.of(new TextChunk(0, 17, "function test() {}", TextChunk.ChunkType.METHOD));
     var xmlChunks = List.of(new TextChunk(0, 13, "<root></root>", TextChunk.ChunkType.XML_ELEMENT));
-    
+
     when(fileChunkingService.chunkFiles(any()))
       .thenReturn(java.util.Map.of(
         testFileUri, javaChunks,
         jsFileUri, jsChunks,
-        xmlFileUri, xmlChunks
-      ));
+        xmlFileUri, xmlChunks));
 
     var result = service.chunkFiles("testScope");
 
