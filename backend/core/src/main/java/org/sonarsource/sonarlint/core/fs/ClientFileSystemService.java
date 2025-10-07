@@ -120,6 +120,7 @@ public class ClientFileSystemService {
       filesByUri.put(clientFileDto.getUri(), clientFile);
       result.put(clientFileDto.getUri(), clientFile);
     });
+    eventPublisher.publishEvent(new FileSystemInitialized(files));
     return result;
   }
 
