@@ -50,15 +50,21 @@ We also know the language each file belongs.
 
 ----
 
+We want to extend the chunking to be more "context-aware", and include 
+- configurable chunk size with different strategies: 
+  - largest ast node within chunk size limit (current strategy)
+  - whole file (no chunk size limit, useful if we will calculate embedding using OpenAI, which does not have a chunk size limit)
+- if you combine all chunks of a file, you should get back the entire file: we don't want parts of the files which are not covered by a chunk
+- chunks should overlap, see the format below
+- chunks should contain the file name
 
-
-- configurable chunk size
-- chunks should overlap
-- metadata: filename, being of range, end of range
-
-...
-FILE path
+# Chunk format
+----
+... (if the chunk is not at the beginning of the file)
 code before the chunk
 chunk
 code after the chunk
-... (only if there is )
+... (if the chunk is not at the end fo the file )
+----
+
+The actual chunk needs to be shorter than the chunk threshold, because the chunk overall size needs to accomodate the code before and after, as well as the ellipses. What's important is that the overall size, everything included, is below the threshold.
