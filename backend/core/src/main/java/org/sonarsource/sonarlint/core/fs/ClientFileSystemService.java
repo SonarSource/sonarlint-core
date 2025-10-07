@@ -36,6 +36,8 @@ import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.chunking.FileChunkingService;
+import org.sonarsource.sonarlint.core.chunking.TextChunk;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -56,15 +58,17 @@ public class ClientFileSystemService {
   private final Map<String, Path> baseDirPerConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final TelemetryService telemetryService;
+  private final FileChunkingService fileChunkingService;
   private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
     new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
 
   public ClientFileSystemService(SonarLintRpcClient rpcClient, ApplicationEventPublisher eventPublisher, OpenFilesRepository openFilesRepository,
-    TelemetryService telemetryService) {
+    TelemetryService telemetryService, FileChunkingService fileChunkingService) {
     this.rpcClient = rpcClient;
     this.eventPublisher = eventPublisher;
     this.openFilesRepository = openFilesRepository;
     this.telemetryService = telemetryService;
+    this.fileChunkingService = fileChunkingService;
   }
 
   public List<ClientFile> getFiles(String configScopeId) {
@@ -170,6 +174,16 @@ public class ClientFileSystemService {
     });
 
     eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, added, updated));
+    
+    // Clear chunking cache for modified files
+    var changedUris = new ArrayList<URI>();
+    removed.forEach(file -> changedUris.add(file.getUri()));
+    added.forEach(file -> changedUris.add(file.getUri()));
+    updated.forEach(file -> changedUris.add(file.getUri()));
+    
+    if (!changedUris.isEmpty()) {
+      fileChunkingService.clearCache(changedUris);
+    }
   }
 
   @EventListener
@@ -177,13 +191,17 @@ public class ClientFileSystemService {
     var removedFilesByURI = filesByConfigScopeIdCache.get(event.getRemovedConfigurationScopeId());
     filesByConfigScopeIdCache.clear(event.getRemovedConfigurationScopeId());
     if (removedFilesByURI != null) {
+      var removedUris = new ArrayList<>(removedFilesByURI.keySet());
       removedFilesByURI.keySet().forEach(filesByUri::remove);
+      // Clear chunking cache for removed files
+      fileChunkingService.clearCache(removedUris);
     }
   }
 
   @PreDestroy
   public void shutdown() {
     filesByConfigScopeIdCache.close();
+    fileChunkingService.clearAllCache();
   }
 
   /**
@@ -236,6 +254,33 @@ public class ClientFileSystemService {
           Collectors.toSet()
         )
       ));
+  }
+
+  /**
+   * Chunks all files in the given configuration scope into text segments for semantic search.
+   * This method retrieves files and then processes them with the chunking service.
+   *
+   * @param configScopeId The configuration scope ID
+   * @return Map where key is file URI and value is list of chunks for that file
+   */
+  public Map<URI, List<TextChunk>> chunkFiles(String configScopeId) {
+    var files = getFiles(configScopeId);
+    return fileChunkingService.chunkFiles(files);
+  }
+
+  /**
+   * Chunks a specific file into text segments.
+   *
+   * @param fileUri The URI of the file to chunk
+   * @return List of text chunks, or empty list if file not found
+   */
+  public List<TextChunk> chunkFile(URI fileUri) {
+    var file = getClientFile(fileUri);
+    if (file == null) {
+      LOG.warn("File not found for chunking: {}", fileUri);
+      return List.of();
+    }
+    return fileChunkingService.chunkFile(file);
   }
 
 }

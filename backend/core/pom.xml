@@ -156,6 +156,13 @@
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
+    
+    <!-- Tree-sitter for code parsing -->
+    <dependency>
+      <groupId>ch.usi.si.seart</groupId>
+      <artifactId>java-tree-sitter</artifactId>
+      <version>1.12.0</version>
+    </dependency>
   </dependencies>
 
 

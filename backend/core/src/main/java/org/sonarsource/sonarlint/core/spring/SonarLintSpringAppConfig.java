@@ -112,6 +112,7 @@ import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationSe
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
+import org.sonarsource.sonarlint.core.chunking.FileChunkingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
@@ -193,6 +194,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AnalysisSchedulerCache.class,
   PromotionService.class,
   KnownFindingsStorageService.class,
+  FileChunkingService.class,
   TrackingService.class,
   FindingsSynchronizationService.class,
   FindingReportingService.class,
