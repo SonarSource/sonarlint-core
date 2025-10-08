@@ -28,10 +28,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.ai.context.api.IndexRequestBody;
 import org.sonarsource.sonarlint.core.ai.context.api.QueryResponseBody;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
@@ -69,18 +71,23 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return;
     }
-    var files = event.files();
-    LOG.info("Considering indexing {} for {} files...", event.configurationScopeId(), files.size());
+    var targetForCopy = SonarLintLogger.get().getTargetForCopy();
+    ForkJoinPool.commonPool().execute(() -> considerIndexing(event.configurationScopeId(), event.files(), targetForCopy));
+  }
+
+  private void considerIndexing(String configurationScopeId, List<ClientFile> files, LogOutput logOutput) {
+    SonarLintLogger.get().setTarget(logOutput);
+    LOG.info("Considering indexing {} for {} files...", configurationScopeId, files.size());
     var filesByUri = files.stream().collect(Collectors.toMap(ClientFile::getUri, UnaryOperator.identity()));
-    var filesStatus = fileExclusionService.getFilesStatus(Map.of(event.configurationScopeId(), new ArrayList<>(filesByUri.keySet())));
+    var filesStatus = fileExclusionService.getFilesStatus(Map.of(configurationScopeId, new ArrayList<>(filesByUri.keySet())));
     var filesToIndex = filesStatus.entrySet().stream()
       .filter(f -> !f.getValue().isExcluded())
       .toList();
     if (filesToIndex.isEmpty()) {
-      LOG.info("Skipping indexing for empty scope '{}'", event.configurationScopeId());
+      LOG.info("Skipping indexing for empty scope '{}'", configurationScopeId);
       return;
     }
-    LOG.info("Starting indexing {} files for {}...", files.size(), event.configurationScopeId());
+    LOG.info("Starting indexing {} files for {}...", files.size(), configurationScopeId);
     var requestBody = new IndexRequestBody(
       filesToIndex.stream()
         .map(f -> {
@@ -123,12 +130,31 @@ public class AiContextAsAService {
       var gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create();
       var responseBody = gson.fromJson(response.bodyAsString(), QueryResponseBody.class);
-      return new AskCodebaseQuestionResponse(responseBody.text(), responseBody.matches().stream().map(m -> {
+      return new AskCodebaseQuestionResponse(responseBody.text(), merge(responseBody.matches()).stream().map(m -> {
         var startLine = m.startRow();
         var textRange = startLine == null ? null : new TextRangeDto(startLine, m.startColumn(), m.endRow(), m.endColumn());
         return new CodeLocation(m.filename(), textRange);
       }).toList());
     }
+  }
+
+  private List<QueryResponseBody.Match> merge(List<QueryResponseBody.Match> matches) {
+    var matchesByFile = matches.stream().collect(Collectors.groupingBy(QueryResponseBody.Match::filename, Collectors.toList()));
+    return matchesByFile.entrySet().stream()
+      .map(entry -> {
+        var filename = entry.getKey();
+        var ms = entry.getValue();
+        if (ms.size() == 1) {
+          return ms.get(0);
+        }
+        var mergedChunk = ms.stream().reduce((m1, m2) -> {
+          var firstChunk = m1.startRow() <= m2.startRow() && m1.startColumn() <= m2.startColumn() ? m1 : m2;
+          var lastChunk = m1.endRow() <= m2.endRow() && m1.endColumn() <= m2.endColumn() ? m2 : m1;
+          return new QueryResponseBody.Match(filename, firstChunk.startRow(), firstChunk.startColumn(), lastChunk.endRow(), lastChunk.endColumn());
+        });
+        return mergedChunk.get();
+      })
+      .toList();
   }
 
   private AskCodebaseQuestionResponse mockSearch(String configurationScopeId, String question) {

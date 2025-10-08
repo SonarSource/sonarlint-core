@@ -139,6 +139,19 @@ class AiContextAsAServiceTest {
         .containsExactly(tuple("path/file.js", null));
     }
 
+    @Test
+    void should_send_search_request_and_merge_chunks_of_same_file() {
+      when(httpClient.get("http://localhost:8080/query?question=Lycos%2C+go+get+it%21"))
+        .thenReturn(mockResponse(
+          "{\"text\": \"This is the answer\",\"matches\":[{\"filename\":\"path/file.js\",\"start_row\":1,\"start_column\":2,\"end_row\":5,\"end_column\":4},{\"filename\":\"path/file.js\",\"start_row\":6,\"start_column\":2,\"end_row\":7,\"end_column\":4}]}"));
+
+      var response = aiContextAsAService.search("configScope", "Lycos, go get it!");
+
+      assertThat(response.getText()).isEqualTo("This is the answer");
+      assertThat(response.getLocations()).extracting(CodeLocation::getFileRelativePath, CodeLocation::getTextRange)
+        .containsExactly(tuple("path/file.js", new TextRangeDto(1, 2, 7, 4)));
+    }
+
     private static HttpClient.Response mockResponse(String body) {
       return new HttpClient.Response() {
 
