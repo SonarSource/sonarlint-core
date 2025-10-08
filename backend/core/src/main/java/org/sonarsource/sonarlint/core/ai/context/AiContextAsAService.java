@@ -61,9 +61,14 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return;
     }
-    LOG.info("Starting indexing {} files for {}...", event.files().size(), event.configurationScopeId());
+    var files = event.files();
+    if (files.isEmpty()) {
+      LOG.info("Skipping indexing for empty scope '{}'", event.configurationScopeId());
+      return;
+    }
+    LOG.info("Starting indexing {} files for {}...", files.size(), event.configurationScopeId());
     var requestBody = new IndexRequestBody(
-      event.files().stream()
+      files.stream()
         .map(f -> {
           var detectedLanguage = f.getDetectedLanguage();
           var language = detectedLanguage == null ? null : detectedLanguage.name();
