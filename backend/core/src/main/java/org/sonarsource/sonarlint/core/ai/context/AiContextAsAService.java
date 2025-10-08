@@ -22,13 +22,19 @@ package org.sonarsource.sonarlint.core.ai.context;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.ai.context.api.IndexRequestBody;
 import org.sonarsource.sonarlint.core.ai.context.api.QueryResponseBody;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
 import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -49,10 +55,12 @@ public class AiContextAsAService {
   private static final String INDEX_API_PATH = "/index";
   private static final String QUERY_API_PATH = "/query";
   private final HttpClientProvider httpClientProvider;
+  private final FileExclusionService fileExclusionService;
   private final boolean isIndexingEnabled;
 
-  public AiContextAsAService(HttpClientProvider httpClientProvider, InitializeParams params) {
+  public AiContextAsAService(HttpClientProvider httpClientProvider, FileExclusionService fileExclusionService, InitializeParams params) {
     this.httpClientProvider = httpClientProvider;
+    this.fileExclusionService = fileExclusionService;
     this.isIndexingEnabled = params.getBackendCapabilities().contains(BackendCapability.CONTEXT_INDEXING_ENABLED);
   }
 
@@ -62,17 +70,25 @@ public class AiContextAsAService {
       return;
     }
     var files = event.files();
-    if (files.isEmpty()) {
+    LOG.info("Considering indexing {} for {} files...", event.configurationScopeId(), files.size());
+    var filesByUri = files.stream().collect(Collectors.toMap(ClientFile::getUri, UnaryOperator.identity()));
+    var filesStatus = fileExclusionService.getFilesStatus(Map.of(event.configurationScopeId(), new ArrayList<>(filesByUri.keySet())));
+    var filesToIndex = filesStatus.entrySet().stream()
+      .filter(f -> !f.getValue().isExcluded())
+      .toList();
+    if (filesToIndex.isEmpty()) {
       LOG.info("Skipping indexing for empty scope '{}'", event.configurationScopeId());
       return;
     }
     LOG.info("Starting indexing {} files for {}...", files.size(), event.configurationScopeId());
     var requestBody = new IndexRequestBody(
-      files.stream()
+      filesToIndex.stream()
         .map(f -> {
-          var detectedLanguage = f.getDetectedLanguage();
+          var uri = f.getKey();
+          var file = filesByUri.get(uri);
+          var detectedLanguage = file.getDetectedLanguage();
           var language = detectedLanguage == null ? null : detectedLanguage.name();
-          return new IndexRequestBody.File(f.getContent(), f.getClientRelativePath().toString(), new IndexRequestBody.File.Metadata(language));
+          return new IndexRequestBody.File(file.getContent(), file.getClientRelativePath().toString(), new IndexRequestBody.File.Metadata(language));
         }).toList());
     var body = new Gson().toJson(requestBody);
     httpClientProvider.getHttpClient()

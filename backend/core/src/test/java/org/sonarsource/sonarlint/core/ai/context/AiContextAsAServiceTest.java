@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,10 +35,12 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.FileSystemInitialized;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext.CodeLocation;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
@@ -46,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,25 +59,28 @@ class AiContextAsAServiceTest {
 
   private HttpClient httpClient;
   private AiContextAsAService aiContextAsAService;
+  private FileExclusionService fileExclusionService;
 
   @BeforeEach
   void prepare() {
     HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
     httpClient = mock(HttpClient.class);
+    fileExclusionService = mock(FileExclusionService.class);
     when(httpClientProvider.getHttpClient()).thenReturn(httpClient);
     when(httpClient.postAsync(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(null));
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getBackendCapabilities()).thenReturn(Set.of(BackendCapability.CONTEXT_INDEXING_ENABLED));
-    aiContextAsAService = new AiContextAsAService(httpClientProvider, initializeParams);
+    when(fileExclusionService.getFilesStatus(any())).thenReturn(Map.of());
+    aiContextAsAService = new AiContextAsAService(httpClientProvider, fileExclusionService, initializeParams);
   }
 
   @Nested
   class Index {
     @Test
-    void should_send_empty_index_request_if_no_file() {
+    void should_not_send_index_request_if_no_file() {
       aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope", List.of()));
 
-      verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[]}");
+      verify(httpClient, never()).postAsync("http://localhost:8080/index", "application/json; charset=utf-8", "{\"files\":[]}");
     }
 
     @Test
@@ -81,11 +88,26 @@ class AiContextAsAServiceTest {
       var abapFile = tempDir.resolve("file.abap");
       Files.createFile(abapFile);
       Files.writeString(abapFile, "content");
+      when((fileExclusionService.getFilesStatus(Map.of("configScope", List.of(abapFile.toUri()))))).thenReturn(Map.of(abapFile.toUri(), new FileStatusDto(false)));
+
       aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope",
         List.of(new ClientFile(abapFile.toUri(), "configScope", tempDir.relativize(abapFile), false, null, abapFile, SonarLanguage.ABAP, true))));
 
       verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
         "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"file.abap\",\"metadata\":{\"language\":\"ABAP\"}}]}");
+    }
+
+    @Test
+    void should_not_send_index_request_if_file_excluded(@TempDir Path tempDir) throws IOException {
+      var abapFile = tempDir.resolve("file.abap");
+      Files.createFile(abapFile);
+      Files.writeString(abapFile, "content");
+      when((fileExclusionService.getFilesStatus(Map.of("configScope", List.of(abapFile.toUri()))))).thenReturn(Map.of(abapFile.toUri(), new FileStatusDto(true)));
+
+      aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope",
+        List.of(new ClientFile(abapFile.toUri(), "configScope", tempDir.relativize(abapFile), false, null, abapFile, SonarLanguage.ABAP, true))));
+
+      verify(httpClient, never()).postAsync(any(), any(), any());
     }
   }
 
