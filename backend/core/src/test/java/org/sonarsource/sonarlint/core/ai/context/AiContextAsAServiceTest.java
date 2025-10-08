@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -93,7 +94,7 @@ class AiContextAsAServiceTest {
       aiContextAsAService.onFileSystemInitialized(new FileSystemInitialized("configScope",
         List.of(new ClientFile(abapFile.toUri(), "configScope", tempDir.relativize(abapFile), false, null, abapFile, SonarLanguage.ABAP, true))));
 
-      verify(httpClient).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
+      verify(httpClient, timeout(500)).postAsync("http://localhost:8080/index", "application/json; charset=utf-8",
         "{\"files\":[{\"content\":\"content\",\"fileRelativePath\":\"file.abap\",\"metadata\":{\"language\":\"ABAP\"}}]}");
     }
 

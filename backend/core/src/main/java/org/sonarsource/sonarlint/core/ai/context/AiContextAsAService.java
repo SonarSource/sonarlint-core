@@ -25,6 +25,7 @@ import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -56,6 +57,7 @@ public class AiContextAsAService {
   private static final String CONTEXT_SERVER_URL = "http://localhost:8080";
   private static final String INDEX_API_PATH = "/index";
   private static final String QUERY_API_PATH = "/query";
+  private static final String DELETE_FILE_API_PATH = "/deletefile";
   private final HttpClientProvider httpClientProvider;
   private final FileExclusionService fileExclusionService;
   private final boolean isIndexingEnabled;
@@ -118,7 +120,29 @@ public class AiContextAsAService {
     if (!isIndexingEnabled) {
       return;
     }
-    // TODO
+    var updatedRelativePaths = event.getUpdated().stream().map(ClientFile::getClientRelativePath).toList();
+    var removedRelativePaths = event.getRemoved().stream().map(ClientFile::getClientRelativePath).toList();
+    var filesToRemove = new HashSet<>(updatedRelativePaths);
+    filesToRemove.addAll(removedRelativePaths);
+    LOG.info("Removing {} files from the index", filesToRemove.size());
+    filesToRemove.forEach(removedRelativePath -> {
+      try (
+        var response = httpClientProvider.getHttpClient()
+          .deleteAsync(CONTEXT_SERVER_URL + DELETE_FILE_API_PATH + "?filename=" + UrlUtils.urlEncode(removedRelativePath.toString()), HttpClient.JSON_CONTENT_TYPE, "")
+          .join()) {
+        if (response.isSuccessful()) {
+          LOG.info("Removed files from index successfully!");
+        } else {
+          LOG.error("Error removing files: status={}, body={}", response.code(), response.bodyAsString());
+        }
+      } catch (Exception e) {
+        LOG.error("Error when sending the index request", e);
+      }
+      LOG.info("Readding {} files to the index", event.getAddedOrUpdated().size());
+      event.getAddedOrUpdated().stream()
+        .collect(Collectors.groupingBy(ClientFile::getConfigScopeId))
+        .forEach((scope, files) -> considerIndexing(scope, files, SonarLintLogger.get().getTargetForCopy()));
+    });
   }
 
   public AskCodebaseQuestionResponse search(String configurationScopeId, String question) {
