@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
@@ -35,12 +36,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 public class RaisedIssueDto extends RaisedFindingDto {
 
   private final boolean isAiCodeFixable;
+  private final ResolutionStatus resolutionStatus;
 
   public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
     Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
-    @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable) {
+    @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable, @Nullable ResolutionStatus resolutionStatus) {
     super(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
     this.isAiCodeFixable = isAiCodeFixable;
+    this.resolutionStatus = resolutionStatus;
   }
 
   public boolean isAiCodeFixable() {
@@ -49,6 +52,10 @@ public class RaisedIssueDto extends RaisedFindingDto {
 
   public Builder builder() {
     return Builder.from(this);
+  }
+
+  public ResolutionStatus getResolutionStatus() {
+    return resolutionStatus;
   }
 
   public static class Builder {
@@ -65,10 +72,11 @@ public class RaisedIssueDto extends RaisedFindingDto {
     private final List<QuickFixDto> quickFixes;
     private final String ruleDescriptionContextKey;
     private final boolean isAiCodeFixable;
+    private final ResolutionStatus resolutionStatus;
 
     private Builder(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
       Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
-      @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable) {
+      @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable, ResolutionStatus resolutionStatus) {
       this.id = id;
       this.serverKey = serverKey;
       this.ruleKey = ruleKey;
@@ -82,11 +90,12 @@ public class RaisedIssueDto extends RaisedFindingDto {
       this.quickFixes = quickFixes;
       this.ruleDescriptionContextKey = ruleDescriptionContextKey;
       this.isAiCodeFixable = isAiCodeFixable;
+      this.resolutionStatus = resolutionStatus;
     }
 
     public static Builder from(RaisedIssueDto dto) {
       return new Builder(dto.getId(), dto.getServerKey(), dto.getRuleKey(), dto.getPrimaryMessage(), dto.getSeverityMode(), dto.getIntroductionDate(), dto.isOnNewCode(),
-        dto.isResolved(), dto.getTextRange(), dto.getFlows(), dto.getQuickFixes(), dto.getRuleDescriptionContextKey(), dto.isAiCodeFixable());
+        dto.isResolved(), dto.getTextRange(), dto.getFlows(), dto.getQuickFixes(), dto.getRuleDescriptionContextKey(), dto.isAiCodeFixable(), dto.getResolutionStatus());
     }
 
     public Builder withResolution(boolean resolved) {
@@ -106,7 +115,7 @@ public class RaisedIssueDto extends RaisedFindingDto {
 
     public RaisedIssueDto buildIssue() {
       return new RaisedIssueDto(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes,
-        ruleDescriptionContextKey, isAiCodeFixable);
+        ruleDescriptionContextKey, isAiCodeFixable, resolutionStatus);
     }
   }
 }

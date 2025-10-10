@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -64,7 +65,7 @@ public class ServerTaintIssueFixtures {
     }
 
     public ServerTaintIssue build() {
-      return new ServerTaintIssue(key, resolved, ruleKey, "message", Path.of(filePath).toString(), introductionDate,
+      return new ServerTaintIssue(key, resolved, resolutionStatus, ruleKey, "message", Path.of(filePath).toString(), introductionDate,
         issueSeverity, ruleType, textRangeWithHash, "contextKey", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     }
   }
@@ -72,6 +73,7 @@ public class ServerTaintIssueFixtures {
   public abstract static class AbstractServerTaintIssueBuilder<T extends AbstractServerTaintIssueBuilder<T>> {
     protected final String key;
     protected boolean resolved = false;
+    protected IssueStatus resolutionStatus;
     protected Instant introductionDate = Instant.now();
     protected RuleType ruleType = RuleType.BUG;
     protected IssueSeverity issueSeverity = IssueSeverity.MINOR;
@@ -85,13 +87,15 @@ public class ServerTaintIssueFixtures {
       return (T) this;
     }
 
-    public T resolved() {
+    public T resolved(IssueStatus resolutionStatus) {
       this.resolved = true;
+      this.resolutionStatus = resolutionStatus;
       return (T) this;
     }
 
     public T open() {
       this.resolved = false;
+      resolutionStatus = null;
       return (T) this;
     }
 
@@ -111,6 +115,7 @@ public class ServerTaintIssueFixtures {
     public UUID id;
     public String key;
     public boolean resolved;
+    public IssueStatus resolutionStatus;
     public String ruleKey;
     public String message;
     public String filePath;
@@ -125,11 +130,13 @@ public class ServerTaintIssueFixtures {
     public final CleanCodeAttribute cleanCodeAttribute;
     public final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-    public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+    public ServerTaintIssue(String key, boolean resolved, IssueStatus resolutionStatus, String ruleKey, String message,
+      String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
       @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
       Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
+      this.resolutionStatus = resolutionStatus;
       this.ruleKey = ruleKey;
       this.message = message;
       this.filePath = filePath;

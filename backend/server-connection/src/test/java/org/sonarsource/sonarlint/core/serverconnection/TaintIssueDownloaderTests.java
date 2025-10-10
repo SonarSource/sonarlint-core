@@ -269,12 +269,16 @@ class TaintIssueDownloaderTests {
       .setCreationDate(123456789L)
       .build();
 
-    mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taint1, taintNoRange);
+    var taintResolved = TaintVulnerabilityLite.newBuilder(taint1)
+      .setResolved(true)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taint1, taintNoRange, taintResolved);
 
     var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getQueryTimestamp()).isEqualTo(Instant.ofEpochMilli(123L));
 
-    assertThat(result.getChangedTaintIssues()).hasSize(2);
+    assertThat(result.getChangedTaintIssues()).hasSize(3);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
     var serverTaintIssue = result.getChangedTaintIssues().get(0);
@@ -299,13 +303,15 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRange()).isNull();
 
     assertThat(serverTaintIssue.getFlows().get(1).locations()).hasSize(1);
+    assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");
 
     var taintIssueNoRange = result.getChangedTaintIssues().get(1);
     assertThat(taintIssueNoRange.getSonarServerKey()).isEqualTo("uuid2");
     assertThat(taintIssueNoRange.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(taintIssueNoRange.getTextRange()).isNull();
 
-    assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");
+    var resolvedTaint = result.getChangedTaintIssues().get(2);
+    assertThat(resolvedTaint.isResolved()).isTrue();
   }
 
   @Test
