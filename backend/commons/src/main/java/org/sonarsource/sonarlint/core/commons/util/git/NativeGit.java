@@ -87,6 +87,7 @@ public class NativeGit {
 
   public MultiFileBlameResult blame(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDateFromNewCodeDefinition) {
     LOG.debug("Using native git blame");
+    var startTime = System.currentTimeMillis();
     var blamePerFile = new HashMap<String, BlameResult>();
     for (var fileUri : fileUris) {
       var filePath = FileUtils.getFilePathFromUri(fileUri).toAbsolutePath().toString();
@@ -101,6 +102,7 @@ public class NativeGit {
         blamePerFile.put(filePathUnix, blameReader.getResult());
       }
     }
+    LOG.debug("Blamed {} files in {}ms", fileUris.size(), System.currentTimeMillis() - startTime);
     return new MultiFileBlameResult(blamePerFile, projectBaseDir);
   }
 
