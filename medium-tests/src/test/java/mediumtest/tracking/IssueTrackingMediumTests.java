@@ -37,17 +37,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.scanner.protocol.Constants;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -62,6 +65,7 @@ import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -118,7 +122,7 @@ class IssueTrackingMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
 
-    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, client, fileUri, ruleKey);
 
     assertThat(firstAnalysisPublishedIssues).hasSize(1);
     changeFileContent(baseDir, ideFilePath,
@@ -128,7 +132,7 @@ class IssueTrackingMediumTests {
         public interface Foo {
         // FIXME bar baz
         }""");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, client, fileUri, ruleKey);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
 
     verifyClientLog(client, LogLevel.INFO, "Git Repository not found");
@@ -174,7 +178,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, client, fileUri);
 
     assertThat(firstAnalysisPublishedIssues).hasSize(1);
     changeFileContent(baseDir, ideFilePath,
@@ -184,7 +188,7 @@ class IssueTrackingMediumTests {
         public interface Foo {
         // FIXME bar baz
         }""");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
   }
 
@@ -236,7 +240,7 @@ class IssueTrackingMediumTests {
           new BindingConfigurationDto(connectionId, projectKey, true)))));
     client.waitForSynchronization();
 
-    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(issues).hasSize(2);
     assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid1")).findFirst().get().isOnNewCode()).isFalse();
     assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid2")).findFirst().get().isOnNewCode()).isTrue();
@@ -249,7 +253,7 @@ class IssueTrackingMediumTests {
         public interface Foo {
         // FIXME bar baz
         }""");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(secondAnalysisPublishedIssues).hasSize(3);
     assertThat(secondAnalysisPublishedIssues.stream().filter(raisedIssueDto -> Objects.isNull(raisedIssueDto.getServerKey())).findFirst().get().isOnNewCode()).isTrue();
   }
@@ -307,7 +311,7 @@ class IssueTrackingMediumTests {
     var analysisTime = Instant.now();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
       List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)), List.of()));
-    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, client, fileUri);
 
     assertThat(issues)
       .extracting(raisedIssueDto -> raisedIssueDto.getIntroductionDate().isAfter(analysisTime), raisedIssueDto -> raisedIssueDto.getTextRange().getStartLine())
@@ -537,7 +541,7 @@ class IssueTrackingMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
 
-    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, client, fileUri);
 
     assertThat(issues)
       .extracting("ruleKey", "primaryMessage", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
@@ -664,12 +668,7 @@ class IssueTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
             .withMainBranch("main", branch -> branch.withIssue(
-              aServerIssue("key")
-                .withMessage("Replace \"pom.version\" with \"project.version\".")
-                .withFilePath("pom.xml")
-                .withRuleKey("xml:S3421")
-                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
-                .withIntroductionDate(serverIssueIntroductionDate)))))
+              pomServerIssue("key", serverIssueIntroductionDate)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
@@ -679,6 +678,57 @@ class IssueTrackingMediumTests {
     assertThat(publishedIssue)
       .extracting(RaisedIssueDto::getServerKey, RaisedIssueDto::getIntroductionDate)
       .containsExactly("key", serverIssueIntroductionDate);
+  }
+
+  @SonarLintTest
+  void it_should_expose_resolution_statuses_of_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var acceptedPath = baseDir.resolve("accepted");
+    var wontFixPath = baseDir.resolve("wontFix");
+    var falsePositivePath = baseDir.resolve("falsePositive");
+    var unresolvedIssueFile = createFileWithAnXmlIssue(baseDir);
+    var acceptedIssueFile = createFileWithAnXmlIssue(acceptedPath);
+    var wontFixIssueFile = createFileWithAnXmlIssue(wontFixPath);
+    var falsePositiveIssueFile = createFileWithAnXmlIssue(falsePositivePath);
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        getClientFileDto(baseDir, unresolvedIssueFile),
+        getClientFileDto(baseDir, acceptedIssueFile),
+        getClientFileDto(baseDir, wontFixIssueFile),
+        getClientFileDto(baseDir, falsePositiveIssueFile)))
+      .build();
+    var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
+    var server = harness.newFakeSonarQubeServer()
+      .withProject("projectKey").start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
+          project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
+            .withMainBranch("main", branch -> branch
+              .withIssue(pomServerIssue("key", serverIssueIntroductionDate))
+              .withIssue(pomServerIssue("key2", serverIssueIntroductionDate, "accepted/")
+                .resolved(IssueStatus.ACCEPT))
+              .withIssue(pomServerIssue("key3", serverIssueIntroductionDate, "wontFix/")
+                .resolved(IssueStatus.WONT_FIX))
+              .withIssue(pomServerIssue("key4", serverIssueIntroductionDate, "falsePositive/")
+                .resolved(IssueStatus.FALSE_POSITIVE))
+            )))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+
+    var unresolved = analyzeFileAndGetIssue(backend, client, unresolvedIssueFile.toUri());
+    var accepted = analyzeFileAndGetIssue(backend, client, acceptedIssueFile.toUri());
+    var wontFix = analyzeFileAndGetIssue(backend, client, wontFixIssueFile.toUri());
+    var falsePositive = analyzeFileAndGetIssue(backend, client, falsePositiveIssueFile.toUri());
+
+    assertThat(unresolved).extracting(RaisedIssueDto::isResolved, RaisedIssueDto::getResolutionStatus)
+      .containsExactly(false, null);
+    assertThat(accepted).extracting(RaisedIssueDto::isResolved, RaisedIssueDto::getResolutionStatus)
+      .containsExactly(true, ResolutionStatus.ACCEPT);
+    assertThat(wontFix).extracting(RaisedIssueDto::isResolved, RaisedIssueDto::getResolutionStatus)
+      .containsExactly(true, ResolutionStatus.WONT_FIX);
+    assertThat(falsePositive).extracting(RaisedIssueDto::isResolved, RaisedIssueDto::getResolutionStatus)
+      .containsExactly(true, ResolutionStatus.FALSE_POSITIVE);
   }
 
   @SonarLintTest
@@ -699,12 +749,7 @@ class IssueTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
             .withMainBranch("main", branch -> branch.withIssue(
-              aServerIssue("key")
-                .withMessage("Replace \"pom.version\" with \"project.version\".")
-                .withFilePath("pom.xml")
-                .withRuleKey("xml:S3421")
-                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
-                .withIntroductionDate(serverIssueIntroductionDate)))))
+              pomServerIssue("key", serverIssueIntroductionDate)))))
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .start(client);
@@ -712,7 +757,9 @@ class IssueTrackingMediumTests {
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
-      new BindingConfigurationDto("connectionId", "projectKey", true)));
+      new BindingConfigurationDto("connectionId", "projectKey", true),
+      BindingMode.MANUAL,
+      null));
     server.getMockServer().stubFor(get("/api/qualityprofiles/search.protobuf?project=projectKey")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addProfiles(
         Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
@@ -804,7 +851,7 @@ class IssueTrackingMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
 
-    analyzeFileAndGetAllIssues(backend, fileUri, client);
+    analyzeFileAndGetAllIssues(backend, client, fileUri);
 
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
@@ -846,10 +893,10 @@ class IssueTrackingMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
-    analyzeFileAndGetAllIssues(backend, fileUri, client);
+    analyzeFileAndGetAllIssues(backend, client, fileUri);
     reset(client);
 
-    analyzeFileAndGetAllIssues(backend, fileUri, client);
+    analyzeFileAndGetAllIssues(backend, client, fileUri);
 
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
@@ -915,19 +962,12 @@ class IssueTrackingMediumTests {
     verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
   }
 
-  private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
-    var analysisId = UUID.randomUUID();
-    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true))
-      .join();
-    var publishedIssuesByFile = getPublishedIssues(client, analysisId);
-    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
-    var raisedIssues = publishedIssuesByFile.get(fileUri);
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, SonarLintRpcClientDelegate client, URI fileUri, String ruleKey) {
+    var raisedIssues = analyzeFileAndGetAllIssues(backend, client, fileUri);
     return raisedIssues.stream().filter(ri -> ri.getRuleKey().equals(ruleKey)).toList();
   }
 
-  private List<RaisedIssueDto> analyzeFileAndGetAllIssues(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client) {
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssues(SonarLintTestRpcServer backend, SonarLintRpcClientDelegate client, URI fileUri) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true)).join();
@@ -938,13 +978,7 @@ class IssueTrackingMediumTests {
   }
 
   private RaisedIssueDto analyzeFileAndGetIssue(SonarLintTestRpcServer backend, SonarLintRpcClientDelegate client, URI fileUri) {
-    var analysisId = UUID.randomUUID();
-    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true)).join();
-    var publishedIssuesByFile = getPublishedIssues(client, analysisId);
-    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
-    var publishedIssues = publishedIssuesByFile.get(fileUri);
+    var publishedIssues = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(publishedIssues).hasSize(1);
     return publishedIssues.get(0);
   }
@@ -970,6 +1004,7 @@ class IssueTrackingMediumTests {
   private static Path createFile(Path folderPath, String fileName, String content) {
     var filePath = folderPath.resolve(fileName);
     try {
+      Files.createDirectories(folderPath);
       Files.writeString(filePath, content);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -1008,4 +1043,20 @@ class IssueTrackingMediumTests {
 
   }
 
+  private static ServerIssueFixtures.ServerIssueBuilder pomServerIssue(String key, Instant serverIssueIntroductionDate) {
+    return pomServerIssue(key, serverIssueIntroductionDate, "");
+  }
+
+  private static ServerIssueFixtures.ServerIssueBuilder pomServerIssue(String key, Instant serverIssueIntroductionDate, String filePath) {
+    return aServerIssue(key)
+      .withMessage("Replace \"pom.version\" with \"project.version\".")
+      .withFilePath(filePath + "pom.xml")
+      .withRuleKey("xml:S3421")
+      .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
+      .withIntroductionDate(serverIssueIntroductionDate);
+  }
+
+  private static ClientFileDto getClientFileDto(Path baseDir, Path filePath) {
+    return new ClientFileDto(filePath.toUri(), baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true);
+  }
 }

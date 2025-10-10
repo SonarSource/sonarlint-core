@@ -49,6 +49,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -550,6 +551,10 @@ public class ServerFixture {
 
           public String getFilePath() {
             return filePath;
+          }
+
+          public boolean isResolved() {
+            return StringUtils.isNotEmpty(resolution);
           }
         }
       }
@@ -1332,6 +1337,7 @@ public class ServerFixture {
         var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var issuesArray = branch.taintIssues.stream().map(issue -> Issues.TaintVulnerabilityLite.newBuilder()
           .setKey(issue.issueKey)
+          .setResolved(issue.isResolved())
           .setRuleKey(issue.ruleKey)
           .setType(Common.RuleType.BUG)
           .setSeverity(Common.Severity.MAJOR)
