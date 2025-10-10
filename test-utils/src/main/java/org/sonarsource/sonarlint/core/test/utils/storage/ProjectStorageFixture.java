@@ -248,12 +248,12 @@ public class ProjectStorageFixture {
                   }
                   if (issue.lineNumber != null && issue.lineHash != null) {
                     issueEntity.setBlobString("lineHash", issue.lineHash);
-                    issueEntity.setProperty("startLine", issue.lineNumber);
+                    issueEntity.setProperty("startRow", issue.lineNumber);
                   } else if (issue.textRangeWithHash != null) {
                     var textRange = issue.textRangeWithHash;
-                    issueEntity.setProperty("startLine", textRange.getStartLine());
+                    issueEntity.setProperty("startRow", textRange.getStartLine());
                     issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                    issueEntity.setProperty("endLine", textRange.getEndLine());
+                    issueEntity.setProperty("endRow", textRange.getEndLine());
                     issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
                     issueEntity.setBlobString("rangeHash", textRange.getHash());
                   }
@@ -276,9 +276,9 @@ public class ProjectStorageFixture {
                   taintIssueEntity.setProperty("severity", taint.severity);
                   if (taint.textRange != null) {
                     var textRange = taint.textRange;
-                    taintIssueEntity.setProperty("startLine", textRange.getStartLine());
+                    taintIssueEntity.setProperty("startRow", textRange.getStartLine());
                     taintIssueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                    taintIssueEntity.setProperty("endLine", textRange.getEndLine());
+                    taintIssueEntity.setProperty("endRow", textRange.getEndLine());
                     taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
                     taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
                   }
@@ -305,9 +305,9 @@ public class ProjectStorageFixture {
                   hotspotEntity.setBlobString("message", hotspot.message);
                   hotspotEntity.setProperty("creationDate", hotspot.introductionDate);
                   var textRange = hotspot.textRangeWithHash;
-                  hotspotEntity.setProperty("startLine", textRange.getStartLine());
+                  hotspotEntity.setProperty("startRow", textRange.getStartLine());
                   hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                  hotspotEntity.setProperty("endLine", textRange.getEndLine());
+                  hotspotEntity.setProperty("endRow", textRange.getEndLine());
                   hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
                   hotspotEntity.setBlobString("rangeHash", textRange.getHash());
 

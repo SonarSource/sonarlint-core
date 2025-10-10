@@ -17,20 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-  CONTEXT_INDEXING_ENABLED,
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+
+public class CodeLocation {
+  private final String fileRelativePath;
+  private final TextRangeDto textRange;
+
+  public CodeLocation(String fileRelativePath, @Nullable TextRangeDto textRange) {
+    this.fileRelativePath = fileRelativePath;
+    this.textRange = textRange;
+  }
+
+  public String getFileRelativePath() {
+    return fileRelativePath;
+  }
+
+  @CheckForNull
+  public TextRangeDto getTextRange() {
+    return textRange;
+  }
 }

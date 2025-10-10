@@ -115,11 +115,12 @@ public class ClientFileSystemService {
   public Map<URI, ClientFile> initializeFileSystem(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
     var result = new ConcurrentHashMap<URI, ClientFile>();
     var files = getClientFileDtos(configScopeId, cancelMonitor);
-    files.forEach(clientFileDto -> {
-      var clientFile = fromDto(clientFileDto);
-      filesByUri.put(clientFileDto.getUri(), clientFile);
-      result.put(clientFileDto.getUri(), clientFile);
+    var clientFiles = files.stream().map(ClientFileSystemService::fromDto).toList();
+    clientFiles.forEach(clientFile -> {
+      filesByUri.put(clientFile.getUri(), clientFile);
+      result.put(clientFile.getUri(), clientFile);
     });
+    eventPublisher.publishEvent(new FileSystemInitialized(configScopeId, clientFiles));
     return result;
   }
 

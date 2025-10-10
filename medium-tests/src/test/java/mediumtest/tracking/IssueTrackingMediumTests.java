@@ -365,7 +365,7 @@ class IssueTrackingMediumTests {
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
-        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+        "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 5, 12, 5, 21);
     var flows = firstPublishedIssue.getFlows();
     assertThat(flows).hasSize(3);
@@ -439,7 +439,7 @@ class IssueTrackingMediumTests {
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
-        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+        "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 1, 0, 1, 16);
   }
 
@@ -486,7 +486,7 @@ class IssueTrackingMediumTests {
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
-        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+        "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 1, 0, 1, 16);
   }
 
@@ -540,7 +540,7 @@ class IssueTrackingMediumTests {
     var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(issues)
-      .extracting("ruleKey", "primaryMessage", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .extracting("ruleKey", "primaryMessage", "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .contains(tuple("java:S1128", "Remove this unnecessary import: java.lang classes are always implicitly imported.", 5, 7, 5, 25));
     var issue = issues.stream().filter(i -> i.getRuleKey().equals("java:S1128")).findFirst().get();
     var quickFixes = issue.getQuickFixes();
