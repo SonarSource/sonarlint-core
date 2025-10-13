@@ -36,10 +36,13 @@ public class AiCodeFixSettingsSynchronizer {
 
   private final ConnectionStorage storage;
   private final OrganizationSynchronizer organizationSynchronizer;
+  private final org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository;
 
-  public AiCodeFixSettingsSynchronizer(ConnectionStorage storage, OrganizationSynchronizer organizationSynchronizer) {
+  public AiCodeFixSettingsSynchronizer(ConnectionStorage storage, OrganizationSynchronizer organizationSynchronizer,
+    org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository) {
     this.storage = storage;
     this.organizationSynchronizer = organizationSynchronizer;
+    this.aiCodeFixRepository = aiCodeFixRepository;
   }
 
   public void synchronize(ServerApi serverApi, Version serverVersion, Set<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
@@ -59,8 +62,14 @@ public class AiCodeFixSettingsSynchronizer {
         var organizationConfig = serverApi.fixSuggestions().getOrganizationConfigs(organization.id(), cancelMonitor);
         var aiCodeFixConfiguration = organizationConfig.aiCodeFix();
         var enabledProjectKeys = aiCodeFixConfiguration.enabledProjectKeys();
-        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), aiCodeFixConfiguration.organizationEligible(),
-          AiCodeFixFeatureEnablement.valueOf(aiCodeFixConfiguration.enablement().name()), enabledProjectKeys == null ? Set.of() : enabledProjectKeys));
+        var enabled = enabledProjectKeys == null ? Set.<String>of() : enabledProjectKeys;
+        var entity = new org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix(
+          storage.connectionId(),
+          supportedRules.rules(),
+          aiCodeFixConfiguration.organizationEligible(),
+          org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix.Enablement.valueOf(aiCodeFixConfiguration.enablement().name()),
+          enabled);
+        aiCodeFixRepository.upsert(entity);
       } catch (Exception e) {
         LOG.error("Error synchronizing AI CodeFix settings for SonarQube Cloud", e);
       }
@@ -73,7 +82,13 @@ public class AiCodeFixSettingsSynchronizer {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var enabledProjectKeys = projectKeys.stream()
           .filter(projectKey -> serverApi.component().getProject(projectKey, cancelMonitor).filter(ServerProject::isAiCodeFixEnabled).isPresent()).collect(Collectors.toSet());
-        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), true, AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS, enabledProjectKeys));
+        var entity = new org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix(
+          storage.connectionId(),
+          supportedRules.rules(),
+          true,
+          org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS,
+          enabledProjectKeys);
+        aiCodeFixRepository.upsert(entity);
       }
     } catch (Exception e) {
       LOG.error("Error synchronizing AI CodeFix settings for SonarQube Server", e);

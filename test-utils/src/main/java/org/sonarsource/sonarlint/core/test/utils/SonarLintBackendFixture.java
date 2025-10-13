@@ -48,6 +48,8 @@ import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
@@ -528,10 +530,22 @@ public class SonarLintBackendFixture {
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);
         }
+        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages);
         return sonarLintBackend;
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
+    }
+
+    private void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages) {
+      var aiCodeFixRepository = new AiCodeFixRepository(sonarLintDatabase);
+
+      storages.forEach(storage -> {
+        var aiCodeFixSettings = storage.getAiCodeFixSettingsBuilder();
+        if (aiCodeFixSettings != null) {
+          aiCodeFixRepository.upsert(aiCodeFixSettings.buildAiCodeFix(storage.getConnectionId()));
+        }
+      });
     }
 
     private static URI createUriFromString(@Nullable String uri) {

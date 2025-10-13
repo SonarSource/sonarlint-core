@@ -53,6 +53,11 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -259,6 +264,21 @@ public class SonarLintSpringAppConfig {
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());
+  }
+
+  @Bean
+  SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
+    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, true);
+  }
+
+  @Bean(destroyMethod = "shutdown")
+  SonarLintDatabase provideSonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
+    return new SonarLintDatabase(sonarLintDatabaseInitParams);
+  }
+
+  @Bean
+  AiCodeFixRepository provideAiCodeFixRepository(SonarLintDatabase sonarLintDatabase) {
+    return new AiCodeFixRepository(sonarLintDatabase);
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {

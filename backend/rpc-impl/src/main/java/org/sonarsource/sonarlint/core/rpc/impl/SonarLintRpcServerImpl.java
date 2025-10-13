@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
@@ -322,6 +323,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return getInitializedApplicationContext().getBean(StorageService.class);
+  }
+
+  public SonarLintDatabase getDatabase() {
+    return getInitializedApplicationContext().getBean(SonarLintDatabase.class);
   }
 
   ExecutorServiceShutdownWatchable<ExecutorService> getRequestsExecutor() {

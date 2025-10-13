@@ -126,6 +126,14 @@ public class StorageFixture {
       return this;
     }
 
+    public AiCodeFixFixtures.Builder getAiCodeFixSettingsBuilder() {
+      return aiCodeFixBuilder;
+    }
+
+    public String getConnectionId() {
+      return connectionId;
+    }
+
     public Storage create(Path rootPath) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
