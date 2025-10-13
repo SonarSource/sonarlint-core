@@ -73,7 +73,6 @@ jobs:
         run: |
           sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
           sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}" "-Dsonar.scm.revision=$GITHUB_SHA")
-          sonar_props+=("${additional_params[@]+"${additional_params[@]}"}")
           if [[ "${GITHUB_EVENT_NAME:?}" == "pull_request" ]]; then
             sonar_props+=("-Dsonar.pullrequest.key=$PULL_REQUEST")
             sonar_props+=("-Dsonar.pullrequest.branch=$GITHUB_HEAD_REF")
