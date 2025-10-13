@@ -23,7 +23,7 @@ jobs:
     outputs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
@@ -47,16 +47,37 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
-      - uses: SonarSource/ci-github-actions/build-maven@v1
+      - name: Vault
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # 3.1.0
         with:
-          deploy-pull-request: false
+          secrets: |
+            development/kv/data/next url | NEXT_URL;
+            development/kv/data/next token | NEXT_TOKEN;
+      - uses: SonarSource/ci-github-actions/config-maven@v1
+        id: config
+        with:
           artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
-          maven-args: -P-deploy-sonarsource,-release,-sign -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+      - name: Run tests
+        env:
+          SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
+          SONAR_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_TOKEN }}
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+          SCANNER_VERSION: 5.1.0.4751
+        run: |
+          mvn -B -e -V -P-deploy-sonarsource,-release,-sign -Dcommercial \
+            -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml \
+            -Dsonar.host.url="${SONAR_HOST_URL}" \
+            -Dsonar.token="${SONAR_TOKEN}" \
+            -Dsonar.projectVersion="${PROJECT_VERSION}" \
+            -Dsonar.scm.revision="${GITHUB_SHA}" \
+            verify org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
@@ -76,19 +97,20 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
-      - uses: SonarSource/ci-github-actions/build-maven@v1
+      - uses: SonarSource/ci-github-actions/config-maven@v1
+        id: config
+        with:
+          artifactory-reader-role: private-reader
+      - name: Run tests
         env:
           MAVEN_OPTS: -Xmx4g
-        with:
-          sonar-platform: none
-          deploy-pull-request: false
-          artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
-          maven-args: -B -e -V -Dcommercial -Dmaven.test.redirectTestOutputToFile=false
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+        run: |
+          mvn -B -e -V -Dcommercial "-Dmaven.test.redirectTestOutputToFile=false" verify
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
@@ -133,7 +155,7 @@ jobs:
             sq_version: "LATEST_RELEASE[9.9]"
             category: "-DexcludedGroups=SonarCloud"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
@@ -254,7 +276,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: SonarSource/ci-github-actions/promote@v1
         with:
           promote-pull-request: true
