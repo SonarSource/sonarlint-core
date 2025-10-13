@@ -71,7 +71,7 @@ jobs:
           PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
           SCANNER_VERSION: 5.1.0.4751
         run: |
-          mvn -B -e -V -P-deploy-sonarsource,-release,-sign -Dcommercial \
+          mvn -Dcommercial \
             -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
             -Dsonar.token="${SONAR_TOKEN}" \
