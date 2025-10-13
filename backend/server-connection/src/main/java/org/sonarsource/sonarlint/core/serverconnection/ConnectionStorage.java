@@ -40,9 +40,11 @@ public class ConnectionStorage {
   private final Path connectionStorageRoot;
   private final AiCodeFixStorage aiCodeFixStorage;
   private final OrganizationStorage organizationStorage;
+  private final String connectionId;
   private final UserStorage userStorage;
 
   public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId) {
+    this.connectionId = connectionId;
     this.connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
     this.projectsStorageRoot = connectionStorageRoot.resolve("projects");
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
@@ -76,6 +78,10 @@ public class ConnectionStorage {
 
   public UserStorage user() {
     return userStorage;
+  }
+
+  public String connectionId() {
+    return connectionId;
   }
 
   public void close() {

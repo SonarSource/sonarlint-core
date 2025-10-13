@@ -90,6 +90,9 @@
     <!-- Exclude from the duplication detection deprecated DTOs that were replaced by new types. They should be removed in 10.3 -->
     <sonar.cpd.exclusions>rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/analysis/*Dto.java</sonar.cpd.exclusions>
     <sonar.organization>sonarsource</sonar.organization>
+    <h2.version>2.4.240</h2.version>
+    <jooq.version>3.19.15</jooq.version>
+    <flyway.version>11.14.0</flyway.version>
   </properties>
 
   <dependencyManagement>
@@ -251,6 +254,21 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${h2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq</artifactId>
+        <version>${jooq.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

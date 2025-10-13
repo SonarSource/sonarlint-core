@@ -150,6 +150,19 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- H2 database and migration libraries -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
     <!-- For Xodus -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
