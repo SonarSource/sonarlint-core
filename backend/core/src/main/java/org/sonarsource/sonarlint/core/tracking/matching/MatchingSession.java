@@ -37,8 +37,6 @@ import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
 public class MatchingSession {
-  private final Map<Path, List<KnownFinding>> remainingUnmatchedIssuesPerFile;
-  private final Map<Path, List<KnownFinding>> remainingUnmatchedSecurityHotspotsPerFile;
   private final Map<Path, IssueMatcher<RawIssue, KnownFinding>> issueMatchersByFile = new HashMap<>();
   private final Map<Path, IssueMatcher<RawIssue, KnownFinding>> hotspotMatchersByFile = new HashMap<>();
 
@@ -49,12 +47,12 @@ public class MatchingSession {
   private long newIssuesFound = 0;
 
   public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
-    this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
+    var knownIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
+    var knownSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
       .map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    remainingUnmatchedIssuesPerFile.forEach((path, issues) -> issueMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), issues)));
-    remainingUnmatchedSecurityHotspotsPerFile.forEach((path, hotspots) -> hotspotMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), hotspots)));
+    knownIssuesPerFile.forEach((path, issues) -> issueMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), issues)));
+    knownSecurityHotspotsPerFile.forEach((path, hotspots) -> hotspotMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), hotspots)));
     this.introductionDateProvider = introductionDateProvider;
   }
 
@@ -71,7 +69,7 @@ public class MatchingSession {
     if (hotspotMatcher == null) {
       throw new IllegalStateException("No hotspot matcher found for " + relativePath);
     }
-    var trackedSecurityHotspot = matchWithKnownFinding(relativePath, hotspotMatcher, remainingUnmatchedSecurityHotspotsPerFile, newSecurityHotspot);
+    var trackedSecurityHotspot = matchWithKnownFinding(relativePath, hotspotMatcher, newSecurityHotspot);
     securityHotspotsPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedSecurityHotspot);
     relativePathsInvolved.add(relativePath);
     return trackedSecurityHotspot;
@@ -83,23 +81,16 @@ public class MatchingSession {
       throw new IllegalStateException("No issue matcher found for " + relativePath);
     }
 
-    var trackedIssue = matchWithKnownFinding(relativePath, issueMatcher, remainingUnmatchedIssuesPerFile, rawIssue);
+    var trackedIssue = matchWithKnownFinding(relativePath, issueMatcher, rawIssue);
     issuesPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedIssue);
     relativePathsInvolved.add(relativePath);
     return trackedIssue;
   }
 
-  private TrackedIssue matchWithKnownFinding(Path relativePath, IssueMatcher<RawIssue, KnownFinding> issueMatcher,
-    Map<Path, List<KnownFinding>> remainingUnmatchedKnownFindingsPerFile, RawIssue newFinding) {
-    var remainingUnmatchedKnownFindings = remainingUnmatchedKnownFindingsPerFile.get(relativePath);
+  private TrackedIssue matchWithKnownFinding(Path relativePath, IssueMatcher<RawIssue, KnownFinding> issueMatcher, RawIssue newFinding) {
     var localMatchingResult = issueMatcher.matchWith(new RawIssueFindingMatchingAttributeMapper(), List.of(newFinding));
     return localMatchingResult.getMatchOpt(newFinding)
-      .map(knownFinding -> {
-        if (remainingUnmatchedKnownFindings != null) {
-          remainingUnmatchedKnownFindings.remove(knownFinding);
-        }
-        return updateKnownFindingWithRawIssueData(knownFinding, newFinding);
-      })
+      .map(knownFinding -> updateKnownFindingWithRawIssueData(knownFinding, newFinding))
       .orElseGet(() -> newlyKnownIssue(relativePath, newFinding));
   }
 
@@ -113,7 +104,7 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
-    newIssuesFound ++;
+    newIssuesFound++;
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
     return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
   }
@@ -135,6 +126,6 @@ public class MatchingSession {
   }
 
   public long countRemainingUnmatchedIssues() {
-    return remainingUnmatchedIssuesPerFile.values().stream().mapToLong(List::size).sum();
+    return issueMatchersByFile.values().stream().mapToLong(IssueMatcher::getUnmatchedIssuesCount).sum();
   }
 }
