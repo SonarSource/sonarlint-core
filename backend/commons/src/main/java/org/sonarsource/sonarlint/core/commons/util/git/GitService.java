@@ -60,6 +60,7 @@ import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 
 public class GitService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final int FILES_GIT_BLAME_TRIGGER_THRESHOLD = 10;
 
   private final NativeGitLocator nativeGitLocator;
 
@@ -73,9 +74,12 @@ public class GitService {
 
   public MultiFileBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
     Instant thresholdDate) {
-    return nativeGitLocator.getNativeGitExecutable()
-      .map(nativeGit -> nativeGit.blame(projectBaseDir, fileUris, thresholdDate))
-      .orElseGet(() -> blameWithGitFilesBlameLibrary(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider));
+
+    var nativeGitExecutable = nativeGitLocator.getNativeGitExecutable();
+    if (nativeGitExecutable.isEmpty() || fileUris.size() >= FILES_GIT_BLAME_TRIGGER_THRESHOLD) {
+      return blameWithGitFilesBlameLibrary(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
+    }
+    return nativeGitExecutable.get().blame(projectBaseDir, fileUris, thresholdDate);
   }
 
   // Could be optimized to only fetch VCS changed files matching the base dir
@@ -129,6 +133,7 @@ public class GitService {
   public static MultiFileBlameResult blameWithGitFilesBlameLibrary(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
     @Nullable UnaryOperator<String> fileContentProvider) {
     LOG.debug("Falling back to JGit");
+    var startTime = System.currentTimeMillis();
     var gitRepo = buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
@@ -148,9 +153,11 @@ public class GitService {
 
     try {
       var blameResult = blameCommand.call();
-      return new MultiFileBlameResult(
+      var multiFileBlameResult = new MultiFileBlameResult(
         blameResult.getFileBlameByPath().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> new BlameResult(Arrays.asList(e.getValue().getCommitDates())))),
         gitRepoRelativeProjectBaseDir);
+      LOG.debug("Blamed {} files in {}ms", projectBaseRelativeFilePaths.size(), System.currentTimeMillis() - startTime);
+      return multiFileBlameResult;
     } catch (NoHeadException e) {
       // it means that the repository has no commits, so we can't get any blame information
       return MultiFileBlameResult.empty(gitRepoRelativeProjectBaseDir);
