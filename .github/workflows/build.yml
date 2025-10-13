@@ -70,6 +70,7 @@ jobs:
           SONAR_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_TOKEN }}
           PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
           SCANNER_VERSION: 5.1.0.4751
+          PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
         run: |
           maven_goals=("verify" "org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
           maven_goals+=("-Pcoverage" "-Dcommercial")
