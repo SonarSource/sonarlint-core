@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -34,9 +36,10 @@ import javax.annotation.Nullable;
  * @param defaultDisabledRules          Rule keys for rules that enabled by default, but was disabled by user in settings.
  * @param nodeVersion                   Node.js version used by analyzers (detected or configured by the user).
  *                                      Empty if no node present/detected/configured
+ * @param userIdsByServerId              List of user IDs by server ID for all configured connections
  */
 public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, int childBindingCount, int sonarQubeServerBindingCount,
                                         int sonarQubeCloudEUBindingCount, int sonarQubeCloudUSBindingCount, boolean devNotificationsDisabled,
                                         List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
-                                        @Nullable String nodeVersion) {
+                                        @Nullable String nodeVersion, Map<String, String> userIdsByServerId) {
 }

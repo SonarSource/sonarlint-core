@@ -25,7 +25,7 @@ import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 
 import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.MQR_MODE_SETTING;
 
-public record StoredServerInfo(Version version, Set<Feature> features, ServerSettings globalSettings) {
+public record StoredServerInfo(Version version, Set<Feature> features, ServerSettings globalSettings, String serverId) {
   private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
   private static final String MQR_MODE_SETTING_MIN_VERSION = "10.8";
 
