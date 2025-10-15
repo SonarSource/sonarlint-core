@@ -71,9 +71,9 @@ public class XodusLocalOnlyIssueStore {
   private static final String RULE_KEY_PROPERTY_NAME = "ruleKey";
   private static final String RANGE_HASH_PROPERTY_NAME = "rangeHash";
   private static final String LINE_HASH_PROPERTY_NAME = "lineHash";
-  private static final String START_LINE_PROPERTY_NAME = "startLine";
+  private static final String START_LINE_PROPERTY_NAME = "startRow";
   private static final String START_LINE_OFFSET_PROPERTY_NAME = "startLineOffset";
-  private static final String END_LINE_PROPERTY_NAME = "endLine";
+  private static final String END_LINE_PROPERTY_NAME = "endRow";
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
   private static final String MESSAGE_BLOB_NAME = "message";
   private static final String BACKUP_TAR_GZ = "local_only_issue_backup.tar.gz";

@@ -158,8 +158,6 @@
     </dependency>
   </dependencies>
 
-
-
   <profiles>
     <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
     <profile>

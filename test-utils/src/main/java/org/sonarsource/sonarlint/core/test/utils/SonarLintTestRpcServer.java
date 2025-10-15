@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext.AiContextRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -178,6 +179,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
     return serverUsingJava.getAiAssistedIdeRpcService();
+  }
+
+  @Override
+  public AiContextRpcService getAiContextRpcService() {
+    return serverUsingJava.getAiContextRpcService();
   }
 
   public Path getWorkDir() {

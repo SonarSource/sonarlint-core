@@ -17,20 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.aicontext;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-  CONTEXT_INDEXING_ENABLED,
+import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+public class AskCodebaseQuestionResponse {
+  private final String text;
+  private final List<CodeLocation> locations;
+
+  public AskCodebaseQuestionResponse(@Nullable String text, List<CodeLocation> locations) {
+    this.text = text;
+    this.locations = locations;
+  }
+
+  @CheckForNull
+  public String getText() {
+    return text;
+  }
+
+  public List<CodeLocation> getLocations() {
+    return locations;
+  }
 }

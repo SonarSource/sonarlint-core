@@ -113,7 +113,7 @@ class SecurityHotspotTrackingMediumTests {
 
     assertThat(firstPublishedHotspot)
       .extracting("ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "status", "introductionDate",
-        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+        "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", HotspotStatus.TO_REVIEW, Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 
@@ -173,7 +173,7 @@ class SecurityHotspotTrackingMediumTests {
 
     assertThat(secondPublishedHotspot)
       .extracting("id", "ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "introductionDate",
-        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+        "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset")
       .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 

@@ -864,7 +864,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .flatExtracting("flows")
         .flatExtracting("locations")
-        .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+        .extracting("message", "filePath", "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset", "textRange.hash")
         .contains(
           // flow 1 (don't assert intermediate locations as they change frequently between versions)
           tuple("Sink: this invocation is not safe; a malicious value can be used as argument", Paths.get("src/main/java/foo/DbHelper.java"), 11, 35, 11, 64,
@@ -885,7 +885,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(taintIssues)
         .flatExtracting("flows")
         .flatExtracting("locations")
-        .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+        .extracting("message", "filePath", "textRange.startRow", "textRange.startLineOffset", "textRange.endRow", "textRange.endLineOffset", "textRange.hash")
         .contains(
           // flow 1 (don't assert intermediate locations as they change frequently between versions)
           tuple("Sink: this invocation is not safe; a malicious value can be used as argument", Paths.get("src/main/java/foo/DbHelper.java"), 11, 35, 11, 64,
