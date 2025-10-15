@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -74,6 +75,10 @@ public class TelemetryLiveAttributes {
   @Nullable
   public String getNodeVersion() {
     return serverAttributes.nodeVersion();
+  }
+
+  public Map<String, String> getUserIdsByServerId() {
+    return serverAttributes.userIdsByServerId();
   }
 
   public Map<String, Object> getAdditionalAttributes() {

@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.sca.ScaApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
+import org.sonarsource.sonarlint.core.serverapi.users.UsersApi;
 
 public class ServerApi {
   private final ServerApiHelper helper;
@@ -126,6 +127,10 @@ public class ServerApi {
 
   public ScaApi sca() {
     return new ScaApi(helper);
+  }
+
+  public UsersApi users() {
+    return new UsersApi(helper);
   }
 
   public boolean isSonarCloud() {

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.BOOLEAN;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryMeasuresBuilder {
 
@@ -107,6 +109,14 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(liveAttributes.countSonarQubeServerBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(liveAttributes.countSonarQubeCloudEUBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(liveAttributes.countSonarQubeCloudUSBindings()), INTEGER, DAILY));
+
+      // TODO: Ideally, we should probably link the user ID and the server ID, but the user ID does not always exist
+      // Also, the user can have multiple connections to different servers, we should send everything
+      // It's not possible to iterate over a map and create indexed keys such as connections.user_server_id_1, connections.user_server_id_2...
+      // For now, possible solution is to serialize as JSON, or come up with a better schema for the measure
+      if (!liveAttributes.getUserIdsByServerId().isEmpty()) {
+        values.add(new TelemetryMeasuresValue("connections.user_server_ids", new Gson().toJson(liveAttributes.getUserIdsByServerId()), STRING, DAILY));
+      }
     }
   }
 

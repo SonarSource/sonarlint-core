@@ -21,7 +21,10 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,6 +140,8 @@ class TelemetryHttpClientTests {
             {"key":"help_and_feedback.docs","value":"1","type":"integer","granularity":"daily"},
             {"key":"analysis_reporting.trigger_count_pre_commit","value":"1","type":"integer","granularity":"daily"},
             {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
+            {"key":"connections.server_id_server-id-1","value":"1111","type":"string","granularity":"daily"},
+            {"key":"connections.server_id_server-id-2","value":null,"type":"string","granularity":"daily"},
             {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
@@ -188,7 +193,10 @@ class TelemetryHttpClientTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var userIdsByServerId = new HashMap<String, String>();
+    userIdsByServerId.put("server-id-1", "1111");
+    userIdsByServerId.put("server-id-2", null);
+    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", userIdsByServerId);
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

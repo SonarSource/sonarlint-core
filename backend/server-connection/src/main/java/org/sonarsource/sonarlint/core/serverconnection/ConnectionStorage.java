@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStora
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UserStorage;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -39,6 +40,7 @@ public class ConnectionStorage {
   private final Path connectionStorageRoot;
   private final AiCodeFixStorage aiCodeFixStorage;
   private final OrganizationStorage organizationStorage;
+  private final UserStorage userStorage;
 
   public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId) {
     this.connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
@@ -48,6 +50,7 @@ public class ConnectionStorage {
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
     this.aiCodeFixStorage = new AiCodeFixStorage(connectionStorageRoot);
     this.organizationStorage = new OrganizationStorage(connectionStorageRoot);
+    this.userStorage = new UserStorage(connectionStorageRoot);
   }
 
   public ServerInfoStorage serverInfo() {
@@ -69,6 +72,10 @@ public class ConnectionStorage {
 
   public OrganizationStorage organization() {
     return organizationStorage;
+  }
+
+  public UserStorage user() {
+    return userStorage;
   }
 
   public void close() {
