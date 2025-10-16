@@ -21,6 +21,7 @@ package mediumtest.issues;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
@@ -354,45 +355,62 @@ class OpenIssueInIdeMediumTests {
   }
 
   @SonarLintTest
-  void it_should_fail_request_when_server_points_to_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
+  void it_should_fail_request_when_server_points_to_sonarcloud_from_sqs(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start(client);
-    HttpRequest request = openIssueRequest(backend,
-      SonarCloudRegion.EU.getProductionUri().toString());
+    var request = openIssueRequestWithOrigin(backend,
+      SonarCloudRegion.EU.getProductionUri().toString(),
+      "http://fake.sonar");
 
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
     verify(client).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. " +
-        "server: " +
-        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
   @SonarLintTest
-  void it_should_fail_request_when_server_points_to_sonarcloud_us(SonarLintTestHarness harness) throws IOException, InterruptedException {
+  void it_should_fail_request_when_server_points_to_sonarcloud_us_from_sqs(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start(client);
-    HttpRequest request = openIssueRequest(backend,
-      SonarCloudRegion.US.getProductionUri().toString());
+    var request = openIssueRequestWithOrigin(backend,
+      SonarCloudRegion.US.getProductionUri().toString(),
+      "http://fake.sonar");
 
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
     verify(client).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. " +
-        "server: " +
-        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+  }
+
+  @SonarLintTest
+  void it_should_not_fail_request_when_server_points_to_sonarcloud_from_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    var request = openIssueRequestWithOrigin(backend,
+      SonarCloudRegion.EU.getProductionUri().toString(),
+      SonarCloudRegion.EU.getProductionUri().toString(),
+      "&issue=" + ISSUE_KEY,
+      "&project=" + PROJECT_KEY,
+      "&branch=" + BRANCH_NAME,
+      "&organizationKey=orgKey");
+
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(200);
   }
 
   private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch)
     throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
@@ -400,14 +418,14 @@ class OpenIssueInIdeMediumTests {
     throws IOException, InterruptedException {
     HttpRequest request = this.openIssueRequest(backend, "https://sonar.my", "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch,
       "&organizationKey=" + organizationKey);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
   private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch, String pullRequest)
     throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&pullRequest=" + pullRequest);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
@@ -416,6 +434,14 @@ class OpenIssueInIdeMediumTests {
       .uri(URI.create(
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + baseUrl + String.join("", params)))
       .header("Origin", baseUrl)
+      .GET().build();
+  }
+
+  private HttpRequest openIssueRequestWithOrigin(SonarLintTestRpcServer backend, String baseUrl, String origin, String... params) {
+    return HttpRequest.newBuilder()
+      .uri(URI.create(
+        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + baseUrl + String.join("", params)))
+      .header("Origin", origin)
       .GET().build();
   }
 

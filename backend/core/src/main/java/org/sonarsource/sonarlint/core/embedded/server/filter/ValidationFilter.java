@@ -28,6 +28,7 @@ import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
 import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.embedded.server.AttributeUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -39,25 +40,29 @@ import static org.apache.hc.core5.http.io.HttpFilterChain.ResponseTrigger;
 public class ValidationFilter implements HttpFilterHandler {
 
   private final SonarLintRpcClient client;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
 
-  public ValidationFilter(SonarLintRpcClient client) {
+  public ValidationFilter(SonarLintRpcClient client, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.client = client;
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
   }
 
   @Override
   public void handle(ClassicHttpRequest request, ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain) throws HttpException, IOException {
+    var origin = AttributeUtils.getOrigin(context);
+    boolean isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(origin);
     var params = AttributeUtils.getParams(context);
-    if (params.containsKey("server")) {
+    if (!isSonarCloud && params.containsKey("server")) {
       var serverUrl = params.get("server");
       if (Strings.CI.startsWithAny(serverUrl, SonarCloudRegion.CLOUD_URLS)) {
         var response = new BasicClassicHttpResponse(HttpStatus.SC_BAD_REQUEST);
         client.showMessage(new ShowMessageParams(MessageType.ERROR,
           "Invalid request to SonarQube backend. " +
-            "server: " +
-            "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server."));
+            "The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server."));
         responseTrigger.submitResponse(response);
       }
     }
     chain.proceed(request, responseTrigger, context);
   }
+
 }

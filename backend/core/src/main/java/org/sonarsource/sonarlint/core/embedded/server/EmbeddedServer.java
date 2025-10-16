@@ -31,6 +31,7 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.filter.CorsFilter;
 import org.sonarsource.sonarlint.core.embedded.server.filter.CspFilter;
@@ -109,7 +110,7 @@ public class EmbeddedServer {
           .addFilterFirst("RateLimiter", new RateLimitFilter())
           .addFilterAfter("RateLimiter", "CORS", new CorsFilter())
           .addFilterAfter("CORS", "Params", new ParseParamsFilter())
-          .addFilterAfter("Params", "Validation", new ValidationFilter(client))
+          .addFilterAfter("Params", "Validation", new ValidationFilter(client, SonarCloudActiveEnvironment.prod()))
           .register("/sonarlint/api/status", statusRequestHandler)
           .register("/sonarlint/api/token", generatedUserTokenHandler)
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)

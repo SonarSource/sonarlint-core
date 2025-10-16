@@ -359,9 +359,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     assertThat(response.statusCode()).isEqualTo(400);
     verify(client).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. " +
-        "server: " +
-        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
   @SonarLintTest
@@ -379,9 +377,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     assertThat(response.statusCode()).isEqualTo(400);
     verify(client).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. " +
-        "server: " +
-        "Should not be SonarQube Cloud url, use it only to specify url of a SonarQube Server.");
+      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
   private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey,
