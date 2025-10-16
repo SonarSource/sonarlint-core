@@ -48,4 +48,5 @@ public class AttributeUtils {
   public static String getOrigin(HttpContext context) {
     return (String) context.getAttribute(ORIGIN_ATTRIBUTE);
   }
+
 }
