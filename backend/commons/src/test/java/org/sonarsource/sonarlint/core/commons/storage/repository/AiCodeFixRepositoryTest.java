@@ -45,7 +45,7 @@ class AiCodeFixRepositoryTest {
     var storageRoot = temp.resolve("storage");
 
     var db = new SonarLintH2Database(new StorageInitParams(storageRoot));
-    var aiCodeFixRepo = new AiCodeFixRepository(db);
+    var aiCodeFixRepo = new AiCodeFixRepository(db, "test-connection");
 
     var entityToStore = new AiCodeFix(
       Set.of("java:S100", "js:S200"),
@@ -62,7 +62,7 @@ class AiCodeFixRepositoryTest {
 
     // Create a new repository with a fresh DB instance pointing to the same storage root
     var db2 = new SonarLintH2Database(new StorageInitParams(storageRoot));
-    var repo2 = new AiCodeFixRepository(db2);
+    var repo2 = new AiCodeFixRepository(db2, "test-connection-2");
 
     // Then we can read back exactly what we stored
     var loadedOpt = repo2.get();

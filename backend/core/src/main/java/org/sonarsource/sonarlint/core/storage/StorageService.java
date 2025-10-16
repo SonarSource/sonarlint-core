@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintH2Database;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
@@ -33,15 +34,17 @@ import org.springframework.context.event.EventListener;
 public class StorageService {
   private final Path globalStorageRoot;
   private final Path workDir;
+  private final SonarLintH2Database h2Database;
   private final Map<String, ConnectionStorage> connectionStorageById = new ConcurrentHashMap<>();
 
-  public StorageService(UserPaths userPaths) {
+  public StorageService(UserPaths userPaths, SonarLintH2Database h2Database) {
     this.globalStorageRoot = userPaths.getStorageRoot();
     this.workDir = userPaths.getWorkDir();
+    this.h2Database = h2Database;
   }
 
   public ConnectionStorage connection(String connectionId) {
-    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, workDir, connectionId));
+    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, workDir, connectionId, h2Database));
   }
 
   public SonarProjectStorage binding(Binding binding) {

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintH2Database;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 
@@ -36,14 +37,15 @@ import static org.sonarsource.sonarlint.core.commons.storage.generated.Tables.AI
  * Stores a single row (id=1) since settings are global for the installation.
  */
 public class AiCodeFixRepository {
-
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final int SINGLETON_ID = 1;
 
   private final SonarLintH2Database database;
+  private final String connectionId;
 
-  @Inject
-  public AiCodeFixRepository(SonarLintH2Database database) {
+  public AiCodeFixRepository(SonarLintH2Database database, String connectionId) {
     this.database = database;
+    this.connectionId = connectionId;
   }
 
   public Optional<AiCodeFix> get() {
@@ -92,7 +94,7 @@ public class AiCodeFixRepository {
           .execute();
       }
     } catch (RuntimeException ex) {
-      System.out.println("[DEBUG_LOG] upsert failed: " + ex.getMessage());
+      LOG.debug("Upsert failed: " + ex.getMessage());
       throw ex;
     }
   }
