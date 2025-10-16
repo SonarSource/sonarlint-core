@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
-class H2DatabaseAutoServerTest {
+class SonarLintH2DatabaseAutoServerTest {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
@@ -40,14 +40,14 @@ class H2DatabaseAutoServerTest {
     var init = new StorageInitParams(tempDir);
 
     // First DB instance opens the same file DB and creates a table + a row
-    var db1 = new H2Database(init);
+    var db1 = new SonarLintH2Database(init);
     try (var c1 = db1.getConnection(); var st1 = c1.createStatement()) {
       st1.execute("CREATE TABLE IF NOT EXISTS T(ID INT PRIMARY KEY, VAL VARCHAR(100))");
       st1.executeUpdate("MERGE INTO T KEY(ID) VALUES (1, 'from-db1')");
     }
 
     // Second DB instance, same storage root, should be able to connect thanks to AUTO_SERVER
-    var db2 = new H2Database(init);
+    var db2 = new SonarLintH2Database(init);
     try (var c2 = db2.getConnection(); var st2 = c2.createStatement()) {
       try (ResultSet rs = st2.executeQuery("SELECT VAL FROM T WHERE ID=1")) {
         assertThat(rs.next()).isTrue();

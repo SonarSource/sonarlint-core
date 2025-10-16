@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.storage.H2Database;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintH2Database;
 import org.sonarsource.sonarlint.core.commons.storage.StorageInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 
@@ -44,7 +44,7 @@ class AiCodeFixRepositoryTest {
     // Given a file-based H2 database under a temporary storage root
     var storageRoot = temp.resolve("storage");
 
-    var db = new H2Database(new StorageInitParams(storageRoot));
+    var db = new SonarLintH2Database(new StorageInitParams(storageRoot));
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var entityToStore = new AiCodeFix(
@@ -61,7 +61,7 @@ class AiCodeFixRepositoryTest {
     db.shutdown();
 
     // Create a new repository with a fresh DB instance pointing to the same storage root
-    var db2 = new H2Database(new StorageInitParams(storageRoot));
+    var db2 = new SonarLintH2Database(new StorageInitParams(storageRoot));
     var repo2 = new AiCodeFixRepository(db2);
 
     // Then we can read back exactly what we stored

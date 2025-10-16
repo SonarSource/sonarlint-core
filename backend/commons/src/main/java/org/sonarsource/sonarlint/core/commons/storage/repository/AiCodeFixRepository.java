@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import org.sonarsource.sonarlint.core.commons.storage.H2Database;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintH2Database;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 
 import static org.sonarsource.sonarlint.core.commons.storage.generated.Tables.AI_CODEFIX_SETTINGS;
@@ -39,10 +39,10 @@ public class AiCodeFixRepository {
 
   private static final int SINGLETON_ID = 1;
 
-  private final H2Database database;
+  private final SonarLintH2Database database;
 
   @Inject
-  public AiCodeFixRepository(H2Database database) {
+  public AiCodeFixRepository(SonarLintH2Database database) {
     this.database = database;
   }
 

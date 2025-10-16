@@ -21,29 +21,28 @@ package org.sonarsource.sonarlint.core.commons.storage;
 
 import jakarta.inject.Inject;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.jooq.DSLContext;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public final class H2Database {
+public final class SonarLintH2Database {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final JdbcConnectionPool dataSource;
-  private final org.jooq.DSLContext dsl;
+  private final DSLContext dsl;
 
   @Inject
-  public H2Database(StorageInitParams storageInitParams) {
+  public SonarLintH2Database(StorageInitParams storageInitParams) {
     JdbcConnectionPool ds;
     try {
-      Path baseDir = storageInitParams.storageRoot().resolve("h2");
+      var baseDir = storageInitParams.storageRoot().resolve("h2");
       Files.createDirectories(baseDir);
-      Path dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
-      System.out.println("H2Database dbBasePath: " + dbBasePath);
-      String url = "jdbc:h2:file:" + dbBasePath + ";AUTO_SERVER=TRUE";
+      var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
+      var url = "jdbc:h2:file:" + dbBasePath + ";AUTO_SERVER=TRUE";
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
     } catch (Exception e) {
@@ -52,9 +51,9 @@ public final class H2Database {
     ds.setMaxConnections(10);
     this.dataSource = ds;
 
-    // Run Flyway migrations if available. Do not fail if none are found.
+    // Run Flyway migrations if available. Do not fail if none is found.
     try {
-      Flyway flyway = Flyway.configure()
+      var flyway = Flyway.configure()
         .dataSource(this.dataSource)
         .locations("classpath:db/migration")
         .defaultSchema("PUBLIC")
@@ -68,34 +67,6 @@ public final class H2Database {
       LOG.debug("Flyway migration skipped or failed: {}", e.getMessage());
     }
 
-    // Defensive fallback: ensure required tables exist if Flyway didn't create them
-    try {
-      try (var conn = this.dataSource.getConnection(); var stmt = conn.createStatement()) {
-        stmt.executeUpdate(
-          "CREATE TABLE IF NOT EXISTS \"AI_CODEFIX_SETTINGS\" (" +
-          " \"id\" INTEGER NOT NULL," +
-          " \"supported_rules\" CLOB," +
-          " \"organization_eligible\" BOOLEAN," +
-          " \"enablement\" VARCHAR(64)," +
-          " \"enabled_project_keys\" CLOB," +
-          " \"updated_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-          " CONSTRAINT pk_ai_codefix_settings PRIMARY KEY (\"id\")" +
-          ")"
-        );
-      }
-    } catch (Exception ex) {
-      LOG.debug("Fallback table creation skipped or failed: {}", ex.getMessage());
-    }
-
-    // Debug: verify table existence
-    try (var conn = this.dataSource.getConnection(); var stmt = conn.createStatement(); var rs = stmt.executeQuery("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='AI_CODEFIX_SETTINGS'")) {
-      if (rs.next()) {
-        int c = rs.getInt(1);
-        // debug removed
-      }
-    } catch (Exception ignored) {
-    }
-
     // Initialize jOOQ DSL after migrations
     this.dsl = org.jooq.impl.DSL.using(this.dataSource, org.jooq.SQLDialect.H2);
   }
@@ -104,7 +75,7 @@ public final class H2Database {
     return dataSource;
   }
 
-  public org.jooq.DSLContext dsl() {
+  public DSLContext dsl() {
     return dsl;
   }
 

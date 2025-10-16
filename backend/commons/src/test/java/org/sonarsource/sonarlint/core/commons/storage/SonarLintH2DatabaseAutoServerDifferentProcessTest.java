@@ -35,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 @Disabled("Flaky across environments due to H2 AUTO_SERVER cross-process networking; kept for documentation and manual verification.")
-class H2DatabaseAutoServerDifferentProcessTest {
+class SonarLintH2DatabaseAutoServerDifferentProcessTest {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
@@ -48,7 +48,7 @@ class H2DatabaseAutoServerDifferentProcessTest {
     var init = new StorageInitParams(tempDir);
 
     // First DB instance opens the file DB and creates a table + a row, then shuts down to simulate another process opening it
-    var db1 = new H2Database(init);
+    var db1 = new SonarLintH2Database(init);
     try (var c1 = db1.getConnection(); var st1 = c1.createStatement()) {
       st1.execute("CREATE TABLE IF NOT EXISTS T(ID INT PRIMARY KEY, VAL VARCHAR(100))");
       st1.executeUpdate("MERGE INTO T KEY(ID) VALUES (1, 'from-db1')");
@@ -60,7 +60,7 @@ class H2DatabaseAutoServerDifferentProcessTest {
     assertThat(result.exitCode).withFailMessage(() -> "External process failed with code " + result.exitCode + "\nOutput:\n" + result.output).isZero();
 
     // Verify from a fresh DB instance that the change written by the external process is persisted
-    var db2 = new H2Database(init);
+    var db2 = new SonarLintH2Database(init);
     try (var c2 = db2.getConnection(); var ps = c2.prepareStatement("SELECT COUNT(*) FROM T"); ResultSet rs = ps.executeQuery()) {
       assertThat(rs.next()).isTrue();
       assertThat(rs.getInt(1)).isEqualTo(2);
