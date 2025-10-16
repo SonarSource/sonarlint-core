@@ -43,13 +43,11 @@ public final class H2Database {
       Files.createDirectories(baseDir);
       Path dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
       System.out.println("H2Database dbBasePath: " + dbBasePath);
-      String url = "jdbc:h2:file:" + dbBasePath + ";AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1";
+      String url = "jdbc:h2:file:" + dbBasePath + ";AUTO_SERVER=TRUE";
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
     } catch (Exception e) {
-      String fallbackUrl = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
-      LOG.debug("Failed to initialize file-based H2 DB ({}). Falling back to in-memory with URL {}", e.getMessage(), fallbackUrl);
-      ds = JdbcConnectionPool.create(fallbackUrl, "sa", "");
+      throw new IllegalStateException("Failed to initialize H2Database", e);
     }
     ds.setMaxConnections(10);
     this.dataSource = ds;
