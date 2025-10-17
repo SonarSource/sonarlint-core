@@ -99,7 +99,7 @@ public class MatchingSession {
       false, rawIssue.getSeverity(), rawIssue.getRuleType(), rawIssue.getRuleKey(),
       TextRangeUtils.getTextRangeWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()), knownIssue.getServerKey(), rawIssue.getImpacts(), rawIssue.getFlows(),
-      rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(), null, rawIssue.getRuleDescriptionContextKey(),
+      rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(), null, null, rawIssue.getRuleDescriptionContextKey(),
       rawIssue.getCleanCodeAttribute(), rawIssue.getFileUri());
   }
 

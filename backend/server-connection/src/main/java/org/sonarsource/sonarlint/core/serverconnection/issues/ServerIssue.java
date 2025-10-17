@@ -26,12 +26,14 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFinding {
   private String key;
   private boolean resolved;
+  private IssueStatus resolutionStatus;
   private String ruleKey;
   private String message;
   private Path filePath;
@@ -40,10 +42,12 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
   private RuleType type;
   private Map<SoftwareQuality, ImpactSeverity> impacts;
 
-  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
+  protected ServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+    String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
     Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.key = key;
     this.resolved = resolved;
+    this.resolutionStatus = resolutionStatus;
     this.ruleKey = ruleKey;
     this.message = message;
     this.filePath = filePath;
@@ -59,6 +63,11 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
 
   public boolean isResolved() {
     return resolved;
+  }
+
+  @CheckForNull
+  public IssueStatus getResolutionStatus() {
+    return resolutionStatus;
   }
 
   @Override

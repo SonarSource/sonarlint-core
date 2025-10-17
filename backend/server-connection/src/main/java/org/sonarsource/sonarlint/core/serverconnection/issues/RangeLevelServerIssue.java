@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -35,9 +36,10 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRangeWithHash textRange;
 
-  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate,
+  public RangeLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+    String message, Path filePath, Instant creationDate,
     @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
+    super(key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
     this.textRange = textRange;
   }
 

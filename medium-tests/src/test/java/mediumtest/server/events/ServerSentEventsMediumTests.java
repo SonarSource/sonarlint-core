@@ -565,7 +565,7 @@ class ServerSentEventsMediumTests {
         .withProject(projectKey,
           project -> project.withBranch(branchName,
             branch -> branch
-              .withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
+              .withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "WONTFIX", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
       harness.newBackend()
@@ -593,7 +593,7 @@ class ServerSentEventsMediumTests {
       assertThat(captor.getValue())
         .usingRecursiveComparison()
         .ignoringFields("id")
-        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", true, null, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
           Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
           new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true, false)));
 
@@ -604,7 +604,7 @@ class ServerSentEventsMediumTests {
       assertThat(captor.getValue())
         .usingRecursiveComparison()
         .ignoringFields("id")
-        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", true, null, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
           Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
           new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true, false)));
     }

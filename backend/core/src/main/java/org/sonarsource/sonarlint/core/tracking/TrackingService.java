@@ -39,9 +39,9 @@ import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
@@ -53,6 +53,7 @@ import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -72,6 +73,7 @@ import static java.util.stream.Collectors.toMap;
 
 public class TrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final SonarProjectBranchTrackingService branchTrackingService;
@@ -244,10 +246,11 @@ public class TrackingService {
     var serverSeverity = serverIssue.getUserSeverity();
     var severity = serverSeverity != null ? serverSeverity : trackedIssue.getSeverity();
     var impacts = serverIssue.getImpacts().isEmpty() ? trackedIssue.getImpacts() : serverIssue.getImpacts();
+    var status = IssueMapper.mapStatus(serverIssue.getResolutionStatus());
     return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), serverIssue.getCreationDate(),
       serverIssue.isResolved(), severity, serverIssue.getType(), serverIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), serverIssue.getKey(), impacts, trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), status, trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
@@ -256,15 +259,20 @@ public class TrackingService {
       serverHotspot.getStatus().isResolved(), trackedHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, trackedHotspot.getRuleKey(),
       trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
       serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
-      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), trackedHotspot.getRuleDescriptionContextKey(),
+      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), null,  trackedHotspot.getRuleDescriptionContextKey(),
       trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
   }
 
   private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
+    var resolution = localOnlyIssue.getResolution();
+    ResolutionStatus status = null;
+    if (resolution != null) {
+      status = IssueMapper.mapStatus(resolution.getStatus());
+    }
     return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), trackedIssue.getIntroductionDate(),
-      localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
+      resolution != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), status, trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 

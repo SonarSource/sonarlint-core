@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -41,6 +42,7 @@ public class ServerIssueFixtures {
     return new LineLevelServerIssue(
       "key",
       true,
+      IssueStatus.WONT_FIX,
       "repo:key",
       "message",
       "hash",
@@ -56,6 +58,7 @@ public class ServerIssueFixtures {
     return new FileLevelServerIssue(
       "key",
       true,
+      IssueStatus.WONT_FIX,
       "repo:key",
       "message",
       Path.of("file/path"),
@@ -69,6 +72,7 @@ public class ServerIssueFixtures {
     return new RangeLevelServerIssue(
       "key",
       true,
+      IssueStatus.WONT_FIX,
       "repo:key",
       "message",
       Path.of("file/path"),
@@ -84,6 +88,7 @@ public class ServerIssueFixtures {
       UUID.randomUUID(),
       "key",
       false,
+      null,
       "repo:key",
       "message",
       Path.of("file/path"),
