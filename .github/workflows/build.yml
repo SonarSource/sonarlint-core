@@ -100,6 +100,14 @@ jobs:
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux-test-report
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
 
   test-windows:
     needs: [ build ]
@@ -133,6 +141,14 @@ jobs:
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-test-report
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
 
   qa:
     needs: [ build ]
@@ -224,6 +240,14 @@ jobs:
           list-suites: failed
           list-tests: failed
           fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: qa-test-report ${{ matrix.name }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
       - name: debug
         if: failure()
         shell: bash
