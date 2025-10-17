@@ -24,12 +24,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -122,11 +124,59 @@ class TaintVulnerabilitiesMediumTests {
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
-    var actualTaintId = listAllTaintVulnerabilities(backend, "configScopeId").get(0).getId();
+    var taintVulnerability = listAllTaintVulnerabilities(backend, "configScopeId").get(0);
+    var actualTaintId = taintVulnerability.getId();
 
     var taintDetails = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams("configScopeId", actualTaintId)).join();
 
     assertThat(taintDetails).isNotNull();
+    assertThat(taintVulnerability)
+      .extracting("resolved", "resolutionStatus")
+      .containsExactly(false, null);
+  }
+
+  @SonarLintTest
+  void it_should_return_resolved_taint_details(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+
+    var server = harness.newFakeSonarQubeServer()
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("javasecurity:S6549", activeRule -> activeRule
+        .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
+      .withProject("projectKey", project -> project.withBranch("main")
+        .withQualityProfile("qpKey"))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    var fakeTaintBuilder = aServerTaintIssue("key")
+      .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withRuleKey("javasecurity:S6549")
+      .withType(RuleType.VULNERABILITY)
+      .withIntroductionDate(introductionDate)
+      .resolvedWithStatus(IssueStatus.ACCEPT);
+
+    var backend = harness.newBackend()
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey",
+          project -> project.withMainBranch("main",
+            branch -> branch.withTaintIssue(fakeTaintBuilder))))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .start(client);
+
+    client.waitForSynchronization();
+
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
+      .extracting(TaintVulnerabilityDto::getIntroductionDate)
+      .containsOnly(introductionDate));
+    var taintVulnerability = listAllTaintVulnerabilities(backend, "configScopeId").get(0);
+    var actualTaintId = taintVulnerability.getId();
+
+    var taintDetails = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams("configScopeId", actualTaintId)).join();
+
+    assertThat(taintDetails).isNotNull();
+    assertThat(taintVulnerability)
+      .extracting("resolved", "resolutionStatus")
+      .containsExactly(true, ResolutionStatus.ACCEPT);
   }
 
   @SonarLintTest

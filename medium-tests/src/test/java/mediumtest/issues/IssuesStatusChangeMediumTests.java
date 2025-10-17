@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
@@ -634,7 +635,7 @@ class IssuesStatusChangeMediumTests {
   @SonarLintTest
   void it_should_return_true_on_reopening_server_issue(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG)
-      .resolved();
+      .resolved(IssueStatus.ACCEPT);
     var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage

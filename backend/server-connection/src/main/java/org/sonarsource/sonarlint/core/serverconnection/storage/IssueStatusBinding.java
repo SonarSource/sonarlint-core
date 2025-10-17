@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import javax.annotation.CheckForNull;
+import java.io.ByteArrayInputStream;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 
-/**
- * Represents Issue resolution status. Not the status of the issue itself.
- */
-public enum IssueStatus {
-  ACCEPT,
-  WONT_FIX,
-  FALSE_POSITIVE;
+public class IssueStatusBinding extends ComparableBinding {
 
-  @CheckForNull
-  public static IssueStatus parse(String stringRepresentation) {
-    return switch (stringRepresentation) {
-      // ACCEPTED transition leads to WONTFIX status on server so we are not making difference between them.
-      case "WONTFIX", "ACCEPT" -> IssueStatus.ACCEPT;
-      case "FALSE-POSITIVE" -> IssueStatus.FALSE_POSITIVE;
-      default -> null;
-    };
+  @Override
+  public IssueStatus readObject(ByteArrayInputStream stream) {
+    return IssueStatus.values()[BindingUtils.readInt(stream)];
+  }
+
+  @Override
+  public void writeObject(LightOutputStream output, Comparable object) {
+    final IssueStatus cPair = (IssueStatus) object;
+    output.writeUnsignedInt(cPair.ordinal() ^ 0x80_000_000);
   }
 }

@@ -35,17 +35,22 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
+import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.HotspotReviewStatusBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueSeverityBinding;
+import org.sonarsource.sonarlint.core.serverconnection.storage.IssueStatusBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueTypeBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -214,15 +219,16 @@ public class ProjectStorageFixture {
         entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
         entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
         entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
+        entityStore.registerCustomPropertyType(txn, IssueStatus.class, new IssueStatusBinding());
         branches.forEach(branch -> {
           var branchEntity = txn.newEntity("Branch");
           branchEntity.setProperty("name", branch.name);
           var issuesByFilePath = branch.serverIssues.stream()
             .map(ServerIssueFixtures.ServerIssueBuilder::build)
-            .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath));
+            .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::filePath));
           var taintIssuesByFilePath = branch.serverTaintIssues.stream()
             .map(ServerTaintIssueFixtures.ServerTaintIssueBuilder::build)
-            .collect(Collectors.groupingBy(ServerTaintIssueFixtures.ServerTaintIssue::getFilePath));
+            .collect(Collectors.groupingBy(ServerTaintIssueFixtures.ServerTaintIssue::filePath));
           var hotspotsByFilePath = branch.serverHotspots.stream()
             .map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build)
             .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::getFilePath));
@@ -234,118 +240,18 @@ public class ProjectStorageFixture {
               fileEntity.setProperty("path", filePath);
               branchEntity.addLink("files", fileEntity);
               issuesByFilePath.getOrDefault(filePath, Collections.emptyList())
-                .forEach(issue -> {
-                  var issueEntity = txn.newEntity("Issue");
-                  issueEntity.setProperty("key", issue.key);
-                  issueEntity.setProperty("type", issue.ruleType);
-                  issueEntity.setProperty("resolved", issue.resolved);
-                  issueEntity.setProperty("ruleKey", issue.ruleKey);
-                  issueEntity.setBlobString("message", issue.message);
-                  issueEntity.setProperty("creationDate", issue.introductionDate);
-                  var userSeverity = issue.userSeverity;
-                  if (userSeverity != null) {
-                    issueEntity.setProperty("userSeverity", userSeverity);
-                  }
-                  if (issue.lineNumber != null && issue.lineHash != null) {
-                    issueEntity.setBlobString("lineHash", issue.lineHash);
-                    issueEntity.setProperty("startLine", issue.lineNumber);
-                  } else if (issue.textRangeWithHash != null) {
-                    var textRange = issue.textRangeWithHash;
-                    issueEntity.setProperty("startLine", textRange.getStartLine());
-                    issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                    issueEntity.setProperty("endLine", textRange.getEndLine());
-                    issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-                    issueEntity.setBlobString("rangeHash", textRange.getHash());
-                  }
-                  issueEntity.setBlob("impacts", toProtoImpact(issue.impacts));
-
-                  issueEntity.setLink("file", fileEntity);
-                  fileEntity.addLink("issues", issueEntity);
-                });
+                .forEach(issue -> linkIssueEntity(txn, issue, fileEntity));
 
               taintIssuesByFilePath.getOrDefault(filePath, Collections.emptyList())
-                .forEach(taint -> {
-                  var taintIssueEntity = txn.newEntity("TaintIssue");
-                  taintIssueEntity.setProperty("id", UUID.randomUUID());
-                  taintIssueEntity.setProperty("key", taint.key);
-                  taintIssueEntity.setProperty("type", taint.type);
-                  taintIssueEntity.setProperty("resolved", taint.resolved);
-                  taintIssueEntity.setProperty("ruleKey", taint.ruleKey);
-                  taintIssueEntity.setBlobString("message", taint.message);
-                  taintIssueEntity.setProperty("creationDate", taint.creationDate);
-                  taintIssueEntity.setProperty("severity", taint.severity);
-                  if (taint.textRange != null) {
-                    var textRange = taint.textRange;
-                    taintIssueEntity.setProperty("startLine", textRange.getStartLine());
-                    taintIssueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                    taintIssueEntity.setProperty("endLine", textRange.getEndLine());
-                    taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-                    taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
-                  }
-                  taintIssueEntity.setBlob("flows", toProtoFlow(taint.flows));
-                  if (taint.ruleDescriptionContextKey != null) {
-                    taintIssueEntity.setProperty("ruleDescriptionContextKey", taint.ruleDescriptionContextKey);
-                  }
-                  if (taint.cleanCodeAttribute != null) {
-                    taintIssueEntity.setProperty("cleanCodeAttribute", taint.cleanCodeAttribute.name());
-                  }
-                  taintIssueEntity.setBlob("impacts", toProtoImpact(taint.impacts));
-
-                  taintIssueEntity.setLink("file", fileEntity);
-                  fileEntity.addLink("taintIssues", taintIssueEntity);
-                  branchEntity.addLink("taintIssues", taintIssueEntity);
-                  taintIssueEntity.setLink("branch", branchEntity);
-                });
+                .forEach(taint -> linkTaintEntity(txn, taint, fileEntity, branchEntity));
 
               hotspotsByFilePath.getOrDefault(filePath, Collections.emptyList())
-                .forEach(hotspot -> {
-                  var hotspotEntity = txn.newEntity("Hotspot");
-                  hotspotEntity.setProperty("key", hotspot.key);
-                  hotspotEntity.setProperty("ruleKey", hotspot.ruleKey);
-                  hotspotEntity.setBlobString("message", hotspot.message);
-                  hotspotEntity.setProperty("creationDate", hotspot.introductionDate);
-                  var textRange = hotspot.textRangeWithHash;
-                  hotspotEntity.setProperty("startLine", textRange.getStartLine());
-                  hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                  hotspotEntity.setProperty("endLine", textRange.getEndLine());
-                  hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-                  hotspotEntity.setBlobString("rangeHash", textRange.getHash());
-
-                  hotspotEntity.setProperty("status", hotspot.status);
-                  hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability.toString());
-                  if (hotspot.assignee != null) {
-                    hotspotEntity.setProperty("assignee", hotspot.assignee);
-                  }
-
-                  hotspotEntity.setLink("file", fileEntity);
-                  fileEntity.addLink("hotspots", hotspotEntity);
-                });
+                .forEach(hotspot -> linkHotshotEntity(txn, hotspot, fileEntity));
             });
 
           branch.serverDependencyRisks.stream()
             .map(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder::build)
-            .forEach(dependencyRisk -> {
-              var dependencyRiskEntity = txn.newEntity("DependencyRisk");
-              dependencyRiskEntity.setProperty("key", dependencyRisk.key().toString());
-              dependencyRiskEntity.setProperty("type", dependencyRisk.type().name());
-              dependencyRiskEntity.setProperty("severity", dependencyRisk.severity().name());
-              dependencyRiskEntity.setProperty("quality", dependencyRisk.quality().name());
-              dependencyRiskEntity.setProperty("status", dependencyRisk.status().name());
-              dependencyRiskEntity.setProperty("packageName", dependencyRisk.packageName());
-              dependencyRiskEntity.setProperty("packageVersion", dependencyRisk.packageVersion());
-              if (dependencyRisk.vulnerabilityId() != null) {
-                dependencyRiskEntity.setProperty("vulnerabilityId", dependencyRisk.vulnerabilityId());
-              }
-              if (dependencyRisk.cvssScore() != null) {
-                dependencyRiskEntity.setProperty("cvssScore", dependencyRisk.cvssScore());
-              }
-              dependencyRiskEntity.setProperty("transitions", dependencyRisk.transitions().stream()
-                .map(Enum::name)
-                .collect(Collectors.joining(",")));
-
-              branchEntity.addLink("dependencyRisks", dependencyRiskEntity);
-              dependencyRiskEntity.setLink("branch", branchEntity);
-            });
+            .forEach(dependencyRisk -> linkDependencyRiskEntity(txn, dependencyRisk, branchEntity));
         });
       });
       try {
@@ -353,6 +259,120 @@ public class ProjectStorageFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Unable to backup server issue database", e);
       }
+    }
+
+    private static void linkIssueEntity(StoreTransaction txn, ServerIssueFixtures.ServerIssue issue, Entity fileEntity) {
+      var issueEntity = txn.newEntity("Issue");
+      issueEntity.setProperty("key", issue.key());
+      issueEntity.setProperty("type", issue.ruleType());
+      issueEntity.setProperty("resolved", issue.resolved());
+      if (issue.resolutionStatus() != null) {
+        issueEntity.setProperty("resolutionStatus", issue.resolutionStatus());
+      }
+      issueEntity.setProperty("ruleKey", issue.ruleKey());
+      issueEntity.setBlobString("message", issue.message());
+      issueEntity.setProperty("creationDate", issue.introductionDate());
+      var userSeverity = issue.userSeverity();
+      if (userSeverity != null) {
+        issueEntity.setProperty("userSeverity", userSeverity);
+      }
+      if (issue.lineNumber() != null && issue.lineHash() != null) {
+        issueEntity.setBlobString("lineHash", issue.lineHash());
+        issueEntity.setProperty("startLine", issue.lineNumber());
+      } else if (issue.textRangeWithHash() != null) {
+        var textRange = issue.textRangeWithHash();
+        issueEntity.setProperty("startLine", textRange.getStartLine());
+        issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+        issueEntity.setProperty("endLine", textRange.getEndLine());
+        issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+        issueEntity.setBlobString("rangeHash", textRange.getHash());
+      }
+      issueEntity.setBlob("impacts", toProtoImpact(issue.impacts()));
+
+      issueEntity.setLink("file", fileEntity);
+      fileEntity.addLink("issues", issueEntity);
+    }
+
+    private static void linkTaintEntity(StoreTransaction txn, ServerTaintIssueFixtures.ServerTaintIssue taint, Entity fileEntity, Entity branchEntity) {
+      var taintIssueEntity = txn.newEntity("TaintIssue");
+      taintIssueEntity.setProperty("id", UUID.randomUUID());
+      taintIssueEntity.setProperty("key", taint.key());
+      taintIssueEntity.setProperty("type", taint.type());
+      taintIssueEntity.setProperty("resolved", taint.resolved());
+      if (taint.resolutionStatus() != null) {
+        taintIssueEntity.setProperty("resolutionStatus", taint.resolutionStatus());
+      }
+      taintIssueEntity.setProperty("ruleKey", taint.ruleKey());
+      taintIssueEntity.setBlobString("message", taint.message());
+      taintIssueEntity.setProperty("creationDate", taint.creationDate());
+      taintIssueEntity.setProperty("severity", taint.severity());
+      if (taint.textRange() != null) {
+        var textRange = taint.textRange();
+        taintIssueEntity.setProperty("startLine", textRange.getStartLine());
+        taintIssueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+        taintIssueEntity.setProperty("endLine", textRange.getEndLine());
+        taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+        taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
+      }
+      taintIssueEntity.setBlob("flows", toProtoFlow(taint.flows()));
+      if (taint.ruleDescriptionContextKey() != null) {
+        taintIssueEntity.setProperty("ruleDescriptionContextKey", taint.ruleDescriptionContextKey());
+      }
+      if (taint.cleanCodeAttribute() != null) {
+        taintIssueEntity.setProperty("cleanCodeAttribute", taint.cleanCodeAttribute().name());
+      }
+      taintIssueEntity.setBlob("impacts", toProtoImpact(taint.impacts()));
+
+      taintIssueEntity.setLink("file", fileEntity);
+      fileEntity.addLink("taintIssues", taintIssueEntity);
+      branchEntity.addLink("taintIssues", taintIssueEntity);
+      taintIssueEntity.setLink("branch", branchEntity);
+    }
+
+    private static void linkHotshotEntity(StoreTransaction txn, ServerSecurityHotspotFixture.ServerHotspot hotspot, Entity fileEntity) {
+      var hotspotEntity = txn.newEntity("Hotspot");
+      hotspotEntity.setProperty("key", hotspot.key);
+      hotspotEntity.setProperty("ruleKey", hotspot.ruleKey);
+      hotspotEntity.setBlobString("message", hotspot.message);
+      hotspotEntity.setProperty("creationDate", hotspot.introductionDate);
+      var textRange = hotspot.textRangeWithHash;
+      hotspotEntity.setProperty("startLine", textRange.getStartLine());
+      hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+      hotspotEntity.setProperty("endLine", textRange.getEndLine());
+      hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+      hotspotEntity.setBlobString("rangeHash", textRange.getHash());
+
+      hotspotEntity.setProperty("status", hotspot.status);
+      hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability.toString());
+      if (hotspot.assignee != null) {
+        hotspotEntity.setProperty("assignee", hotspot.assignee);
+      }
+
+      hotspotEntity.setLink("file", fileEntity);
+      fileEntity.addLink("hotspots", hotspotEntity);
+    }
+
+    private static void linkDependencyRiskEntity(StoreTransaction txn, ServerDependencyRisk dependencyRisk, Entity branchEntity) {
+      var dependencyRiskEntity = txn.newEntity("DependencyRisk");
+      dependencyRiskEntity.setProperty("key", dependencyRisk.key().toString());
+      dependencyRiskEntity.setProperty("type", dependencyRisk.type().name());
+      dependencyRiskEntity.setProperty("severity", dependencyRisk.severity().name());
+      dependencyRiskEntity.setProperty("quality", dependencyRisk.quality().name());
+      dependencyRiskEntity.setProperty("status", dependencyRisk.status().name());
+      dependencyRiskEntity.setProperty("packageName", dependencyRisk.packageName());
+      dependencyRiskEntity.setProperty("packageVersion", dependencyRisk.packageVersion());
+      if (dependencyRisk.vulnerabilityId() != null) {
+        dependencyRiskEntity.setProperty("vulnerabilityId", dependencyRisk.vulnerabilityId());
+      }
+      if (dependencyRisk.cvssScore() != null) {
+        dependencyRiskEntity.setProperty("cvssScore", dependencyRisk.cvssScore());
+      }
+      dependencyRiskEntity.setProperty("transitions", dependencyRisk.transitions().stream()
+        .map(Enum::name)
+        .collect(Collectors.joining(",")));
+
+      branchEntity.addLink("dependencyRisks", dependencyRiskEntity);
+      dependencyRiskEntity.setLink("branch", branchEntity);
     }
 
     public static class RuleSetBuilder {

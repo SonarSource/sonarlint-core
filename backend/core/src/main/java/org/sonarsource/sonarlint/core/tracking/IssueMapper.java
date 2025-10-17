@@ -20,13 +20,20 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.time.Instant;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
 
 public class IssueMapper {
+
+  private static final Map<IssueStatus, ResolutionStatus> STATUS_MAPPING = statusMapping();
 
   private IssueMapper() {
     // utils
@@ -37,7 +44,18 @@ public class IssueMapper {
       issue.getRuleType(), issue.getRuleKey(), getTextRangeWithHash(issue.getTextRange(),
       issue.getClientInputFile()), getLineWithHash(issue.getTextRange(),
       issue.getClientInputFile()), null, issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(),
-      issue.getVulnerabilityProbability(), null,  issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());
+      issue.getVulnerabilityProbability(), null, null, issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());
   }
 
+  public static ResolutionStatus mapStatus(@Nullable IssueStatus status) {
+    return STATUS_MAPPING.get(status);
+  }
+
+  private static EnumMap<IssueStatus, ResolutionStatus> statusMapping() {
+    return new EnumMap<>(Map.of(
+      IssueStatus.ACCEPT, ResolutionStatus.ACCEPT,
+      IssueStatus.FALSE_POSITIVE, ResolutionStatus.FALSE_POSITIVE,
+      IssueStatus.WONT_FIX, ResolutionStatus.WONT_FIX
+    ));
+  }
 }
