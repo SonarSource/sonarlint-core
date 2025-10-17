@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
@@ -33,9 +34,10 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
  */
 public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
 
-  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
+  public FileLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+    String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
     RuleType type, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
+    super(key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
   }
 
 }

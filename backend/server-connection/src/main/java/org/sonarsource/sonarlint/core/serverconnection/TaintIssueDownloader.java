@@ -38,6 +38,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -121,7 +122,7 @@ public class TaintIssueDownloader {
     Map<String, Path> componentPathsByKey, Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = RuleKey.parse(taintVulnerabilityFromWs.getRule());
     var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentPathsByKey, sourceCodeByKey, cancelMonitor);
-    var filePath = primaryLocation.getFilePath();
+    var filePath = primaryLocation.filePath();
     if (filePath == null) {
       // Ignore project level issues
       return null;
@@ -131,17 +132,20 @@ public class TaintIssueDownloader {
     var impacts = taintVulnerabilityFromWs.getImpactsList().stream()
       .map(i -> Map.entry(parseProtoSoftwareQuality(i), parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    var resolution = taintVulnerabilityFromWs.getResolution();
+    var resolutionStatus = IssueStatus.parse(resolution);
     return new ServerTaintIssue(
       UUID.randomUUID(),
       taintVulnerabilityFromWs.getKey(),
-      !taintVulnerabilityFromWs.getResolution().isEmpty(),
+      !resolution.isEmpty(),
+      resolutionStatus,
       ruleKey.toString(),
-      primaryLocation.getMessage(),
+      primaryLocation.message(),
       filePath,
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
       IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
-      primaryLocation.getTextRange(), ruleDescriptionContextKey,
+      primaryLocation.textRange(), ruleDescriptionContextKey,
       cleanCodeAttribute, impacts)
       .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey, cancelMonitor));
   }
@@ -205,12 +209,12 @@ public class TaintIssueDownloader {
         parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     if (mainLocation.hasTextRange()) {
-      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(),
+      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), null, liteTaintIssueFromWs.getRuleKey(),
         mainLocation.getMessage(),
         filePath, creationDate, severity,
         type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     } else {
-      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(),
+      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), null, liteTaintIssueFromWs.getRuleKey(),
         mainLocation.getMessage(),
         filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     }

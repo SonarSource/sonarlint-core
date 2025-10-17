@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -126,11 +127,14 @@ public class IssueDownloader {
     var userSeverity = batchIssueFromWs.getManualSeverity() ? IssueSeverity.valueOf(batchIssueFromWs.getSeverity().name()) : null;
     var ruleType = RuleType.valueOf(batchIssueFromWs.getType());
     var impacts = Collections.<SoftwareQuality, ImpactSeverity>emptyMap();
+    var resolutionStatus = IssueStatus.parse(batchIssueFromWs.getResolution());
     if (batchIssueFromWs.hasLine()) {
-      return new LineLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), batchIssueFromWs.getChecksum(), filePath,
+      return new LineLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), resolutionStatus, ruleKey,
+        batchIssueFromWs.getMsg(), batchIssueFromWs.getChecksum(), filePath,
         creationDate, userSeverity, ruleType, batchIssueFromWs.getLine(), impacts);
     } else {
-      return new FileLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), filePath, creationDate, userSeverity,
+      return new FileLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), resolutionStatus, ruleKey,
+        batchIssueFromWs.getMsg(), filePath, creationDate, userSeverity,
         ruleType, impacts);
     }
   }
@@ -148,11 +152,11 @@ public class IssueDownloader {
         parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     if (mainLocation.hasTextRange()) {
-      return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+      return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), null, liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, userSeverity,
         ruleType, toServerIssueTextRange(mainLocation.getTextRange()), impacts);
     } else {
-      return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+      return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), null, liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, userSeverity, ruleType, impacts);
     }
   }
