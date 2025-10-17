@@ -15,6 +15,19 @@
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- Database-related libraries for H2 wrapper -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
     <dependency>
         <groupId>org.sonarsource.git.blame</groupId>
         <artifactId>git-files-blame</artifactId>
@@ -103,6 +116,60 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-codegen-maven</artifactId>
+        <version>${jooq.version}</version>
+        <executions>
+          <execution>
+            <id>generate-ai-codefix-jooq</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <generator>
+                <name>org.jooq.codegen.DefaultGenerator</name>
+                <database>
+                  <name>org.jooq.meta.extensions.ddl.DDLDatabase</name>
+                  <properties>
+                    <property>
+                      <key>scripts</key>
+                      <value>${project.basedir}/src/main/resources/db/migration/*.sql</value>
+                    </property>
+                    <property>
+                      <key>sort</key>
+                      <value>flyway</value>
+                    </property>
+                  </properties>
+                  <includes>AI_CODEFIX_SETTINGS</includes>
+                </database>
+                <target>
+                  <packageName>org.sonarsource.sonarlint.core.commons.storage.generated</packageName>
+                  <directory>${project.build.directory}/generated-sources/jooq</directory>
+                </target>
+              </generator>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-meta</artifactId>
+            <version>${jooq.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-codegen</artifactId>
+            <version>${jooq.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

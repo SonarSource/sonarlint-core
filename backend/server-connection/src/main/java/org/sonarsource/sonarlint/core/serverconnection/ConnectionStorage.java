@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.flywaydb.core.internal.database.h2.H2Database;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintH2Database;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.AiCodeFixStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
@@ -38,15 +41,17 @@ public class ConnectionStorage {
   private final PluginsStorage pluginsStorage;
   private final Path connectionStorageRoot;
   private final AiCodeFixStorage aiCodeFixStorage;
+  private final AiCodeFixRepository aiCodeFixRepository;
   private final OrganizationStorage organizationStorage;
 
-  public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId) {
+  public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId, SonarLintH2Database h2Database) {
     this.connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
     this.projectsStorageRoot = connectionStorageRoot.resolve("projects");
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
     this.serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
     this.aiCodeFixStorage = new AiCodeFixStorage(connectionStorageRoot);
+    this.aiCodeFixRepository = new AiCodeFixRepository(h2Database, connectionId);
     this.organizationStorage = new OrganizationStorage(connectionStorageRoot);
   }
 
@@ -65,6 +70,10 @@ public class ConnectionStorage {
 
   public AiCodeFixStorage aiCodeFix() {
     return aiCodeFixStorage;
+  }
+
+  public AiCodeFixRepository aiCodeFixH2() {
+    return aiCodeFixRepository;
   }
 
   public OrganizationStorage organization() {
