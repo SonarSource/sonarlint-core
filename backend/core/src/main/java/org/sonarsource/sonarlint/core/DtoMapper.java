@@ -58,7 +58,8 @@ public class DtoMapper {
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).toList(),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).toList(),
-      issue.getRuleDescriptionContextKey(), isAiCodeFixable);
+      issue.getRuleDescriptionContextKey(), isAiCodeFixable,
+      issue.getResolutionStatus());
   }
 
   public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {

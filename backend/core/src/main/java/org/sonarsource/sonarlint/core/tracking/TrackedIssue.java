@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 
 public class TrackedIssue {
   private final UUID id;
@@ -54,14 +55,15 @@ public class TrackedIssue {
   private final List<QuickFix> quickFixes;
   private final VulnerabilityProbability vulnerabilityProbability;
   private final HotspotStatus hotspotStatus;
+  private final ResolutionStatus resolutionStatus;
   private final String ruleDescriptionContextKey;
   private final CleanCodeAttribute cleanCodeAttribute;
   private final URI fileUri;
 
   public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity, RuleType type, String ruleKey,
     @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts, List<Flow> flows,
-    List<QuickFix> quickFixes, @Nullable VulnerabilityProbability vulnerabilityProbability, @Nullable HotspotStatus hotspotStatus, @Nullable String ruleDescriptionContextKey,
-    CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
+    List<QuickFix> quickFixes, @Nullable VulnerabilityProbability vulnerabilityProbability, @Nullable HotspotStatus hotspotStatus, @Nullable ResolutionStatus resolutionStatus, 
+    @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
     this.id = id;
     this.message = message;
     this.ruleKey = ruleKey;
@@ -77,6 +79,7 @@ public class TrackedIssue {
     this.quickFixes = quickFixes;
     this.vulnerabilityProbability = vulnerabilityProbability;
     this.hotspotStatus = hotspotStatus;
+    this.resolutionStatus = resolutionStatus;
     this.ruleDescriptionContextKey = ruleDescriptionContextKey;
     this.cleanCodeAttribute = cleanCodeAttribute;
     this.fileUri = fileUri;
@@ -163,5 +166,9 @@ public class TrackedIssue {
   @CheckForNull
   public HotspotStatus getHotspotStatus() {
     return hotspotStatus;
+  }
+
+  public ResolutionStatus getResolutionStatus() {
+    return resolutionStatus;
   }
 }

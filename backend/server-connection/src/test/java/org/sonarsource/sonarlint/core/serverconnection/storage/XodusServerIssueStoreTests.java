@@ -174,8 +174,8 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getTextRange().getHash()).isEqualTo("ab12");
     assertThat(savedIssue.getFlows()).hasSize(1);
     assertThat(savedIssue.getFlows().get(0).locations())
-      .extracting(ServerIssueLocation::getFilePath, ServerIssueLocation::getMessage, l -> l.getTextRange().getHash(), l -> l.getTextRange().getStartLine(),
-        l -> l.getTextRange().getStartLineOffset(), l -> l.getTextRange().getEndLine(), l -> l.getTextRange().getEndLineOffset())
+      .extracting(ServerIssueLocation::filePath, ServerIssueLocation::message, l -> l.textRange().getHash(), l -> l.textRange().getStartLine(),
+        l -> l.textRange().getStartLineOffset(), l -> l.textRange().getEndLine(), l -> l.textRange().getEndLineOffset())
       .containsOnly(tuple(filePath, "flow message", "myFlowRangeHash", 5, 6, 7, 8));
     assertThat(savedIssue.getRuleDescriptionContextKey()).isEqualTo("context");
     assertThat(savedIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));

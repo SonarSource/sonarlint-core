@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -153,6 +154,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String CVSS_SCORE_PROPERTY_NAME = "cvssScore";
   private static final String TRANSITIONS_PROPERTY_NAME = "transitions";
   private static final String STATUS_PROPERTY_NAME = "status";
+  private static final String RESOLUTION_STATUS_PROPERTY_NAME = "resolutionStatus";
+
   private final PersistentEntityStore entityStore;
 
   private final Path backupFile;
@@ -183,6 +186,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
       entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
       entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
+      entityStore.registerCustomPropertyType(txn, IssueStatus.class, new IssueStatusBinding());
     });
 
     entityStore.executeInExclusiveTransaction(afterInit);
@@ -203,6 +207,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var startLine = storedIssue.getProperty(START_LINE_PROPERTY_NAME);
     var key = (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME));
     var resolved = Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME));
+    var resolutionStatus = (IssueStatus) storedIssue.getProperty(RESOLUTION_STATUS_PROPERTY_NAME);
     var ruleKey = (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME));
     var msg = requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME));
     var creationDate = (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME));
@@ -211,7 +216,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var impacts = readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME));
     var effectiveFilePath = Path.of(filePath);
     if (startLine == null) {
-      return new FileLevelServerIssue(key, resolved, ruleKey, msg, effectiveFilePath, creationDate, userSeverity, type, impacts);
+      return new FileLevelServerIssue(key, resolved, resolutionStatus, ruleKey, msg, effectiveFilePath, creationDate, userSeverity, type, impacts);
     } else {
       var rangeHash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
@@ -222,6 +227,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         return new RangeLevelServerIssue(
           key,
           resolved,
+          resolutionStatus,
           ruleKey,
           msg,
           effectiveFilePath,
@@ -234,6 +240,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         return new LineLevelServerIssue(
           key,
           resolved,
+          resolutionStatus,
           ruleKey,
           msg,
           storedIssue.getBlobString(LINE_HASH_PROPERTY_NAME),
@@ -263,6 +270,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (UUID) requireNonNull(storedIssue.getProperty(ID_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
+      (IssueStatus) storedIssue.getProperty(RESOLUTION_STATUS_PROPERTY_NAME),
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME)),
       Path.of(filePath),
@@ -650,6 +658,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static void updateIssueEntity(Entity issueEntity, ServerIssue issue) {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
+    var resolutionStatus = issue.getResolutionStatus();
+    if (resolutionStatus != null) {
+      issueEntity.setProperty(RESOLUTION_STATUS_PROPERTY_NAME, resolutionStatus);
+    }
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
     var userSeverity = issue.getUserSeverity();
@@ -681,6 +693,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static void updateTaintIssueEntity(ServerTaintIssue issue, Entity issueEntity) {
     issueEntity.setProperty(ID_PROPERTY_NAME, issue.getId());
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
+    var resolutionStatus = issue.getResolutionStatus();
+    if (resolutionStatus != null) {
+      issueEntity.setProperty(RESOLUTION_STATUS_PROPERTY_NAME, resolutionStatus);
+    }
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
@@ -925,7 +941,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static void setTransitions(Entity issueEntity, List<ServerDependencyRisk.Transition> transitions) {
     issueEntity.setProperty(TRANSITIONS_PROPERTY_NAME, transitions.stream()
       .map(Enum::name)
-      .collect(Collectors.joining(",")));
+      .collect(joining(",")));
   }
 
   @Override
@@ -1040,12 +1056,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static Location toProtoLocation(ServerIssueLocation l) {
     var location = Location.newBuilder();
-    var filePath = l.getFilePath();
+    var filePath = l.filePath();
     if (filePath != null) {
       location.setFilePath(filePath.toString());
     }
-    location.setMessage(l.getMessage());
-    var textRange = l.getTextRange();
+    location.setMessage(l.message());
+    var textRange = l.textRange();
     if (textRange != null) {
       location.setTextRange(TextRange.newBuilder()
         .setStartLine(textRange.getStartLine())

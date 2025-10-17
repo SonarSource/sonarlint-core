@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -39,6 +40,8 @@ public class ServerTaintIssue implements ServerFinding {
   private final UUID id;
   private String key;
   private boolean resolved;
+  @Nullable
+  private final IssueStatus resolutionStatus;
   private String ruleKey;
   private String message;
   private Path filePath;
@@ -53,12 +56,14 @@ public class ServerTaintIssue implements ServerFinding {
   @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
 
-  public ServerTaintIssue(UUID id, String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+  public ServerTaintIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+                          String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
                           @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
                           Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.id = id;
     this.key = key;
     this.resolved = resolved;
+    this.resolutionStatus = resolutionStatus;
     this.ruleKey = ruleKey;
     this.message = message;
     this.filePath = filePath;
@@ -81,6 +86,11 @@ public class ServerTaintIssue implements ServerFinding {
 
   public boolean isResolved() {
     return resolved;
+  }
+
+  @CheckForNull
+  public IssueStatus getResolutionStatus() {
+    return resolutionStatus;
   }
 
   @Override
@@ -185,41 +195,7 @@ public class ServerTaintIssue implements ServerFinding {
     return this;
   }
 
-  public static class Flow {
-    private final List<ServerIssueLocation> locations;
+  public record Flow(List<ServerIssueLocation> locations) { }
 
-    public Flow(List<ServerIssueLocation> locations) {
-      this.locations = locations;
-    }
-
-    public List<ServerIssueLocation> locations() {
-      return locations;
-    }
-  }
-
-  public static class ServerIssueLocation {
-    private final String message;
-    private final Path filePath;
-    private final TextRangeWithHash textRange;
-
-    public ServerIssueLocation(@Nullable Path filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
-      this.textRange = textRange;
-      this.filePath = filePath;
-      this.message = message;
-    }
-
-    @CheckForNull
-    public Path getFilePath() {
-      return filePath;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-
-    @CheckForNull
-    public TextRangeWithHash getTextRange() {
-      return textRange;
-    }
-  }
+  public record ServerIssueLocation(@Nullable Path filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) { }
 }
