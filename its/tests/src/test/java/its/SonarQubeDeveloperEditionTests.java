@@ -93,7 +93,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
@@ -202,9 +202,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
-      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, true, true, false, true, false);
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
+        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null,
+          Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.SERVER_SENT_EVENTS, BackendCapability.SECURITY_HOTSPOTS,
+            BackendCapability.DATAFLOW_BUG_DETECTION),
           sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("work"),
           emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(),
@@ -722,7 +723,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(configScopeId))
         .get().getMatchedSonarProjectBranch())
-        .isEqualTo(short_branch));
+          .isEqualTo(short_branch));
 
       await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, short_branch, long_branch));
     }
@@ -757,7 +758,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(configScopeId))
         .get().getMatchedSonarProjectBranch())
-        .isEqualTo(featureBranch));
+          .isEqualTo(featureBranch));
       waitForSync(configScopeId);
 
       raisedIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");

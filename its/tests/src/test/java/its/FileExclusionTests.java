@@ -57,7 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddCo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -106,17 +106,17 @@ class FileExclusionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, false, false);
       var enabledLanguages = Set.of(JAVA);
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO,
-            IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"),
-            sonarUserHome.resolve("work"),
-            Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(), Collections.emptySet(),
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
-            Collections.emptyList(),
-            sonarUserHome.toString(),
-            Map.of(), false, null, false, null))
+        new InitializeParams(IT_CLIENT_INFO,
+          IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION),
+          sonarUserHome.resolve("storage"),
+          sonarUserHome.resolve("work"),
+          Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(), Collections.emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
+          Collections.emptyList(),
+          sonarUserHome.toString(),
+          Map.of(), false, null, false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -160,8 +160,8 @@ class FileExclusionTests extends AbstractConnectedTests {
 
     // Firstly check file is included
     var getFilesStatusParams = new GetFilesStatusParams(Map.of(configScopeId, List.of(filePath.toUri())));
-    await().atMost(10, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+    await().atMost(10, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
 
     // Change file exclusion settings on SQ which should affect Foo.java
     adminWsClient.settings().set(new SetRequest()
@@ -172,8 +172,8 @@ class FileExclusionTests extends AbstractConnectedTests {
     forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is excluded
-    await().atMost(30, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
+    await().atMost(30, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
 
     // Change file exclusion settings on SQ which should not affect Foo.java
     adminWsClient.settings().set(new SetRequest()
@@ -184,8 +184,8 @@ class FileExclusionTests extends AbstractConnectedTests {
     forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is included
-    await().atMost(30, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+    await().atMost(30, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
 
     // Change file inclusion settings on SQ to include only .js files
     adminWsClient.settings().set(new SetRequest()
@@ -196,8 +196,8 @@ class FileExclusionTests extends AbstractConnectedTests {
     forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is excluded
-    await().atMost(30, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
+    await().atMost(30, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
 
     // Reset file inclusions/exclusion settings on SQ
     adminWsClient.settings().reset(new ResetRequest()
@@ -207,8 +207,8 @@ class FileExclusionTests extends AbstractConnectedTests {
     forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is included again
-    await().atMost(30, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+    await().atMost(30, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
   }
 
   private static void forceBackendToPullSettings(String configScopeId, String projectKey) {

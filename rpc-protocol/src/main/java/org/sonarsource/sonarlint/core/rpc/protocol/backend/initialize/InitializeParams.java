@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,16 +29,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 
 public class InitializeParams {
   private final ClientConstantInfoDto clientConstantInfo;
@@ -62,7 +51,6 @@ public class InitializeParams {
   private final LanguageSpecificRequirements languageSpecificRequirements;
   private final boolean automaticAnalysisEnabled;
   private final TelemetryMigrationDto telemetryMigration;
-
 
   /**
    * @param enabledLanguagesInStandaloneMode if IPYTHON is part of the list and a configuration scope is bound, standalone active rules will be used
@@ -112,43 +100,6 @@ public class InitializeParams {
     this.languageSpecificRequirements = languageSpecificRequirements;
     this.automaticAnalysisEnabled = automaticAnalysisEnabled;
     this.telemetryMigration = telemetryMigration;
-  }
-
-  /**
-   * @deprecated use newer constructor with BackendCapabilities parameter instead of FeatureFlagDto
-   * @param enabledLanguagesInStandaloneMode if IPYTHON is part of the list and a configuration scope is bound, standalone active rules will be used
-   * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
-   * @param workDir                     Path to work directory. If null, will default to [sonarlintUserHome]/work
-   * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to the SONARLINT_USER_HOME env variable if set, else ~/.sonarlint
-   * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
-   */
-  @Deprecated(since = "10.19", forRemoval = true)
-  public InitializeParams(
-    ClientConstantInfoDto clientConstantInfo,
-    TelemetryClientConstantAttributesDto telemetryConstantAttributes,
-    HttpConfigurationDto httpConfiguration,
-    @Nullable SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment,
-    FeatureFlagsDto featureFlags,
-    Path storageRoot,
-    @Nullable Path workDir,
-    @Nullable Set<Path> embeddedPluginPaths,
-    @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
-    @Nullable Set<Language> enabledLanguagesInStandaloneMode,
-    @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
-    @Nullable Set<String> disabledPluginKeysForAnalysis,
-    @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
-    @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
-    @Nullable String sonarlintUserHome,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
-    boolean isFocusOnNewCode,
-    @Nullable LanguageSpecificRequirements languageSpecificRequirements,
-    boolean automaticAnalysisEnabled,
-    @Nullable TelemetryMigrationDto telemetryMigration) {
-    this(clientConstantInfo, telemetryConstantAttributes, httpConfiguration, alternativeSonarCloudEnvironment,
-      featureFlagsToBackendCapabilities(featureFlags), storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-      enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections,
-      sonarCloudConnections, sonarlintUserHome, standaloneRuleConfigByKey, isFocusOnNewCode, languageSpecificRequirements,
-      automaticAnalysisEnabled, telemetryMigration);
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -234,28 +185,5 @@ public class InitializeParams {
   @CheckForNull
   public TelemetryMigrationDto getTelemetryMigration() {
     return telemetryMigration;
-  }
-
-  private static Set<BackendCapability> featureFlagsToBackendCapabilities(@Nullable FeatureFlagsDto featureFlags) {
-    var capabilities = EnumSet.noneOf(BackendCapability.class);
-    if (featureFlags == null) {
-      return capabilities;
-    }
-    addIfTrue(capabilities, featureFlags.shouldManageSmartNotifications(), SMART_NOTIFICATIONS);
-    addIfTrue(capabilities, featureFlags.shouldSynchronizeProjects(), PROJECT_SYNCHRONIZATION);
-    addIfTrue(capabilities, featureFlags.shouldManageLocalServer(), EMBEDDED_SERVER);
-    addIfTrue(capabilities, featureFlags.isEnablesSecurityHotspots(), SECURITY_HOTSPOTS);
-    addIfTrue(capabilities, featureFlags.shouldManageServerSentEvents(), SERVER_SENT_EVENTS);
-    addIfTrue(capabilities, featureFlags.isEnabledDataflowBugDetection(), DATAFLOW_BUG_DETECTION);
-    addIfTrue(capabilities, featureFlags.shouldManageFullSynchronization(), FULL_SYNCHRONIZATION);
-    addIfTrue(capabilities, featureFlags.isEnabledTelemetry(), TELEMETRY);
-    addIfTrue(capabilities, featureFlags.isEnabledMonitoring(), MONITORING);
-    return capabilities;
-  }
-
-  private static void addIfTrue(Set<BackendCapability> capabilities, boolean enabled, BackendCapability backendCapability) {
-    if (enabled) {
-      capabilities.add(backendCapability);
-    }
   }
 }

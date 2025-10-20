@@ -27,7 +27,7 @@ class InitializeParamsTests {
 
   @Test
   void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null,null, null, (FeatureFlagsDto) null, null, null, null, null, null, null, null, null, null, null, null, false, null, false, null);
+    var params = new InitializeParams(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null, false, null);
     assertNotNull(params.getEmbeddedPluginPaths());
     assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
     assertNotNull(params.getEnabledLanguagesInStandaloneMode());
