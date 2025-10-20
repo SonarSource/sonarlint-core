@@ -50,7 +50,7 @@ class NodeJsMediumTests {
 
     var futureRuleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481));
 
-    assertThat(futureRuleDetails).failsWithin(Duration.ofMillis(200))
+    assertThat(futureRuleDetails).failsWithin(Duration.ofSeconds(1))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)

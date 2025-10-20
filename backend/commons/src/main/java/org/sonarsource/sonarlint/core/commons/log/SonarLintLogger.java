@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
  */
 public class SonarLintLogger {
   private static final SonarLintLogger logger = new SonarLintLogger();
+  private Level currentLevel = Level.OFF;
 
   public static SonarLintLogger get() {
     return logger;
@@ -149,12 +150,11 @@ public class SonarLintLogger {
   }
 
   private void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
-    String stacktrace = null;
     if (t != null) {
       Sentry.captureException(t);
-      stacktrace = LogOutput.stackTraceToString(t);
     }
-    if (formattedMessage != null || t != null) {
+    if (currentLevel.isMoreVerboseOrEqual(level) && (formattedMessage != null || t != null)) {
+      var stacktrace = t == null ? null : LogOutput.stackTraceToString(t);
       log(formattedMessage, level, stacktrace);
     }
   }
@@ -187,4 +187,7 @@ public class SonarLintLogger {
     return count == 1 ? singular : (singular + "s");
   }
 
+  public void setLevel(Level newLevel) {
+    this.currentLevel = newLevel;
+  }
 }

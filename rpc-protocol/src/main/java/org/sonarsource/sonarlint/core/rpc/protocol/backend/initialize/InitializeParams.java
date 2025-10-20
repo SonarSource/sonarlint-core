@@ -27,6 +27,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
@@ -51,6 +52,43 @@ public class InitializeParams {
   private final LanguageSpecificRequirements languageSpecificRequirements;
   private final boolean automaticAnalysisEnabled;
   private final TelemetryMigrationDto telemetryMigration;
+  private final LogLevel logLevel;
+
+  /**
+   * @deprecated use newer constructor with log level
+   * @param enabledLanguagesInStandaloneMode if IPYTHON is part of the list and a configuration scope is bound, standalone active rules will be used
+   * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
+   * @param workDir                     Path to work directory. If null, will default to [sonarlintUserHome]/work
+   * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to the SONARLINT_USER_HOME env variable if set, else ~/.sonarlint
+   * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
+   */
+  @Deprecated(since = "10.35", forRemoval = true)
+  public InitializeParams(
+    ClientConstantInfoDto clientConstantInfo,
+    TelemetryClientConstantAttributesDto telemetryConstantAttributes,
+    HttpConfigurationDto httpConfiguration,
+    @Nullable SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment,
+    Set<BackendCapability> backendCapabilities,
+    Path storageRoot,
+    @Nullable Path workDir,
+    @Nullable Set<Path> embeddedPluginPaths,
+    @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
+    @Nullable Set<Language> enabledLanguagesInStandaloneMode,
+    @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
+    @Nullable Set<String> disabledPluginKeysForAnalysis,
+    @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
+    @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome,
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
+    boolean isFocusOnNewCode,
+    @Nullable LanguageSpecificRequirements languageSpecificRequirements,
+    boolean automaticAnalysisEnabled,
+    @Nullable TelemetryMigrationDto telemetryMigration) {
+    this(clientConstantInfo, telemetryConstantAttributes, httpConfiguration, alternativeSonarCloudEnvironment, backendCapabilities, storageRoot, workDir, embeddedPluginPaths,
+      connectedModeEmbeddedPluginPathsByKey, enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections,
+      sonarCloudConnections, sonarlintUserHome, standaloneRuleConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration,
+      LogLevel.TRACE);
+  }
 
   /**
    * @param enabledLanguagesInStandaloneMode if IPYTHON is part of the list and a configuration scope is bound, standalone active rules will be used
@@ -79,7 +117,8 @@ public class InitializeParams {
     boolean isFocusOnNewCode,
     @Nullable LanguageSpecificRequirements languageSpecificRequirements,
     boolean automaticAnalysisEnabled,
-    @Nullable TelemetryMigrationDto telemetryMigration) {
+    @Nullable TelemetryMigrationDto telemetryMigration,
+    LogLevel logLevel) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.httpConfiguration = httpConfiguration;
@@ -100,6 +139,7 @@ public class InitializeParams {
     this.languageSpecificRequirements = languageSpecificRequirements;
     this.automaticAnalysisEnabled = automaticAnalysisEnabled;
     this.telemetryMigration = telemetryMigration;
+    this.logLevel = logLevel;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -185,5 +225,9 @@ public class InitializeParams {
   @CheckForNull
   public TelemetryMigrationDto getTelemetryMigration() {
     return telemetryMigration;
+  }
+
+  public LogLevel getLogLevel() {
+    return logLevel;
   }
 }

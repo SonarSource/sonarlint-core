@@ -36,6 +36,7 @@ class SonarLintLoggerTests {
 
   @BeforeEach
   void prepare() {
+    logger.setLevel(Level.TRACE);
     logger.setTarget(output);
   }
 

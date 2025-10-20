@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.log.LogService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -61,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.Flight
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
@@ -146,6 +148,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
+      SonarLintLogger.get().setLevel(LogService.convert(params.getLogLevel()));
       SonarLintLogger.get().setTarget(logOutput);
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
@@ -252,6 +255,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
     return new AiAssistedIdeRpcServiceDelegate(this);
+  }
+
+  @Override
+  public LogRpcService getLogService() {
+    return new LogServiceDelegate(this);
   }
 
   @Override
