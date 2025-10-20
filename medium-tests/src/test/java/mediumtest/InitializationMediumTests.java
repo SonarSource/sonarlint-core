@@ -21,10 +21,10 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
@@ -43,10 +43,9 @@ class InitializationMediumTests {
     var backend = harness.newBackend()
       .start();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false, false, false);
     var future = backend
       .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto,
-        HttpConfigurationDto.defaultConfig(), null, featureFlags,
+        HttpConfigurationDto.defaultConfig(), null, Set.of(),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap(), false, null, false, null));

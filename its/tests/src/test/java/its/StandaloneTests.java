@@ -52,7 +52,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
@@ -98,10 +97,9 @@ class StandaloneTests {
     try {
       // The global-extension-plugin reuses the cobol plugin key to be whitelisted
       var languages = Set.of(COBOL);
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, false, false);
       System.out.println("Before backend initialize");
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
+        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, Set.of(),
           sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("work"),
           Set.of(Paths.get("../plugins/global-extension-plugin/target/global-extension-plugin.jar")), Collections.emptyMap(),

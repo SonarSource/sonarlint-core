@@ -88,7 +88,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.S
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
@@ -135,8 +135,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     SONARCLOUD_STAGING_URIS.put(SonarCloudRegion.US, new SonarQubeCloudRegionDto(URI.create("https://us-sc-staging.io"), URI.create("https://api.us-sc-staging.io"),
       URI.create("wss://events-api.us-sc-staging.io/")));
   }
-  private static final SonarCloudRegion region = StringUtils.isNotBlank(System.getenv("SONARCLOUD_REGION")) ?
-    SonarCloudRegion.valueOf(System.getenv("SONARCLOUD_REGION")) : SonarCloudRegion.EU;
+  private static final SonarCloudRegion region = StringUtils.isNotBlank(System.getenv("SONARCLOUD_REGION")) ? SonarCloudRegion.valueOf(System.getenv("SONARCLOUD_REGION"))
+    : SonarCloudRegion.EU;
   private static final URI SONARCLOUD_STAGING_URL = SONARCLOUD_STAGING_URIS.get(region).getUri();
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
@@ -170,10 +170,10 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML);
-    var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true, false);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
-        new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URIS), featureFlags,
+        new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URIS),
+        Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS, BackendCapability.SERVER_SENT_EVENTS),
         sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.valueOf(region.name()), true)), sonarUserHome.toString(),

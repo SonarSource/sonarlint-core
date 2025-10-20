@@ -1,5 +1,9 @@
 # 10.35
 
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` class.
+
 ## New features
 
 * Add a new `CONTEXT_GENERATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. This is only accessible in dogfooding environments, and should be enabled in AI-related environments.
