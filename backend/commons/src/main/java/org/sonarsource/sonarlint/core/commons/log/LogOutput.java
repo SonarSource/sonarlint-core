@@ -48,7 +48,7 @@ public interface LogOutput {
   enum Level {
     OFF, ERROR, WARN, INFO, DEBUG, TRACE;
 
-    public boolean isEnabledForLevel(Level targetLevel) {
+    public boolean isMoreVerboseOrEqual(Level targetLevel) {
       return this.ordinal() >= targetLevel.ordinal();
     }
   }

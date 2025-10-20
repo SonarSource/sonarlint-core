@@ -73,6 +73,7 @@ public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAll
   private final ConcurrentListAppender<ILoggingEvent> listAppender = new ConcurrentListAppender<>();
 
   public SonarLintLogTester(boolean writeToStdOut) {
+
     logOutput = new LogOutput() {
       @Override
       public void log(@Nullable String formattedMessage, Level level, @Nullable String stacktrace) {
@@ -129,7 +130,7 @@ public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAll
   }
 
   @Override
-  public void afterAll(ExtensionContext context) throws Exception {
+  public void afterAll(ExtensionContext context) {
     SonarLintLogger.get().setTarget(null);
     listAppender.stop();
     listAppender.list.clear();
@@ -137,7 +138,8 @@ public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAll
   }
 
   @Override
-  public void beforeAll(ExtensionContext context) throws Exception {
+  public void beforeAll(ExtensionContext context) {
+    SonarLintLogger.get().setLevel(Level.DEBUG);
     SonarLintLogger.get().setTarget(logOutput);
     getRootLogger().addAppender(listAppender);
     listAppender.start();

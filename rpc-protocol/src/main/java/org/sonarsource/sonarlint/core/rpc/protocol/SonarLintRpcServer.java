@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.Flight
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
@@ -103,6 +104,9 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   AiAssistedIdeRpcService getAiAssistedIdeRpcService();
+
+  @JsonDelegate
+  LogRpcService getLogService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

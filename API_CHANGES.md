@@ -7,6 +7,12 @@
 ## New features
 
 * Add a new `CONTEXT_GENERATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. This is only accessible in dogfooding environments, and should be enabled in AI-related environments.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService` service, with a new `setLogLevel` method. This allows clients to dynamically change the logging level.
+* Introduce a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`, that accepts a `LogLevel` parameter.
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` previous constructor. Please use the new one and provide the log level.
 
 # 10.33
 
