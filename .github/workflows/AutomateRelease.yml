@@ -1,0 +1,25 @@
+name: Automate release
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'The branch from which to check the releasability status.'
+        required: false
+        default: 'master'
+      short-description:
+        description: 'A short description for the release ticket'
+        required: true
+
+jobs:
+  release:
+    runs-on: github-ubuntu-latest-s
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: Check releasability
+        uses: SonarSource/release-github-actions/check-releasability-status@v1
+        with:
+          branch: ${{ inputs.branch }}
