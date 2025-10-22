@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
@@ -44,7 +45,7 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
     return requestAsync(cancelMonitor -> {
       try {
         return new GetEffectiveRuleDetailsResponse(
-          getBean(RulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey(), cancelMonitor));
+          getBean(ActiveRulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey(), cancelMonitor));
       } catch (RuleNotFoundException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
@@ -59,11 +60,11 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
 
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
-    return requestAsync(cancelMonitor -> getBean(RulesService.class).getStandaloneRuleDescription(params.getRuleKey()));
+    return requestAsync(cancelMonitor -> getBean(ActiveRulesService.class).getStandaloneRuleDescription(params.getRuleKey()));
   }
 
   @Override
   public void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params) {
-    notify(() -> getBean(RulesService.class).updateStandaloneRulesConfiguration(params.getRuleConfigByKey()));
+    notify(() -> getBean(ActiveRulesService.class).updateStandaloneRulesConfiguration(params.getRuleConfigByKey()));
   }
 }

@@ -95,7 +95,7 @@ public class RuleDetailsAdapter {
       adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
-  static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails, @Nullable String contextKey) {
+  public static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails, @Nullable String contextKey) {
     if (ruleDetails.hasMonolithicDescription()) {
       return Either.forLeft(transformMonolithicDescription(ruleDetails));
     }

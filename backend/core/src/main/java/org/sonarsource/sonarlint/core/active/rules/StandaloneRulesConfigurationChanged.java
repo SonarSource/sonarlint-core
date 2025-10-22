@@ -17,11 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rules;
+package org.sonarsource.sonarlint.core.active.rules;
 
-public class NewRulesActivatedOnServer {
+import java.util.List;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 
-  public NewRulesActivatedOnServer() {
-    // no field
+public class StandaloneRulesConfigurationChanged {
+  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig;
+
+  StandaloneRulesConfigurationChanged(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
+    this.standaloneRuleConfig = standaloneRuleConfig;
+  }
+
+  public boolean isOnlyDeactivated() {
+    return standaloneRuleConfig.values().stream()
+      .noneMatch(StandaloneRuleConfigDto::isActive);
+  }
+
+  public List<String> getDeactivatedRules() {
+    return standaloneRuleConfig.entrySet().stream()
+      .filter(entry -> !entry.getValue().isActive())
+      .map(Map.Entry::getKey)
+      .toList();
   }
 }
