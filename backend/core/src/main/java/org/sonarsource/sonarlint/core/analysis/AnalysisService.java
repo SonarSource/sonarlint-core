@@ -79,10 +79,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
@@ -111,7 +107,6 @@ import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesys
 import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVCSChangedFiles;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
 public class AnalysisService {
@@ -138,7 +133,6 @@ public class AnalysisService {
   private final AnalysisSchedulerCache schedulerCache;
   private final ApplicationEventPublisher eventPublisher;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
-  private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
@@ -164,7 +158,6 @@ public class AnalysisService {
     this.taskManager = taskManager;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.hotspotEnabled = initializeParams.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
-    this.isDataflowBugDetectionEnabled = initializeParams.getBackendCapabilities().contains(DATAFLOW_BUG_DETECTION);
     this.nodeJsService = nodeJsService;
     this.schedulerCache = schedulerCache;
     this.eventPublisher = eventPublisher;
@@ -197,11 +190,6 @@ public class AnalysisService {
     return patterns;
   }
 
-  @NotNull
-  private static org.sonarsource.sonarlint.core.rpc.protocol.common.Language toDto(SonarLanguage language) {
-    return org.sonarsource.sonarlint.core.rpc.protocol.common.Language.valueOf(language.name());
-  }
-
   private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
     Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
     activeRule.getParams().forEach((paramName, paramValue) -> {
@@ -230,23 +218,6 @@ public class AnalysisService {
     return getPatterns(enabledLanguages, analysisSettings);
   }
 
-  public GetGlobalConfigurationResponse getGlobalStandaloneConfiguration() {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
-    var pluginPaths = pluginsService.getEmbeddedPluginPaths();
-    var activeNodeJs = nodeJsService.getActiveNodeJs();
-    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).toList(), nodeJsDetailsDto, false);
-  }
-
-  public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
-    var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
-    var activeNodeJs = nodeJsService.getActiveNodeJs();
-    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).toList(), nodeJsDetailsDto,
-      isDataflowBugDetectionEnabled);
-  }
-
   private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, Set<URI> filesUrisToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
     TriggerType triggerType, Trace trace) {
     trace.setData("trigger", triggerType);
@@ -255,49 +226,38 @@ public class AnalysisService {
       () -> fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir));
     var actualBaseDir = baseDir == null ? findCommonPrefix(filesUrisToAnalyze) : baseDir;
     var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly, trace);
-    var analysisProperties = analysisConfig.getAnalysisProperties();
+    var analysisProperties = analysisConfig.analysisProperties();
     var inferredAnalysisProperties = startChild(trace, "getInferredAnalysisProperties", ANALYSIS_CFG_FOR_ENGINE,
       () -> client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(
         configScopeId, filesToAnalyze.stream().map(ClientFile::getUri).toList())).join().getProperties());
     analysisProperties.putAll(inferredAnalysisProperties);
-    var activeRules = analysisConfig.getActiveRules().stream().map(r -> {
-      var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
-      ar.setParams(r.getParams());
-      ar.setTemplateRuleKey(r.getTemplateRuleKey());
-      return ar;
-    }).toList();
-    trace.setData("activeRulesCount", activeRules.size());
+    trace.setData("activeRulesCount", analysisConfig.activeRules().size());
     return startChild(trace, "buildAnalysisConfiguration", ANALYSIS_CFG_FOR_ENGINE, () -> AnalysisConfiguration.builder()
       .addInputFiles(filesToAnalyze.stream().map(BackendInputFile::new).toList())
       .putAllExtraProperties(analysisProperties)
       // properties sent by client using new API were merged above
       // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(activeRules)
+      .addActiveRules(analysisConfig.activeRules())
       .setBaseDir(actualBaseDir)
       .build());
   }
 
-  public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId, boolean hotspotsOnly, @Nullable Trace trace) {
+  private AnalysisConfig getAnalysisConfig(String configScopeId, boolean hotspotsOnly, @Nullable Trace trace) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
-    var activeNodeJs = startChild(trace, "getActiveNodeJs", GET_ANALYSIS_CFG, nodeJsService::getActiveNodeJs);
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
     // If the client (IDE) has specified a bundle path, use it
     if (this.esLintBridgeServerPath != null) {
       userAnalysisProperties.put(SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP, this.esLintBridgeServerPath.toString());
     }
-    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
     if (trace != null) {
-      if (activeNodeJs != null) {
-        trace.setData("nodeJsVersion", activeNodeJs.getVersion().toString());
-      }
       trace.setData("connected", bindingOpt.isPresent());
     }
     if (bindingOpt.isPresent()) {
       var binding = bindingOpt.get();
       var analyzerConfig = storageService.binding(binding).analyzerConfiguration();
       if (analyzerConfig.isValid()) {
-        return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, nodeJsDetailsDto, trace);
+        return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, trace);
       } else {
         // This can happen when a standalone analysis was scheduled and a synchronization happened in between.
         // The config scope is bound, but the config file is not yet created.
@@ -306,28 +266,22 @@ public class AnalysisService {
         LOG.warn("Could not retrieve connected analysis configuration, falling back to standalone configuration");
       }
     }
-    return getStandaloneAnalysisConfig(userAnalysisProperties, nodeJsDetailsDto, trace);
+    return getStandaloneAnalysisConfig(userAnalysisProperties, trace);
   }
 
-  public GetAnalysisConfigResponse getConnectedAnalysisConfig(Binding binding, boolean hotspotsOnly,
-    Map<String, String> userAnalysisProperties, @Nullable NodeJsDetailsDto nodeJsDetailsDto, @Nullable Trace trace) {
+  private AnalysisConfig getConnectedAnalysisConfig(Binding binding, boolean hotspotsOnly, Map<String, String> userAnalysisProperties, @Nullable Trace trace) {
     var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
       () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
     var analysisProperties = new HashMap<>(serverProperties);
     analysisProperties.putAll(userAnalysisProperties);
     var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
       () -> buildConnectedActiveRules(binding, hotspotsOnly));
-    var connectedPluginPaths = startChild(trace, "getConnectedPluginPaths", GET_ANALYSIS_CFG,
-      () -> pluginsService.getConnectedPluginPaths(binding.connectionId()));
-    return new GetAnalysisConfigResponse(connectedActiveRules, analysisProperties, nodeJsDetailsDto,
-      Set.copyOf(connectedPluginPaths));
+    return new AnalysisConfig(connectedActiveRules, analysisProperties);
   }
 
-  public GetAnalysisConfigResponse getStandaloneAnalysisConfig(Map<String, String> userAnalysisProperties,
-    @Nullable NodeJsDetailsDto nodeJsDetailsDto, @Nullable Trace trace) {
+  private AnalysisConfig getStandaloneAnalysisConfig(Map<String, String> userAnalysisProperties, @Nullable Trace trace) {
     var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, this::buildStandaloneActiveRules);
-    var embeddedPluginPaths = startChild(trace, "getEmbeddedPluginPaths", GET_ANALYSIS_CFG, pluginsService::getEmbeddedPluginPaths);
-    return new GetAnalysisConfigResponse(standaloneActiveRules, userAnalysisProperties, nodeJsDetailsDto, Set.copyOf(embeddedPluginPaths));
+    return new AnalysisConfig(standaloneActiveRules, userAnalysisProperties);
   }
 
   private static Path findCommonPrefix(Set<URI> uris) {
@@ -355,10 +309,10 @@ public class AnalysisService {
     }
   }
 
-  private List<ActiveRuleDto> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {
+  private List<ActiveRule> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {
     var analyzerConfig = storageService.binding(binding).analyzerConfiguration().read();
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
-    var result = new ArrayList<ActiveRuleDto>();
+    var result = new ArrayList<ActiveRule>();
     ruleSetByLanguageKey.entrySet()
       .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
       .forEach(e -> {
@@ -395,15 +349,15 @@ public class AnalysisService {
     if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.IPYTHON)) {
       // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
       var iPythonRules = buildStandaloneActiveRules()
-        .stream().filter(rule -> rule.getLanguageKey().equals(SonarLanguage.IPYTHON.getSonarLanguageKey()))
+        .stream().filter(rule -> rule.languageKey().equals(SonarLanguage.IPYTHON.getSonarLanguageKey()))
         .toList();
       result.addAll(iPythonRules);
     }
     return result;
   }
 
-  public ActiveRuleDto buildActiveRuleDto(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
-    return new ActiveRuleDto(activeRule.getRuleKey(),
+  public ActiveRule buildActiveRuleDto(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+    return new ActiveRule(activeRule.getRuleKey(),
       ruleOrTemplateDefinition.getLanguage().getSonarLanguageKey(),
       getEffectiveParams(ruleOrTemplateDefinition, activeRule),
       trimToNull(activeRule.getTemplateKey()));
@@ -448,7 +402,7 @@ public class AnalysisService {
     }
   }
 
-  private List<ActiveRuleDto> buildStandaloneActiveRules() {
+  private List<ActiveRule> buildStandaloneActiveRules() {
     var standaloneRuleConfig = rulesService.getStandaloneRuleConfig();
     Set<String> excludedRules = standaloneRuleConfig.entrySet().stream().filter(not(e -> e.getValue().isActive())).map(Map.Entry::getKey).collect(toSet());
     Set<String> includedRules = standaloneRuleConfig.entrySet().stream().filter(e -> e.getValue().isActive())
@@ -475,7 +429,7 @@ public class AnalysisService {
       Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
       ofNullable(standaloneRuleConfig.get(rd.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
       // No template rules in standalone mode
-      return new ActiveRuleDto(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
+      return new ActiveRule(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
     })
       .toList();
   }
@@ -840,5 +794,8 @@ public class AnalysisService {
     var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
     var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration.toMillis());
+  }
+
+  private record AnalysisConfig(List<ActiveRule> activeRules, Map<String, String> analysisProperties) {
   }
 }

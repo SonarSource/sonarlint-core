@@ -53,8 +53,7 @@ class AnalysisConfigurationTests {
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, SonarLanguage.JAVA);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, SonarLanguage.PHP);
     var baseDir = createDirectory(temp.resolve("baseDir"));
-    var activeRuleWithParams = new ActiveRule("php:S123", null);
-    activeRuleWithParams.setParams(Map.of("param1", "value1"));
+    var activeRuleWithParams = new ActiveRule("php:S123", null, Map.of("param1", "value1"), null);
     var config = AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
@@ -79,7 +78,7 @@ class AnalysisConfigurationTests {
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, inputFileWithLanguage, testInputFile);
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
-    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+    assertThat(config.activeRules()).extracting(ActiveRule::ruleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
   }
 
   @Test
@@ -103,8 +102,7 @@ class AnalysisConfigurationTests {
   void testToString_and_getters_when_active_rules_verbose() {
     System.setProperty("sonarlint.debug.active.rules", "true");
 
-    var activeRuleWithParams = new ActiveRule("php:S123", null);
-    activeRuleWithParams.setParams(Map.of("param1", "value1"));
+    var activeRuleWithParams = new ActiveRule("php:S123", null, Map.of("param1", "value1"), null);
     var config = AnalysisConfiguration.builder()
       .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
       .addActiveRules(activeRuleWithParams)
@@ -121,13 +119,12 @@ class AnalysisConfigurationTests {
       """);
     assertThat(config.baseDir()).isNull();
     assertThat(config.inputFiles()).isEmpty();
-    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+    assertThat(config.activeRules()).extracting(ActiveRule::ruleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
   }
 
   @Test
   void testToString_and_getters_when_active_rules_not_verbose() {
-    var activeRuleWithParams = new ActiveRule("php:S123", null);
-    activeRuleWithParams.setParams(Map.of("param1", "value1"));
+    var activeRuleWithParams = new ActiveRule("php:S123", null, Map.of("param1", "value1"), null);
     var config = AnalysisConfiguration.builder()
       .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
       .addActiveRules(activeRuleWithParams)
@@ -144,7 +141,7 @@ class AnalysisConfigurationTests {
       """);
     assertThat(config.baseDir()).isNull();
     assertThat(config.inputFiles()).isEmpty();
-    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+    assertThat(config.activeRules()).extracting(ActiveRule::ruleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
   }
 
 }

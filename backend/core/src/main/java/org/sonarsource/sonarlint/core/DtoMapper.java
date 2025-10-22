@@ -19,11 +19,8 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
@@ -39,15 +36,6 @@ public class DtoMapper {
 
   private DtoMapper() {
     // util
-  }
-
-  public static GetRuleDetailsResponse toRuleDetailsResponse(RuleDetailsForAnalysis ruleDetails) {
-    return new GetRuleDetailsResponse(
-      RuleDetailsAdapter.adapt(ruleDetails.getSeverity()),
-      RuleDetailsAdapter.adapt(ruleDetails.getType()),
-      RuleDetailsAdapter.adapt(ruleDetails.getCleanCodeAttribute()),
-      ruleDetails.getImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
-        .toList(), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
   public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode, boolean isAiCodeFixable) {

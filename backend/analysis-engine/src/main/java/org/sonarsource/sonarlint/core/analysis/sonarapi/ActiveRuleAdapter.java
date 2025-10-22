@@ -34,7 +34,7 @@ public class ActiveRuleAdapter implements ActiveRule {
 
   @Override
   public RuleKey ruleKey() {
-    return RuleKey.parse(activeRule.getRuleKey());
+    return RuleKey.parse(activeRule.ruleKey());
   }
 
   @Override
@@ -44,7 +44,7 @@ public class ActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String language() {
-    return activeRule.getLanguageKey();
+    return activeRule.languageKey();
   }
 
   @Override
@@ -54,7 +54,7 @@ public class ActiveRuleAdapter implements ActiveRule {
 
   @Override
   public Map<String, String> params() {
-    return activeRule.getParams();
+    return activeRule.params();
   }
 
   @Override
@@ -65,7 +65,7 @@ public class ActiveRuleAdapter implements ActiveRule {
 
   @Override
   public String templateRuleKey() {
-    var templateRuleKey = activeRule.getTemplateRuleKey();
+    var templateRuleKey = activeRule.templateRuleKey();
     if (!StringUtils.isEmpty(templateRuleKey)) {
       // The SQ plugin API expect template rule key to be only the "rule" part of the key (without the repository key)
       var ruleKey = RuleKey.parse(templateRuleKey);

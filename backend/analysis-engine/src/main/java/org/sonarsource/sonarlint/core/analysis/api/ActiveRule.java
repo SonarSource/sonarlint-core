@@ -19,46 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.util.Collections;
 import java.util.Map;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class ActiveRule {
-
-  private final String ruleKey;
-  private final String languageKey;
-  private Map<String, String> params = Collections.emptyMap();
-  private String templateRuleKey = null;
+public record ActiveRule(String ruleKey, String languageKey, @Nullable Map<String, String> params, @Nullable String templateRuleKey) {
 
   public ActiveRule(String ruleKey, String languageKey) {
-    this.ruleKey = ruleKey;
-    this.languageKey = languageKey;
+    this(ruleKey, languageKey, null, null);
   }
 
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getLanguageKey() {
-    return languageKey;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public void setParams(Map<String, String> params) {
-    this.params = Map.copyOf(params);
-  }
-
-  @CheckForNull
-  public String getTemplateRuleKey() {
-    return templateRuleKey;
-  }
-
-  public void setTemplateRuleKey(@Nullable String templateRuleKey) {
-    this.templateRuleKey = templateRuleKey;
+  public ActiveRule {
+    if (params == null) {
+      params = Map.of();
+    }
   }
 
   @Override
@@ -70,5 +43,4 @@ public class ActiveRule {
     }
     return sb.toString();
   }
-
 }

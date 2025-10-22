@@ -321,9 +321,7 @@ class AnalysisSchedulerMediumTests {
   }
 
   private static ActiveRule trailingCommentRule() {
-    var pythonActiveRule = new ActiveRule("python:S139", "py");
-    pythonActiveRule.setParams(Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
-    return pythonActiveRule;
+    return new ActiveRule("python:S139", "py", Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"), null);
   }
 
   private static ClientModuleFileSystem aModuleFileSystem() {

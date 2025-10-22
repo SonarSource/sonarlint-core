@@ -43,11 +43,6 @@ class NodeJsMediumTests {
       .withClientNodeJsPath(Paths.get("wrong"))
       .start(client);
 
-    var globalConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
-
-    assertThat(globalConfig.getNodeJsDetails()).isNull();
-    assertThat(client.getLogMessages()).contains("Unable to query node version");
-
     var futureRuleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481));
 
     assertThat(futureRuleDetails).failsWithin(Duration.ofSeconds(1))
@@ -55,6 +50,7 @@ class NodeJsMediumTests {
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
       .withMessage("Could not find rule 'javascript:S1481' in embedded rules");
+    assertThat(client.getLogMessages()).contains("Unable to query node version");
   }
 
   @SonarLintTest

@@ -87,7 +87,7 @@ public class AnalysisConfiguration {
       // Group active rules by language and count occurrences
       var languageCounts = new HashMap<String, Integer>();
       for (var rule : activeRules) {
-        var languageKey = rule.getRuleKey().split(":")[0];
+        var languageKey = rule.ruleKey().split(":")[0];
         languageCounts.put(languageKey, languageCounts.getOrDefault(languageKey, 0) + 1);
       }
 
