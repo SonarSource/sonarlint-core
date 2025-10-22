@@ -52,7 +52,6 @@ import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
@@ -701,45 +700,105 @@ class AnalysisMediumTests {
   }
 
   @SonarLintTest
-  void should_save_and_return_client_analysis_settings(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().start();
+  void should_pass_user_properties_to_sensors(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "file.php", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var propertyDumpingPlugin = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
+      .withEnabledLanguageInStandaloneMode(Language.PHP)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .start(client);
     backend.getAnalysisService().didSetUserAnalysisProperties(
-      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1", "key2", "user-value2")));
+      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1")));
 
-    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "key1"), false, System.currentTimeMillis()));
 
-    assertThat(analysisProperties).containsEntry("key1", "user-value1").containsEntry("key2", "user-value2");
+    await().atMost(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).hasContent("user-value1"));
   }
 
   @SonarLintTest
-  void should_set_js_internal_bundlePath_if_provided(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void should_pass_eslint_bridge_path_to_sensors_if_provided(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "file.php", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var propertyDumpingPlugin = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
       .withEslintBridgeServerBundlePath(baseDir.resolve("eslint-bridge"))
-      .start();
+      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
+      .withEnabledLanguageInStandaloneMode(Language.PHP)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .start(client);
 
-    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "sonar.js.internal.bundlePath"), false, System.currentTimeMillis()));
 
-    assertThat(analysisProperties).containsEntry("sonar.js.internal.bundlePath", baseDir.resolve("eslint-bridge").toString());
+    await().atMost(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).hasContent(baseDir.resolve("eslint-bridge").toString()));
   }
 
   @SonarLintTest
-  void should_not_set_js_internal_bundlePath_when_not_provided(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().start();
+  void should_not_pass_eslint_bridge_path_to_sensors_if_not_provided(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var propertyDumpingPlugin = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
+      .start(client);
+    backend.getAnalysisService().didSetUserAnalysisProperties(
+      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1")));
 
-    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "key1"), false, System.currentTimeMillis()));
 
-    assertThat(analysisProperties).doesNotContainKey("sonar.js.internal.bundlePath");
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).doesNotExist());
   }
 
   @SonarLintTest
-  void should_not_set_js_internal_bundlePath_when_no_language_specific_requirements(SonarLintTestHarness harness) {
+  void should_not_set_js_internal_bundlePath_when_no_language_specific_requirements(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var propertyDumpingPlugin = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
       .withNoLanguageSpecificRequirements()
-      .start();
+      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
+      .start(client);
 
-    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "sonar.js.internal.bundlePath"), false, System.currentTimeMillis()));
 
-    assertThat(analysisProperties).doesNotContainKey("sonar.js.internal.bundlePath");
+    await().atMost(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).doesNotExist());
   }
 
   @SonarLintTest
@@ -854,25 +913,36 @@ class AnalysisMediumTests {
 
     backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path"));
 
-    var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path"));
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsOnlyKeys(cFileUri);
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).hasSize(1);
   }
 
   @SonarLintTest
-  void should_allow_removing_compile_commands_path(SonarLintTestHarness harness) {
+  void should_allow_removing_compile_commands_path(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
     assumeTrue(COMMERCIAL_ENABLED);
+    var cFile = prepareInputFile("foo.c", "#import \"foo.h\"\n", false, StandardCharsets.UTF_8, SonarLanguage.C, baseDir);
+    var cFilePath = baseDir.resolve("foo.c");
+    var cFileUri = cFile.uri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(cFileUri, baseDir.relativize(cFilePath), CONFIG_SCOPE_ID, false, null, cFilePath, null, null, true)))
+      .build();
+    var propertyDumpingPlugin = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
-      .start();
+      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
+      .withEnabledLanguageInStandaloneMode(Language.PHP)
+      .start(client);
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "sonar.cfamily.compile-commands")));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, cFileUri));
 
     backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, null));
 
-    var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", ""));
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).isEmptyFile());
   }
 
   @SonarLintTest

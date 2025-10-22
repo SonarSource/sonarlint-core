@@ -3,6 +3,11 @@
 ## Breaking changes
 
 * Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` class.
+* Remove unused methods from `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`:
+  * `getGlobalStandaloneConfiguration`
+  * `getGlobalConnectedConfiguration`
+  * `getAnalysisConfig`
+  * `getRuleDetails`
 
 ## New features
 

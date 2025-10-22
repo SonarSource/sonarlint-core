@@ -38,24 +38,6 @@ public interface AnalysisRpcService {
   @JsonRequest
   CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params);
 
-  @JsonRequest
-  CompletableFuture<GetGlobalConfigurationResponse> getGlobalStandaloneConfiguration();
-
-  @JsonRequest
-  CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params);
-
-  /**
-   * @since 10.3 this method returns not only server analyser properties, but also user properties provided by client
-   */
-  @JsonRequest
-  CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params);
-
-  /**
-   * @return Extra attributes that used to be returned on the Issue from Standalone/Connected engines.
-   */
-  @JsonRequest
-  CompletableFuture<GetRuleDetailsResponse> getRuleDetails(GetRuleDetailsParams params);
-
   /**
    * Inform the backend that the client has changed the location of the nodejs executable to be used by analyzer
    * @return The Node.js path and version that were forced on the user's machine.

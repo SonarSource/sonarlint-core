@@ -22,15 +22,12 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.analysis.AnalysisResult;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
@@ -43,14 +40,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAut
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ForceAnalyzeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAutoDetectedNodeJsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetForcedNodeJsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConnectedConfigurationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
@@ -66,12 +57,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
-import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
-import org.sonarsource.sonarlint.core.rules.RulesService;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.DtoMapper.toRuleDetailsResponse;
 
 class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
@@ -84,37 +72,6 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(
       cancelChecker -> new GetSupportedFilePatternsResponse(getBean(AnalysisService.class).getSupportedFilePatterns(params.getConfigScopeId())),
       params.getConfigScopeId());
-  }
-
-  @Override
-  public CompletableFuture<GetGlobalConfigurationResponse> getGlobalStandaloneConfiguration() {
-    return requestAsync(
-      cancelChecker -> getBean(AnalysisService.class).getGlobalStandaloneConfiguration());
-  }
-
-  @Override
-  public CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params) {
-    return requestAsync(
-      cancelChecker -> getBean(AnalysisService.class).getGlobalConnectedConfiguration(params.getConnectionId()));
-  }
-
-  @Override
-  public CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params) {
-    return requestAsync(
-      cancelChecker -> getBean(AnalysisService.class).getAnalysisConfig(params.getConfigScopeId(), false, null), params.getConfigScopeId());
-  }
-
-  @Override
-  public CompletableFuture<GetRuleDetailsResponse> getRuleDetails(GetRuleDetailsParams params) {
-    return requestAsync(
-      cancelChecker -> {
-        try {
-          return toRuleDetailsResponse(getBean(RulesService.class).getRuleDetailsForAnalysis(params.getConfigScopeId(), params.getRuleKey()));
-        } catch (RuleNotFoundException e) {
-          var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
-          throw new ResponseErrorException(error);
-        }
-      }, params.getConfigScopeId());
   }
 
   @Override

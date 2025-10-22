@@ -19,21 +19,24 @@
  */
 package mediumtest.analysis;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
+import static utils.AnalysisUtils.createFile;
 
 class RulesInConnectedModeMediumTests {
 
@@ -42,82 +45,147 @@ class RulesInConnectedModeMediumTests {
   private static final String JAVA_MODULE_KEY = "sample-project";
 
   @SonarLintTest
-  void should_ignore_unknown_active_rule_parameters_and_convert_deprecated_keys(SonarLintTestHarness harness) throws Exception {
+  void should_ignore_unknown_active_rule_parameters_and_convert_deprecated_keys(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Class.java", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var activeRulesDumpingPlugin = newSonarPlugin("php")
+      .withSensor(ActiveRulesDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
-      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
       .withStorage(CONNECTION_ID, s -> s
-        .withPlugins(TestPlugin.JAVA)
+        .withPlugin(TestPlugin.JAVA)
+        .withPlugin("php", activeRulesDumpingPlugin, "hash")
         .withProject(JAVA_MODULE_KEY, project -> project
+          .withMainBranch("main")
           .withRuleSet("java", ruleSet -> ruleSet
             // Emulate server returning a deprecated key for local analyzer
             .withActiveRule("squid:S106", "BLOCKER")
             .withActiveRule("java:S3776", "BLOCKER", Map.of("blah", "blah"))
             // Emulate server returning a deprecated template key
             .withCustomActiveRule("squid:myCustomRule", "squid:S124", "MAJOR", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*")))))
-      .start();
+      .start(client);
 
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "My project",
-        new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)))));
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
-    assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey, ActiveRuleDto::getParams, ActiveRuleDto::getTemplateRuleKey)
-      .containsExactlyInAnyOrder(
-        // Deprecated key has been converted
-        tuple("java:S106", "java", Map.of(), null),
-        // Unknown parameters have been removed
-        tuple("java:S3776", "java", Map.of("Threshold", "15"), null),
-        // Deprecated template key has been converted
-        tuple("java:myCustomRule", "java", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*"), "java:S124"));
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+        .contains("java:S106;java;null;")
+        .contains("java:S3776;java;null;{Threshold=15}")
+        .contains("java:myCustomRule;java;S124;{message=Needs to be reviewed, regularExpression=.*REVIEW.*}"));
   }
 
   @SonarLintTest
-  void hotspot_rules_should_be_active_when_feature_flag_is_enabled(SonarLintTestHarness harness) throws Exception {
+  void hotspot_rules_should_be_active_when_feature_flag_is_enabled(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Class.java", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var activeRulesDumpingPlugin = newSonarPlugin("php")
+      .withSensor(ActiveRulesDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
       .withBackendCapability(SECURITY_HOTSPOTS)
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarQubeConnection(CONNECTION_ID,
-        storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
+      .withSonarQubeConnection(CONNECTION_ID)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .start();
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
+      .withStorage(CONNECTION_ID,
+        s -> s
+          .withServerVersion("9.7")
+          .withPlugin(TestPlugin.JAVA)
+          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withProject(JAVA_MODULE_KEY, project -> project
+            .withMainBranch("main")
+            .withRuleSet("java", ruleSet -> ruleSet
+              .withActiveRule("java:S4792", "INFO"))))
+      .start(client);
 
-    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    assertThat(activeRules)
-      .extracting(ActiveRuleDto::getRuleKey)
-      .contains("java:S4792");
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+        .contains("java:S4792;java;null;"));
   }
 
   @SonarLintTest
-  void hotspot_rules_should_not_be_active_when_feature_flag_is_disabled(SonarLintTestHarness harness) throws Exception {
+  void hotspot_rules_should_not_be_active_when_feature_flag_is_disabled(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Class.java", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var activeRulesDumpingPlugin = newSonarPlugin("php")
+      .withSensor(ActiveRulesDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarQubeConnection(CONNECTION_ID,
-        storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
+      .withSonarQubeConnection(CONNECTION_ID)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .start();
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
+      .withStorage(CONNECTION_ID,
+        s -> s
+          .withServerVersion("9.7")
+          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withProject(JAVA_MODULE_KEY, project -> project
+            .withMainBranch("main")
+            .withRuleSet("java", ruleSet -> ruleSet
+              .withActiveRule("java:S4792", "INFO"))))
+      .start(client);
 
-    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    assertThat(activeRules).isEmpty();
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+        .doesNotContain("java:S4792;java;null;"));
   }
 
   @SonarLintTest
-  void should_use_ipython_standalone_active_rules_in_connected_mode(SonarLintTestHarness harness) throws Exception {
+  void should_use_ipython_standalone_active_rules_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "mod.py", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var activeRulesDumpingPlugin = newSonarPlugin("php")
+      .withSensor(ActiveRulesDumpingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
-      .withSonarQubeConnection(CONNECTION_ID,
-        storage -> storage.withServerVersion("9.9").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
+      .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
+      .withSonarQubeConnection(CONNECTION_ID)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .start();
+      .withStorage(CONNECTION_ID,
+        s -> s
+          .withServerVersion("9.7")
+          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withProject(JAVA_MODULE_KEY, project -> project
+            .withMainBranch("main")
+            .withRuleSet("java", ruleSet -> ruleSet
+              .withActiveRule("java:S4792", "INFO"))))
+      .start(client);
 
-    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    assertThat(activeRules)
-      .extracting(ActiveRuleDto::getRuleKey)
-      .contains("ipython:PrintStatementUsage");
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+        .contains("ipython:PrintStatementUsage"));
   }
 
 }
