@@ -37,8 +37,11 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.active.rules.ServerActiveRulesChanged;
+import org.sonarsource.sonarlint.core.active.rules.StandaloneRulesConfigurationChanged;
 import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -59,6 +62,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
@@ -93,6 +97,44 @@ public class FindingReportingService {
     this.eventPublisher = eventPublisher;
     this.storageService = storageService;
     this.isStreamingEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.ISSUE_STREAMING);
+  }
+
+  @EventListener
+  public void onStandaloneRulesConfigurationChanged(StandaloneRulesConfigurationChanged event) {
+    if (event.isOnlyDeactivated()) {
+      // if no rules were enabled (only disabled), trigger only a new reporting, removing issues of disabled rules
+      configurationRepository.getConfigScopeIds().stream()
+        .filter(configScopeId -> configurationRepository.getEffectiveBinding(configScopeId).isEmpty())
+        .forEach(configScopeId -> {
+          var deactivatedRules = event.getDeactivatedRules();
+          updateAndReportFindings(configScopeId,
+            hotspot -> raisedFindingUpdater(hotspot, deactivatedRules),
+            issue -> raisedFindingUpdater(issue, deactivatedRules));
+        });
+    }
+  }
+
+  @CheckForNull
+  private static <T extends RaisedFindingDto> T raisedFindingUpdater(T raisedFinding, List<String> deactivatedRules) {
+    if (deactivatedRules.contains(raisedFinding.getRuleKey())) {
+      return null;
+    }
+    return raisedFinding;
+  }
+
+  @EventListener
+  private void onServerActiveRulesChanged(ServerActiveRulesChanged event) {
+    var deactivatedRules = event.deactivatedRules();
+    // if rules were activated, an analysis will be triggered in the AnalysisService, and a new reporting will occur
+    if (event.activatedRules().isEmpty() && !deactivatedRules.isEmpty()) {
+      var changedProjectKeys = event.projectKeys();
+      configurationRepository.getAllBoundScopes().stream()
+        .filter(scope -> event.connectionId().equals(scope.getConnectionId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
+        .map(BoundScope::getConfigScopeId)
+        .forEach(scopeId -> updateAndReportFindings(scopeId,
+          hotspot -> raisedFindingUpdater(hotspot, deactivatedRules),
+          issue -> raisedFindingUpdater(issue, deactivatedRules)));
+    }
   }
 
   public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {

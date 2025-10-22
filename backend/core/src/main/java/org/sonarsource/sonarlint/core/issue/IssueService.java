@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
@@ -67,7 +68,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rules.RuleDetails;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
-import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -106,13 +106,13 @@ public class IssueService {
   private final FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
   private final NewCodeService newCodeService;
-  private final RulesService rulesService;
+  private final ActiveRulesService activeRulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
   public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
+    NewCodeService newCodeService, ActiveRulesService activeRulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.storageService = storageService;
@@ -122,7 +122,7 @@ public class IssueService {
     this.findingReportingService = findingReportingService;
     this.severityModeService = severityModeService;
     this.newCodeService = newCodeService;
-    this.rulesService = rulesService;
+    this.activeRulesService = activeRulesService;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
   }
 
@@ -385,7 +385,7 @@ public class IssueService {
 
   private EffectiveIssueDetailsDto getFindingDetails(RaisedFindingDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var ruleKey = finding.getRuleKey();
-    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetails = activeRulesService.getActiveRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
     var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
     return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
@@ -396,7 +396,7 @@ public class IssueService {
 
   private EffectiveIssueDetailsDto getTaintDetails(TaintVulnerabilityDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var ruleKey = finding.getRuleKey();
-    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetails = activeRulesService.getActiveRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
     var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
     return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),

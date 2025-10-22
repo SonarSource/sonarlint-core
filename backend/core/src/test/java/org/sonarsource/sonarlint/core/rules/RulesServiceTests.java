@@ -41,21 +41,19 @@ class RulesServiceTests {
 
   private RulesRepository rulesRepository;
   private RulesExtractionHelper extractionHelper;
-  private ConfigurationRepository configurationRepository;
-  private StorageService storageService;
 
   @BeforeEach
   void prepare() {
     extractionHelper = mock(RulesExtractionHelper.class);
-    configurationRepository = mock(ConfigurationRepository.class);
-    storageService = mock(StorageService.class);
+    var configurationRepository = mock(ConfigurationRepository.class);
+    var storageService = mock(StorageService.class);
     rulesRepository = new RulesRepository(extractionHelper, configurationRepository, storageService);
   }
 
   @Test
   void it_should_return_all_embedded_rules_from_the_repository() {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
-    var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of(), null);
+    var rulesService = new RulesService(rulesRepository);
 
     var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().values();
 
@@ -68,12 +66,10 @@ class RulesServiceTests {
   void it_should_only_override_overridden_impact_quality() {
     Map<SoftwareQuality, ImpactSeverity> defaultImpacts = Map.of(
       SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW,
-      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM
-    );
+      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM);
 
     List<ImpactPayload> overriddenImpacts = List.of(
-      new ImpactPayload("MAINTAINABILITY", "HIGH")
-    );
+      new ImpactPayload("MAINTAINABILITY", "HIGH"));
 
     Map<SoftwareQuality, ImpactSeverity> result = RuleDetails.mergeImpacts(defaultImpacts, overriddenImpacts);
     assertThat(result)
@@ -85,8 +81,7 @@ class RulesServiceTests {
   void it_should_work_when_no_overridden_impacts() {
     Map<SoftwareQuality, ImpactSeverity> defaultImpacts = Map.of(
       SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW,
-      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM
-    );
+      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM);
 
     Map<SoftwareQuality, ImpactSeverity> result = RuleDetails.mergeImpacts(defaultImpacts, List.of());
 

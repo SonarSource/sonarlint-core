@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -38,16 +39,16 @@ public class TelemetryServerAttributesProvider {
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final RulesService rulesService;
+  private final ActiveRulesService activeRulesService;
   private final RulesRepository rulesRepository;
   private final NodeJsService nodeJsService;
 
   public TelemetryServerAttributesProvider(ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository,
-    RulesService rulesService, RulesRepository rulesRepository, NodeJsService nodeJsService) {
+    ActiveRulesService activeRulesService, RulesRepository rulesRepository, NodeJsService nodeJsService) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.rulesService = rulesService;
+    this.activeRulesService = activeRulesService;
     this.rulesRepository = rulesRepository;
     this.nodeJsService = nodeJsService;
   }
@@ -68,7 +69,7 @@ public class TelemetryServerAttributesProvider {
     var nonDefaultEnabledRules = new ArrayList<String>();
     var defaultDisabledRules = new ArrayList<String>();
 
-    rulesService.getStandaloneRuleConfig().forEach((ruleKey, standaloneRuleConfigDto) -> {
+    activeRulesService.getStandaloneRuleConfig().forEach((ruleKey, standaloneRuleConfigDto) -> {
       var optionalEmbeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
       if (optionalEmbeddedRule.isEmpty()) {
         return;

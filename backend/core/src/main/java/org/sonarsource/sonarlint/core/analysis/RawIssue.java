@@ -138,14 +138,6 @@ public class RawIssue {
     return issue.getRuleDescriptionContextKey().orElse(null);
   }
 
-  public Issue getIssue() {
-    return issue;
-  }
-
-  public RuleDetailsForAnalysis getActiveRule() {
-    return activeRule;
-  }
-
   public Collection<Integer> getLineNumbers() {
     Set<Integer> lineNumbers = new HashSet<>();
     Optional.ofNullable(getTextRange())
