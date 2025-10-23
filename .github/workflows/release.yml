@@ -5,6 +5,22 @@ on:
     types:
       - published
 
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version
+        required: true
+      releaseId:
+        type: string
+        description: Release ID
+        required: true
+      dryRun:
+        type: boolean
+        description: Flag to enable the dry-run execution
+        default: false
+        required: false
+
 jobs:
   release:
     permissions:
@@ -12,6 +28,9 @@ jobs:
       contents: write
     uses: SonarSource/gh-action_release/.github/workflows/main.yaml@v6
     with:
+      version: ${{ inputs.version }}
+      releaseId: ${{ inputs.releaseId }}
+      dryRun: ${{ inputs.dryRun }}
       publishToBinaries: false
       mavenCentralSync: true
       slackChannel: squad-ide
