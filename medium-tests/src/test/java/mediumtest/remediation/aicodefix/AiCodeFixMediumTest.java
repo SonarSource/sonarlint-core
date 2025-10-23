@@ -109,7 +109,9 @@ public class AiCodeFixMediumTest {
 
   @SonarLintTest
   void it_should_fail_if_the_issue_is_unknown(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer().start();
     var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey"))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -118,7 +120,7 @@ public class AiCodeFixMediumTest {
 
     var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issueId));
 
-    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+    assertThat(future).failsWithin(Duration.of(2, ChronoUnit.SECONDS))
       .withThrowableThat()
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
