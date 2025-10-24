@@ -37,7 +37,7 @@ class IOExceptionUtilsTests {
     var list = new ArrayDeque<IOException>();
     tryAndCollectIOException(() -> {
     }, list);
-    assertThat(list).isEmpty();
+    assertThat(list).isNotEmpty();
   }
 
   @Test

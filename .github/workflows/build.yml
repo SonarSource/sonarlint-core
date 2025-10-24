@@ -72,22 +72,12 @@ jobs:
           SCANNER_VERSION: 5.1.0.4751
           PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
         run: |
-          if git rev-parse --is-shallow-repository --quiet >/dev/null 2>&1; then
-            echo "Fetch Git references for SonarQube analysis..."
-            git fetch --unshallow || true
-          fi
-          maven_goals=("verify" "org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
+          mvn verify
+          maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
           maven_goals+=("-Pcoverage" "-Dcommercial")
           sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
           sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}" "-Dsonar.scm.revision=$GITHUB_SHA")
           sonar_props+=("-Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
-          if [[ "${GITHUB_EVENT_NAME:?}" == "pull_request" ]]; then
-            sonar_props+=("-Dsonar.pullrequest.key=$PULL_REQUEST")
-            sonar_props+=("-Dsonar.pullrequest.branch=$GITHUB_HEAD_REF")
-            sonar_props+=("-Dsonar.pullrequest.base=$GITHUB_BASE_REF")
-            echo "Fetch ${GITHUB_BASE_REF:?} for SonarQube analysis..."
-            git fetch origin "${GITHUB_BASE_REF}" || true
-          fi
           echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
           mvn "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
