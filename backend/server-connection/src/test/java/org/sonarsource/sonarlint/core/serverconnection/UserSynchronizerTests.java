@@ -54,7 +54,7 @@ class UserSynchronizerTests {
 
   @Test
   void it_should_synchronize_user_id_on_sonarcloud() {
-    mockServer.addStringResponse("/users/current", """
+    mockServer.addStringResponse("/api/users/current", """
       {
         "isLoggedIn": true,
         "id": "16c9b3b3-3f7e-4d61-91fe-31d731456c08",
@@ -81,7 +81,7 @@ class UserSynchronizerTests {
 
   @Test
   void it_should_not_store_null_user_id() {
-    mockServer.addStringResponse("/users/current", "{}");
+    mockServer.addStringResponse("/api/users/current", "{}");
 
     var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
@@ -92,7 +92,7 @@ class UserSynchronizerTests {
 
   @Test
   void it_should_store_user_id_in_correct_file() throws IOException {
-    mockServer.addStringResponse("/users/current", """
+    mockServer.addStringResponse("/api/users/current", """
       {
         "isLoggedIn": true,
         "id": "test-user-id",

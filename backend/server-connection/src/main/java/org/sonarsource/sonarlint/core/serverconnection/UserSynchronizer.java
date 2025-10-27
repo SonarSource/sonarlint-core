@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 public class UserSynchronizer {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionStorage storage;
 
   public UserSynchronizer(ConnectionStorage storage) {
@@ -42,8 +44,8 @@ public class UserSynchronizer {
       if (userId != null && !userId.trim().isEmpty()) {
         storage.user().store(userId.trim());
       }
-    } catch (Exception ignored) {
-      // Don't fail the synchronization if user id cannot be fetched
+    } catch (Exception e) {
+      LOG.warn("Failed to synchronize user id from server: {}", e.getMessage());
     }
   }
 }

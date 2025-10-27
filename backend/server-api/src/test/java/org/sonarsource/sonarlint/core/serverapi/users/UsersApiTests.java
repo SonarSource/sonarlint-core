@@ -48,7 +48,7 @@ class UsersApiTests {
 
   @Test
   void should_return_user_id_on_sonarcloud() {
-    mockServer.addStringResponse("/users/current", """
+    mockServer.addStringResponse("/api/users/current", """
       {
         "isLoggedIn": true,
         "id": "16c9b3b3-3f7e-4d61-91fe-31d731456c08",
@@ -72,7 +72,7 @@ class UsersApiTests {
 
   @Test
   void should_return_null_on_malformed_response() {
-    mockServer.addStringResponse("/users/current", "{}");
+    mockServer.addStringResponse("/api/users/current", "{}");
 
     var id = underTest.getCurrentUserId(new SonarLintCancelMonitor());
 

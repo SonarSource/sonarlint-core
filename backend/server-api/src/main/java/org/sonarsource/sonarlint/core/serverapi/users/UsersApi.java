@@ -41,13 +41,13 @@ public class UsersApi {
     if (!helper.isSonarCloud()) {
       return null;
     }
-    try (var response = helper.apiGet("/users/current", cancelMonitor)) {
+    try (var response = helper.get("/api/users/current", cancelMonitor)) {
       var body = response.bodyAsString();
       try {
         var userResponse = new Gson().fromJson(body, CurrentUserResponse.class);
         return userResponse == null ? null : userResponse.id;
       } catch (Exception e) {
-        LOG.error("Error while parsing users/current response", e);
+        LOG.error("Error while parsing /api/users/current response", e);
         return null;
       }
     }
