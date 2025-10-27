@@ -225,14 +225,6 @@ public class PluginsService {
     pluginsRepository.unload(connectionId);
   }
 
-  public List<Path> getEmbeddedPluginPaths() {
-    return List.copyOf(embeddedPluginPaths);
-  }
-
-  public List<Path> getConnectedPluginPaths(String connectionId) {
-    return List.copyOf(getPluginPathsForConnection(connectionId));
-  }
-
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;

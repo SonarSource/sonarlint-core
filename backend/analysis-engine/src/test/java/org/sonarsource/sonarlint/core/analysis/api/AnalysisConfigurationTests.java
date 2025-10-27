@@ -196,6 +196,16 @@ class AnalysisConfigurationTests {
       public String qpKey() {
         return "";
       }
+
+      @Override
+      public String toString() {
+        var sb = new StringBuilder();
+        sb.append(ruleKey);
+        if (!params.isEmpty()) {
+          sb.append(params);
+        }
+        return sb.toString();
+      }
     };
   }
 

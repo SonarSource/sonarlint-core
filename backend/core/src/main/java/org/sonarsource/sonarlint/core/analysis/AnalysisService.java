@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
@@ -245,12 +246,16 @@ public class AnalysisService {
     var analysisProperties = new HashMap<>(serverProperties);
     analysisProperties.putAll(userAnalysisProperties);
     var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
-      () -> activeRulesService.buildConnectedActiveRules(binding, hotspotsOnly));
+      () -> {
+        var activeRules = activeRulesService.getConnectedActiveRules(binding);
+        return hotspotsOnly ? activeRules.stream().filter(activeRule -> activeRule.type() == RuleType.SECURITY_HOTSPOT).toList()
+          : activeRules;
+      });
     return new AnalysisConfig(connectedActiveRules, analysisProperties);
   }
 
   private AnalysisConfig getStandaloneAnalysisConfig(Map<String, String> userAnalysisProperties, @Nullable Trace trace) {
-    var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, activeRulesService::buildStandaloneActiveRules);
+    var standaloneActiveRules = startChild(trace, "buildStandaloneActiveRules", GET_ANALYSIS_CFG, activeRulesService::getStandaloneActiveRules);
     return new AnalysisConfig(standaloneActiveRules, userAnalysisProperties);
   }
 
@@ -309,7 +314,7 @@ public class AnalysisService {
 
   @EventListener
   public void onAnalyzerConfigurationSynchronized(AnalyzerConfigurationSynchronized event) {
-    checkIfReadyForAnalysis(event.getConfigScopeIds());
+    checkIfReadyForAnalysis(event.configScopeIds());
   }
 
   @EventListener

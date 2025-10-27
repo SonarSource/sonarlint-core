@@ -331,7 +331,8 @@ public class SynchronizationService {
         .collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       aiCodeFixSynchronizer.synchronize(serverApi, summary.version(), scopesPerProjectKey.keySet(), cancelMonitor);
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
-        bindingSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(new Binding(connectionId, projectKey));
+        var binding = new Binding(connectionId, projectKey);
+        bindingSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(binding);
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         var analyzerConfigUpdateSummary = storageSynchronizer.synchronizeAnalyzerConfig(serverApi, projectKey, cancelMonitor);
         // XXX we might want to group those 2 events under one
@@ -339,7 +340,7 @@ public class SynchronizationService {
           applicationEventPublisher.publishEvent(
             new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey()));
         }
-        applicationEventPublisher.publishEvent(new AnalyzerConfigurationSynchronized(configScopeIds));
+        applicationEventPublisher.publishEvent(new AnalyzerConfigurationSynchronized(binding, configScopeIds));
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey, cancelMonitor);
       });
       synchronizeProjectsSync(

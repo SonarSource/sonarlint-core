@@ -127,7 +127,7 @@ class AnalysisSchedulerMediumTests {
     assertThat(issues).hasSize(1);
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), 2, 9, 2, 27));
+      .containsOnly(tuple(RuleKey.parse("python:S139"), "Move this trailing comment on the previous empty line.", inputFile, List.of(), 2, 9, 2, 27));
     assertThat(issues.get(0).quickFixes()).hasSize(1);
   }
 

@@ -20,15 +20,7 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.Binding;
 
-public class AnalyzerConfigurationSynchronized {
-  private final Set<String> configScopeIds;
-
-  public AnalyzerConfigurationSynchronized(Set<String> configScopeIds) {
-    this.configScopeIds = configScopeIds;
-  }
-
-  public Set<String> getConfigScopeIds() {
-    return configScopeIds;
-  }
+public record AnalyzerConfigurationSynchronized(Binding binding, Set<String> configScopeIds) {
 }
