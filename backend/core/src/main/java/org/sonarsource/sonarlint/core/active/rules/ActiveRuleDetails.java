@@ -88,4 +88,14 @@ public record ActiveRuleDetails(
   public String qpKey() {
     throw new UnsupportedOperationException("qpKey not supported in SonarLint");
   }
+
+  @Override
+  public String toString() {
+    var sb = new StringBuilder();
+    sb.append(ruleKeyString());
+    if (!params.isEmpty()) {
+      sb.append(params);
+    }
+    return sb.toString();
+  }
 }

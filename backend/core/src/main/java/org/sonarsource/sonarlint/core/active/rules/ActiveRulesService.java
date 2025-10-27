@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -65,6 +67,7 @@ import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -81,7 +84,6 @@ public class ActiveRulesService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
@@ -91,6 +93,10 @@ public class ActiveRulesService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final boolean hotspotEnabled;
   private final ApplicationEventPublisher eventPublisher;
+
+  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
+  private List<ActiveRuleDetails> standaloneActiveRules;
+  private final Map<Binding, List<ActiveRuleDetails>> activeRulesPerBinding = new ConcurrentHashMap<>();
 
   public ActiveRulesService(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, SonarQubeClientManager sonarQubeClientManager,
     SeverityModeService severityModeService, StorageService storageService, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
@@ -110,6 +116,7 @@ public class ActiveRulesService {
   public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
     this.standaloneRuleConfig.clear();
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
+    this.standaloneActiveRules = null;
     eventPublisher.publishEvent(new StandaloneRulesConfigurationChanged(standaloneRuleConfig));
   }
 
@@ -129,7 +136,54 @@ public class ActiveRulesService {
     return new GetStandaloneRuleDescriptionResponse(RulesService.convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null));
   }
 
-  public List<ActiveRuleDetails> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {
+  public synchronized List<ActiveRuleDetails> getStandaloneActiveRules() {
+    if (standaloneActiveRules == null) {
+      standaloneActiveRules = buildStandaloneActiveRules();
+    }
+    return standaloneActiveRules;
+  }
+
+  private List<ActiveRuleDetails> buildStandaloneActiveRules() {
+    Set<String> excludedRules = standaloneRuleConfig.entrySet().stream()
+      .filter(not(e -> e.getValue().isActive()))
+      .map(Map.Entry::getKey).collect(toSet());
+    Set<String> includedRules = standaloneRuleConfig.entrySet().stream()
+      .filter(e -> e.getValue().isActive())
+      .map(Map.Entry::getKey)
+      .filter(r -> !excludedRules.contains(r))
+      .collect(toSet());
+
+    var filteredActiveRules = new ArrayList<SonarLintRuleDefinition>();
+
+    var allRulesDefinitions = rulesRepository.getEmbeddedRules().stream()
+      .filter(rule -> !rule.getType().equals(RuleType.SECURITY_HOTSPOT))
+      .toList();
+
+    filteredActiveRules.addAll(allRulesDefinitions.stream()
+      .filter(SonarLintRuleDefinition::isActiveByDefault)
+      .filter(isExcludedByConfiguration(excludedRules))
+      .toList());
+    filteredActiveRules.addAll(allRulesDefinitions.stream()
+      .filter(r -> !r.isActiveByDefault())
+      .filter(isIncludedByConfiguration(includedRules))
+      .toList());
+
+    return filteredActiveRules.stream().map(ruleDefinition -> {
+      Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
+      ofNullable(standaloneRuleConfig.get(ruleDefinition.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
+      // No template rules in standalone mode
+      return new ActiveRuleDetails(ruleDefinition.getKey(), ruleDefinition.getLanguage().getSonarLanguageKey(), effectiveParams, null, ruleDefinition.getDefaultSeverity(),
+        ruleDefinition.getType(), ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
+        ruleDefinition.getVulnerabilityProbability().orElse(null));
+    })
+      .toList();
+  }
+
+  public List<ActiveRuleDetails> getConnectedActiveRules(Binding binding) {
+    return activeRulesPerBinding.computeIfAbsent(binding, k -> buildConnectedActiveRules(binding));
+  }
+
+  private List<ActiveRuleDetails> buildConnectedActiveRules(Binding binding) {
     var analyzerConfig = storageService.binding(binding).analyzerConfiguration().read();
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDetails>();
@@ -158,7 +212,7 @@ public class ActiveRulesService {
               continue;
             }
           }
-          if (shouldIncludeRuleForAnalysis(binding.connectionId(), ruleOrTemplateDefinition, hotspotsOnly)) {
+          if (shouldIncludeRuleForAnalysis(binding.connectionId(), ruleOrTemplateDefinition)) {
             result.add(buildActiveRule(ruleOrTemplateDefinition, activeRuleFromStorage));
           }
         }
@@ -168,7 +222,7 @@ public class ActiveRulesService {
       });
     if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.IPYTHON)) {
       // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
-      var iPythonRules = buildStandaloneActiveRules()
+      var iPythonRules = getStandaloneActiveRules()
         .stream().filter(rule -> rule.languageKey().equals(SonarLanguage.IPYTHON.getSonarLanguageKey()))
         .toList();
       result.addAll(iPythonRules);
@@ -198,12 +252,12 @@ public class ActiveRulesService {
     return effectiveParams;
   }
 
-  private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition, boolean hotspotsOnly) {
+  private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition) {
     var isHotspot = ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT);
-    return (!isHotspot && !hotspotsOnly) || (isHotspot && hotspotEnabled && isHotspotTrackingPossible(connectionId));
+    return !isHotspot || (hotspotEnabled && isHotspotTrackingPossible(connectionId));
   }
 
-  public boolean isHotspotTrackingPossible(String connectionId) {
+  private boolean isHotspotTrackingPossible(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     if (connection == null) {
       // Connection is gone
@@ -211,39 +265,6 @@ public class ActiveRulesService {
     }
     // when storage is not present, consider hotspots should not be detected
     return storageService.connection(connectionId).serverInfo().read().isPresent();
-  }
-
-  public List<ActiveRuleDetails> buildStandaloneActiveRules() {
-    Set<String> excludedRules = standaloneRuleConfig.entrySet().stream().filter(not(e -> e.getValue().isActive())).map(Map.Entry::getKey).collect(toSet());
-    Set<String> includedRules = standaloneRuleConfig.entrySet().stream().filter(e -> e.getValue().isActive())
-      .map(Map.Entry::getKey)
-      .filter(r -> !excludedRules.contains(r))
-      .collect(toSet());
-
-    var filteredActiveRules = new ArrayList<SonarLintRuleDefinition>();
-
-    var allRulesDefinitions = rulesRepository.getEmbeddedRules().stream()
-      .filter(rule -> !rule.getType().equals(RuleType.SECURITY_HOTSPOT))
-      .toList();
-
-    filteredActiveRules.addAll(allRulesDefinitions.stream()
-      .filter(SonarLintRuleDefinition::isActiveByDefault)
-      .filter(isExcludedByConfiguration(excludedRules))
-      .toList());
-    filteredActiveRules.addAll(allRulesDefinitions.stream()
-      .filter(r -> !r.isActiveByDefault())
-      .filter(isIncludedByConfiguration(includedRules))
-      .toList());
-
-    return filteredActiveRules.stream().map(ruleDefinition -> {
-      Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
-      ofNullable(standaloneRuleConfig.get(ruleDefinition.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
-      // No template rules in standalone mode
-      return new ActiveRuleDetails(ruleDefinition.getKey(), ruleDefinition.getLanguage().getSonarLanguageKey(), effectiveParams, null, ruleDefinition.getDefaultSeverity(),
-        ruleDefinition.getType(), ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
-        ruleDefinition.getVulnerabilityProbability().orElse(null));
-    })
-      .toList();
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
@@ -277,10 +298,42 @@ public class ActiveRulesService {
   }
 
   @EventListener
+  public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
+    var iterator = activeRulesPerBinding.entrySet().iterator();
+    while (iterator.hasNext()) {
+      var binding = iterator.next().getKey();
+      if (binding.connectionId().equals(event.getRemovedConnectionId())) {
+        // evict the cache, active rules will be lazily loaded next time they are needed
+        iterator.remove();
+      }
+    }
+  }
+
+  @EventListener
+  public void onBindingUpdated(BindingConfigChangedEvent event) {
+    var previousBinding = event.previousConfig();
+    var previousConnectionId = previousBinding.connectionId();
+    var previousProjectKey = previousBinding.sonarProjectKey();
+    if (previousConnectionId != null && previousProjectKey != null
+      && configurationRepository.getBoundScopesToConnectionAndSonarProject(previousConnectionId, previousProjectKey).isEmpty()) {
+      // evict the cache, active rules will be lazily loaded next time they are needed
+      activeRulesPerBinding.remove(new Binding(previousConnectionId, previousProjectKey));
+    }
+  }
+
+  @EventListener
+  public void onAnalyzerConfigurationSynchronized(AnalyzerConfigurationSynchronized event) {
+    // evict the cache, active rules will be lazily loaded next time they are needed
+    activeRulesPerBinding.remove(event.binding());
+  }
+
+  @EventListener
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof RuleSetChangedEvent ruleSetChangedEvent) {
+      // evict the cache, active rules will be lazily loaded next time they are needed
+      ruleSetChangedEvent.getProjectKeys().forEach(projectKey -> activeRulesPerBinding.remove(new Binding(connectionId, projectKey)));
       updateStorage(connectionId, ruleSetChangedEvent);
       eventPublisher.publishEvent(
         new ServerActiveRulesChanged(connectionId, ruleSetChangedEvent.getProjectKeys(), ruleSetChangedEvent.getActivatedRules(), ruleSetChangedEvent.getDeactivatedRules()));
