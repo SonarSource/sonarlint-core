@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.users;
 
 import com.google.gson.Gson;
+import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -37,6 +38,7 @@ public class UsersApi {
    * Fetch the current user info on SonarQube Cloud (SQC) using api/users/current.
    * Returns null on SonarQube Server or if the response cannot be parsed.
    */
+  @CheckForNull
   public String getCurrentUserId(SonarLintCancelMonitor cancelMonitor) {
     if (!helper.isSonarCloud()) {
       return null;
