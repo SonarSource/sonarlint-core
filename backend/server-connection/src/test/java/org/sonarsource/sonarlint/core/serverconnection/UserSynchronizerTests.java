@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
