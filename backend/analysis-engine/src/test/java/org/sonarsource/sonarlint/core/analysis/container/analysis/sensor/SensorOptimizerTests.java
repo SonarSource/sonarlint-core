@@ -26,17 +26,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.InputFileIndex;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintFileSystem;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
-import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 import testutils.TestInputFileBuilder;
 
 import static java.util.Arrays.asList;
@@ -54,7 +54,7 @@ class SensorOptimizerTests {
   private final InputFileIndex inputFileCache = new InputFileIndex();
 
   @BeforeEach
-  void prepare() throws Exception {
+  void prepare() {
     fs = new SonarLintFileSystem(mock(AnalysisConfiguration.class), inputFileCache);
     settings = new MapSettings(Map.of());
     optimizer = new SensorOptimizer(fs, mock(ActiveRules.class), settings.asConfig());
@@ -111,14 +111,14 @@ class SensorOptimizerTests {
       .createIssuesForRuleRepositories("squid");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    var ruleAnotherRepo = mock(ActiveRuleAdapter.class);
+    var ruleAnotherRepo = mock(ActiveRule.class);
     when(ruleAnotherRepo.ruleKey()).thenReturn(RuleKey.of("repo1", "foo"));
     ActiveRules activeRules = new ActiveRulesAdapter(List.of(ruleAnotherRepo));
     optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
 
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    var ruleSquid = mock(ActiveRuleAdapter.class);
+    var ruleSquid = mock(ActiveRule.class);
     when(ruleSquid.ruleKey()).thenReturn(RuleKey.of("squid", "rule"));
 
     activeRules = new ActiveRulesAdapter(asList(ruleSquid, ruleAnotherRepo));

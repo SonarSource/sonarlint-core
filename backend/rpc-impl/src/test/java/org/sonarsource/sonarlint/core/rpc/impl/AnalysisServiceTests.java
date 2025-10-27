@@ -25,9 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
@@ -37,7 +36,6 @@ import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,19 +56,18 @@ class AnalysisServiceTests {
     when(issueLocation.inputComponent()).thenReturn(inputComponent);
     var clientInputFile = mock(ClientInputFile.class);
     when(clientInputFile.contents()).thenReturn("content");
-
-    var issue = new Issue(new ActiveRuleAdapter(new ActiveRule("repo:ruleKey", "languageKey")),
+    var issue = new Issue(new ActiveRuleDetails("repo:ruleKey", "languageKey", null, null, org.sonarsource.sonarlint.core.commons.IssueSeverity.BLOCKER,
+      org.sonarsource.sonarlint.core.commons.RuleType.BUG, org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CLEAR,
+      Map.of(), org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH),
       "primary message", Map.of(),
       new DefaultTextRange(new DefaultTextPointer(1, 1), new DefaultTextPointer(1, 1)),
       clientInputFile, List.of(new Flow(List.of(issueLocation))), List.of(new QuickFix(List.of(
-      new ClientInputFileEdit(clientInputFile, List.of(new TextEdit(
-        new TextRange(5, 6, 7, 8), "Quick fix text")))),
-      "Quick fix message")), Optional.of(""));
-    var ruleDetailsResponse = new RuleDetailsForAnalysis(org.sonarsource.sonarlint.core.commons.IssueSeverity.BLOCKER,
-      org.sonarsource.sonarlint.core.commons.RuleType.BUG, org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CLEAR,
-      Map.of(), org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH);
+        new ClientInputFileEdit(clientInputFile, List.of(new TextEdit(
+          new TextRange(5, 6, 7, 8), "Quick fix text")))),
+        "Quick fix message")),
+      Optional.of(""));
 
-    var rawIssueDto = AnalysisRpcServiceDelegate.toDto(new RawIssue(issue, ruleDetailsResponse));
+    var rawIssueDto = AnalysisRpcServiceDelegate.toDto(new RawIssue(issue));
 
     assertThat(rawIssueDto.getRuleKey()).isEqualTo("repo:ruleKey");
     var rawIssueLocationDto = rawIssueDto.getFlows().get(0).getLocations().get(0);

@@ -24,27 +24,27 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public class Issue implements IssueLocation {
-  private final String ruleKey;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
   private final Optional<String> ruleDescriptionContextKey;
   private final TextRange textRange;
+  private final ActiveRule activeRule;
   private final Map<SoftwareQuality, ImpactSeverity> overriddenImpacts;
 
-  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts,
-    @Nullable org.sonar.api.batch.fs.TextRange textRange, @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes,
-    Optional<String> ruleDescriptionContextKey) {
+  public Issue(ActiveRule activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts, @Nullable org.sonar.api.batch.fs.TextRange textRange,
+    @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes, Optional<String> ruleDescriptionContextKey) {
+    this.activeRule = activeRule;
     this.overriddenImpacts = overriddenImpacts;
     this.textRange = Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null);
-    this.ruleKey = activeRule.ruleKey().toString();
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
     this.flows = flows;
@@ -52,8 +52,12 @@ public class Issue implements IssueLocation {
     this.ruleDescriptionContextKey = ruleDescriptionContextKey;
   }
 
-  public String getRuleKey() {
-    return ruleKey;
+  public ActiveRule getActiveRule() {
+    return activeRule;
+  }
+
+  public RuleKey getRuleKey() {
+    return activeRule.ruleKey();
   }
 
   @Override
@@ -93,7 +97,7 @@ public class Issue implements IssueLocation {
   public String toString() {
     var sb = new StringBuilder();
     sb.append("[");
-    sb.append("rule=").append(ruleKey);
+    sb.append("rule=").append(getRuleKey());
     if (textRange != null) {
       var startLine = textRange.getStartLine();
       sb.append(", line=").append(startLine);

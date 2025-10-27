@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerH
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.IssueFilters;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.TextRangeUtils;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssue;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
@@ -78,7 +77,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     }
     var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
-    var activeRule = (ActiveRuleAdapter) activeRules.find(sonarLintIssue.ruleKey());
+    var activeRule = activeRules.find(sonarLintIssue.ruleKey());
     if ((activeRule == null) || noSonar(inputComponent, sonarLintIssue)) {
       return;
     }
@@ -88,8 +87,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     var quickFixes = transform(sonarLintIssue.quickFixes());
     var overriddenImpacts = transform(sonarLintIssue.overridenImpacts());
 
-    var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage, overriddenImpacts,
-      issue.primaryLocation().textRange(),
+    var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage, overriddenImpacts, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes, sonarLintIssue.ruleDescriptionContextKey());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);

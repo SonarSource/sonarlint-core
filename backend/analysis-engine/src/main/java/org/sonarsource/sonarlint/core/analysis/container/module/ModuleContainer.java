@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerH
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
@@ -69,7 +68,7 @@ public class ModuleContainer extends SpringComponentContainer {
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
     analysisContainer.add(startChild(trace, "newActiveRulesAdapter", "analyze", () ->
-      new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList())));
+      new ActiveRulesAdapter(configuration.activeRules())));
     var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
     if (trace != null) {

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.active.rules;
 
-import java.util.Map;
-import javax.annotation.Nullable;
-
-public record ActiveRule(String ruleKey, String languageKey, @Nullable Map<String, String> params, @Nullable String templateRuleKey) {
-
-  public ActiveRule(String ruleKey, String languageKey) {
-    this(ruleKey, languageKey, null, null);
-  }
-
-  public ActiveRule {
-    if (params == null) {
-      params = Map.of();
-    }
-  }
-
-  @Override
-  public String toString() {
-    var sb = new StringBuilder();
-    sb.append(ruleKey);
-    if (!params.isEmpty()) {
-      sb.append(params);
-    }
-    return sb.toString();
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

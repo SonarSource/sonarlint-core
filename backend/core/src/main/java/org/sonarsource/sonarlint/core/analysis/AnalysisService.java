@@ -42,9 +42,10 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.active.rules.ServerActiveRulesChanged;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
+import org.sonarsource.sonarlint.core.active.rules.StandaloneRulesConfigurationChanged;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
@@ -79,8 +80,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
-import org.sonarsource.sonarlint.core.active.rules.StandaloneRulesConfigurationChanged;
-import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.sonarsource.sonarlint.core.sync.ConfigurationScopesSynchronizedEvent;
@@ -391,24 +390,13 @@ public class AnalysisService {
     }
   }
 
-  private void streamIssue(String configScopeId, UUID analysisId, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues, Issue issue) {
-    var ruleKey = issue.getRuleKey();
-    var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
-      try {
-        return activeRulesService.getRuleDetailsForAnalysis(configScopeId, k);
-      } catch (Exception e) {
-        return null;
-      }
-    });
-    if (activeRule != null) {
-      var rawIssue = new RawIssue(issue, activeRule);
-      rawIssues.add(rawIssue);
-      if (rawIssue.getRuleKey().contains("secrets")) {
-        client.didDetectSecret(new DidDetectSecretParams(configScopeId));
-      }
-      eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
-
+  private void streamIssue(String configScopeId, UUID analysisId, List<RawIssue> rawIssues, Issue issue) {
+    var rawIssue = new RawIssue(issue);
+    rawIssues.add(rawIssue);
+    if (rawIssue.getRuleKey().contains("secrets")) {
+      client.didDetectSecret(new DidDetectSecretParams(configScopeId));
     }
+    eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
   }
 
   private void checkIfReadyForAnalysis(Set<String> configurationScopeIds) {
@@ -518,12 +506,11 @@ public class AnalysisService {
 
   public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, Set<URI> files, Map<String, String> extraProperties,
     boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
-    var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
     var trace = newAnalysisTrace();
     var analysisTask = new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
       () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType, trace),
-      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), trace, cancelChecker,
+      issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace, cancelChecker,
       taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
       files, extraProperties);
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues, trace);
@@ -586,11 +573,10 @@ public class AnalysisService {
 
   private AnalyzeCommand getAnalyzeCommand(String configurationScopeId, Set<URI> files, ArrayList<RawIssue> rawIssues, boolean hotspotsOnly, TriggerType triggerType,
     UUID analysisId) {
-    var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var trace = newAnalysisTrace();
     return new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
       () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
-      issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), trace,
+      issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
       () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
   }
@@ -610,6 +596,6 @@ public class AnalysisService {
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration.toMillis());
   }
 
-  private record AnalysisConfig(List<ActiveRule> activeRules, Map<String, String> analysisProperties) {
+  private record AnalysisConfig(List<ActiveRuleDetails> activeRules, Map<String, String> analysisProperties) {
   }
 }

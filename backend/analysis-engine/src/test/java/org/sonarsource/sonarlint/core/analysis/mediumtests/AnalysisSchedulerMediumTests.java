@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +46,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.AnalysisScheduler;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -249,7 +251,8 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
-      () -> analysisConfig, i -> {}, null, progressMonitor, TASK_MANAGER,
+      () -> analysisConfig, i -> {
+      }, null, progressMonitor, TASK_MANAGER,
       NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of("a", "1"));
     progressMonitor.cancel();
 
@@ -321,7 +324,49 @@ class AnalysisSchedulerMediumTests {
   }
 
   private static ActiveRule trailingCommentRule() {
-    return new ActiveRule("python:S139", "py", Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"), null);
+    return new ActiveRule() {
+      @Override
+      public RuleKey ruleKey() {
+        return RuleKey.parse("python:S139");
+      }
+
+      @Override
+      public String severity() {
+        return "";
+      }
+
+      @Override
+      public String language() {
+        return "py";
+      }
+
+      @CheckForNull
+      @Override
+      public String param(String key) {
+        return params().get(key);
+      }
+
+      @Override
+      public Map<String, String> params() {
+        return Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$");
+      }
+
+      @Override
+      public String internalKey() {
+        return "";
+      }
+
+      @CheckForNull
+      @Override
+      public String templateRuleKey() {
+        return null;
+      }
+
+      @Override
+      public String qpKey() {
+        return "";
+      }
+    };
   }
 
   private static ClientModuleFileSystem aModuleFileSystem() {
