@@ -76,6 +76,10 @@ public class TelemetryLiveAttributes {
     return serverAttributes.nodeVersion();
   }
 
+  public List<TelemetryConnectionAttributes> getConnectionsAttributes() {
+    return serverAttributes.connectionsAttributes();
+  }
+
   public Map<String, Object> getAdditionalAttributes() {
     return clientAttributes.getAdditionalAttributes();
   }

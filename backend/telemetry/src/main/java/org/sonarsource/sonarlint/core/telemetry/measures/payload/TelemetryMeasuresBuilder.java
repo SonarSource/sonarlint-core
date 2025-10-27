@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.BOOLEAN;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryMeasuresBuilder {
 
@@ -107,6 +109,10 @@ public class TelemetryMeasuresBuilder {
       values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(liveAttributes.countSonarQubeServerBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(liveAttributes.countSonarQubeCloudEUBindings()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(liveAttributes.countSonarQubeCloudUSBindings()), INTEGER, DAILY));
+
+      if (!liveAttributes.getConnectionsAttributes().isEmpty()) {
+        values.add(new TelemetryMeasuresValue("connections.attributes", new Gson().toJson(liveAttributes.getConnectionsAttributes()), STRING, DAILY));
+      }
     }
   }
 

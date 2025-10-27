@@ -65,6 +65,7 @@ public class ServerInfoStorage {
   private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, Set<Feature> features, Map<String, String> globalSettings) {
     return Sonarlint.ServerInfo.newBuilder()
       .setVersion(serverStatus.version())
+      .setServerId(serverStatus.id())
       .putAllGlobalSettings(globalSettings)
       .addAllSupportedFeatures(features.stream().map(Feature::getKey).toList())
       .build();
@@ -81,7 +82,8 @@ public class ServerInfoStorage {
       globalSettings.put(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(serverInfo.getMisraEarlyAccessRulesEnabled()));
     }
     return new StoredServerInfo(Version.create(serverInfo.getVersion()),
-      serverInfo.getSupportedFeaturesList().stream().map(Feature::fromKey).flatMap(Optional::stream).collect(Collectors.toSet()), new ServerSettings(globalSettings));
+      serverInfo.getSupportedFeaturesList().stream().map(Feature::fromKey).flatMap(Optional::stream).collect(Collectors.toSet()), new ServerSettings(globalSettings),
+      serverInfo.getServerId());
   }
 
 }

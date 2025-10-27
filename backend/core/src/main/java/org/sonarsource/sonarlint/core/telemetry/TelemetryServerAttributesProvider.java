@@ -34,6 +34,9 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rules.RulesService;
+import org.sonarsource.sonarlint.core.serverconnection.Organization;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 public class TelemetryServerAttributesProvider {
 
@@ -42,15 +45,17 @@ public class TelemetryServerAttributesProvider {
   private final ActiveRulesService activeRulesService;
   private final RulesRepository rulesRepository;
   private final NodeJsService nodeJsService;
+  private final StorageService storageService;
 
   public TelemetryServerAttributesProvider(ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository,
-    ActiveRulesService activeRulesService, RulesRepository rulesRepository, NodeJsService nodeJsService) {
+    RulesService rulesService, RulesRepository rulesRepository, NodeJsService nodeJsService, StorageService storageService) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.activeRulesService = activeRulesService;
     this.rulesRepository = rulesRepository;
     this.nodeJsService = nodeJsService;
+    this.storageService = storageService;
   }
 
   public TelemetryServerAttributes getTelemetryServerLiveAttributes() {
@@ -85,9 +90,25 @@ public class TelemetryServerAttributesProvider {
 
     var nodeJsVersion = getNodeJsVersion();
 
+    var connectionsAttributes = connectionConfigurationRepository.getConnectionsById().keySet().stream()
+      .map(storageService::connection)
+      .map(c -> {
+        var userId = c.user().read().orElse(null);
+        var serverId = c.serverInfo().read().map(StoredServerInfo::serverId).orElse(null);
+        var orgId = c.organization().read().map(Organization::id).orElse(null);
+
+        if (userId == null && serverId == null && orgId == null) {
+          return null;
+        }
+
+        return new TelemetryConnectionAttributes(userId, serverId, orgId);
+      })
+      .filter(Objects::nonNull)
+      .toList();
+
     return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, childBindingCount, sonarQubeServerBindingCount,
       sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, devNotificationsDisabled, nonDefaultEnabledRules,
-      defaultDisabledRules, nodeJsVersion);
+      defaultDisabledRules, nodeJsVersion, connectionsAttributes);
   }
 
   private int countSonarQubeCloudBindings(Collection<BoundScope> allBindings, SonarCloudRegion region) {
