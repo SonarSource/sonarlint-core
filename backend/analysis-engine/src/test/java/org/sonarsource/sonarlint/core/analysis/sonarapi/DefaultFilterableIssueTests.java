@@ -24,8 +24,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
+import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
@@ -39,10 +39,10 @@ class DefaultFilterableIssueTests {
   @Test
   void delegate_textRange_to_rawIssue() {
     TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
-    var activeRule = mock(ActiveRuleAdapter.class);
+    var activeRule = mock(ActiveRule.class);
     when(activeRule.ruleKey()).thenReturn(RuleKey.of("foo", "S123"));
     var rawIssue = new Issue(activeRule, null, Map.of(), textRange, null, null, null, Optional.empty());
-    FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
+    var underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
     assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }
 }

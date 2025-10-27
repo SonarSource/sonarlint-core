@@ -45,7 +45,7 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public RuleKey ruleKey() {
-    return RuleKey.parse(rawIssue.getRuleKey());
+    return rawIssue.getRuleKey();
   }
 
   @Override

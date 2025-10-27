@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
+import org.sonar.api.batch.rule.ActiveRule;
 
 @Immutable
 public class AnalysisConfiguration {
@@ -87,7 +88,7 @@ public class AnalysisConfiguration {
       // Group active rules by language and count occurrences
       var languageCounts = new HashMap<String, Integer>();
       for (var rule : activeRules) {
-        var languageKey = rule.ruleKey().split(":")[0];
+        var languageKey = rule.ruleKey().toString().split(":")[0];
         languageCounts.put(languageKey, languageCounts.getOrDefault(languageKey, 0) + 1);
       }
 

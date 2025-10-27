@@ -36,7 +36,7 @@ public class ActiveRulesAdapter implements ActiveRules {
   private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndKey = new HashMap<>();
   private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndInternalKey = new HashMap<>();
 
-  public ActiveRulesAdapter(Collection<ActiveRuleAdapter> activeRules) {
+  public ActiveRulesAdapter(Collection<ActiveRule> activeRules) {
     allActiveRules = List.copyOf(activeRules);
     for (ActiveRule r : allActiveRules) {
       if (r.internalKey() != null) {

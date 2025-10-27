@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
@@ -48,17 +49,17 @@ import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 public class RawIssue {
 
   private final Issue issue;
-  private final RuleDetailsForAnalysis activeRule;
+  private final ActiveRuleDetails activeRule;
   private final Map<SoftwareQuality, ImpactSeverity> impacts = new EnumMap<>(SoftwareQuality.class);
   @Nullable
   private final String textRangeHash;
   @Nullable
   private final String lineHash;
 
-  public RawIssue(Issue issue, RuleDetailsForAnalysis activeRule) {
+  public RawIssue(Issue issue) {
     this.issue = issue;
-    this.activeRule = activeRule;
-    this.impacts.putAll(activeRule.getImpacts());
+    this.activeRule = (ActiveRuleDetails) issue.getActiveRule();
+    this.impacts.putAll(activeRule.impacts());
     this.impacts.putAll(issue.getOverriddenImpacts());
     var textRangeWithHash = TextRangeUtils.getTextRangeWithHash(getTextRange(), getClientInputFile());
     this.textRangeHash = textRangeWithHash == null ? null : textRangeWithHash.getHash();
@@ -67,11 +68,11 @@ public class RawIssue {
   }
 
   public IssueSeverity getSeverity() {
-    return activeRule.getSeverity();
+    return activeRule.issueSeverity();
   }
 
   public RuleType getRuleType() {
-    return activeRule.getType();
+    return activeRule.type();
   }
 
   public boolean isSecurityHotspot() {
@@ -79,7 +80,7 @@ public class RawIssue {
   }
 
   public CleanCodeAttribute getCleanCodeAttribute() {
-    return activeRule.getCleanCodeAttribute();
+    return activeRule.cleanCodeAttribute();
   }
 
   public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
@@ -87,7 +88,7 @@ public class RawIssue {
   }
 
   public String getRuleKey() {
-    return issue.getRuleKey();
+    return activeRule.ruleKeyString();
   }
 
   public String getMessage() {
@@ -130,7 +131,7 @@ public class RawIssue {
 
   @CheckForNull
   public VulnerabilityProbability getVulnerabilityProbability() {
-    return activeRule.getVulnerabilityProbability();
+    return activeRule.vulnerabilityProbability();
   }
 
   @CheckForNull

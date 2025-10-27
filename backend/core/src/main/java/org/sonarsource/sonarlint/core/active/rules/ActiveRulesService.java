@@ -35,8 +35,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
-import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -131,10 +129,10 @@ public class ActiveRulesService {
     return new GetStandaloneRuleDescriptionResponse(RulesService.convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null));
   }
 
-  public List<ActiveRule> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {
+  public List<ActiveRuleDetails> buildConnectedActiveRules(Binding binding, boolean hotspotsOnly) {
     var analyzerConfig = storageService.binding(binding).analyzerConfiguration().read();
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
-    var result = new ArrayList<ActiveRule>();
+    var result = new ArrayList<ActiveRuleDetails>();
     ruleSetByLanguageKey.entrySet()
       .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
       .forEach(e -> {
@@ -178,11 +176,14 @@ public class ActiveRulesService {
     return result;
   }
 
-  public ActiveRule buildActiveRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
-    return new ActiveRule(activeRule.getRuleKey(),
+  public ActiveRuleDetails buildActiveRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+    return new ActiveRuleDetails(activeRule.getRuleKey(),
       ruleOrTemplateDefinition.getLanguage().getSonarLanguageKey(),
       getEffectiveParams(ruleOrTemplateDefinition, activeRule),
-      trimToNull(activeRule.getTemplateKey()));
+      trimToNull(activeRule.getTemplateKey()), activeRule.getSeverity(), ruleOrTemplateDefinition.getType(),
+      ruleOrTemplateDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL),
+      RuleDetails.mergeImpacts(ruleOrTemplateDefinition.getDefaultImpacts(), activeRule.getOverriddenImpacts()),
+      ruleOrTemplateDefinition.getVulnerabilityProbability().orElse(null));
   }
 
   private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
@@ -212,7 +213,7 @@ public class ActiveRulesService {
     return storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
-  public List<ActiveRule> buildStandaloneActiveRules() {
+  public List<ActiveRuleDetails> buildStandaloneActiveRules() {
     Set<String> excludedRules = standaloneRuleConfig.entrySet().stream().filter(not(e -> e.getValue().isActive())).map(Map.Entry::getKey).collect(toSet());
     Set<String> includedRules = standaloneRuleConfig.entrySet().stream().filter(e -> e.getValue().isActive())
       .map(Map.Entry::getKey)
@@ -234,11 +235,13 @@ public class ActiveRulesService {
       .filter(isIncludedByConfiguration(includedRules))
       .toList());
 
-    return filteredActiveRules.stream().map(rd -> {
-      Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
-      ofNullable(standaloneRuleConfig.get(rd.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
+    return filteredActiveRules.stream().map(ruleDefinition -> {
+      Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
+      ofNullable(standaloneRuleConfig.get(ruleDefinition.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
       // No template rules in standalone mode
-      return new ActiveRule(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
+      return new ActiveRuleDetails(ruleDefinition.getKey(), ruleDefinition.getLanguage().getSonarLanguageKey(), effectiveParams, null, ruleDefinition.getDefaultSeverity(),
+        ruleDefinition.getType(), ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
+        ruleDefinition.getVulnerabilityProbability().orElse(null));
     })
       .toList();
   }
@@ -441,46 +444,4 @@ public class ActiveRulesService {
       new Object[] {connectionId, ruleKey});
     return new ResponseErrorException(error);
   }
-
-  public RuleDetailsForAnalysis getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
-    var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    return effectiveBinding.isEmpty() ? getRuleDetailsForStandaloneAnalysis(ruleKey) : getRuleDetailsForConnectedAnalysis(effectiveBinding.get(), ruleKey);
-  }
-
-  private RuleDetailsForAnalysis getRuleDetailsForStandaloneAnalysis(String ruleKey) throws RuleNotFoundException {
-    var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
-    if (embeddedRule.isEmpty()) {
-      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + IN_EMBEDDED_RULES, ruleKey);
-    }
-    var ruleDefinition = embeddedRule.get();
-    return new RuleDetailsForAnalysis(ruleDefinition.getDefaultSeverity(), ruleDefinition.getType(),
-      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
-      ruleDefinition.getVulnerabilityProbability().orElse(null));
-  }
-
-  private RuleDetailsForAnalysis getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
-    if (ruleKey.startsWith("ipython:")) {
-      // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
-      return getRuleDetailsForStandaloneAnalysis(ruleKey);
-    }
-    var activeRuleOpt = findServerActiveRuleInStorage(binding, ruleKey);
-    if (activeRuleOpt.isEmpty()) {
-      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in active rules", ruleKey);
-    }
-    var activeRule = activeRuleOpt.get();
-    var actualRuleKey = ruleKey;
-    if (StringUtils.isNotBlank(activeRule.getTemplateKey())) {
-      actualRuleKey = activeRule.getTemplateKey();
-    }
-    var ruleDefinitionOpt = rulesRepository.getRule(binding.connectionId(), actualRuleKey);
-    if (ruleDefinitionOpt.isEmpty()) {
-      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + IN_EMBEDDED_RULES, actualRuleKey);
-    }
-    var ruleDefinition = ruleDefinitionOpt.get();
-    return new RuleDetailsForAnalysis(activeRule.getSeverity(), ruleDefinition.getType(),
-      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL),
-      RuleDetails.mergeImpacts(ruleDefinition.getDefaultImpacts(), activeRule.getOverriddenImpacts()),
-      ruleDefinition.getVulnerabilityProbability().orElse(null));
-  }
-
 }
