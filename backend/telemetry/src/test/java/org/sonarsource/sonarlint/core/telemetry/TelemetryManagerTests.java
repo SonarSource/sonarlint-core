@@ -284,7 +284,7 @@ class TelemetryManagerTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 0, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 0, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", Collections.emptyList());
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

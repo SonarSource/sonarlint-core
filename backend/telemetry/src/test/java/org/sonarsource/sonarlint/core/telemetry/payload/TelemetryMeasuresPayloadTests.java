@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
+import com.google.gson.Gson;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryConnectionAttributes;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValue;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.BOOLEAN;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 class TelemetryMeasuresPayloadTests {
 
@@ -74,6 +77,7 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"bindings.server_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_eu_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_us_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"connections.attributes\",\"value\":\"[{\\\"userId\\\":\\\"user-id\\\",\\\"organizationId\\\":\\\"org-id\\\"}]\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"analysis_reporting.trigger_count_vcs_changed_files\",\"value\":\"7\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"performance.biggest_size_config_scope_files\",\"value\":\"12345\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
@@ -112,6 +116,8 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(0), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(0), INTEGER, DAILY));
 
+    values.add(new TelemetryMeasuresValue("connections.attributes", new Gson().toJson(List.of(new TelemetryConnectionAttributes("user-id", null, "org-id"))), STRING, DAILY));
+
     values.add(new TelemetryMeasuresValue("help_and_feedback.doc_link", String.valueOf(5), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("analysis_reporting.trigger_count_vcs_changed_files", String.valueOf(7), INTEGER, DAILY));
@@ -139,6 +145,7 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("new_bindings.accepted_suggestion_shared_config_file", "4", INTEGER, DAILY))
       .contains(tuple("new_bindings.accepted_suggestion_project_name", "5", INTEGER, DAILY))
       .contains(tuple("binding_suggestion_clue.remote_url", "5", INTEGER, DAILY))
+      .contains(tuple("connections.attributes", "[{\"userId\":\"user-id\",\"organizationId\":\"org-id\"}]", STRING, DAILY))
       .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY))
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY))
       .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))

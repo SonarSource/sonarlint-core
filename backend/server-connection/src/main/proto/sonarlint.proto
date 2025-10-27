@@ -34,6 +34,7 @@ message ServerInfo {
   optional bool misraEarlyAccessRulesEnabled = 3 [deprecated=true];
   map<string, string> globalSettings = 4;
   repeated string supportedFeatures = 5;
+  string serverId = 6;
 }
 
 message PluginReferences {
@@ -120,6 +121,10 @@ message NewCodeDefinition {
 message Organization {
   string id = 1;
   string uuidV4 = 2;
+}
+
+message User {
+  optional string id = 1;
 }
 
 message AiCodeFixSettings {

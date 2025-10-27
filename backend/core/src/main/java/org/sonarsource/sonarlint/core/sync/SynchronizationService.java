@@ -67,6 +67,7 @@ import org.sonarsource.sonarlint.core.serverconnection.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.UserSynchronizer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -319,8 +320,10 @@ public class SynchronizationService {
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, connectedModeEmbeddedPluginKeys, serverInfoSynchronizer, storage);
     var aiCodeFixSynchronizer = new AiCodeFixSettingsSynchronizer(storage, new OrganizationSynchronizer(storage));
+    var userSynchronizer = new UserSynchronizer(storage);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
+      userSynchronizer.synchronize(serverApi, cancelMonitor);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));

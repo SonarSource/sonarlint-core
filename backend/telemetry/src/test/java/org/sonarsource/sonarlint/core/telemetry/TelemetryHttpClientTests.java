@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.commons.lang3.SystemUtils;
@@ -137,6 +138,7 @@ class TelemetryHttpClientTests {
             {"key":"help_and_feedback.docs","value":"1","type":"integer","granularity":"daily"},
             {"key":"analysis_reporting.trigger_count_pre_commit","value":"1","type":"integer","granularity":"daily"},
             {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
+            {"key":"connections.attributes","value":"[{\\"userId\\":\\"user-id-sqc\\",\\"organizationId\\":\\"org-id\\"},{\\"serverId\\":\\"server-id\\"}]","type":"string","granularity":"daily"},
             {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
@@ -188,7 +190,10 @@ class TelemetryHttpClientTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var connectionsAttributes = new ArrayList<TelemetryConnectionAttributes>();
+    connectionsAttributes.add(new TelemetryConnectionAttributes("user-id-sqc", null, "org-id"));
+    connectionsAttributes.add(new TelemetryConnectionAttributes(null, "server-id", null));
+    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", connectionsAttributes);
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

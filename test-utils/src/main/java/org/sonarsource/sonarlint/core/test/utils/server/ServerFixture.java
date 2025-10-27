@@ -876,6 +876,7 @@ public class ServerFixture {
         registerPushApiResponses();
         registerFeaturesApiResponses();
         registerScaApiResponses();
+        registerUsersApiResponses();
         registerDopTranslationApiResponses();
       }
     }
@@ -1634,6 +1635,11 @@ public class ServerFixture {
         mockServer.stubFor(post(prefix + "/sca/issues-releases/change-status")
           .willReturn(aResponse().withStatus(200)));
       }));
+    }
+
+    private void registerUsersApiResponses() {
+      mockServer.stubFor(get("/api/users/current")
+        .willReturn(jsonResponse("{\"isLoggedIn\": true, \"id\": \"11111111-1111-1111-1111-111111111111\", \"login\": \"user\"}", 200)));
     }
 
     public void pushEvent(String eventPayload) {
