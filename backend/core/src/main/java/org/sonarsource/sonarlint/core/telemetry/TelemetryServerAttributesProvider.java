@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverconnection.Organization;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -48,8 +47,8 @@ public class TelemetryServerAttributesProvider {
   private final StorageService storageService;
 
   public TelemetryServerAttributesProvider(ConfigurationRepository configurationRepository,
-    ConnectionConfigurationRepository connectionConfigurationRepository,
-    RulesService rulesService, RulesRepository rulesRepository, NodeJsService nodeJsService, StorageService storageService) {
+    ConnectionConfigurationRepository connectionConfigurationRepository, ActiveRulesService activeRulesService, RulesRepository rulesRepository,
+    NodeJsService nodeJsService, StorageService storageService) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.activeRulesService = activeRulesService;
