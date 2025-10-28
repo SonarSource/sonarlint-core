@@ -178,7 +178,7 @@ class SonarProjectBranchMediumTests {
       .when(client).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
 
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId",
+      .withSonarQubeConnection("connectionId", harness.newFakeSonarQubeServer().start(),
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
