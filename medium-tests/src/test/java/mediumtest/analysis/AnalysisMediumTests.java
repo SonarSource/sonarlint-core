@@ -974,6 +974,7 @@ class AnalysisMediumTests {
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject(projectKey)
       .withProject(projectKey2)
       .start();
