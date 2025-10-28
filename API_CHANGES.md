@@ -1,3 +1,11 @@
+# 10.36
+
+## New features
+
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService` service and a `joinIdeLabsProgram` method.
+  * Use it to allow users to join the SonarQube for IDE Labs program
+  * The method accepts user email and IDE name as parameters
+
 # 10.35
 
 ## Breaking changes
