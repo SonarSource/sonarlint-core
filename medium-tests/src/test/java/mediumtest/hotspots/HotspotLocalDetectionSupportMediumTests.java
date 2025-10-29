@@ -22,8 +22,6 @@ package mediumtest.hotspots;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -32,7 +30,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class HotspotLocalDetectionSupportMediumTests {
 
   @SonarLintTest
