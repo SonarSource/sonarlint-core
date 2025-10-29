@@ -24,9 +24,12 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
+import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public final class SonarLintDatabase {
@@ -51,8 +54,9 @@ public final class SonarLintDatabase {
         url = "jdbc:h2:" + dbBasePath;
         if (sonarLintDatabaseInitParams.autoServerModeEnabled()) {
           // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
-          if (System.getProperty("h2.bindAddress") == null || System.getProperty("h2.bindAddress").isBlank()) {
-            System.setProperty("h2.bindAddress", "127.0.0.1");
+          var bindAddressProperty = "h2.bindAddress";
+          if (StringUtils.isEmpty(System.getProperty(bindAddressProperty))) {
+            System.setProperty(bindAddressProperty, "127.0.0.1");
           }
           url += ";AUTO_SERVER=TRUE";
         }
@@ -82,7 +86,7 @@ public final class SonarLintDatabase {
     }
 
     // Initialize jOOQ DSL after migrations
-    this.dsl = org.jooq.impl.DSL.using(this.dataSource, org.jooq.SQLDialect.H2);
+    this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
   }
 
   public DataSource getDataSource() {

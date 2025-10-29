@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 public class H2Utils {
 
-  public static void insertRecords(SonarLintDatabase sonarLintDatabase, int recCount) throws SQLException, InterruptedException {
+  public static void insertRecords(SonarLintDatabase sonarLintDatabase, int recCount) throws SQLException {
     var insertSQL = "INSERT INTO TEST_TABLE (VAL) VALUES (?)";
     var countSQL = "SELECT COUNT(*) FROM TEST_TABLE";
     try (var connection = sonarLintDatabase.getConnection()) {
