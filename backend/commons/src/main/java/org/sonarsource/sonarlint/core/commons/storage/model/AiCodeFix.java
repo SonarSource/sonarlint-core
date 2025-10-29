@@ -39,8 +39,8 @@ public record AiCodeFix(
 
   public enum Enablement {
     DISABLED,
-    ENABLED_FOR_SOME_PROJECTS,
-    ENABLED_FOR_ALL_PROJECTS
+    ENABLED_FOR_ALL_PROJECTS,
+    ENABLED_FOR_SOME_PROJECTS
   }
 
   public AiCodeFix {

@@ -248,9 +248,15 @@ public class FindingReportingService {
 
   private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues, NewCodeDefinition newCodeDefinition, boolean isMQRMode,
     Optional<AiCodeFixFeature> aiCodeFixFeature) {
+    LOG.debug("AiCodeFix optional is present: {}", aiCodeFixFeature.isPresent());
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri,
-        Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode, aiCodeFixFeature.map(feature -> feature.isFixable(issue)).orElse(false)),
+        Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode, aiCodeFixFeature.map(feature -> {
+            LOG.debug("AiCodeFix is fixable: {}", aiCodeFixFeature.get().isFixable(issue));
+            LOG.debug("Supported rules: {}", aiCodeFixFeature.get().settings().supportedRules());
+            LOG.debug("Issue ruleKey {} and text range {}", issue.getRuleKey(), issue.getTextRangeWithHash());
+            return feature.isFixable(issue);
+          }).orElse(false)),
           Collectors.toList())));
   }
 
