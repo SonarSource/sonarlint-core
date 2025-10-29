@@ -21,9 +21,7 @@ package mediumtest.rules;
 
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -31,7 +29,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 
-@ExtendWith(LogTestStartAndEnd.class)
 public class RuleExtractionMediumTests {
 
   @SonarLintTest

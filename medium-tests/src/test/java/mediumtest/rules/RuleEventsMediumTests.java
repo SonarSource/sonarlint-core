@@ -25,9 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
@@ -54,7 +52,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class RuleEventsMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";

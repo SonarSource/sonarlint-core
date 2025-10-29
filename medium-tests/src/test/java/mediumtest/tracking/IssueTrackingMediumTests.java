@@ -34,12 +34,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -92,7 +90,6 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class IssueTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
