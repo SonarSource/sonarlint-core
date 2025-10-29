@@ -537,7 +537,7 @@ public class SonarLintBackendFixture {
       }
     }
 
-    private void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages) {
+    private static void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages) {
       var aiCodeFixRepository = new AiCodeFixRepository(sonarLintDatabase);
 
       storages.forEach(storage -> {

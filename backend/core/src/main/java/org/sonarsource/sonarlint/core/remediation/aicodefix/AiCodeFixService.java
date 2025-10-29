@@ -150,7 +150,6 @@ public class AiCodeFixService {
 
   private AiSuggestionResponseBodyDto generateResponseBodyForIssue(ServerApi serverApi, RaisedIssue raisedIssue, UUID issueId,
     BindingWithOrg bindingWithOrg, SonarLintCancelMonitor cancelMonitor) {
-    // First validate the file exists to return the proper FILE_NOT_FOUND error if needed
     var aiCodeFixFeature = getFeature(bindingWithOrg.binding());
     if (!aiCodeFixFeature.map(feature -> feature.isFixable(raisedIssue)).orElse(false)) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));

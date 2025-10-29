@@ -62,8 +62,8 @@ public class AiCodeFixRepository {
 
   public void upsert(AiCodeFix entity) {
     var now = Timestamp.from(Instant.now());
-    // TODO this maybe a problem
-    int rowId = Math.abs(entity.connectionId().hashCode());
+    // use connection ID from Connection Table when it will be created
+    int rowId = entity.connectionId().hashCode();
 
     var dsl = database.dsl();
     try {
