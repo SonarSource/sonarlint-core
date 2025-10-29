@@ -32,9 +32,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
@@ -59,7 +57,6 @@ import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXP
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisSchedulingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";

@@ -20,6 +20,7 @@
 package mediumtest;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.logging.Handler;
@@ -28,6 +29,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
@@ -62,7 +64,7 @@ class SonarLintTestHarnessShutdownTest {
     TestServer server = new TestServer();
     harness.addServer(server);
 
-    harness.afterEach(null);
+    harness.afterEach(emptyContext());
 
     assertThat(harness.getBackends()).isEmpty();
     assertThat(harness.getServers()).isEmpty();
@@ -78,7 +80,7 @@ class SonarLintTestHarnessShutdownTest {
     TestServer server = new TestServer();
     harness.addServer(server);
 
-    harness.afterEach(null);
+    harness.afterEach(emptyContext());
 
     assertThat(harness.getBackends()).isEmpty();
     assertThat(harness.getServers()).isEmpty();
@@ -99,7 +101,7 @@ class SonarLintTestHarnessShutdownTest {
     TestServer server = new TestServer();
     harness.addServer(server);
 
-    harness.afterEach(null);
+    harness.afterEach(emptyContext());
 
     assertThat(harness.getBackends()).isEmpty();
     assertThat(harness.getServers()).isEmpty();
@@ -125,7 +127,7 @@ class SonarLintTestHarnessShutdownTest {
     harness.addServer(throwingServer1);
     harness.addServer(throwingServer2);
 
-    harness.afterEach(null);
+    harness.afterEach(emptyContext());
 
     assertThat(harness.getBackends()).isEmpty();
     assertThat(harness.getServers()).isEmpty();
@@ -158,7 +160,7 @@ class SonarLintTestHarnessShutdownTest {
     harness.addServer(server1);
     harness.addServer(server2);
 
-    harness.afterEach(null);
+    harness.afterEach(emptyContext());
 
     assertThat(harness.getBackends()).isEmpty();
     assertThat(harness.getServers()).isEmpty();
@@ -166,6 +168,12 @@ class SonarLintTestHarnessShutdownTest {
     assertThat(logHandler.getRecords()).anySatisfy(logRecord -> assertThat(logRecord.getMessage()).contains("Error shutting down backend"));
     assertThat(logHandler.getRecords()).anySatisfy(logRecord -> assertThat(logRecord.getMessage()).contains("Failed to shutdown backend"));
     assertThat(logHandler.getRecords()).anySatisfy(logRecord -> assertThat(logRecord.getMessage()).contains("Failed to shutdown server"));
+  }
+
+  private static ExtensionContext emptyContext() {
+    var context = mock(ExtensionContext.class);
+    when(context.getTestMethod()).thenReturn(Optional.empty());
+    return context;
   }
 
   static class TestLogHandler extends Handler {

@@ -26,9 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -44,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static utils.AnalysisUtils.awaitRaisedIssuesNotification;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisCharsetMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";

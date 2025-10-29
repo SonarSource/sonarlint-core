@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.support.TypeBasedParameterResolver;
@@ -36,7 +37,7 @@ import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
-public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness> implements BeforeAllCallback, AfterEachCallback, AfterAllCallback {
+public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness> implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
   private static final Logger LOG = Logger.getLogger(SonarLintTestHarness.class.getName());
   private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
 
@@ -57,6 +58,11 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   }
 
   @Override
+  public void beforeEach(ExtensionContext context) {
+    context.getTestMethod().ifPresent(method -> System.out.printf(">>> Before test %s%n", method.getName()));
+  }
+
+  @Override
   public void afterAll(ExtensionContext context) {
     if (isStatic) {
       shutdownAll();
@@ -68,6 +74,7 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
     if (!isStatic) {
       shutdownAll();
     }
+    context.getTestMethod().ifPresent(method -> System.out.printf("<<< After test %s%n", method.getName()));
   }
 
   private void shutdownAll() {
@@ -134,5 +141,4 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   public List<ServerFixture.Server> getServers() {
     return servers;
   }
-
 }

@@ -26,9 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
@@ -54,7 +52,6 @@ import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static utils.AnalysisUtils.getPublishedIssues;
 
-@ExtendWith(LogTestStartAndEnd.class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class AnalysisReadinessMediumTests {
 
