@@ -526,11 +526,11 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
           .get();
+        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages);
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);
         }
-        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages);
         return sonarLintBackend;
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
