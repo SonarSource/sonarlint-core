@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.io.InputStream;
@@ -152,6 +153,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       SonarLintLogger.get().setLevel(LogService.convert(params.getLogLevel()));
       SonarLintLogger.get().setTarget(logOutput);
+      // for flyway logging level
+      setLogbackRootLogger(params);
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
@@ -161,6 +164,19 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       }
       return null;
     });
+  }
+
+  private static void setLogbackRootLogger(InitializeParams params) {
+    var root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+    var logLevel = switch (params.getLogLevel()) {
+      case OFF -> Level.OFF;
+      case ERROR -> Level.ERROR;
+      case WARN -> Level.WARN;
+      case INFO -> Level.INFO;
+      case DEBUG -> Level.DEBUG;
+      case TRACE -> Level.TRACE;
+    };
+    root.setLevel(logLevel);
   }
 
   public ConfigurableApplicationContext getInitializedApplicationContext() {
