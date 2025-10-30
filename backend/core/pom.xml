@@ -149,7 +149,6 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
-
     <!-- For Xodus -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
