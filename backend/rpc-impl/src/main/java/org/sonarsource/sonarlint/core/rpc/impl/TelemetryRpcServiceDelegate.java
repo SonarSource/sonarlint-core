@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
+// TODO Replace direct calls with SLCORE event infrastructure ??? Or maybe keep using the same approach but then we will need to separate them somehow... And send them in a different time with a different storage...
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
   public TelemetryRpcServiceDelegate(SonarLintRpcServerImpl server) {
