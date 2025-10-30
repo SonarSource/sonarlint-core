@@ -148,13 +148,13 @@ class SonarCodeContextMediumTests {
         new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true)))));
 
     var sonarMd = baseDir.resolve(".sonar-code-context").resolve("SONAR.md");
-    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar.mdc");
+    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar-code-context.mdc");
     await().untilAsserted(() -> assertThat(Files.exists(sonarMd)).isTrue());
     await().untilAsserted(() -> assertThat(Files.exists(mdc)).isTrue());
     var mdContent = Files.readString(sonarMd);
     assertThat(mdContent).contains("SONAR.md");
     var mdcContent = Files.readString(mdc);
-    assertThat(mdcContent).contains("sonar.mdc");
+    assertThat(mdcContent).contains("sonar-code-context.mdc");
     assertThat(Files.isExecutable(cliPath)).isTrue();
   }
 
@@ -190,7 +190,7 @@ class SonarCodeContextMediumTests {
         new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true)))));
 
     var sonarMd = baseDir.resolve(".sonar-code-context").resolve("SONAR.md");
-    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar.mdc");
+    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar-code-context.mdc");
     await().during(java.time.Duration.ofMillis(300)).untilAsserted(() -> {
       assertThat(Files.exists(sonarMd)).isFalse();
       assertThat(Files.exists(mdc)).isFalse();
@@ -228,7 +228,7 @@ class SonarCodeContextMediumTests {
         new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true)))));
 
     var sonarMd = baseDir.resolve(".sonar-code-context").resolve("SONAR.md");
-    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar.mdc");
+    var mdc = baseDir.resolve(".cursor").resolve("rules").resolve("sonar-code-context.mdc");
     await().during(java.time.Duration.ofMillis(300)).untilAsserted(() -> {
       assertThat(Files.exists(sonarMd)).isFalse();
       assertThat(Files.exists(mdc)).isFalse();
@@ -250,9 +250,9 @@ class SonarCodeContextMediumTests {
         echo "SONAR_GUIDELINES generated $*" > .sonar-code-context/SONAR_GUIDELINES.md
       elif [ "$cmd" = "merge-md" ]; then
         echo "SONAR.md merged" > .sonar-code-context/SONAR.md
-      elif [ "$cmd" = "install-sonar-mdc" ]; then
+      elif [ "$cmd" = "install" ]; then
         mkdir -p .cursor/rules
-        echo "sonar.mdc generated $*" > .cursor/rules/sonar.mdc
+        echo "sonar-code-context.mdc generated $*" > .cursor/rules/sonar-code-context.mdc
       fi""";
     Files.writeString(cli, content, UTF_8);
     try {

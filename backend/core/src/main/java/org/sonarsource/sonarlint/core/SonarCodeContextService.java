@@ -45,7 +45,7 @@ import org.springframework.context.event.EventListener;
 
 /**
  * Dogfooding-only integration that runs SonarCodeContext CLI on repository open in connected mode.
- * Commands executed (in order): init, generate-md, install-sonar-mdc.
+ * Commands executed (in order): init, generate-md-guidelines, merge-md, install.
  * Outputs are expected under the '.sonar-code-context' directory.
  */
 public class SonarCodeContextService {
