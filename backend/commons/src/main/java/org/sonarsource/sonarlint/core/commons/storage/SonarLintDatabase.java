@@ -23,6 +23,7 @@ import jakarta.inject.Inject;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -100,6 +101,12 @@ public final class SonarLintDatabase {
     } catch (Exception e) {
       LOG.debug("Error while disposing H2Database: {}", e.getMessage());
     }
+  }
+
+  public void cleanupNonExistingConnections(Set<String> connectionIds) {
+    connectionIds.forEach(connectionId -> {
+      // TODO: remove connection and related records from the database
+    });
   }
 }
 

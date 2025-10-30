@@ -21,5 +21,5 @@ package org.sonarsource.sonarlint.core.commons.storage;
 
 import java.nio.file.Path;
 
-public record SonarLintDatabaseInitParams(Path storageRoot, SonarLintDatabaseMode sonarLintDatabaseMode, boolean newSonarLintDatabaseEnabled) {
+public record SonarLintDatabaseInitParams(Path storageRoot, SonarLintDatabaseMode sonarLintDatabaseMode) {
 }

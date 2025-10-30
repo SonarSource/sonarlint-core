@@ -28,8 +28,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -71,12 +71,12 @@ public class AiCodeFixService {
   private final ApplicationEventPublisher eventPublisher;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
   private final AiCodeFixRepository aiCodeFixRepository;
-  private final boolean newSonarLintDatabaseEnabled;
+  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService,
     ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixRepository aiCodeFixRepository,
-    StorageService storageService, SonarLintDatabaseInitParams dbInitParams) {
+    StorageService storageService, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -86,7 +86,7 @@ public class AiCodeFixService {
     this.eventPublisher = eventPublisher;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
     this.aiCodeFixRepository = aiCodeFixRepository;
-    this.newSonarLintDatabaseEnabled = dbInitParams.newSonarLintDatabaseEnabled();
+    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
   }
 
   public static AiCodeFixSettings aiCodeFixMapping(AiCodeFix entity) {
@@ -98,15 +98,19 @@ public class AiCodeFixService {
   }
 
   public Optional<AiCodeFixFeature> getFeature(Binding binding) {
-    if (newSonarLintDatabaseEnabled) {
+    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
       return aiCodeFixRepository.get(binding.connectionId())
         .map(AiCodeFixService::aiCodeFixMapping)
         .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
         .map(AiCodeFixFeature::new);
     } else {
-      return storageService.connection(binding.connectionId()).aiCodeFix().read()
-        .map(AiCodeFixFeature::new);
+      return getFeature(storageService, binding);
     }
+  }
+
+  public static Optional<AiCodeFixFeature> getFeature(StorageService storageService, Binding binding) {
+    return storageService.connection(binding.connectionId()).aiCodeFix().read()
+      .map(AiCodeFixFeature::new);
   }
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {

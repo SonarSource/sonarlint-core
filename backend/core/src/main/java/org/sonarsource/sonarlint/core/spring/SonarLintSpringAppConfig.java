@@ -110,6 +110,7 @@ import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
@@ -220,7 +221,9 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AiAssistedIdeService.class,
   LogService.class,
   ActiveRulesService.class,
-
+  SonarLintDatabase.class,
+  AiCodeFixRepository.class,
+  SonarLintDatabaseService.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -268,17 +271,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
-    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, params.isUseNewSonarLintDatabaseEnabled());
-  }
-
-  @Bean(destroyMethod = "shutdown")
-  SonarLintDatabase provideSonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
-    return new SonarLintDatabase(sonarLintDatabaseInitParams);
-  }
-
-  @Bean
-  AiCodeFixRepository provideAiCodeFixRepository(SonarLintDatabase sonarLintDatabase) {
-    return new AiCodeFixRepository(sonarLintDatabase);
+    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE);
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
