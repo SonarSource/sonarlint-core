@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
@@ -68,7 +70,7 @@ class AiCodeFixServiceTest {
 
   @Test
   void getFeature_reads_from_h2_repository() {
-    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
+    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE));
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";
@@ -88,9 +90,11 @@ class AiCodeFixServiceTest {
     var eventPublisher = mock(ApplicationEventPublisher.class);
     var taintService = mock(TaintVulnerabilityTrackingService.class);
     var storageService = mock(StorageService.class);
+    var dogfoodingService = mock(DogfoodEnvironmentDetectionService.class);
+    when(dogfoodingService.isDogfoodEnvironment()).thenReturn(true);
 
     var service = new AiCodeFixService(connectionRepository, configurationRepository, sonarQubeClientManager,
-      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixRepo, storageService, new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
+      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixRepo, storageService, dogfoodingService);
 
     var binding = new Binding(connectionId, projectKey);
 
