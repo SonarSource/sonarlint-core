@@ -19,10 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage.model;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Entity representing AI CodeFix settings persisted in the local storage (H2).
@@ -31,11 +30,15 @@ import java.util.Set;
  */
 public record AiCodeFix(
   String connectionId,
-  Set<String> supportedRules,
+  String[] supportedRules,
   boolean organizationEligible,
   Enablement enablement,
-  Set<String> enabledProjectKeys
+  String[] enabledProjectKeys
 ) {
+
+  public AiCodeFix(String connectionId, Collection<String> supportedRules, boolean organizationEligible, Enablement enablement, Collection<String> enabledProjectKeys) {
+    this(connectionId, supportedRules.toArray(String[]::new), organizationEligible, enablement, enabledProjectKeys.toArray(String[]::new));
+  }
 
   public enum Enablement {
     DISABLED,
@@ -48,8 +51,17 @@ public record AiCodeFix(
     Objects.requireNonNull(supportedRules, "supportedRules");
     Objects.requireNonNull(enablement, "enablement");
     Objects.requireNonNull(enabledProjectKeys, "enabledProjectKeys");
+  }
 
-    supportedRules = Collections.unmodifiableSet(new HashSet<>(supportedRules));
-    enabledProjectKeys = Collections.unmodifiableSet(new HashSet<>(enabledProjectKeys));
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    AiCodeFix aiCodeFix = (AiCodeFix) o;
+    return organizationEligible == aiCodeFix.organizationEligible && Objects.equals(connectionId, aiCodeFix.connectionId) && enablement == aiCodeFix.enablement && Objects.deepEquals(supportedRules, aiCodeFix.supportedRules) && Objects.deepEquals(enabledProjectKeys, aiCodeFix.enabledProjectKeys);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(connectionId, Arrays.hashCode(supportedRules), organizationEligible, enablement, Arrays.hashCode(enabledProjectKeys));
   }
 }

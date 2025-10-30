@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
@@ -63,11 +64,11 @@ public class AiCodeFixSettingsSynchronizer {
         var aiCodeFixConfiguration = organizationConfig.aiCodeFix();
         var enabledProjectKeys = aiCodeFixConfiguration.enabledProjectKeys();
         var enabled = enabledProjectKeys == null ? Set.<String>of() : enabledProjectKeys;
-        var entity = new org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix(
+        var entity = new AiCodeFix(
           storage.connectionId(),
           supportedRules.rules(),
           aiCodeFixConfiguration.organizationEligible(),
-          org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix.Enablement.valueOf(aiCodeFixConfiguration.enablement().name()),
+          AiCodeFix.Enablement.valueOf(aiCodeFixConfiguration.enablement().name()),
           enabled);
         aiCodeFixRepository.upsert(entity);
       } catch (Exception e) {
@@ -82,11 +83,11 @@ public class AiCodeFixSettingsSynchronizer {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var enabledProjectKeys = projectKeys.stream()
           .filter(projectKey -> serverApi.component().getProject(projectKey, cancelMonitor).filter(ServerProject::isAiCodeFixEnabled).isPresent()).collect(Collectors.toSet());
-        var entity = new org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix(
+        var entity = new AiCodeFix(
           storage.connectionId(),
           supportedRules.rules(),
           true,
-          org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS,
+          AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS,
           enabledProjectKeys);
         aiCodeFixRepository.upsert(entity);
       }

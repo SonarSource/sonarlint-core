@@ -21,10 +21,7 @@ package org.sonarsource.sonarlint.core.commons.storage.repository;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
@@ -53,10 +50,10 @@ public class AiCodeFixRepository {
     if (rec == null) {
       return Optional.empty();
     }
-    var supportedRules = splitToSet(rec.get(AI_CODEFIX_SETTINGS.SUPPORTED_RULES));
+    var supportedRules = rec.get(AI_CODEFIX_SETTINGS.SUPPORTED_RULES);
     var organizationEligible = Boolean.TRUE.equals(rec.get(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE));
     var enablement = AiCodeFix.Enablement.valueOf(rec.get(AI_CODEFIX_SETTINGS.ENABLEMENT));
-    var enabledProjectKeys = splitToSet(rec.get(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS));
+    var enabledProjectKeys = rec.get(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS);
     return Optional.of(new AiCodeFix(connectionId, supportedRules, organizationEligible, enablement, enabledProjectKeys));
   }
 
@@ -68,10 +65,10 @@ public class AiCodeFixRepository {
     var dsl = database.dsl();
     try {
       int updated = dsl.update(AI_CODEFIX_SETTINGS)
-        .set(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, join(entity.supportedRules()))
+        .set(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, entity.supportedRules())
         .set(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, entity.organizationEligible())
         .set(AI_CODEFIX_SETTINGS.ENABLEMENT, entity.enablement().name())
-        .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, join(entity.enabledProjectKeys()))
+        .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, entity.enabledProjectKeys())
         .set(AI_CODEFIX_SETTINGS.UPDATED_AT, now)
         .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.eq(entity.connectionId()))
         .execute();
@@ -86,10 +83,10 @@ public class AiCodeFixRepository {
             AI_CODEFIX_SETTINGS.UPDATED_AT)
           .values(rowId,
             entity.connectionId(),
-            join(entity.supportedRules()),
+            entity.supportedRules(),
             entity.organizationEligible(),
             entity.enablement().name(),
-            join(entity.enabledProjectKeys()),
+            entity.enabledProjectKeys(),
             now)
           .execute();
       }
@@ -97,21 +94,6 @@ public class AiCodeFixRepository {
       LOG.debug("Upsert failed: " + ex.getMessage());
       throw ex;
     }
-  }
-
-  private static String join(Set<String> values) {
-    if (values == null || values.isEmpty()) {
-      return "";
-    }
-    return String.join("\n", values);
-  }
-
-  private static Set<String> splitToSet(String s) {
-    if (s == null || s.isEmpty()) {
-      return Set.of();
-    }
-    // Keep deterministic order for stability
-    return new TreeSet<>(Arrays.asList(s.split("\n")));
   }
 
 }

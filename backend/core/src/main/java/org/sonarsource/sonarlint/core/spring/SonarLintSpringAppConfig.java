@@ -62,7 +62,6 @@ import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHand
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
-import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
@@ -220,7 +219,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AnalyzeFileListRequestHandler.class,
   AiAssistedIdeService.class,
   LogService.class,
-  ActiveRulesService.class
+  ActiveRulesService.class,
+
 })
 public class SonarLintSpringAppConfig {
 
@@ -268,7 +268,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
-    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, true);
+    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE, params.isUseNewSonarLintDatabaseEnabled());
   }
 
   @Bean(destroyMethod = "shutdown")
