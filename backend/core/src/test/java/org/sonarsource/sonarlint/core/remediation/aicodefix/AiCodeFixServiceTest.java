@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -67,21 +68,18 @@ class AiCodeFixServiceTest {
 
   @Test
   void getFeature_reads_from_h2_repository() {
-    // Arrange: real H2 database and repository
     db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
-    var repo = new AiCodeFixRepository(db);
+    var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";
     var projectKey = "project-A";
-    // Persist entity in H2 so that service can read it back
-    repo.upsert(new AiCodeFix(
+    aiCodeFixRepo.upsert(new AiCodeFix(
       connectionId,
       Set.of("xml:S3421"),
       true,
       AiCodeFix.Enablement.ENABLED_FOR_ALL_PROJECTS,
       Set.of(projectKey)));
 
-    // Mocks for other collaborators (not used by fast-path repo read)
     var connectionRepository = mock(ConnectionConfigurationRepository.class);
     var configurationRepository = mock(ConfigurationRepository.class);
     var sonarQubeClientManager = mock(SonarQubeClientManager.class);
@@ -89,20 +87,18 @@ class AiCodeFixServiceTest {
     var clientFileSystemService = mock(ClientFileSystemService.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
     var taintService = mock(TaintVulnerabilityTrackingService.class);
+    var storageService = mock(StorageService.class);
 
     var service = new AiCodeFixService(connectionRepository, configurationRepository, sonarQubeClientManager,
-      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, repo);
+      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixRepo, storageService, new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE, true));
 
     var binding = new Binding(connectionId, projectKey);
 
-    // Act
     Optional<AiCodeFixFeature> featureOpt = service.getFeature(binding);
 
-    // Assert: present and fixable for a rule we stored
     assertThat(featureOpt).isPresent();
     var feature = featureOpt.get();
     assertThat(feature.settings().supportedRules()).contains("xml:S3421");
-    // Feature should be enabled for the project as we stored ENABLED_FOR_ALL_PROJECTS
     assertThat(feature.settings().isFeatureEnabled(projectKey)).isTrue();
   }
 }

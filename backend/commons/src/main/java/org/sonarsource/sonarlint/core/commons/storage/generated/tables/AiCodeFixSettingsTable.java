@@ -39,10 +39,10 @@ public final class AiCodeFixSettingsTable extends TableImpl<Record> {
 
   public final TableField<Record, Integer> ID = createField(DSL.name("ID"), SQLDataType.INTEGER.nullable(false), this, "");
   public final TableField<Record, String> CONNECTION_ID = createField(DSL.name("CONNECTION_ID"), SQLDataType.VARCHAR.length(255), this, "");
-  public final TableField<Record, String> SUPPORTED_RULES = createField(DSL.name("SUPPORTED_RULES"), SQLDataType.CLOB, this, "");
+  public final TableField<Record, String[]> SUPPORTED_RULES = createField(DSL.name("SUPPORTED_RULES"), SQLDataType.VARCHAR(64).getArrayDataType(), this, "");
   public final TableField<Record, Boolean> ORGANIZATION_ELIGIBLE = createField(DSL.name("ORGANIZATION_ELIGIBLE"), SQLDataType.BOOLEAN, this, "");
   public final TableField<Record, String> ENABLEMENT = createField(DSL.name("ENABLEMENT"), SQLDataType.VARCHAR.length(64), this, "");
-  public final TableField<Record, String> ENABLED_PROJECT_KEYS = createField(DSL.name("ENABLED_PROJECT_KEYS"), SQLDataType.CLOB, this, "");
+  public final TableField<Record, String[]> ENABLED_PROJECT_KEYS = createField(DSL.name("ENABLED_PROJECT_KEYS"), SQLDataType.VARCHAR(400).getArrayDataType(), this, "");
   public final TableField<Record, Timestamp> UPDATED_AT = createField(DSL.name("UPDATED_AT"), SQLDataType.TIMESTAMP, this, "");
 
   private AiCodeFixSettingsTable() {

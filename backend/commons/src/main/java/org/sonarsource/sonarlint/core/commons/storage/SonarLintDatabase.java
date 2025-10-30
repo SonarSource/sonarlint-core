@@ -23,7 +23,6 @@ import jakarta.inject.Inject;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
-import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -52,14 +51,12 @@ public final class SonarLintDatabase {
         Files.createDirectories(baseDir);
         var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
         url = "jdbc:h2:" + dbBasePath;
-        if (sonarLintDatabaseInitParams.autoServerModeEnabled()) {
-          // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
-          var bindAddressProperty = "h2.bindAddress";
-          if (StringUtils.isEmpty(System.getProperty(bindAddressProperty))) {
-            System.setProperty(bindAddressProperty, "127.0.0.1");
-          }
-          url += ";AUTO_SERVER=TRUE";
+        // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
+        var bindAddressProperty = "h2.bindAddress";
+        if (StringUtils.isEmpty(System.getProperty(bindAddressProperty))) {
+          System.setProperty(bindAddressProperty, "127.0.0.1");
         }
+        url += ";AUTO_SERVER=TRUE";
       }
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
@@ -82,15 +79,10 @@ public final class SonarLintDatabase {
         .load();
       flyway.migrate();
     } catch (RuntimeException e) {
-      LOG.debug("Flyway migration skipped or failed: {}", e.getMessage());
+      LOG.error("Flyway migration skipped or failed: {}", e.getMessage());
     }
 
-    // Initialize jOOQ DSL after migrations
     this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
-  }
-
-  public DataSource getDataSource() {
-    return dataSource;
   }
 
   public DSLContext dsl() {

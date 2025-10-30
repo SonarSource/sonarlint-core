@@ -3,10 +3,10 @@
 CREATE TABLE IF NOT EXISTS AI_CODEFIX_SETTINGS (
   id INT NOT NULL,
   connection_id VARCHAR(255),
-  supported_rules CLOB,
+  supported_rules VARCHAR(200) ARRAY,
   organization_eligible BOOLEAN,
   enablement VARCHAR(64),
-  enabled_project_keys CLOB,
+  enabled_project_keys VARCHAR(400) ARRAY,
   updated_at TIMESTAMP,
   CONSTRAINT pk_ai_codefix_settings PRIMARY KEY (id)
 );
