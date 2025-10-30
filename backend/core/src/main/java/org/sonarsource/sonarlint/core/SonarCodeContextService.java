@@ -53,6 +53,8 @@ public class SonarCodeContextService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_CODE_CONTEXT_DIR = ".sonar-code-context";
   private static final String CLI_EXECUTABLE = "sonar-code-context";
+  private static final String SONAR_MD_FILENAME = "SONAR.md";
+  private static final String CURSOR_MDC_FILENAME = "sonar-code-context.mdc";
 
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
@@ -122,7 +124,7 @@ public class SonarCodeContextService {
       runGenerateGuidelines(workingDir, paramsOpt.get());
       runMergeMd(workingDir);
       if (mdcInstalledScopes.add(configScopeId)) {
-        runInstallMdc(workingDir);
+        runInstall(workingDir);
       }
     } else {
       LOG.debug("Missing parameters for SonarCodeContext CLI, skipping for configuration scope '{}'", configScopeId);
@@ -174,26 +176,29 @@ public class SonarCodeContextService {
       "--sq-token=" + params.sqToken,
       "--sq-project-key=" + params.projectKey
     ));
+    if (params.sqBranch() != null) {
+      command.add("--sq-branch=" + params.sqBranch());
+    }
     execute(baseDir, command);
   }
 
   private void runMergeMd(Path baseDir) {
     var command = new ArrayList<>(List.of(resolveCliExecutable(), "merge-md"));
     execute(baseDir, command);
-    var merged = baseDir.resolve(SONAR_CODE_CONTEXT_DIR).resolve("SONAR.md");
+    var merged = baseDir.resolve(SONAR_CODE_CONTEXT_DIR).resolve(SONAR_MD_FILENAME);
     if (Files.exists(merged)) {
-      LOG.debug("Merged SONAR.md at {}", merged);
+      LOG.debug("Merged {} at {}", SONAR_MD_FILENAME, merged);
     } else {
-      LOG.debug("SONAR.md was not generated under {}", baseDir.resolve(SONAR_CODE_CONTEXT_DIR));
+      LOG.debug("{} was not generated under {}", SONAR_MD_FILENAME, baseDir.resolve(SONAR_CODE_CONTEXT_DIR));
     }
   }
 
-  private void runInstallMdc(Path baseDir) {
-    var command = new ArrayList<>(List.of(resolveCliExecutable(), "install-sonar-mdc", "--force"));
+  private void runInstall(Path baseDir) {
+    var command = new ArrayList<>(List.of(resolveCliExecutable(), "install", "--force", "--cursor-mdc"));
     execute(baseDir, command);
-    var cursorRule = baseDir.resolve(".cursor").resolve("rules").resolve("sonar.mdc");
+    var cursorRule = baseDir.resolve(".cursor").resolve("rules").resolve(CURSOR_MDC_FILENAME);
     if (Files.exists(cursorRule)) {
-      LOG.debug("Generated sonar.mdc at {}", cursorRule);
+      LOG.debug("Generated {} at {}", CURSOR_MDC_FILENAME, cursorRule);
     }
   }
 
