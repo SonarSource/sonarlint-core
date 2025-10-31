@@ -35,7 +35,7 @@ public enum SonarLanguage {
   APEX("apex", "sonarapex", new String[]{".cls", ".trigger"}, "sonar.apex.file.suffixes"),
   C("c", "cpp", new String[]{".c", ".h"}, "sonar.c.file.suffixes"),
   CPP("cpp", "cpp", new String[]{".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
-  CS("cs", "csharp", new String[]{".cs"}, "sonar.cs.file.suffixes"),
+  CS("cs", "csharp", new String[]{".cs", ".razor"}, "sonar.cs.file.suffixes"),
   CSS("css", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".css", ".less", ".scss"}, "sonar.css.file.suffixes"),
   OBJC("objc", "cpp", new String[]{".m"}, "sonar.objc.file.suffixes"),
   COBOL("cobol", "cobol", new String[0], "sonar.cobol.file.suffixes"),
