@@ -19,43 +19,23 @@
  */
 package mediumtest.analysis.sensor;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 
-public class WaitingCancellationSensor implements Sensor {
-
-  public static final String CANCELLATION_FILE_PATH_PROPERTY_NAME = "cancellation.file.path";
+public class WaitingSensor implements Sensor {
 
   @Override
   public void describe(SensorDescriptor sensorDescriptor) {
-    sensorDescriptor.name("WaitingCancellationSensor");
+    sensorDescriptor.name("WaitingSensor");
   }
 
   @Override
   public void execute(SensorContext sensorContext) {
-    var cancellationFilePath = Path.of(sensorContext.config().get(CANCELLATION_FILE_PATH_PROPERTY_NAME)
-      .orElseThrow(() -> new IllegalArgumentException("Missing '" + CANCELLATION_FILE_PATH_PROPERTY_NAME + "' property")));
-    var startTime = System.currentTimeMillis();
-    while (!sensorContext.isCancelled() && startTime + 8000 > System.currentTimeMillis()) {
-      System.out.println("Helloooo");
-      try {
-        Thread.sleep(200);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    System.out.println("Context cancelled: " + sensorContext.isCancelled());
-    if (sensorContext.isCancelled()) {
-      try {
-        Files.writeString(cancellationFilePath, "CANCELED");
-        System.out.println("Wrote to cancellation file: " + cancellationFilePath);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    try {
+      Thread.sleep(3000);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 }

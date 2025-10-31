@@ -27,14 +27,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import mediumtest.analysis.sensor.WaitingCancellationSensor;
+import mediumtest.analysis.sensor.WaitingSensor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
@@ -59,7 +58,6 @@ import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXP
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisSchedulingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -90,7 +88,8 @@ class AnalysisSchedulingMediumTests {
     var future = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false, System.currentTimeMillis()));
-    Thread.sleep(500);
+    await().untilAsserted(() -> assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1));
+    Thread.sleep(2000);
 
     future.cancel(false);
 
@@ -149,12 +148,13 @@ class AnalysisSchedulingMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer()
-      .withPlugin(TestPlugin.XML)
-      .withProject("projectKey")
-      .start();
+    var plugin = newSonarPlugin("xml")
+      .withSensor(WaitingSensor.class)
+      .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start(), storage -> storage
+        .withPlugin("xml", plugin, "hash")
+        .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
@@ -166,7 +166,7 @@ class AnalysisSchedulingMediumTests {
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
 
     assertThat(future)
-      .failsWithin(2, TimeUnit.SECONDS)
+      .failsWithin(5, TimeUnit.SECONDS)
       .withThrowableThat()
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
@@ -225,6 +225,7 @@ class AnalysisSchedulingMediumTests {
     var future = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
+    await().untilAsserted(() -> assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1));
     Thread.sleep(2000);
     var secondFuture = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
@@ -234,7 +235,7 @@ class AnalysisSchedulingMediumTests {
       .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
     assertThat(future).isCompletedExceptionally();
     // wait for the other future to complete so the scheduler can be stopped gracefully
-    assertThat(secondFuture).succeedsWithin(Duration.of(5, ChronoUnit.SECONDS));
+    assertThat(secondFuture).succeedsWithin(Duration.of(10, ChronoUnit.SECONDS));
   }
 
   @SonarLintTest

@@ -27,13 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -61,7 +59,6 @@ import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtu
 import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.createFile;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class IssueEventsMediumTests {
 
   @RegisterExtension
