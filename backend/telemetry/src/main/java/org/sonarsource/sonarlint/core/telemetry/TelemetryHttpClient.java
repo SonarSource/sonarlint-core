@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class TelemetryHttpClient {
 
@@ -58,7 +59,7 @@ public class TelemetryHttpClient {
   private final String endpoint;
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, String telemetryEndpoint) {
+  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, @Qualifier("telemetryEndpoint") String telemetryEndpoint) {
     TelemetryClientConstantAttributesDto attributes = initializeParams.getTelemetryConstantAttributes();
     this.product = attributes.getProductName();
     this.version = attributes.getProductVersion();

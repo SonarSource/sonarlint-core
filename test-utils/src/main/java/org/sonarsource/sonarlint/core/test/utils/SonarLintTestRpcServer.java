@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.Flight
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
@@ -184,6 +185,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public LogRpcService getLogService() {
     return serverUsingRpc.getLogService();
+  }
+
+  @Override
+  public IdeLabsRpcService getIdeLabsService() {
+    return serverUsingRpc.getIdeLabsService();
   }
 
   public Path getWorkDir() {
