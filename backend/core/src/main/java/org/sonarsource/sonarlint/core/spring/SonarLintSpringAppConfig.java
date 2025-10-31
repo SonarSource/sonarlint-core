@@ -81,7 +81,6 @@ import org.sonarsource.sonarlint.core.http.HttpConfig;
 import org.sonarsource.sonarlint.core.http.ssl.CertificateStore;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 import org.sonarsource.sonarlint.core.issue.IssueService;
-import org.sonarsource.sonarlint.core.labs.IdeLabsService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
@@ -216,8 +215,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AnalyzeFileListRequestHandler.class,
   AiAssistedIdeService.class,
   LogService.class,
-  ActiveRulesService.class,
-  IdeLabsService.class
+  ActiveRulesService.class
 })
 public class SonarLintSpringAppConfig {
 

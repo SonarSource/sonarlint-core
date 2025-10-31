@@ -22,7 +22,6 @@ package mediumtest.labs;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.JoinIdeLabsProgramParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -37,19 +36,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.sonarsource.sonarlint.core.labs.IdeLabsService.PROPERTY_IDE_LABS_SUBSCRIPTION_URL;
+import static org.sonarsource.sonarlint.core.labs.IdeLabsSpringConfig.PROPERTY_IDE_LABS_SUBSCRIPTION_URL;
 
 public class IdeLabsMediumTests {
   @RegisterExtension
   static WireMockExtension marketingCloudMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
-
-  @BeforeAll
-  static void setUp() {
-    System.setProperty(PROPERTY_IDE_LABS_SUBSCRIPTION_URL,
-      marketingCloudMock.baseUrl());
-  }
 
   @AfterAll
   static void tearDown() {
@@ -59,6 +52,7 @@ public class IdeLabsMediumTests {
   @SonarLintTest
   void it_should_join_labs_successfully(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withIdeLabsSubscriptionUrl(marketingCloudMock.baseUrl())
       .start();
     marketingCloudMock.stubFor(post("/")
       .willReturn(okJson("{ \"valid_email\": true }")));
@@ -76,6 +70,7 @@ public class IdeLabsMediumTests {
   @SonarLintTest
   void it_should_fail_to_join_labs_with_invalid_email(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withIdeLabsSubscriptionUrl(marketingCloudMock.baseUrl())
       .start();
     marketingCloudMock.stubFor(post("/")
       .willReturn(okJson("{ \"valid_email\": false }")));
@@ -93,6 +88,7 @@ public class IdeLabsMediumTests {
   @SonarLintTest
   void it_should_handle_server_error_when_joining_labs(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
+      .withIdeLabsSubscriptionUrl(marketingCloudMock.baseUrl())
       .start();
     marketingCloudMock.stubFor(post("/")
       .willReturn(aResponse().withStatus(500)));

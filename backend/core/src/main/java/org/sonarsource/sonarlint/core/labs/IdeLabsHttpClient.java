@@ -19,7 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.labs;
 
-import com.google.gson.annotations.SerializedName;
+import com.google.gson.Gson;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 
-public record IdeLabsSubscriptionResponseBody(@SerializedName("valid_email") boolean validEmail) {
+public class IdeLabsHttpClient {
+  private final HttpClient httpClient;
+  private final String labsSubscriptionEndpoint;
+
+  private final Gson gson = new Gson();
+
+  public IdeLabsHttpClient(HttpClientProvider httpClientProvider, @Qualifier("labsSubscriptionEndpoint") String labsSubscriptionEndpoint) {
+    this.httpClient = httpClientProvider.getHttpClient();
+    this.labsSubscriptionEndpoint = labsSubscriptionEndpoint;
+  }
+
+  public HttpClient.Response join(String email, String ideName) {
+    var requestBody = gson.toJson(new IdeLabsSubscriptionRequestPayload(email, ideName));
+
+    return httpClient.post(labsSubscriptionEndpoint, "application/json", requestBody);
+  }
 }

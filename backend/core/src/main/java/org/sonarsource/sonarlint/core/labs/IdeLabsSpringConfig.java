@@ -19,7 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.labs;
 
-import com.google.gson.annotations.SerializedName;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
-public record IdeLabsSubscriptionResponseBody(@SerializedName("valid_email") boolean validEmail) {
+
+@Configuration
+@Import({IdeLabsHttpClient.class, IdeLabsService.class})
+public class IdeLabsSpringConfig {
+  public static final String PROPERTY_IDE_LABS_SUBSCRIPTION_URL = "sonarlint.internal.labs.subscription.url";
+  public static final String IDE_LABS_SUBSCRIPTION_URL = "https://discover.sonarsource.com/sq-ide-labs.json";
+
+  @Bean(name = "labsSubscriptionEndpoint")
+  String provideLabsSubscriptionEndpoint() {
+    return System.getProperty(PROPERTY_IDE_LABS_SUBSCRIPTION_URL, IDE_LABS_SUBSCRIPTION_URL);
+  }
 }
