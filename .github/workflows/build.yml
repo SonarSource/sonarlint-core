@@ -188,6 +188,8 @@ jobs:
         with:
           version: 2025.9.12
       - name: Compute month key
+        #Avoid caching for DEV since it is frequently changing
+        if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         id: month
         shell: bash
         run: |
@@ -198,11 +200,10 @@ jobs:
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
       - uses: SonarSource/ci-github-actions/cache@v1
+        if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
-          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}
-          restore-keys: |
-            cache-${{ runner.os }}
+          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}-${{ matrix.name }} # Use matrix name to differentiate caches
       - name: Vault (SonarCloud IT token)
         if: ${{ matrix.sc == true }}
         id: secrets-sc
@@ -256,7 +257,7 @@ jobs:
           find ./its/tests/target/surefire-reports -type f || true
           echo "=== Checking if directory is empty ==="
           [ -d ./its/tests/target/surefire-reports ] && ls -la ./its/tests/target/surefire-reports/ || echo "Directory doesn't exist"
-      - name: Debug orchestrator cache
+      - name: Inspect Orchestrator Cache
         if: always()
         shell: bash
         run: |
@@ -271,38 +272,6 @@ jobs:
           else
             echo "Directory does not exist: ${CACHE_DIR}"
           fi
-
-  inspect-orchestrator-cache:
-    needs: [ build, qa ]
-    runs-on: github-ubuntu-latest-s
-    name: Inspect Orchestrator Cache
-    permissions:
-      contents: read
-    steps:
-      - name: Compute month key
-        id: month
-        shell: bash
-        run: |
-          THIS_MONTH="$(date +%Y-%m)"
-          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
-          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
-          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
-          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
-          mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@v1
-        with:
-          path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
-          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}
-          restore-keys: |
-            cache-${{ runner.os }}
-      - name: Inspect cache directory
-        shell: bash
-        run: |
-          echo "Inspecting cache ${ORCHESTRATOR_HOME}..."
-          cd "${ORCHESTRATOR_HOME}"
-          ls -l
-          find .
-          echo "Inspecting cache done."
 
   promote:
     needs: [ build, qa, test-linux, test-windows ]
