@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 
-import static org.sonarsource.sonarlint.core.commons.storage.generated.Tables.AI_CODEFIX_SETTINGS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.AI_CODEFIX_SETTINGS;
 
 /**
  * Repository for persisting and retrieving AiCodeFix entity using the local H2 database.

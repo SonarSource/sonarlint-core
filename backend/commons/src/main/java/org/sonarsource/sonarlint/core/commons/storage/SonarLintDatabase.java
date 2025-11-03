@@ -32,7 +32,7 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-import static org.sonarsource.sonarlint.core.commons.storage.generated.Tables.AI_CODEFIX_SETTINGS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.AI_CODEFIX_SETTINGS;
 
 public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
