@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage.repository;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
@@ -58,9 +56,6 @@ public class AiCodeFixRepository {
   }
 
   public void upsert(AiCodeFix entity) {
-    var now = Timestamp.from(Instant.now());
-    // use connection ID from Connection Table when it will be created
-    int rowId = entity.connectionId().hashCode();
 
     var dsl = database.dsl();
     try {
@@ -69,25 +64,20 @@ public class AiCodeFixRepository {
         .set(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, entity.organizationEligible())
         .set(AI_CODEFIX_SETTINGS.ENABLEMENT, entity.enablement().name())
         .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, entity.enabledProjectKeys())
-        .set(AI_CODEFIX_SETTINGS.UPDATED_AT, now)
         .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.eq(entity.connectionId()))
         .execute();
       if (updated == 0) {
         dsl.insertInto(AI_CODEFIX_SETTINGS,
-            AI_CODEFIX_SETTINGS.ID,
             AI_CODEFIX_SETTINGS.CONNECTION_ID,
             AI_CODEFIX_SETTINGS.SUPPORTED_RULES,
             AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE,
             AI_CODEFIX_SETTINGS.ENABLEMENT,
-            AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS,
-            AI_CODEFIX_SETTINGS.UPDATED_AT)
-          .values(rowId,
-            entity.connectionId(),
+            AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS)
+          .values(entity.connectionId(),
             entity.supportedRules(),
             entity.organizationEligible(),
             entity.enablement().name(),
-            entity.enabledProjectKeys(),
-            now)
+            entity.enabledProjectKeys())
           .execute();
       }
     } catch (RuntimeException ex) {

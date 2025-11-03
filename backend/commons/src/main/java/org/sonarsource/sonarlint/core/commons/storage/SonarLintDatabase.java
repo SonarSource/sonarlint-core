@@ -32,6 +32,8 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
+import static org.sonarsource.sonarlint.core.commons.storage.generated.Tables.AI_CODEFIX_SETTINGS;
+
 public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -103,10 +105,10 @@ public final class SonarLintDatabase {
     }
   }
 
-  public void cleanupNonExistingConnections(Set<String> connectionIds) {
-    connectionIds.forEach(connectionId -> {
-      // TODO: remove connection and related records from the database
-    });
+  public void cleanupNonExistingConnections(Set<String> existingConnectionIds) {
+    dsl.deleteFrom(AI_CODEFIX_SETTINGS)
+      .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
   }
 }
 

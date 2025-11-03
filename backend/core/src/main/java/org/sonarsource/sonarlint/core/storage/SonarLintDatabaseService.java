@@ -23,7 +23,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
+@Component
+@Lazy(false)
 public class SonarLintDatabaseService {
 
   private final SonarLintDatabase database;
@@ -40,8 +44,8 @@ public class SonarLintDatabaseService {
 
   @PostConstruct
   public void postConstruct() {
-    var connectionIds = connectionConfigurationRepository.getConnectionsById().keySet();
-    database.cleanupNonExistingConnections(connectionIds);
+    var existingConnectionIds = connectionConfigurationRepository.getConnectionsById().keySet();
+    database.cleanupNonExistingConnections(existingConnectionIds);
   }
 
   @PreDestroy
