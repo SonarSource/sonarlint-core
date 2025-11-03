@@ -49,7 +49,7 @@
 
   <properties>
     <license.name>GNU LGPL v3</license.name>
-    
+
     <!--
       Most of SonarLint Core is build using Java 17 except for the modules that
       are dependencies for the SonarLint Core OSGi bundle that is used on
@@ -91,6 +91,7 @@
     <sonar.cpd.exclusions>rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/analysis/*Dto.java</sonar.cpd.exclusions>
     <sonar.organization>sonarsource</sonar.organization>
     <h2.version>2.4.240</h2.version>
+    <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
     <flyway.version>11.14.0</flyway.version>
   </properties>
@@ -336,6 +337,16 @@
           <artifactId>download-maven-plugin</artifactId>
           <version>1.13.0</version>
         </plugin>
+        <plugin>
+          <groupId>org.jooq</groupId>
+          <artifactId>jooq-codegen-maven</artifactId>
+          <version>${jooq.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.flywaydb</groupId>
+          <artifactId>flyway-maven-plugin</artifactId>
+          <version>${flyway.version}</version>
+      </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
