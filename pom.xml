@@ -305,6 +305,14 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <trimStackTrace>false</trimStackTrace>
+            <!-- Some tests are asserting on localized messages or dates -->
+            <systemPropertyVariables>
+              <user.language>en</user.language>
+              <user.country>US</user.country>
+            </systemPropertyVariables>
+            <environmentVariables>
+              <LANGUAGE>en_US</LANGUAGE>
+            </environmentVariables>
           </configuration>
         </plugin>
         <plugin>
