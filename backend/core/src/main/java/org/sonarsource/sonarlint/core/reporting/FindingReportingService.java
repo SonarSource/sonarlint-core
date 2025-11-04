@@ -58,7 +58,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotD
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
 import org.springframework.context.ApplicationEventPublisher;
@@ -83,20 +82,18 @@ public class FindingReportingService {
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
   private final ApplicationEventPublisher eventPublisher;
-  private final StorageService storageService;
   private final boolean isStreamingEnabled;
   private final AiCodeFixService aiCodeFixService;
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, StorageService storageService,
-    InitializeParams initializeParams, AiCodeFixService aiCodeFixService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams,
+    AiCodeFixService aiCodeFixService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
     this.severityModeService = severityModeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.eventPublisher = eventPublisher;
-    this.storageService = storageService;
     this.isStreamingEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.ISSUE_STREAMING);
     this.aiCodeFixService = aiCodeFixService;
   }
@@ -252,11 +249,11 @@ public class FindingReportingService {
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri,
         Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode, aiCodeFixFeature.map(feature -> {
-            LOG.debug("AiCodeFix is fixable: {}", aiCodeFixFeature.get().isFixable(issue));
-            LOG.debug("Supported rules: {}", aiCodeFixFeature.get().settings().supportedRules());
-            LOG.debug("Issue ruleKey {} and text range {}", issue.getRuleKey(), issue.getTextRangeWithHash());
-            return feature.isFixable(issue);
-          }).orElse(false)),
+          LOG.debug("AiCodeFix is fixable: {}", aiCodeFixFeature.get().isFixable(issue));
+          LOG.debug("Supported rules: {}", aiCodeFixFeature.get().settings().supportedRules());
+          LOG.debug("Issue ruleKey {} and text range {}", issue.getRuleKey(), issue.getTextRangeWithHash());
+          return feature.isFixable(issue);
+        }).orElse(false)),
           Collectors.toList())));
   }
 
