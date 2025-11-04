@@ -29,6 +29,10 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.NewCodeDefinitionRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.PluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
@@ -37,20 +41,22 @@ public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> enabledLanguageKeys;
-  private final ConnectionStorage storage;
+  private final ServerInfoRepository serverInfoRepository;
+  private final String connectionId;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final PluginsSynchronizer pluginsSynchronizer;
 
-  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
+  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ServerInfoRepository serverInfoRepository, PluginsRepository pluginsRepository, String connectionId) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(toSet());
-    this.storage = storage;
-    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, storage, embeddedPluginKeys);
+    this.serverInfoRepository = serverInfoRepository;
+    this.connectionId = connectionId;
     this.serverInfoSynchronizer = serverInfoSynchronizer;
+    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsRepository, connectionId, embeddedPluginKeys);
   }
 
   public Summary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
-    var version = storage.serverInfo().read().orElseThrow().version();
+    var version = serverInfoRepository.read(connectionId).orElseThrow().version();
     var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, version, cancelMonitor);
     return new Summary(version, pluginSynchronizationSummary.anyPluginSynchronized());
   }
@@ -66,30 +72,30 @@ public class LocalStorageSynchronizer {
     return new AnalyzerSettingsUpdateSummary(updatedSettingsValueByKey);
   }
 
-  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var updatedAnalyzerConfiguration = downloadAnalyzerConfig(serverApi, projectKey, cancelMonitor);
+  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, AnalyzerConfigurationRepository analyzerConfigurationRepository, NewCodeDefinitionRepository newCodeDefinitionRepository, SonarLintCancelMonitor cancelMonitor) {
+    var updatedAnalyzerConfiguration = downloadAnalyzerConfig(serverApi, projectKey, analyzerConfigurationRepository, cancelMonitor);
     AnalyzerSettingsUpdateSummary configUpdateSummary;
     try {
-      var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
+      var originalAnalyzerConfiguration = analyzerConfigurationRepository.read(connectionId, projectKey);
       configUpdateSummary = diffAnalyzerConfiguration(originalAnalyzerConfiguration, updatedAnalyzerConfiguration);
     } catch (StorageException e) {
       configUpdateSummary = new AnalyzerSettingsUpdateSummary(updatedAnalyzerConfiguration.getSettings().getAll());
     }
 
-    storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
-    var version = storage.serverInfo().read().orElseThrow().version();
+    analyzerConfigurationRepository.store(connectionId, projectKey, updatedAnalyzerConfiguration);
+    var version = serverInfoRepository.read(connectionId).orElseThrow().version();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
-      .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
+      .ifPresent(ncd -> newCodeDefinitionRepository.store(connectionId, projectKey, ncd));
     return configUpdateSummary;
   }
 
-  private AnalyzerConfiguration downloadAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+  private AnalyzerConfiguration downloadAnalyzerConfig(ServerApi serverApi, String projectKey, AnalyzerConfigurationRepository analyzerConfigurationRepository, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
     LOG.info("[SYNC] Languages enabled for synchronization: {}", enabledLanguageKeys);
     Map<String, RuleSet> currentRuleSets;
     int currentSchemaVersion;
     try {
-      var analyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
+      var analyzerConfiguration = analyzerConfigurationRepository.read(connectionId, projectKey);
       currentRuleSets = analyzerConfiguration.getRuleSetByLanguageKey();
       currentSchemaVersion = analyzerConfiguration.getSchemaVersion();
     } catch (StorageException e) {

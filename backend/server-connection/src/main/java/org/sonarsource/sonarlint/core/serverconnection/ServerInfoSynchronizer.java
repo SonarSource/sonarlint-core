@@ -23,19 +23,22 @@ import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 
 public class ServerInfoSynchronizer {
-  private final ConnectionStorage storage;
+  private final ServerInfoRepository serverInfoRepository;
+  private final String connectionId;
 
-  public ServerInfoSynchronizer(ConnectionStorage storage) {
-    this.storage = storage;
+  public ServerInfoSynchronizer(ServerInfoRepository serverInfoRepository, String connectionId) {
+    this.serverInfoRepository = serverInfoRepository;
+    this.connectionId = connectionId;
   }
 
   public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return storage.serverInfo().read()
+    return serverInfoRepository.read(connectionId)
       .orElseGet(() -> {
         synchronize(serverApi, cancelMonitor);
-        return storage.serverInfo().read().get();
+        return serverInfoRepository.read(connectionId).get();
       });
   }
 
@@ -45,7 +48,7 @@ public class ServerInfoSynchronizer {
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
     var globalSettings = serverApi.settings().getGlobalSettings(cancelMonitor);
     var supportedFeatures = serverApi.isSonarCloud() ? getSupportedFeaturesForSonarQubeCloud(serverApi, cancelMonitor) : serverApi.features().list(cancelMonitor);
-    storage.serverInfo().store(serverStatus, supportedFeatures, globalSettings);
+    serverInfoRepository.store(connectionId, serverStatus, supportedFeatures, globalSettings);
   }
 
   private static Set<Feature> getSupportedFeaturesForSonarQubeCloud(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {

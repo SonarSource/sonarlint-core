@@ -73,8 +73,8 @@ import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -99,7 +99,8 @@ public class IssueService {
 
   private final ConfigurationRepository configurationRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
-  private final StorageService storageService;
+  private final ServerInfoRepository serverInfoRepository;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
@@ -110,13 +111,14 @@ public class IssueService {
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
   private final AiCodeFixService aiCodeFixService;
 
-  public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
+  public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
+    ServerInfoRepository serverInfoRepository, ServerIssuesRepository serverIssuesRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
     NewCodeService newCodeService, ActiveRulesService activeRulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService) {
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
-    this.storageService = storageService;
+    this.serverInfoRepository = serverInfoRepository;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
@@ -132,11 +134,10 @@ public class IssueService {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverConnection = sonarQubeClientManager.getClientOrThrow(binding.connectionId());
     var reviewStatus = transitionByResolutionStatus.get(newStatus);
-    var projectServerIssueStore = storageService.binding(binding).findings();
-    boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey);
+    boolean isServerIssue = serverIssuesRepository.containsIssue(binding.connectionId(), binding.sonarProjectKey(), issueKey);
     if (isServerIssue) {
       serverConnection.withClientApi(serverApi -> serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor));
-      projectServerIssueStore.updateIssueResolutionStatus(issueKey, isTaintIssue, true)
+      serverIssuesRepository.updateIssueResolutionStatus(binding.connectionId(), binding.sonarProjectKey(), issueKey, isTaintIssue, true)
         .ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.connectionId(), binding.sonarProjectKey(), issue)));
     } else {
       var localIssueOpt = asUUID(issueKey).flatMap(localOnlyIssueRepository::findByKey);
@@ -186,7 +187,7 @@ public class IssueService {
    * @return whether server is SonarQube instance and matches version requirement
    */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
-    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
+    return !api.isSonarCloud() && serverInfoRepository.read(connectionId)
       .map(version -> version.version().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
       .orElse(false);
   }
@@ -216,7 +217,7 @@ public class IssueService {
    * For checking whether SonarQube is already on 10.4 or not. NEVER apply to SonarCloud as their version differs!
    */
   private boolean is104orNewer(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    var serverVersionSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
+    var serverVersionSynchronizer = new ServerInfoSynchronizer(serverInfoRepository, connectionId);
     var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor);
     return serverVersion.version().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
   }
@@ -251,8 +252,7 @@ public class IssueService {
 
   public void addComment(String configurationScopeId, String issueKey, String text, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    var projectServerIssueStore = storageService.binding(binding).findings();
-    boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey);
+    boolean isServerIssue = serverIssuesRepository.containsIssue(binding.connectionId(), binding.sonarProjectKey(), issueKey);
     if (isServerIssue) {
       addCommentOnServerIssue(configurationScopeId, issueKey, text, cancelMonitor);
     } else {
@@ -273,11 +273,10 @@ public class IssueService {
 
   public boolean reopenIssue(String configurationScopeId, String issueId, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    var projectServerIssueStore = storageService.binding(binding).findings();
-    boolean isServerIssue = projectServerIssueStore.containsIssue(issueId);
+    boolean isServerIssue = serverIssuesRepository.containsIssue(binding.connectionId(), binding.sonarProjectKey(), issueId);
     if (isServerIssue) {
       return sonarQubeClientManager.getClientOrThrow(binding.connectionId())
-        .withClientApiAndReturn(serverApi -> reopenServerIssue(serverApi, binding, issueId, projectServerIssueStore, isTaintIssue, cancelMonitor));
+        .withClientApiAndReturn(serverApi -> reopenServerIssue(serverApi, binding, issueId, isTaintIssue, cancelMonitor));
     } else {
       return reopenLocalIssue(issueId, configurationScopeId, cancelMonitor);
     }
@@ -341,10 +340,10 @@ public class IssueService {
       .withClientApi(serverApi -> serverApi.issue().addComment(issueKey, comment, cancelMonitor));
   }
 
-  private boolean reopenServerIssue(ServerApi connection, Binding binding, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue,
+  private boolean reopenServerIssue(ServerApi connection, Binding binding, String issueId, boolean isTaintIssue,
     SonarLintCancelMonitor cancelMonitor) {
     connection.issue().changeStatus(issueId, Transition.REOPEN, cancelMonitor);
-    var serverIssue = projectServerIssueStore.updateIssueResolutionStatus(issueId, isTaintIssue, false);
+    var serverIssue = serverIssuesRepository.updateIssueResolutionStatus(binding.connectionId(), binding.sonarProjectKey(), issueId, isTaintIssue, false);
     serverIssue.ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.connectionId(), binding.sonarProjectKey(), issue)));
     return true;
   }
@@ -490,8 +489,7 @@ public class IssueService {
   }
 
   private void updateProjectIssueStorage(String connectionId, IssueChangedEvent event) {
-    var findingsStorage = storageService.connection(connectionId).project(event.getProjectKey()).findings();
-    event.getImpactedIssues().forEach(issue -> findingsStorage.updateIssue(issue.getIssueKey(), storedIssue -> {
+    event.getImpactedIssues().forEach(issue -> serverIssuesRepository.updateIssue(connectionId, event.getProjectKey(), issue.getIssueKey(), storedIssue -> {
       var userSeverity = event.getUserSeverity();
       if (userSeverity != null) {
         storedIssue.setUserSeverity(userSeverity);

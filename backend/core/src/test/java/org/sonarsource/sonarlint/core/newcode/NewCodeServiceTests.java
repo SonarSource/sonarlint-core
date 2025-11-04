@@ -26,9 +26,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.NewCodeDefinitionStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.NewCodeDefinitionRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,15 +36,15 @@ import static org.mockito.Mockito.when;
 class NewCodeServiceTests {
 
   private ConfigurationRepository mockConfigRepository;
-  private StorageService mockStorageService;
+  private NewCodeDefinitionRepository mockNewCodeDefinitionRepository;
 
   private NewCodeService underTest;
 
   @BeforeEach
   void setup() {
     mockConfigRepository = mock(ConfigurationRepository.class);
-    mockStorageService = mock(StorageService.class);
-    underTest = new NewCodeService(mockConfigRepository, mockStorageService, mock(TelemetryService.class));
+    mockNewCodeDefinitionRepository = mock(NewCodeDefinitionRepository.class);
+    underTest = new NewCodeService(mockConfigRepository, mockNewCodeDefinitionRepository, mock(TelemetryService.class));
   }
 
   @Test
@@ -59,14 +57,13 @@ class NewCodeServiceTests {
   @Test
   void getNewCodeDefinition_noNcdSynchronized() {
     String scopeId = "scope";
-    var effectiveBinding = mock(Binding.class);
+    var connectionId = "connectionId";
+    var projectKey = "projectKey";
+    var effectiveBinding = new Binding(connectionId, projectKey);
     when(mockConfigRepository.getEffectiveBinding(scopeId))
       .thenReturn(Optional.of(effectiveBinding));
-    var storage = mock(SonarProjectStorage.class);
-    when(mockStorageService.binding(effectiveBinding))
-      .thenReturn(storage);
-    var newCodeDefStorage = mock(NewCodeDefinitionStorage.class);
-    when(storage.newCodeDefinition()).thenReturn(newCodeDefStorage);
+    when(mockNewCodeDefinitionRepository.read(connectionId, projectKey))
+      .thenReturn(Optional.empty());
     var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
       .containsExactly("No new code definition found", false);
@@ -75,16 +72,14 @@ class NewCodeServiceTests {
   @Test
   void getNewCodeDefinition_readFromStorage() {
     String scopeId = "scope";
-    var effectiveBinding = mock(Binding.class);
+    var connectionId = "connectionId";
+    var projectKey = "projectKey";
+    var effectiveBinding = new Binding(connectionId, projectKey);
     when(mockConfigRepository.getEffectiveBinding(scopeId))
       .thenReturn(Optional.of(effectiveBinding));
-    var storage = mock(SonarProjectStorage.class);
-    when(mockStorageService.binding(effectiveBinding))
-      .thenReturn(storage);
-    var newCodeDefStorage = mock(NewCodeDefinitionStorage.class);
-    when(storage.newCodeDefinition()).thenReturn(newCodeDefStorage);
     var newCodeDefinition = NewCodeDefinition.withNumberOfDaysWithDate(42, 1234567890123L);
-    when(newCodeDefStorage.read()).thenReturn(Optional.of(newCodeDefinition));
+    when(mockNewCodeDefinitionRepository.read(connectionId, projectKey))
+      .thenReturn(Optional.of(newCodeDefinition));
     var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
       .containsExactly("From last 42 days", true);

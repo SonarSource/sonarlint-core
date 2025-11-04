@@ -23,12 +23,15 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 
 public class IssueStoreReader {
-  private final ConnectionStorage storage;
+  private final ServerIssuesRepository serverIssuesRepository;
+  private final String connectionId;
 
-  public IssueStoreReader(ConnectionStorage storage) {
-    this.storage = storage;
+  public IssueStoreReader(ServerIssuesRepository serverIssuesRepository, String connectionId) {
+    this.serverIssuesRepository = serverIssuesRepository;
+    this.connectionId = connectionId;
   }
 
   public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, Path ideFilePath) {
@@ -36,7 +39,7 @@ public class IssueStoreReader {
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = storage.project(projectBinding.projectKey()).findings().load(branchName, sqPath);
+    var loadedIssues = serverIssuesRepository.load(connectionId, projectBinding.projectKey(), branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }

@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufPluginsRepository;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +54,8 @@ class PluginsSynchronizerTests {
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": false}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), pluginsRepository, "connectionId", Set.of("text"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.3"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -73,7 +75,8 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), pluginsRepository, "connectionId", Set.of("text"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.4"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -95,7 +98,8 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
     mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), pluginsRepository, "connectionId", Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -111,7 +115,8 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), pluginsRepository, "connectionId", Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -132,7 +137,8 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
     mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), pluginsRepository, "connectionId", Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -148,7 +154,8 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), pluginsRepository, "connectionId", Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -162,7 +169,8 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-go");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), pluginsRepository, "connectionId", Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -176,7 +184,8 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-csharp");
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    var pluginsRepository = new ProtobufPluginsRepository(dest);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), pluginsRepository, "connectionId", Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();

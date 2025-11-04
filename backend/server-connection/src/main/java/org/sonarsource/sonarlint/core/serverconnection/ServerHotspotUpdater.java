@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 
 import static org.sonarsource.sonarlint.core.serverconnection.ServerUpdaterUtils.computeLastSync;
 
@@ -34,17 +35,19 @@ public class ServerHotspotUpdater {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ConnectionStorage storage;
+  private final ServerIssuesRepository serverIssuesRepository;
+  private final String connectionId;
   private final HotspotDownloader hotspotDownloader;
 
-  public ServerHotspotUpdater(ConnectionStorage storage, HotspotDownloader hotspotDownloader) {
-    this.storage = storage;
+  public ServerHotspotUpdater(ServerIssuesRepository serverIssuesRepository, String connectionId, HotspotDownloader hotspotDownloader) {
+    this.serverIssuesRepository = serverIssuesRepository;
+    this.connectionId = connectionId;
     this.hotspotDownloader = hotspotDownloader;
   }
 
   public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, SonarLintCancelMonitor cancelMonitor) {
     var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
-    storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
+    serverIssuesRepository.replaceAllHotspotsOfBranch(connectionId, projectKey, branchName, projectHotspots);
   }
 
   public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,
@@ -54,16 +57,16 @@ public class ServerHotspotUpdater {
       return;
     }
     var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);
-    storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
+    serverIssuesRepository.replaceAllHotspotsOfFile(connectionId, projectKey, branchName, serverFilePath, fileHotspots);
   }
 
   public void sync(HotspotApi hotspotApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
-    var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
+    var lastSync = serverIssuesRepository.getLastHotspotSyncTimestamp(connectionId, projectKey, branchName);
 
-    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastHotspotEnabledLanguages(branchName));
+    lastSync = computeLastSync(enabledLanguages, lastSync, serverIssuesRepository.getLastHotspotEnabledLanguages(connectionId, projectKey, branchName));
 
     var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync, cancelMonitor);
-    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(),
+    serverIssuesRepository.mergeHotspots(connectionId, projectKey, branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(),
       result.getQueryTimestamp(), enabledLanguages);
   }
 }

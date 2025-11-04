@@ -58,7 +58,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.telemetry.LocalDateAdapter;
 import org.sonarsource.sonarlint.core.telemetry.LocalDateTimeAdapter;
 import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
@@ -234,8 +235,12 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     return serverUsingJava.getLocalOnlyIssueStorageService();
   }
 
-  public StorageService getIssueStorageService() {
-    return serverUsingJava.getIssueStorageService();
+  public ServerIssuesRepository getServerIssuesRepository() {
+    return serverUsingJava.getServerIssuesRepository();
+  }
+
+  public AnalyzerConfigurationRepository getAnalyzerConfigurationRepository() {
+    return serverUsingJava.getAnalyzerConfigurationRepository();
   }
 
   public SonarLintDatabase getSonarLintDatabase() {

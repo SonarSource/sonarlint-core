@@ -34,8 +34,8 @@ import org.sonarsource.sonarlint.core.serverconnection.IssueDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -45,17 +45,17 @@ public class TaintSynchronizationService {
 
   private final ConfigurationRepository configurationRepository;
   private final SonarProjectBranchTrackingService branchTrackingService;
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ApplicationEventPublisher eventPublisher;
 
   public TaintSynchronizationService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-                                     StorageService storageService, LanguageSupportRepository languageSupportRepository,
+                                     ServerIssuesRepository serverIssuesRepository, LanguageSupportRepository languageSupportRepository,
                                      SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
-    this.storageService = storageService;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.eventPublisher = eventPublisher;
@@ -82,10 +82,9 @@ public class TaintSynchronizationService {
 
   private UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(String connectionId, ServerApi serverApi, String projectKey,
     String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
+    var issuesUpdater = new ServerIssueUpdater(serverIssuesRepository, connectionId, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (serverApi.isSonarCloud()) {
       return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName, cancelMonitor);
     } else {

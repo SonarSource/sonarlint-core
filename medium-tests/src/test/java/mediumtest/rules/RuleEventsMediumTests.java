@@ -32,8 +32,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
+import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -48,7 +49,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
 
@@ -96,8 +96,8 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder()
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(new ServerActiveRule("java:S0000", org.sonarsource.sonarlint.core.commons.IssueSeverity.MAJOR, Map.of("key1", "value1"), "", List.of()))));
     }
 
     @SonarLintTest
@@ -140,17 +140,9 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder()
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
-            .setRuleKey("java:S0000")
-            .setSeverity("MAJOR")
-            .putParams("key1", "value1")
-            .addOverriddenImpacts(Sonarlint.RuleSet.ActiveRule.newBuilder().addOverriddenImpactsBuilder()
-              .setSoftwareQuality("SECURITY")
-              .setSeverity("HIGH")
-              .build())
-            .build())
-          .build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(new ServerActiveRule("java:S0000", org.sonarsource.sonarlint.core.commons.IssueSeverity.MAJOR, Map.of("key1", "value1"), "",
+          List.of(new ImpactPayload("SECURITY", "HIGH"))))));
     }
 
     @SonarLintTest
@@ -191,8 +183,8 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder()
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(new ServerActiveRule("java:S0000", org.sonarsource.sonarlint.core.commons.IssueSeverity.MAJOR, Map.of("key1", "value1"), "", List.of()))));
     }
 
     @SonarLintTest
@@ -233,9 +225,10 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder()
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("INFO").build())
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0001").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(
+          new ServerActiveRule("java:S0000", org.sonarsource.sonarlint.core.commons.IssueSeverity.INFO, Map.of(), null, List.of()),
+          new ServerActiveRule("java:S0001", org.sonarsource.sonarlint.core.commons.IssueSeverity.MAJOR, Map.of("key1", "value1"), "", List.of()))));
     }
 
     @SonarLintTest
@@ -339,8 +332,8 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("cs")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder()
-          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("cs:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(new ServerActiveRule("cs:S0000", org.sonarsource.sonarlint.core.commons.IssueSeverity.MAJOR, Map.of("key1", "value1"), "", List.of()))));
     }
 
     @SonarLintTest
@@ -373,7 +366,8 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder().addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0001").setSeverity("INFO").build()).build()));
+        .extracting(RuleSet::getRules)
+        .isEqualTo(List.of(new ServerActiveRule("java:S0001", org.sonarsource.sonarlint.core.commons.IssueSeverity.INFO, Map.of(), null, List.of()))));
     }
 
     @SonarLintTest
@@ -475,11 +469,8 @@ class RuleEventsMediumTests {
     }
   }
 
-  private Map<String, Sonarlint.RuleSet> readRuleSets(SonarLintTestRpcServer backend, String connectionId, String projectKey) {
-    var path = backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb");
-    if (path.toFile().exists()) {
-      return ProtobufFileUtil.readFile(path, Sonarlint.AnalyzerConfiguration.parser()).getRuleSetsByLanguageKeyMap();
-    }
-    return Map.of();
+  private Map<String, RuleSet> readRuleSets(SonarLintTestRpcServer backend, String connectionId, String projectKey) {
+    var ruleSetByLanguageKey = backend.getAnalyzerConfigurationRepository().read(connectionId, projectKey).getRuleSetByLanguageKey();
+    return ruleSetByLanguageKey;
   }
 }

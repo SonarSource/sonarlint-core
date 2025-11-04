@@ -21,24 +21,27 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverconnection.repository.OrganizationRepository;
 
 public class OrganizationSynchronizer {
-  private final ConnectionStorage storage;
+  private final OrganizationRepository organizationRepository;
+  private final String connectionId;
 
-  public OrganizationSynchronizer(ConnectionStorage storage) {
-    this.storage = storage;
+  public OrganizationSynchronizer(OrganizationRepository organizationRepository, String connectionId) {
+    this.organizationRepository = organizationRepository;
+    this.connectionId = connectionId;
   }
 
   // should be called only in the context of SonarQube Cloud
   public Organization readOrSynchronizeOrganization(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return storage.organization().read()
+    return organizationRepository.read(connectionId)
       .orElseGet(() -> synchronize(serverApi, cancelMonitor));
   }
 
   private Organization synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var organizationDto = serverApi.organization().getOrganizationByKey(cancelMonitor);
     var organization = new Organization(organizationDto.id(), organizationDto.uuidV4());
-    storage.organization().store(organization);
+    organizationRepository.store(connectionId, organization);
     return organization;
   }
 }

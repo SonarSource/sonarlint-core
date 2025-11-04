@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ServerSettings;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 import org.springframework.context.event.EventListener;
 
 public class RulesRepository {
@@ -44,12 +44,12 @@ public class RulesRepository {
   private final Map<String, Map<String, SonarLintRuleDefinition>> rulesByKeyByConnectionId = new HashMap<>();
   private final Map<String, Map<String, String>> ruleKeyReplacementsByConnectionId = new HashMap<>();
   private final ConfigurationRepository configurationRepository;
-  private final StorageService storageService;
+  private final ServerInfoRepository serverInfoRepository;
 
-  public RulesRepository(RulesExtractionHelper extractionHelper, ConfigurationRepository configurationRepository, StorageService storageService) {
+  public RulesRepository(RulesExtractionHelper extractionHelper, ConfigurationRepository configurationRepository, ServerInfoRepository serverInfoRepository) {
     this.extractionHelper = extractionHelper;
     this.configurationRepository = configurationRepository;
-    this.storageService = storageService;
+    this.serverInfoRepository = serverInfoRepository;
   }
 
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
@@ -78,7 +78,7 @@ public class RulesRepository {
   private synchronized void lazyInit(String connectionId) {
     var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
     if (rulesByKey == null) {
-      var serverSettings = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::globalSettings);
+      var serverSettings = serverInfoRepository.read(connectionId).map(StoredServerInfo::globalSettings);
       setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId, serverSettings.map(ServerSettings::globalSettings).orElseGet(Map::of)));
     }
   }

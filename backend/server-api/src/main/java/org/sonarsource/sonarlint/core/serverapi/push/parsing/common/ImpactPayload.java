@@ -19,30 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push.parsing.common;
 
-public class ImpactPayload {
-
-  private String softwareQuality;
-  private String severity;
-
-  public ImpactPayload(String softwareQuality, String severity) {
-    this.softwareQuality = softwareQuality;
-    this.severity = severity;
-  }
-
-  public String getSoftwareQuality() {
-    return softwareQuality;
-  }
-
-  public void setSoftwareQuality(String softwareQuality) {
-    this.softwareQuality = softwareQuality;
-  }
-
-  public String getSeverity() {
-    return severity;
-  }
-
-  public void setSeverity(String severity) {
-    this.severity = severity;
-  }
-
+public record ImpactPayload(String softwareQuality, String severity) {
 }

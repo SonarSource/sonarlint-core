@@ -32,7 +32,7 @@ public class RuleSet {
 
   public RuleSet(Collection<ServerActiveRule> rules, String lastModified) {
     this.rules = rules;
-    this.rulesByKey = rules.stream().collect(Collectors.toMap(ServerActiveRule::getRuleKey, Function.identity()));
+    this.rulesByKey = rules.stream().collect(Collectors.toMap(ServerActiveRule::ruleKey, Function.identity()));
     this.lastModified = lastModified;
   }
 

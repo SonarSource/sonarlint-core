@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
-public class PluginsRepository {
+public class PluginsCache {
   private final AtomicReference<LoadedPlugins> loadedEmbeddedPlugins = new AtomicReference<>();
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
 

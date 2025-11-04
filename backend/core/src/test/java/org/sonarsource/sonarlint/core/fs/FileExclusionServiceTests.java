@@ -30,10 +30,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfigurationStorage;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,19 +42,19 @@ class FileExclusionServiceTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private ConfigurationRepository configRepo;
-  private StorageService storageService;
+  private AnalyzerConfigurationRepository analyzerConfigurationRepository;
   private ClientFileSystemService clientFileSystemService;
   private FileExclusionService underTest;
 
   @BeforeEach
   void setup() {
     configRepo = mock(ConfigurationRepository.class);
-    storageService = mock(StorageService.class);
+    analyzerConfigurationRepository = mock(AnalyzerConfigurationRepository.class);
     var pathTranslationService = mock(PathTranslationService.class);
     clientFileSystemService = mock(ClientFileSystemService.class);
     var client = mock(SonarLintRpcClient.class);
     
-    underTest = new FileExclusionService(configRepo, storageService, pathTranslationService, clientFileSystemService, client);
+    underTest = new FileExclusionService(configRepo, analyzerConfigurationRepository, pathTranslationService, clientFileSystemService, client);
   }
 
   @Test
@@ -70,18 +67,11 @@ class FileExclusionServiceTests {
 
     when(clientFile.getConfigScopeId()).thenReturn(configScopeId);
     var binding = new Binding(connectionId, projectKey);
-
-    var connectionStorage = mock(ConnectionStorage.class);
-    var projectStorage = mock(SonarProjectStorage.class);
-    var analyzerStorage = mock(AnalyzerConfigurationStorage.class);
     
     // Setup the mocks to return the invalid analyzer storage
     when(clientFileSystemService.getClientFile(fileUri)).thenReturn(clientFile);
     when(configRepo.getEffectiveBinding(configScopeId)).thenReturn(Optional.of(binding));
-    when(storageService.connection(connectionId)).thenReturn(connectionStorage);
-    when(connectionStorage.project(projectKey)).thenReturn(projectStorage);
-    when(projectStorage.analyzerConfiguration()).thenReturn(analyzerStorage);
-    when(analyzerStorage.isValid()).thenReturn(false); // This is the key setup for our test
+    when(analyzerConfigurationRepository.hasActiveRules(connectionId, projectKey)).thenReturn(false); // This is the key setup for our test
     var cancelMonitor = mock(SonarLintCancelMonitor.class);
 
     var result = underTest.computeIfExcluded(fileUri, cancelMonitor);

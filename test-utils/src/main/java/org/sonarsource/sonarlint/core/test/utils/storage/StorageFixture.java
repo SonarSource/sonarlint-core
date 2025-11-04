@@ -134,6 +134,26 @@ public class StorageFixture {
       return connectionId;
     }
 
+    public List<Feature> getSupportedFeatures() {
+      return supportedFeatures;
+    }
+
+    public String getServerVersion() {
+      return serverVersion;
+    }
+
+    public Map<String, String> getGlobalSettings() {
+      return globalSettings;
+    }
+
+    public List<ProjectStorageFixture.ProjectStorageBuilder> getProjectBuilders() {
+      return projectBuilders;
+    }
+
+    public List<Plugin> getPlugins() {
+      return plugins;
+    }
+
     public Storage create(Path rootPath) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
@@ -195,17 +215,33 @@ public class StorageFixture {
       ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
     }
 
-    private static class Plugin {
+    public static class Plugin {
       private final Path path;
       private final String jarName;
       private final String hash;
       private final String key;
 
-      private Plugin(Path path, String jarName, String hash, String key) {
+      Plugin(Path path, String jarName, String hash, String key) {
         this.path = path;
         this.jarName = jarName;
         this.hash = hash;
         this.key = key;
+      }
+
+      public Path getPath() {
+        return path;
+      }
+
+      public String getJarName() {
+        return jarName;
+      }
+
+      public String getHash() {
+        return hash;
+      }
+
+      public String getKey() {
+        return key;
       }
     }
   }

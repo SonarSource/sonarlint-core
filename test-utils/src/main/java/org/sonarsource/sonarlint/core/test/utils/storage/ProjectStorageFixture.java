@@ -78,6 +78,30 @@ public class ProjectStorageFixture {
       this.projectKey = projectKey;
     }
 
+    public String getProjectKey() {
+      return projectKey;
+    }
+
+    public List<RuleSetBuilder> getRuleSets() {
+      return ruleSets;
+    }
+
+    public List<BranchBuilder> getBranches() {
+      return branches;
+    }
+
+    public Map<String, String> getProjectSettings() {
+      return projectSettings;
+    }
+
+    public ZonedDateTime getLastSmartNotificationPoll() {
+      return lastSmartNotificationPoll;
+    }
+
+    public Sonarlint.NewCodeDefinition getNewCodeDefinition() {
+      return newCodeDefinition;
+    }
+
     public ProjectStorageBuilder withRuleSet(String languageKey, Consumer<RuleSetBuilder> consumer) {
       var ruleSetBuilder = new RuleSetBuilder(languageKey);
       consumer.accept(ruleSetBuilder);
@@ -383,6 +407,18 @@ public class ProjectStorageFixture {
         this.languageKey = languageKey;
       }
 
+      public String getLanguageKey() {
+        return languageKey;
+      }
+
+      public List<ActiveRule> getActiveRules() {
+        return activeRules;
+      }
+
+      public List<ActiveRule> getActiveRulesList() {
+        return List.copyOf(activeRules);
+      }
+
       public RuleSetBuilder withActiveRule(String ruleKey, String severity) {
         return withActiveRule(ruleKey, severity, Map.of());
       }
@@ -411,6 +447,14 @@ public class ProjectStorageFixture {
         this.isMain = isMain;
       }
 
+      public String getName() {
+        return name;
+      }
+
+      public boolean isMain() {
+        return isMain;
+      }
+
       public BranchBuilder withIssue(ServerIssueFixtures.ServerIssueBuilder serverIssueBuilder) {
         serverIssues.add(serverIssueBuilder);
         return this;
@@ -432,7 +476,7 @@ public class ProjectStorageFixture {
       }
     }
 
-    private record ActiveRule(String ruleKey, String severity, @Nullable String templateKey, Map<String, String> params) {
+    public static record ActiveRule(String ruleKey, String severity, @Nullable String templateKey, Map<String, String> params) {
     }
   }
 }

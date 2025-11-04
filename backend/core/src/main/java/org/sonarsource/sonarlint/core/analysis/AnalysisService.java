@@ -81,7 +81,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.PluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.sonarsource.sonarlint.core.sync.ConfigurationScopesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
@@ -109,7 +111,9 @@ public class AnalysisService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
-  private final StorageService storageService;
+  private final AnalyzerConfigurationRepository analyzerConfigurationRepository;
+  private final PluginsRepository pluginsRepository;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final PluginsService pluginsService;
   private final ActiveRulesService activeRulesService;
   private final ClientFileSystemService fileSystemService;
@@ -127,14 +131,16 @@ public class AnalysisService {
   private boolean automaticAnalysisEnabled;
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    StorageService storageService, PluginsService pluginsService, ActiveRulesService activeRulesService, ClientFileSystemService fileSystemService,
+    AnalyzerConfigurationRepository analyzerConfigurationRepository, PluginsRepository pluginsRepository, ServerIssuesRepository serverIssuesRepository, PluginsService pluginsService, ActiveRulesService activeRulesService, ClientFileSystemService fileSystemService,
     FileExclusionService fileExclusionService, MonitoringService monitoringService, TaskManager taskManager, InitializeParams initializeParams, NodeJsService nodeJsService,
     AnalysisSchedulerCache schedulerCache, ApplicationEventPublisher eventPublisher, UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository,
     OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
-    this.storageService = storageService;
+    this.analyzerConfigurationRepository = analyzerConfigurationRepository;
+    this.pluginsRepository = pluginsRepository;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.pluginsService = pluginsService;
     this.activeRulesService = activeRulesService;
     this.fileSystemService = fileSystemService;
@@ -182,8 +188,8 @@ public class AnalysisService {
       analysisSettings = Collections.emptyMap();
     } else {
       enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
-      analysisSettings = storageService.binding(effectiveBinding.get())
-        .analyzerConfiguration().read().getSettings().getAll();
+      var binding = effectiveBinding.get();
+      analysisSettings = analyzerConfigurationRepository.read(binding.connectionId(), binding.sonarProjectKey()).getSettings().getAll();
     }
     // TODO merge client side analysis settings
     return getPatterns(enabledLanguages, analysisSettings);
@@ -226,8 +232,7 @@ public class AnalysisService {
     }
     if (bindingOpt.isPresent()) {
       var binding = bindingOpt.get();
-      var analyzerConfig = storageService.binding(binding).analyzerConfiguration();
-      if (analyzerConfig.isValid()) {
+      if (analyzerConfigurationRepository.hasActiveRules(binding.connectionId(), binding.sonarProjectKey())) {
         return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, trace);
       } else {
         // This can happen when a standalone analysis was scheduled and a synchronization happened in between.
@@ -242,7 +247,7 @@ public class AnalysisService {
 
   private AnalysisConfig getConnectedAnalysisConfig(Binding binding, boolean hotspotsOnly, Map<String, String> userAnalysisProperties, @Nullable Trace trace) {
     var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
-      () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
+      () -> analyzerConfigurationRepository.read(binding.connectionId(), binding.sonarProjectKey()).getSettings().getAll());
     var analysisProperties = new HashMap<>(serverProperties);
     analysisProperties.putAll(userAnalysisProperties);
     var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,
@@ -448,10 +453,9 @@ public class AnalysisService {
   }
 
   private boolean isReadyForAnalysis(Binding binding) {
-    var pluginsValid = storageService.connection(binding.connectionId()).plugins().isValid();
-    var bindingStorage = storageService.binding(binding);
-    var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
-    var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
+    var pluginsValid = pluginsRepository.isValid(binding.connectionId());
+    var analyzerConfigValid = analyzerConfigurationRepository.hasActiveRules(binding.connectionId(), binding.sonarProjectKey());
+    var findingsStorageValid = serverIssuesRepository.wasEverUpdated(binding.connectionId(), binding.sonarProjectKey());
     var isReady = pluginsValid
       && analyzerConfigValid
       // this is not strictly for analysis but for tracking

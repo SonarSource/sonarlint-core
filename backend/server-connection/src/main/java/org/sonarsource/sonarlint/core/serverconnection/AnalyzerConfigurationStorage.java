@@ -136,14 +136,14 @@ public class AnalyzerConfigurationStorage {
 
   private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
     return Sonarlint.RuleSet.ActiveRule.newBuilder()
-      .setRuleKey(rule.getRuleKey())
-      .setSeverity(rule.getSeverity().name())
-      .setTemplateKey(rule.getTemplateKey())
-      .putAllParams(rule.getParams())
-      .addAllOverriddenImpacts(rule.getOverriddenImpacts().stream()
+      .setRuleKey(rule.ruleKey())
+      .setSeverity(rule.severity().name())
+      .setTemplateKey(rule.templateKey())
+      .putAllParams(rule.params())
+      .addAllOverriddenImpacts(rule.overriddenImpacts().stream()
         .map(impact -> Sonarlint.RuleSet.ActiveRule.newBuilder().addOverriddenImpactsBuilder()
-          .setSoftwareQuality(impact.getSoftwareQuality())
-          .setSeverity(impact.getSeverity())
+          .setSoftwareQuality(impact.softwareQuality())
+          .setSeverity(impact.severity())
           .build())
         .toList())
       .build();

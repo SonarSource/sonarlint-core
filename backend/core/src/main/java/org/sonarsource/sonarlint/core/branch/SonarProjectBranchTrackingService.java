@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProjectBranchesRepository;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesChangedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -48,16 +48,16 @@ import org.springframework.context.event.EventListener;
 public class SonarProjectBranchTrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
-  private final StorageService storageService;
+  private final ProjectBranchesRepository projectBranchesRepository;
   private final ConfigurationRepository configurationRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final SmartCancelableLoadingCache<String, String> cachedMatchingBranchByConfigScope = new SmartCancelableLoadingCache<>("sonarlint-branch-matcher",
     this::matchSonarProjectBranch, this::afterCachedValueRefreshed);
 
-  public SonarProjectBranchTrackingService(SonarLintRpcClient client, StorageService storageService,
+  public SonarProjectBranchTrackingService(SonarLintRpcClient client, ProjectBranchesRepository projectBranchesRepository,
     ConfigurationRepository configurationRepository, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
-    this.storageService = storageService;
+    this.projectBranchesRepository = projectBranchesRepository;
     this.configurationRepository = configurationRepository;
     this.applicationEventPublisher = applicationEventPublisher;
   }
@@ -91,8 +91,8 @@ public class SonarProjectBranchTrackingService {
     configScopeIds.forEach(configScopeId -> {
       var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
-        var branchesStorage = storageService.binding(effectiveBinding.get()).branches();
-        if (branchesStorage.exists()) {
+        var binding = effectiveBinding.get();
+        if (projectBranchesRepository.exists(binding.connectionId(), binding.sonarProjectKey())) {
           LOG.debug("Bound configuration scope '{}' added with an existing storage, queuing matching of the Sonar project branch...", configScopeId);
           cachedMatchingBranchByConfigScope.refreshAsync(configScopeId);
         }
@@ -136,12 +136,11 @@ public class SonarProjectBranchTrackingService {
     }
     var effectiveBinding = effectiveBindingOpt.get();
 
-    var branchesStorage = storageService.binding(effectiveBinding).branches();
-    if (!branchesStorage.exists()) {
+    if (!projectBranchesRepository.exists(effectiveBinding.connectionId(), effectiveBinding.sonarProjectKey())) {
       LOG.info("Cannot match Sonar branch, storage is empty");
       return null;
     }
-    var storedBranches = branchesStorage.read();
+    var storedBranches = projectBranchesRepository.read(effectiveBinding.connectionId(), effectiveBinding.sonarProjectKey());
     var mainBranchName = storedBranches.getMainBranchName();
     var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames(), cancelMonitor);
     if (matchedSonarBranch == null) {

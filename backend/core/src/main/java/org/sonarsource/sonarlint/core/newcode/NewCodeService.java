@@ -23,18 +23,18 @@ import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.NewCodeDefinitionRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class NewCodeService {
   private static final NewCodeDefinition STANDALONE_NEW_CODE_DEFINITION = NewCodeDefinition.withExactNumberOfDays(30);
   private final ConfigurationRepository configurationRepository;
-  private final StorageService storageService;
+  private final NewCodeDefinitionRepository newCodeDefinitionRepository;
   private final TelemetryService telemetryService;
 
-  public NewCodeService(ConfigurationRepository configurationRepository, StorageService storageService, TelemetryService telemetryService) {
+  public NewCodeService(ConfigurationRepository configurationRepository, NewCodeDefinitionRepository newCodeDefinitionRepository, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
-    this.storageService = storageService;
+    this.newCodeDefinitionRepository = newCodeDefinitionRepository;
     this.telemetryService = telemetryService;
   }
 
@@ -50,8 +50,7 @@ public class NewCodeService {
       return Optional.of(STANDALONE_NEW_CODE_DEFINITION);
     }
     var binding = effectiveBinding.get();
-    var sonarProjectStorage = storageService.binding(binding);
-    return sonarProjectStorage.newCodeDefinition().read();
+    return newCodeDefinitionRepository.read(binding.connectionId(), binding.sonarProjectKey());
   }
 
   public void didToggleFocus() {

@@ -65,8 +65,9 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -88,7 +89,8 @@ public class ActiveRulesService {
   private final LanguageSupportRepository languageSupportRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SeverityModeService severityModeService;
-  private final StorageService storageService;
+  private final AnalyzerConfigurationRepository analyzerConfigurationRepository;
+  private final ServerInfoRepository serverInfoRepository;
   private final RulesRepository rulesRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final boolean hotspotEnabled;
@@ -99,13 +101,14 @@ public class ActiveRulesService {
   private final Map<Binding, List<ActiveRuleDetails>> activeRulesPerBinding = new ConcurrentHashMap<>();
 
   public ActiveRulesService(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, SonarQubeClientManager sonarQubeClientManager,
-    SeverityModeService severityModeService, StorageService storageService, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
+    SeverityModeService severityModeService, AnalyzerConfigurationRepository analyzerConfigurationRepository, ServerInfoRepository serverInfoRepository, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
     InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.severityModeService = severityModeService;
-    this.storageService = storageService;
+    this.analyzerConfigurationRepository = analyzerConfigurationRepository;
+    this.serverInfoRepository = serverInfoRepository;
     this.rulesRepository = rulesRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.hotspotEnabled = initializeParams.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
@@ -184,7 +187,7 @@ public class ActiveRulesService {
   }
 
   private List<ActiveRuleDetails> buildConnectedActiveRules(Binding binding) {
-    var analyzerConfig = storageService.binding(binding).analyzerConfiguration().read();
+    var analyzerConfig = analyzerConfigurationRepository.read(binding.connectionId(), binding.sonarProjectKey());
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDetails>();
     ruleSetByLanguageKey.entrySet()
@@ -198,17 +201,17 @@ public class ActiveRulesService {
         for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
           var activeRuleFromStorage = tryConvertDeprecatedKeys(binding.connectionId(), possiblyDeprecatedActiveRuleFromStorage);
           SonarLintRuleDefinition ruleOrTemplateDefinition;
-          if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
-            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.getTemplateKey()).orElse(null);
+          if (StringUtils.isNotBlank(activeRuleFromStorage.templateKey())) {
+            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.templateKey()).orElse(null);
             if (ruleOrTemplateDefinition == null) {
-              LOG.debug("Rule {} is enabled on the server, but its template {} is not available in SonarLint", activeRuleFromStorage.getRuleKey(),
-                activeRuleFromStorage.getTemplateKey());
+              LOG.debug("Rule {} is enabled on the server, but its template {} is not available in SonarLint", activeRuleFromStorage.ruleKey(),
+                activeRuleFromStorage.templateKey());
               continue;
             }
           } else {
-            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.getRuleKey()).orElse(null);
+            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.ruleKey()).orElse(null);
             if (ruleOrTemplateDefinition == null) {
-              missingRuleOrTemplateDefinitions.add(activeRuleFromStorage.getRuleKey());
+              missingRuleOrTemplateDefinitions.add(activeRuleFromStorage.ruleKey());
               continue;
             }
           }
@@ -231,18 +234,18 @@ public class ActiveRulesService {
   }
 
   public ActiveRuleDetails buildActiveRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
-    return new ActiveRuleDetails(activeRule.getRuleKey(),
+    return new ActiveRuleDetails(activeRule.ruleKey(),
       ruleOrTemplateDefinition.getLanguage().getSonarLanguageKey(),
       getEffectiveParams(ruleOrTemplateDefinition, activeRule),
-      trimToNull(activeRule.getTemplateKey()), activeRule.getSeverity(), ruleOrTemplateDefinition.getType(),
+      trimToNull(activeRule.templateKey()), activeRule.severity(), ruleOrTemplateDefinition.getType(),
       ruleOrTemplateDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL),
-      RuleDetails.mergeImpacts(ruleOrTemplateDefinition.getDefaultImpacts(), activeRule.getOverriddenImpacts()),
+      RuleDetails.mergeImpacts(ruleOrTemplateDefinition.getDefaultImpacts(), activeRule.overriddenImpacts()),
       ruleOrTemplateDefinition.getVulnerabilityProbability().orElse(null));
   }
 
   private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
     Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
-    activeRule.getParams().forEach((paramName, paramValue) -> {
+    activeRule.params().forEach((paramName, paramValue) -> {
       if (!ruleOrTemplateDefinition.getParams().containsKey(paramName)) {
         LOG.debug("Rule parameter '{}' for rule '{}' does not exist in embedded analyzer, ignoring.", paramName, ruleOrTemplateDefinition.getKey());
         return;
@@ -264,7 +267,7 @@ public class ActiveRulesService {
       return false;
     }
     // when storage is not present, consider hotspots should not be detected
-    return storageService.connection(connectionId).serverInfo().read().isPresent();
+    return serverInfoRepository.read(connectionId).isPresent();
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
@@ -341,7 +344,7 @@ public class ActiveRulesService {
   }
 
   private void updateStorage(String connectionId, RuleSetChangedEvent event) {
-    event.getProjectKeys().forEach(projectKey -> storageService.connection(connectionId).project(projectKey).analyzerConfiguration().update(currentConfiguration -> {
+    event.getProjectKeys().forEach(projectKey -> analyzerConfigurationRepository.update(connectionId, projectKey, currentConfiguration -> {
       var newRuleSetByLanguageKey = incorporate(event, currentConfiguration.getRuleSetByLanguageKey());
       return new AnalyzerConfiguration(currentConfiguration.getSettings(), newRuleSetByLanguageKey, currentConfiguration.getSchemaVersion());
     }));
@@ -421,7 +424,7 @@ public class ActiveRulesService {
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
     AnalyzerConfiguration analyzerConfiguration;
     try {
-      analyzerConfiguration = storageService.binding(binding).analyzerConfiguration().read();
+      analyzerConfiguration = analyzerConfigurationRepository.read(binding.connectionId(), binding.sonarProjectKey());
     } catch (StorageException e) {
       // XXX we should make sure this situation can not happen (sync should be enforced at least once)
       return Optional.empty();
@@ -429,36 +432,36 @@ public class ActiveRulesService {
     return analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
       .flatMap(s -> s.getRules().stream())
       // XXX is it important to migrate the rule repos in tryConvertDeprecatedKeys?
-      .filter(r -> tryConvertDeprecatedKeys(binding.connectionId(), r).getRuleKey().equals(ruleKey)).findFirst();
+      .filter(r -> tryConvertDeprecatedKeys(binding.connectionId(), r).ruleKey().equals(ruleKey)).findFirst();
   }
 
   private ServerActiveRule tryConvertDeprecatedKeys(String connectionId, ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
     SonarLintRuleDefinition ruleOrTemplateDefinition;
-    if (StringUtils.isNotBlank(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey())) {
-      ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getTemplateKey()).orElse(null);
+    if (StringUtils.isNotBlank(possiblyDeprecatedActiveRuleFromStorage.templateKey())) {
+      ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.templateKey()).orElse(null);
       if (ruleOrTemplateDefinition == null) {
         // The rule template is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
         return possiblyDeprecatedActiveRuleFromStorage;
       }
-      var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
+      var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.ruleKey());
       var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.getKey());
       var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
-      return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
+      return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.severity(), possiblyDeprecatedActiveRuleFromStorage.params(),
+        ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.overriddenImpacts());
     } else {
-      ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getRuleKey()).orElse(null);
+      ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.ruleKey()).orElse(null);
       if (ruleOrTemplateDefinition == null) {
         // The rule is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
         return possiblyDeprecatedActiveRuleFromStorage;
       }
-      return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        null, possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
+      return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.severity(), possiblyDeprecatedActiveRuleFromStorage.params(),
+        null, possiblyDeprecatedActiveRuleFromStorage.overriddenImpacts());
     }
   }
 
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
-    var ruleKey = activeRuleFromStorage.getRuleKey();
-    var templateKey = activeRuleFromStorage.getTemplateKey();
+    var ruleKey = activeRuleFromStorage.ruleKey();
+    var templateKey = activeRuleFromStorage.templateKey();
     var serverConnection = sonarQubeClientManager.getClientOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
       var templateRule = rulesRepository.getRule(connectionId, templateKey);

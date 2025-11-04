@@ -186,8 +186,7 @@ class DependencyRiskStatusChangeMediumTests {
       DependencyRiskTransition.CONFIRM, comment));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var issueStorage = backend.getIssueStorageService().connection(CONNECTION_ID).project(PROJECT_KEY).findings();
-    var storedDependencyRisk = issueStorage.loadDependencyRisks(BRANCH_NAME).stream().filter(risk -> risk.key().equals(dependencyRiskKey)).findFirst();
+    var storedDependencyRisk = backend.getServerIssuesRepository().loadDependencyRisks(CONNECTION_ID, PROJECT_KEY, BRANCH_NAME).stream().filter(risk -> risk.key().equals(dependencyRiskKey)).findFirst();
     assertThat(storedDependencyRisk)
       .map(ServerDependencyRisk::status)
       .contains(ServerDependencyRisk.Status.CONFIRM);

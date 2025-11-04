@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufUserRepository;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,12 +45,13 @@ class UserSynchronizerTests {
   @TempDir
   Path tmpDir;
   private UserSynchronizer synchronizer;
-  private ConnectionStorage storage;
+  private ProtobufUserRepository userRepository;
+  private static final String CONNECTION_ID = "connectionId";
 
   @BeforeEach
   void prepare() {
-    storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    synchronizer = new UserSynchronizer(storage);
+    userRepository = new ProtobufUserRepository(tmpDir);
+    synchronizer = new UserSynchronizer(userRepository, CONNECTION_ID);
   }
 
   @Test
@@ -64,7 +66,7 @@ class UserSynchronizerTests {
     var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
-    var storedUserId = storage.user().read();
+    var storedUserId = userRepository.read(CONNECTION_ID);
     assertThat(storedUserId)
       .isPresent()
       .contains("16c9b3b3-3f7e-4d61-91fe-31d731456c08");
@@ -75,7 +77,7 @@ class UserSynchronizerTests {
     var serverApi = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
-    var storedUserId = storage.user().read();
+    var storedUserId = userRepository.read(CONNECTION_ID);
     assertThat(storedUserId).isEmpty();
   }
 
@@ -86,7 +88,7 @@ class UserSynchronizerTests {
     var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
-    var storedUserId = storage.user().read();
+    var storedUserId = userRepository.read(CONNECTION_ID);
     assertThat(storedUserId).isEmpty();
   }
 

@@ -22,31 +22,30 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.SmartNotificationsRepository;
 
 public class LastEventPolling {
 
-  private final StorageService storage;
+  private final SmartNotificationsRepository smartNotificationsRepository;
 
-  public LastEventPolling(StorageService storage) {
-    this.storage = storage;
+  public LastEventPolling(SmartNotificationsRepository smartNotificationsRepository) {
+    this.smartNotificationsRepository = smartNotificationsRepository;
   }
 
   public ZonedDateTime getLastEventPolling(String connectionId, String projectKey) {
-    var lastEventPollingEpoch = storage.connection(connectionId).project(projectKey).smartNotifications().readLastEventPolling();
+    var lastEventPollingEpoch = smartNotificationsRepository.readLastEventPolling(connectionId, projectKey);
     return lastEventPollingEpoch.map(aLong -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(aLong), ZoneId.systemDefault()))
       .orElseGet(ZonedDateTime::now);
   }
 
   public void setLastEventPolling(ZonedDateTime dateTime, String connectionId, String projectKey) {
-    var smartNotificationsStorage = storage.connection(connectionId).project(projectKey).smartNotifications();
-    var lastEventPolling = smartNotificationsStorage.readLastEventPolling();
+    var lastEventPolling = smartNotificationsRepository.readLastEventPolling(connectionId, projectKey);
     var dateTimeEpoch = dateTime.toInstant().toEpochMilli();
     if (lastEventPolling.isPresent() && dateTimeEpoch <= lastEventPolling.get()) {
       // this can happen if the settings changed between the read and write
       return;
     }
-    smartNotificationsStorage.store(dateTimeEpoch);
+    smartNotificationsRepository.store(connectionId, projectKey, dateTimeEpoch);
   }
 
 }

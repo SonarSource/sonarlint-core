@@ -62,9 +62,7 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProjectBranchesRepository;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -90,7 +88,7 @@ class ShowIssueRequestHandlerTests {
   private ConnectionConfigurationRepository connectionConfigurationRepository;
   private ConfigurationRepository configurationRepository;
   private SonarLintRpcClient sonarLintRpcClient;
-  private ProjectBranchesStorage branchesStorage;
+  private ProjectBranchesRepository projectBranchesRepository;
   private IssueApi issueApi;
   private TelemetryService telemetryService;
 
@@ -114,15 +112,11 @@ class ShowIssueRequestHandlerTests {
       invocation -> ((Function<ServerApi, Optional<Object>>) invocation.getArguments()[1]).apply(serverApi));
     when(connectionManager.withActiveClientAndReturn(any(), any())).thenAnswer(
       invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi)));
-    branchesStorage = mock(ProjectBranchesStorage.class);
-    var storageService = mock(StorageService.class);
-    var sonarStorage = mock(SonarProjectStorage.class);
+    projectBranchesRepository = mock(ProjectBranchesRepository.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, connectionManager, eventPublisher));
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(connectionManager, eventPublisher, projectBranchesRepository));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
-    when(storageService.binding(any())).thenReturn(sonarStorage);
-    when(sonarStorage.branches()).thenReturn(branchesStorage);
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
@@ -389,8 +383,8 @@ class ShowIssueRequestHandlerTests {
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
         false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(branchesStorage.exists()).thenReturn(true);
-    when(branchesStorage.read()).thenReturn(new ProjectBranches(Set.of(), "main"));
+    when(projectBranchesRepository.exists("connectionId", "projectKey")).thenReturn(true);
+    when(projectBranchesRepository.read("connectionId", "projectKey")).thenReturn(new ProjectBranches(Set.of(), "main"));
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
     when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
     var issueDetails = mock(IssueDetailsDto.class);
@@ -427,7 +421,7 @@ class ShowIssueRequestHandlerTests {
       new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
         false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(branchesStorage.exists()).thenReturn(false);
+    when(projectBranchesRepository.exists("connectionId", "projectKey")).thenReturn(false);
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
     when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
     var issueDetails = mock(IssueDetailsDto.class);

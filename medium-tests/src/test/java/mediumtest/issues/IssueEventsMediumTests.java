@@ -537,6 +537,6 @@ class IssueEventsMediumTests {
   }
 
   private List<ServerIssue<?>> readIssues(SonarLintTestRpcServer backend, String connectionId, String projectKey, String branchName, String filePath) {
-    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().load(branchName, Path.of(filePath));
+    return backend.getServerIssuesRepository().load(connectionId, projectKey, branchName, Path.of(filePath));
   }
 }

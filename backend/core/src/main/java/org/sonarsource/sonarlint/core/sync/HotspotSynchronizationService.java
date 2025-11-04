@@ -31,30 +31,31 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.HotspotDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 
 public class HotspotSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
+  private final ServerInfoRepository serverInfoRepository;
 
-  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, SonarQubeClientManager sonarQubeClientManager) {
-    this.storageService = storageService;
+  public HotspotSynchronizationService(ServerIssuesRepository serverIssuesRepository, LanguageSupportRepository languageSupportRepository, SonarQubeClientManager sonarQubeClientManager, ServerInfoRepository serverInfoRepository) {
+    this.serverIssuesRepository = serverIssuesRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
+    this.serverInfoRepository = serverInfoRepository;
   }
 
   public void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
-    var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
+    var serverVersion = getSonarServerVersion(serverApi, connectionId, cancelMonitor);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
+    var hotspotsUpdater = new ServerHotspotUpdater(serverIssuesRepository, connectionId, new HotspotDownloader(enabledLanguagesToSync));
     if (HotspotApi.supportHotspotsPull(serverApi.isSonarCloud(), serverVersion)) {
       LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
       hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName, enabledLanguagesToSync, cancelMonitor);
@@ -63,8 +64,8 @@ public class HotspotSynchronizationService {
     }
   }
 
-  private static Version getSonarServerVersion(ServerApi serverApi, ConnectionStorage storage, SonarLintCancelMonitor cancelMonitor) {
-    var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
+  private Version getSonarServerVersion(ServerApi serverApi, String connectionId, SonarLintCancelMonitor cancelMonitor) {
+    var serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoRepository, connectionId);
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).version();
   }
 
@@ -74,11 +75,10 @@ public class HotspotSynchronizationService {
   }
 
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
-    var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
+    var serverVersion = getSonarServerVersion(serverApi, connectionId, cancelMonitor);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
+    var hotspotsUpdater = new ServerHotspotUpdater(serverIssuesRepository, connectionId, new HotspotDownloader(enabledLanguagesToSync));
     hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> serverVersion, cancelMonitor);
   }
 
@@ -89,12 +89,12 @@ public class HotspotSynchronizationService {
 
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName,
     SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
-    var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
+    var serverVersion = getSonarServerVersion(serverApi, connectionId, cancelMonitor);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
-    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectKey, serverRelativeFilePath, branchName, () -> serverVersion, cancelMonitor);
+    var hotspotsUpdater = new ServerHotspotUpdater(serverIssuesRepository, connectionId, new HotspotDownloader(enabledLanguagesToSync));
+    var finalServerVersion = serverVersion;
+    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectKey, serverRelativeFilePath, branchName, () -> finalServerVersion, cancelMonitor);
   }
 
 }

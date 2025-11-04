@@ -21,13 +21,12 @@ package org.sonarsource.sonarlint.core.sync;
 
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
-import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProjectBranchesRepository;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toSet;
@@ -37,25 +36,24 @@ import static java.util.stream.Collectors.toSet;
  */
 public class SonarProjectBranchesSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final StorageService storageService;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ApplicationEventPublisher eventPublisher;
+  private final ProjectBranchesRepository projectBranchesRepository;
 
-  public SonarProjectBranchesSynchronizationService(StorageService storageService, SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
-    this.storageService = storageService;
+  public SonarProjectBranchesSynchronizationService(SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher, ProjectBranchesRepository projectBranchesRepository) {
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.eventPublisher = eventPublisher;
+    this.projectBranchesRepository = projectBranchesRepository;
   }
 
   public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
     sonarQubeClientManager.withActiveClient(connectionId, serverApi -> {
-      var branchesStorage = storageService.connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
-      if (branchesStorage.exists()) {
-        oldBranches = Optional.of(branchesStorage.read());
+      if (projectBranchesRepository.exists(connectionId, sonarProjectKey)) {
+        oldBranches = Optional.of(projectBranchesRepository.read(connectionId, sonarProjectKey));
       }
       var newBranches = getProjectBranches(serverApi, sonarProjectKey, cancelMonitor);
-      branchesStorage.store(newBranches);
+      projectBranchesRepository.store(connectionId, sonarProjectKey, newBranches);
       if (oldBranches.isEmpty() || !oldBranches.get().equals(newBranches)) {
         LOG.debug("Project branches changed for project '{}'", sonarProjectKey);
         eventPublisher.publishEvent(new SonarProjectBranchesChangedEvent(connectionId, sonarProjectKey));
@@ -72,9 +70,8 @@ public class SonarProjectBranchesSynchronizationService {
   }
 
   public String findMainBranch(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var branchesStorage = storageService.binding(new Binding(connectionId, projectKey)).branches();
-    if (branchesStorage.exists()) {
-      var storedBranches = branchesStorage.read();
+    if (projectBranchesRepository.exists(connectionId, projectKey)) {
+      var storedBranches = projectBranchesRepository.read(connectionId, projectKey);
       return storedBranches.getMainBranchName();
     } else {
       return sonarQubeClientManager.withActiveClientAndReturn(connectionId,
