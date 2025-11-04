@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
+import com.google.common.collect.Sets;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -27,7 +28,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -44,6 +47,9 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,10 +70,13 @@ public class AiCodeFixService {
   private final StorageService storageService;
   private final ApplicationEventPublisher eventPublisher;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
+  private final AiCodeFixRepository aiCodeFixRepository;
+  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService,
-    ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService,
+    ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixRepository aiCodeFixRepository,
+    StorageService storageService, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -76,11 +85,31 @@ public class AiCodeFixService {
     this.storageService = storageService;
     this.eventPublisher = eventPublisher;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
+    this.aiCodeFixRepository = aiCodeFixRepository;
+    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
+  }
+
+  public static AiCodeFixSettings aiCodeFixMapping(AiCodeFix entity) {
+    return new AiCodeFixSettings(
+      Sets.newHashSet(entity.supportedRules()),
+      entity.organizationEligible(),
+      AiCodeFixFeatureEnablement.valueOf(entity.enablement().name()),
+      Sets.newHashSet(entity.enabledProjectKeys()));
+  }
+
+  public Optional<AiCodeFixFeature> getFeature(Binding binding) {
+    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+      return aiCodeFixRepository.get(binding.connectionId())
+        .map(AiCodeFixService::aiCodeFixMapping)
+        .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
+        .map(AiCodeFixFeature::new);
+    } else {
+      return getFeature(storageService, binding);
+    }
   }
 
   public static Optional<AiCodeFixFeature> getFeature(StorageService storageService, Binding binding) {
     return storageService.connection(binding.connectionId()).aiCodeFix().read()
-      .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
       .map(AiCodeFixFeature::new);
   }
 
@@ -105,7 +134,7 @@ public class AiCodeFixService {
 
   private AiSuggestionResponseBodyDto generateResponseBodyForIssue(ServerApi serverApi, RaisedIssue raisedIssue, UUID issueId,
     BindingWithOrg bindingWithOrg, SonarLintCancelMonitor cancelMonitor) {
-    var aiCodeFixFeature = getFeature(storageService, bindingWithOrg.binding());
+    var aiCodeFixFeature = getFeature(bindingWithOrg.binding());
     if (!aiCodeFixFeature.map(feature -> feature.isFixable(raisedIssue)).orElse(false)) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));
     }
@@ -113,8 +142,8 @@ public class AiCodeFixService {
     AiSuggestionResponseBodyDto fixResponseDto;
 
     try {
-      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), raisedIssue),
-        cancelMonitor);
+      var requestBody = toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), raisedIssue);
+      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(requestBody, cancelMonitor);
     } catch (TooManyRequestsException e) {
       throw new ResponseErrorException(new ResponseError(TOO_MANY_REQUESTS, "AI CodeFix usage has been capped. Too many requests have been made.", issueId));
     }
@@ -131,7 +160,7 @@ public class AiCodeFixService {
 
   private AiSuggestionResponseBodyDto generateResponseBodyForTaint(ServerApi serverApi, TaintVulnerabilityDto taint,
     String configScopeId, BindingWithOrg bindingWithOrg, SonarLintCancelMonitor cancelMonitor) {
-    var aiCodeFixFeature = getFeature(storageService, bindingWithOrg.binding());
+    var aiCodeFixFeature = getFeature(bindingWithOrg.binding());
     if (!aiCodeFixFeature.map(feature -> feature.isFixable(taint)).orElse(false)) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided taint cannot be fixed", taint.getId()));
     }
@@ -139,8 +168,8 @@ public class AiCodeFixService {
     AiSuggestionResponseBodyDto fixResponseDto;
 
     try {
-      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), taint, configScopeId),
-        cancelMonitor);
+      var requestBody = toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), taint, configScopeId);
+      fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(requestBody, cancelMonitor);
     } catch (TooManyRequestsException e) {
       throw new ResponseErrorException(new ResponseError(TOO_MANY_REQUESTS, "AI CodeFix usage has been capped. Too many requests have been made.", taint.getId()));
     }

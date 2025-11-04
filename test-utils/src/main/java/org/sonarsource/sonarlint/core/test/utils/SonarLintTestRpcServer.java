@@ -31,6 +31,7 @@ import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -235,6 +236,10 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return serverUsingJava.getIssueStorageService();
+  }
+
+  public SonarLintDatabase getSonarLintDatabase() {
+    return serverUsingJava.getDatabase();
   }
 
   @Override

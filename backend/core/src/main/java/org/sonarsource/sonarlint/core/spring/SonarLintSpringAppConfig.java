@@ -53,11 +53,15 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
-import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
@@ -106,6 +110,7 @@ import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
@@ -215,7 +220,10 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AnalyzeFileListRequestHandler.class,
   AiAssistedIdeService.class,
   LogService.class,
-  ActiveRulesService.class
+  ActiveRulesService.class,
+  SonarLintDatabase.class,
+  AiCodeFixRepository.class,
+  SonarLintDatabaseService.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -259,6 +267,11 @@ public class SonarLintSpringAppConfig {
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());
+  }
+
+  @Bean
+  SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
+    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE);
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
