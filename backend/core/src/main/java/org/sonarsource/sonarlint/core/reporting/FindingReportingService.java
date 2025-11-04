@@ -216,9 +216,12 @@ public class FindingReportingService {
 
   private synchronized void updateRaisedFindingsCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> updatedIssues,
     Map<URI, List<RaisedHotspotDto>> updatedHotspots, boolean isIntermediatePublication) {
-    var issuesToRaise = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
-    LOG.debug("Reporting {} issues for configuration scope {}", issuesToRaise.size(), configurationScopeId);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, isIntermediatePublication, analysisId));
+    var fileIssues = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
+
+    var totalIssues = fileIssues.values().stream().mapToInt(List::size).sum();
+    LOG.debug("Reporting {} issues over {} files for configuration scope {}", totalIssues, fileIssues.size(), configurationScopeId);
+
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, fileIssues, isIntermediatePublication, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
       // security hotspots are only supported in connected mode
