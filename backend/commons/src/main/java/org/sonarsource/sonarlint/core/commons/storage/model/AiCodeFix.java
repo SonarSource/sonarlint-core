@@ -56,12 +56,24 @@ public record AiCodeFix(
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) return false;
-    AiCodeFix aiCodeFix = (AiCodeFix) o;
-    return organizationEligible == aiCodeFix.organizationEligible && Objects.equals(connectionId, aiCodeFix.connectionId) && enablement == aiCodeFix.enablement && Objects.deepEquals(supportedRules, aiCodeFix.supportedRules) && Objects.deepEquals(enabledProjectKeys, aiCodeFix.enabledProjectKeys);
+    var aiCodeFix = (AiCodeFix) o;
+    return organizationEligible == aiCodeFix.organizationEligible && Objects.equals(connectionId, aiCodeFix.connectionId) && enablement == aiCodeFix.enablement
+      && Objects.deepEquals(supportedRules, aiCodeFix.supportedRules) && Objects.deepEquals(enabledProjectKeys, aiCodeFix.enabledProjectKeys);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(connectionId, Arrays.hashCode(supportedRules), organizationEligible, enablement, Arrays.hashCode(enabledProjectKeys));
+  }
+
+  @Override
+  public String toString() {
+    return "AiCodeFix{" +
+      "connectionId='" + connectionId + '\'' +
+      ", supportedRules=" + Arrays.toString(supportedRules) +
+      ", organizationEligible=" + organizationEligible +
+      ", enablement=" + enablement +
+      ", enabledProjectKeys=" + Arrays.toString(enabledProjectKeys) +
+      '}';
   }
 }
