@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 import org.jooq.Configuration;
 import org.jooq.Record;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
@@ -73,7 +72,7 @@ public class KnownFindingsRepository {
       var introDate = LocalDateTime.ofInstant(finding.getIntroductionDate(), ZoneId.systemDefault());
       trx.dsl().mergeInto(KNOWN_FINDINGS)
         .using(trx.dsl().selectOne())
-        .on(KNOWN_FINDINGS.ID.eq(finding.getId().toString()))
+        .on(KNOWN_FINDINGS.ID.eq(finding.getId()))
         .whenMatchedThenUpdate()
         .set(KNOWN_FINDINGS.CONFIGURATION_SCOPE_ID, configurationScopeId)
         .set(KNOWN_FINDINGS.IDE_RELATIVE_FILE_PATH, clientRelativePath.toString())
@@ -93,7 +92,7 @@ public class KnownFindingsRepository {
           KNOWN_FINDINGS.RULE_KEY, KNOWN_FINDINGS.MESSAGE, KNOWN_FINDINGS.INTRODUCTION_DATE, KNOWN_FINDINGS.FINDING_TYPE,
           KNOWN_FINDINGS.START_LINE, KNOWN_FINDINGS.START_LINE_OFFSET, KNOWN_FINDINGS.END_LINE, KNOWN_FINDINGS.END_LINE_OFFSET, KNOWN_FINDINGS.TEXT_RANGE_HASH,
           KNOWN_FINDINGS.LINE, KNOWN_FINDINGS.LINE_HASH)
-        .values(finding.getId().toString(), configurationScopeId, clientRelativePath.toString(), finding.getServerKey(), finding.getRuleKey(),
+        .values(finding.getId(), configurationScopeId, clientRelativePath.toString(), finding.getServerKey(), finding.getRuleKey(),
           finding.getMessage(), introDate, type.name(),
           startLine, startLineOffset, endLine, endLineOffset, textRangeHash,
           line, lineHash
@@ -116,7 +115,7 @@ public class KnownFindingsRepository {
   }
 
   private static KnownFinding recordToKnownFinding(Record rec) {
-    var id = UUID.fromString(rec.get(KNOWN_FINDINGS.ID));
+    var id = rec.get(KNOWN_FINDINGS.ID);
     var introductionDate = rec.get(KNOWN_FINDINGS.INTRODUCTION_DATE).atZone(ZoneId.systemDefault()).toInstant();
     var textRangeWithHash = getTextRangeWithHash(rec);
     var lineWithHash = getLineWithHash(rec);
