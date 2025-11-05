@@ -1,0 +1,68 @@
+/*
+ * SonarLint Core - Server Connection
+ * Copyright (C) 2016-2025 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.serverconnection.repository;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.RWLock;
+
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil.writeToFile;
+
+/**
+ * Protobuf-based implementation of UserRepository.
+ */
+public class ProtobufUserRepository implements UserRepository {
+  public static final String USER_PB = "user.pb";
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final Path storageRoot;
+
+  public ProtobufUserRepository(Path storageRoot) {
+    this.storageRoot = storageRoot;
+  }
+
+  private Path getStorageFilePath(String connectionId) {
+    return storageRoot.resolve(encodeForFs(connectionId)).resolve(USER_PB);
+  }
+
+  @Override
+  public void store(String connectionId, String userId) {
+    var storageFilePath = getStorageFilePath(connectionId);
+    FileUtils.mkdirs(storageFilePath.getParent());
+    var user = Sonarlint.User.newBuilder().setId(userId).build();
+    LOG.debug("Storing user in {}", storageFilePath);
+    new RWLock().write(() -> writeToFile(user, storageFilePath));
+    LOG.debug("Stored user");
+  }
+
+  @Override
+  public Optional<String> read(String connectionId) {
+    var storageFilePath = getStorageFilePath(connectionId);
+    return new RWLock().read(() -> Files.exists(storageFilePath) ? Optional.of(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.User.parser()).getId())
+      : Optional.empty());
+  }
+}
+

@@ -32,21 +32,32 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.ACTIVE_RULESETS;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.AI_CODEFIX_SETTINGS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.NEW_CODE_DEFINITIONS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.ORGANIZATIONS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.PLUGINS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.PROJECTS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.PROJECT_BRANCHES;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVERS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FEATURES;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.USERS;
 
 public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
+  private final boolean isInMemory;
 
   @Inject
   public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
     JdbcConnectionPool ds;
     try {
       var mode = System.getProperty("sonarlint.db.mode", "file");
+      this.isInMemory = "mem".equalsIgnoreCase(mode);
       String url;
-      if ("mem".equalsIgnoreCase(mode)) {
+      if (isInMemory) {
         // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
         url = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
       } else {
@@ -98,6 +109,9 @@ public final class SonarLintDatabase {
 
   public void shutdown() {
     try {
+      if (isInMemory) {
+        dsl.execute("SHUTDOWN");
+      }
       dataSource.dispose();
       LOG.debug("H2Database disposed");
     } catch (Exception e) {
@@ -108,6 +122,33 @@ public final class SonarLintDatabase {
   public void cleanupNonExistingConnections(Set<String> existingConnectionIds) {
     dsl.deleteFrom(AI_CODEFIX_SETTINGS)
       .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(ACTIVE_RULESETS)
+      .where(ACTIVE_RULESETS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(PROJECTS)
+      .where(PROJECTS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(SERVERS)
+      .where(SERVERS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(PROJECT_BRANCHES)
+      .where(PROJECT_BRANCHES.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(PLUGINS)
+      .where(PLUGINS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(SERVER_FEATURES)
+      .where(SERVER_FEATURES.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(ORGANIZATIONS)
+      .where(ORGANIZATIONS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(USERS)
+      .where(USERS.CONNECTION_ID.notIn(existingConnectionIds))
+      .execute();
+    dsl.deleteFrom(NEW_CODE_DEFINITIONS)
+      .where(NEW_CODE_DEFINITIONS.CONNECTION_ID.notIn(existingConnectionIds))
       .execute();
   }
 }

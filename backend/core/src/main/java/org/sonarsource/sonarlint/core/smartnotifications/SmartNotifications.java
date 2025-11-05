@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
@@ -70,7 +69,7 @@ public class SmartNotifications {
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager,
-    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
+    SonarLintRpcClient client, LastEventPolling lastEventPollingService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -78,7 +77,7 @@ public class SmartNotifications {
     this.telemetryService = telemetryService;
     this.webSocketService = webSocketService;
     this.params = params;
-    lastEventPollingService = new LastEventPolling(storageService);
+    this.lastEventPollingService = lastEventPollingService;
   }
 
   @PostConstruct

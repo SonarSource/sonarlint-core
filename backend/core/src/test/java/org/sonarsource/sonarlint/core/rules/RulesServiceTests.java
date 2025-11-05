@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -46,8 +46,8 @@ class RulesServiceTests {
   void prepare() {
     extractionHelper = mock(RulesExtractionHelper.class);
     var configurationRepository = mock(ConfigurationRepository.class);
-    var storageService = mock(StorageService.class);
-    rulesRepository = new RulesRepository(extractionHelper, configurationRepository, storageService);
+    var serverInfoRepository = mock(ServerInfoRepository.class);
+    rulesRepository = new RulesRepository(extractionHelper, configurationRepository, serverInfoRepository);
   }
 
   @Test

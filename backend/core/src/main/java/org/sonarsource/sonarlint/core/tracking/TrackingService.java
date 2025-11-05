@@ -57,7 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatu
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.tracking.matching.LocalOnlyIssueMatchingAttributesMapper;
@@ -81,7 +81,7 @@ public class TrackingService {
   private final FindingReportingService reportingService;
   private final Map<UUID, MatchingSession> matchingSessionByAnalysisId = new HashMap<>();
   private final KnownFindingsStorageService knownFindingsStorageService;
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final FindingsSynchronizationService findingsSynchronizationService;
@@ -90,7 +90,7 @@ public class TrackingService {
   private final GitService gitService;
 
   public TrackingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-    PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, StorageService storageService,
+    PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, ServerIssuesRepository serverIssuesRepository,
     LocalOnlyIssueRepository localOnlyIssueRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, FindingsSynchronizationService findingsSynchronizationService,
     NewCodeService newCodeService, ApplicationEventPublisher eventPublisher) {
     this.client = client;
@@ -99,7 +99,7 @@ public class TrackingService {
     this.pathTranslationService = pathTranslationService;
     this.reportingService = reportingService;
     this.knownFindingsStorageService = knownFindingsStorageService;
-    this.storageService = storageService;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.findingsSynchronizationService = findingsSynchronizationService;
@@ -169,7 +169,7 @@ public class TrackingService {
       issuesToReport = issuesToReport.entrySet().stream().map(e -> {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
-        var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
+        var serverIssues = serverIssuesRepository.load(binding.connectionId(), binding.sonarProjectKey(), activeBranch, serverRelativePath);
         var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
         var matches = matchWithServerIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue());
         return Map.entry(ideRelativePath, matches);
@@ -177,7 +177,7 @@ public class TrackingService {
       hotspotsToReport = hotspotsToReport.entrySet().stream().map(e -> {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
-        var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
+        var serverHotspots = serverIssuesRepository.loadHotspots(binding.connectionId(), binding.sonarProjectKey(), activeBranch, serverRelativePath);
         var matches = matchWithServerHotspots(serverHotspots, e.getValue());
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

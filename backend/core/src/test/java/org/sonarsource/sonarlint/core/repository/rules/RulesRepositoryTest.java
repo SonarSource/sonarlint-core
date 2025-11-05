@@ -23,9 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -36,19 +34,15 @@ class RulesRepositoryTest {
 
   @Test
   void it_should_not_touch_storage_after_rules_are_lazily_loaded_in_connected_mode() {
-    var storageService = mock(StorageService.class);
-    var rulesRepository = new RulesRepository(mock(RulesExtractionHelper.class), mock(ConfigurationRepository.class), storageService);
-    var connectionStorage = mock(ConnectionStorage.class);
-    when(storageService.connection("connection")).thenReturn(connectionStorage);
-    var serverInfoStorage = mock(ServerInfoStorage.class);
-    when(connectionStorage.serverInfo()).thenReturn(serverInfoStorage);
-    when(serverInfoStorage.read()).thenReturn(Optional.empty());
+    var serverInfoRepository = mock(ServerInfoRepository.class);
+    var rulesRepository = new RulesRepository(mock(RulesExtractionHelper.class), mock(ConfigurationRepository.class), serverInfoRepository);
+    when(serverInfoRepository.read("connection")).thenReturn(Optional.empty());
     rulesRepository.getRule("connection", "rule");
-    reset(storageService);
+    reset(serverInfoRepository);
 
     rulesRepository.getRule("connection", "rule");
 
-    verifyNoInteractions(storageService);
+    verifyNoInteractions(serverInfoRepository);
   }
 
 }

@@ -224,7 +224,7 @@ class RulesApiTests {
 
     var activeRules = rulesApi.getAllActiveRules("QPKEY+", new SonarLintCancelMonitor());
 
-    assertThat(activeRules).extracting(ServerActiveRule::getRuleKey).containsExactlyInAnyOrder("repo:key1", "repo:key2");
+    assertThat(activeRules).extracting(ServerActiveRule::ruleKey).containsExactlyInAnyOrder("repo:key1", "repo:key2");
   }
 
 }

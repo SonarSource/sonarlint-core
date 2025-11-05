@@ -512,6 +512,6 @@ class HotspotEventsMediumTests {
   }
 
   private Collection<ServerHotspot> readHotspots(SonarLintTestRpcServer backend, String connectionId, String projectKey, String branchName, String filePath) {
-    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, Path.of(filePath));
+    return backend.getServerIssuesRepository().loadHotspots(connectionId, projectKey, branchName, Path.of(filePath));
   }
 }

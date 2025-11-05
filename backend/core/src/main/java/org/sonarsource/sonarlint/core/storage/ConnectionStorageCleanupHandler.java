@@ -19,46 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.storage;
 
-import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.UserPaths;
-import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.springframework.context.event.EventListener;
 
-public class StorageService {
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+
+public class ConnectionStorageCleanupHandler {
+  private final ServerIssuesRepository serverIssuesRepository;
   private final Path globalStorageRoot;
-  private final Path workDir;
-  private final Map<String, ConnectionStorage> connectionStorageById = new ConcurrentHashMap<>();
 
-  public StorageService(UserPaths userPaths) {
+  public ConnectionStorageCleanupHandler(ServerIssuesRepository serverIssuesRepository, UserPaths userPaths) {
+    this.serverIssuesRepository = serverIssuesRepository;
     this.globalStorageRoot = userPaths.getStorageRoot();
-    this.workDir = userPaths.getWorkDir();
-  }
-
-  public ConnectionStorage connection(String connectionId) {
-    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, workDir, connectionId));
-  }
-
-  public SonarProjectStorage binding(Binding binding) {
-    return connection(binding.connectionId()).project(binding.sonarProjectKey());
   }
 
   @EventListener
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     var removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    var connectionStorage = connection(removedConnectionId);
-    connectionStorage.close();
-    connectionStorage.delete();
+    serverIssuesRepository.close(removedConnectionId);
+    var connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(removedConnectionId));
+    FileUtils.deleteRecursively(connectionStorageRoot);
   }
-
-  @PreDestroy
-  public void close() {
-    connectionStorageById.values().forEach(ConnectionStorage::close);
-  }
-
 }
+

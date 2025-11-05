@@ -57,8 +57,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclus
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
@@ -78,7 +78,7 @@ public class FileExclusionService {
     CoreProperties.PROJECT_TEST_EXCLUSIONS_PROPERTY);
 
   private final ConfigurationRepository configRepo;
-  private final StorageService storageService;
+  private final AnalyzerConfigurationRepository analyzerConfigurationRepository;
   private final PathTranslationService pathTranslationService;
   private final ClientFileSystemService clientFileSystemService;
   private final SonarLintRpcClient client;
@@ -86,10 +86,10 @@ public class FileExclusionService {
   private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache = new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded,
     (key, oldValue, newValue) -> {});
 
-  public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
+  public FileExclusionService(ConfigurationRepository configRepo, AnalyzerConfigurationRepository analyzerConfigurationRepository, PathTranslationService pathTranslationService,
     ClientFileSystemService clientFileSystemService, SonarLintRpcClient client) {
     this.configRepo = configRepo;
-    this.storageService = storageService;
+    this.analyzerConfigurationRepository = analyzerConfigurationRepository;
     this.pathTranslationService = pathTranslationService;
     this.clientFileSystemService = clientFileSystemService;
     this.client = client;
@@ -107,16 +107,14 @@ public class FileExclusionService {
     if (effectiveBindingOpt.isEmpty()) {
       return false;
     }
-    var analyzerStorage = storageService.connection(effectiveBindingOpt.get().connectionId())
-      .project(effectiveBindingOpt.get().sonarProjectKey())
-      .analyzerConfiguration();
-    if (!analyzerStorage.isValid()) {
+    var binding = effectiveBindingOpt.get();
+    if (!analyzerConfigurationRepository.hasSettings(binding.connectionId(), binding.sonarProjectKey())) {
       LOG.warn("Unable to read settings in local storage, analysis storage is not ready");
       return false;
     }
     AnalyzerConfiguration analyzerConfig;
     try {
-      analyzerConfig = analyzerStorage.read();
+      analyzerConfig = analyzerConfigurationRepository.read(binding.connectionId(), binding.sonarProjectKey());
     } catch (StorageException e) {
       LOG.debug("Unable to read settings in local storage", e);
       return false;
@@ -148,7 +146,7 @@ public class FileExclusionService {
       var connectionId = requireNonNull(event.newConfig().connectionId());
       var projectKey = requireNonNull(event.newConfig().sonarProjectKey());
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
-      if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
+      if (analyzerConfigurationRepository.hasSettings(connectionId, projectKey)) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
         clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
       }

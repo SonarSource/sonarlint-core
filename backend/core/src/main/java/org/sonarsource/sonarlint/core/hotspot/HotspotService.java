@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.event.EventListener;
@@ -65,13 +65,13 @@ public class HotspotService {
   private final TelemetryService telemetryService;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final FindingReportingService findingReportingService;
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
 
-  public HotspotService(SonarLintRpcClient client, StorageService storageService, ConfigurationRepository configurationRepository,
+  public HotspotService(SonarLintRpcClient client, ServerIssuesRepository serverIssuesRepository, ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager, TelemetryService telemetryService,
     SonarProjectBranchTrackingService branchTrackingService, FindingReportingService findingReportingService) {
     this.client = client;
-    this.storageService = storageService;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -154,9 +154,7 @@ public class HotspotService {
   }
 
   private void saveStatusInStorage(Binding binding, String hotspotKey, HotspotReviewStatus newStatus) {
-    storageService.binding(binding)
-      .findings()
-      .changeHotspotStatus(hotspotKey, newStatus);
+    serverIssuesRepository.changeHotspotStatus(binding.connectionId(), binding.sonarProjectKey(), hotspotKey, newStatus);
   }
 
   static String buildHotspotUrl(String projectKey, String branch, String hotspotKey, EndpointParams endpointParams) {
@@ -198,17 +196,17 @@ public class HotspotService {
       event.getVulnerabilityProbability(),
       null);
     var projectKey = event.getProjectKey();
-    storageService.connection(connectionId).project(projectKey).findings().insert(event.getBranch(), hotspot);
+    serverIssuesRepository.insert(connectionId, projectKey, event.getBranch(), hotspot);
   }
 
   private void updateStorage(String connectionId, SecurityHotspotClosedEvent event) {
     var projectKey = event.getProjectKey();
-    storageService.connection(connectionId).project(projectKey).findings().deleteHotspot(event.getHotspotKey());
+    serverIssuesRepository.deleteHotspot(connectionId, projectKey, event.getHotspotKey());
   }
 
   private void updateStorage(String connectionId, SecurityHotspotChangedEvent event) {
     var projectKey = event.getProjectKey();
-    storageService.connection(connectionId).project(projectKey).findings().updateHotspot(event.getHotspotKey(), hotspot -> {
+    serverIssuesRepository.updateHotspot(connectionId, projectKey, event.getHotspotKey(), hotspot -> {
       var status = event.getStatus();
       if (status != null) {
         hotspot.setStatus(status);

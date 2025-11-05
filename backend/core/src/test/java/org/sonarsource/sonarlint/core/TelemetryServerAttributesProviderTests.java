@@ -37,7 +37,9 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.OrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.UserRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServerAttributesProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,8 +58,10 @@ class TelemetryServerAttributesProviderTests {
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(new BoundScope(configurationScopeId, connectionId, projectKey)));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), connectionId, "myTestOrg", SonarCloudRegion.EU, false));
-    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class), mock(NodeJsService.class), mock(StorageService.class));
+    when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(),
+      SonarCloudRegion.EU.getApiProductionUri(), connectionId, "myTestOrg", SonarCloudRegion.EU, false));
+    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class),
+      mock(NodeJsService.class), mock(ServerInfoRepository.class), mock(UserRepository.class), mock(OrganizationRepository.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
@@ -98,7 +102,8 @@ class TelemetryServerAttributesProviderTests {
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
     when(connectionConfigurationRepository.getConnectionById(connectionId_2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_2, "www.squrl2.org", true));
-    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class), mock(NodeJsService.class), mock(StorageService.class));
+    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class),
+      mock(NodeJsService.class), mock(ServerInfoRepository.class), mock(UserRepository.class), mock(OrganizationRepository.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
@@ -131,7 +136,8 @@ class TelemetryServerAttributesProviderTests {
     when(rulesRepository.getEmbeddedRule("ruleKey_3")).thenReturn(sonarLintRuleDefinition_3);
     when(rulesRepository.getEmbeddedRule("ruleKey_4")).thenReturn(sonarLintRuleDefinition_4);
 
-    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), activeRulesService, rulesRepository, mock(NodeJsService.class), mock(StorageService.class));
+    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), activeRulesService, rulesRepository,
+      mock(NodeJsService.class), mock(ServerInfoRepository.class), mock(UserRepository.class), mock(OrganizationRepository.class));
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
 
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).containsExactly("ruleKey_2");
@@ -150,7 +156,8 @@ class TelemetryServerAttributesProviderTests {
     var nodeJsService = mock(NodeJsService.class);
     var version = "3.1.4.159";
     when(nodeJsService.getActiveNodeJsVersion()).thenReturn(Optional.of(Version.create(version)));
-    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(ActiveRulesService.class), mock(RulesRepository.class), nodeJsService, mock(StorageService.class));
+    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), mock(ActiveRulesService.class),
+      mock(RulesRepository.class), nodeJsService, mock(ServerInfoRepository.class), mock(UserRepository.class), mock(OrganizationRepository.class));
 
     assertThat(underTest.getTelemetryServerLiveAttributes().nodeVersion()).isEqualTo(version);
   }

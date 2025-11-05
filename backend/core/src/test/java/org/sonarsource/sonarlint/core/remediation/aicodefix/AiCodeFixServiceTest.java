@@ -23,64 +23,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AiCodeFixSettingsRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * This test verifies that AiCodeFixService.getFeature() reads settings
- * from the H2-backed AiCodeFixRepository (and does not rely on file-based StorageService).
+ * from AiCodeFixSettingsRepository (and does not rely on file-based StorageService).
  */
 class AiCodeFixServiceTest {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
 
-  @TempDir
-  Path tempDir;
-
-  private SonarLintDatabase db;
-
-  @AfterEach
-  void tearDown() {
-    if (db != null) {
-      db.shutdown();
-    }
-  }
-
   @Test
-  void getFeature_reads_from_h2_repository() {
-    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE));
-    var aiCodeFixRepo = new AiCodeFixRepository(db);
-
+  void getFeature_reads_from_repository() {
     var connectionId = "conn-1";
     var projectKey = "project-A";
-    aiCodeFixRepo.upsert(new AiCodeFix(
-      connectionId,
+    var settings = new AiCodeFixSettings(
       Set.of("xml:S3421"),
       true,
-      AiCodeFix.Enablement.ENABLED_FOR_ALL_PROJECTS,
-      Set.of(projectKey)));
+      AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS,
+      Set.of(projectKey));
 
     var connectionRepository = mock(ConnectionConfigurationRepository.class);
     var configurationRepository = mock(ConfigurationRepository.class);
@@ -89,12 +66,11 @@ class AiCodeFixServiceTest {
     var clientFileSystemService = mock(ClientFileSystemService.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
     var taintService = mock(TaintVulnerabilityTrackingService.class);
-    var storageService = mock(StorageService.class);
-    var dogfoodingService = mock(DogfoodEnvironmentDetectionService.class);
-    when(dogfoodingService.isDogfoodEnvironment()).thenReturn(true);
+    var aiCodeFixSettingsRepository = mock(AiCodeFixSettingsRepository.class);
+    when(aiCodeFixSettingsRepository.read(connectionId)).thenReturn(Optional.of(settings));
 
     var service = new AiCodeFixService(connectionRepository, configurationRepository, sonarQubeClientManager,
-      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixRepo, storageService, dogfoodingService);
+      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixSettingsRepository);
 
     var binding = new Binding(connectionId, projectKey);
 

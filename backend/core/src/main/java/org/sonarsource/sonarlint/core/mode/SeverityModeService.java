@@ -23,15 +23,15 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
 
 public class SeverityModeService {
 
-  private final StorageService storageService;
+  private final ServerInfoRepository serverInfoRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
 
-  public SeverityModeService(StorageService storageService, ConnectionConfigurationRepository connectionConfigurationRepository) {
-    this.storageService = storageService;
+  public SeverityModeService(ServerInfoRepository serverInfoRepository, ConnectionConfigurationRepository connectionConfigurationRepository) {
+    this.serverInfoRepository = serverInfoRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
@@ -46,7 +46,7 @@ public class SeverityModeService {
     if (connection.getKind() == ConnectionKind.SONARCLOUD) {
       return true;
     }
-    return storageService.connection(connectionId).serverInfo().read()
+    return serverInfoRepository.read(connectionId)
       .map(StoredServerInfo::shouldConsiderMultiQualityModeEnabled)
       // if no storage, use MQR
       .orElse(true);

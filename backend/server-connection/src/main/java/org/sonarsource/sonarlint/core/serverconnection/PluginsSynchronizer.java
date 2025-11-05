@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverconnection.repository.PluginsRepository;
 
 public class PluginsSynchronizer {
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
@@ -45,10 +46,11 @@ public class PluginsSynchronizer {
 
   private final Set<String> sonarSourceDisabledPluginKeys;
   private final Set<String> notSonarLintSupportedPluginsToSynchronize = new HashSet<>();
-  private final ConnectionStorage storage;
+  private final PluginsRepository pluginsRepository;
+  private final String connectionId;
   private Set<String> embeddedPluginKeys;
 
-  public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
+  public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, PluginsRepository pluginsRepository, String connectionId, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
     if (enabledLanguages.contains(SonarLanguage.GO)) {
       // SLCORE-1337 Force synchronize "Go Enterprise" before proper repackaging (SQS 2025.2)
@@ -58,7 +60,8 @@ public class PluginsSynchronizer {
       // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
       this.notSonarLintSupportedPluginsToSynchronize.add(CSHARP_ENTERPRISE_PLUGIN_ID);
     }
-    this.storage = storage;
+    this.pluginsRepository = pluginsRepository;
+    this.connectionId = connectionId;
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
@@ -78,7 +81,7 @@ public class PluginsSynchronizer {
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
 
-    var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
+    var storedPluginsByKey = pluginsRepository.getStoredPluginsByKey(connectionId);
     var serverPlugins = serverApi.plugins().getInstalled(cancelMonitor);
     var downloadSkipReasonByServerPlugin = serverPlugins.stream()
       .collect(Collectors.toMap(Function.identity(), plugin -> determineIfShouldSkipDownload(plugin, storedPluginsByKey)));
@@ -93,12 +96,12 @@ public class PluginsSynchronizer {
       .toList();
 
     if (pluginsToDownload.isEmpty()) {
-      storage.plugins().storeNoPlugins();
-      storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+      pluginsRepository.storeNoPlugins(connectionId);
+      pluginsRepository.cleanUpUnknownPlugins(connectionId, serverPluginsExpectedInStorage);
       return new PluginSynchronizationSummary(false);
     }
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+    pluginsRepository.cleanUpUnknownPlugins(connectionId, serverPluginsExpectedInStorage);
     return new PluginSynchronizationSummary(true);
   }
 
@@ -110,7 +113,7 @@ public class PluginsSynchronizer {
 
   private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
+    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> pluginsRepository.store(connectionId, plugin, pluginBinary), cancelMonitor);
   }
 
   private Optional<DownloadSkipReason> determineIfShouldSkipDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {

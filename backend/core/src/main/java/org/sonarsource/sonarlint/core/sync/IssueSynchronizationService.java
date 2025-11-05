@@ -32,26 +32,25 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.IssueDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 
 public class IssueSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
 
-  public IssueSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository,
+  public IssueSynchronizationService(ServerIssuesRepository serverIssuesRepository, LanguageSupportRepository languageSupportRepository,
     SonarQubeClientManager sonarQubeClientManager) {
-    this.storageService = storageService;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
   }
 
   public void syncServerIssuesForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
+    var issuesUpdater = new ServerIssueUpdater(serverIssuesRepository, connectionId, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (serverApi.isSonarCloud()) {
       LOG.debug("Incremental issue sync is not supported by SonarCloud. Skipping.");
     } else {
@@ -66,10 +65,9 @@ public class IssueSynchronizationService {
   }
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
+    var issuesUpdater = new ServerIssueUpdater(serverIssuesRepository, connectionId, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.update(serverApi, projectKey, branchName, cancelMonitor);
   }
 
@@ -80,10 +78,9 @@ public class IssueSynchronizationService {
 
   public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName,
     SonarLintCancelMonitor cancelMonitor) {
-    var storage = storageService.connection(connectionId);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
-    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
+    var issuesUpdater = new ServerIssueUpdater(serverIssuesRepository, connectionId, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.updateFileIssuesIfNeeded(serverApi, projectKey, serverFileRelativePath, branchName, cancelMonitor);
   }
 

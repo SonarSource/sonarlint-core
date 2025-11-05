@@ -110,12 +110,12 @@ public class RuleDetails {
   }
 
   public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
-    return new RuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
+    return new RuleDetails(activeRuleFromStorage.ruleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       serverRule.getImpacts(),
-      Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
+      Optional.ofNullable(activeRuleFromStorage.severity()).orElse(serverRule.getSeverity()),
       serverRule.getType(),
       serverRule.getCleanCodeAttribute(),
       serverRule.getHtmlNote(), Collections.emptyList(),
@@ -142,14 +142,14 @@ public class RuleDetails {
     var cleanCodeAttribute = skipCleanCodeTaxonomy ? null : templateRuleDefFromPlugin.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
     var defaultImpacts = skipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : templateRuleDefFromPlugin.getDefaultImpacts();
     return new RuleDetails(
-      activeRuleFromStorage.getRuleKey(),
+      activeRuleFromStorage.ruleKey(),
       templateRuleDefFromPlugin.getLanguage(),
       serverRule.getName(),
       serverRule.getHtmlDesc(),
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
-      mergeImpacts(defaultImpacts, activeRuleFromStorage.getOverriddenImpacts()),
+      mergeImpacts(defaultImpacts, activeRuleFromStorage.overriddenImpacts()),
       serverRule.getSeverity(),
       serverRule.getType(),
       cleanCodeAttribute,
@@ -165,8 +165,8 @@ public class RuleDetails {
     }
 
     for (var impact : overriddenImpacts) {
-      var quality = SoftwareQuality.valueOf(impact.getSoftwareQuality());
-      var severity = ImpactSeverity.mapSeverity(impact.getSeverity());
+      var quality = SoftwareQuality.valueOf(impact.softwareQuality());
+      var severity = ImpactSeverity.mapSeverity(impact.severity());
       mergedImpacts.put(quality, severity);
     }
 

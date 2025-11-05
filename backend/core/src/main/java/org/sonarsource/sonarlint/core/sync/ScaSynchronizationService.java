@@ -27,8 +27,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toSet;
@@ -36,14 +37,16 @@ import static java.util.stream.Collectors.toSet;
 public class ScaSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final StorageService storageService;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final boolean isScaSynchronizationEnabled;
+  private final ServerInfoRepository serverInfoRepository;
 
-  public ScaSynchronizationService(StorageService storageService, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams) {
-    this.storageService = storageService;
+  public ScaSynchronizationService(ServerIssuesRepository serverIssuesRepository, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams, ServerInfoRepository serverInfoRepository) {
+    this.serverIssuesRepository = serverIssuesRepository;
     this.eventPublisher = eventPublisher;
     this.isScaSynchronizationEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.SCA_SYNCHRONIZATION);
+    this.serverInfoRepository = serverInfoRepository;
   }
 
   public void synchronize(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -64,9 +67,8 @@ public class ScaSynchronizationService {
   private UpdateSummary<ServerDependencyRisk> updateServerDependencyRisksForProject(ServerApi serverApi, String connectionId, String sonarProjectKey, String branchName,
     SonarLintCancelMonitor cancelMonitor) {
     var issuesReleases = serverApi.sca().getIssuesReleases(sonarProjectKey, branchName, cancelMonitor);
-    var findingsStore = storageService.connection(connectionId).project(sonarProjectKey).findings();
 
-    var previousDependencyRisks = findingsStore.loadDependencyRisks(branchName);
+    var previousDependencyRisks = serverIssuesRepository.loadDependencyRisks(connectionId, sonarProjectKey, branchName);
     var previousDependencyRiskKeys = previousDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
 
     var serverDependencyRisks = issuesReleases.issuesReleases().stream()
@@ -83,7 +85,7 @@ public class ScaSynchronizationService {
         issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList()))
       .toList();
 
-    findingsStore.replaceAllDependencyRisksOfBranch(branchName, serverDependencyRisks);
+    serverIssuesRepository.replaceAllDependencyRisksOfBranch(connectionId, sonarProjectKey, branchName, serverDependencyRisks);
 
     var newDependencyRiskKeys = serverDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
     var deletedDependencyRiskIds = previousDependencyRisks.stream()
@@ -101,7 +103,7 @@ public class ScaSynchronizationService {
   }
 
   private boolean isScaSupported(String connectionId) {
-    var serverInfo = storageService.connection(connectionId).serverInfo().read();
+    var serverInfo = serverInfoRepository.read(connectionId);
     return serverInfo.map(info -> info.hasFeature(Feature.SCA)).orElse(false);
   }
 }

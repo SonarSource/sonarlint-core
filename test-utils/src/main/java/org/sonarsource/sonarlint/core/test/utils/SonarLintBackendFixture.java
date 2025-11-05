@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.test.utils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
@@ -45,11 +46,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
@@ -107,9 +110,28 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
+import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
+import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
+import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
+import org.sonarsource.sonarlint.core.serverconnection.Settings;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2AiCodeFixSettingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2NewCodeDefinitionRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2OrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2PluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2ProjectBranchesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2SmartNotificationsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2UserRepository;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.storage.ConfigurationScopeStorageFixture;
+import org.sonarsource.sonarlint.core.test.utils.storage.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture;
 
 import static java.util.Collections.emptyMap;
@@ -526,7 +548,7 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
           .get();
-        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages);
+        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages, storageRoot);
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);
@@ -537,15 +559,133 @@ public class SonarLintBackendFixture {
       }
     }
 
-    private static void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages) {
-      var aiCodeFixRepository = new AiCodeFixRepository(sonarLintDatabase);
+    private static void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages, Path storageRoot) {
+      var aiCodeFixSettingsRepository = new H2AiCodeFixSettingsRepository(sonarLintDatabase);
+      var analyzerConfigurationRepository = new H2AnalyzerConfigurationRepository(sonarLintDatabase);
+      var newCodeDefinitionRepository = new H2NewCodeDefinitionRepository(sonarLintDatabase);
+      var organizationRepository = new H2OrganizationRepository(sonarLintDatabase);
+      var pluginsRepository = new H2PluginsRepository(sonarLintDatabase, storageRoot);
+      var projectBranchesRepository = new H2ProjectBranchesRepository(sonarLintDatabase);
+      var serverInfoRepository = new H2ServerInfoRepository(sonarLintDatabase);
+      var smartNotificationsRepository = new H2SmartNotificationsRepository(sonarLintDatabase);
+      var userRepository = new H2UserRepository(sonarLintDatabase);
 
       storages.forEach(storage -> {
-        var aiCodeFixSettings = storage.getAiCodeFixSettingsBuilder();
-        if (aiCodeFixSettings != null) {
-          aiCodeFixRepository.upsert(aiCodeFixSettings.buildAiCodeFix(storage.getConnectionId()));
+        var connectionId = storage.getConnectionId();
+
+        // AI CodeFix Settings
+        var aiCodeFixSettingsBuilder = storage.getAiCodeFixSettingsBuilder();
+        if (aiCodeFixSettingsBuilder != null) {
+          var settings = aiCodeFixSettingsBuilder.buildAiCodeFixSettings();
+          aiCodeFixSettingsRepository.store(connectionId, settings);
         }
+
+        // Server Info
+        var serverVersion = storage.getServerVersion();
+        var supportedFeatures = storage.getSupportedFeatures();
+        var globalSettings = storage.getGlobalSettings();
+        if (serverVersion != null || !supportedFeatures.isEmpty() || globalSettings != null) {
+          var version = serverVersion != null ? serverVersion : "0.0.0";
+          var features = supportedFeatures != null ? Set.copyOf(supportedFeatures) : Set.<Feature>of();
+          var settings = globalSettings != null ? globalSettings : Map.<String, String>of();
+          var serverStatus = new ServerStatusInfo("test-id", "UP", version);
+          serverInfoRepository.store(connectionId, serverStatus, features, settings);
+        }
+
+        // Plugins
+        var plugins = storage.getPlugins();
+        if (!plugins.isEmpty()) {
+          // The plugins are already copied to disk by storage.create(), 
+          // we just need to populate the database metadata
+          // Plugins are stored at: storageRoot/connectionId/plugins/plugin.jarName
+          for (var plugin : plugins) {
+            var pluginPath = plugin.getPath();
+            if (Files.exists(pluginPath)) {
+              try (InputStream pluginInputStream = Files.newInputStream(pluginPath)) {
+                var serverPlugin = new ServerPlugin(plugin.getKey(), plugin.getHash(), plugin.getJarName(), true);
+                pluginsRepository.store(connectionId, serverPlugin, pluginInputStream);
+              } catch (java.io.IOException e) {
+                throw new IllegalStateException("Cannot read plugin file: " + pluginPath, e);
+              }
+            }
+          }
+        }
+
+        // Projects
+        storage.getProjectBuilders().forEach(projectBuilder -> {
+          var projectKey = projectBuilder.getProjectKey();
+
+          // Analyzer Configuration
+          var ruleSets = projectBuilder.getRuleSets();
+          var projectSettings = projectBuilder.getProjectSettings();
+          if (!ruleSets.isEmpty() || !projectSettings.isEmpty()) {
+            var ruleSetByLanguageKey = new HashMap<String, RuleSet>();
+            for (var ruleSetBuilder : ruleSets) {
+              var languageKey = ruleSetBuilder.getLanguageKey();
+              var activeRulesList = new ArrayList<ServerActiveRule>();
+              // Access ActiveRule through reflection-like approach or use the createAnalyzerConfig logic
+              // Since ActiveRule is private, we'll iterate and access fields directly
+              var activeRules = ruleSetBuilder.getActiveRules();
+              for (int i = 0; i < activeRules.size(); i++) {
+                var activeRule = activeRules.get(i);
+                activeRulesList.add(new ServerActiveRule(
+                  activeRule.ruleKey(),
+                  IssueSeverity.valueOf(activeRule.severity()),
+                  activeRule.params(),
+                  activeRule.templateKey(),
+                  List.of())); // No overridden impacts in fixtures
+              }
+              var ruleSet = new RuleSet(activeRulesList, ""); // Empty lastModified for tests
+              ruleSetByLanguageKey.put(languageKey, ruleSet);
+            }
+            var settings = new Settings(projectSettings);
+            var analyzerConfiguration = new AnalyzerConfiguration(settings, ruleSetByLanguageKey, AnalyzerConfiguration.CURRENT_SCHEMA_VERSION);
+            analyzerConfigurationRepository.store(connectionId, projectKey, analyzerConfiguration);
+          }
+
+          // Project Branches
+          var branches = projectBuilder.getBranches();
+          if (!branches.isEmpty()) {
+            var branchNames = branches.stream().map(ProjectStorageFixture.ProjectStorageBuilder.BranchBuilder::getName).collect(Collectors.toSet());
+            var mainBranchName = branches.stream()
+              .filter(ProjectStorageFixture.ProjectStorageBuilder.BranchBuilder::isMain)
+              .map(ProjectStorageFixture.ProjectStorageBuilder.BranchBuilder::getName)
+              .findFirst()
+              .orElseThrow(() -> new IllegalArgumentException("No main branch defined"));
+            var projectBranches = new ProjectBranches(branchNames, mainBranchName);
+            projectBranchesRepository.store(connectionId, projectKey, projectBranches);
+          }
+
+          // Smart Notifications
+          var lastSmartNotificationPoll = projectBuilder.getLastSmartNotificationPoll();
+          if (lastSmartNotificationPoll != null) {
+            var timestamp = lastSmartNotificationPoll.toInstant().toEpochMilli();
+            smartNotificationsRepository.store(connectionId, projectKey, timestamp);
+          }
+
+          // New Code Definition
+          var newCodeDefinitionProto = projectBuilder.getNewCodeDefinition();
+          if (newCodeDefinitionProto != null) {
+            var newCodeDefinition = adaptNewCodeDefinition(newCodeDefinitionProto);
+            newCodeDefinitionRepository.store(connectionId, projectKey, newCodeDefinition);
+          }
+        });
       });
+    }
+
+    private static NewCodeDefinition adaptNewCodeDefinition(Sonarlint.NewCodeDefinition proto) {
+      var thresholdDate = proto.getThresholdDate();
+      var mode = proto.getMode();
+      return switch (mode) {
+        case NUMBER_OF_DAYS -> NewCodeDefinition.withNumberOfDaysWithDate(proto.getDays(), thresholdDate);
+        case PREVIOUS_VERSION -> {
+          var version = proto.hasVersion() ? proto.getVersion() : null;
+          yield NewCodeDefinition.withPreviousVersion(thresholdDate, version);
+        }
+        case REFERENCE_BRANCH -> NewCodeDefinition.withReferenceBranch(proto.getReferenceBranch());
+        case SPECIFIC_ANALYSIS -> NewCodeDefinition.withSpecificAnalysis(thresholdDate);
+        default -> throw new IllegalArgumentException("Unsupported mode: " + mode);
+      };
     }
 
     private static URI createUriFromString(@Nullable String uri) {

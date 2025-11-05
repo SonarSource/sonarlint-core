@@ -22,13 +22,16 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverconnection.repository.UserRepository;
 
 public class UserSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ConnectionStorage storage;
+  private final UserRepository userRepository;
+  private final String connectionId;
 
-  public UserSynchronizer(ConnectionStorage storage) {
-    this.storage = storage;
+  public UserSynchronizer(UserRepository userRepository, String connectionId) {
+    this.userRepository = userRepository;
+    this.connectionId = connectionId;
   }
 
   /**
@@ -42,7 +45,7 @@ public class UserSynchronizer {
     try {
       var userId = serverApi.users().getCurrentUserId(cancelMonitor);
       if (userId != null && !userId.trim().isEmpty()) {
-        storage.user().store(userId.trim());
+        userRepository.store(connectionId, userId.trim());
       }
     } catch (Exception e) {
       LOG.warn("Failed to synchronize user id from server: {}", e.getMessage());

@@ -25,25 +25,27 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AiCodeFixSettingsRepository;
 
 public class AiCodeFixSettingsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final Version MIN_SQS_VERSION_SUPPORTING_AI_CODEFIX = Version.create("2025.3");
 
-  private final ConnectionStorage storage;
+  private final String connectionId;
   private final OrganizationSynchronizer organizationSynchronizer;
-  private final org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository;
+  private final AiCodeFixSettingsRepository aiCodeFixSettingsRepository;
 
-  public AiCodeFixSettingsSynchronizer(ConnectionStorage storage, OrganizationSynchronizer organizationSynchronizer,
-    org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository) {
-    this.storage = storage;
+  public AiCodeFixSettingsSynchronizer(String connectionId, OrganizationSynchronizer organizationSynchronizer,
+    AiCodeFixSettingsRepository aiCodeFixSettingsRepository) {
+    this.connectionId = connectionId;
     this.organizationSynchronizer = organizationSynchronizer;
-    this.aiCodeFixRepository = aiCodeFixRepository;
+    this.aiCodeFixSettingsRepository = aiCodeFixSettingsRepository;
   }
 
   public void synchronize(ServerApi serverApi, Version serverVersion, Set<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
@@ -64,13 +66,12 @@ public class AiCodeFixSettingsSynchronizer {
         var aiCodeFixConfiguration = organizationConfig.aiCodeFix();
         var enabledProjectKeys = aiCodeFixConfiguration.enabledProjectKeys();
         var enabled = enabledProjectKeys == null ? Set.<String>of() : enabledProjectKeys;
-        var entity = new AiCodeFix(
-          storage.connectionId(),
+        var settings = new AiCodeFixSettings(
           supportedRules.rules(),
           aiCodeFixConfiguration.organizationEligible(),
-          AiCodeFix.Enablement.valueOf(aiCodeFixConfiguration.enablement().name()),
+          AiCodeFixFeatureEnablement.valueOf(aiCodeFixConfiguration.enablement().name()),
           enabled);
-        aiCodeFixRepository.upsert(entity);
+        aiCodeFixSettingsRepository.store(connectionId, settings);
       } catch (Exception e) {
         LOG.error("Error synchronizing AI CodeFix settings for SonarQube Cloud", e);
       }
@@ -83,13 +84,12 @@ public class AiCodeFixSettingsSynchronizer {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var enabledProjectKeys = projectKeys.stream()
           .filter(projectKey -> serverApi.component().getProject(projectKey, cancelMonitor).filter(ServerProject::isAiCodeFixEnabled).isPresent()).collect(Collectors.toSet());
-        var entity = new AiCodeFix(
-          storage.connectionId(),
+        var settings = new AiCodeFixSettings(
           supportedRules.rules(),
           true,
-          AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS,
+          AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS,
           enabledProjectKeys);
-        aiCodeFixRepository.upsert(entity);
+        aiCodeFixSettingsRepository.store(connectionId, settings);
       }
     } catch (Exception e) {
       LOG.error("Error synchronizing AI CodeFix settings for SonarQube Server", e);

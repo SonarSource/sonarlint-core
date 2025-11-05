@@ -53,15 +53,14 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
-import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
@@ -90,7 +89,7 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
-import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginsCache;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
@@ -109,9 +108,39 @@ import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AiCodeFixSettingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2AiCodeFixSettingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2NewCodeDefinitionRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2OrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2PluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2ProjectBranchesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2SmartNotificationsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2UserRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.NewCodeDefinitionRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.OrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.PluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProjectBranchesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufAiCodeFixSettingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufAnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufNewCodeDefinitionRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufOrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufPluginsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufProjectBranchesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufSmartNotificationsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufUserRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.SmartNotificationsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.UserRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.XodusServerIssuesRepository;
+import org.sonarsource.sonarlint.core.smartnotifications.LastEventPolling;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.storage.ConnectionStorageCleanupHandler;
 import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
@@ -153,7 +182,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   RulesExtractionHelper.class,
   PluginsService.class,
   SkippedPluginsNotifierService.class,
-  PluginsRepository.class,
+  PluginsCache.class,
   SkippedPluginsRepository.class,
   LanguageSupportRepository.class,
   ConnectionService.class,
@@ -175,12 +204,12 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   IssueService.class,
   AnalysisService.class,
   SmartNotifications.class,
+  LastEventPolling.class,
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
   ServerEventsService.class,
   VersionSoonUnsupportedHelper.class,
   LocalOnlyIssueStorageService.class,
-  StorageService.class,
   SeverityModeService.class,
   NewCodeService.class,
   RequestHandlerBindingAssistant.class,
@@ -222,8 +251,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   LogService.class,
   ActiveRulesService.class,
   SonarLintDatabase.class,
-  AiCodeFixRepository.class,
-  SonarLintDatabaseService.class
+  SonarLintDatabaseService.class,
+  ConnectionStorageCleanupHandler.class,
 })
 public class SonarLintSpringAppConfig {
 
@@ -272,6 +301,92 @@ public class SonarLintSpringAppConfig {
   @Bean
   SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
     return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE);
+  }
+
+  @Bean
+  ServerInfoRepository provideServerInfoRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2ServerInfoRepository(database);
+    }
+    return new ProtobufServerInfoRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  PluginsRepository providePluginsRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2PluginsRepository(database, userPaths.getStorageRoot());
+    }
+    return new ProtobufPluginsRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  OrganizationRepository provideOrganizationRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2OrganizationRepository(database);
+    }
+    return new ProtobufOrganizationRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  UserRepository provideUserRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2UserRepository(database);
+    }
+    return new ProtobufUserRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  AnalyzerConfigurationRepository provideAnalyzerConfigurationRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2AnalyzerConfigurationRepository(database);
+    }
+    return new ProtobufAnalyzerConfigurationRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  NewCodeDefinitionRepository provideNewCodeDefinitionRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2NewCodeDefinitionRepository(database);
+    }
+    return new ProtobufNewCodeDefinitionRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  ProjectBranchesRepository provideProjectBranchesRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2ProjectBranchesRepository(database);
+    }
+    return new ProtobufProjectBranchesRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  SmartNotificationsRepository provideSmartNotificationsRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2SmartNotificationsRepository(database);
+    }
+    return new ProtobufSmartNotificationsRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  AiCodeFixSettingsRepository provideAiCodeFixSettingsRepository(UserPaths userPaths, SonarLintDatabase database,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      return new H2AiCodeFixSettingsRepository(database);
+    }
+    return new ProtobufAiCodeFixSettingsRepository(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  ServerIssuesRepository provideServerIssuesRepository(UserPaths userPaths) {
+    return new XodusServerIssuesRepository(userPaths.getStorageRoot(), userPaths.getWorkDir());
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {

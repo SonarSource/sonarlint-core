@@ -32,8 +32,9 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AiCodeFixSettingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.H2AiCodeFixSettingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixParams;
@@ -50,7 +51,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.InvalidParams;
-import static org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
+import static org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
@@ -750,8 +752,8 @@ public class AiCodeFixMediumTest {
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
-      .contains(new AiCodeFix("connectionId", Set.of("xml:S3421"),
-        true, AiCodeFix.Enablement.DISABLED, Set.of())));
+      .contains(new AiCodeFixSettings(Set.of("xml:S3421"),
+        true, AiCodeFixFeatureEnablement.DISABLED, Set.of())));
   }
 
   @SonarLintTest
@@ -780,8 +782,8 @@ public class AiCodeFixMediumTest {
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
-      .contains(new AiCodeFix("connectionId", Set.of("xml:S3421"),
-        true, AiCodeFix.Enablement.ENABLED_FOR_SOME_PROJECTS, Set.of("projectKey"))));
+      .contains(new AiCodeFixSettings(Set.of("xml:S3421"),
+        true, AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS, Set.of("projectKey"))));
   }
 
   @SonarLintTest
@@ -810,8 +812,8 @@ public class AiCodeFixMediumTest {
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
-      .contains(new AiCodeFix("connectionId", Set.of("xml:S3421"),
-        true, AiCodeFix.Enablement.ENABLED_FOR_ALL_PROJECTS, Set.of())));
+      .contains(new AiCodeFixSettings(Set.of("xml:S3421"),
+        true, AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS, Set.of())));
   }
 
   @SonarLintTest
@@ -889,7 +891,7 @@ public class AiCodeFixMediumTest {
     fakeClient.waitForSynchronization();
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
-      .contains(new AiCodeFix("connectionId", Set.of("xml:S3421"), true,
+      .contains(new AiCodeFixSettings(Set.of("xml:S3421"), true,
         ENABLED_FOR_SOME_PROJECTS, Set.of("projectKey"))));
   }
 
@@ -1039,10 +1041,10 @@ public class AiCodeFixMediumTest {
       .doesNotExist());
   }
 
-  private Optional<AiCodeFix> readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {
+  private Optional<AiCodeFixSettings> readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {
     var sonarLintDatabase = backend.getSonarLintDatabase();
-    var aiCodeFixRepository = new AiCodeFixRepository(sonarLintDatabase);
-    return aiCodeFixRepository.get(connectionId);
+    var aiCodeFixSettingsRepository = new H2AiCodeFixSettingsRepository(sonarLintDatabase);
+    return aiCodeFixSettingsRepository.read(connectionId);
   }
 
   private static Path getAiCodeFixStorageFilePath(SonarLintTestRpcServer backend, String connectionId) {

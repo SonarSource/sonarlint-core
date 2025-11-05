@@ -36,9 +36,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBi
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProjectBranchesRepository;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,20 +57,15 @@ class SonarProjectBranchTrackingServiceTests {
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private SonarProjectBranchTrackingService underTest;
   private final SonarLintRpcClient sonarLintRpcClient = mock(SonarLintRpcClient.class);
-  private final StorageService storageService = mock(StorageService.class);
+  private final ProjectBranchesRepository projectBranchesRepository = mock(ProjectBranchesRepository.class);
   private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
-  private ProjectBranchesStorage projectBranchesStorage;
 
   @BeforeEach
   void prepare() {
     when(configurationRepository.getConfigurationScope(CONFIG_SCOPE_ID)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "Test config scope"));
     var binding = new Binding(CONNECTION_ID, PROJECT_KEY);
     when(configurationRepository.getEffectiveBinding(CONFIG_SCOPE_ID)).thenReturn(Optional.of(binding));
-    var sonarProjectStorage = mock(SonarProjectStorage.class);
-    when(storageService.binding(binding)).thenReturn(sonarProjectStorage);
-    projectBranchesStorage = mock(ProjectBranchesStorage.class);
-    when(sonarProjectStorage.branches()).thenReturn(projectBranchesStorage);
-    underTest = new SonarProjectBranchTrackingService(sonarLintRpcClient, storageService, configurationRepository, mock(ApplicationEventPublisher.class));
+    underTest = new SonarProjectBranchTrackingService(sonarLintRpcClient, projectBranchesRepository, configurationRepository, mock(ApplicationEventPublisher.class));
   }
 
   @AfterEach
@@ -82,8 +75,8 @@ class SonarProjectBranchTrackingServiceTests {
 
   @Test
   void shouldCancelPreviousJobIfNewOneIsSubmitted() {
-    when(projectBranchesStorage.exists()).thenReturn(true);
-    when(projectBranchesStorage.read()).thenReturn(new ProjectBranches(Set.of("main", "feature"), "main"));
+    when(projectBranchesRepository.exists(CONNECTION_ID, PROJECT_KEY)).thenReturn(true);
+    when(projectBranchesRepository.read(CONNECTION_ID, PROJECT_KEY)).thenReturn(new ProjectBranches(Set.of("main", "feature"), "main"));
 
     var firstFuture = new CompletableFuture<MatchSonarProjectBranchResponse>();
     when(sonarLintRpcClient.matchSonarProjectBranch(any()))
@@ -112,8 +105,8 @@ class SonarProjectBranchTrackingServiceTests {
 
   @Test
   void shouldUnlockThoseAwaitingForBranchOnErrorAndDefaultToMain() {
-    when(projectBranchesStorage.exists()).thenReturn(true);
-    when(projectBranchesStorage.read()).thenReturn(new ProjectBranches(Set.of("main", "feature"), "main"));
+    when(projectBranchesRepository.exists(CONNECTION_ID, PROJECT_KEY)).thenReturn(true);
+    when(projectBranchesRepository.read(CONNECTION_ID, PROJECT_KEY)).thenReturn(new ProjectBranches(Set.of("main", "feature"), "main"));
 
     var rpcFuture = new CompletableFuture<MatchSonarProjectBranchResponse>();
     when(sonarLintRpcClient.matchSonarProjectBranch(any()))

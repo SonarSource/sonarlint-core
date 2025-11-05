@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
-import com.google.common.collect.Sets;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -28,9 +27,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -47,10 +44,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AiCodeFixSettingsRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -67,49 +61,27 @@ public class AiCodeFixService {
   private final SonarQubeClientManager sonarQubeClientManager;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final ClientFileSystemService clientFileSystemService;
-  private final StorageService storageService;
+  private final AiCodeFixSettingsRepository aiCodeFixSettingsRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
-  private final AiCodeFixRepository aiCodeFixRepository;
-  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService,
-    ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixRepository aiCodeFixRepository,
-    StorageService storageService, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
+    ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService,
+    AiCodeFixSettingsRepository aiCodeFixSettingsRepository) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.clientFileSystemService = clientFileSystemService;
-    this.storageService = storageService;
+    this.aiCodeFixSettingsRepository = aiCodeFixSettingsRepository;
     this.eventPublisher = eventPublisher;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
-    this.aiCodeFixRepository = aiCodeFixRepository;
-    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
-  }
-
-  public static AiCodeFixSettings aiCodeFixMapping(AiCodeFix entity) {
-    return new AiCodeFixSettings(
-      Sets.newHashSet(entity.supportedRules()),
-      entity.organizationEligible(),
-      AiCodeFixFeatureEnablement.valueOf(entity.enablement().name()),
-      Sets.newHashSet(entity.enabledProjectKeys()));
   }
 
   public Optional<AiCodeFixFeature> getFeature(Binding binding) {
-    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
-      return aiCodeFixRepository.get(binding.connectionId())
-        .map(AiCodeFixService::aiCodeFixMapping)
-        .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
-        .map(AiCodeFixFeature::new);
-    } else {
-      return getFeature(storageService, binding);
-    }
-  }
-
-  public static Optional<AiCodeFixFeature> getFeature(StorageService storageService, Binding binding) {
-    return storageService.connection(binding.connectionId()).aiCodeFix().read()
+    return aiCodeFixSettingsRepository.read(binding.connectionId())
+      .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
       .map(AiCodeFixFeature::new);
   }
 

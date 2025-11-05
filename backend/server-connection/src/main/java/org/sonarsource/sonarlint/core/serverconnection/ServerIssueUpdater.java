@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 import static java.util.stream.Collectors.toSet;
@@ -38,12 +39,14 @@ public class ServerIssueUpdater {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ConnectionStorage storage;
+  private final ServerIssuesRepository serverIssuesRepository;
+  private final String connectionId;
   private final IssueDownloader issueDownloader;
   private final TaintIssueDownloader taintIssueDownloader;
 
-  public ServerIssueUpdater(ConnectionStorage storage, IssueDownloader issueDownloader, TaintIssueDownloader taintIssueDownloader) {
-    this.storage = storage;
+  public ServerIssueUpdater(ServerIssuesRepository serverIssuesRepository, String connectionId, IssueDownloader issueDownloader, TaintIssueDownloader taintIssueDownloader) {
+    this.serverIssuesRepository = serverIssuesRepository;
+    this.connectionId = connectionId;
     this.issueDownloader = issueDownloader;
     this.taintIssueDownloader = taintIssueDownloader;
   }
@@ -51,34 +54,32 @@ public class ServerIssueUpdater {
   public void update(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     if (serverApi.isSonarCloud()) {
       var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);
-      storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
+      serverIssuesRepository.replaceAllIssuesOfBranch(connectionId, projectKey, branchName, issues);
     } else {
       sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     }
   }
 
   public void sync(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
-    var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
+    var lastSync = serverIssuesRepository.getLastIssueSyncTimestamp(connectionId, projectKey, branchName);
 
-    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
+    lastSync = computeLastSync(enabledLanguages, lastSync, serverIssuesRepository.getLastIssueEnabledLanguages(connectionId, projectKey, branchName));
 
     var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
-    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(),
+    serverIssuesRepository.mergeIssues(connectionId, projectKey, branchName, result.getChangedIssues(), result.getClosedIssueKeys(),
       result.getQueryTimestamp(), enabledLanguages);
   }
 
   public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverIssueStore = storage.project(projectKey).findings();
+    var lastSync = serverIssuesRepository.getLastTaintSyncTimestamp(connectionId, projectKey, branchName);
 
-    var lastSync = serverIssueStore.getLastTaintSyncTimestamp(branchName);
-
-    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastTaintEnabledLanguages(branchName));
+    lastSync = computeLastSync(enabledLanguages, lastSync, serverIssuesRepository.getLastTaintEnabledLanguages(connectionId, projectKey, branchName));
 
     var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
-    var previousTaintIssues = serverIssueStore.loadTaint(branchName);
+    var previousTaintIssues = serverIssuesRepository.loadTaint(connectionId, projectKey, branchName);
     var previousTaintIssueKeys = previousTaintIssues.stream().map(ServerTaintIssue::getSonarServerKey).collect(toSet());
-    serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp(), enabledLanguages);
+    serverIssuesRepository.mergeTaintIssues(connectionId, projectKey, branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp(), enabledLanguages);
     var deletedTaintVulnerabilityIds = previousTaintIssues.stream().filter(issue -> result.getClosedIssueKeys().contains(issue.getSonarServerKey())).map(ServerTaintIssue::getId)
       .collect(toSet());
     var addedTaintVulnerabilities = result.getChangedTaintIssues().stream().filter(issue -> !previousTaintIssueKeys.contains(issue.getSonarServerKey()))
@@ -105,7 +106,7 @@ public class ServerIssueUpdater {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
-    storage.project(projectKey).findings().replaceAllIssuesOfFile(branchName, serverFileRelativePath, issues);
+    serverIssuesRepository.replaceAllIssuesOfFile(connectionId, projectKey, branchName, serverFileRelativePath, issues);
   }
 
   public UpdateSummary<ServerTaintIssue> downloadProjectTaints(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -116,10 +117,9 @@ public class ServerIssueUpdater {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
     }
-    var findingsStorage = storage.project(projectKey).findings();
-    var previousTaintIssues = findingsStorage.loadTaint(branchName);
+    var previousTaintIssues = serverIssuesRepository.loadTaint(connectionId, projectKey, branchName);
     var previousTaintIssueKeys = previousTaintIssues.stream().map(ServerTaintIssue::getSonarServerKey).collect(toSet());
-    findingsStorage.replaceAllTaintsOfBranch(branchName, newTaintIssues);
+    serverIssuesRepository.replaceAllTaintsOfBranch(connectionId, projectKey, branchName, newTaintIssues);
     var newTaintIssueKeys = newTaintIssues.stream().map(ServerTaintIssue::getSonarServerKey).collect(toSet());
     var deletedTaintVulnerabilityIds = previousTaintIssues.stream().filter(issue -> !newTaintIssueKeys.contains(issue.getSonarServerKey())).map(ServerTaintIssue::getId)
       .collect(toSet());

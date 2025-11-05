@@ -73,8 +73,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.AnalyzerConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
 
 public class SonarLintRpcServerImpl implements SonarLintRpcServer {
@@ -337,12 +338,16 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return getInitializedApplicationContext().getBean(LocalOnlyIssueStorageService.class);
   }
 
-  public StorageService getIssueStorageService() {
-    return getInitializedApplicationContext().getBean(StorageService.class);
+  public ServerIssuesRepository getServerIssuesRepository() {
+    return getInitializedApplicationContext().getBean(ServerIssuesRepository.class);
   }
 
   public SonarLintDatabase getDatabase() {
     return getInitializedApplicationContext().getBean(SonarLintDatabase.class);
+  }
+
+  public AnalyzerConfigurationRepository getAnalyzerConfigurationRepository() {
+    return getInitializedApplicationContext().getBean(AnalyzerConfigurationRepository.class);
   }
 
   ExecutorServiceShutdownWatchable<ExecutorService> getRequestsExecutor() {

@@ -25,16 +25,14 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufSmartNotificationsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.SmartNotificationsRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class LastEventPollingTests {
@@ -53,8 +51,8 @@ class LastEventPollingTests {
     ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
-    var storage = new StorageService(userPathsFrom(tmpDir));
-    var lastEventPolling = new LastEventPolling(storage);
+    SmartNotificationsRepository repository = new ProtobufSmartNotificationsRepository(tmpDir);
+    var lastEventPolling = new LastEventPolling(repository);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
@@ -63,8 +61,8 @@ class LastEventPollingTests {
 
   @Test
   void should_store_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService(userPathsFrom(tmpDir));
-    var lastEventPolling = new LastEventPolling(storage);
+    SmartNotificationsRepository repository = new ProtobufSmartNotificationsRepository(tmpDir);
+    var lastEventPolling = new LastEventPolling(repository);
     lastEventPolling.setLastEventPolling(STORED_DATE, CONNECTION_ID, PROJECT_KEY);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
@@ -74,19 +72,12 @@ class LastEventPollingTests {
 
   @Test
   void should_not_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService(userPathsFrom(tmpDir));
-    var lastEventPolling = new LastEventPolling(storage);
+    SmartNotificationsRepository repository = new ProtobufSmartNotificationsRepository(tmpDir);
+    var lastEventPolling = new LastEventPolling(repository);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
     assertThat(result).isBeforeOrEqualTo(ZonedDateTime.now()).isAfter(ZonedDateTime.now().minusSeconds(3));
-  }
-
-  private static UserPaths userPathsFrom(Path tmpDir) {
-    var mock = mock(UserPaths.class);
-    when(mock.getStorageRoot()).thenReturn(tmpDir);
-    when(mock.getWorkDir()).thenReturn(tmpDir);
-    return mock;
   }
 
 }

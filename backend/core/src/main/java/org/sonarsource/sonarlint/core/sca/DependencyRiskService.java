@@ -51,7 +51,8 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.event.EventListener;
@@ -62,19 +63,21 @@ public class DependencyRiskService {
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
-  private final StorageService storageService;
+  private final ServerInfoRepository serverInfoRepository;
+  private final ServerIssuesRepository serverIssuesRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final ScaSynchronizationService scaSynchronizationService;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
 
-  public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
-    SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, ScaSynchronizationService scaSynchronizationService,
+  public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
+    ServerInfoRepository serverInfoRepository, ServerIssuesRepository serverIssuesRepository, SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, ScaSynchronizationService scaSynchronizationService,
     SonarLintRpcClient client, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
-    this.storageService = storageService;
+    this.serverInfoRepository = serverInfoRepository;
+    this.serverIssuesRepository = serverIssuesRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.branchTrackingService = branchTrackingService;
     this.scaSynchronizationService = scaSynchronizationService;
@@ -120,7 +123,7 @@ public class DependencyRiskService {
         connectionId);
       throw new ResponseErrorException(error);
     }
-    var optServerInfo = storageService.connection(connectionId).serverInfo().read();
+    var optServerInfo = serverInfoRepository.read(connectionId);
     if (optServerInfo.isEmpty()) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Could not retrieve server information for connection",
         connectionId);
@@ -143,8 +146,7 @@ public class DependencyRiskService {
           sonarQubeClientManager.withActiveClient(binding.connectionId(),
             serverApi -> scaSynchronizationService.synchronize(serverApi, binding.connectionId(), binding.sonarProjectKey(), matchedBranch, cancelMonitor));
         }
-        var projectStorage = storageService.binding(binding);
-        return projectStorage.findings().loadDependencyRisks(matchedBranch)
+        return serverIssuesRepository.loadDependencyRisks(binding.connectionId(), binding.sonarProjectKey(), matchedBranch)
           .stream().map(DependencyRiskService::toDto)
           .toList();
       }).orElseGet(Collections::emptyList);
@@ -170,14 +172,13 @@ public class DependencyRiskService {
     SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverConnection = sonarQubeClientManager.getClientOrThrow(binding.connectionId());
-    var projectServerIssueStore = storageService.binding(binding).findings();
     var branchName = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
 
     if (branchName.isEmpty()) {
       throw new IllegalArgumentException("Could not determine matched branch for configuration scope " + configurationScopeId);
     }
 
-    var dependencyRisks = projectServerIssueStore.loadDependencyRisks(branchName.get());
+    var dependencyRisks = serverIssuesRepository.loadDependencyRisks(binding.connectionId(), binding.sonarProjectKey(), branchName.get());
     var dependencyRiskOpt = dependencyRisks.stream().filter(risk -> risk.key().equals(dependencyRiskKey)).findFirst();
 
     if (dependencyRiskOpt.isEmpty()) {
@@ -207,7 +208,7 @@ public class DependencyRiskService {
 
     serverConnection.withClientApi(serverApi -> {
       serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor);
-      projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus, updatedDependencyRisk.transitions());
+      serverIssuesRepository.updateDependencyRiskStatus(binding.connectionId(), binding.sonarProjectKey(), dependencyRiskKey, newStatus, updatedDependencyRisk.transitions());
       client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(), List.of(toDto(updatedDependencyRisk))));
     });
   }

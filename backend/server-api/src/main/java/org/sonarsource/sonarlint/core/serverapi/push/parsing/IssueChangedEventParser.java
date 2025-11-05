@@ -66,8 +66,8 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
     }
     return Arrays.stream(payloads)
       .collect(Collectors.toMap(
-        payload -> SoftwareQuality.valueOf(payload.getSoftwareQuality()),
-        payload -> ImpactSeverity.valueOf(payload.getSeverity())
+        payload -> SoftwareQuality.valueOf(payload.softwareQuality()),
+        payload -> ImpactSeverity.valueOf(payload.severity())
       ));
   }
 

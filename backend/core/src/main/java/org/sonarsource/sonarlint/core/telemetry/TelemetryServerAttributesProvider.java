@@ -35,7 +35,9 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.serverconnection.Organization;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.repository.OrganizationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerInfoRepository;
+import org.sonarsource.sonarlint.core.serverconnection.repository.UserRepository;
 
 public class TelemetryServerAttributesProvider {
 
@@ -44,17 +46,21 @@ public class TelemetryServerAttributesProvider {
   private final ActiveRulesService activeRulesService;
   private final RulesRepository rulesRepository;
   private final NodeJsService nodeJsService;
-  private final StorageService storageService;
+  private final ServerInfoRepository serverInfoRepository;
+  private final UserRepository userRepository;
+  private final OrganizationRepository organizationRepository;
 
   public TelemetryServerAttributesProvider(ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, ActiveRulesService activeRulesService, RulesRepository rulesRepository,
-    NodeJsService nodeJsService, StorageService storageService) {
+    NodeJsService nodeJsService, ServerInfoRepository serverInfoRepository, UserRepository userRepository, OrganizationRepository organizationRepository) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.activeRulesService = activeRulesService;
     this.rulesRepository = rulesRepository;
     this.nodeJsService = nodeJsService;
-    this.storageService = storageService;
+    this.serverInfoRepository = serverInfoRepository;
+    this.userRepository = userRepository;
+    this.organizationRepository = organizationRepository;
   }
 
   public TelemetryServerAttributes getTelemetryServerLiveAttributes() {
@@ -90,11 +96,10 @@ public class TelemetryServerAttributesProvider {
     var nodeJsVersion = getNodeJsVersion();
 
     var connectionsAttributes = connectionConfigurationRepository.getConnectionsById().keySet().stream()
-      .map(storageService::connection)
-      .map(c -> {
-        var userId = c.user().read().orElse(null);
-        var serverId = c.serverInfo().read().map(StoredServerInfo::serverId).orElse(null);
-        var orgId = c.organization().read().map(Organization::id).orElse(null);
+      .map(connectionId -> {
+        var userId = userRepository.read(connectionId).orElse(null);
+        var serverId = serverInfoRepository.read(connectionId).map(StoredServerInfo::serverId).orElse(null);
+        var orgId = organizationRepository.read(connectionId).map(Organization::id).orElse(null);
 
         if (userId == null && serverId == null && orgId == null) {
           return null;

@@ -786,8 +786,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -805,7 +805,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isTrue());
     }
 
     @SonarLintTest
@@ -822,8 +822,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -841,7 +841,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
     }
 
     @SonarLintTest
@@ -858,8 +858,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -876,7 +876,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
     }
 
     @SonarLintTest
@@ -893,8 +893,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -911,7 +911,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
     }
 
     @SonarLintTest
@@ -928,8 +928,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -946,7 +946,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("connectionId", "projectKey", "myIssueKey").isResolved()).isFalse());
     }
   }
 
@@ -964,7 +964,7 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
+      var issueStorage = backend.getServerIssuesRepository();
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1020,7 +1020,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isTrue());
     }
 
     @SonarLintTest
@@ -1035,7 +1035,7 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
+      var issueStorage = backend.getServerIssuesRepository();
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1091,7 +1091,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isFalse());
     }
   }
 
@@ -1111,8 +1111,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isTrue());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1124,7 +1124,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isFalse());
     }
 
     @SonarLintTest
@@ -1141,8 +1141,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isTrue());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1154,7 +1154,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("connectionId", "projectKey", "taintKey")).isTrue());
     }
   }
 
@@ -1174,8 +1174,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey").getStatus().isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1192,7 +1192,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey").getStatus().isResolved()).isTrue());
     }
 
     @SonarLintTest
@@ -1209,8 +1209,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey").getStatus().isResolved()).isFalse());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1227,7 +1227,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey").getStatus().isResolved()).isFalse());
     }
   }
 
@@ -1245,8 +1245,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNull());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1275,8 +1275,8 @@ class WebSocketMediumTests {
           }}""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
-        assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull();
-        assertThat(issueStorage.getHotspot("hotspotKey").getStatus()).isEqualTo(HotspotReviewStatus.FIXED);
+        assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNotNull();
+        assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey").getStatus()).isEqualTo(HotspotReviewStatus.FIXED);
       });
     }
 
@@ -1292,8 +1292,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNull());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1320,7 +1320,7 @@ class WebSocketMediumTests {
               "branch": "some-branch"
           }}""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNull());
     }
   }
 
@@ -1340,8 +1340,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNotNull());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1354,7 +1354,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNull());
     }
 
     @SonarLintTest
@@ -1371,8 +1371,8 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
+      var issueStorage = backend.getServerIssuesRepository();
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNotNull());
 
       webSocketServerEU.getConnections().get(0).sendMessage(
         """
@@ -1385,7 +1385,7 @@ class WebSocketMediumTests {
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("connectionId", "projectKey", "hotspotKey")).isNotNull());
     }
   }
 

@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ProtobufServerInfoRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -52,11 +53,12 @@ class ServerInfoSynchronizerTests {
   @TempDir
   Path tmpDir;
   private ServerInfoSynchronizer synchronizer;
+  private static final String CONNECTION_ID = "connectionId";
 
   @BeforeEach
   void prepare() {
-    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    synchronizer = new ServerInfoSynchronizer(storage);
+    var serverInfoRepository = new ProtobufServerInfoRepository(tmpDir);
+    synchronizer = new ServerInfoSynchronizer(serverInfoRepository, CONNECTION_ID);
   }
 
   @Test

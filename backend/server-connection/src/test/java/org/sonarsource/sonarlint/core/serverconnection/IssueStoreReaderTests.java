@@ -27,7 +27,7 @@ import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.repository.ServerIssuesRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,25 +35,22 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 
 class IssueStoreReaderTests {
+  private static final String CONNECTION_ID = "connectionId";
   private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
-  private final ProjectServerIssueStore issueStore = mock(ProjectServerIssueStore.class);
+  private final ServerIssuesRepository serverIssuesRepository = mock(ServerIssuesRepository.class);
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
   @BeforeEach
   void setUp() {
-    ConnectionStorage storage = mock(ConnectionStorage.class);
-    SonarProjectStorage projectStorage = mock(SonarProjectStorage.class);
-    when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
-    when(projectStorage.findings()).thenReturn(issueStore);
-    issueStoreReader = new IssueStoreReader(storage);
+    issueStoreReader = new IssueStoreReader(serverIssuesRepository, CONNECTION_ID);
   }
 
   @Test
   void testSingleModule() {
     // setup issues
-    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
+    when(serverIssuesRepository.load(CONNECTION_ID, PROJECT_KEY, "branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
 
     // test
 
@@ -73,7 +70,7 @@ class IssueStoreReaderTests {
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
+    when(serverIssuesRepository.load(CONNECTION_ID, PROJECT_KEY, "branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path1")))
       .isEmpty();
   }
@@ -83,7 +80,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    when(issueStore.load("branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
+    when(serverIssuesRepository.load(CONNECTION_ID, PROJECT_KEY, "branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -98,7 +95,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    when(issueStore.load("branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
+    when(serverIssuesRepository.load(CONNECTION_ID, PROJECT_KEY, "branch", Paths.get("src/path1"))).thenReturn(List.of(createServerIssue("src/path1")));
 
     // test
 
@@ -113,7 +110,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    when(issueStore.load("branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
+    when(serverIssuesRepository.load(CONNECTION_ID, PROJECT_KEY, "branch", Paths.get("sq/src/path1"))).thenReturn(List.of(createServerIssue("sq/src/path1")));
 
     // test
 

@@ -129,7 +129,7 @@ class AnalysisReadinessMediumTests {
       .withProject("projectKey", project -> project.withQualityProfile("qp"))
       .withProject("projectKey2", project -> project.withQualityProfile("qp2"))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
-      .withQualityProfile("qp2")
+      .withQualityProfile("qp2", qualityProfile -> qualityProfile.withLanguage("xml"))
       .start();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))

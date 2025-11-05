@@ -25,38 +25,5 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
-public class ServerActiveRule {
-  private final String ruleKey;
-  private final IssueSeverity severity;
-  private final Map<String, String> params;
-  private final String templateKey;
-  private final List<ImpactPayload> overriddenImpacts;
-
-  public ServerActiveRule(String ruleKey, IssueSeverity severity, Map<String, String> params, @Nullable String templateKey, List<ImpactPayload> overriddenImpacts) {
-    this.ruleKey = ruleKey;
-    this.severity = severity;
-    this.params = params;
-    this.templateKey = templateKey;
-    this.overriddenImpacts = overriddenImpacts;
-  }
-
-  public List<ImpactPayload> getOverriddenImpacts() {
-    return overriddenImpacts;
-  }
-
-  public IssueSeverity getSeverity() {
-    return severity;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getTemplateKey() {
-    return templateKey;
-  }
+public record ServerActiveRule(String ruleKey, IssueSeverity severity, Map<String, String> params, @Nullable String templateKey, List<ImpactPayload> overriddenImpacts) {
 }
