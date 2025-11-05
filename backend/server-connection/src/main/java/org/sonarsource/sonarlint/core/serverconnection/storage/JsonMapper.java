@@ -17,27 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
-public class IssueStoreReader {
-  private final ConnectionStorage storage;
+public class JsonMapper {
 
-  public IssueStoreReader(ConnectionStorage storage) {
-    this.storage = storage;
-  }
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, Path ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (sqPath == null) {
-      return Collections.emptyList();
+  public String serializeImpacts(ServerIssue<?> issue) {
+    var impacts = issue.getImpacts();
+    try {
+      return objectMapper.writeValueAsString(impacts);
+    } catch (Exception e) {
+      return "{}";
     }
-    var loadedIssues = storage.project(projectBinding.projectKey()).findings().load(branchName, sqPath);
-    loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
-    return loadedIssues;
   }
+
+  public String serializeFlows(ServerTaintIssue issue) {
+    try {
+      return objectMapper.writeValueAsString(issue.getFlows());
+    } catch (Exception e) {
+      return "[]";
+    }
+  }
+
 }

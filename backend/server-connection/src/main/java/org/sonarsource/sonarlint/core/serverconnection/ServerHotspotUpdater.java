@@ -42,7 +42,7 @@ public class ServerHotspotUpdater {
     this.hotspotDownloader = hotspotDownloader;
   }
 
-  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, SonarLintCancelMonitor cancelMonitor) {
+  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
     storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
   }

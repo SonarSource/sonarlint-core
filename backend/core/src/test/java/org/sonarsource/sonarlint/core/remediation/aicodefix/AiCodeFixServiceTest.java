@@ -70,7 +70,7 @@ class AiCodeFixServiceTest {
 
   @Test
   void getFeature_reads_from_h2_repository() {
-    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.FILE));
+    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.MEM));
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";

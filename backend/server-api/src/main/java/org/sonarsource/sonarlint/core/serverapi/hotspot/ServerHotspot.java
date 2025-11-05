@@ -21,12 +21,15 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.UUID;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public class ServerHotspot {
+  private final UUID id;
   private final String key;
   private final String ruleKey;
   private final String message;
@@ -38,7 +41,7 @@ public class ServerHotspot {
   @Nullable
   private String assignee;
 
-  public ServerHotspot(String key,
+  public ServerHotspot(@Nullable UUID id, String key,
     String ruleKey,
     String message,
     Path filePath,
@@ -47,6 +50,7 @@ public class ServerHotspot {
     HotspotReviewStatus status,
     VulnerabilityProbability vulnerabilityProbability,
     @Nullable String assignee) {
+    this.id = id;
     this.key = key;
     this.ruleKey = ruleKey;
     this.message = message;
@@ -56,6 +60,27 @@ public class ServerHotspot {
     this.status = status;
     this.vulnerabilityProbability = vulnerabilityProbability;
     this.assignee = assignee;
+  }
+
+  /**
+   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
+   * when using with H2 UUID should always be set
+   */
+  public ServerHotspot(String key,
+    String ruleKey,
+    String message,
+    Path filePath,
+    TextRange textRange,
+    Instant creationDate,
+    HotspotReviewStatus status,
+    VulnerabilityProbability vulnerabilityProbability,
+    @Nullable String assignee) {
+    this(null, key, ruleKey, message, filePath, textRange, creationDate, status, vulnerabilityProbability, assignee);
+  }
+
+  @CheckForNull
+  public UUID getId() {
+    return id;
   }
 
   public void setFilePath(Path filePath) {

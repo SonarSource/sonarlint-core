@@ -51,8 +51,8 @@ public class TaintSynchronizationService {
   private final ApplicationEventPublisher eventPublisher;
 
   public TaintSynchronizationService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-                                     StorageService storageService, LanguageSupportRepository languageSupportRepository,
-                                     SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
+    StorageService storageService, LanguageSupportRepository languageSupportRepository,
+    SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
     this.storageService = storageService;

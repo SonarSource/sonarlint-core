@@ -27,9 +27,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +55,9 @@ class LastEventPollingTests {
     ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
-    var storage = new StorageService(userPathsFrom(tmpDir));
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabaseService.class);
+    var storage = new StorageService(userPathsFrom(tmpDir), dogfoodEnvDetectionService, databaseService);
     var lastEventPolling = new LastEventPolling(storage);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
@@ -63,7 +67,9 @@ class LastEventPollingTests {
 
   @Test
   void should_store_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService(userPathsFrom(tmpDir));
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabaseService.class);
+    var storage = new StorageService(userPathsFrom(tmpDir), dogfoodEnvDetectionService, databaseService);
     var lastEventPolling = new LastEventPolling(storage);
     lastEventPolling.setLastEventPolling(STORED_DATE, CONNECTION_ID, PROJECT_KEY);
 
@@ -74,7 +80,9 @@ class LastEventPollingTests {
 
   @Test
   void should_not_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService(userPathsFrom(tmpDir));
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabaseService.class);
+    var storage = new StorageService(userPathsFrom(tmpDir), dogfoodEnvDetectionService, databaseService);
     var lastEventPolling = new LastEventPolling(storage);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);

@@ -24,9 +24,11 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -94,6 +96,10 @@ public final class SonarLintDatabase {
 
   public Connection getConnection() throws SQLException {
     return dataSource.getConnection();
+  }
+
+  public void withTransaction(Consumer<Configuration> transaction) {
+    dsl.transaction(transaction::accept);
   }
 
   public void shutdown() {

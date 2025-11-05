@@ -45,7 +45,7 @@ class KnownFindingsRepositoryTests {
   void testKnownFindingsRepository(@TempDir Path temp) {
     var storageRoot = temp.resolve("storage");
 
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
+    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
     var repo = new KnownFindingsRepository(db);
 
     var filePath = Path.of("/file/path");

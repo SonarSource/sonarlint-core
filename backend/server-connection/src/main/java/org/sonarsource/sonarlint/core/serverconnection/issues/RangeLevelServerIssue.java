@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -36,11 +37,21 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRangeWithHash textRange;
 
+  public RangeLevelServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+    String message, Path filePath, Instant creationDate,
+    @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
+    super(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
+    this.textRange = textRange;
+  }
+
+  /**
+   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
+   * when using with H2 UUID should always be set
+   */
   public RangeLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate,
     @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    super(key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
-    this.textRange = textRange;
+    this(null, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, textRange, impacts);
   }
 
   public TextRangeWithHash getTextRange() {
