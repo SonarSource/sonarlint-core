@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -104,7 +104,7 @@ public interface SonarLintRpcServer {
   FlightRecordingRpcService getFlightRecordingService();
 
   @JsonDelegate
-  AiAssistedIdeRpcService getAiAssistedIdeRpcService();
+  AiAgentRpcService getAiAgentService();
 
   @JsonDelegate
   LogRpcService getLogService();

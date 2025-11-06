@@ -19,14 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public class GetRuleFileContentParams {
-  private final AiAgent agent;
-
-  public GetRuleFileContentParams(AiAgent agent) {
-    this.agent = agent;
-  }
-
-  public AiAgent getAiAgent() {
-    return agent;
-  }
+public enum AiAgent {
+  CURSOR, GITHUB_COPILOT, WINDSURF
 }

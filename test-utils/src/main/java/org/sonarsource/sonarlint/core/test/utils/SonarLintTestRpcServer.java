@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -179,8 +179,8 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   }
 
   @Override
-  public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
-    return serverUsingJava.getAiAssistedIdeRpcService();
+  public AiAgentRpcService getAiAgentService() {
+    return serverUsingJava.getAiAgentService();
   }
 
   @Override

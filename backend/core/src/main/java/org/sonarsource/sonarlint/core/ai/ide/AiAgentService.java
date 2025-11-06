@@ -19,19 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIde;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
 
-public class AiAssistedIdeService {
-  public GetRuleFileContentResponse getRuleFileContent(AiAssistedIde ide) {
-    var header = ide == AiAssistedIde.CURSOR ? """
-      ---
-      description: SonarQube MCP Server usage guidelines
-      globs:
-      alwaysApply: true
-      ---
+public class AiAgentService {
+  public GetRuleFileContentResponse getRuleFileContent(AiAgent agent) {
+    var header = switch (agent) {
+      case CURSOR, WINDSURF -> """
+        ---
+        description: SonarQube MCP Server usage guidelines
+        globs:
+        alwaysApply: true
+        ---
 
-      """ : "";
+        """;
+      case GITHUB_COPILOT -> """
+        ---
+        applyTo: "**/*"
+        ---
+
+        """;
+    };
     return new GetRuleFileContentResponse(header
       + """
         These are some guidelines when using the SonarQube MCP server.
@@ -39,6 +47,8 @@ public class AiAssistedIdeService {
         # Important Tool Guidelines
 
         ## Basic usage
+        - **IMPORTANT**: After you finish generating or modifying any code files, you MUST call the `analyze_file_list` |
+        tool (if it exists) to analyze the files you created or modified.
         - When starting a new task, disable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
         - When you are done generating code at the very end of the task, re-enable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
         Then call the `analyze_file_list` tool if it exists.
