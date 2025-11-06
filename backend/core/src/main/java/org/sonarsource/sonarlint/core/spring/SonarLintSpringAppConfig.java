@@ -270,8 +270,8 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  SonarLintDatabaseInitParams provideStorageInitParams(InitializeParams params) {
-    return new SonarLintDatabaseInitParams(params.getStorageRoot(), SonarLintDatabaseMode.FILE);
+  SonarLintDatabaseInitParams provideStorageInitParams(UserPaths userPaths) {
+    return new SonarLintDatabaseInitParams(userPaths.getStorageRoot(), SonarLintDatabaseMode.FILE);
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
