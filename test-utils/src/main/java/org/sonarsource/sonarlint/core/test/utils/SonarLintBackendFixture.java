@@ -117,8 +117,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.labs.IdeLabsSpringConfig.PROPERTY_IDE_LABS_SUBSCRIPTION_URL;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
+import static org.sonarsource.sonarlint.core.telemetry.gessie.GessieSpringConfig.PROPERTY_GESSIE_ENDPOINT;
 import static org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture.newStorage;
 
 public class SonarLintBackendFixture {
@@ -463,6 +465,12 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
       this.backendCapabilities.add(TELEMETRY);
       System.setProperty(PROPERTY_TELEMETRY_ENDPOINT, endpointUrl);
+      return this;
+    }
+
+    public SonarLintBackendBuilder withGessieTelemetryEnabled(String endpointUrl) {
+      this.backendCapabilities.add(GESSIE_TELEMETRY);
+      System.setProperty(PROPERTY_GESSIE_ENDPOINT, endpointUrl);
       return this;
     }
 
