@@ -22,12 +22,13 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
-public class TelemetryManager {
+public class TelemetryManager implements TelemetryUserSetting {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
@@ -87,6 +88,7 @@ public class TelemetryManager {
     }
   }
 
+  @Override
   public boolean isTelemetryEnabledByUser() {
     return storageManager.isEnabled();
   }
