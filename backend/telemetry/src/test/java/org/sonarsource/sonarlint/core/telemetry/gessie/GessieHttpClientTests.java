@@ -75,7 +75,7 @@ class GessieHttpClientTests {
   }
 
   @Test
-  void should_not_retry_400_error() throws URISyntaxException, IOException {
+  void should_handle_400_error_gracefully() throws URISyntaxException, IOException {
     mockGessie.stubFor(post(IDE_ENDPOINT)
       .willReturn(aResponse().withStatus(400)));
 
@@ -88,7 +88,7 @@ class GessieHttpClientTests {
   }
 
   @Test
-  void should_not_retry_403_error() throws URISyntaxException, IOException {
+  void should_handle_403_error_gracefully() throws URISyntaxException, IOException {
     mockGessie.stubFor(post(IDE_ENDPOINT)
       .willReturn(aResponse().withStatus(403)));
 
