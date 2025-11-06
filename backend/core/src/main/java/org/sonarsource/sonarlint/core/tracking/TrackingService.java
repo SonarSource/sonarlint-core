@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.repository.KnownFindingsRepository;
+import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
@@ -178,7 +179,7 @@ public class TrackingService {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
-        var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
+        var localOnlyIssues = loadLocalOnlyIssuesForFile(configurationScopeId, serverRelativePath);
         var matches = matchWithServerIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue());
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -358,5 +359,15 @@ public class TrackingService {
 
   private record MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport,
     Map<Path, List<TrackedIssue>> hotspotsToReport) {
+  }
+
+  // Helper method to abstract between Xodus and H2 storage
+  private List<LocalOnlyIssue> loadLocalOnlyIssuesForFile(String configurationScopeId, Path filePath) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.loadForFile(configurationScopeId, filePath);
+    } else {
+      return localOnlyIssueStorageService.get().loadForFile(configurationScopeId, filePath);
+    }
   }
 }
