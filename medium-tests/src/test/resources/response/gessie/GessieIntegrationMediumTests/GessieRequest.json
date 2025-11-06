@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "event_id": "${json-unit.any-string}",
+    "source": {
+      "domain": "SLCore"
+    },
+    "event_type": "Analytics.Editor.PluginActivated",
+    "event_timestamp": "${json-unit.any-string}",
+    "event_version": "0"
+  },
+  "event_payload": {
+    "message": "Gessie integration test event",
+    "trigger": "slcore_start"
+  }
+}
