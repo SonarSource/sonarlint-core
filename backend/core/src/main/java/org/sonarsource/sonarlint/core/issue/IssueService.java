@@ -42,12 +42,13 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
-import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixService;
@@ -74,6 +75,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
+import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -109,11 +111,14 @@ public class IssueService {
   private final ActiveRulesService activeRulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
   private final AiCodeFixService aiCodeFixService;
+  private final DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService;
+  private final SonarLintDatabaseService databaseService;
 
   public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    NewCodeService newCodeService, ActiveRulesService activeRulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService) {
+    NewCodeService newCodeService, ActiveRulesService activeRulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService,
+    DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService, SonarLintDatabaseService databaseService) {
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.storageService = storageService;
@@ -126,6 +131,8 @@ public class IssueService {
     this.activeRulesService = activeRulesService;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
     this.aiCodeFixService = aiCodeFixService;
+    this.dogfoodEnvironmentDetectionService = dogfoodEnvironmentDetectionService;
+    this.databaseService = databaseService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -153,10 +160,10 @@ public class IssueService {
       var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(newStatus.name());
       var issue = localIssueOpt.get();
       issue.resolve(coreStatus);
-      var localOnlyIssueStore = localOnlyIssueStorageService.get();
+      var allIssues = loadAllLocalOnlyIssues(configurationScopeId);
       serverConnection.withClientApi(serverApi -> serverApi.issue()
-        .anticipatedTransitions(binding.sonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue), cancelMonitor));
-      localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, issue);
+        .anticipatedTransitions(binding.sonarProjectKey(), concat(allIssues, issue), cancelMonitor));
+      storeLocalOnlyIssue(configurationScopeId, issue);
       eventPublisher.publishEvent(new LocalOnlyIssueStatusChangedEvent(issue));
     }
   }
@@ -286,24 +293,21 @@ public class IssueService {
   public boolean reopenAllIssuesForFile(ReopenAllIssuesForFileParams params, SonarLintCancelMonitor cancelMonitor) {
     var configurationScopeId = params.getConfigurationScopeId();
     var ideRelativePath = params.getIdeRelativePath();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, ideRelativePath, cancelMonitor);
-    return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, ideRelativePath);
+    removeAllIssuesForFile(configurationScopeId, ideRelativePath, cancelMonitor);
+    return removeAllIssuesForFileFromStore(configurationScopeId, ideRelativePath);
   }
 
-  private void removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, Path filePath, SonarLintCancelMonitor cancelMonitor) {
-    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-    var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
+  private void removeAllIssuesForFile(String configurationScopeId, Path filePath, SonarLintCancelMonitor cancelMonitor) {
+    var allIssues = loadAllLocalOnlyIssues(configurationScopeId);
+    var issuesForFile = loadLocalOnlyIssuesForFile(configurationScopeId, filePath);
     var issuesToSync = subtract(allIssues, issuesForFile);
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     sonarQubeClientManager.getClientOrThrow(binding.connectionId())
         .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
   }
 
-  private void removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
-    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+  private void removeIssueOnServer(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
+    var allIssues = loadAllLocalOnlyIssues(configurationScopeId);
     var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).toList();
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     sonarQubeClientManager.getClientOrThrow(binding.connectionId())
@@ -311,19 +315,18 @@ public class IssueService {
   }
 
   private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, SonarLintCancelMonitor cancelMonitor) {
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    var optionalLocalOnlyIssue = localOnlyIssueStore.find(issueId);
+    var optionalLocalOnlyIssue = findLocalOnlyIssue(issueId);
     if (optionalLocalOnlyIssue.isPresent()) {
       var commentedIssue = optionalLocalOnlyIssue.get();
       var resolution = commentedIssue.getResolution();
       if (resolution != null) {
         resolution.setComment(comment);
-        var issuesToSync = localOnlyIssueStore.loadAll(configurationScopeId);
+        var issuesToSync = loadAllLocalOnlyIssues(configurationScopeId);
         issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
         var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
         sonarQubeClientManager.getClientOrThrow(binding.connectionId())
             .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
-        localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue);
+        storeLocalOnlyIssue(configurationScopeId, commentedIssue);
       }
     } else {
       throw issueNotFoundException(issueId.toString());
@@ -355,9 +358,8 @@ public class IssueService {
       return false;
     }
     var issueUuid = issueUuidOptional.get();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelMonitor);
-    return localOnlyIssueStorageService.get().removeIssue(issueUuid);
+    removeIssueOnServer(configurationScopeId, issueUuid, cancelMonitor);
+    return removeLocalOnlyIssue(issueUuid);
   }
 
   public EffectiveIssueDetailsDto getEffectiveIssueDetails(String configurationScopeId, UUID findingId, SonarLintCancelMonitor cancelMonitor)
@@ -533,6 +535,61 @@ public class IssueService {
       return Optional.of(UUID.fromString(key));
     } catch (Exception e) {
       return Optional.empty();
+    }
+  }
+
+  // Helper methods to abstract between Xodus and H2 storage
+  private List<LocalOnlyIssue> loadAllLocalOnlyIssues(String configurationScopeId) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.loadAll(configurationScopeId);
+    } else {
+      return localOnlyIssueStorageService.get().loadAll(configurationScopeId);
+    }
+  }
+
+  private List<LocalOnlyIssue> loadLocalOnlyIssuesForFile(String configurationScopeId, Path filePath) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.loadForFile(configurationScopeId, filePath);
+    } else {
+      return localOnlyIssueStorageService.get().loadForFile(configurationScopeId, filePath);
+    }
+  }
+
+  private Optional<LocalOnlyIssue> findLocalOnlyIssue(UUID issueId) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.find(issueId);
+    } else {
+      return localOnlyIssueStorageService.get().find(issueId);
+    }
+  }
+
+  private void storeLocalOnlyIssue(String configurationScopeId, LocalOnlyIssue issue) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      repository.storeLocalOnlyIssue(configurationScopeId, issue);
+    } else {
+      localOnlyIssueStorageService.get().storeLocalOnlyIssue(configurationScopeId, issue);
+    }
+  }
+
+  private boolean removeLocalOnlyIssue(UUID issueId) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.removeIssue(issueId);
+    } else {
+      return localOnlyIssueStorageService.get().removeIssue(issueId);
+    }
+  }
+
+  private boolean removeAllIssuesForFileFromStore(String configurationScopeId, Path filePath) {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+      return repository.removeAllIssuesForFile(configurationScopeId, filePath);
+    } else {
+      return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath);
     }
   }
 }
