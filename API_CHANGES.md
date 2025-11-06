@@ -26,6 +26,7 @@
 * Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService` service and a `joinIdeLabsProgram` method.
   * Use it to allow users to join the SonarQube for IDE Labs program
   * The method accepts user email and IDE name as parameters
+* Add a new `GESSIE_TELEMETRY` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
 
 # 10.35
 
