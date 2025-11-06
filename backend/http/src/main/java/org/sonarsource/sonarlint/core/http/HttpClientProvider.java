@@ -43,6 +43,7 @@ import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
@@ -69,6 +70,12 @@ public class HttpClientProvider {
     CredentialsProvider proxyCredentialsProvider) {
     this.userAgent = userAgent;
     this.webSocketThreadPool = FailSafeExecutors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
+    sharedClient = buildSharedClient(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider);
+    sharedClient.start();
+  }
+
+  private static CloseableHttpAsyncClient buildSharedClient(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate,
+    ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
       .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.sslConfig(), trustManagerParametersPredicate)))
       .setDefaultTlsConfig(TlsConfig.custom()
@@ -77,17 +84,17 @@ public class HttpClientProvider {
         .build())
       .setDefaultConnectionConfig(buildConnectionConfig(httpConfig.connectTimeout(), httpConfig.socketTimeout()))
       .build();
-    this.sharedClient = HttpAsyncClients.custom()
+    var routePlanner = new SystemDefaultRoutePlanner(proxySelector);
+    return HttpAsyncClients.custom()
       .setConnectionManager(asyncConnectionManager)
       .addResponseInterceptorFirst(new RedirectInterceptor())
       .setUserAgent(userAgent)
       // proxy settings
-      .setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector))
+      .setRoutePlanner(routePlanner)
       .setDefaultCredentialsProvider(proxyCredentialsProvider)
       .setDefaultRequestConfig(buildRequestConfig(httpConfig.connectionRequestTimeout(), httpConfig.responseTimeout()))
+      .setRetryStrategy(new RetryOnDemandStrategy(2, TimeValue.ofSeconds(3)))
       .build();
-
-    sharedClient.start();
   }
 
   private static SSLContext configureSsl(SslConfig sslConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate) {
@@ -137,19 +144,32 @@ public class HttpClientProvider {
   }
 
   public HttpClient getHttpClient() {
-    return ApacheHttpClientAdapter.withoutCredentials(sharedClient);
+    return ApacheHttpClientAdapter.builder()
+      .withInnerClient(sharedClient)
+      .build();
   }
 
   public HttpClient getHttpClientWithPreemptiveAuth(String username, @Nullable String password) {
-    return ApacheHttpClientAdapter.withUsernamePassword(sharedClient, username, password);
+    return ApacheHttpClientAdapter.builder()
+      .withInnerClient(sharedClient)
+      .withUserNamePassword(username, password)
+      .build();
   }
 
   public HttpClient getHttpClientWithPreemptiveAuth(String token, boolean shouldUseBearer) {
-    return ApacheHttpClientAdapter.withToken(sharedClient, token, shouldUseBearer);
+    return ApacheHttpClientAdapter.builder()
+      .withInnerClient(sharedClient)
+      .withToken(token)
+      .useBearer(shouldUseBearer)
+      .build();
   }
 
-  public HttpClient getHttpClientWithXApiKey(String xApiKey) {
-    return ApacheHttpClientAdapter.withXApiKey(sharedClient, xApiKey);
+  public HttpClient getHttpClientWithXApiKeyAndRetries(String xApiKey) {
+    return ApacheHttpClientAdapter.builder()
+      .withInnerClient(sharedClient)
+      .withXApiKey(xApiKey)
+      .withRetries()
+      .build();
   }
 
   public WebSocketClient getWebSocketClient(String token) {
