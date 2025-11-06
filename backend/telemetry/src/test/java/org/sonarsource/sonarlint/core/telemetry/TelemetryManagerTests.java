@@ -35,6 +35,7 @@ import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static java.util.Collections.emptyMap;
@@ -236,6 +237,7 @@ class TelemetryManagerTests {
       data.findingsFiltered("severity");
       data.incrementFlightRecorderSessionsCount();
       data.setMcpIntegrationEnabled(true);
+      data.setMcpTransportModeUsed(McpTransportMode.HTTPS);
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -257,6 +259,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.getFindingsFilteredCountersByType()).isEmpty();
     assertThat(reloaded.getFlightRecorderSessionsCount()).isZero();
     assertThat(reloaded.isMcpIntegrationEnabled()).isFalse();
+    assertThat(reloaded.getMcpTransportModeUsed()).isNull();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

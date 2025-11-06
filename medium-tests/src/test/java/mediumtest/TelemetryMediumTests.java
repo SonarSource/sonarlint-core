@@ -50,6 +50,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilt
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -441,6 +443,22 @@ class TelemetryMediumTests {
     backend.getTelemetryService().mcpIntegrationEnabled();
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().isMcpIntegrationEnabled()).isTrue());
+  }
+
+  @SonarLintTest
+  void it_should_record_mcpTransportModeUsed(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().mcpTransportModeUsed(new McpTransportModeUsedParams(McpTransportMode.STDIO));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getMcpTransportModeUsed()).isEqualTo(McpTransportMode.STDIO));
+  }
+
+  @SonarLintTest
+  void mcp_transport_mode_should_be_null_if_not_recorded(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getMcpTransportModeUsed()).isNull());
   }
 
   @SonarLintTest

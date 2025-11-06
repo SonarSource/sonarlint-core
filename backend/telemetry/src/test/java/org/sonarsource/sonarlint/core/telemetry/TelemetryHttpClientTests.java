@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -121,6 +122,7 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.findingsFiltered("severity");
     telemetryLocalStorage.incrementFlightRecorderSessionsCount();
     telemetryLocalStorage.setMcpIntegrationEnabled(true);
+    telemetryLocalStorage.setMcpTransportModeUsed(McpTransportMode.STDIO);
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -145,7 +147,8 @@ class TelemetryHttpClientTests {
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
             {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"},
-            {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"}
+            {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"},
+            {"key":"mcp.transport_mode","value":"STDIO","type":"string","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

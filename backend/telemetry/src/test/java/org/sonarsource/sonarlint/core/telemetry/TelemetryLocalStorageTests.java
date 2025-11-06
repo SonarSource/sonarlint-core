@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -357,5 +358,13 @@ class TelemetryLocalStorageTests {
     assertThat(data.isMcpIntegrationEnabled()).isFalse();
     data.setMcpIntegrationEnabled(true);
     assertThat(data.isMcpIntegrationEnabled()).isTrue();
+  }
+
+  @Test
+  void should_find_mcp_transport_mode_used() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getMcpTransportModeUsed()).isNull();
+    data.setMcpTransportModeUsed(McpTransportMode.HTTP);
+    assertThat(data.getMcpTransportModeUsed()).isEqualTo(McpTransportMode.HTTP);
   }
 }
