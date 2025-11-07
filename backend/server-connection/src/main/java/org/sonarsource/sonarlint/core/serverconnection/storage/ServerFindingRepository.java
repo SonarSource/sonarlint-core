@@ -240,7 +240,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         trx.dsl().deleteFrom(SERVER_FINDINGS)
           .where(SERVER_FINDINGS.SERVER_KEY.eq(taint.getSonarServerKey()))
           .execute();
-        insert(branchName, taint);
+        insertTaint(branchName, taint, trx);
       });
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_TAINT_SYNC_TS,
@@ -462,7 +462,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
-      taintIssues.forEach(t -> insert(branchName, t));
+      taintIssues.forEach(t -> insertTaint(branchName, t, trx));
     });
   }
 
@@ -573,43 +573,44 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   @Override
   public void insert(String branchName, ServerTaintIssue taintIssue) {
+    database.withTransaction(trx -> insertTaint(branchName, taintIssue, trx));
+  }
+
+  private void insertTaint(String branchName, ServerTaintIssue taintIssue, Configuration trx) {
+    trx.dsl().deleteFrom(SERVER_FINDINGS)
+      .where(SERVER_FINDINGS.SERVER_KEY.eq(taintIssue.getSonarServerKey()))
+      .execute();
     var creationDate = LocalDateTime.ofInstant(taintIssue.getCreationDate(), ZoneId.systemDefault());
-    // Serialize impacts and flows using JsonMapper-like behavior
     var impactsJson = mapper.serializeImpacts(taintIssue.getImpacts());
     var flowsJson = mapper.serializeFlows(taintIssue);
     var cleanCodeAttribute = taintIssue.getCleanCodeAttribute();
-    database.withTransaction(trx -> {
-      trx.dsl().deleteFrom(SERVER_FINDINGS)
-        .where(SERVER_FINDINGS.SERVER_KEY.eq(taintIssue.getSonarServerKey()))
-        .execute();
-      var insert = trx.dsl().insertInto(SERVER_FINDINGS)
-        .set(SERVER_FINDINGS.ID, taintIssue.getId())
-        .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
-        .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
-        .set(SERVER_FINDINGS.SERVER_KEY, taintIssue.getSonarServerKey())
-        .set(SERVER_FINDINGS.RULE_KEY, taintIssue.getRuleKey())
-        .set(SERVER_FINDINGS.MESSAGE, taintIssue.getMessage())
-        .set(SERVER_FINDINGS.FILE_PATH, taintIssue.getFilePath().toString())
-        .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
-        .set(SERVER_FINDINGS.USER_SEVERITY, taintIssue.getSeverity() != null ? taintIssue.getSeverity().name() : null)
-        .set(SERVER_FINDINGS.RULE_TYPE, taintIssue.getType() != null ? taintIssue.getType().name() : null)
-        .set(SERVER_FINDINGS.RULE_DESCRIPTION_CONTEXT_KEY, taintIssue.getRuleDescriptionContextKey())
-        .set(SERVER_FINDINGS.CLEAN_CODE_ATTRIBUTE, cleanCodeAttribute.map(Enum::name).orElse(null))
-        .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.TAINT.name())
-        .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
-        .set(SERVER_FINDINGS.RESOLVED, taintIssue.isResolved())
-        .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, taintIssue.getResolutionStatus() != null ? taintIssue.getResolutionStatus().name() : null)
-        .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson))
-        .set(SERVER_FINDINGS.FLOWS, JSON.valueOf(flowsJson));
-      if (taintIssue.getTextRange() != null) {
-        insert = insert.set(SERVER_FINDINGS.START_LINE, taintIssue.getTextRange().getStartLine())
-          .set(SERVER_FINDINGS.START_LINE_OFFSET, taintIssue.getTextRange().getStartLineOffset())
-          .set(SERVER_FINDINGS.END_LINE, taintIssue.getTextRange().getEndLine())
-          .set(SERVER_FINDINGS.END_LINE_OFFSET, taintIssue.getTextRange().getEndLineOffset())
-          .set(SERVER_FINDINGS.TEXT_RANGE_HASH, taintIssue.getTextRange().getHash());
-      }
-      insert.execute();
-    });
+    var insert = trx.dsl().insertInto(SERVER_FINDINGS)
+      .set(SERVER_FINDINGS.ID, taintIssue.getId())
+      .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
+      .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
+      .set(SERVER_FINDINGS.SERVER_KEY, taintIssue.getSonarServerKey())
+      .set(SERVER_FINDINGS.RULE_KEY, taintIssue.getRuleKey())
+      .set(SERVER_FINDINGS.MESSAGE, taintIssue.getMessage())
+      .set(SERVER_FINDINGS.FILE_PATH, taintIssue.getFilePath().toString())
+      .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
+      .set(SERVER_FINDINGS.USER_SEVERITY, taintIssue.getSeverity() != null ? taintIssue.getSeverity().name() : null)
+      .set(SERVER_FINDINGS.RULE_TYPE, taintIssue.getType() != null ? taintIssue.getType().name() : null)
+      .set(SERVER_FINDINGS.RULE_DESCRIPTION_CONTEXT_KEY, taintIssue.getRuleDescriptionContextKey())
+      .set(SERVER_FINDINGS.CLEAN_CODE_ATTRIBUTE, cleanCodeAttribute.map(Enum::name).orElse(null))
+      .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.TAINT.name())
+      .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
+      .set(SERVER_FINDINGS.RESOLVED, taintIssue.isResolved())
+      .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, taintIssue.getResolutionStatus() != null ? taintIssue.getResolutionStatus().name() : null)
+      .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson))
+      .set(SERVER_FINDINGS.FLOWS, JSON.valueOf(flowsJson));
+    if (taintIssue.getTextRange() != null) {
+      insert = insert.set(SERVER_FINDINGS.START_LINE, taintIssue.getTextRange().getStartLine())
+        .set(SERVER_FINDINGS.START_LINE_OFFSET, taintIssue.getTextRange().getStartLineOffset())
+        .set(SERVER_FINDINGS.END_LINE, taintIssue.getTextRange().getEndLine())
+        .set(SERVER_FINDINGS.END_LINE_OFFSET, taintIssue.getTextRange().getEndLineOffset())
+        .set(SERVER_FINDINGS.TEXT_RANGE_HASH, taintIssue.getTextRange().getHash());
+    }
+    insert.execute();
   }
 
   @Override
