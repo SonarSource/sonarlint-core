@@ -50,11 +50,11 @@ class RuleExtractorMediumTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 8;
-  private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 16;
+  private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 15;
   private static final int COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 77;
-  private static final int NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 265;
-  private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 1740;
-  private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 3674;
+  private static final int NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 267;
+  private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 1789;
+  private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 3723;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
