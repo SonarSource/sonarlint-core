@@ -19,6 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAssistedIde {
-  CURSOR, VSCODE, WINDSURF
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+
+@JsonSegment("ai")
+public interface AiAgentRpcService {
+
+  /**
+   * Returns the content of rule file to be written to each IDE's rule folder, based on the agent.
+   * The rule file provides good practices to the agent.
+   */
+  @JsonRequest
+  CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params);
+
 }

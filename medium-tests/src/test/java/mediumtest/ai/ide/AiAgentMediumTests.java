@@ -19,34 +19,39 @@
  */
 package mediumtest.ai.ide;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIde;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AiAssistedIdeMediumTests {
+class AiAgentMediumTests {
 
   @SonarLintTest
   void it_should_return_the_rule_file_content_for_cursor(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .start();
 
-    var response = backend.getAiAssistedIdeRpcService().getRuleFileContent(new GetRuleFileContentParams(AiAssistedIde.CURSOR)).join();
+    var response = backend.getAiAgentService().getRuleFileContent(new GetRuleFileContentParams(AiAgent.CURSOR)).join();
 
     assertThat(response.getContent()).contains("alwaysApply: true");
+    assertThat(response.getContent()).contains("IMPORTANT");
+    assertThat(response.getContent()).contains("analyze_file_list");
     assertThat(response.getContent()).contains("Important Tool Guidelines");
   }
 
   @SonarLintTest
-  void it_should_return_the_rule_file_content_for_vscode(SonarLintTestHarness harness) {
+  void it_should_return_the_rule_file_content_for_github_copilot(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .start();
 
-    var response = backend.getAiAssistedIdeRpcService().getRuleFileContent(new GetRuleFileContentParams(AiAssistedIde.VSCODE)).join();
+    var response = backend.getAiAgentService().getRuleFileContent(new GetRuleFileContentParams(AiAgent.GITHUB_COPILOT)).join();
 
     assertThat(response.getContent()).doesNotContain("alwaysApply: true");
+    assertThat(response.getContent()).contains("applyTo: \"**/*\"");
+    assertThat(response.getContent()).contains("IMPORTANT");
+    assertThat(response.getContent()).contains("analyze_file_list");
     assertThat(response.getContent()).contains("Important Tool Guidelines");
   }
 
@@ -55,9 +60,11 @@ class AiAssistedIdeMediumTests {
     var backend = harness.newBackend()
       .start();
 
-    var response = backend.getAiAssistedIdeRpcService().getRuleFileContent(new GetRuleFileContentParams(AiAssistedIde.WINDSURF)).join();
+    var response = backend.getAiAgentService().getRuleFileContent(new GetRuleFileContentParams(AiAgent.WINDSURF)).join();
 
-    assertThat(response.getContent()).doesNotContain("alwaysApply: true");
+    assertThat(response.getContent()).contains("alwaysApply: true");
+    assertThat(response.getContent()).contains("IMPORTANT");
+    assertThat(response.getContent()).contains("analyze_file_list");
     assertThat(response.getContent()).contains("Important Tool Guidelines");
   }
 
