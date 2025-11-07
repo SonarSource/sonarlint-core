@@ -26,30 +26,23 @@ import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.jooq.Configuration;
 import org.jooq.JSON;
 import org.jooq.TableField;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerBranchesRecord;
@@ -66,9 +59,13 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_BRANCHES;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeImpacts;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeLanguages;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeTransitions;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.serializeLanguages;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.serializeTransitions;
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintDatabase database;
   private final String connectionId;
@@ -352,14 +349,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
 
     var ldt = LocalDateTime.ofInstant(syncTimestamp, ZoneId.systemDefault());
-    JSON langsJson = null;
-    try {
-      var objectMapper = new ObjectMapper();
-      var languageNames = enabledLanguages.stream().map(Enum::name).toList();
-      langsJson = JSON.valueOf(objectMapper.writeValueAsString(languageNames));
-    } catch (Exception e) {
-      LOG.error("Failed to serialize enabled languages {}", enabledLanguages, e);
-    }
+    var langsJson = serializeLanguages(enabledLanguages);
 
     int updated = database.dsl().update(SERVER_BRANCHES)
       .set(tsField, ldt)
@@ -388,81 +378,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return Set.of();
     }
-    var json = rec.value1();
-    if (json == null) {
-      return Set.of();
-    }
-    try {
-      var objectMapper = new ObjectMapper();
-      var languages = objectMapper.readValue(json.data(), new TypeReference<List<String>>() {
-      });
-      return languages.stream()
-        .map(language -> {
-          try {
-            return SonarLanguage.valueOf(language);
-          } catch (Exception e) {
-            return null;
-          }
-        })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toUnmodifiableSet());
-    } catch (Exception e) {
-      return Set.of();
-    }
-  }
-
-  private static JSON serializeTransitions(@Nullable List<ServerDependencyRisk.Transition> transitions) {
-    if (transitions == null) {
-      return null;
-    }
-    try {
-      var objectMapper = new ObjectMapper();
-      var stringList = transitions.stream().map(Enum::name).toList();
-      return JSON.valueOf(objectMapper.writeValueAsString(stringList));
-    } catch (Exception e) {
-      LOG.error("Failed to serialize transitions {}", transitions, e);
-      return JSON.valueOf("{}");
-    }
-  }
-
-  private static Map<SoftwareQuality, ImpactSeverity> deserializeImpacts(@Nullable JSON impactsJson) {
-    if (impactsJson == null) {
-      return Map.of();
-    }
-    try {
-      var objectMapper = new ObjectMapper();
-      var map = objectMapper.readValue(impactsJson.data(), new TypeReference<Map<String, String>>() {
-      });
-      return map.entrySet().stream()
-        .collect(Collectors.toMap(entry -> SoftwareQuality.valueOf(entry.getKey()), entry -> ImpactSeverity.valueOf(entry.getValue())));
-    } catch (Exception e) {
-      LOG.error("Failed to deserialize impacts {}", impactsJson.data(), e);
-      return Map.of();
-    }
-  }
-
-  private static List<ServerDependencyRisk.Transition> deserializeTransitions(@Nullable JSON json) {
-    if (json == null) {
-      return List.of();
-    }
-    try {
-      var objectMapper = new ObjectMapper();
-      var transitions = objectMapper.readValue(json.data(), new TypeReference<List<String>>() {
-      });
-      return transitions.stream()
-        .map(transition -> {
-          try {
-            return ServerDependencyRisk.Transition.valueOf(transition);
-          } catch (Exception e) {
-            return null;
-          }
-        })
-        .filter(Objects::nonNull)
-        .toList();
-    } catch (Exception e) {
-      LOG.error("Failed to deserialize transitions {}", json.data(), e);
-      return List.of();
-    }
+    return deserializeLanguages(rec.value1());
   }
 
   private static ServerIssue<?> adaptIssue(ServerFindingsRecord rec) {

@@ -61,16 +61,6 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     this.impacts = impacts;
   }
 
-  /**
-   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
-   * when using with H2 UUID should always be set
-   */
-  protected ServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
-    Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
-  }
-
   @CheckForNull
   public UUID getId() {
     return id;
@@ -119,8 +109,18 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     return impacts;
   }
 
+  public G setId(@Nullable UUID id) {
+    this.id = id;
+    return (G) this;
+  }
+
   public G setKey(String key) {
     this.key = key;
+    return (G) this;
+  }
+
+  public G setResolutionStatus(@Nullable IssueStatus resolutionStatus) {
+    this.resolutionStatus = resolutionStatus;
     return (G) this;
   }
 
