@@ -208,8 +208,10 @@ class PluginsSynchronizerTests {
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-vb");
-
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.VBNET), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabase.class);
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.VBNET), new ConnectionStorage(dest, dest, "connectionId",
+      dogfoodEnvDetectionService, databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -222,8 +224,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-go");
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId",
+      dogfoodEnvDetectionService, databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();

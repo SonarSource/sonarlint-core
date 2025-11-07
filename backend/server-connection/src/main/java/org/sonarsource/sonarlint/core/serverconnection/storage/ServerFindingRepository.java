@@ -25,12 +25,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.Configuration;
 import org.jooq.JSON;
 import org.jooq.TableField;
@@ -59,14 +57,10 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_BRANCHES;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeImpacts;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeLanguages;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.deserializeTransitions;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.serializeLanguages;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.JsonMapper.serializeTransitions;
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
 
+  private final JsonMapper mapper = new JsonMapper();
   private final SonarLintDatabase database;
   private final String connectionId;
   private final String sonarProjectKey;
@@ -102,8 +96,12 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private static void insertIssue(String branchName, String connectionId, String sonarProjectKey, Configuration trx, ServerIssue<?> issue, JsonMapper serializer) {
-    var impactsJson = serializer.serializeImpacts(issue);
+    var impactsJson = serializer.serializeImpacts(issue.getImpacts());
     var creationDate = LocalDateTime.ofInstant(issue.getCreationDate(), ZoneId.systemDefault());
+    trx.dsl()
+      .deleteFrom(SERVER_FINDINGS)
+      .where(SERVER_FINDINGS.ID.eq(issue.getId()))
+      .execute();
     var query = trx.dsl().insertInto(SERVER_FINDINGS)
       .set(SERVER_FINDINGS.ID, issue.getId())
       .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
@@ -240,7 +238,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
       }
       issuesToMerge.forEach(taint -> {
         trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.ID.eq(taint.getId()))
+          .where(SERVER_FINDINGS.SERVER_KEY.eq(taint.getSonarServerKey()))
           .execute();
         insert(branchName, taint);
       });
@@ -349,7 +347,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
 
     var ldt = LocalDateTime.ofInstant(syncTimestamp, ZoneId.systemDefault());
-    var langsJson = serializeLanguages(enabledLanguages);
+    var langsJson = mapper.serializeLanguages(enabledLanguages);
 
     int updated = database.dsl().update(SERVER_BRANCHES)
       .set(tsField, ldt)
@@ -378,10 +376,10 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return Set.of();
     }
-    return deserializeLanguages(rec.value1());
+    return mapper.deserializeLanguages(rec.value1());
   }
 
-  private static ServerIssue<?> adaptIssue(ServerFindingsRecord rec) {
+  private ServerIssue<?> adaptIssue(ServerFindingsRecord rec) {
     var id = rec.getId();
     var serverKey = rec.getServerKey();
     var ruleKey = rec.getRuleKey();
@@ -393,7 +391,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     var resolved = Boolean.TRUE.equals(rec.getResolved());
     var resolutionStatus = rec.getIssueResolutionStatus() != null ? IssueStatus.valueOf(rec.getIssueResolutionStatus()) : null;
     var impactsJson = rec.getImpacts();
-    var impacts = deserializeImpacts(impactsJson);
+    var impacts = mapper.deserializeImpacts(impactsJson);
     if (rec.getLine() != null) {
       return new LineLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, rec.getLineHash(), filePath, creationDate, userSeverity, type,
         rec.getLine(), impacts);
@@ -419,7 +417,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     return new ServerHotspot(id, key, ruleKey, message, filePath, textRange, creationDate, status, prob, assignee);
   }
 
-  private static ServerTaintIssue adaptTaint(ServerFindingsRecord rec) {
+  private ServerTaintIssue adaptTaint(ServerFindingsRecord rec) {
     var id = rec.getId();
     var key = rec.getServerKey();
     var resolved = Boolean.TRUE.equals(rec.getResolved());
@@ -437,7 +435,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     var ruleDescCtx = rec.getRuleDescriptionContextKey();
     var cleanCodeAttr = rec.getCleanCodeAttribute() != null ? CleanCodeAttribute.valueOf(rec.getCleanCodeAttribute()) : null;
     var impactsJson = rec.getImpacts();
-    var impacts = deserializeImpacts(impactsJson);
+    var impacts = mapper.deserializeImpacts(impactsJson);
     return new ServerTaintIssue(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate,
       severity, type, textRangeWithHash, ruleDescCtx, cleanCodeAttr, impacts);
   }
@@ -451,7 +449,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetch().stream()
-      .<ServerIssue<?>>map(ServerFindingRepository::adaptIssue)
+      .<ServerIssue<?>>map(this::adaptIssue)
       .toList();
   }
 
@@ -489,7 +487,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetch().stream()
-      .map(ServerFindingRepository::adaptTaint)
+      .map(this::adaptTaint)
       .toList();
   }
 
@@ -577,37 +575,41 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   public void insert(String branchName, ServerTaintIssue taintIssue) {
     var creationDate = LocalDateTime.ofInstant(taintIssue.getCreationDate(), ZoneId.systemDefault());
     // Serialize impacts and flows using JsonMapper-like behavior
-    var mapper = new JsonMapper();
-    var impactsJson = new ObjectMapper().convertValue(taintIssue.getImpacts(), Map.class).toString();
+    var impactsJson = mapper.serializeImpacts(taintIssue.getImpacts());
     var flowsJson = mapper.serializeFlows(taintIssue);
     var cleanCodeAttribute = taintIssue.getCleanCodeAttribute();
-    var insert = database.dsl().insertInto(SERVER_FINDINGS)
-      .set(SERVER_FINDINGS.ID, taintIssue.getId())
-      .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
-      .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
-      .set(SERVER_FINDINGS.SERVER_KEY, taintIssue.getSonarServerKey())
-      .set(SERVER_FINDINGS.RULE_KEY, taintIssue.getRuleKey())
-      .set(SERVER_FINDINGS.MESSAGE, taintIssue.getMessage())
-      .set(SERVER_FINDINGS.FILE_PATH, taintIssue.getFilePath().toString())
-      .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
-      .set(SERVER_FINDINGS.USER_SEVERITY, taintIssue.getSeverity() != null ? taintIssue.getSeverity().name() : null)
-      .set(SERVER_FINDINGS.RULE_TYPE, taintIssue.getType() != null ? taintIssue.getType().name() : null)
-      .set(SERVER_FINDINGS.RULE_DESCRIPTION_CONTEXT_KEY, taintIssue.getRuleDescriptionContextKey())
-      .set(SERVER_FINDINGS.CLEAN_CODE_ATTRIBUTE, cleanCodeAttribute.map(Enum::name).orElse(null))
-      .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.TAINT.name())
-      .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
-      .set(SERVER_FINDINGS.RESOLVED, taintIssue.isResolved())
-      .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, taintIssue.getResolutionStatus() != null ? taintIssue.getResolutionStatus().name() : null)
-      .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson))
-      .set(SERVER_FINDINGS.FLOWS, JSON.valueOf(flowsJson));
-    if (taintIssue.getTextRange() != null) {
-      insert = insert.set(SERVER_FINDINGS.START_LINE, taintIssue.getTextRange().getStartLine())
-        .set(SERVER_FINDINGS.START_LINE_OFFSET, taintIssue.getTextRange().getStartLineOffset())
-        .set(SERVER_FINDINGS.END_LINE, taintIssue.getTextRange().getEndLine())
-        .set(SERVER_FINDINGS.END_LINE_OFFSET, taintIssue.getTextRange().getEndLineOffset())
-        .set(SERVER_FINDINGS.TEXT_RANGE_HASH, taintIssue.getTextRange().getHash());
-    }
-    insert.execute();
+    database.withTransaction(trx -> {
+      trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.SERVER_KEY.eq(taintIssue.getSonarServerKey()))
+        .execute();
+      var insert = trx.dsl().insertInto(SERVER_FINDINGS)
+        .set(SERVER_FINDINGS.ID, taintIssue.getId())
+        .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
+        .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
+        .set(SERVER_FINDINGS.SERVER_KEY, taintIssue.getSonarServerKey())
+        .set(SERVER_FINDINGS.RULE_KEY, taintIssue.getRuleKey())
+        .set(SERVER_FINDINGS.MESSAGE, taintIssue.getMessage())
+        .set(SERVER_FINDINGS.FILE_PATH, taintIssue.getFilePath().toString())
+        .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
+        .set(SERVER_FINDINGS.USER_SEVERITY, taintIssue.getSeverity() != null ? taintIssue.getSeverity().name() : null)
+        .set(SERVER_FINDINGS.RULE_TYPE, taintIssue.getType() != null ? taintIssue.getType().name() : null)
+        .set(SERVER_FINDINGS.RULE_DESCRIPTION_CONTEXT_KEY, taintIssue.getRuleDescriptionContextKey())
+        .set(SERVER_FINDINGS.CLEAN_CODE_ATTRIBUTE, cleanCodeAttribute.map(Enum::name).orElse(null))
+        .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.TAINT.name())
+        .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
+        .set(SERVER_FINDINGS.RESOLVED, taintIssue.isResolved())
+        .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, taintIssue.getResolutionStatus() != null ? taintIssue.getResolutionStatus().name() : null)
+        .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson))
+        .set(SERVER_FINDINGS.FLOWS, JSON.valueOf(flowsJson));
+      if (taintIssue.getTextRange() != null) {
+        insert = insert.set(SERVER_FINDINGS.START_LINE, taintIssue.getTextRange().getStartLine())
+          .set(SERVER_FINDINGS.START_LINE_OFFSET, taintIssue.getTextRange().getStartLineOffset())
+          .set(SERVER_FINDINGS.END_LINE, taintIssue.getTextRange().getEndLine())
+          .set(SERVER_FINDINGS.END_LINE_OFFSET, taintIssue.getTextRange().getEndLineOffset())
+          .set(SERVER_FINDINGS.TEXT_RANGE_HASH, taintIssue.getTextRange().getHash());
+      }
+      insert.execute();
+    });
   }
 
   @Override
@@ -684,7 +686,10 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(table.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
       serverDependencyRisks.forEach(dependencyRisk -> {
-        var transitionsJson = serializeTransitions(dependencyRisk.transitions());
+        trx.dsl().deleteFrom(table)
+          .where(table.ID.eq(dependencyRisk.key()))
+          .execute();
+        var transitionsJson = mapper.serializeTransitions(dependencyRisk.transitions());
         trx.dsl().insertInto(table)
           .set(table.ID, dependencyRisk.key())
           .set(table.CONNECTION_ID, connectionId)
@@ -726,7 +731,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         var ver = rec.get(table.PACKAGE_VERSION);
         var vuln = rec.get(table.VULNERABILITY_ID);
         var cvss = rec.get(table.CVSS_SCORE);
-        var transitions = deserializeTransitions(rec.get(table.TRANSITIONS));
+        var transitions = mapper.deserializeTransitions(rec.get(table.TRANSITIONS));
         return new ServerDependencyRisk(id, type, severity, quality, status, pkg, ver, vuln, cvss, transitions);
       })
       .toList();
@@ -737,13 +742,16 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     var table = Tables.SERVER_DEPENDENCY_RISKS;
     database.dsl().update(table)
       .set(table.STATUS, newStatus.name())
-      .set(table.TRANSITIONS, serializeTransitions(transitions))
+      .set(table.TRANSITIONS, mapper.serializeTransitions(transitions))
       .where(table.ID.eq(key))
       .execute();
   }
 
   private static void insertHotspot(String branchName, String connectionId, String sonarProjectKey, Configuration trx, ServerHotspot hotspot) {
     var creationDate = LocalDateTime.ofInstant(hotspot.getCreationDate(), ZoneId.systemDefault());
+    trx.dsl().deleteFrom(SERVER_FINDINGS)
+      .where(SERVER_FINDINGS.SERVER_KEY.eq(hotspot.getKey()))
+      .execute();
     trx.dsl().insertInto(SERVER_FINDINGS)
       .set(SERVER_FINDINGS.ID, hotspot.getId())
       .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)

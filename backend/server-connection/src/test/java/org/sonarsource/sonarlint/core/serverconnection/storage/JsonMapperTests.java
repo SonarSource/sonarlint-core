@@ -23,11 +23,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,12 +41,13 @@ class JsonMapperTests {
     var impacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
     impacts.put(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH);
     impacts.put(SoftwareQuality.SECURITY, ImpactSeverity.LOW);
-    var issue = new FileLevelServerIssue(null, "", true, null, "", ""
-      , Path.of(""), null, null, null, impacts);
 
-    var json = underTest.serializeImpacts(issue);
+    var json = underTest.serializeImpacts(impacts);
 
     assertEquals("{\"MAINTAINABILITY\":\"HIGH\",\"SECURITY\":\"LOW\"}", json);
+    var impactsDeserialized = underTest.deserializeImpacts(JSON.valueOf(json));
+
+    assertEquals(impacts, impactsDeserialized);
   }
 
   @Test
