@@ -49,8 +49,9 @@ public class AiAgentService {
         ## Basic usage
         - **IMPORTANT**: After you finish generating or modifying any code files at the very end of the task, you MUST call the `analyze_file_list` \
         tool (if it exists) to analyze the files you created or modified.
-        - When starting a new task, disable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
-        - When you are done generating code at the very end of the task, re-enable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
+        - **IMPORTANT**: When starting a new task, you MUST disable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
+        - **IMPORTANT**: When you are done generating code at the very end of the task, \
+        you MUST re-enable automatic analysis with the `toggle_automatic_analysis` tool if it exists.
 
         ## Project Keys
         - When a user mentions a project key, use `search_my_sonarqube_projects` first to find the exact project key
