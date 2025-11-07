@@ -67,6 +67,8 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitService.createS
 public class FileExclusionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  // 5 MB
+  private static final long MAX_AUTO_ANALYSIS_FILE_SIZE_BYTES = 5L * 1024 * 1024;
 
   // See org.sonar.api.scan.filesystem.FileExclusions
   private static final Set<String> ALL_EXCLUSION_RELATED_SETTINGS = Set.of(
@@ -224,6 +226,7 @@ public class FileExclusionService {
     var filteredURIsFromSymbolicLink = new ArrayList<URI>();
     var filteredURIsFromWindowsShortcut = new ArrayList<URI>();
     var filteredURIsNoFile = new ArrayList<URI>();
+    var filteredURIsTooLarge = new ArrayList<URI>();
 
     var filesToExclude = files;
 
@@ -265,6 +268,19 @@ public class FileExclusionService {
         return true;
       })
       .filter(file -> {
+        try {
+          var uri = file.getUri();
+          var path = FileUtils.getFilePathFromUri(uri);
+          if (Files.exists(path) && Files.size(path) > MAX_AUTO_ANALYSIS_FILE_SIZE_BYTES) {
+            filteredURIsTooLarge.add(uri);
+            return false;
+          }
+        } catch (Exception ignored) {
+          // If we cannot determine size, do not skip
+        }
+        return true;
+      })
+      .filter(file -> {
         // On Schemes like "temp" (used by IntelliJ) or "rse" (Eclipse Remote System Explorer),
         // the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the operations.
         // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
@@ -291,6 +307,7 @@ public class FileExclusionService {
     logFilteredURIs("Filtered out URIs based on the server exclusion service", filteredURIsFromServerExclusionService);
     logFilteredURIs("Filtered out URIs ignored by Git", filteredURIsFromGitIgnore);
     logFilteredURIs("Filtered out URIs not user-defined", filteredURIsNotUserDefined);
+    logFilteredURIs("Filtered out URIs exceeding max allowed size", filteredURIsTooLarge);
     logFilteredURIs("Filtered out URIs that are symbolic links", filteredURIsFromSymbolicLink);
     logFilteredURIs("Filtered out URIs that are Windows shortcuts", filteredURIsFromWindowsShortcut);
     logFilteredURIs("Filtered out URIs having no file", filteredURIsNoFile);
