@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 
 class FileExclusionServiceTests {
 
@@ -156,6 +157,8 @@ class FileExclusionServiceTests {
     when(clientFileSystemService.getClientFiles(configScopeId, smallUri)).thenReturn(smallClientFile);
     when(clientFileSystemService.getClientFiles(configScopeId, largeUri)).thenReturn(largeClientFile);
     when(client.getFileExclusions(any(GetFileExclusionsParams.class))).thenReturn(CompletableFuture.completedFuture(new GetFileExclusionsResponse(Collections.emptySet())));
+    when(smallClientFile.isLargerThan(anyLong())).thenReturn(false);
+    when(largeClientFile.isLargerThan(anyLong())).thenReturn(true);
 
     // Avoid interference from server-side exclusions
     var spy = Mockito.spy(underTest);

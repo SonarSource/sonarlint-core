@@ -32,6 +32,7 @@ import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
 public class ClientFile {
 
@@ -157,6 +158,18 @@ public class ClientFile {
   public void setClean() {
     this.isDirty = false;
     this.clientProvidedContent = null;
+  }
+
+  public boolean isLargerThan(long size) throws IOException {
+    if (isDirty && clientProvidedContent != null) {
+      return clientProvidedContent.getBytes(getCharset()).length > size;
+    } else {
+      var localPath = FileUtils.getFilePathFromUri(uri);
+      if (Files.exists(localPath)) {
+        return Files.size(localPath) > size;
+      }
+    }
+    return false;
   }
 
   public boolean isSonarlintConfigurationFile() {
