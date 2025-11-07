@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryConnectionAttributes;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
@@ -84,7 +85,8 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"automatic_analysis.enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
       "{\"key\":\"automatic_analysis.toggled_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.configuration_requested\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"mcp.integration_enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"mcp.integration_enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"mcp.transport_mode\",\"value\":\"HTTP\",\"type\":\"string\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -129,6 +131,7 @@ class TelemetryMeasuresPayloadTests {
 
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(3), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", String.valueOf(true), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("mcp.transport_mode", McpTransportMode.HTTP.name(), STRING, DAILY));
 
     return values;
   }
@@ -150,7 +153,8 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY))
       .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))
       .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY))
-      .contains(tuple("mcp.integration_enabled", "true", BOOLEAN, DAILY));
+      .contains(tuple("mcp.integration_enabled", "true", BOOLEAN, DAILY))
+      .contains(tuple("mcp.transport_mode", "HTTP", STRING, DAILY));
   }
 
 }

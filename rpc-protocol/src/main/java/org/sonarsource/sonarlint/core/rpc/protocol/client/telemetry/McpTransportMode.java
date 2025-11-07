@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public enum ReportIssuesAsErrorLevel {
-  NONE, MEDIUM_AND_ABOVE, ALL
+public enum McpTransportMode {
+  STDIO,
+  HTTP,
+  HTTPS
 }

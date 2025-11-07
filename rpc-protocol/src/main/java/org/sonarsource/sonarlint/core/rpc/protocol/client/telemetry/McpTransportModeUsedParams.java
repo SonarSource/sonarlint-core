@@ -19,20 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public class ReportIssuesAsOverrideParams {
-  private final ReportIssuesAsOverrideLevel level;
-  private final String ruleKey;
+public class McpTransportModeUsedParams {
+  private final McpTransportMode transport;
 
-  public ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel level, String ruleKey) {
-    this.level = level;
-    this.ruleKey = ruleKey;
+  public McpTransportModeUsedParams(McpTransportMode transport) {
+    this.transport = transport;
   }
 
-  public ReportIssuesAsOverrideLevel getLevel() {
-    return level;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
+  public McpTransportMode getMcpTransportMode() {
+    return transport;
   }
 }

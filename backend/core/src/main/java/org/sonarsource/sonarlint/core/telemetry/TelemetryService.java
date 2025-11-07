@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
@@ -271,6 +272,10 @@ public class TelemetryService {
 
   public void mcpIntegrationEnabled() {
     updateTelemetry(storage -> storage.setMcpIntegrationEnabled(true));
+  }
+
+  public void mcpTransportModeUsed(McpTransportMode transportMode) {
+    updateTelemetry(storage -> storage.setMcpTransportModeUsed(transportMode));
   }
 
   public void toolCalled(ToolCalledParams params) {

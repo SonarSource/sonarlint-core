@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -98,6 +99,8 @@ public class TelemetryLocalStorage {
   private int flightRecorderSessionsCount;
   private int mcpServerConfigurationRequestedCount;
   private boolean isMcpIntegrationEnabled;
+  @Nullable
+  private McpTransportMode mcpTransportModeUsed;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -265,6 +268,7 @@ public class TelemetryLocalStorage {
     flightRecorderSessionsCount = 0;
     mcpServerConfigurationRequestedCount = 0;
     isMcpIntegrationEnabled = false;
+    mcpTransportModeUsed = null;
   }
 
   public long numUseDays() {
@@ -586,6 +590,15 @@ public class TelemetryLocalStorage {
 
   public boolean isMcpIntegrationEnabled() {
     return isMcpIntegrationEnabled;
+  }
+
+  public void setMcpTransportModeUsed(McpTransportMode mcpTransportMode) {
+    this.mcpTransportModeUsed = mcpTransportMode;
+  }
+
+  @CheckForNull
+  public McpTransportMode getMcpTransportModeUsed() {
+    return mcpTransportModeUsed;
   }
 
   public void incrementToolCalledCount(String toolName, boolean succeeded) {
