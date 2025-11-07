@@ -268,15 +268,9 @@ public class FileExclusionService {
         return true;
       })
       .filter(file -> {
-        try {
-          var uri = file.getUri();
-          var path = FileUtils.getFilePathFromUri(uri);
-          if (Files.exists(path) && Files.size(path) > MAX_AUTO_ANALYSIS_FILE_SIZE_BYTES) {
-            filteredURIsTooLarge.add(uri);
-            return false;
-          }
-        } catch (Exception ignored) {
-          // If we cannot determine size, do not skip
+        if (isLargerThanMaxAutoSize(file)) {
+          filteredURIsTooLarge.add(file.getUri());
+          return false;
         }
         return true;
       })
@@ -328,6 +322,37 @@ public class FileExclusionService {
   private void logFilteredURIs(String reason, ArrayList<URI> uris) {
     if (!uris.isEmpty()) {
       SonarLintLogger.get().debug(reason + ": " + String.join(", ", uris.stream().map(Object::toString).toList()));
+    }
+  }
+
+  private static boolean isLargerThanMaxAutoSize(ClientFile file) {
+    // Prefer local FS size when possible
+    try {
+      if (!file.isDirty()) {
+        var localPath = FileUtils.getFilePathFromUri(file.getUri());
+        if (Files.exists(localPath)) {
+          return Files.size(localPath) > MAX_AUTO_ANALYSIS_FILE_SIZE_BYTES;
+        }
+      }
+    } catch (Exception ignored) {
+      // Fall back to reading from inputStream below
+    }
+
+    // Fallback: count bytes from input stream and stop whenever 5 MB is reached
+    try (var in = file.inputStream()) {
+      var buffer = new byte[8192];
+      var total = 0L;
+      int read;
+      while ((read = in.read(buffer)) != -1) {
+        total += read;
+        if (total > MAX_AUTO_ANALYSIS_FILE_SIZE_BYTES) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception ignored) {
+      // If we cannot determine size, do not exclude
+      return false;
     }
   }
 
