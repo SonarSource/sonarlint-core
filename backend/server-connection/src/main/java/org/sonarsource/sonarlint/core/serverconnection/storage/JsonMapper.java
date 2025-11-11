@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -107,37 +108,14 @@ public class JsonMapper {
     }
   }
 
-  public Set<SonarLanguage> deserializeLanguages(@Nullable JSON json) {
-    if (json == null) {
+  public Set<SonarLanguage> deserializeLanguages(@Nullable String[] languages) {
+    if (languages == null) {
       return Set.of();
     }
-    try {
-      var languages = objectMapper.readValue(json.data(), new TypeReference<List<String>>() {
-      });
-      return languages.stream()
-        .map(language -> {
-          try {
-            return SonarLanguage.valueOf(language);
-          } catch (Exception e) {
-            return null;
-          }
-        })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toUnmodifiableSet());
-    } catch (Exception e) {
-      LOG.error("Failed to deserialize enabled languages {}", json.data(), e);
-      return Set.of();
-    }
+    return Arrays.stream(languages).map(SonarLanguage::valueOf).collect(Collectors.toSet());
   }
 
-  @Nullable
-  public JSON serializeLanguages(Set<SonarLanguage> enabledLanguages) {
-    try {
-      var languageNames = enabledLanguages.stream().map(Enum::name).toList();
-      return JSON.valueOf(objectMapper.writeValueAsString(languageNames));
-    } catch (Exception e) {
-      LOG.error("Failed to serialize enabled languages {}", enabledLanguages, e);
-    }
-    return null;
+  public String[] serializeLanguages(Set<SonarLanguage> enabledLanguages) {
+    return enabledLanguages.stream().map(Enum::name).toList().toArray(new String[0]);
   }
 }

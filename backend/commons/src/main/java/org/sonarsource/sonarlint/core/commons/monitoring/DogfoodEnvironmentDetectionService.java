@@ -20,15 +20,11 @@
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class DogfoodEnvironmentDetectionService {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
 
   public boolean isDogfoodEnvironment() {
-    var dogfoodingMode = SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0");
-    LOG.debug("Dogfooding mode: {}", dogfoodingMode);
-    return "1".equals(dogfoodingMode);
+    return "1".equals(SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0"));
   }
 }

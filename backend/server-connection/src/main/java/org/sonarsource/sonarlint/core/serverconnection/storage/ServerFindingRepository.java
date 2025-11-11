@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Server Connection
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -343,7 +343,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   private void upsertBranchMetadata(String branchName,
     TableField<ServerBranchesRecord, LocalDateTime> tsField,
-    TableField<ServerBranchesRecord, JSON> langsField,
+    TableField<ServerBranchesRecord, String[]> langsField,
     Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
 
     var ldt = LocalDateTime.ofInstant(syncTimestamp, ZoneId.systemDefault());
@@ -365,7 +365,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private Set<SonarLanguage> readLanguages(String branchName,
-    TableField<ServerBranchesRecord, JSON> langsField) {
+    TableField<ServerBranchesRecord, String[]> langsField) {
     var table = SERVER_BRANCHES;
     var rec = database.dsl().select(langsField)
       .from(table)

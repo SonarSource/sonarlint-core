@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS SERVER_FINDINGS (
     server_key VARCHAR(255) NOT NULL PRIMARY KEY,
     rule_id VARCHAR(255),
     rule_key VARCHAR(255) NOT NULL,
-    message VARCHAR(255) NOT NULL,
+    message VARCHAR(10000) NOT NULL,
     file_path VARCHAR(4096) NOT NULL, -- default Linux path length limit
     creation_date TIMESTAMP NOT NULL,
     user_severity VARCHAR(255),
@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS SERVER_BRANCHES (
     last_issue_sync_ts TIMESTAMP,
     last_taint_sync_ts TIMESTAMP,
     last_hotspot_sync_ts TIMESTAMP,
-    last_issue_enabled_langs JSON(10000),
-    last_taint_enabled_langs JSON(10000),
-    last_hotspot_enabled_langs JSON(10000),
+    last_issue_enabled_langs VARCHAR(64) ARRAY,
+    last_taint_enabled_langs VARCHAR(64) ARRAY,
+    last_hotspot_enabled_langs VARCHAR(64) ARRAY,
     PRIMARY KEY (branch_name, connection_id, sonar_project_key)
 );
 
