@@ -19,25 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+public class GetHookScriptContentParams {
+  private final AiAgent agent;
 
-@JsonSegment("ai")
-public interface AiAgentRpcService {
+  public GetHookScriptContentParams(AiAgent agent) {
+    this.agent = agent;
+  }
 
-  /**
-   * Returns the content of rule file to be written to each IDE's rule folder, based on the agent.
-   * The rule file provides good practices to the agent.
-   */
-  @JsonRequest
-  CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params);
-
-  /**
-   * Returns hook script content with auto-detected executable type and embedded server port.
-   * The hook script will analyze code after write events using the post_write_code hook.
-   */
-  @JsonRequest
-  CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params);
-
+  public AiAgent getAiAgent() {
+    return agent;
+  }
 }
+
