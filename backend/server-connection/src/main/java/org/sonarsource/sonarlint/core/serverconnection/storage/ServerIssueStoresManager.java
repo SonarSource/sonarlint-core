@@ -23,17 +23,25 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 public class ServerIssueStoresManager {
 
   Map<String, ProjectServerIssueStore> serverIssueStoreByKey = new ConcurrentHashMap<>();
   private final Path projectsStorageBaseDir;
+  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
+  private final SonarLintDatabase database;
   private final Path workDir;
+  private final String connectionId;
 
-  public ServerIssueStoresManager(Path projectsStorageBaseDir, Path workDir) {
+  public ServerIssueStoresManager(Path projectsStorageBaseDir, Path workDir, String connectionId,
+    DogfoodEnvironmentDetectionService dogfoodEnvDetectionService, SonarLintDatabase database) {
     this.projectsStorageBaseDir = projectsStorageBaseDir;
     this.workDir = workDir;
-
+    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
+    this.database = database;
+    this.connectionId = connectionId;
   }
 
   public ProjectServerIssueStore get(String projectKey) {
@@ -41,7 +49,11 @@ public class ServerIssueStoresManager {
     return serverIssueStoreByKey.computeIfAbsent(projectKey,
       p -> {
         try {
-          return new XodusServerIssueStore(xodusBackupPath, workDir);
+          if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+            return new ServerFindingRepository(database, connectionId, projectKey);
+          } else {
+            return new XodusServerIssueStore(xodusBackupPath, workDir);
+          }
         } catch (IOException e) {
           throw new IllegalStateException("Unable to create server issue database", e);
         }

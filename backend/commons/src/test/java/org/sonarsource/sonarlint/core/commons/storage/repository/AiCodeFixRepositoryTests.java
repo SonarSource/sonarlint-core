@@ -45,7 +45,7 @@ class AiCodeFixRepositoryTests {
     // Given a file-based H2 database under a temporary storage root
     var storageRoot = temp.resolve("storage");
 
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
+    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var entityToStore = new AiCodeFix(
@@ -63,7 +63,7 @@ class AiCodeFixRepositoryTests {
     db.shutdown();
 
     // Create a new repository with a fresh DB instance pointing to the same storage root
-    var db2 = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
+    var db2 = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
     var repo2 = new AiCodeFixRepository(db2);
     // With a different connection id, no settings should be visible
     var loadedOptDifferent = repo2.get("test-connection-2");

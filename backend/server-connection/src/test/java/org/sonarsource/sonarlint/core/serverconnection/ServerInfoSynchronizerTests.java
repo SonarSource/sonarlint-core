@@ -30,7 +30,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
@@ -41,6 +43,7 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.mock;
 
 class ServerInfoSynchronizerTests {
   @RegisterExtension
@@ -55,7 +58,9 @@ class ServerInfoSynchronizerTests {
 
   @BeforeEach
   void prepare() {
-    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
+    var databaseService = mock(SonarLintDatabase.class);
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId", dogfoodEnvDetectionService, databaseService);
     synchronizer = new ServerInfoSynchronizer(storage);
   }
 

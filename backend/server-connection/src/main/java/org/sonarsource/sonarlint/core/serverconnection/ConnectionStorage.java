@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.storage.AiCodeFixStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
@@ -43,11 +45,12 @@ public class ConnectionStorage {
   private final String connectionId;
   private final UserStorage userStorage;
 
-  public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId) {
+  public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId,
+    DogfoodEnvironmentDetectionService dogfoodEnvDetectionService, SonarLintDatabase database) {
     this.connectionId = connectionId;
     this.connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
     this.projectsStorageRoot = connectionStorageRoot.resolve("projects");
-    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
+    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir, connectionId, dogfoodEnvDetectionService, database);
     this.serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
     this.aiCodeFixStorage = new AiCodeFixStorage(connectionStorageRoot);

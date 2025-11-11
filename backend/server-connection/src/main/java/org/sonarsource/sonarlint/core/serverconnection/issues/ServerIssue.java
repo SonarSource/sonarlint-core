@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
@@ -31,6 +32,8 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFinding {
+
+  private UUID id;
   private String key;
   private boolean resolved;
   private IssueStatus resolutionStatus;
@@ -42,9 +45,10 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
   private RuleType type;
   private Map<SoftwareQuality, ImpactSeverity> impacts;
 
-  protected ServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+  protected ServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
     Map<SoftwareQuality, ImpactSeverity> impacts) {
+    this.id = id;
     this.key = key;
     this.resolved = resolved;
     this.resolutionStatus = resolutionStatus;
@@ -55,6 +59,11 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     this.userSeverity = userSeverity;
     this.type = type;
     this.impacts = impacts;
+  }
+
+  @CheckForNull
+  public UUID getId() {
+    return id;
   }
 
   public String getKey() {
@@ -100,8 +109,18 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     return impacts;
   }
 
+  public G setId(@Nullable UUID id) {
+    this.id = id;
+    return (G) this;
+  }
+
   public G setKey(String key) {
     this.key = key;
+    return (G) this;
+  }
+
+  public G setResolutionStatus(@Nullable IssueStatus resolutionStatus) {
+    this.resolutionStatus = resolutionStatus;
     return (G) this;
   }
 

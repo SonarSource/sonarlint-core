@@ -17,27 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-
-public class IssueStoreReader {
-  private final ConnectionStorage storage;
-
-  public IssueStoreReader(ConnectionStorage storage) {
-    this.storage = storage;
-  }
-
-  public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, Path ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (sqPath == null) {
-      return Collections.emptyList();
-    }
-    var loadedIssues = storage.project(projectBinding.projectKey()).findings().load(branchName, sqPath);
-    loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
-    return loadedIssues;
-  }
+public enum ServerFindingType {
+  ISSUE,
+  HOTSPOT,
+  TAINT
 }
