@@ -29,26 +29,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.jooq.Configuration;
-import org.jooq.JSON;
 import org.jooq.TableField;
-import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.IssueStatus;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerBranchesRecord;
-import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerFindingsRecord;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -60,7 +49,7 @@ import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
 
-  private final JsonMapper mapper = new JsonMapper();
+  private final EntityMapper mapper = new EntityMapper();
   private final SonarLintDatabase database;
   private final String connectionId;
   private final String sonarProjectKey;
@@ -90,51 +79,8 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
-      var serializer = new JsonMapper();
-      issues.forEach(issue -> insertIssue(branchName, connectionId, sonarProjectKey, trx, issue, serializer));
+      batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issues);
     });
-  }
-
-  private static void insertIssue(String branchName, String connectionId, String sonarProjectKey, Configuration trx, ServerIssue<?> issue, JsonMapper serializer) {
-    var impactsJson = serializer.serializeImpacts(issue.getImpacts());
-    var creationDate = LocalDateTime.ofInstant(issue.getCreationDate(), ZoneId.systemDefault());
-    trx.dsl()
-      .deleteFrom(SERVER_FINDINGS)
-      .where(SERVER_FINDINGS.ID.eq(issue.getId()))
-      .execute();
-    var query = trx.dsl().insertInto(SERVER_FINDINGS)
-      .set(SERVER_FINDINGS.ID, issue.getId())
-      .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
-      .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
-      .set(SERVER_FINDINGS.SERVER_KEY, issue.getKey())
-      .set(SERVER_FINDINGS.RULE_KEY, issue.getRuleKey())
-      .set(SERVER_FINDINGS.MESSAGE, issue.getMessage())
-      .set(SERVER_FINDINGS.FILE_PATH, issue.getFilePath().toString())
-      .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
-      .set(SERVER_FINDINGS.USER_SEVERITY, issue.getUserSeverity() != null ? issue.getUserSeverity().name() : null)
-      .set(SERVER_FINDINGS.RULE_TYPE, issue.getType() != null ? issue.getType().name() : null)
-      .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.ISSUE.name())
-      .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
-      // Resolution
-      .set(SERVER_FINDINGS.RESOLVED, issue.isResolved())
-      .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, issue.getResolutionStatus() != null ? issue.getResolutionStatus().name() : null)
-      // Impacts
-      .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson));
-    if (issue instanceof LineLevelServerIssue lineIssue) {
-      query.set(SERVER_FINDINGS.LINE, lineIssue.getLine())
-        .set(SERVER_FINDINGS.LINE_HASH, lineIssue.getLineHash())
-        .execute();
-    } else if (issue instanceof RangeLevelServerIssue textRangeIssue) {
-      query.set(SERVER_FINDINGS.START_LINE, textRangeIssue.getTextRange().getStartLine())
-        .set(SERVER_FINDINGS.START_LINE_OFFSET, textRangeIssue.getTextRange().getStartLineOffset())
-        .set(SERVER_FINDINGS.END_LINE, textRangeIssue.getTextRange().getEndLine())
-        .set(SERVER_FINDINGS.END_LINE_OFFSET, textRangeIssue.getTextRange().getEndLineOffset())
-        .set(SERVER_FINDINGS.TEXT_RANGE_HASH, textRangeIssue.getTextRange().getHash())
-        .execute();
-    } else {
-      // File level issue
-      query.execute();
-    }
   }
 
   @Override
@@ -146,7 +92,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
-      serverHotspots.forEach(hotspot -> insertHotspot(branchName, connectionId, sonarProjectKey, trx, hotspot));
+      batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, serverHotspots);
     });
   }
 
@@ -161,7 +107,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
         )
         .execute();
-      serverHotspots.forEach(hotspot -> insertHotspot(branchName, connectionId, sonarProjectKey, trx, hotspot));
+      batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, serverHotspots);
     });
   }
 
@@ -189,8 +135,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
         )
         .execute();
-      var jsonMapper = new JsonMapper();
-      issues.forEach(issue -> insertIssue(branchName, connectionId, sonarProjectKey, trx, issue, jsonMapper));
+      batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issues);
     });
   }
 
@@ -206,16 +151,13 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
             .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
           .execute();
       }
-      var serializer = new JsonMapper();
-      issuesToMerge.forEach(issue -> {
-        // remove any existing row with same id to mimic upsert behavior
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.ID.eq(issue.getId())
-            .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-            .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-          .execute();
-        insertIssue(branchName, connectionId, sonarProjectKey, trx, issue, serializer);
-      });
+      var issueIds = issuesToMerge.stream().map(ServerIssue::getId).collect(Collectors.toSet());
+      trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.ID.in(issueIds))
+        .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
+        .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
+        .execute();
+      batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issuesToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_ISSUE_SYNC_TS,
         SERVER_BRANCHES.LAST_ISSUE_ENABLED_LANGS,
@@ -224,7 +166,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> taintsToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
     Set<SonarLanguage> enabledLanguages) {
     database.withTransaction(trx -> {
       if (!closedIssueKeysToDelete.isEmpty()) {
@@ -236,12 +178,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
             .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
           .execute();
       }
-      issuesToMerge.forEach(taint -> {
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.SERVER_KEY.eq(taint.getSonarServerKey()))
-          .execute();
-        insertTaint(branchName, taint, trx);
-      });
+      batchMergeTaints(branchName, connectionId, sonarProjectKey, trx, taintsToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_TAINT_SYNC_TS,
         SERVER_BRANCHES.LAST_TAINT_ENABLED_LANGS,
@@ -262,14 +199,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
             .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
           .execute();
       }
-      hotspotsToMerge.forEach(hotspot -> {
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.ID.eq(hotspot.getId())
-            .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-            .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-          .execute();
-        insertHotspot(branchName, connectionId, sonarProjectKey, trx, hotspot);
-      });
+      batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, hotspotsToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS,
         SERVER_BRANCHES.LAST_HOTSPOT_ENABLED_LANGS,
@@ -379,67 +309,6 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     return mapper.deserializeLanguages(rec.value1());
   }
 
-  private ServerIssue<?> adaptIssue(ServerFindingsRecord rec) {
-    var id = rec.getId();
-    var serverKey = rec.getServerKey();
-    var ruleKey = rec.getRuleKey();
-    var message = rec.getMessage();
-    var filePath = Path.of((rec.getFilePath()));
-    var creationDate = toInstant(rec.getCreationDate());
-    var userSeverity = rec.getUserSeverity() != null ? IssueSeverity.valueOf(rec.getUserSeverity()) : null;
-    var type = rec.getRuleType() != null ? RuleType.valueOf(rec.getRuleType()) : RuleType.CODE_SMELL;
-    var resolved = Boolean.TRUE.equals(rec.getResolved());
-    var resolutionStatus = rec.getIssueResolutionStatus() != null ? IssueStatus.valueOf(rec.getIssueResolutionStatus()) : null;
-    var impactsJson = rec.getImpacts();
-    var impacts = mapper.deserializeImpacts(impactsJson);
-    if (rec.getLine() != null) {
-      return new LineLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, rec.getLineHash(), filePath, creationDate, userSeverity, type,
-        rec.getLine(), impacts);
-    }
-    if (rec.getStartLine() != null) {
-      var textRangeWithHash = new TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset(), rec.getTextRangeHash());
-      return new RangeLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, textRangeWithHash, impacts);
-    }
-    return new FileLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
-  }
-
-  private static ServerHotspot adaptHotspot(ServerFindingsRecord rec) {
-    var id = rec.getId();
-    var key = rec.getServerKey();
-    var ruleKey = rec.getRuleKey();
-    var message = rec.getMessage();
-    var filePath = Path.of((rec.getFilePath()));
-    var textRange = new TextRange(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset());
-    var creationDate = toInstant(rec.getCreationDate());
-    var status = HotspotReviewStatus.valueOf(rec.getHotspotReviewStatus());
-    var prob = rec.getVulnerabilityProbability() != null ? VulnerabilityProbability.valueOf(rec.getVulnerabilityProbability()) : VulnerabilityProbability.MEDIUM;
-    var assignee = rec.getAssignee();
-    return new ServerHotspot(id, key, ruleKey, message, filePath, textRange, creationDate, status, prob, assignee);
-  }
-
-  private ServerTaintIssue adaptTaint(ServerFindingsRecord rec) {
-    var id = rec.getId();
-    var key = rec.getServerKey();
-    var resolved = Boolean.TRUE.equals(rec.getResolved());
-    var resolutionStatus = rec.getIssueResolutionStatus() != null ? IssueStatus.valueOf(rec.getIssueResolutionStatus()) : null;
-    var ruleKey = rec.getRuleKey();
-    var message = rec.getMessage();
-    var filePath = Path.of((rec.getFilePath()));
-    var creationDate = toInstant(rec.getCreationDate());
-    var severity = rec.getUserSeverity() != null ? IssueSeverity.valueOf(rec.getUserSeverity()) : IssueSeverity.MAJOR;
-    var type = rec.getRuleType() != null ? RuleType.valueOf(rec.getRuleType()) : RuleType.CODE_SMELL;
-    TextRangeWithHash textRangeWithHash = null;
-    if (rec.getStartLine() != null) {
-      textRangeWithHash = new TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset(), rec.getTextRangeHash());
-    }
-    var ruleDescCtx = rec.getRuleDescriptionContextKey();
-    var cleanCodeAttr = rec.getCleanCodeAttribute() != null ? CleanCodeAttribute.valueOf(rec.getCleanCodeAttribute()) : null;
-    var impactsJson = rec.getImpacts();
-    var impacts = mapper.deserializeImpacts(impactsJson);
-    return new ServerTaintIssue(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate,
-      severity, type, textRangeWithHash, ruleDescCtx, cleanCodeAttr, impacts);
-  }
-
   @Override
   public List<ServerIssue<?>> load(String branchName, Path sqFilePath) {
     return database.dsl().selectFrom(SERVER_FINDINGS)
@@ -449,7 +318,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetch().stream()
-      .<ServerIssue<?>>map(this::adaptIssue)
+      .<ServerIssue<?>>map(mapper::adaptIssue)
       .toList();
   }
 
@@ -462,7 +331,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
-      taintIssues.forEach(t -> insertTaint(branchName, t, trx));
+      batchMergeTaints(branchName, connectionId, sonarProjectKey, trx, taintIssues);
     });
   }
 
@@ -475,7 +344,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetch().stream()
-      .map(ServerFindingRepository::adaptHotspot)
+      .map(mapper::adaptHotspot)
       .toList();
   }
 
@@ -487,13 +356,12 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetch().stream()
-      .map(this::adaptTaint)
+      .map(mapper::adaptTaint)
       .toList();
   }
 
   @Override
   public boolean updateIssue(String issueKey, Consumer<ServerIssue<?>> issueUpdater) {
-    // For compatibility only; we will persist a subset of fields after applying the updater
     var rec = database.dsl().selectFrom(SERVER_FINDINGS)
       .where(SERVER_FINDINGS.SERVER_KEY.eq(issueKey)
         .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.ISSUE.name()))
@@ -503,14 +371,12 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return false;
     }
-    var current = adaptIssue(rec);
+    var current = mapper.adaptIssue(rec);
     issueUpdater.accept(current);
-    // Persist supported fields from the possibly-updated object
     database.dsl().update(SERVER_FINDINGS)
       .set(SERVER_FINDINGS.RESOLVED, current.isResolved())
       .set(SERVER_FINDINGS.USER_SEVERITY, current.getUserSeverity() != null ? current.getUserSeverity().name() : null)
       .set(SERVER_FINDINGS.RULE_TYPE, current.getType() != null ? current.getType().name() : null)
-      // Impacts JSON is kept as-is until full serialization support; do not update here
       .where(SERVER_FINDINGS.ID.eq(rec.getId()))
       .execute();
     return true;
@@ -524,7 +390,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    return rec != null ? adaptIssue(rec) : null;
+    return rec != null ? mapper.adaptIssue(rec) : null;
   }
 
   @Override
@@ -535,7 +401,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    return rec != null ? adaptHotspot(rec) : null;
+    return rec != null ? mapper.adaptHotspot(rec) : null;
   }
 
   @Override
@@ -553,7 +419,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return Optional.empty();
     }
-    return Optional.of(isTaintIssue ? adaptTaint(rec) : adaptIssue(rec));
+    return Optional.of(isTaintIssue ? mapper.adaptTaint(rec) : mapper.adaptIssue(rec));
   }
 
   @Override
@@ -565,57 +431,19 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return Optional.empty();
     }
-    var current = adaptTaint(rec);
+    var current = mapper.adaptTaint(rec);
     taintIssueUpdater.accept(current);
-    // persist a couple of fields if modified through separate APIs elsewhere; here we keep record unchanged
     return Optional.of(current);
   }
 
   @Override
   public void insert(String branchName, ServerTaintIssue taintIssue) {
-    database.withTransaction(trx -> insertTaint(branchName, taintIssue, trx));
-  }
-
-  private void insertTaint(String branchName, ServerTaintIssue taintIssue, Configuration trx) {
-    trx.dsl().deleteFrom(SERVER_FINDINGS)
-      .where(SERVER_FINDINGS.SERVER_KEY.eq(taintIssue.getSonarServerKey()))
-      .execute();
-    var creationDate = LocalDateTime.ofInstant(taintIssue.getCreationDate(), ZoneId.systemDefault());
-    var impactsJson = mapper.serializeImpacts(taintIssue.getImpacts());
-    var flowsJson = mapper.serializeFlows(taintIssue);
-    var cleanCodeAttribute = taintIssue.getCleanCodeAttribute();
-    var insert = trx.dsl().insertInto(SERVER_FINDINGS)
-      .set(SERVER_FINDINGS.ID, taintIssue.getId())
-      .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
-      .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
-      .set(SERVER_FINDINGS.SERVER_KEY, taintIssue.getSonarServerKey())
-      .set(SERVER_FINDINGS.RULE_KEY, taintIssue.getRuleKey())
-      .set(SERVER_FINDINGS.MESSAGE, taintIssue.getMessage())
-      .set(SERVER_FINDINGS.FILE_PATH, taintIssue.getFilePath().toString())
-      .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
-      .set(SERVER_FINDINGS.USER_SEVERITY, taintIssue.getSeverity() != null ? taintIssue.getSeverity().name() : null)
-      .set(SERVER_FINDINGS.RULE_TYPE, taintIssue.getType() != null ? taintIssue.getType().name() : null)
-      .set(SERVER_FINDINGS.RULE_DESCRIPTION_CONTEXT_KEY, taintIssue.getRuleDescriptionContextKey())
-      .set(SERVER_FINDINGS.CLEAN_CODE_ATTRIBUTE, cleanCodeAttribute.map(Enum::name).orElse(null))
-      .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.TAINT.name())
-      .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
-      .set(SERVER_FINDINGS.RESOLVED, taintIssue.isResolved())
-      .set(SERVER_FINDINGS.ISSUE_RESOLUTION_STATUS, taintIssue.getResolutionStatus() != null ? taintIssue.getResolutionStatus().name() : null)
-      .set(SERVER_FINDINGS.IMPACTS, JSON.valueOf(impactsJson))
-      .set(SERVER_FINDINGS.FLOWS, JSON.valueOf(flowsJson));
-    if (taintIssue.getTextRange() != null) {
-      insert = insert.set(SERVER_FINDINGS.START_LINE, taintIssue.getTextRange().getStartLine())
-        .set(SERVER_FINDINGS.START_LINE_OFFSET, taintIssue.getTextRange().getStartLineOffset())
-        .set(SERVER_FINDINGS.END_LINE, taintIssue.getTextRange().getEndLine())
-        .set(SERVER_FINDINGS.END_LINE_OFFSET, taintIssue.getTextRange().getEndLineOffset())
-        .set(SERVER_FINDINGS.TEXT_RANGE_HASH, taintIssue.getTextRange().getHash());
-    }
-    insert.execute();
+    database.withTransaction(trx -> batchMergeTaints(branchName, connectionId, sonarProjectKey, trx, List.of(taintIssue)));
   }
 
   @Override
   public void insert(String branchName, ServerHotspot hotspot) {
-    database.withTransaction(trx -> insertHotspot(branchName, connectionId, sonarProjectKey, trx, hotspot));
+    database.withTransaction(trx -> batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, List.of(hotspot)));
   }
 
   @Override
@@ -657,7 +485,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     if (rec == null) {
       return;
     }
-    var current = adaptHotspot(rec);
+    var current = mapper.adaptHotspot(rec);
     hotspotUpdater.accept(current);
     database.dsl().update(SERVER_FINDINGS)
       .set(SERVER_FINDINGS.HOTSPOT_REVIEW_STATUS, current.getStatus().name())
@@ -686,27 +514,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(table.CONNECTION_ID.eq(connectionId))
           .and(table.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
-      serverDependencyRisks.forEach(dependencyRisk -> {
-        trx.dsl().deleteFrom(table)
-          .where(table.ID.eq(dependencyRisk.key()))
-          .execute();
-        var transitionsJson = mapper.serializeTransitions(dependencyRisk.transitions());
-        trx.dsl().insertInto(table)
-          .set(table.ID, dependencyRisk.key())
-          .set(table.CONNECTION_ID, connectionId)
-          .set(table.SONAR_PROJECT_KEY, sonarProjectKey)
-          .set(table.BRANCH_NAME, branchName)
-          .set(table.TYPE, dependencyRisk.type().name())
-          .set(table.SEVERITY, dependencyRisk.severity().name())
-          .set(table.SOFTWARE_QUALITY, dependencyRisk.quality().name())
-          .set(table.STATUS, dependencyRisk.status().name())
-          .set(table.PACKAGE_NAME, dependencyRisk.packageName())
-          .set(table.PACKAGE_VERSION, dependencyRisk.packageVersion())
-          .set(table.VULNERABILITY_ID, dependencyRisk.vulnerabilityId())
-          .set(table.CVSS_SCORE, dependencyRisk.cvssScore())
-          .set(table.TRANSITIONS, transitionsJson)
-          .execute();
-      });
+      batchMergeDependencyRisks(branchName, connectionId, sonarProjectKey, trx, serverDependencyRisks);
     });
   }
 
@@ -748,31 +556,27 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
       .execute();
   }
 
-  private static void insertHotspot(String branchName, String connectionId, String sonarProjectKey, Configuration trx, ServerHotspot hotspot) {
-    var creationDate = LocalDateTime.ofInstant(hotspot.getCreationDate(), ZoneId.systemDefault());
-    trx.dsl().deleteFrom(SERVER_FINDINGS)
-      .where(SERVER_FINDINGS.SERVER_KEY.eq(hotspot.getKey()))
+  private void batchMergeHotspots(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerHotspot> hotspots) {
+    trx.dsl().batchMerge(hotspots.stream()
+        .map(hotspot -> mapper.serverHotspotToRecord(hotspot, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
-    trx.dsl().insertInto(SERVER_FINDINGS)
-      .set(SERVER_FINDINGS.ID, hotspot.getId())
-      .set(SERVER_FINDINGS.CONNECTION_ID, connectionId)
-      .set(SERVER_FINDINGS.SONAR_PROJECT_KEY, sonarProjectKey)
-      .set(SERVER_FINDINGS.SERVER_KEY, hotspot.getKey())
-      .set(SERVER_FINDINGS.RULE_KEY, hotspot.getRuleKey())
-      .set(SERVER_FINDINGS.MESSAGE, hotspot.getMessage())
-      .set(SERVER_FINDINGS.FILE_PATH, hotspot.getFilePath().toString())
-      .set(SERVER_FINDINGS.CREATION_DATE, creationDate)
-      .set(SERVER_FINDINGS.VULNERABILITY_PROBABILITY, hotspot.getVulnerabilityProbability().name())
-      .set(SERVER_FINDINGS.ASSIGNEE, hotspot.getAssignee())
-      .set(SERVER_FINDINGS.FINDING_TYPE, ServerFindingType.HOTSPOT.name())
-      .set(SERVER_FINDINGS.BRANCH_NAME, branchName)
-      // Resolution
-      .set(SERVER_FINDINGS.HOTSPOT_REVIEW_STATUS, hotspot.getStatus().name())
-      // Text range
-      .set(SERVER_FINDINGS.START_LINE, hotspot.getTextRange().getStartLine())
-        .set(SERVER_FINDINGS.START_LINE_OFFSET, hotspot.getTextRange().getStartLineOffset())
-        .set(SERVER_FINDINGS.END_LINE, hotspot.getTextRange().getEndLine())
-        .set(SERVER_FINDINGS.END_LINE_OFFSET, hotspot.getTextRange().getEndLineOffset())
+  }
+
+  private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {
+    trx.dsl().batchMerge(issues.stream()
+        .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
+      .execute();
+  }
+
+  private void batchMergeTaints(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerTaintIssue> taints) {
+    trx.dsl().batchMerge(taints.stream()
+        .map(taint -> mapper.serverTaintToRecord(taint, branchName, connectionId, sonarProjectKey)).toList())
+      .execute();
+  }
+
+  private void batchMergeDependencyRisks(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerDependencyRisk> risks) {
+    trx.dsl().batchMerge(risks.stream()
+        .map(risk -> mapper.serverDependencyRiskToRecord(risk, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
   }
 }
