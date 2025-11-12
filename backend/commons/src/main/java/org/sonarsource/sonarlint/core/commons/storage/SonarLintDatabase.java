@@ -46,9 +46,8 @@ public final class SonarLintDatabase {
   public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
     JdbcConnectionPool ds;
     try {
-      var mode = System.getProperty("sonarlint.db.mode", "file");
       String url;
-      if ("mem".equalsIgnoreCase(mode)) {
+      if (sonarLintDatabaseInitParams.sonarLintDatabaseMode() == SonarLintDatabaseMode.MEM) {
         // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
         url = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
       } else {

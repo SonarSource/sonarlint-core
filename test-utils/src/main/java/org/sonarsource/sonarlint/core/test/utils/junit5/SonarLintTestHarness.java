@@ -53,8 +53,6 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   @Override
   public void beforeAll(ExtensionContext context) {
     isStatic = true;
-    // Use in-memory H2 for medium tests to speed up backend startup
-    System.setProperty("sonarlint.db.mode", "mem");
   }
 
   @Override
