@@ -48,8 +48,6 @@ import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
@@ -159,7 +157,7 @@ public class SonarLintBackendFixture {
     private String clientName = "SonarLint Backend Fixture";
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
-    private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
+    private final List<StorageFixture.StorageBuilder> serverStorages = new ArrayList<>();
     private boolean isFocusOnNewCode;
 
     @Nullable
@@ -235,7 +233,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, disableNotifications));
       return this;
@@ -245,7 +243,7 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withStorage(String connectionId, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       var storage = newStorage(connectionId);
       storageBuilder.accept(storage);
-      storages.add(storage);
+      serverStorages.add(storage);
       return this;
     }
 
@@ -289,7 +287,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
         SonarCloudRegion.valueOf(region), disableNotifications));
@@ -301,7 +299,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
         region, disableNotifications));
@@ -497,7 +495,7 @@ public class SonarLintBackendFixture {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
-      storages.forEach(storage -> storage.create(storageParentPath));
+      serverStorages.forEach(storage -> storage.create(storageParentPath));
       var storageRoot = storageParentPath.resolve("storage");
       if (!configurationScopeStorages.isEmpty()) {
         configurationScopeStorages.forEach(storage -> storage.create(storageRoot));
@@ -528,7 +526,10 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
           .get();
-        initializeDatabase(sonarLintBackend.getSonarLintDatabase(), storages);
+        serverStorages.forEach(storage ->
+          storage.populateDatabase(sonarLintBackend.getSonarLintDatabase())
+        );
+        configurationScopeStorages.forEach(storage -> storage.populateDatabase(sonarLintBackend.getSonarLintDatabase()));
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);
@@ -537,17 +538,6 @@ public class SonarLintBackendFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
-    }
-
-    private static void initializeDatabase(SonarLintDatabase sonarLintDatabase, List<StorageFixture.StorageBuilder> storages) {
-      var aiCodeFixRepository = new AiCodeFixRepository(sonarLintDatabase);
-
-      storages.forEach(storage -> {
-        var aiCodeFixSettings = storage.getAiCodeFixSettingsBuilder();
-        if (aiCodeFixSettings != null) {
-          aiCodeFixRepository.upsert(aiCodeFixSettings.buildAiCodeFix(storage.getConnectionId()));
-        }
-      });
     }
 
     private static URI createUriFromString(@Nullable String uri) {
