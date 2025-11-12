@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -45,7 +46,12 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.HotspotReviewStatusBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
@@ -54,6 +60,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.IssueStatusBindin
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueTypeBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerFindingRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
@@ -231,7 +238,7 @@ public class ProjectStorageFixture {
             .collect(Collectors.groupingBy(ServerTaintIssueFixtures.ServerTaintIssue::filePath));
           var hotspotsByFilePath = branch.serverHotspots.stream()
             .map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build)
-            .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::getFilePath));
+            .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::filePath));
           Stream.of(issuesByFilePath, taintIssuesByFilePath, hotspotsByFilePath)
             .flatMap(map -> map.keySet().stream())
             .toList()
@@ -331,21 +338,21 @@ public class ProjectStorageFixture {
 
     private static void linkHotshotEntity(StoreTransaction txn, ServerSecurityHotspotFixture.ServerHotspot hotspot, Entity fileEntity) {
       var hotspotEntity = txn.newEntity("Hotspot");
-      hotspotEntity.setProperty("key", hotspot.key);
-      hotspotEntity.setProperty("ruleKey", hotspot.ruleKey);
-      hotspotEntity.setBlobString("message", hotspot.message);
-      hotspotEntity.setProperty("creationDate", hotspot.introductionDate);
-      var textRange = hotspot.textRangeWithHash;
+      hotspotEntity.setProperty("key", hotspot.key());
+      hotspotEntity.setProperty("ruleKey", hotspot.ruleKey());
+      hotspotEntity.setBlobString("message", hotspot.message());
+      hotspotEntity.setProperty("creationDate", hotspot.introductionDate());
+      var textRange = hotspot.textRangeWithHash();
       hotspotEntity.setProperty("startLine", textRange.getStartLine());
       hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
       hotspotEntity.setProperty("endLine", textRange.getEndLine());
       hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
       hotspotEntity.setBlobString("rangeHash", textRange.getHash());
 
-      hotspotEntity.setProperty("status", hotspot.status);
-      hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability.toString());
-      if (hotspot.assignee != null) {
-        hotspotEntity.setProperty("assignee", hotspot.assignee);
+      hotspotEntity.setProperty("status", hotspot.status());
+      hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability().toString());
+      if (hotspot.assignee() != null) {
+        hotspotEntity.setProperty("assignee", hotspot.assignee());
       }
 
       hotspotEntity.setLink("file", fileEntity);
@@ -373,6 +380,70 @@ public class ProjectStorageFixture {
 
       branchEntity.addLink("dependencyRisks", dependencyRiskEntity);
       dependencyRiskEntity.setLink("branch", branchEntity);
+    }
+
+    public void populateDatabase(SonarLintDatabase database, String connectionId) {
+      var serverFindingRepository = new ServerFindingRepository(database, connectionId, projectKey);
+      branches.forEach(branch -> {
+
+        serverFindingRepository.replaceAllIssuesOfBranch(branch.name,
+          branch.serverIssues.stream().map(ServerIssueFixtures.ServerIssueBuilder::build).<ServerIssue<?>>map(issue -> new RangeLevelServerIssue(
+            UUID.randomUUID(),
+            issue.key(),
+            issue.resolved(),
+            issue.resolutionStatus(),
+            issue.ruleKey(),
+            issue.message(),
+            Paths.get(issue.filePath()),
+            issue.introductionDate(),
+            issue.userSeverity(),
+            issue.ruleType(),
+            issue.textRangeWithHash(),
+            issue.impacts())).toList());
+
+        serverFindingRepository.replaceAllHotspotsOfBranch(branch.name,
+          branch.serverHotspots.stream().map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build).map(hotspot -> new ServerHotspot(
+            UUID.randomUUID(),
+            hotspot.key(),
+            hotspot.ruleKey(),
+            hotspot.message(),
+            Paths.get(hotspot.filePath()),
+            hotspot.textRangeWithHash(),
+            hotspot.introductionDate(),
+            hotspot.status(),
+            hotspot.vulnerabilityProbability(),
+            hotspot.assignee())).toList());
+
+        serverFindingRepository.replaceAllTaintsOfBranch(branch.name,
+          branch.serverTaintIssues.stream().map(ServerTaintIssueFixtures.ServerTaintIssueBuilder::build).map(i -> new ServerTaintIssue(
+            UUID.randomUUID(),
+            i.key(),
+            i.resolved(),
+            i.resolutionStatus(),
+            i.ruleKey(),
+            i.message(),
+            Paths.get(i.filePath()),
+            i.creationDate(),
+            i.severity(),
+            i.type(),
+            i.textRange(),
+            i.ruleDescriptionContextKey(),
+            i.cleanCodeAttribute(),
+            i.impacts())).toList());
+
+        serverFindingRepository.replaceAllDependencyRisksOfBranch(branch.name,
+          branch.serverDependencyRisks.stream().map(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder::build).map(i -> new ServerDependencyRisk(
+            UUID.randomUUID(),
+            i.type(),
+            i.severity(),
+            i.quality(),
+            i.status(),
+            i.packageName(),
+            i.packageVersion(),
+            i.vulnerabilityId(),
+            i.cvssScore(),
+            i.transitions())).toList());
+      });
     }
 
     public static class RuleSetBuilder {
