@@ -87,6 +87,8 @@ public final class SonarLintDatabase {
       LOG.error("Flyway migration skipped or failed: {}", e.getMessage());
     }
 
+    System.setProperty("org.jooq.no-tips", "true");
+    System.setProperty("org.jooq.no-logo", "true");
     this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
   }
 
