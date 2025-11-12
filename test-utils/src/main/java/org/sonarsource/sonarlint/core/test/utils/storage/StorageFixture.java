@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -126,10 +128,6 @@ public class StorageFixture {
       return this;
     }
 
-    public AiCodeFixFixtures.Builder getAiCodeFixSettingsBuilder() {
-      return aiCodeFixBuilder;
-    }
-
     public String getConnectionId() {
       return connectionId;
     }
@@ -193,6 +191,14 @@ public class StorageFixture {
         .setKey(plugin.key)
         .build()));
       ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
+    }
+
+    public void populateDatabase(SonarLintDatabase database) {
+      var aiCodeFixRepository = new AiCodeFixRepository(database);
+      if (aiCodeFixBuilder != null) {
+        aiCodeFixRepository.upsert(aiCodeFixBuilder.buildAiCodeFix(connectionId));
+      }
+      projectBuilders.forEach(project -> project.populateDatabase(database, connectionId));
     }
 
     private static class Plugin {
