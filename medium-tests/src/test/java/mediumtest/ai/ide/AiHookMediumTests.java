@@ -48,18 +48,25 @@ class AiHookMediumTests {
       .getHookScriptContent(new GetHookScriptContentParams(AiAgent.WINDSURF))
       .join();
 
-    assertThat(response.getFileName()).matches("post_write_code\\.(js|py|sh)");
-    assertThat(response.getContent()).contains("SonarQube for IDE WINDSURF Hook");
-    assertThat(response.getContent()).contains("post_write_code");
-    assertThat(response.getContent()).containsAnyOf(
+    // Check script content
+    assertThat(response.getScriptFileName()).matches("post_write_code\\.(js|py|sh)");
+    assertThat(response.getScriptContent()).contains("SonarQube for IDE WINDSURF Hook");
+    assertThat(response.getScriptContent()).contains("post_write_code");
+    assertThat(response.getScriptContent()).containsAnyOf(
       "http://localhost:" + backend.getEmbeddedServerPort(),
       "port: " + backend.getEmbeddedServerPort()
     );
-    assertThat(response.getContent()).contains("/sonarlint/api/analysis/files");
+    assertThat(response.getScriptContent()).contains("/sonarlint/api/analysis/files");
+
+    // Check config content
+    assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
+    assertThat(response.getConfigContent()).contains("\"post_write_code\"");
+    assertThat(response.getConfigContent()).contains("{{SCRIPT_PATH}}");
+    assertThat(response.getConfigContent()).contains("\"show_output\": true");
   }
 
   @SonarLintTest
-  void it_should_return_hook_script_content_for_cursor_with_embedded_port(SonarLintTestHarness harness) {
+  void it_should_throw_exception_for_cursor_not_yet_implemented(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
@@ -71,18 +78,14 @@ class AiHookMediumTests {
       assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0);
     });
 
-    var response = backend.getAiAgentService()
-      .getHookScriptContent(new GetHookScriptContentParams(AiAgent.CURSOR))
-      .join();
+    var futureResponse = backend.getAiAgentService()
+      .getHookScriptContent(new GetHookScriptContentParams(AiAgent.CURSOR));
 
-    assertThat(response.getFileName()).matches("post_write_code\\.(js|py|sh)");
-
-    assertThat(response.getContent()).contains("SonarQube for IDE CURSOR Hook");
-    assertThat(response.getContent()).contains("post_write_code");
-    assertThat(response.getContent()).containsAnyOf(
-      "http://localhost:" + backend.getEmbeddedServerPort(),
-      "port: " + backend.getEmbeddedServerPort()
-    );
+    assertThat(futureResponse)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableThat()
+      .withCauseInstanceOf(UnsupportedOperationException.class)
+      .withMessageContaining("hook configuration not yet implemented");
   }
 
 }

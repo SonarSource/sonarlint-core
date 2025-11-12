@@ -20,20 +20,32 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 public class GetHookScriptContentResponse {
-  private final String content;
-  private final String fileName;
+  private final String scriptContent;
+  private final String scriptFileName;
+  private final String configContent;
+  private final String configFileName;
 
-  public GetHookScriptContentResponse(String content, String fileName) {
-    this.content = content;
-    this.fileName = fileName;
+  public GetHookScriptContentResponse(String scriptContent, String scriptFileName, String configContent, String configFileName) {
+    this.scriptContent = scriptContent;
+    this.scriptFileName = scriptFileName;
+    this.configContent = configContent;
+    this.configFileName = configFileName;
   }
 
-  public String getContent() {
-    return content;
+  public String getScriptContent() {
+    return scriptContent;
   }
 
-  public String getFileName() {
-    return fileName;
+  public String getScriptFileName() {
+    return scriptFileName;
+  }
+
+  public String getConfigContent() {
+    return configContent;
+  }
+
+  public String getConfigFileName() {
+    return configFileName;
   }
 }
 

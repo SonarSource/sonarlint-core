@@ -47,12 +47,17 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getFileName()).isEqualTo("post_write_code.js");
-    assertThat(response.getContent())
+    assertThat(response.getScriptFileName()).isEqualTo("post_write_code.js");
+    assertThat(response.getScriptContent())
       .contains("#!/usr/bin/env node")
       .contains("hostname: 'localhost'")
       .contains("port: 64120")
       .contains("path: '/sonarlint/api/analysis/files'");
+    assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
+    assertThat(response.getConfigContent())
+      .contains("\"post_write_code\"")
+      .contains("{{SCRIPT_PATH}}")
+      .contains("\"show_output\": true");
   }
 
   @Test
@@ -64,12 +69,10 @@ class AiHookServiceTests {
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(ExecutableType.PYTHON));
 
     var service = new AiHookService(embeddedServer, executableLocator);
-    var response = service.getHookScriptContent(AiAgent.CURSOR);
 
-    assertThat(response.getFileName()).isEqualTo("post_write_code.py");
-    assertThat(response.getContent())
-      .contains("#!/usr/bin/env python3")
-      .contains("http://localhost:64121/sonarlint/api/analysis/files");
+    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.CURSOR))
+      .isInstanceOf(UnsupportedOperationException.class)
+      .hasMessageContaining("hook configuration not yet implemented");
   }
 
   @Test
@@ -83,10 +86,15 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getFileName()).isEqualTo("post_write_code.sh");
-    assertThat(response.getContent())
+    assertThat(response.getScriptFileName()).isEqualTo("post_write_code.sh");
+    assertThat(response.getScriptContent())
       .contains("#!/bin/bash")
       .contains("http://localhost:64122/sonarlint/api/analysis/files");
+    assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
+    assertThat(response.getConfigContent())
+      .contains("\"post_write_code\"")
+      .contains("{{SCRIPT_PATH}}")
+      .contains("\"show_output\": true");
   }
 
   @Test
@@ -129,11 +137,11 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getContent()).contains("SonarQube for IDE WINDSURF Hook");
+    assertThat(response.getScriptContent()).contains("SonarQube for IDE WINDSURF Hook");
   }
 
   @Test
-  void it_should_embed_correct_agent_in_script_comment_for_cursor() {
+  void it_should_throw_exception_for_unsupported_cursor_agent() {
     var embeddedServer = mock(EmbeddedServer.class);
     var executableLocator = mock(ExecutableLocator.class);
 
@@ -141,9 +149,10 @@ class AiHookServiceTests {
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(ExecutableType.PYTHON));
 
     var service = new AiHookService(embeddedServer, executableLocator);
-    var response = service.getHookScriptContent(AiAgent.CURSOR);
 
-    assertThat(response.getContent()).contains("SonarQube for IDE CURSOR Hook");
+    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.CURSOR))
+      .isInstanceOf(UnsupportedOperationException.class)
+      .hasMessageContaining("hook configuration not yet implemented");
   }
 }
 
