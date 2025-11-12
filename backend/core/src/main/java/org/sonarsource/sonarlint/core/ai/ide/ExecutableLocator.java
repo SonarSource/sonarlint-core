@@ -139,7 +139,7 @@ public class ExecutableLocator {
       var pathHelperCommand = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       var pathHelperOutput = runSimpleCommand(pathHelperCommand);
       if (pathHelperOutput != null) {
-        var regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
+        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
         var matchResult = regex.matcher(pathHelperOutput);
         if (matchResult.matches()) {
           command.setEnvironmentVariable("PATH", matchResult.group(1));
