@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
+import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse;
@@ -39,7 +40,6 @@ public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implem
 
   @Override
   public CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params) {
-    // TODO: To Implement
-    throw new UnsupportedOperationException("Hook script content generation not yet implemented");
+    return requestAsync(cancelMonitor -> getBean(AiHookService.class).getHookScriptContent(params.getAiAgent()));
   }
 }
