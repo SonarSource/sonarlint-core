@@ -148,6 +148,10 @@ public class HttpClientProvider {
     return ApacheHttpClientAdapter.withToken(sharedClient, token, shouldUseBearer);
   }
 
+  public HttpClient getHttpClientWithXApiKey(String xApiKey) {
+    return ApacheHttpClientAdapter.withXApiKey(sharedClient, xApiKey);
+  }
+
   public WebSocketClient getWebSocketClient(String token) {
     return new WebSocketClient(userAgent, token, webSocketThreadPool);
   }
