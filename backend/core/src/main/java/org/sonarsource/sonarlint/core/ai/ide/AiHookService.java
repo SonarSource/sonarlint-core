@@ -61,7 +61,40 @@ public class AiHookService {
       case BASH -> generateBashScript(port, agent);
     };
 
-    return new GetHookScriptContentResponse(scriptContent, executableType.getFileName());
+    var configContent = generateHookConfiguration(agent);
+    var configFileName = getConfigFileName(agent);
+
+    return new GetHookScriptContentResponse(scriptContent, executableType.getFileName(), configContent, configFileName);
+  }
+
+  private static String generateHookConfiguration(AiAgent agent) {
+    return switch (agent) {
+      case WINDSURF -> generateWindsurfHooksConfig();
+      case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+    };
+  }
+
+  private static String generateWindsurfHooksConfig() {
+    var scriptPath = "{{SCRIPT_PATH}}";
+    return """
+      {
+        "hooks": {
+          "post_write_code": [
+            {
+              "command": "%s",
+              "show_output": true
+            }
+          ]
+        }
+      }
+      """.formatted(scriptPath);
+  }
+
+  private static String getConfigFileName(AiAgent agent) {
+    return switch (agent) {
+      case WINDSURF -> "hooks.json";
+      case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+    };
   }
 
   private static String generateBashScript(int port, AiAgent agent) {
