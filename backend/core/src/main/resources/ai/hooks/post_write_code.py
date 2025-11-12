@@ -29,7 +29,10 @@ def main():
         req = urllib.request.Request(
             url,
             data=request_body.encode('utf-8'),
-            headers={'Content-Type': 'application/json'}
+            headers={
+                'Content-Type': 'application/json',
+                'Origin': 'ai-agent://{{AGENT}}'
+            }
         )
         
         try:
