@@ -54,7 +54,8 @@ process.stdin.on('end', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(requestBody)
+        'Content-Length': Buffer.byteLength(requestBody),
+        'Origin': 'ai-agent://{{AGENT}}'
       },
       timeout: 30000
     };

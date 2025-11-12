@@ -29,6 +29,7 @@ REQUEST_BODY=$(jq -n --argjson files "$FILE_ARRAY" '{fileAbsolutePaths: $files}'
 # Call SonarQube for IDE analysis endpoint
 RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
+  -H "Origin: ai-agent://{{AGENT}}" \
   -d "$REQUEST_BODY" \
   "http://localhost:{{PORT}}/sonarlint/api/analysis/files" 2>/dev/null || echo '{"findings":[]}')
 
