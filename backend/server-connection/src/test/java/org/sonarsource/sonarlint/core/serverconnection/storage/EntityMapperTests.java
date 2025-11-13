@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
-import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
@@ -32,9 +31,9 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class JsonMapperTests {
+class EntityMapperTests {
 
-  private final JsonMapper underTest = new JsonMapper();
+  private final EntityMapper underTest = new EntityMapper();
 
   @Test
   void should_serialize_issue_impacts() {
@@ -44,8 +43,8 @@ class JsonMapperTests {
 
     var json = underTest.serializeImpacts(impacts);
 
-    assertEquals("{\"MAINTAINABILITY\":\"HIGH\",\"SECURITY\":\"LOW\"}", json);
-    var impactsDeserialized = underTest.deserializeImpacts(JSON.valueOf(json));
+    assertEquals("{\"MAINTAINABILITY\":\"HIGH\",\"SECURITY\":\"LOW\"}", json.data());
+    var impactsDeserialized = underTest.deserializeImpacts(json);
 
     assertEquals(impacts, impactsDeserialized);
   }
@@ -67,13 +66,13 @@ class JsonMapperTests {
       null, null,null, null,null, null,null);
     taint.setFlows(flows);
 
-    var json = underTest.serializeFlows(taint);
+    var json = underTest.serializeFlows(taint.getFlows());
 
     assertEquals("[{\"locations\":[{\"filePath\":\"" + uri + "\"," +
       "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}," +
       "{\"filePath\":\"" + uri + "\",\"textRange\":{\"startLine\":5,\"startLineOffset\":6,\"endLine\":7,\"endLineOffset\":8,\"hash\":\"hash2\"}," +
       "\"message\":\"Message 2\"}]},{\"locations\":[{\"filePath\":\"" + uri + "\"," +
-      "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}]}]", json);
+      "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}]}]", json.data());
   }
 
 }
