@@ -14,38 +14,29 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
-# Extract file paths from the event
-FILES=$(echo "$EVENT_JSON" | jq -r '.files[]? // empty' 2>/dev/null || echo "")
+# Extract file path from tool_info (single file for post_write_code)
+FILE_PATH=$(echo "$EVENT_JSON" | jq -r '.tool_info.file_path // empty' 2>/dev/null || echo "")
 
-if [ -z "$FILES" ]; then
-  echo "No files to analyze"
+if [ -z "$FILE_PATH" ]; then
+  echo "No file to analyze"
   exit 0
 fi
 
-# Build JSON array of file paths
-FILE_ARRAY=$(echo "$FILES" | jq -R . | jq -s .)
-REQUEST_BODY=$(jq -n --argjson files "$FILE_ARRAY" '{fileAbsolutePaths: $files}')
+# Build JSON request body with single file
+REQUEST_BODY=$(jq -n --arg file "$FILE_PATH" '{fileAbsolutePaths: [$file]}')
 
 # Call SonarQube for IDE analysis endpoint
-RESPONSE=$(curl -s -X POST \
+HTTP_STATUS=$(curl -s -w "%{http_code}" -o /dev/null -X POST \
   -H "Content-Type: application/json" \
   -H "Origin: ai-agent://{{AGENT}}" \
   -d "$REQUEST_BODY" \
-  "http://localhost:{{PORT}}/sonarlint/api/analysis/files" 2>/dev/null || echo '{"findings":[]}')
+  "http://localhost:{{PORT}}/sonarlint/api/analysis/files" 2>/dev/null)
 
 # Check if the request was successful
-if [ $? -ne 0 ]; then
-  echo "Warning: Failed to connect to SonarQube for IDE backend on port {{PORT}}" >&2
-  exit 0
-fi
-
-# Format and output findings
-FINDINGS_COUNT=$(echo "$RESPONSE" | jq '.findings | length' 2>/dev/null || echo "0")
-
-if [ "$FINDINGS_COUNT" -gt 0 ]; then
-  echo "SonarQube for IDE Analysis Results:"
-  echo "$RESPONSE" | jq -r '.findings[] | "[\(.severity // "UNKNOWN")] \(.ruleKey): \(.message) at \(.filePath):\(.textRange.startLine // "?")"' 2>/dev/null || echo "Error parsing results"
+if [ "$HTTP_STATUS" = "200" ]; then
+  echo "Analysis completed"
 else
-  echo "No issues found"
+  echo "Analysis failed with status: $HTTP_STATUS" >&2
+  exit 1
 fi
 

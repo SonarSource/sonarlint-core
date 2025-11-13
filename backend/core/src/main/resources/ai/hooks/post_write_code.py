@@ -14,15 +14,16 @@ def main():
         event_json = sys.stdin.read()
         event = json.loads(event_json)
         
-        # Extract file paths from the event
-        files = event.get('files', [])
+        # Extract file path from tool_info (single file for post_write_code)
+        tool_info = event.get('tool_info', {})
+        file_path = tool_info.get('file_path')
         
-        if not files:
-            print("No files to analyze")
+        if not file_path:
+            print("No file to analyze")
             return
         
-        # Build request body
-        request_body = json.dumps({'fileAbsolutePaths': files})
+        # Build request body with single file
+        request_body = json.dumps({'fileAbsolutePaths': [file_path]})
         
         # Call SonarQube for IDE analysis endpoint
         url = 'http://localhost:{{PORT}}/sonarlint/api/analysis/files'
@@ -37,26 +38,14 @@ def main():
         
         try:
             with urllib.request.urlopen(req, timeout=30) as response:
-                result = json.loads(response.read().decode('utf-8'))
+                if response.status == 200:
+                    print("Analysis completed")
+                else:
+                    print(f"Analysis failed with status: {response.status}", file=sys.stderr)
+                    sys.exit(1)
         except urllib.error.URLError as e:
-            print(f"Warning: Failed to connect to SonarQube for IDE backend on port {{PORT}}: {e}", file=sys.stderr)
-            return
-        
-        # Format and output findings
-        findings = result.get('findings', [])
-        
-        if findings:
-            print("SonarQube for IDE Analysis Results:")
-            for finding in findings:
-                severity = finding.get('severity', 'UNKNOWN')
-                rule_key = finding.get('ruleKey', 'unknown')
-                message = finding.get('message', 'No message')
-                file_path = finding.get('filePath', 'unknown')
-                text_range = finding.get('textRange', {})
-                start_line = text_range.get('startLine', '?')
-                print(f"[{severity}] {rule_key}: {message} at {file_path}:{start_line}")
-        else:
-            print("No issues found")
+            print(f"Analysis failed: {e}", file=sys.stderr)
+            sys.exit(1)
     
     except json.JSONDecodeError as e:
         print(f"Error: Failed to parse JSON: {e}", file=sys.stderr)

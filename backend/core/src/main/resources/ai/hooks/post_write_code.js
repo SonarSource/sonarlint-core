@@ -36,15 +36,17 @@ process.stdin.on('data', (chunk) => {
 process.stdin.on('end', () => {
   try {
     const event = JSON.parse(eventJson);
-    const files = event.files || [];
     
-    if (files.length === 0) {
-      console.log('No files to analyze');
+    // Extract file path from tool_info (single file for post_write_code)
+    const filePath = event.tool_info?.file_path;
+    
+    if (!filePath) {
+      console.log('No file to analyze');
       return;
     }
     
-    // Build request body
-    const requestBody = JSON.stringify({ fileAbsolutePaths: files });
+    // Build request body with single file
+    const requestBody = JSON.stringify({ fileAbsolutePaths: [filePath] });
     
     // Call SonarQube for IDE analysis endpoint
     const options = {
@@ -61,34 +63,13 @@ process.stdin.on('end', () => {
     };
     
     const req = http.request(options, (res) => {
-      let responseData = '';
-      
-      res.on('data', (chunk) => {
-        responseData += chunk;
-      });
-      
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(responseData);
-          const findings = result.findings || [];
-          
-          if (findings.length > 0) {
-            console.log('SonarQube for IDE Analysis Results:');
-            findings.forEach((finding) => {
-              const severity = finding.severity || 'UNKNOWN';
-              const ruleKey = finding.ruleKey || 'unknown';
-              const message = finding.message || 'No message';
-              const filePath = finding.filePath || 'unknown';
-              const startLine = finding.textRange?.startLine || '?';
-              console.log(`[${severity}] ${ruleKey}: ${message} at ${filePath}:${startLine}`);
-            });
-          } else {
-            console.log('No issues found');
-          }
-        } catch (e) {
-          console.error('Error parsing response:', e.message);
-        }
-      });
+      if (res.statusCode === 200) {
+        console.log('Analysis completed');
+      } else {
+        console.error(`Analysis failed with status: ${res.statusCode}`);
+        process.exit(1);
+      }
+      res.resume();
     });
     
     req.on('error', (e) => {
