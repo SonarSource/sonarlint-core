@@ -44,11 +44,14 @@ class MCPServerConfigurationProviderMediumTests {
   }
 
   @SonarLintTest
-  void should_return_sonarcloud_config_for_sonarcloud_connection(SonarLintTestHarness harness) throws Exception {
+  void should_return_sonarcloud_config_for_sonarcloud_eu_connection(SonarLintTestHarness harness) throws Exception {
     var connectionId = "scConnection";
     var organizationKey = "myOrg";
     var token = "token123";
     var embeddedServerPort = 0;
+
+    var server = harness.newFakeSonarCloudServer().start();
+    var cloudUrl = server.baseUrl().replaceAll("/$", "");
 
     var expectedSettings = String.format("""
       {
@@ -62,22 +65,72 @@ class MCPServerConfigurationProviderMediumTests {
           "-e",
           "SONARQUBE_ORG",
           "-e",
+          "SONARQUBE_CLOUD_URL",
+          "-e",
           "SONARQUBE_IDE_PORT",
           "mcp/sonarqube"
         ],
         "env": {
           "SONARQUBE_ORG": "%s",
+          "SONARQUBE_CLOUD_URL": "%s",
           "SONARQUBE_TOKEN": "%s",
           "SONARQUBE_IDE_PORT": "%s"
         }
       }
-      """, organizationKey, token, embeddedServerPort);
-
-    var server = harness.newFakeSonarCloudServer().start();
+      """, organizationKey, cloudUrl, token, embeddedServerPort);
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
+      .withTelemetryEnabled()
+      .start();
+
+    var result = getSettings(backend, connectionId, token);
+
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    assertThat(result.get().getJsonConfiguration()).isEqualTo(expectedSettings);
+    assertThat(backend.telemetryFileContent().getMcpServerConfigurationRequestedCount()).isEqualTo(1);
+  }
+
+  @SonarLintTest
+  void should_return_sonarcloud_config_for_sonarcloud_us_connection(SonarLintTestHarness harness) throws Exception {
+    var connectionId = "scUsConnection";
+    var organizationKey = "myOrg";
+    var token = "token123";
+    var embeddedServerPort = 0;
+
+    var server = harness.newFakeSonarCloudServer().start();
+    var cloudUrl = server.baseUrl().replaceAll("/$", "");
+
+    var expectedSettings = String.format("""
+      {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-e",
+          "SONARQUBE_TOKEN",
+          "-e",
+          "SONARQUBE_ORG",
+          "-e",
+          "SONARQUBE_CLOUD_URL",
+          "-e",
+          "SONARQUBE_IDE_PORT",
+          "mcp/sonarqube"
+        ],
+        "env": {
+          "SONARQUBE_ORG": "%s",
+          "SONARQUBE_CLOUD_URL": "%s",
+          "SONARQUBE_TOKEN": "%s",
+          "SONARQUBE_IDE_PORT": "%s"
+        }
+      }
+      """, organizationKey, cloudUrl, token, embeddedServerPort);
+
+    var backend = harness.newBackend()
+      .withSonarQubeCloudUsRegionUri(server.baseUrl())
+      .withSonarCloudConnection(connectionId, organizationKey, "US")
       .withTelemetryEnabled()
       .start();
 

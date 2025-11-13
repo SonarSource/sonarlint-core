@@ -43,11 +43,14 @@ public class MCPServerConfigurationProvider {
         "-e",
         "SONARQUBE_ORG",
         "-e",
+        "SONARQUBE_CLOUD_URL",
+        "-e",
         "SONARQUBE_IDE_PORT",
         "mcp/sonarqube"
       ],
       "env": {
         "SONARQUBE_ORG": "%s",
+        "SONARQUBE_CLOUD_URL": "%s",
         "SONARQUBE_TOKEN": "%s",
         "SONARQUBE_IDE_PORT": "%s"
       }
@@ -93,8 +96,9 @@ public class MCPServerConfigurationProvider {
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var sonarCloudConnection = (SonarCloudConnectionConfiguration) connection;
         var organization = sonarCloudConnection.getOrganization();
+        var url = connection.getUrl();
 
-        return format(SONARCLOUD_MCP_CONFIG, organization, token, embeddedServer.getPort());
+        return format(SONARCLOUD_MCP_CONFIG, organization, url, token, embeddedServer.getPort());
       } else {
         var url = connection.getUrl();
 
