@@ -81,6 +81,11 @@ public class ServerInfoStorage {
       }
       globalSettings.put(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(serverInfo.getMisraEarlyAccessRulesEnabled()));
     }
+    // Making sure that CFamily analyzer gets updated flag even with old Server/Cloud.
+    if (globalSettings.containsKey(ServerSettings.EARLY_ACCESS_MISRA_ENABLED)) {
+      globalSettings = new HashMap<>(globalSettings);
+      globalSettings.put(ServerSettings.MISRA_COMPLIANCE_ENABLED, globalSettings.get(ServerSettings.EARLY_ACCESS_MISRA_ENABLED));
+    }
     return new StoredServerInfo(Version.create(serverInfo.getVersion()),
       serverInfo.getSupportedFeaturesList().stream().map(Feature::fromKey).flatMap(Optional::stream).collect(Collectors.toSet()), new ServerSettings(globalSettings),
       serverInfo.getServerId());
