@@ -51,8 +51,10 @@ class AiHookServiceTests {
     assertThat(response.getScriptContent())
       .contains("#!/usr/bin/env node")
       .contains("hostname: 'localhost'")
-      .contains("port: 64120")
-      .contains("path: '/sonarlint/api/analysis/files'");
+      .contains("STARTING_PORT = 64120")
+      .contains("ENDING_PORT = 64130")
+      .contains("path: '/sonarlint/api/analysis/files'")
+      .contains("path: '/sonarlint/api/status'");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
@@ -89,7 +91,10 @@ class AiHookServiceTests {
     assertThat(response.getScriptFileName()).isEqualTo("post_write_code.sh");
     assertThat(response.getScriptContent())
       .contains("#!/bin/bash")
-      .contains("http://localhost:64122/sonarlint/api/analysis/files");
+      .contains("STARTING_PORT=64120")
+      .contains("ENDING_PORT=64130")
+      .contains("/sonarlint/api/analysis/files")
+      .contains("/sonarlint/api/status");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
@@ -137,7 +142,9 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptContent()).contains("SonarQube for IDE WINDSURF Hook");
+    assertThat(response.getScriptContent())
+      .contains("SonarQube for IDE Windsurf Hook")
+      .contains("EXPECTED_IDE_NAME = 'Windsurf'");
   }
 
   @Test

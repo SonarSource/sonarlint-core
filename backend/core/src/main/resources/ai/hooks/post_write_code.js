@@ -20,10 +20,103 @@
  */
 // SonarQube for IDE {{AGENT}} Hook - post_write_code
 // Auto-generated script for Node.js
-// Connects to SonarQube for IDE backend on port {{PORT}}
+// Connects to SonarQube for IDE backend
 
-const https = require('https');
 const http = require('http');
+
+const STARTING_PORT = 64120;
+const ENDING_PORT = 64130;
+const EXPECTED_IDE_NAME = '{{AGENT}}';
+const PORT_SCAN_TIMEOUT = 50; // ms per port
+
+// Fast port discovery: find the correct SonarQube for IDE backend
+async function findBackendPort() {
+  const portPromises = [];
+  
+  for (let port = STARTING_PORT; port <= ENDING_PORT; port++) {
+    portPromises.push(checkPort(port));
+  }
+  
+  // Race all port checks - return first successful match
+  const results = await Promise.allSettled(portPromises);
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value !== null) {
+      return result.value;
+    }
+  }
+  
+  return null;
+}
+
+function checkPort(port) {
+  return new Promise((resolve) => {
+    const req = http.get({
+      hostname: 'localhost',
+      port: port,
+      path: '/sonarlint/api/status',
+      timeout: PORT_SCAN_TIMEOUT
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const status = JSON.parse(data);
+          if (status.ideName === EXPECTED_IDE_NAME) {
+            resolve(port);
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+    
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
+}
+
+async function analyzeFile(port, filePath) {
+  const requestBody = JSON.stringify({ fileAbsolutePaths: [filePath] });
+  
+  const options = {
+    hostname: 'localhost',
+    port: port,
+    path: '/sonarlint/api/analysis/files',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(requestBody),
+      'Origin': 'ai-agent://{{AGENT}}'
+    },
+    timeout: 30000
+  };
+  
+  return new Promise((resolve, reject) => {
+    const req = http.request(options, (res) => {
+      if (res.statusCode === 200) {
+        console.log('Analysis completed');
+        resolve();
+      } else {
+        reject(new Error(`Analysis failed with status: ${res.statusCode}`));
+      }
+      res.resume();
+    });
+    
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+    
+    req.write(requestBody);
+    req.end();
+  });
+}
 
 // Read the event JSON from stdin
 let eventJson = '';
@@ -33,7 +126,7 @@ process.stdin.on('data', (chunk) => {
   eventJson += chunk;
 });
 
-process.stdin.on('end', () => {
+process.stdin.on('end', async () => {
   try {
     const event = JSON.parse(eventJson);
     
@@ -45,44 +138,15 @@ process.stdin.on('end', () => {
       return;
     }
     
-    // Build request body with single file
-    const requestBody = JSON.stringify({ fileAbsolutePaths: [filePath] });
+    // Find the backend port
+    const port = await findBackendPort();
+    if (!port) {
+      console.error('SonarQube for IDE backend not found');
+      process.exit(1);
+    }
     
-    // Call SonarQube for IDE analysis endpoint
-    const options = {
-      hostname: 'localhost',
-      port: {{PORT}},
-      path: '/sonarlint/api/analysis/files',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(requestBody),
-        'Origin': 'ai-agent://{{AGENT}}'
-      },
-      timeout: 30000
-    };
-    
-    const req = http.request(options, (res) => {
-      if (res.statusCode === 200) {
-        console.log('Analysis completed');
-      } else {
-        console.error(`Analysis failed with status: ${res.statusCode}`);
-        process.exit(1);
-      }
-      res.resume();
-    });
-    
-    req.on('error', (e) => {
-      console.error(`Warning: Failed to connect to SonarQube for IDE backend on port {{PORT}}: ${e.message}`);
-    });
-    
-    req.on('timeout', () => {
-      req.destroy();
-      console.error('Request timeout');
-    });
-    
-    req.write(requestBody);
-    req.end();
+    // Call analysis endpoint
+    await analyzeFile(port, filePath);
   } catch (e) {
     console.error('Error:', e.message);
     process.exit(1);

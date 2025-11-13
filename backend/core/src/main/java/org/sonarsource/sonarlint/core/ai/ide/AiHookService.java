@@ -118,11 +118,19 @@ public class AiHookService {
       var template = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
       return template
         .replace("{{PORT}}", String.valueOf(port))
-        .replace("{{AGENT}}", agent.toString());
+        .replace("{{AGENT}}", getIdeName(agent));
     } catch (IOException e) {
       LOG.error("Failed to load hook script template: {}", templateFileName, e);
       throw new IllegalStateException("Failed to load hook script template: " + templateFileName, e);
     }
+  }
+
+  private static String getIdeName(AiAgent agent) {
+    return switch (agent) {
+      case WINDSURF -> "Windsurf";
+      case CURSOR -> "Cursor";
+      case GITHUB_COPILOT -> "GitHub Copilot";
+    };
   }
 }
 

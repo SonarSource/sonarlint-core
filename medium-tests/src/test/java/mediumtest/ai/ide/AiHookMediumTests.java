@@ -50,13 +50,17 @@ class AiHookMediumTests {
 
     // Check script content
     assertThat(response.getScriptFileName()).matches("post_write_code\\.(js|py|sh)");
-    assertThat(response.getScriptContent()).contains("SonarQube for IDE WINDSURF Hook");
-    assertThat(response.getScriptContent()).contains("post_write_code");
-    assertThat(response.getScriptContent()).containsAnyOf(
-      "http://localhost:" + backend.getEmbeddedServerPort(),
-      "port: " + backend.getEmbeddedServerPort()
-    );
-    assertThat(response.getScriptContent()).contains("/sonarlint/api/analysis/files");
+    assertThat(response.getScriptContent())
+      .contains("SonarQube for IDE Windsurf Hook")
+      .contains("post_write_code")
+      .contains("/sonarlint/api/analysis/files")
+      .contains("/sonarlint/api/status")
+      .contains("STARTING_PORT")
+      .contains("ENDING_PORT")
+      .containsAnyOf(
+        "EXPECTED_IDE_NAME = 'Windsurf'",  // JS/Python
+        "EXPECTED_IDE_NAME=\"Windsurf\""   // Bash
+      );
 
     // Check config content
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
