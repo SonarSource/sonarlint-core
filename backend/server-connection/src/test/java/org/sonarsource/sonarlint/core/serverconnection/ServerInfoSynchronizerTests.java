@@ -97,7 +97,10 @@ class ServerInfoSynchronizerTests {
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::version, StoredServerInfo::features, StoredServerInfo::globalSettings)
       .containsExactly(Version.create("9.9"), Set.of(Feature.SCA),
-        new ServerSettings(Map.of("sonar.multi-quality-mode.enabled", "true", "sonar.earlyAccess.misra.enabled", "true")));
+        new ServerSettings(Map.of(
+          "sonar.multi-quality-mode.enabled", "true",
+          "sonar.earlyAccess.misra.enabled", "true",
+          "sonar.misracompliance.enabled", "true")));
   }
 
   @Test
