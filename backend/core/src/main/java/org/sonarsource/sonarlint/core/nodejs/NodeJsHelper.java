@@ -38,7 +38,7 @@ public class NodeJsHelper {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
+  private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(?:-\\S+)?)");
   private final System2 system2;
   private final Path pathHelperLocationOnMac;
   private final CommandExecutor commandExecutor;
@@ -132,7 +132,7 @@ public class NodeJsHelper {
       var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       var pathHelperOutput = runSimpleCommand(command);
       if (pathHelperOutput != null) {
-        var regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
+        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
         var matchResult = regex.matcher(pathHelperOutput);
         if (matchResult.matches()) {
           which.setEnvironmentVariable("PATH", matchResult.group(1));
