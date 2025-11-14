@@ -37,6 +37,7 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
@@ -58,16 +59,19 @@ class ApacheHttpClientAdapter implements HttpClient {
   @Nullable
   private final String password;
   private final boolean shouldUseBearer;
+  @Nullable
   private final String xApiKey;
+  private final boolean withRetries;
   private boolean connected = false;
 
   private ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password, boolean shouldUseBearer,
-    @Nullable String xApiKey) {
+    @Nullable String xApiKey, boolean withRetries) {
     this.apacheClient = apacheClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;
     this.shouldUseBearer = shouldUseBearer;
     this.xApiKey = xApiKey;
+    this.withRetries = withRetries;
   }
 
   @Override
@@ -220,7 +224,9 @@ class ApacheHttpClientAdapter implements HttpClient {
 
     private CompletableFutureWrappingFuture(SimpleHttpRequest httpRequest) {
       var callingThreadLogOutput = SonarLintLogger.get().getTargetForCopy();
-      this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
+      var context = new HttpClientContext();
+      context.setAttribute(ContextAttributes.RETRIES_ENABLED, withRetries);
+      this.wrapped = apacheClient.execute(httpRequest, context, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
           SonarLintLogger.get().setTarget(callingThreadLogOutput);
@@ -309,19 +315,59 @@ class ApacheHttpClientAdapter implements HttpClient {
     }
   }
 
-  public static ApacheHttpClientAdapter withoutCredentials(CloseableHttpAsyncClient apacheClient) {
-    return new ApacheHttpClientAdapter(apacheClient, null, null, false, null);
+  public static Builder builder() {
+    return new Builder();
   }
 
-  public static ApacheHttpClientAdapter withUsernamePassword(CloseableHttpAsyncClient apacheClient, String username, @Nullable String password) {
-    return new ApacheHttpClientAdapter(apacheClient, username, password, false, null);
-  }
+  public static final class Builder {
 
-  public static ApacheHttpClientAdapter withToken(CloseableHttpAsyncClient apacheClient, String token, boolean shouldUseBearer) {
-    return new ApacheHttpClientAdapter(apacheClient, token, null, shouldUseBearer, null);
-  }
+    private CloseableHttpAsyncClient apacheClient;
+    @Nullable
+    private String usernameOrToken;
+    @Nullable
+    private String password;
+    private boolean shouldUseBearer = false;
+    @Nullable
+    private String xApiKey;
+    private boolean withRetries = false;
 
-  public static ApacheHttpClientAdapter withXApiKey(CloseableHttpAsyncClient apacheClient, String xApiKey) {
-    return new ApacheHttpClientAdapter(apacheClient, null, null, false, xApiKey);
+    public Builder withInnerClient(CloseableHttpAsyncClient apacheClient) {
+      this.apacheClient = apacheClient;
+      return this;
+    }
+
+    public Builder withUserNamePassword(String username, @Nullable String password) {
+      this.usernameOrToken = username;
+      this.password = password;
+      return this;
+    }
+
+    public Builder withToken(String token) {
+      this.usernameOrToken = token;
+      return this;
+    }
+
+    public Builder useBearer(boolean shouldUseBearer) {
+      this.shouldUseBearer = shouldUseBearer;
+      return this;
+    }
+
+    public Builder withXApiKey(String xApiKey) {
+      this.xApiKey = xApiKey;
+      return this;
+    }
+
+    public Builder withRetries() {
+      this.withRetries = true;
+      return this;
+    }
+
+    ApacheHttpClientAdapter build() {
+      if (apacheClient == null) {
+        throw new IllegalStateException("Required an Apache HTTP client to wrap.");
+      }
+
+      return new ApacheHttpClientAdapter(apacheClient, usernameOrToken, password, shouldUseBearer, xApiKey, withRetries);
+    }
   }
 }

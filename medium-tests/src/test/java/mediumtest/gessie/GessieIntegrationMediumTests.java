@@ -21,11 +21,13 @@ package mediumtest.gessie;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +48,7 @@ import static org.awaitility.Awaitility.await;
 class GessieIntegrationMediumTests {
 
   private static final String IDE_ENDPOINT = "/ide";
+  public static final String FAILED_ONCE = "Failed once";
 
   @RegisterExtension
   static WireMockExtension gessieEndpointMock = WireMockExtension.newInstance()
@@ -88,6 +91,47 @@ class GessieIntegrationMediumTests {
       .start();
 
     await().untilAsserted(() -> gessieEndpointMock.verify(0, anyRequestedFor(urlEqualTo(IDE_ENDPOINT))));
+  }
+
+  @SonarLintTest
+  void it_should_retry_503_error(SonarLintTestHarness harness) throws URISyntaxException, IOException {
+    gessieEndpointMock.stubFor(post("/ide")
+      .inScenario("Retry")
+      .whenScenarioStateIs(Scenario.STARTED)
+      .willSetStateTo(FAILED_ONCE)
+      .willReturn(aResponse().withStatus(503)));
+    gessieEndpointMock.stubFor(post("/ide")
+      .inScenario("Retry")
+      .whenScenarioStateIs(FAILED_ONCE)
+      .willReturn(aResponse().withStatus(202)));
+
+    harness.newBackend()
+      .withGessieTelemetryEnabled(gessieEndpointMock.baseUrl())
+      .start();
+
+    var fileContent = getTestJson("GessieRequest");
+    await().atMost(15, TimeUnit.SECONDS)
+      .untilAsserted(() -> gessieEndpointMock.verify(2, postRequestedFor(urlEqualTo(IDE_ENDPOINT))
+      .withHeader("x-api-key", new EqualToPattern("value"))
+      .withRequestBody(equalToJson(fileContent))));
+  }
+
+  @SonarLintTest
+  void it_should_retry_503_error_only_twice(SonarLintTestHarness harness) throws URISyntaxException, IOException {
+    gessieEndpointMock.stubFor(post("/ide")
+      .willReturn(aResponse().withStatus(503)));
+
+    harness.newBackend()
+      .withGessieTelemetryEnabled(gessieEndpointMock.baseUrl())
+      .start();
+
+    var fileContent = getTestJson("GessieRequest");
+    // Wait for timeframe enough for more than 2 retries.
+    await().timeout(15, TimeUnit.SECONDS)
+      .pollDelay(12, TimeUnit.SECONDS)
+      .untilAsserted(() -> gessieEndpointMock.verify(3, postRequestedFor(urlEqualTo(IDE_ENDPOINT))
+      .withHeader("x-api-key", new EqualToPattern("value"))
+      .withRequestBody(equalToJson(fileContent))));
   }
 
   private String getTestJson(String fileName) throws URISyntaxException, IOException {

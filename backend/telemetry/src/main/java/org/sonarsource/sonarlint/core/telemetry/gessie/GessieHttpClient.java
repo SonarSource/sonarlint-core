@@ -43,7 +43,7 @@ public class GessieHttpClient {
   private boolean isTelemetryLogEnabled;
 
   public GessieHttpClient(HttpClientProvider httpClientProvider, @Qualifier("gessieEndpoint") String gessieEndpoint) {
-    this.client = httpClientProvider.getHttpClientWithXApiKey(X_API_KEY_IDE);
+    this.client = httpClientProvider.getHttpClientWithXApiKeyAndRetries(X_API_KEY_IDE);
     this.endpoint = gessieEndpoint;
   }
 
