@@ -12,7 +12,7 @@ import socket
 STARTING_PORT = 64120
 ENDING_PORT = 64130
 EXPECTED_IDE_NAME = '{{AGENT}}'
-PORT_SCAN_TIMEOUT = 0.05  # 50ms per port
+PORT_SCAN_TIMEOUT = 0.2  # 200ms per port
 
 def find_backend_port():
     """Fast port discovery: find the correct SonarQube for IDE backend"""
@@ -25,18 +25,17 @@ def check_port(port):
     """Check if a port has a valid SonarQube for IDE backend"""
     try:
         url = f'http://localhost:{port}/sonarlint/api/status'
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url, headers={'Origin': 'ai-agent://{{AGENT}}'})
         with urllib.request.urlopen(req, timeout=PORT_SCAN_TIMEOUT) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode('utf-8'))
-                if data.get('ideName') == EXPECTED_IDE_NAME:
+                ide_name = data.get('ideName')
+                if ide_name == EXPECTED_IDE_NAME:
                     return True
-    except (urllib.error.URLError, socket.timeout, json.JSONDecodeError):
-        pass
     return False
 
 def analyze_file(port, file_path):
-    """Call the analysis endpoint"""
+    """Call the analysis endpoint (fire-and-forget, non-blocking)"""
     request_body = json.dumps({'fileAbsolutePaths': [file_path]})
     url = f'http://localhost:{port}/sonarlint/api/analysis/files'
     req = urllib.request.Request(
@@ -47,46 +46,39 @@ def analyze_file(port, file_path):
             'Origin': 'ai-agent://{{AGENT}}'
         }
     )
-    
+
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            if response.status == 200:
-                print("Analysis completed")
-            else:
-                print(f"Analysis failed with status: {response.status}", file=sys.stderr)
-                sys.exit(1)
-    except urllib.error.URLError as e:
-        print(f"Analysis failed: {e}", file=sys.stderr)
-        sys.exit(1)
+        response = urllib.request.urlopen(req, timeout=1)
+        response.close()
+    except Exception:
+        pass
+
+    sys.exit(0)
 
 def main():
     try:
-        # Read the event JSON from stdin
         event_json = sys.stdin.read()
         event = json.loads(event_json)
-        
-        # Extract file path from tool_info (single file for post_write_code)
+
         tool_info = event.get('tool_info', {})
         file_path = tool_info.get('file_path')
         
         if not file_path:
-            print("No file to analyze")
             return
-        
-        # Find the backend port
+
         port = find_backend_port()
         if not port:
-            print("SonarQube for IDE backend not found", file=sys.stderr)
             sys.exit(1)
-        
-        # Call analysis endpoint
+
         analyze_file(port, file_path)
     
     except json.JSONDecodeError as e:
-        print(f"Error: Failed to parse JSON: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':
