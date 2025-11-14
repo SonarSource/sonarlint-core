@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -399,7 +400,7 @@ public class ProjectStorageFixture {
             issue.userSeverity(),
             issue.ruleType(),
             issue.textRangeWithHash(),
-            issue.impacts())).toList());
+            issue.impacts())).toList(), Set.of());
 
         serverFindingRepository.replaceAllHotspotsOfBranch(branch.name,
           branch.serverHotspots.stream().map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build).map(hotspot -> new ServerHotspot(
@@ -412,11 +413,11 @@ public class ProjectStorageFixture {
             hotspot.introductionDate(),
             hotspot.status(),
             hotspot.vulnerabilityProbability(),
-            hotspot.assignee())).toList());
+            hotspot.assignee())).toList(), Set.of());
 
         serverFindingRepository.replaceAllTaintsOfBranch(branch.name,
           branch.serverTaintIssues.stream().map(ServerTaintIssueFixtures.ServerTaintIssueBuilder::build).map(i -> new ServerTaintIssue(
-            UUID.randomUUID(),
+            i.id(),
             i.key(),
             i.resolved(),
             i.resolutionStatus(),
@@ -429,11 +430,11 @@ public class ProjectStorageFixture {
             i.textRange(),
             i.ruleDescriptionContextKey(),
             i.cleanCodeAttribute(),
-            i.impacts())).toList());
+            i.impacts())).toList(), Set.of());
 
         serverFindingRepository.replaceAllDependencyRisksOfBranch(branch.name,
           branch.serverDependencyRisks.stream().map(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder::build).map(i -> new ServerDependencyRisk(
-            UUID.randomUUID(),
+            i.key(),
             i.type(),
             i.severity(),
             i.quality(),
