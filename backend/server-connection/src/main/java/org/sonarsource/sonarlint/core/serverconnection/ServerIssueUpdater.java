@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 import static java.util.stream.Collectors.toSet;
@@ -50,8 +52,16 @@ public class ServerIssueUpdater {
 
   public void update(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
     if (serverApi.isSonarCloud()) {
+      LOG.debug("Start downloading issues from SonarQube Cloud");
+      var start = Instant.now();
       var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);
-      storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues, enabledLanguages);
+      var finishedDownload = Instant.now();
+      LOG.debug("Finished downloading {} issues from SonarQube Cloud in {} ms", issues.size(), finishedDownload.toEpochMilli() - start.toEpochMilli());
+      var issueStore = storage.project(projectKey).findings();
+      LOG.debug("Issue store type: {}", issueStore.getClass().getSimpleName());
+      issueStore.replaceAllIssuesOfBranch(branchName, issues, enabledLanguages);
+      var finishedWritingToStorage = Instant.now();
+      LOG.debug("Finished updating {} issues in storage in {} ms", issues.size(), finishedWritingToStorage.toEpochMilli() - finishedDownload.toEpochMilli());
     } else {
       sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     }
@@ -61,10 +71,13 @@ public class ServerIssueUpdater {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
-
+    Instant start = Instant.now();
     var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
+    var downloadTime = Instant.now();
+    LOG.debug("Downloaded {} issues took {}", result.getChangedIssues().size(), downloadTime.toEpochMilli() - start.toEpochMilli());
     storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(),
       result.getQueryTimestamp(), enabledLanguages);
+    LOG.debug("Finished updating {} issues in storage in {} ms", result.getChangedIssues().size(), Instant.now().toEpochMilli() - downloadTime.toEpochMilli());
   }
 
   public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages,

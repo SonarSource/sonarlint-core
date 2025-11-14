@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -36,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 public class FindingsSynchronizationService {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final int FETCH_ALL_ISSUES_THRESHOLD = 10;
   private final ConfigurationRepository configurationRepository;
   private final SonarProjectBranchTrackingService branchTrackingService;
@@ -58,6 +61,7 @@ public class FindingsSynchronizationService {
   }
 
   public void refreshServerFindings(String configurationScopeId, Set<Path> pathsToRefresh) {
+    LOG.debug("Refreshing server findings for configuration scope: {}", configurationScopeId);
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
@@ -75,9 +79,12 @@ public class FindingsSynchronizationService {
 
   private void refreshServerIssues(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
     Set<Path> pathsInvolved, FilePathTranslation translation) {
+    LOG.debug("Refreshing server issues for binding: {}, active branch: {}", binding, activeBranch);
     var serverFileRelativePaths = pathsInvolved.stream().map(translation::ideToServerPath).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<CompletableFuture<?>>();
+    LOG.debug("Fetching issues");
+    var now = Instant.now();
     if (downloadAllIssuesAtOnce) {
       fetchTasks.add(CompletableFuture.runAsync(() -> issueSynchronizationService.fetchProjectIssues(binding, activeBranch, cancelMonitor), issueUpdaterExecutorService));
     } else {
@@ -87,6 +94,7 @@ public class FindingsSynchronizationService {
         .toList());
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
+    LOG.debug("Fetching issues took {} ms", Instant.now().toEpochMilli() - now.toEpochMilli());
   }
 
   private void refreshServerSecurityHotspots(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,

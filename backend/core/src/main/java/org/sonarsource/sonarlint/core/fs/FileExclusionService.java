@@ -98,7 +98,6 @@ public class FileExclusionService {
   }
 
   public boolean computeIfExcluded(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
-    LOG.debug("Computing file exclusion for uri '{}'", fileUri);
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {
       LOG.debug("Unable to find client file for uri {}", fileUri);
@@ -140,7 +139,6 @@ public class FileExclusionService {
     }
     var type = clientFile.isTest() ? InputFile.Type.TEST : InputFile.Type.MAIN;
     var result = !exclusionFilters.accept(serverPath.toString(), type);
-    LOG.debug("File exclusion for uri '{}' is {}", fileUri, result);
     return result;
   }
 
