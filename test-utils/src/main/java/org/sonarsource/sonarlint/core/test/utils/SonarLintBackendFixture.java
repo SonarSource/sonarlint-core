@@ -501,8 +501,6 @@ public class SonarLintBackendFixture {
         configurationScopeStorages.forEach(storage -> storage.create(storageRoot));
       }
       try {
-        // Use in-memory H2 for medium tests to speed up backend startup
-        System.setProperty("sonarlint.db.mode", "MEM");
         var sonarLintBackend = createTestBackend(client);
         beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",

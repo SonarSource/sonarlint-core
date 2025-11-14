@@ -39,8 +39,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -62,11 +60,12 @@ class ServerFindingRepositoryTests {
   private ServerFindingRepository repo;
   private String branch;
   private Path filePath;
+  private SonarLintDatabase db;
 
   @BeforeEach
   void setUp() {
     var storageRoot = tempDir.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
+    db = new SonarLintDatabase(storageRoot);
     repo = new ServerFindingRepository(db, "conn-1", "project-1");
     branch = "main";
     filePath = Path.of("/file/path");
@@ -76,6 +75,7 @@ class ServerFindingRepositoryTests {
   void tearDown() {
     if (repo != null) {
       repo.close();
+      db.shutdown();
     }
   }
 
@@ -116,7 +116,7 @@ class ServerFindingRepositoryTests {
     var h1 = hotspot("HOTSPOT_KEY_1", filePath, 1, HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.MEDIUM, null);
     var h2 = hotspot("HOTSPOT_KEY_2", filePath, 2, HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.HIGH, "john.doe");
 
-    repo.replaceAllHotspotsOfBranch(branch, List.of(h1, h2));
+    repo.replaceAllHotspotsOfBranch(branch, List.of(h1, h2), Set.of());
 
     var loaded = repo.loadHotspots(branch, filePath);
     assertThat(loaded).hasSize(2);
@@ -176,7 +176,7 @@ class ServerFindingRepositoryTests {
     var file = Path.of("/file/path");
     var issue = rangeIssue(issueKey, file, new TextRangeWithHash(1, 10, 1, 20, "hash"));
 
-    repo.replaceAllIssuesOfBranch(branch, List.of(issue));
+    repo.replaceAllIssuesOfBranch(branch, List.of(issue), Set.of());
 
     var loadedIssue = repo.getIssue(issueKey);
     assertRangeIssueEquals(issue, (RangeLevelServerIssue) loadedIssue);
@@ -188,7 +188,7 @@ class ServerFindingRepositoryTests {
     var file = Path.of("/file/path");
     var issue = rangeIssue(issueKey, file, new TextRangeWithHash(1, 10, 1, 20, "hash"));
 
-    repo.replaceAllIssuesOfBranch(branch, List.of(issue));
+    repo.replaceAllIssuesOfBranch(branch, List.of(issue), Set.of());
     assertThat(repo.wasEverUpdated()).isTrue();
   }
 
@@ -212,7 +212,7 @@ class ServerFindingRepositoryTests {
   @Test
   void taints_replace_load_insert_delete_update() {
     var t1 = taint("TAINT_KEY_1", filePath);
-    repo.replaceAllTaintsOfBranch(branch, List.of(t1));
+    repo.replaceAllTaintsOfBranch(branch, List.of(t1), Set.of());
 
     var loaded = repo.loadTaint(branch);
     assertThat(loaded).hasSize(1);

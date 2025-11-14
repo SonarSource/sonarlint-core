@@ -19,10 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
@@ -34,18 +30,20 @@ import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
-import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * This test verifies that AiCodeFixService.getFeature() reads settings
@@ -70,7 +68,7 @@ class AiCodeFixServiceTest {
 
   @Test
   void getFeature_reads_from_h2_repository() {
-    db = new SonarLintDatabase(new SonarLintDatabaseInitParams(tempDir, SonarLintDatabaseMode.MEM));
+    db = new SonarLintDatabase(tempDir);
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var connectionId = "conn-1";

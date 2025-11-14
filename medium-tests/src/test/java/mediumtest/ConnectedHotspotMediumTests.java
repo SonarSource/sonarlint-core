@@ -88,7 +88,7 @@ class ConnectedHotspotMediumTests {
     assertThat(hotspot.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
-  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 20);
   private static final String CONFIG_SCOPE_ID = "configScopeId";
 
 }

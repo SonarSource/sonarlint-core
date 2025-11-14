@@ -321,7 +321,7 @@ public class IssueService {
       var resolution = commentedIssue.getResolution();
       if (resolution != null) {
         resolution.setComment(comment);
-        var issuesToSync = loadAllLocalOnlyIssues(configurationScopeId);
+        var issuesToSync = new ArrayList<>(loadAllLocalOnlyIssues(configurationScopeId));
         issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
         var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
         sonarQubeClientManager.getClientOrThrow(binding.connectionId())
@@ -539,7 +539,7 @@ public class IssueService {
   }
 
   // Helper methods to abstract between Xodus and H2 storage
-  private List<LocalOnlyIssue> loadAllLocalOnlyIssues(String configurationScopeId) {
+  public List<LocalOnlyIssue> loadAllLocalOnlyIssues(String configurationScopeId) {
     if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
       var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
       return repository.loadAll(configurationScopeId);

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.sync;
 
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -61,21 +62,19 @@ public class IssueSynchronizationService {
   }
 
   public void fetchProjectIssues(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
-      downloadServerIssuesForProject(binding.connectionId(), serverApi, binding.sonarProjectKey(), activeBranch, cancelMonitor));
+    sonarQubeClientManager.withActiveClient(binding.connectionId(),
+      serverApi -> downloadServerIssuesForProject(binding.connectionId(), serverApi, binding.sonarProjectKey(), activeBranch, cancelMonitor));
   }
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.connection(connectionId);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
-      .collect(Collectors.toCollection(LinkedHashSet::new));
-    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    issuesUpdater.update(serverApi, projectKey, branchName, cancelMonitor);
+    var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync()), new TaintIssueDownloader(enabledLanguagesToSync()));
+    issuesUpdater.update(serverApi, projectKey, branchName, enabledLanguagesToSync(), cancelMonitor);
   }
 
   public void fetchFileIssues(Binding binding, Path serverFileRelativePath, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
-      downloadServerIssuesForFile(binding.connectionId(), serverApi, binding.sonarProjectKey(), serverFileRelativePath, activeBranch, cancelMonitor));
+    sonarQubeClientManager.withActiveClient(binding.connectionId(),
+      serverApi -> downloadServerIssuesForFile(binding.connectionId(), serverApi, binding.sonarProjectKey(), serverFileRelativePath, activeBranch, cancelMonitor));
   }
 
   public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName,
@@ -85,6 +84,12 @@ public class IssueSynchronizationService {
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.updateFileIssuesIfNeeded(serverApi, projectKey, serverFileRelativePath, branchName, cancelMonitor);
+  }
+
+  private Set<SonarLanguage> enabledLanguagesToSync() {
+    return languageSupportRepository.getEnabledLanguagesInConnectedMode().stream()
+      .filter(SonarLanguage::shouldSyncInConnectedMode)
+      .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
 }

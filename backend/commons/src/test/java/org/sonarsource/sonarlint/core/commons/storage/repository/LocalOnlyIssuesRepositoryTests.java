@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,8 +35,6 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,13 +42,23 @@ class LocalOnlyIssuesRepositoryTests {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
+  private LocalOnlyIssuesRepository repository;
+  private SonarLintDatabase db;
+
+  @BeforeEach
+  void prepare(@TempDir Path temp) {
+    var storageRoot = temp.resolve("storage");
+    db = new SonarLintDatabase(storageRoot);
+    repository = new LocalOnlyIssuesRepository(db);
+  }
+
+  @AfterEach
+  void shutdown() {
+    db.shutdown();
+  }
 
   @Test
-  void should_store_and_load_issues_for_file(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_store_and_load_issues_for_file() {
     var filePath = Path.of("/file/path");
     var configScopeId = "configScopeId";
     var issueUuid1 = UUID.randomUUID();
@@ -58,10 +68,10 @@ class LocalOnlyIssuesRepositoryTests {
     var issue2 = new LocalOnlyIssue(issueUuid2, filePath, new TextRangeWithHash(5, 6, 7, 8, "hash2"),
       new LineWithHash(2, "linehash2"), "test-rule-2", "Test issue message 2", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue1);
-    repo.storeLocalOnlyIssue(configScopeId, issue2);
+    repository.storeLocalOnlyIssue(configScopeId, issue1);
+    repository.storeLocalOnlyIssue(configScopeId, issue2);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(2);
     assertThat(loadedIssues).extracting(LocalOnlyIssue::getId).containsExactlyInAnyOrder(issueUuid1, issueUuid2);
@@ -75,11 +85,7 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_store_and_load_resolved_issue(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_store_and_load_resolved_issue() {
     var filePath = Path.of("/file/path");
     var configScopeId = "configScopeId";
     var issueUuid = UUID.randomUUID();
@@ -88,9 +94,9 @@ class LocalOnlyIssuesRepositoryTests {
     var issue = new LocalOnlyIssue(issueUuid, filePath, new TextRangeWithHash(1, 2, 3, 4, "hash1"),
       new LineWithHash(1, "linehash1"), "test-rule-1", "Test issue message", resolution);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue);
+    repository.storeLocalOnlyIssue(configScopeId, issue);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(1);
     var loadedIssue = loadedIssues.get(0);
@@ -102,19 +108,15 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_store_issue_without_text_range_and_line_hash(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_store_issue_without_text_range_and_line_hash() {
     var filePath = Path.of("/file/path");
     var configScopeId = "configScopeId";
     var issueUuid = UUID.randomUUID();
     var issue = new LocalOnlyIssue(issueUuid, filePath, null, null, "test-rule-1", "Test issue message", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue);
+    repository.storeLocalOnlyIssue(configScopeId, issue);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(1);
     var loadedIssue = loadedIssues.get(0);
@@ -124,11 +126,7 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_load_all_issues_for_configuration_scope(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_load_all_issues_for_configuration_scope() {
     var configScopeId = "configScopeId";
     var filePath1 = Path.of("/file/path1");
     var filePath2 = Path.of("/file/path2");
@@ -136,11 +134,11 @@ class LocalOnlyIssuesRepositoryTests {
     var issue2 = new LocalOnlyIssue(UUID.randomUUID(), filePath2, null, null, "test-rule-2", "Message 2", null);
     var issue3 = new LocalOnlyIssue(UUID.randomUUID(), filePath1, null, null, "test-rule-3", "Message 3", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue1);
-    repo.storeLocalOnlyIssue(configScopeId, issue2);
-    repo.storeLocalOnlyIssue(configScopeId, issue3);
+    repository.storeLocalOnlyIssue(configScopeId, issue1);
+    repository.storeLocalOnlyIssue(configScopeId, issue2);
+    repository.storeLocalOnlyIssue(configScopeId, issue3);
 
-    var allIssues = repo.loadAll(configScopeId);
+    var allIssues = repository.loadAll(configScopeId);
 
     assertThat(allIssues).hasSize(3);
     assertThat(allIssues).extracting(LocalOnlyIssue::getId)
@@ -148,18 +146,14 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_find_issue_by_id(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_find_issue_by_id() {
     var configScopeId = "configScopeId";
     var issueUuid = UUID.randomUUID();
     var issue = new LocalOnlyIssue(issueUuid, Path.of("/file/path"), null, null, "test-rule-1", "Test message", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue);
+    repository.storeLocalOnlyIssue(configScopeId, issue);
 
-    var foundIssue = repo.find(issueUuid);
+    var foundIssue = repository.find(issueUuid);
 
     assertThat(foundIssue).isPresent();
     assertThat(foundIssue.get().getId()).isEqualTo(issueUuid);
@@ -168,22 +162,14 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_return_empty_when_issue_not_found(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
-    var foundIssue = repo.find(UUID.randomUUID());
+  void should_return_empty_when_issue_not_found() {
+    var foundIssue = repository.find(UUID.randomUUID());
 
     assertThat(foundIssue).isEmpty();
   }
 
   @Test
   void should_remove_issue(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var issueUuid1 = UUID.randomUUID();
@@ -191,34 +177,26 @@ class LocalOnlyIssuesRepositoryTests {
     var issue1 = new LocalOnlyIssue(issueUuid1, filePath, null, null, "test-rule-1", "Message 1", null);
     var issue2 = new LocalOnlyIssue(issueUuid2, filePath, null, null, "test-rule-2", "Message 2", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue1);
-    repo.storeLocalOnlyIssue(configScopeId, issue2);
+    repository.storeLocalOnlyIssue(configScopeId, issue1);
+    repository.storeLocalOnlyIssue(configScopeId, issue2);
 
-    var removed = repo.removeIssue(issueUuid1);
+    var removed = repository.removeIssue(issueUuid1);
 
     assertThat(removed).isTrue();
-    var remainingIssues = repo.loadForFile(configScopeId, filePath);
+    var remainingIssues = repository.loadForFile(configScopeId, filePath);
     assertThat(remainingIssues).hasSize(1);
     assertThat(remainingIssues.get(0).getId()).isEqualTo(issueUuid2);
   }
 
   @Test
-  void should_return_false_when_removing_nonexistent_issue(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
-    var removed = repo.removeIssue(UUID.randomUUID());
+  void should_return_false_when_removing_nonexistent_issue() {
+    var removed = repository.removeIssue(UUID.randomUUID());
 
     assertThat(removed).isFalse();
   }
 
   @Test
-  void should_remove_all_issues_for_file(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_remove_all_issues_for_file() {
     var configScopeId = "configScopeId";
     var filePath1 = Path.of("/file/path1");
     var filePath2 = Path.of("/file/path2");
@@ -226,37 +204,33 @@ class LocalOnlyIssuesRepositoryTests {
     var issue2 = new LocalOnlyIssue(UUID.randomUUID(), filePath1, null, null, "test-rule-2", "Message 2", null);
     var issue3 = new LocalOnlyIssue(UUID.randomUUID(), filePath2, null, null, "test-rule-3", "Message 3", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue1);
-    repo.storeLocalOnlyIssue(configScopeId, issue2);
-    repo.storeLocalOnlyIssue(configScopeId, issue3);
+    repository.storeLocalOnlyIssue(configScopeId, issue1);
+    repository.storeLocalOnlyIssue(configScopeId, issue2);
+    repository.storeLocalOnlyIssue(configScopeId, issue3);
 
-    var removed = repo.removeAllIssuesForFile(configScopeId, filePath1);
+    var removed = repository.removeAllIssuesForFile(configScopeId, filePath1);
 
     assertThat(removed).isTrue();
-    assertThat(repo.loadForFile(configScopeId, filePath1)).isEmpty();
-    assertThat(repo.loadForFile(configScopeId, filePath2)).hasSize(1);
+    assertThat(repository.loadForFile(configScopeId, filePath1)).isEmpty();
+    assertThat(repository.loadForFile(configScopeId, filePath2)).hasSize(1);
   }
 
   @Test
-  void should_update_existing_issue(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_update_existing_issue() {
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var issueUuid = UUID.randomUUID();
     var issue1 = new LocalOnlyIssue(issueUuid, filePath, null, null, "test-rule-1", "Original message", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue1);
+    repository.storeLocalOnlyIssue(configScopeId, issue1);
 
     var resolution = new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "Updated comment");
     var issue2 = new LocalOnlyIssue(issueUuid, filePath, new TextRangeWithHash(1, 2, 3, 4, "hash"),
       new LineWithHash(1, "linehash"), "test-rule-1", "Updated message", resolution);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue2);
+    repository.storeLocalOnlyIssue(configScopeId, issue2);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(1);
     var loadedIssue = loadedIssues.get(0);
@@ -271,11 +245,7 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_purge_old_resolved_issues(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_purge_old_resolved_issues() {
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var oldDate = Instant.now().minus(10, ChronoUnit.DAYS);
@@ -288,54 +258,46 @@ class LocalOnlyIssuesRepositoryTests {
       new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, recentDate.truncatedTo(ChronoUnit.MILLIS), "comment"));
     var unresolvedIssue = new LocalOnlyIssue(UUID.randomUUID(), filePath, null, null, "test-rule-3", "Unresolved issue", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, oldIssue);
-    repo.storeLocalOnlyIssue(configScopeId, recentIssue);
-    repo.storeLocalOnlyIssue(configScopeId, unresolvedIssue);
+    repository.storeLocalOnlyIssue(configScopeId, oldIssue);
+    repository.storeLocalOnlyIssue(configScopeId, recentIssue);
+    repository.storeLocalOnlyIssue(configScopeId, unresolvedIssue);
 
-    repo.purgeIssuesOlderThan(limit);
+    repository.purgeIssuesOlderThan(limit);
 
-    var remainingIssues = repo.loadAll(configScopeId);
+    var remainingIssues = repository.loadAll(configScopeId);
     assertThat(remainingIssues).hasSize(2);
     assertThat(remainingIssues).extracting(LocalOnlyIssue::getId)
       .containsExactlyInAnyOrder(recentIssue.getId(), unresolvedIssue.getId());
   }
 
   @Test
-  void should_isolate_issues_by_configuration_scope(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_isolate_issues_by_configuration_scope() {
     var configScopeId1 = "configScopeId1";
     var configScopeId2 = "configScopeId2";
     var filePath = Path.of("/file/path");
     var issue1 = new LocalOnlyIssue(UUID.randomUUID(), filePath, null, null, "test-rule-1", "Message 1", null);
     var issue2 = new LocalOnlyIssue(UUID.randomUUID(), filePath, null, null, "test-rule-2", "Message 2", null);
 
-    repo.storeLocalOnlyIssue(configScopeId1, issue1);
-    repo.storeLocalOnlyIssue(configScopeId2, issue2);
+    repository.storeLocalOnlyIssue(configScopeId1, issue1);
+    repository.storeLocalOnlyIssue(configScopeId2, issue2);
 
-    assertThat(repo.loadAll(configScopeId1)).hasSize(1);
-    assertThat(repo.loadAll(configScopeId2)).hasSize(1);
-    assertThat(repo.loadForFile(configScopeId1, filePath)).hasSize(1);
-    assertThat(repo.loadForFile(configScopeId2, filePath)).hasSize(1);
+    assertThat(repository.loadAll(configScopeId1)).hasSize(1);
+    assertThat(repository.loadAll(configScopeId2)).hasSize(1);
+    assertThat(repository.loadForFile(configScopeId1, filePath)).hasSize(1);
+    assertThat(repository.loadForFile(configScopeId2, filePath)).hasSize(1);
   }
 
   @Test
-  void should_handle_issue_with_only_text_range(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_handle_issue_with_only_text_range() {
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var issueUuid = UUID.randomUUID();
     var issue = new LocalOnlyIssue(issueUuid, filePath, new TextRangeWithHash(1, 2, 3, 4, "hash1"),
       null, "test-rule-1", "Test message", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue);
+    repository.storeLocalOnlyIssue(configScopeId, issue);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(1);
     var loadedIssue = loadedIssues.get(0);
@@ -344,20 +306,16 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_handle_issue_with_only_line_hash(@TempDir Path temp) {
-    var storageRoot = temp.resolve("storage");
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.FILE));
-    var repo = new LocalOnlyIssuesRepository(db);
-
+  void should_handle_issue_with_only_line_hash() {
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var issueUuid = UUID.randomUUID();
     var issue = new LocalOnlyIssue(issueUuid, filePath, null,
       new LineWithHash(5, "linehash"), "test-rule-1", "Test message", null);
 
-    repo.storeLocalOnlyIssue(configScopeId, issue);
+    repository.storeLocalOnlyIssue(configScopeId, issue);
 
-    var loadedIssues = repo.loadForFile(configScopeId, filePath);
+    var loadedIssues = repository.loadForFile(configScopeId, filePath);
 
     assertThat(loadedIssues).hasSize(1);
     var loadedIssue = loadedIssues.get(0);
