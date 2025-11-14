@@ -19,10 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
-import jakarta.inject.Inject;
 import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
@@ -42,15 +39,13 @@ public final class SonarLintDatabase {
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
 
-  @Inject
   public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
     JdbcConnectionPool ds;
     try {
-      var mode = System.getProperty("sonarlint.db.mode", "file");
       String url;
-      if ("mem".equalsIgnoreCase(mode)) {
+      if (sonarLintDatabaseInitParams.sonarLintDatabaseMode() == SonarLintDatabaseMode.MEM) {
         // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
-        url = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
+        url = "jdbc:h2:mem:sonarlint";
       } else {
         var baseDir = sonarLintDatabaseInitParams.storageRoot().resolve("h2");
         Files.createDirectories(baseDir);
@@ -68,7 +63,6 @@ public final class SonarLintDatabase {
     } catch (Exception e) {
       throw new IllegalStateException("Failed to initialize H2Database", e);
     }
-    ds.setMaxConnections(10);
     this.dataSource = ds;
 
     // Run Flyway migrations if available. Do not fail if none is found.
@@ -87,15 +81,13 @@ public final class SonarLintDatabase {
       LOG.error("Flyway migration skipped or failed: {}", e.getMessage());
     }
 
+    System.setProperty("org.jooq.no-tips", "true");
+    System.setProperty("org.jooq.no-logo", "true");
     this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
   }
 
   public DSLContext dsl() {
     return dsl;
-  }
-
-  public Connection getConnection() throws SQLException {
-    return dataSource.getConnection();
   }
 
   public void withTransaction(Consumer<Configuration> transaction) {

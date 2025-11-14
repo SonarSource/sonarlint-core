@@ -41,9 +41,9 @@ public interface ProjectServerIssueStore {
   /**
    * Store issues for a branch by replacing existing ones.
    */
-  void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues);
+  void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues, Set<SonarLanguage> enabledLanguages);
 
-  void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots);
+  void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots, Set<SonarLanguage> enabledLanguages);
 
   void replaceAllHotspotsOfFile(String branchName, Path serverFilePath, Collection<ServerHotspot> serverHotspots);
 
@@ -131,7 +131,7 @@ public interface ProjectServerIssueStore {
   /**
    * Store taint issues for a branch.
    */
-  void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues);
+  void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues, Set<SonarLanguage> enabledLanguages);
 
   /**
    * Load hotspots stored for specified file.
