@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,6 +35,7 @@ import org.jooq.Configuration;
 import org.jooq.TableField;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerBranchesRecord;
@@ -48,7 +50,7 @@ import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
-
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final EntityMapper mapper = new EntityMapper();
   private final SonarLintDatabase database;
   private final String connectionId;
@@ -215,7 +217,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    if (rec == null) {
+    if (rec == null || rec.value1() == null) {
       return Optional.empty();
     }
     var ldt = rec.value1();
@@ -245,7 +247,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    if (rec == null) {
+    if (rec == null || rec.value1() == null) {
       return Optional.empty();
     }
     var ldt = rec.value1();
@@ -260,7 +262,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    if (rec == null) {
+    if (rec == null || rec.get(0, LocalDateTime.class) == null) {
       return Optional.empty();
     }
     var ldt = rec.get(0, LocalDateTime.class);
@@ -563,9 +565,12 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {
+    LOG.debug("Batch merging {} issues for branch '{}' and project '{}'", issues.size(), branchName, sonarProjectKey);
+    var start = Instant.now();
     trx.dsl().batchMerge(issues.stream()
         .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
+    LOG.debug("Batch merge completed in {} ms", Duration.between(start, Instant.now()).toMillis());
   }
 
   private void batchMergeTaints(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerTaintIssue> taints) {
