@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
@@ -46,6 +47,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssuePara
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
@@ -269,7 +271,7 @@ class IssuesStatusChangeMediumTests {
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, baseDir.relativize(filePath));
+    var issueLoaded = loadIssuesForFile(backend, baseDir.relativize(filePath));
     assertThat(issueLoaded).hasSize(1);
     assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
     assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
@@ -441,7 +443,7 @@ class IssuesStatusChangeMediumTests {
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
+    var storedIssues = loadIssuesForFile(backend, Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getResolution)
       .extracting(LocalOnlyIssueResolution::getComment)
@@ -520,14 +522,14 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .start();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    var storedIssues = loadIssues(backend);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
 
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, issueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();
-    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    storedIssues = loadIssues(backend);
     assertThat(storedIssues).isEmpty();
   }
 
@@ -553,9 +555,9 @@ class IssuesStatusChangeMediumTests {
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
       .start();
 
-    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
-    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path1"));
-    var allIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    var issuesForFile = loadIssuesForFile(backend, Path.of("file/path"));
+    var issuesForOtherFile = loadIssuesForFile(backend, Path.of("file/path1"));
+    var allIssues = loadIssues(backend);
     assertThat(issuesForFile).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2);
     assertThat(issuesForOtherFile).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
     assertThat(allIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
@@ -582,7 +584,7 @@ class IssuesStatusChangeMediumTests {
             "message",
             new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment"))))
       .start();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    var storedIssues = loadIssues(backend);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
 
     var response = backend.getIssueService()
@@ -590,7 +592,7 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();
-    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    storedIssues = loadIssues(backend);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
   }
 
@@ -608,7 +610,7 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
+    var storedIssues = loadIssuesForFile(backend, Path.of("file/path"));
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
   }
 
@@ -626,7 +628,7 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
+    var storedIssues = loadIssuesForFile(backend, Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getId)
       .containsOnly(issueId);
@@ -648,5 +650,19 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(reopenResponse).succeedsWithin(Duration.ofSeconds(2));
     assertThat(reopenResponse.get().isSuccess()).isTrue();
+  }
+
+  private static List<LocalOnlyIssue> loadIssuesForFile(SonarLintTestRpcServer backend, Path path) {
+    if (backend.getDogfoodingService().isDogfoodingEnvironment().join().isDogfoodingEnvironment()) {
+      return new LocalOnlyIssuesRepository(backend.getSonarLintDatabase()).loadForFile(CONFIGURATION_SCOPE_ID, path);
+    }
+    return backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, path);
+  }
+
+  private static List<LocalOnlyIssue> loadIssues(SonarLintTestRpcServer backend) {
+    if (backend.getDogfoodingService().isDogfoodingEnvironment().join().isDogfoodingEnvironment()) {
+      return new LocalOnlyIssuesRepository(backend.getSonarLintDatabase()).loadAll(CONFIGURATION_SCOPE_ID);
+    }
+    return backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
   }
 }

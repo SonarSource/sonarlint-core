@@ -103,7 +103,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aBatchServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aBatchServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     var savedIssues = store.load("branch", filePath);
     assertThat(savedIssues).isNotEmpty();
@@ -126,7 +126,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     var savedIssues = store.load("branch", filePath);
     assertThat(savedIssues).isNotEmpty();
@@ -154,7 +154,7 @@ class XodusServerIssueStoreTests {
     store
       .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setCreationDate(creationDate)
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation(filePath,
-          new TextRangeWithHash(5, 6, 7, 8, "myFlowRangeHash"), "flow message")))))));
+          new TextRangeWithHash(5, 6, 7, 8, "myFlowRangeHash"), "flow message")))))), Set.of());
 
     var savedIssues = store.loadTaint("branch");
     assertThat(savedIssues).isNotEmpty();
@@ -189,7 +189,7 @@ class XodusServerIssueStoreTests {
     store.replaceAllIssuesOfFile("branch", filePath2, List.of(
       aServerIssue().setFilePath(filePath2).setKey("key2")));
     store.replaceAllTaintsOfBranch("branch", List.of(
-      aServerTaintIssue().setFilePath(filePath1).setKey("key4")));
+      aServerTaintIssue().setFilePath(filePath1).setKey("key4")), Set.of());
 
     var issues = store.load("branch", filePath1);
     assertThat(issues)
@@ -201,12 +201,12 @@ class XodusServerIssueStoreTests {
   void should_load_all_taint_issues_of_a_branch() {
     store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setFilePath(filePath1).setKey("key0"),
-      aServerTaintIssue().setFilePath(filePath2).setKey("key2")));
+      aServerTaintIssue().setFilePath(filePath2).setKey("key2")), Set.of());
     store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setFilePath(filePath1).setKey("key1"),
-      aServerTaintIssue().setFilePath(filePath1).setKey("key3")));
+      aServerTaintIssue().setFilePath(filePath1).setKey("key3")), Set.of());
     store.replaceAllIssuesOfBranch("branch", List.of(
-      aServerIssue().setFilePath(filePath1).setKey("key4")));
+      aServerIssue().setFilePath(filePath1).setKey("key4")), Set.of());
 
     var issues = store.loadTaint("branch");
     assertThat(issues)
@@ -216,8 +216,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_load_issues_of_the_right_branch() {
-    store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath(filePath1).setKey("key2")));
-    store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath(filePath1).setKey("key1")));
+    store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath(filePath1).setKey("key2")), Set.of());
+    store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath(filePath1).setKey("key1")), Set.of());
 
     var issues = store.load("branch1", filePath1);
     assertThat(issues)
@@ -229,7 +229,7 @@ class XodusServerIssueStoreTests {
   void should_load_all_taint_issues_on_a_branch() {
     var branchName = "branch1";
 
-    store.replaceAllTaintsOfBranch(branchName, List.of(aServerTaintIssue().setFilePath(filePath1).setKey("key1"), aServerTaintIssue().setFilePath(filePath2).setKey("key2")));
+    store.replaceAllTaintsOfBranch(branchName, List.of(aServerTaintIssue().setFilePath(filePath1).setKey("key1"), aServerTaintIssue().setFilePath(filePath2).setKey("key2")), Set.of());
 
     var issues = store.loadTaint(branchName);
 
@@ -240,8 +240,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_load_issues_of_the_right_file() {
-    store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath(filePath1).setKey("key1")));
-    store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath(Path.of("file/Path1")).setKey("key2")));
+    store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath(filePath1).setKey("key1")), Set.of());
+    store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath(Path.of("file/Path1")).setKey("key2")), Set.of());
 
     var issues = store.load("branch1", filePath1);
     assertThat(issues)
@@ -254,7 +254,7 @@ class XodusServerIssueStoreTests {
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setKey("key1"),
       aServerIssue().setKey("key2"),
-      aServerIssue().setKey("key3")));
+      aServerIssue().setKey("key3")), Set.of());
 
     store.mergeIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
@@ -280,7 +280,7 @@ class XodusServerIssueStoreTests {
   void should_update_existing_issues_when_merging() {
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setType(RuleType.VULNERABILITY).setKey("key1"),
-      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key2")));
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key2")), Set.of());
 
     store.mergeIssues("branch", List.of(
       aServerIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
@@ -298,7 +298,7 @@ class XodusServerIssueStoreTests {
     store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setKey("key1"),
       aServerTaintIssue().setKey("key2"),
-      aServerTaintIssue().setKey("key3")));
+      aServerTaintIssue().setKey("key3")), Set.of());
 
     store.mergeTaintIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
@@ -323,7 +323,7 @@ class XodusServerIssueStoreTests {
   void should_update_existing_taints_when_merging() {
     store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key1"),
-      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key2")));
+      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key2")), Set.of());
 
     store.mergeTaintIssues("branch", List.of(
       aServerTaintIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
@@ -338,7 +338,7 @@ class XodusServerIssueStoreTests {
   @Test
   void should_save_issue_without_line() {
     store.replaceAllIssuesOfBranch("branch", List.of(
-      aFileLevelServerIssue().setFilePath(filePath)));
+      aFileLevelServerIssue().setFilePath(filePath)), Set.of());
 
     var issue = store.load("branch", filePath).get(0);
 
@@ -348,7 +348,7 @@ class XodusServerIssueStoreTests {
   @Test
   void should_save_taint_issue_without_range() {
     store.replaceAllTaintsOfBranch("branch", List.of(
-      aServerTaintIssue().setKey("key1").setTextRange(null)));
+      aServerTaintIssue().setKey("key1").setTextRange(null)), Set.of());
 
     var issues = store.loadTaint("branch");
 
@@ -358,8 +358,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_existing_taint_issues_on_branch() {
-    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key1").setTextRange(null)));
-    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key2").setTextRange(null)));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key1").setTextRange(null)), Set.of());
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key2").setTextRange(null)), Set.of());
 
     var issues = store.loadTaint("branch");
 
@@ -382,8 +382,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_existing_issues_on_same_file() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("old message")));
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key2").setFilePath(filePathNoSlash).setMessage("new message")));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("old message")), Set.of());
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key2").setFilePath(filePathNoSlash).setMessage("new message")), Set.of());
 
     var issues = store.load("branch", filePathNoSlash);
 
@@ -394,8 +394,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_existing_issues_on_another_file() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash1).setMessage("old message")));
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key2").setFilePath(filePathNoSlash2).setMessage("new message")));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash1).setMessage("old message")), Set.of());
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key2").setFilePath(filePathNoSlash2).setMessage("new message")), Set.of());
 
     var issues = store.load("branch", filePathNoSlash2);
 
@@ -408,8 +408,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_existing_issue_with_same_key() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("old message")));
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("new message")));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("old message")), Set.of());
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setFilePath(filePathNoSlash).setMessage("new message")), Set.of());
 
     var issues = store.load("branch", filePathNoSlash);
 
@@ -422,7 +422,7 @@ class XodusServerIssueStoreTests {
   void should_save_from_different_files() {
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setKey("key1").setFilePath(filePathNoSlash1),
-      aServerIssue().setKey("key2").setFilePath(filePathNoSlash2)));
+      aServerIssue().setKey("key2").setFilePath(filePathNoSlash2)), Set.of());
 
     var issues = store.load("branch", filePathNoSlash1);
 
@@ -435,7 +435,7 @@ class XodusServerIssueStoreTests {
   void should_save_issues_with_different_case_keys() {
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setKey("key"),
-      aServerIssue().setKey("Key")));
+      aServerIssue().setKey("Key")), Set.of());
 
     var issues = store.load("branch", filePath);
 
@@ -447,9 +447,9 @@ class XodusServerIssueStoreTests {
   @Test
   void should_move_issue_to_other_file() {
     store.replaceAllIssuesOfBranch("branch", List.of(
-      aServerIssue().setKey("key").setFilePath(filePathNoSlash1)));
+      aServerIssue().setKey("key").setFilePath(filePathNoSlash1)), Set.of());
     store.replaceAllIssuesOfBranch("branch", List.of(
-      aServerIssue().setKey("key").setFilePath(filePathNoSlash2)));
+      aServerIssue().setKey("key").setFilePath(filePathNoSlash2)), Set.of());
 
     var issuesFile1 = store.load("branch", filePathNoSlash1);
     assertThat(issuesFile1).isEmpty();
@@ -461,7 +461,7 @@ class XodusServerIssueStoreTests {
   @Test
   void should_update_issue() {
     store.replaceAllIssuesOfBranch("branch", List.of(
-      aServerIssue().setKey("key").setFilePath(filePathNoSlash).setResolved(false)));
+      aServerIssue().setKey("key").setFilePath(filePathNoSlash).setResolved(false)), Set.of());
 
     store.updateIssue("key", issue -> issue.setResolved(true));
 
@@ -472,7 +472,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_update_hotspots() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()), Set.of());
 
     store.updateHotspot("key", hotspot -> hotspot.setStatus(HotspotReviewStatus.SAFE));
 
@@ -483,7 +483,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_remove_hotspot() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot(), aServerHotspot("key2", Path.of("file2"))));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot(), aServerHotspot("key2", Path.of("file2"))), Set.of());
 
     store.deleteHotspot("key2");
 
@@ -494,7 +494,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_insert_hotspot() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()), Set.of());
 
     var newHotspot = aServerHotspot("key2", filePath);
     var newHotspot2 = aServerHotspot("key3", filePath);
@@ -508,14 +508,14 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_empty_last_issue_sync_timestamp_if_no_branch() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()), Set.of());
 
     assertThat(store.getLastIssueSyncTimestamp("unknown")).isEmpty();
   }
 
   @Test
   void should_get_empty_last_issue_sync_timestamp_if_no_timestamp_on_branch() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()), Set.of());
 
     assertThat(store.getLastIssueSyncTimestamp("branch")).isEmpty();
   }
@@ -557,14 +557,14 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_empty_last_taint_sync_timestamp_if_no_branch() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()), Set.of());
 
     assertThat(store.getLastTaintSyncTimestamp("unknown")).isEmpty();
   }
 
   @Test
   void should_get_empty_last_taint_sync_timestamp_if_no_timestamp_on_branch() {
-    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()));
+    store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()), Set.of());
 
     assertThat(store.getLastTaintSyncTimestamp("branch")).isEmpty();
   }
@@ -633,7 +633,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_delete_taints() {
-    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()), Set.of());
 
     store.deleteTaintIssueBySonarServerKey("key");
 
@@ -643,7 +643,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_update_taints() {
-    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()), Set.of());
 
     store.updateTaintIssueBySonarServerKey("key", taintIssue -> taintIssue.setResolved(true));
 
@@ -655,7 +655,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_update_taint_issue_status() {
-    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()), Set.of());
 
     store.updateIssueResolutionStatus("key", true, true);
 
@@ -693,7 +693,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_branch_hotspots_when_replacing_them_on_an_empty_store() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()), Set.of());
 
     var hotspots = store.loadHotspots("branch", filePath);
     assertThat(hotspots)
@@ -725,9 +725,9 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_branch_hotspots_of_an_existing_file() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot")));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot")), Set.of());
 
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot")));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot")), Set.of());
 
     var hotspots = store.loadHotspots("branch", filePath);
     assertThat(hotspots)
@@ -737,9 +737,9 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_replace_branch_hotspots_for_a_new_file() {
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot", Path.of("old/path"))));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot", Path.of("old/path"))), Set.of());
 
-    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot", Path.of("new/path"))));
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot", Path.of("new/path"))), Set.of());
 
     var hotspots = store.loadHotspots("branch", Path.of("new/path"));
     assertThat(hotspots)
@@ -752,7 +752,7 @@ class XodusServerIssueStoreTests {
     store.replaceAllHotspotsOfBranch("branch", List.of(
       aServerHotspot("key1"),
       aServerHotspot("key2"),
-      aServerHotspot("key3")));
+      aServerHotspot("key3")), Set.of());
 
     store.mergeHotspots("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
@@ -777,7 +777,7 @@ class XodusServerIssueStoreTests {
   void should_update_existing_hotspots_when_merging() {
     store.replaceAllHotspotsOfBranch("branch", List.of(
       aServerHotspot("key1"),
-      aServerHotspot("key2")));
+      aServerHotspot("key2")), Set.of());
 
     store.mergeHotspots("branch", List.of(
       aServerHotspot("key1"),
@@ -793,7 +793,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     assertThat(backupDir).isEmptyDirectory();
 
@@ -815,7 +815,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     assertThat(backupDir).isEmptyDirectory();
 
@@ -838,7 +838,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
     store.close();
     assertThat(backupDir).isDirectoryContaining("glob:**backup.tar.gz");
 
@@ -859,7 +859,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     assertThat(store.containsIssue("key")).isTrue();
   }
@@ -869,7 +869,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     assertThat(store.containsIssue("key")).isTrue();
   }
@@ -879,7 +879,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)), Set.of());
 
     assertThat(store.containsIssue("key_not_found")).isFalse();
   }

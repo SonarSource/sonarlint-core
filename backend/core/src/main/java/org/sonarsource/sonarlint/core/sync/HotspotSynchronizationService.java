@@ -78,7 +78,7 @@ public class HotspotSynchronizationService {
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
-    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, cancelMonitor);
+    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, enabledLanguagesToSync, cancelMonitor);
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath, SonarLintCancelMonitor cancelMonitor) {

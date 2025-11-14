@@ -53,8 +53,6 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
@@ -221,7 +219,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AiAgentService.class,
   LogService.class,
   ActiveRulesService.class,
-  SonarLintDatabase.class,
   AiCodeFixRepository.class,
   SonarLintDatabaseService.class
 })
@@ -270,9 +267,8 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  SonarLintDatabaseInitParams provideStorageInitParams(UserPaths userPaths) {
-    var dbMode = SonarLintDatabaseMode.valueOf(System.getProperty("sonarlint.db.mode", "FILE"));
-    return new SonarLintDatabaseInitParams(userPaths.getStorageRoot(), dbMode);
+  SonarLintDatabase provideDatabase(UserPaths userPaths) {
+    return new SonarLintDatabase(userPaths.getStorageRoot());
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {

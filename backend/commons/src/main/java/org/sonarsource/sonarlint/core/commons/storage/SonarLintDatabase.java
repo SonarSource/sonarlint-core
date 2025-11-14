@@ -19,10 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
-import jakarta.inject.Inject;
 import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
@@ -42,32 +40,23 @@ public final class SonarLintDatabase {
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
 
-  @Inject
-  public SonarLintDatabase(SonarLintDatabaseInitParams sonarLintDatabaseInitParams) {
+  public SonarLintDatabase(Path storageRoot) {
     JdbcConnectionPool ds;
     try {
-      String url;
-      if (sonarLintDatabaseInitParams.sonarLintDatabaseMode() == SonarLintDatabaseMode.MEM) {
-        // In-memory mode for tests: keep DB alive until JVM exits to allow multiple connections
-        url = "jdbc:h2:mem:sonarlint;DB_CLOSE_DELAY=-1";
-      } else {
-        var baseDir = sonarLintDatabaseInitParams.storageRoot().resolve("h2");
-        Files.createDirectories(baseDir);
-        var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
-        url = "jdbc:h2:" + dbBasePath;
-        // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
-        var bindAddressProperty = "h2.bindAddress";
-        if (StringUtils.isEmpty(System.getProperty(bindAddressProperty))) {
-          System.setProperty(bindAddressProperty, "127.0.0.1");
-        }
-        url += ";AUTO_SERVER=TRUE";
+      var baseDir = storageRoot.resolve("h2");
+      Files.createDirectories(baseDir);
+      var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
+      var url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
+      // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
+      var bindAddressProperty = "h2.bindAddress";
+      if (StringUtils.isEmpty(System.getProperty(bindAddressProperty))) {
+        System.setProperty(bindAddressProperty, "127.0.0.1");
       }
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
     } catch (Exception e) {
       throw new IllegalStateException("Failed to initialize H2Database", e);
     }
-    ds.setMaxConnections(10);
     this.dataSource = ds;
 
     // Run Flyway migrations if available. Do not fail if none is found.
@@ -95,10 +84,6 @@ public final class SonarLintDatabase {
     return dsl;
   }
 
-  public Connection getConnection() throws SQLException {
-    return dataSource.getConnection();
-  }
-
   public void withTransaction(Consumer<Configuration> transaction) {
     dsl.transaction(transaction::accept);
   }
@@ -118,4 +103,3 @@ public final class SonarLintDatabase {
       .execute();
   }
 }
-

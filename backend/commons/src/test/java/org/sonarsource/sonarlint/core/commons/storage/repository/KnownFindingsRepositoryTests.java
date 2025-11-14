@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,8 +32,6 @@ import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -40,12 +39,18 @@ class KnownFindingsRepositoryTests {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
+  private SonarLintDatabase db;
+
+  @AfterEach
+  void shutdown() {
+    db.shutdown();
+  }
 
   @Test
   void testKnownFindingsRepository(@TempDir Path temp) {
     var storageRoot = temp.resolve("storage");
 
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
+    db = new SonarLintDatabase(storageRoot);
     var repo = new KnownFindingsRepository(db);
 
     var filePath = Path.of("/file/path");

@@ -19,18 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseMode;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabaseInitParams;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AiCodeFixRepositoryTest {
 
@@ -45,7 +43,7 @@ class AiCodeFixRepositoryTest {
     // Given a file-based H2 database under a temporary storage root
     var storageRoot = temp.resolve("storage");
 
-    var db = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
+    var db = new SonarLintDatabase(storageRoot);
     var aiCodeFixRepo = new AiCodeFixRepository(db);
 
     var entityToStore = new AiCodeFix(
@@ -63,7 +61,7 @@ class AiCodeFixRepositoryTest {
     db.shutdown();
 
     // Create a new repository with a fresh DB instance pointing to the same storage root
-    var db2 = new SonarLintDatabase(new SonarLintDatabaseInitParams(storageRoot, SonarLintDatabaseMode.MEM));
+    var db2 = new SonarLintDatabase(storageRoot);
     var repo2 = new AiCodeFixRepository(db2);
     // With a different connection id, no settings should be visible
     var loadedOptDifferent = repo2.get("test-connection-2");

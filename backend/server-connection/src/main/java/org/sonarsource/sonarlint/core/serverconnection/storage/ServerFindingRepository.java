@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.jooq.Configuration;
+import org.jooq.Record1;
 import org.jooq.TableField;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -43,9 +45,9 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
-import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_BRANCHES;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
 
@@ -63,15 +65,15 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   @Override
   public boolean wasEverUpdated() {
     // Limit to current connection/project scope
-    var rec = database.dsl().selectCount().from(SERVER_FINDINGS)
-      .where(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId)
-        .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-      .fetchOne();
-    return rec != null && rec.value1() > 0;
+    var rec = database.dsl().select(SERVER_BRANCHES.LAST_ISSUE_SYNC_TS).from(SERVER_BRANCHES)
+      .where(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId)
+        .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
+      .fetchAny();
+    return rec != null && rec.value1() != null;
   }
 
   @Override
-  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues, Set<SonarLanguage> enabledLanguages) {
     database.withTransaction(trx -> {
       trx.dsl().deleteFrom(SERVER_FINDINGS)
         .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
@@ -81,10 +83,14 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
         .execute();
       batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issues);
     });
+    upsertBranchMetadata(branchName,
+      SERVER_BRANCHES.LAST_ISSUE_SYNC_TS,
+      SERVER_BRANCHES.LAST_ISSUE_ENABLED_LANGS,
+      Instant.now(), enabledLanguages);
   }
 
   @Override
-  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
+  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots, Set<SonarLanguage> enabledLanguages) {
     database.withTransaction(trx -> {
       trx.dsl().deleteFrom(SERVER_FINDINGS)
         .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
@@ -93,6 +99,10 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
       batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, serverHotspots);
+      upsertBranchMetadata(branchName,
+        SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS,
+        SERVER_BRANCHES.LAST_HOTSPOT_ENABLED_LANGS,
+        Instant.now(), enabledLanguages);
     });
   }
 
@@ -104,8 +114,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.FILE_PATH.eq(serverFilePath.toString()))
           .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.HOTSPOT.name()))
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
-        )
+          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
       batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, serverHotspots);
     });
@@ -132,8 +141,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.FILE_PATH.eq(serverFilePath.toString()))
           .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.ISSUE.name()))
           .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
-        )
+          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
       batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issues);
     });
@@ -209,17 +217,14 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   @Override
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
-    var rec = database.dsl().select(SERVER_BRANCHES.LAST_ISSUE_SYNC_TS)
+    return database.dsl().select(SERVER_BRANCHES.LAST_ISSUE_SYNC_TS)
       .from(SERVER_BRANCHES)
       .where(SERVER_BRANCHES.BRANCH_NAME.eq(branchName)
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-      .fetchOne();
-    if (rec == null) {
-      return Optional.empty();
-    }
-    var ldt = rec.value1();
-    return Optional.of(toInstant(ldt));
+      .fetchOptional()
+      .map(Record1::value1)
+      .map(ServerFindingRepository::toInstant);
   }
 
   @Override
@@ -239,36 +244,30 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   @Override
   public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
-    var rec = database.dsl().select(SERVER_BRANCHES.LAST_TAINT_SYNC_TS)
+    return database.dsl().select(SERVER_BRANCHES.LAST_TAINT_SYNC_TS)
       .from(SERVER_BRANCHES)
       .where(SERVER_BRANCHES.BRANCH_NAME.eq(branchName)
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-      .fetchOne();
-    if (rec == null) {
-      return Optional.empty();
-    }
-    var ldt = rec.value1();
-    return Optional.of(toInstant(ldt));
+      .fetchOptional()
+      .map(Record1::value1)
+      .map(ServerFindingRepository::toInstant);
   }
 
   @Override
   public Optional<Instant> getLastHotspotSyncTimestamp(String branchName) {
-    var rec = database.dsl().select(SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS)
+    return database.dsl().select(SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS)
       .from(SERVER_BRANCHES)
       .where(SERVER_BRANCHES.BRANCH_NAME.eq(branchName)
         .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
         .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-      .fetchOne();
-    if (rec == null) {
-      return Optional.empty();
-    }
-    var ldt = rec.get(0, LocalDateTime.class);
-    return Optional.of(toInstant(ldt));
+      .fetchOptional()
+      .map(Record1::value1)
+      .map(ServerFindingRepository::toInstant);
   }
 
   private static Instant toInstant(LocalDateTime ldt) {
-    return ldt.atZone(ZoneId.systemDefault()).toInstant();
+    return ldt.toInstant(ZoneOffset.UTC);
   }
 
   private void upsertBranchMetadata(String branchName,
@@ -323,7 +322,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
+  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues, Set<SonarLanguage> enabledLanguages) {
     database.withTransaction(trx -> {
       trx.dsl().deleteFrom(SERVER_FINDINGS)
         .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
@@ -332,6 +331,10 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
           .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
         .execute();
       batchMergeTaints(branchName, connectionId, sonarProjectKey, trx, taintIssues);
+      upsertBranchMetadata(branchName,
+        SERVER_BRANCHES.LAST_TAINT_SYNC_TS,
+        SERVER_BRANCHES.LAST_TAINT_ENABLED_LANGS,
+        Instant.now(), enabledLanguages);
     });
   }
 
@@ -377,6 +380,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
       .set(SERVER_FINDINGS.RESOLVED, current.isResolved())
       .set(SERVER_FINDINGS.USER_SEVERITY, current.getUserSeverity() != null ? current.getUserSeverity().name() : null)
       .set(SERVER_FINDINGS.RULE_TYPE, current.getType() != null ? current.getType().name() : null)
+      .set(SERVER_FINDINGS.IMPACTS, mapper.serializeImpacts(current.getImpacts()))
       .where(SERVER_FINDINGS.ID.eq(rec.getId()))
       .execute();
     return true;
@@ -433,6 +437,13 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     }
     var current = mapper.adaptTaint(rec);
     taintIssueUpdater.accept(current);
+    database.dsl().update(SERVER_FINDINGS)
+      .set(SERVER_FINDINGS.USER_SEVERITY, current.getSeverity().name())
+      .set(SERVER_FINDINGS.RULE_TYPE, current.getType().name())
+      .set(SERVER_FINDINGS.RESOLVED, current.isResolved())
+      .set(SERVER_FINDINGS.IMPACTS, mapper.serializeImpacts(current.getImpacts()))
+      .where(SERVER_FINDINGS.SERVER_KEY.eq(sonarServerKey))
+      .execute();
     return Optional.of(current);
   }
 
@@ -473,7 +484,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   @Override
   public void close() {
-    database.shutdown();
+    // database will be disposed in SonarLintDatabase
   }
 
   @Override
@@ -523,7 +534,7 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     var table = SERVER_DEPENDENCY_RISKS;
 
     return database.dsl().select(table.ID, table.TYPE, table.SEVERITY, table.SOFTWARE_QUALITY, table.STATUS,
-        table.PACKAGE_NAME, table.PACKAGE_VERSION, table.VULNERABILITY_ID, table.CVSS_SCORE, table.TRANSITIONS)
+      table.PACKAGE_NAME, table.PACKAGE_VERSION, table.VULNERABILITY_ID, table.CVSS_SCORE, table.TRANSITIONS)
       .from(table)
       .where(table.BRANCH_NAME.eq(branchName)
         .and(table.CONNECTION_ID.eq(connectionId))
@@ -558,25 +569,25 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   private void batchMergeHotspots(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerHotspot> hotspots) {
     trx.dsl().batchMerge(hotspots.stream()
-        .map(hotspot -> mapper.serverHotspotToRecord(hotspot, branchName, connectionId, sonarProjectKey)).toList())
+      .map(hotspot -> mapper.serverHotspotToRecord(hotspot, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
   }
 
   private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {
     trx.dsl().batchMerge(issues.stream()
-        .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
+      .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
   }
 
   private void batchMergeTaints(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerTaintIssue> taints) {
     trx.dsl().batchMerge(taints.stream()
-        .map(taint -> mapper.serverTaintToRecord(taint, branchName, connectionId, sonarProjectKey)).toList())
+      .map(taint -> mapper.serverTaintToRecord(taint, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
   }
 
   private void batchMergeDependencyRisks(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerDependencyRisk> risks) {
     trx.dsl().batchMerge(risks.stream()
-        .map(risk -> mapper.serverDependencyRiskToRecord(risk, branchName, connectionId, sonarProjectKey)).toList())
+      .map(risk -> mapper.serverDependencyRiskToRecord(risk, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
   }
 }
