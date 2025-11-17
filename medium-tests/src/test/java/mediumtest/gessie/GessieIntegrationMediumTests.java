@@ -31,10 +31,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
@@ -45,10 +49,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.awaitility.Awaitility.await;
 
+@ExtendWith(SystemStubsExtension.class)
 class GessieIntegrationMediumTests {
 
   private static final String IDE_ENDPOINT = "/ide";
   public static final String FAILED_ONCE = "Failed once";
+
+  @SystemStub
+  private EnvironmentVariables environmentVariables;
 
   @RegisterExtension
   static WireMockExtension gessieEndpointMock = WireMockExtension.newInstance()
@@ -63,14 +71,16 @@ class GessieIntegrationMediumTests {
   }
 
   @BeforeEach
-  void saveInternalDebugFlag() {
+  void setUp() {
     this.oldDebugValue = InternalDebug.isEnabled();
     InternalDebug.setEnabled(true);
+    environmentVariables.set("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS", "0");
   }
 
   @AfterEach
   void tearDown() {
     InternalDebug.setEnabled(oldDebugValue);
+    environmentVariables.remove("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS");
   }
 
   @SonarLintTest
@@ -127,8 +137,8 @@ class GessieIntegrationMediumTests {
 
     var fileContent = getTestJson("GessieRequest");
     // Wait for timeframe enough for more than 2 retries.
-    await().timeout(15, TimeUnit.SECONDS)
-      .pollDelay(12, TimeUnit.SECONDS)
+    await().timeout(5, TimeUnit.SECONDS)
+      .pollDelay(2, TimeUnit.SECONDS)
       .untilAsserted(() -> gessieEndpointMock.verify(3, postRequestedFor(urlEqualTo(IDE_ENDPOINT))
       .withHeader("x-api-key", new EqualToPattern("value"))
       .withRequestBody(equalToJson(fileContent))));
