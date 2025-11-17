@@ -123,6 +123,7 @@ import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -226,6 +227,11 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 })
 public class SonarLintSpringAppConfig {
 
+  @Value("#{environment.SONARLINT_HTTP_MAX_RETRIES ?: 2}")
+  private Integer httpMaxRetries;
+  @Value("#{environment.SONARLINT_HTTP_RETRY_INTERVAL_SECONDS ?: 3}")
+  private Integer httpRetryInterval;
+
   @Bean(name = "applicationEventMulticaster")
   public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
     var eventMulticaster = new SimpleApplicationEventMulticaster();
@@ -249,7 +255,7 @@ public class SonarLintSpringAppConfig {
   HttpClientProvider provideHttpClientProvider(InitializeParams params, UserPaths userPaths, AskClientCertificatePredicate askClientCertificatePredicate,
     ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     return new HttpClientProvider(params.getClientConstantInfo().getUserAgent(), adapt(params.getHttpConfiguration(), userPaths.getUserHome()), askClientCertificatePredicate,
-      proxySelector, proxyCredentialsProvider);
+      proxySelector, proxyCredentialsProvider, httpMaxRetries, httpRetryInterval);
   }
 
   @Bean
