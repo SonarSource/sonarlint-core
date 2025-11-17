@@ -48,9 +48,15 @@ public class ConfigurationScopeStorageFixture {
   public static class ConfigurationScopeStorageBuilder {
     private final List<LocalOnlyIssue> localOnlyIssues = new ArrayList<>();
     private final String configScopeId;
+    private boolean noH2;
 
     public ConfigurationScopeStorageBuilder(String configScopeId) {
       this.configScopeId = configScopeId;
+    }
+
+    public ConfigurationScopeStorageBuilder noH2() {
+      this.noH2 = true;
+      return this;
     }
 
     public ConfigurationScopeStorageBuilder withLocalOnlyIssue(LocalOnlyIssue issue) {
@@ -119,8 +125,10 @@ public class ConfigurationScopeStorageFixture {
     }
 
     public void populateDatabase(SonarLintDatabase database) {
-      var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(database);
-      localOnlyIssues.forEach(issue -> localOnlyIssuesRepository.storeLocalOnlyIssue(configScopeId, issue));
+      if (!noH2) {
+        var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(database);
+        localOnlyIssues.forEach(issue -> localOnlyIssuesRepository.storeLocalOnlyIssue(configScopeId, issue));
+      }
     }
   }
 }

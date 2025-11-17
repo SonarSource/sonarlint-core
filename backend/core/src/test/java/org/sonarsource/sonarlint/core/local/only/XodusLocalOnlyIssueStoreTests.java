@@ -51,7 +51,7 @@ class XodusLocalOnlyIssueStoreTests {
 
   @AfterEach
   void tearDown() {
-    store.close();
+    store.backupAndClose();
   }
 
   @Test
@@ -139,7 +139,7 @@ class XodusLocalOnlyIssueStoreTests {
 
   @Test
   void should_purge_old_folders() throws IOException {
-    store.close();
+    store.backupAndClose();
     var oldFile = Files.createTempFile(workDir, "xodus-local-only-issue-store", UUID.randomUUID().toString());
     var file = oldFile.toFile();
     var oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;

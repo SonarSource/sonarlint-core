@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
@@ -50,11 +51,14 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.flatMapping;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusLocalOnlyIssueStore {
 
-  private static final String LOCAL_ONLY_ISSUE = "xodus-local-only-issue-store";
+  static final String LOCAL_ONLY_ISSUE = "xodus-local-only-issue-store";
   private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
   private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
@@ -76,13 +80,15 @@ public class XodusLocalOnlyIssueStore {
   private static final String END_LINE_PROPERTY_NAME = "endLine";
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
   private static final String MESSAGE_BLOB_NAME = "message";
-  private static final String BACKUP_TAR_GZ = "local_only_issue_backup.tar.gz";
+  static final String BACKUP_TAR_GZ = "local_only_issue_backup.tar.gz";
   private final PersistentEntityStore entityStore;
   private final Path backupFile;
   private final Path xodusDbDir;
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private final Path workDir;
 
   public XodusLocalOnlyIssueStore(Path backupDir, Path workDir) throws IOException {
+    this.workDir = workDir;
     xodusDbDir = Files.createTempDirectory(workDir, LOCAL_ONLY_ISSUE);
     purgeOldTemporaryFiles(workDir, PURGE_NUMBER_OF_DAYS, LOCAL_ONLY_ISSUE + "*");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
@@ -112,6 +118,16 @@ public class XodusLocalOnlyIssueStore {
         .map(XodusLocalOnlyIssueStore::adapt)
         .toList())
       .orElseGet(Collections::emptyList));
+  }
+
+  public Map<String, List<LocalOnlyIssue>> loadAll() {
+    return entityStore.computeInReadonlyTransaction(txn -> StreamSupport.stream(txn.getAll(CONFIGURATION_SCOPE_ID_ENTITY_TYPE).spliterator(), false)
+      .collect(groupingBy(
+        e -> (String) requireNonNull(e.getProperty(NAME_PROPERTY_NAME)),
+        flatMapping(e -> StreamSupport.stream(e.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME).spliterator(), false)
+          .flatMap(file -> StreamSupport.stream(file.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME).spliterator(), false)
+            .map(XodusLocalOnlyIssueStore::adapt)),
+          toList()))));
   }
 
   public List<LocalOnlyIssue> loadAll(String configurationScopeId) {
@@ -316,8 +332,12 @@ public class XodusLocalOnlyIssueStore {
     }
   }
 
-  public void close() {
+  public void backupAndClose() {
     backup();
+    close();
+  }
+
+  public void close() {
     entityStore.close();
     FileUtils.deleteQuietly(xodusDbDir.toFile());
   }

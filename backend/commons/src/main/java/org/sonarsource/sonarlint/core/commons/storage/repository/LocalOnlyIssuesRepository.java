@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.commons.storage.repository;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jooq.Configuration;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.LocalOnlyIssuesRecord;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.LOCAL_ONLY_ISSUES;
 
@@ -66,6 +68,38 @@ public class LocalOnlyIssuesRepository {
       .toList();
   }
 
+  public void storeIssues(Map<String, List<LocalOnlyIssue>> issuesPerConfigScopeId) {
+    database.dsl().batchMerge(issuesPerConfigScopeId.entrySet().stream()
+      .flatMap(entry -> {
+        var configScopeId = entry.getKey();
+        return entry.getValue().stream().map(
+          issue -> {
+            var resolution = issue.getResolution();
+            var textRangeWithHash = issue.getTextRangeWithHash();
+            var lineWithHash = issue.getLineWithHash();
+            return new LocalOnlyIssuesRecord(
+              issue.getId(),
+              configScopeId,
+              issue.getServerRelativePath().toString(),
+              issue.getRuleKey(),
+              issue.getMessage(),
+              resolution == null ? null : resolution.getStatus().name(),
+              resolution == null ? null : LocalDateTime.ofInstant(resolution.getResolutionDate(), ZoneOffset.UTC),
+              resolution == null ? null : resolution.getComment(),
+              textRangeWithHash == null ? null : textRangeWithHash.getStartLine(),
+              textRangeWithHash == null ? null : textRangeWithHash.getStartLineOffset(),
+              textRangeWithHash == null ? null : textRangeWithHash.getEndLine(),
+              textRangeWithHash == null ? null : textRangeWithHash.getEndLineOffset(),
+              textRangeWithHash == null ? null : textRangeWithHash.getHash(),
+              lineWithHash == null ? null : lineWithHash.getNumber(),
+              lineWithHash == null ? null : lineWithHash.getHash());
+
+          });
+      })
+      .toList())
+      .execute();
+  }
+
   public void storeLocalOnlyIssue(String configurationScopeId, LocalOnlyIssue issue) {
     database.dsl().transaction((Configuration trx) -> {
       var textRangeWithHash = issue.getTextRangeWithHash();
@@ -81,7 +115,7 @@ public class LocalOnlyIssuesRepository {
 
       var resolution = issue.getResolution();
       var resolutionStatus = resolution == null ? null : resolution.getStatus().name();
-      var resolutionDate = resolution == null ? null : LocalDateTime.ofInstant(resolution.getResolutionDate(), ZoneId.systemDefault());
+      var resolutionDate = resolution == null ? null : LocalDateTime.ofInstant(resolution.getResolutionDate(), ZoneOffset.UTC);
       var comment = resolution == null ? null : resolution.getComment();
 
       trx.dsl().mergeInto(LOCAL_ONLY_ISSUES)
@@ -164,7 +198,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public void purgeIssuesOlderThan(Instant limit) {
-    var limitDateTime = LocalDateTime.ofInstant(limit, ZoneId.systemDefault());
+    var limitDateTime = LocalDateTime.ofInstant(limit, ZoneOffset.UTC);
     database.dsl()
       .deleteFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.RESOLUTION_DATE.isNotNull()
@@ -186,7 +220,7 @@ public class LocalOnlyIssuesRepository {
     var resolutionDate = rec.get(LOCAL_ONLY_ISSUES.RESOLUTION_DATE);
     if (resolutionStatus != null && resolutionDate != null) {
       var status = IssueStatus.valueOf(resolutionStatus);
-      var instant = resolutionDate.atZone(ZoneId.systemDefault()).toInstant();
+      var instant = resolutionDate.toInstant(ZoneOffset.UTC);
       var comment = rec.get(LOCAL_ONLY_ISSUES.COMMENT);
       resolution = new LocalOnlyIssueResolution(status, instant, comment);
     }

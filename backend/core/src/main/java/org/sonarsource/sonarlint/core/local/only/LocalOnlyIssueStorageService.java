@@ -22,10 +22,15 @@ package org.sonarsource.sonarlint.core.local.only;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
+
+import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.deleteInFolderWithPattern;
+import static org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore.LOCAL_ONLY_ISSUE;
 
 public class LocalOnlyIssueStorageService {
 
@@ -40,7 +45,13 @@ public class LocalOnlyIssueStorageService {
 
   @PostConstruct
   public void purgeOldIssues() {
-    get().purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
+    if (exists()) {
+      get().purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
+    }
+  }
+
+  public boolean exists() {
+    return Files.exists(projectsStorageBaseDir.resolve(XodusLocalOnlyIssueStore.BACKUP_TAR_GZ));
   }
 
   public XodusLocalOnlyIssueStore get() {
@@ -58,8 +69,17 @@ public class LocalOnlyIssueStorageService {
   @PreDestroy
   public void close() {
     if (localOnlyIssueStore != null) {
-      localOnlyIssueStore.close();
+      localOnlyIssueStore.backupAndClose();
     }
   }
 
+  public void delete() {
+    if (localOnlyIssueStore != null) {
+      localOnlyIssueStore.close();
+      localOnlyIssueStore = null;
+    }
+    FileUtils.deleteQuietly(projectsStorageBaseDir.resolve(XodusLocalOnlyIssueStore.BACKUP_TAR_GZ).toFile());
+    deleteInFolderWithPattern(workDir, LOCAL_ONLY_ISSUE + "*");
+    deleteInFolderWithPattern(projectsStorageBaseDir, "local_only_issue_backup*");
+  }
 }

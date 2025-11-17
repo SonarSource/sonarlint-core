@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import jakarta.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +43,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
@@ -83,6 +85,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 public class IssueService {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube Server 10.2+";
@@ -133,6 +136,24 @@ public class IssueService {
     this.aiCodeFixService = aiCodeFixService;
     this.dogfoodEnvironmentDetectionService = dogfoodEnvironmentDetectionService;
     this.databaseService = databaseService;
+  }
+
+  @PostConstruct
+  public void migrateData() {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      if (localOnlyIssueStorageService.exists()) {
+        try {
+          var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
+          var xodusLocalOnlyIssueStore = localOnlyIssueStorageService.get();
+          var issuesPerConfigScope = xodusLocalOnlyIssueStore.loadAll();
+          repository.storeIssues(issuesPerConfigScope);
+        } catch (Exception e) {
+          LOG.error("Unable to migrate local-only findings, will use fresh DB", e);
+        }
+      }
+      // always call to remove lingering temporary files
+      localOnlyIssueStorageService.delete();
+    }
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -303,7 +324,7 @@ public class IssueService {
     var issuesToSync = subtract(allIssues, issuesForFile);
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     sonarQubeClientManager.getClientOrThrow(binding.connectionId())
-        .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
+      .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
   }
 
   private void removeIssueOnServer(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
@@ -311,7 +332,7 @@ public class IssueService {
     var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).toList();
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     sonarQubeClientManager.getClientOrThrow(binding.connectionId())
-        .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
+      .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
   }
 
   private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, SonarLintCancelMonitor cancelMonitor) {
@@ -325,7 +346,7 @@ public class IssueService {
         issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
         var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
         sonarQubeClientManager.getClientOrThrow(binding.connectionId())
-            .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
+          .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
         storeLocalOnlyIssue(configurationScopeId, commentedIssue);
       }
     } else {
