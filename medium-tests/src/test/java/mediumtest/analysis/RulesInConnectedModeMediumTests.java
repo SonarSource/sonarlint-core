@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -96,7 +96,7 @@ class RulesInConnectedModeMediumTests {
       .generate(baseDir);
     var backend = harness.newBackend()
       .withBackendCapability(SECURITY_HOTSPOTS)
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
@@ -131,7 +131,7 @@ class RulesInConnectedModeMediumTests {
       .withSensor(ActiveRulesDumpingSensor.class)
       .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
@@ -168,7 +168,7 @@ class RulesInConnectedModeMediumTests {
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withStorage(CONNECTION_ID,
         s -> s

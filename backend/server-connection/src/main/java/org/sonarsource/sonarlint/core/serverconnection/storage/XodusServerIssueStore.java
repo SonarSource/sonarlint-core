@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Server Connection
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -483,7 +483,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues, Set<SonarLanguage> enabledLanguages) {
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -504,7 +504,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
+  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots, Set<SonarLanguage> enabledLanguages) {
     var hotspotsByFile = serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
     timed(wroteMessage(serverHotspots.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -617,7 +617,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
+  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues, Set<SonarLanguage> enabledLanguages) {
     var taintsByFile = taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed(wroteMessage(taintIssues.size(), "taints"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);

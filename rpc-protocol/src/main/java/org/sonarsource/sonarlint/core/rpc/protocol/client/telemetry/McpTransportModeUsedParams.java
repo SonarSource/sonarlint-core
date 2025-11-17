@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - RPC Protocol
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public enum ReportIssuesAsErrorLevel {
-  NONE, MEDIUM_AND_ABOVE, ALL
+public class McpTransportModeUsedParams {
+  private final McpTransportMode transport;
+
+  public McpTransportModeUsedParams(McpTransportMode transport) {
+    this.transport = transport;
+  }
+
+  public McpTransportMode getMcpTransportMode() {
+    return transport;
+  }
 }

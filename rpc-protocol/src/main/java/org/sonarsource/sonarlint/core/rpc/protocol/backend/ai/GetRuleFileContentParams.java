@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - RPC Protocol
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,13 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 public class GetRuleFileContentParams {
-  private final AiAssistedIde ide;
+  private final AiAgent agent;
 
-  public GetRuleFileContentParams(AiAssistedIde ide) {
-    this.ide = ide;
+  public GetRuleFileContentParams(AiAgent agent) {
+    this.agent = agent;
   }
 
-  public AiAssistedIde getIde() {
-    return ide;
+  public AiAgent getAiAgent() {
+    return agent;
   }
 }

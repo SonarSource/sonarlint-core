@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>10.36-SNAPSHOT</version>
+    <version>10.37-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-commons</artifactId>
@@ -14,6 +14,18 @@
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
     </dependency>
     <dependency>
         <groupId>org.sonarsource.git.blame</groupId>
@@ -93,6 +105,54 @@
       </resource>
     </resources>
     <plugins>
+      <plugin>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>generate-sources</phase>
+              <goals>
+                <goal>migrate</goal>
+              </goals>
+            </execution>
+          </executions>
+            <configuration>
+            <url>jdbc:h2:${project.build.directory}/db/for-schema-generation.db</url>
+            <user>user</user>
+            <locations>
+                <location>filesystem:src/main/resources/db/migration/</location>
+            </locations>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq-codegen-maven</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jdbc>
+            <driver>org.h2.Driver</driver>
+            <url>jdbc:h2:${project.build.directory}/db/for-schema-generation.db</url>
+            <user>user</user>
+          </jdbc>
+          <generator>
+            <database>
+              <name>org.jooq.meta.h2.H2Database</name>
+              <inputSchema>PUBLIC</inputSchema>
+            </database>
+            <target>
+              <packageName>org.sonarsource.sonarlint.core.commons.storage.model</packageName>
+              <directory>${project.build.directory}/generated-sources/jooq</directory>
+            </target>
+          </generator>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

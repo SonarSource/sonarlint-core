@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -258,7 +258,7 @@ class OpenHotspotInIdeMediumTests {
       "someOrigin");
 
     assertThat(statusCode).isEqualTo(400);
-    verify(client).showMessage(MessageType.ERROR,
+    verify(client, timeout(500)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 

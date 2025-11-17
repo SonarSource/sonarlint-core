@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Server Connection
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -80,6 +80,11 @@ public class ServerInfoStorage {
         globalSettings.put(MQR_MODE_SETTING, Boolean.toString(serverInfo.getIsMqrMode()));
       }
       globalSettings.put(ServerSettings.EARLY_ACCESS_MISRA_ENABLED, Boolean.toString(serverInfo.getMisraEarlyAccessRulesEnabled()));
+    }
+    // Making sure that CFamily analyzer gets updated flag even with old Server/Cloud.
+    if (globalSettings.containsKey(ServerSettings.EARLY_ACCESS_MISRA_ENABLED)) {
+      globalSettings = new HashMap<>(globalSettings);
+      globalSettings.put(ServerSettings.MISRA_COMPLIANCE_ENABLED, globalSettings.get(ServerSettings.EARLY_ACCESS_MISRA_ENABLED));
     }
     return new StoredServerInfo(Version.create(serverInfo.getVersion()),
       serverInfo.getSupportedFeaturesList().stream().map(Feature::fromKey).flatMap(Optional::stream).collect(Collectors.toSet()), new ServerSettings(globalSettings),

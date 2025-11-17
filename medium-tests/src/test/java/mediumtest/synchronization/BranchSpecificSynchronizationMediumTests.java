@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -65,10 +65,8 @@ class BranchSpecificSynchronizationMediumTests {
       .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
-      assertThat(backend.getNewCodeService().getNewCodeDefinition(new GetNewCodeDefinitionParams("configScopeId"))).succeedsWithin(1, MINUTES);
-    });
+    waitAtMost(3, SECONDS)
+      .untilAsserted(() -> assertThat(backend.getNewCodeService().getNewCodeDefinition(new GetNewCodeDefinitionParams("configScopeId"))).succeedsWithin(1, MINUTES));
   }
 
   @SonarLintTest
@@ -187,8 +185,7 @@ class BranchSpecificSynchronizationMediumTests {
     reset(fakeClient);
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
-      new ConfigurationScopeDto("configScope2", null, true, "Child1", new BindingConfigurationDto("connectionId", "projectKey", true))
-      )));
+      new ConfigurationScopeDto("configScope2", null, true, "Child1", new BindingConfigurationDto("connectionId", "projectKey", true)))));
 
     verify(fakeClient, after(2000).times(0)).didSynchronizeConfigurationScopes(any());
   }

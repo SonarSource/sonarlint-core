@@ -1,6 +1,6 @@
 /*
- * SonarLint Core - Telemetry
- * Copyright (C) 2016-2025 SonarSource SA
+ * SonarLint Core - RPC Protocol
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,27 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
-public class TelemetryReportIssuesAsOverride {
-  private final String ruleKey;
-  private int count;
+@JsonSegment("ai")
+public interface AiAgentRpcService {
 
-  public TelemetryReportIssuesAsOverride(String ruleKey) {
-    this.ruleKey = ruleKey;
-    this.count = 1;
-  }
+  /**
+   * Returns the content of rule file to be written to each IDE's rule folder, based on the agent.
+   * The rule file provides good practices to the agent.
+   */
+  @JsonRequest
+  CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params);
 
-  public void increment() {
-    count++;
-  }
-
-  public int getCount() {
-    return count;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
 }

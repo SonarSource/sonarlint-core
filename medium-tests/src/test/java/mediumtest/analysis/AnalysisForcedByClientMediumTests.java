@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,9 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
@@ -55,7 +53,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static utils.AnalysisUtils.createFile;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisForcedByClientMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";

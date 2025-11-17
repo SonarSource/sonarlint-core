@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - RPC Implementation
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,18 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.ai.ide.AiAssistedIdeService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
 
-public class AiAssistedIdeRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAssistedIdeRpcService {
-  public AiAssistedIdeRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
+public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAgentRpcService {
+  public AiAgentRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
     super(sonarLintRpcServer);
   }
 
   @Override
   public CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params) {
-    return requestAsync(cancelMonitor -> getBean(AiAssistedIdeService.class).getRuleFileContent(params.getIde()));
+    return requestAsync(cancelMonitor -> getBean(AiAgentService.class).getRuleFileContent(params.getAiAgent()));
   }
 }

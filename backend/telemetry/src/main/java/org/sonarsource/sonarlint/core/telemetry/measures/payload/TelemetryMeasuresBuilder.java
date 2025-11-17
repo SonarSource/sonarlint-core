@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Telemetry
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -215,6 +215,10 @@ public class TelemetryMeasuresBuilder {
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", Boolean.toString(storage.isMcpIntegrationEnabled()), BOOLEAN, DAILY));
+    var mcpTransportModeUsed = storage.getMcpTransportModeUsed();
+    if (mcpTransportModeUsed != null) {
+      values.add(new TelemetryMeasuresValue("mcp.transport_mode", mcpTransportModeUsed.name(), STRING, DAILY));
+    }
   }
 
 }

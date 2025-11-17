@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Test Utils
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -159,7 +159,7 @@ public class SonarLintBackendFixture {
     private String clientName = "SonarLint Backend Fixture";
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
-    private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
+    private final List<StorageFixture.StorageBuilder> serverStorages = new ArrayList<>();
     private boolean isFocusOnNewCode;
 
     @Nullable
@@ -235,7 +235,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, disableNotifications));
       return this;
@@ -245,7 +245,7 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withStorage(String connectionId, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       var storage = newStorage(connectionId);
       storageBuilder.accept(storage);
-      storages.add(storage);
+      serverStorages.add(storage);
       return this;
     }
 
@@ -289,7 +289,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
         SonarCloudRegion.valueOf(region), disableNotifications));
@@ -301,7 +301,7 @@ public class SonarLintBackendFixture {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
-        storages.add(storage);
+        serverStorages.add(storage);
       }
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
         region, disableNotifications));
@@ -503,7 +503,7 @@ public class SonarLintBackendFixture {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
-      storages.forEach(storage -> storage.create(storageParentPath));
+      serverStorages.forEach(storage -> storage.create(storageParentPath));
       var storageRoot = storageParentPath.resolve("storage");
       if (!configurationScopeStorages.isEmpty()) {
         configurationScopeStorages.forEach(storage -> storage.create(storageRoot));
@@ -532,6 +532,10 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
           .get();
+        serverStorages.forEach(storage ->
+          storage.populateDatabase(sonarLintBackend.getSonarLintDatabase())
+        );
+        configurationScopeStorages.forEach(storage -> storage.populateDatabase(sonarLintBackend.getSonarLintDatabase()));
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);

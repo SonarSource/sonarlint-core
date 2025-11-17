@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
@@ -47,7 +45,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.UP;
 
-@ExtendWith(LogTestStartAndEnd.class)
 class PluginSynchronizationMediumTests {
 
   @SonarLintTest

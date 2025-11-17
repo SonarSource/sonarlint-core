@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -60,6 +61,11 @@ class SonarCodeContextMediumTests {
 
   @BeforeEach
   void clearDogfoodFlag() {
+    environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
+  }
+
+  @AfterEach
+  void cleanUp() {
     environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
   }
 

@@ -1,6 +1,6 @@
 /*
- * SonarLint Core - RPC Protocol
- * Copyright (C) 2016-2025 SonarSource SA
+ * SonarLint Core - Commons
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,22 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.commons;
 
-public class ReportIssuesAsOverrideParams {
-  private final ReportIssuesAsOverrideLevel level;
-  private final String ruleKey;
-
-  public ReportIssuesAsOverrideParams(ReportIssuesAsOverrideLevel level, String ruleKey) {
-    this.level = level;
-    this.ruleKey = ruleKey;
-  }
-
-  public ReportIssuesAsOverrideLevel getLevel() {
-    return level;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
+public enum KnownFindingType {
+  ISSUE,
+  HOTSPOT
 }

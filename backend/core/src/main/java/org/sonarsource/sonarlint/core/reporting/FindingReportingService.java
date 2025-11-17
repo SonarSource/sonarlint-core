@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -58,7 +58,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotD
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
 import org.springframework.context.ApplicationEventPublisher;
@@ -83,20 +82,20 @@ public class FindingReportingService {
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
   private final ApplicationEventPublisher eventPublisher;
-  private final StorageService storageService;
   private final boolean isStreamingEnabled;
+  private final AiCodeFixService aiCodeFixService;
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, StorageService storageService,
-    InitializeParams initializeParams) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams,
+    AiCodeFixService aiCodeFixService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
     this.severityModeService = severityModeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.eventPublisher = eventPublisher;
-    this.storageService = storageService;
     this.isStreamingEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.ISSUE_STREAMING);
+    this.aiCodeFixService = aiCodeFixService;
   }
 
   @EventListener
@@ -186,7 +185,7 @@ public class FindingReportingService {
     var connectionId = effectiveBinding.map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
-    var aiCodeFixFeature = effectiveBinding.flatMap(b -> AiCodeFixService.getFeature(storageService, b));
+    var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(),
@@ -207,7 +206,7 @@ public class FindingReportingService {
     var connectionId = effectiveBinding.map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
-    var aiCodeFixFeature = effectiveBinding.flatMap(b -> AiCodeFixService.getFeature(storageService, b));
+    var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
     this.eventPublisher.publishEvent(new IssuesRaisedEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
@@ -217,9 +216,12 @@ public class FindingReportingService {
 
   private synchronized void updateRaisedFindingsCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> updatedIssues,
     Map<URI, List<RaisedHotspotDto>> updatedHotspots, boolean isIntermediatePublication) {
-    var issuesToRaise = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
-    LOG.debug("Reporting {} issues for configuration scope {}", issuesToRaise.size(), configurationScopeId);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, isIntermediatePublication, analysisId));
+    var fileIssues = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
+
+    var totalIssues = fileIssues.values().stream().mapToInt(List::size).sum();
+    LOG.debug("Reporting {} issues over {} files for configuration scope {}", totalIssues, fileIssues.size(), configurationScopeId);
+
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, fileIssues, isIntermediatePublication, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
       // security hotspots are only supported in connected mode
@@ -246,9 +248,15 @@ public class FindingReportingService {
 
   private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues, NewCodeDefinition newCodeDefinition, boolean isMQRMode,
     Optional<AiCodeFixFeature> aiCodeFixFeature) {
+    LOG.debug("AiCodeFix optional is present: {}", aiCodeFixFeature.isPresent());
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri,
-        Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode, aiCodeFixFeature.map(feature -> feature.isFixable(issue)).orElse(false)),
+        Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode, aiCodeFixFeature.map(feature -> {
+          LOG.debug("AiCodeFix is fixable: {}", aiCodeFixFeature.get().isFixable(issue));
+          LOG.debug("Supported rules: {}", aiCodeFixFeature.get().settings().supportedRules());
+          LOG.debug("Issue ruleKey {} and text range {}", issue.getRuleKey(), issue.getTextRangeWithHash());
+          return feature.isFixable(issue);
+        }).orElse(false)),
           Collectors.toList())));
   }
 

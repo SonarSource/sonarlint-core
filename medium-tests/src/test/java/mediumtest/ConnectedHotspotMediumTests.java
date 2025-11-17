@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Medium Tests
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -88,7 +88,7 @@ class ConnectedHotspotMediumTests {
     assertThat(hotspot.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
-  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 20);
   private static final String CONFIG_SCOPE_ID = "configScopeId";
 
 }

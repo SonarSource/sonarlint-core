@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Server Connection
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -42,9 +42,9 @@ public class ServerHotspotUpdater {
     this.hotspotDownloader = hotspotDownloader;
   }
 
-  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, SonarLintCancelMonitor cancelMonitor) {
+  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
     var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
-    storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
+    storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots, enabledLanguages);
   }
 
   public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - RPC Implementation
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
@@ -50,7 +52,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -151,6 +153,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       SonarLintLogger.get().setLevel(LogService.convert(params.getLogLevel()));
       SonarLintLogger.get().setTarget(logOutput);
+      // for flyway logging level
+      setLogbackRootLogger(params);
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
@@ -160,6 +164,19 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       }
       return null;
     });
+  }
+
+  private static void setLogbackRootLogger(InitializeParams params) {
+    var root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+    var logLevel = switch (params.getLogLevel()) {
+      case OFF -> Level.OFF;
+      case ERROR -> Level.ERROR;
+      case WARN -> Level.WARN;
+      case INFO -> Level.INFO;
+      case DEBUG -> Level.DEBUG;
+      case TRACE -> Level.TRACE;
+    };
+    root.setLevel(logLevel);
   }
 
   public ConfigurableApplicationContext getInitializedApplicationContext() {
@@ -254,8 +271,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   @Override
-  public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
-    return new AiAssistedIdeRpcServiceDelegate(this);
+  public AiAgentRpcService getAiAgentService() {
+    return new AiAgentRpcServiceDelegate(this);
   }
 
   @Override
@@ -322,6 +339,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return getInitializedApplicationContext().getBean(StorageService.class);
+  }
+
+  public SonarLintDatabase getDatabase() {
+    return getInitializedApplicationContext().getBean(SonarLintDatabase.class);
   }
 
   ExecutorServiceShutdownWatchable<ExecutorService> getRequestsExecutor() {

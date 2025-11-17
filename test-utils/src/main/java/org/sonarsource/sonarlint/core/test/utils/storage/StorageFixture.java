@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Test Utils
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -126,6 +128,10 @@ public class StorageFixture {
       return this;
     }
 
+    public String getConnectionId() {
+      return connectionId;
+    }
+
     public Storage create(Path rootPath) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
@@ -185,6 +191,14 @@ public class StorageFixture {
         .setKey(plugin.key)
         .build()));
       ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
+    }
+
+    public void populateDatabase(SonarLintDatabase database) {
+      var aiCodeFixRepository = new AiCodeFixRepository(database);
+      if (aiCodeFixBuilder != null) {
+        aiCodeFixRepository.upsert(aiCodeFixBuilder.buildAiCodeFix(connectionId));
+      }
+      projectBuilders.forEach(project -> project.populateDatabase(database, connectionId));
     }
 
     private static class Plugin {

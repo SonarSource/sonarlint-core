@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Test Utils
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -92,35 +92,7 @@ public class ServerSecurityHotspotFixture {
     }
   }
 
-  public static class ServerHotspot {
-
-    public final String key;
-    public final String ruleKey;
-    public final String message;
-    public final String filePath;
-    public final Instant introductionDate;
-    public final IssueSeverity userSeverity;
-    public final TextRangeWithHash textRangeWithHash;
-    public final HotspotReviewStatus status;
-    public final VulnerabilityProbability vulnerabilityProbability;
-    public final String assignee;
-
-    public ServerHotspot(String key, String ruleKey, String message, String filePath, Instant introductionDate, @Nullable IssueSeverity userSeverity,
-      TextRangeWithHash textRangeWithHash, HotspotReviewStatus status, VulnerabilityProbability vulnerabilityProbability, String assignee) {
-      this.key = key;
-      this.ruleKey = ruleKey;
-      this.message = message;
-      this.filePath = filePath;
-      this.introductionDate = introductionDate;
-      this.userSeverity = userSeverity;
-      this.textRangeWithHash = textRangeWithHash;
-      this.status = status;
-      this.vulnerabilityProbability = vulnerabilityProbability;
-      this.assignee = assignee;
-    }
-
-    public String getFilePath() {
-      return filePath;
-    }
+  public record ServerHotspot(String key, String ruleKey, String message, String filePath, Instant introductionDate, @Nullable IssueSeverity userSeverity,
+    TextRangeWithHash textRangeWithHash, HotspotReviewStatus status, VulnerabilityProbability vulnerabilityProbability, String assignee) {
   }
 }

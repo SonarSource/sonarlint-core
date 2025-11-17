@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - RPC Protocol
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 
 @JsonSegment("telemetry")
@@ -92,6 +93,13 @@ public interface TelemetryRpcService {
    */
   @JsonNotification
   void mcpIntegrationEnabled();
+
+  /**
+   * To be called from SonarQube MCP Server after initialization
+   * This is tracking the transport type on which the MCP is running
+   */
+  @JsonNotification
+  void mcpTransportModeUsed(McpTransportModeUsedParams params);
 
   @JsonNotification
   void toolCalled(ToolCalledParams params);

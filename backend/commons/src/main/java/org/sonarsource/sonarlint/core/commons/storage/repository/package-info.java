@@ -1,6 +1,6 @@
 /*
- * SonarLint Core - RPC Protocol
- * Copyright (C) 2016-2025 SonarSource SA
+ * SonarLint Core - Commons
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,16 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.commons.storage.repository;
 
-public class ReportIssuesAsErrorLevelParams {
-  private final ReportIssuesAsErrorLevel level;
-
-  public ReportIssuesAsErrorLevelParams(ReportIssuesAsErrorLevel level) {
-    this.level = level;
-  }
-
-  public ReportIssuesAsErrorLevel getLevel() {
-    return level;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

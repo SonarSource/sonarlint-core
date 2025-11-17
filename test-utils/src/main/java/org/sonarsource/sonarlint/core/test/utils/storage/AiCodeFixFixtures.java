@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Test Utils
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.test.utils.storage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -61,6 +62,10 @@ public class AiCodeFixFixtures {
     public Builder enabledForAllProjects() {
       this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS;
       return this;
+    }
+
+    public AiCodeFix buildAiCodeFix(String connectionId) {
+      return new AiCodeFix(connectionId, supportedRules, organizationEligible, AiCodeFix.Enablement.valueOf(enablement.name()), Set.copyOf(enabledProjectKeys));
     }
 
     public void create(Path path) {

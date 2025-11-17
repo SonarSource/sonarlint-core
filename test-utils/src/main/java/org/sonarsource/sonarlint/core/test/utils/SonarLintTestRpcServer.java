@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Test Utils
- * Copyright (C) 2016-2025 SonarSource SA
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,12 +31,13 @@ import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -178,8 +179,8 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   }
 
   @Override
-  public AiAssistedIdeRpcService getAiAssistedIdeRpcService() {
-    return serverUsingJava.getAiAssistedIdeRpcService();
+  public AiAgentRpcService getAiAgentService() {
+    return serverUsingJava.getAiAgentService();
   }
 
   @Override
@@ -235,6 +236,10 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return serverUsingJava.getIssueStorageService();
+  }
+
+  public SonarLintDatabase getSonarLintDatabase() {
+    return serverUsingJava.getDatabase();
   }
 
   @Override
