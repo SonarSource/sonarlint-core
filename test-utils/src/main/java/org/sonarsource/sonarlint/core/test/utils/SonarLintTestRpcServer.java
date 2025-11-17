@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
-import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
@@ -259,9 +258,6 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
       } catch (Exception e) {
         e.printStackTrace(System.err);
       }
-      FileUtils.deleteQuietly(workDir.toFile());
-      FileUtils.deleteQuietly(userHome.toFile());
-      FileUtils.deleteQuietly(storageRoot.toFile());
     }
     return CompletableFuture.completedFuture(null);
   }

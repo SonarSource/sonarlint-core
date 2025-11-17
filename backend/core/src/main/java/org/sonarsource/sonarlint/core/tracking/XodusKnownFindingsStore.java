@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
@@ -42,16 +44,20 @@ import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.storage.repository.Findings;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.flatMapping;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusKnownFindingsStore {
 
-  private static final String KNOWN_FINDINGS_STORE = "known-findings-store";
+  static final String KNOWN_FINDINGS_STORE = "known-findings-store";
   private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
   private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
@@ -73,7 +79,7 @@ public class XodusKnownFindingsStore {
   private static final String END_LINE_PROPERTY_NAME = "endLine";
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
   private static final String MESSAGE_BLOB_NAME = "message";
-  private static final String BACKUP_TAR_GZ = "known_findings_backup.tar.gz";
+  static final String BACKUP_TAR_GZ = "known_findings_backup.tar.gz";
   private final PersistentEntityStore entityStore;
   private final Path backupFile;
   private final Path xodusDbDir;
@@ -97,6 +103,21 @@ public class XodusKnownFindingsStore {
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
       entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
     });
+  }
+
+  public Map<String, Map<Path, Findings>> loadAll() {
+    return entityStore.computeInReadonlyTransaction(txn -> StreamSupport.stream(txn.getAll(CONFIGURATION_SCOPE_ID_ENTITY_TYPE).spliterator(), false)
+      .collect(groupingBy(
+        e -> (String) requireNonNull(e.getProperty(NAME_PROPERTY_NAME)),
+        flatMapping(e -> StreamSupport.stream(e.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME).spliterator(), false),
+          toMap(
+            f -> Paths.get((String) requireNonNull(f.getProperty(PATH_PROPERTY_NAME))),
+            f -> new Findings(
+              StreamSupport.stream(f.getLinks(FILE_TO_ISSUES_LINK_NAME).spliterator(), false)
+                .map(XodusKnownFindingsStore::adapt).toList(),
+              StreamSupport.stream(f.getLinks(FILE_TO_SECURITY_HOTSPOTS_LINK_NAME).spliterator(), false)
+                .map(XodusKnownFindingsStore::adapt).toList()),
+            Findings::mergeWith)))));
   }
 
   public List<KnownFinding> loadIssuesForFile(String configurationScopeId, Path filePath) {
@@ -229,7 +250,7 @@ public class XodusKnownFindingsStore {
     }
   }
 
-  public void backup() {
+  private void backup() {
     LOG.debug("Creating backup of known findings database in {}", backupFile);
     try {
       var backupTmp = CompressBackupUtil.backup(entityStore, backupFile.getParent().toFile(), "known_findings_backup", false);
@@ -239,8 +260,12 @@ public class XodusKnownFindingsStore {
     }
   }
 
-  public void close() {
+  public void backupAndClose() {
     backup();
+    close();
+  }
+
+  public void close() {
     entityStore.close();
     FileUtils.deleteQuietly(xodusDbDir.toFile());
   }

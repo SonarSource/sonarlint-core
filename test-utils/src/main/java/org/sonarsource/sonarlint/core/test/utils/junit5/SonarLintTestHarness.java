@@ -78,18 +78,7 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   private void shutdownAll() {
     // Shutdown backends with timeout and exception handling
     for (SonarLintTestRpcServer backend : backends) {
-      try {
-        CompletableFuture<Void> future = backend.shutdown();
-        future.orTimeout(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-          .exceptionally(ex -> {
-            LOG.log(Level.WARNING, "Error shutting down backend", ex);
-            return null;
-          })
-          .join();
-      } catch (CompletionException | IllegalStateException e) {
-        // Log and continue with next backend
-        LOG.log(Level.WARNING, "Failed to shutdown backend", e);
-      }
+      doShutdown(backend);
     }
     backends.clear();
     // Shutdown servers with exception handling
@@ -102,6 +91,21 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
       }
     }
     servers.clear();
+  }
+
+  private static void doShutdown(SonarLintTestRpcServer backend) {
+    try {
+      CompletableFuture<Void> future = backend.shutdown();
+      future.orTimeout(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .exceptionally(ex -> {
+          LOG.log(Level.WARNING, "Error shutting down backend", ex);
+          return null;
+        })
+        .join();
+    } catch (CompletionException | IllegalStateException e) {
+      // Log and continue with next backend
+      LOG.log(Level.WARNING, "Failed to shutdown backend", e);
+    }
   }
 
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackend() {
@@ -138,5 +142,11 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
 
   public List<ServerFixture.Server> getServers() {
     return servers;
+  }
+
+  public void shutdown(SonarLintTestRpcServer backend) {
+    if (backends.remove(backend)) {
+      doShutdown(backend);
+    }
   }
 }

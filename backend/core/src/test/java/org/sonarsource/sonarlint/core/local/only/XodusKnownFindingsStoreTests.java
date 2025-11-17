@@ -57,7 +57,7 @@ class XodusKnownFindingsStoreTests {
 
   @AfterEach
   void tearDown() {
-    store.close();
+    store.backupAndClose();
   }
 
   @Test
@@ -176,7 +176,7 @@ class XodusKnownFindingsStoreTests {
 
   @Test
   void should_purge_old_folders() throws IOException {
-    store.close();
+    store.backupAndClose();
     var oldFile = Files.createTempFile(workDir, "known-findings-store", UUID.randomUUID().toString());
     var file = oldFile.toFile();
     var oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
