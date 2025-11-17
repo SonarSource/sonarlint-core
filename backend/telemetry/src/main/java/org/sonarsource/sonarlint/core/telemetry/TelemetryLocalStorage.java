@@ -75,7 +75,6 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
-  private int newBindingsManualCount;
   private int newBindingsPropertiesFileCount;
   private int newBindingsRemoteUrlCount;
   private int newBindingsProjectNameCount;
@@ -252,7 +251,6 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
-    newBindingsManualCount = 0;
     newBindingsPropertiesFileCount = 0;
     newBindingsRemoteUrlCount = 0;
     newBindingsProjectNameCount = 0;
@@ -509,11 +507,6 @@ public class TelemetryLocalStorage {
     exportedConnectedModeCount++;
   }
 
-  public void incrementNewBindingsManualCount() {
-    markSonarLintAsUsedToday();
-    newBindingsManualCount++;
-  }
-
   public void incrementNewBindingsPropertiesFileCount() {
     markSonarLintAsUsedToday();
     newBindingsPropertiesFileCount++;
@@ -540,10 +533,6 @@ public class TelemetryLocalStorage {
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
-  }
-
-  public int getNewBindingsManualCount() {
-    return newBindingsManualCount;
   }
 
   public int getNewBindingsPropertiesFileCount() {

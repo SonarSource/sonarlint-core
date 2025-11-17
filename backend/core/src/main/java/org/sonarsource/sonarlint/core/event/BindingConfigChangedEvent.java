@@ -19,16 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 
-public record BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig, @Nullable BindingMode bindingMode,
-                                        @Nullable BindingSuggestionOrigin origin) {
-
-  public BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
-    this(configScopeId, previousConfig, newConfig, null, null);
-  }
+public record BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
 
 }

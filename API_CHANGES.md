@@ -1,3 +1,10 @@
+# 10.37
+
+## Breaking Changes
+* Deprecate 4-parameter constructor and remove deprecation of 2-parameter one of `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams`. Move back to an old constructor as not all IDEs were able to provide all data to a new one.
+* Remove Deprecation from `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings` method. It should be used again for manual binding events instead of parametrized `didUpdateBinding`.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.acceptedBindingSuggestion`. It should be used to for bindings created based on suggestions and pass `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` instead of parametrized `didUpdateBinding`. 
+
 # 10.36
 
 ## Breaking Changes

@@ -17,23 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class AcceptedBindingSuggestionParams {
 
-class DidUpdateBindingParamsTests {
+  private final BindingSuggestionOrigin origin;
 
-  @Test
-  void constructor_keeps_mode_and_origin_null() {
-    var dto = new BindingConfigurationDto("conn", "proj", false);
+  public AcceptedBindingSuggestionParams(BindingSuggestionOrigin origin) {
+    this.origin = origin;
+  }
 
-    var params = new DidUpdateBindingParams("scope", dto);
-
-    assertThat(params.getConfigScopeId()).isEqualTo("scope");
-    assertThat(params.getUpdatedBinding()).isEqualTo(dto);
-    assertThat(params.getBindingMode()).isNull();
-    assertThat(params.getOrigin()).isNull();
+  public BindingSuggestionOrigin getOrigin() {
+    return origin;
   }
 }

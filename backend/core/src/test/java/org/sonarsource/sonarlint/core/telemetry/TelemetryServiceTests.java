@@ -25,16 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -68,19 +65,19 @@ class TelemetryServiceTests {
 
   @Test
   void should_increment_manual_counter_for_manual_binding() {
-    underTest.addedNewBinding(BindingMode.MANUAL, null);
+    underTest.addedManualBindings();
 
     ArgumentCaptor<Consumer<TelemetryLocalStorage>> captor = ArgumentCaptor.forClass(Consumer.class);
     verify(telemetryManager).updateTelemetry(captor.capture());
     var storage = mock(TelemetryLocalStorage.class);
     captor.getValue().accept(storage);
-    verify(storage).incrementNewBindingsManualCount();
+    verify(storage).incrementManualAddedBindingsCount();
     verifyNoMoreInteractions(storage);
   }
 
   @Test
   void should_increment_remote_url_counter_for_assisted_remote_url() {
-    underTest.addedNewBinding(BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.REMOTE_URL);
+    underTest.acceptedBindingSuggestion(BindingSuggestionOrigin.REMOTE_URL);
 
     ArgumentCaptor<Consumer<TelemetryLocalStorage>> captor = ArgumentCaptor.forClass(Consumer.class);
     verify(telemetryManager).updateTelemetry(captor.capture());
@@ -92,7 +89,7 @@ class TelemetryServiceTests {
 
   @Test
   void should_increment_project_name_counter_for_assisted_project_name() {
-    underTest.addedNewBinding(BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.PROJECT_NAME);
+    underTest.acceptedBindingSuggestion(BindingSuggestionOrigin.PROJECT_NAME);
 
     ArgumentCaptor<Consumer<TelemetryLocalStorage>> captor = ArgumentCaptor.forClass(Consumer.class);
     verify(telemetryManager).updateTelemetry(captor.capture());
@@ -104,7 +101,7 @@ class TelemetryServiceTests {
 
   @Test
   void should_increment_shared_config_counter_for_assisted_shared_config() {
-    underTest.addedNewBinding(BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.SHARED_CONFIGURATION);
+    underTest.acceptedBindingSuggestion(BindingSuggestionOrigin.SHARED_CONFIGURATION);
 
     ArgumentCaptor<Consumer<TelemetryLocalStorage>> captor = ArgumentCaptor.forClass(Consumer.class);
     verify(telemetryManager).updateTelemetry(captor.capture());
@@ -116,7 +113,7 @@ class TelemetryServiceTests {
 
   @Test
   void should_increment_properties_file_counter_for_assisted_properties_file() {
-    underTest.addedNewBinding(BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.PROPERTIES_FILE);
+    underTest.acceptedBindingSuggestion(BindingSuggestionOrigin.PROPERTIES_FILE);
 
     ArgumentCaptor<Consumer<TelemetryLocalStorage>> captor = ArgumentCaptor.forClass(Consumer.class);
     verify(telemetryManager).updateTelemetry(captor.capture());
@@ -124,11 +121,5 @@ class TelemetryServiceTests {
     captor.getValue().accept(storage);
     verify(storage).incrementNewBindingsPropertiesFileCount();
     verifyNoMoreInteractions(storage);
-  }
-
-  @Test
-  void should_do_nothing_when_assisted_and_origin_null() {
-    underTest.addedNewBinding(BindingMode.FROM_SUGGESTION, null);
-    verify(telemetryManager, never()).updateTelemetry(any());
   }
 }

@@ -43,7 +43,7 @@ class ConfigurationRpcServiceDelegate extends AbstractRpcServiceDelegate impleme
 
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
-    notify(() -> getBean(ConfigurationService.class).didUpdateBinding(params.getConfigScopeId(), params.getUpdatedBinding(),
-      params.getBindingMode(), params.getOrigin()));
+    notify(() -> getBean(ConfigurationService.class).didUpdateBinding(params.getConfigScopeId(), params.getUpdatedBinding()
+    ));
   }
 }

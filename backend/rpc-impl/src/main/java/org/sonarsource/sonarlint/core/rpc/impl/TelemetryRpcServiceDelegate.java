@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
@@ -123,6 +124,11 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void addedManualBindings() {
     notify(() -> getBean(TelemetryService.class).addedManualBindings());
+  }
+
+  @Override
+  public void acceptedBindingSuggestion(AcceptedBindingSuggestionParams params) {
+    notify(() -> getBean(TelemetryService.class).acceptedBindingSuggestion(params.getOrigin()));
   }
 
   @Override

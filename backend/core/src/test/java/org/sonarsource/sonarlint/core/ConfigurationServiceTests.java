@@ -34,8 +34,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -149,7 +147,7 @@ class ConfigurationServiceTests {
     // Ignore add event
     Mockito.reset(eventPublisher);
 
-    underTest.didUpdateBinding("id1", BINDING_DTO_2, null, null);
+    underTest.didUpdateBinding("id1", BINDING_DTO_2);
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -172,7 +170,7 @@ class ConfigurationServiceTests {
   void update_binding_config_for_unknown_config_scope_should_log() {
     underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
 
-    underTest.didUpdateBinding("id2", BINDING_DTO_2, null, null);
+    underTest.didUpdateBinding("id2", BINDING_DTO_2);
 
     assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
   }
@@ -194,61 +192,4 @@ class ConfigurationServiceTests {
       .extracting(BindingConfiguration::connectionId, BindingConfiguration::sonarProjectKey, BindingConfiguration::bindingSuggestionDisabled)
       .containsExactly(BINDING_DTO_3.getConnectionId(), BINDING_DTO_3.getSonarProjectKey(), BINDING_DTO_3.isBindingSuggestionDisabled());
   }
-
-  @Test
-  void should_propagate_origin_and_binding_mode_in_didUpdateBinding_for_shared_configuration() {
-    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
-
-    Mockito.reset(eventPublisher);
-    underTest.didUpdateBinding("id1", BINDING_DTO_2, BindingMode.MANUAL, BindingSuggestionOrigin.SHARED_CONFIGURATION);
-
-    ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    var event = captor.getValue();
-    assertThat(event.bindingMode()).isEqualTo(BindingMode.MANUAL);
-    assertThat(event.origin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
-  }
-
-  @Test
-  void should_propagate_origin_and_binding_mode_in_didUpdateBinding_for_remote_url() {
-    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
-
-    Mockito.reset(eventPublisher);
-    underTest.didUpdateBinding("id1", BINDING_DTO_2, BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.REMOTE_URL);
-
-    ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    var event = captor.getValue();
-    assertThat(event.bindingMode()).isEqualTo(BindingMode.FROM_SUGGESTION);
-    assertThat(event.origin()).isEqualTo(BindingSuggestionOrigin.REMOTE_URL);
-  }
-
-  @Test
-  void should_propagate_origin_and_binding_mode_in_didUpdateBinding_for_properties_file() {
-    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
-
-    Mockito.reset(eventPublisher);
-    underTest.didUpdateBinding("id1", BINDING_DTO_2, BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.PROPERTIES_FILE);
-
-    ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    var event = captor.getValue();
-    assertThat(event.bindingMode()).isEqualTo(BindingMode.FROM_SUGGESTION);
-    assertThat(event.origin()).isEqualTo(BindingSuggestionOrigin.PROPERTIES_FILE);
-  }
-
-  @Test
-  void should_propagate_origin_and_binding_mode_in_didUpdateBinding_for_project_name() {
-    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
-
-    Mockito.reset(eventPublisher);
-    underTest.didUpdateBinding("id1", BINDING_DTO_2, BindingMode.FROM_SUGGESTION, BindingSuggestionOrigin.PROJECT_NAME);
-
-    ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    var event = captor.getValue();
-    assertThat(event.bindingMode()).isEqualTo(BindingMode.FROM_SUGGESTION);
-    assertThat(event.origin()).isEqualTo(BindingSuggestionOrigin.PROJECT_NAME);
-  }
-
 }
