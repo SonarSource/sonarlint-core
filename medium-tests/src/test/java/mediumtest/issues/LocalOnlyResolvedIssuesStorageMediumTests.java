@@ -19,18 +19,35 @@
  */
 package mediumtest.issues;
 
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
+@ExtendWith(SystemStubsExtension.class)
 class LocalOnlyResolvedIssuesStorageMediumTests {
+
+  @SystemStub
+  EnvironmentVariables environmentVariables;
+
+  @BeforeEach
+  void prepare() {
+    environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
+  }
 
   @SonarLintTest
   void it_should_purge_local_only_stored_issues_resolved_more_than_one_week_ago_at_startup(SonarLintTestHarness harness) {
@@ -47,5 +64,24 @@ class LocalOnlyResolvedIssuesStorageMediumTests {
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
 
     assertThat(storedIssues).isEmpty();
+  }
+
+  @SonarLintTest
+  void it_should_migrate_the_local_only_issues_from_xodus_to_the_new_h2_database(SonarLintTestHarness harness) {
+    environmentVariables.set(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "1");
+    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", harness.newFakeSonarQubeServer().start(), storage -> storage
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withServerVersion("9.8"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
+        storage -> storage.noH2()
+          .withLocalOnlyIssue(aLocalOnlyIssueResolved()))
+      .start();
+    var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(backend.getSonarLintDatabase());
+
+    var issues = localOnlyIssuesRepository.loadForFile("configScopeId", Paths.get("file/path"));
+
+    assertThat(issues).hasSize(1);
   }
 }

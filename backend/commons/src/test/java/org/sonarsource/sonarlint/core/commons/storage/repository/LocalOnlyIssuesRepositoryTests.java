@@ -169,7 +169,7 @@ class LocalOnlyIssuesRepositoryTests {
   }
 
   @Test
-  void should_remove_issue(@TempDir Path temp) {
+  void should_remove_issue() {
     var configScopeId = "configScopeId";
     var filePath = Path.of("/file/path");
     var issueUuid1 = UUID.randomUUID();
