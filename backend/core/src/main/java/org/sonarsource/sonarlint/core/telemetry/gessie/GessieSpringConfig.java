@@ -31,10 +31,17 @@ import org.springframework.context.annotation.Import;
 public class GessieSpringConfig {
 
   public static final String PROPERTY_GESSIE_ENDPOINT = "sonarlint.internal.telemetry.gessie.endpoint";
+  public static final String PROPERTY_GESSIE_API_KEY = "sonarlint.internal.telemetry.gessie.api.key";
   private static final String GESSIE_ENDPOINT = "https://events.sonardata.io";
+  private static final String IDE_SOURCE = "CiiwpdWnR21rWEOkgJ8tr3EYSXb7dzaQ5ezbipLb";
 
   @Bean
   String gessieEndpoint() {
     return System.getProperty(PROPERTY_GESSIE_ENDPOINT, GESSIE_ENDPOINT);
+  }
+
+  @Bean
+  String gessieApiKey() {
+    return System.getProperty(PROPERTY_GESSIE_API_KEY, IDE_SOURCE);
   }
 }

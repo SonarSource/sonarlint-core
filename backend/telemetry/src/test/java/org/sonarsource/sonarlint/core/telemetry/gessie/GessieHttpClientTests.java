@@ -58,7 +58,7 @@ class GessieHttpClientTests {
 
   @BeforeEach
   void setUp() {
-    tested = new GessieHttpClient(HttpClientProvider.forTesting(), mockGessie.baseUrl());
+    tested = new GessieHttpClient(HttpClientProvider.forTesting(), mockGessie.baseUrl(), "value");
   }
 
   @Test
