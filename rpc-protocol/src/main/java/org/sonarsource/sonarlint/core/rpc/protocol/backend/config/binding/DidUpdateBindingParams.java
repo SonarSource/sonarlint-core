@@ -20,24 +20,33 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 
 public class DidUpdateBindingParams {
 
   private final String configScopeId;
   private final BindingConfigurationDto updatedBinding;
   /**
-   * Temporarily nullable till all the clients are migrated to use the new constructor.
+   * @deprecated As it's hard to obtain for some IDEs on this event.
    */
+  @Deprecated(since = "10.37", forRemoval = true)
   @Nullable
   private final BindingMode bindingMode;
   /**
-   * This value should only be set if the bindingMode is:
-   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode#FROM_SUGGESTION}
+   * @deprecated As it's hard to obtain for some IDEs on this event.
    */
+  @Deprecated(since = "10.37", forRemoval = true)
   @Nullable
   private final BindingSuggestionOrigin origin;
 
 
+  /**
+   * @deprecated avoid calling this constructor if possible, since it will be removed once all the clients are migrated.
+   * Rely on the constructor without origin and bindingMode params instead as not IDEs can get this info at this point.
+   * For manual addition use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings()}
+   * For accepted suggestion use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#acceptedBindingSuggestion(AcceptedBindingSuggestionParams)}
+   */
+  @Deprecated(since = "10.37", forRemoval = true)
   public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding, BindingMode bindingMode, @Nullable BindingSuggestionOrigin origin) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
@@ -45,11 +54,6 @@ public class DidUpdateBindingParams {
     this.origin = origin;
   }
 
-  /**
-   * @deprecated avoid calling this constructor if possible, since it will be removed once all the clients are migrated.
-   * Rely on the constructor with origin and bindingMode params instead.
-   */
-  @Deprecated(forRemoval = true)
   public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;

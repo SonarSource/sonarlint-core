@@ -33,8 +33,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -91,10 +89,9 @@ public class ConfigurationService {
     }
   }
 
-  public void didUpdateBinding(String configScopeId, BindingConfigurationDto updatedBinding,
-    @Nullable BindingMode bindingMode, @Nullable BindingSuggestionOrigin origin) {
+  public void didUpdateBinding(String configScopeId, BindingConfigurationDto updatedBinding) {
     LOG.debug("Did update binding for configuration scope '{}', new binding: '{}'", configScopeId, updatedBinding);
-    var boundEvent = bind(configScopeId, updatedBinding, bindingMode, origin);
+    var boundEvent = bind(configScopeId, updatedBinding);
     if (boundEvent != null) {
       applicationEventPublisher.publishEvent(boundEvent);
     }
@@ -109,8 +106,7 @@ public class ConfigurationService {
   }
 
   @CheckForNull
-  private BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration,
-  @Nullable BindingMode bindingMode, @Nullable BindingSuggestionOrigin origin) {
+  private BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
     var previousBindingConfig = repository.getBindingConfiguration(configurationScopeId);
     if (previousBindingConfig == null) {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configurationScopeId);
@@ -119,14 +115,14 @@ public class ConfigurationService {
     var newBindingConfig = adapt(bindingConfiguration);
     repository.updateBinding(configurationScopeId, newBindingConfig);
 
-    return createChangedEventIfNeeded(configurationScopeId, previousBindingConfig, newBindingConfig, bindingMode, origin);
+    return createChangedEventIfNeeded(configurationScopeId, previousBindingConfig, newBindingConfig);
   }
 
   @CheckForNull
   private static BindingConfigChangedEvent createChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig,
-    BindingConfiguration newBindingConfig, @Nullable BindingMode bindingMode, @Nullable BindingSuggestionOrigin origin) {
+    BindingConfiguration newBindingConfig) {
     if (!previousBindingConfig.equals(newBindingConfig)) {
-      return new BindingConfigChangedEvent(configScopeId, previousBindingConfig, newBindingConfig, bindingMode, origin);
+      return new BindingConfigChangedEvent(configScopeId, previousBindingConfig, newBindingConfig);
     }
     return null;
   }

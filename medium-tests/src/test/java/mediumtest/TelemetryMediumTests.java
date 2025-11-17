@@ -35,11 +35,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
@@ -516,6 +518,42 @@ class TelemetryMediumTests {
     backend.getTelemetryService().addedManualBindings();
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getManualAddedBindingsCount()).isEqualTo(1));
+  }
+
+  @SonarLintTest
+  void it_should_record_acceptedBindingSuggestion_remoteUrl(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(BindingSuggestionOrigin.REMOTE_URL));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsRemoteUrlCount()).isEqualTo(1));
+  }
+
+  @SonarLintTest
+  void it_should_record_acceptedBindingSuggestion_sharedConfiguration(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(BindingSuggestionOrigin.SHARED_CONFIGURATION));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsSharedConfigurationCount()).isEqualTo(1));
+  }
+
+  @SonarLintTest
+  void it_should_record_acceptedBindingSuggestion_propertiesFile(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(BindingSuggestionOrigin.PROPERTIES_FILE));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsPropertiesFileCount()).isEqualTo(1));
+  }
+
+  @SonarLintTest
+  void it_should_record_acceptedBindingSuggestion_projectName(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(BindingSuggestionOrigin.PROJECT_NAME));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsProjectNameCount()).isEqualTo(1));
   }
 
   @SonarLintTest

@@ -23,6 +23,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -37,29 +38,11 @@ class BindingTelemetryMediumTests {
   private static final String PROJECT_KEY = "projectKey";
 
   @SonarLintTest
-  void should_count_new_binding_manual(SonarLintTestHarness harness) {
-    var backend = setupBackendUnboundWithTelemetry(harness);
-
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
-      CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.MANUAL,
-      null
-    ));
-
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsManualCount()).isEqualTo(1));
-  }
-
-  @SonarLintTest
   void should_count_new_binding_from_suggestion_remote_url(SonarLintTestHarness harness) {
     var backend = setupBackendUnboundWithTelemetry(harness);
 
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
-      CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.FROM_SUGGESTION,
-      BindingSuggestionOrigin.REMOTE_URL
-    ));
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(
+      BindingSuggestionOrigin.REMOTE_URL));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsRemoteUrlCount()).isEqualTo(1));
   }
@@ -68,12 +51,8 @@ class BindingTelemetryMediumTests {
   void should_count_new_binding_from_suggestion_project_name(SonarLintTestHarness harness) {
     var backend = setupBackendUnboundWithTelemetry(harness);
 
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
-      CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.FROM_SUGGESTION,
-      BindingSuggestionOrigin.PROJECT_NAME
-    ));
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(
+      BindingSuggestionOrigin.PROJECT_NAME));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsProjectNameCount()).isEqualTo(1));
   }
@@ -82,12 +61,8 @@ class BindingTelemetryMediumTests {
   void should_count_new_binding_from_suggestion_shared_configuration(SonarLintTestHarness harness) {
     var backend = setupBackendUnboundWithTelemetry(harness);
 
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
-      CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.FROM_SUGGESTION,
-      BindingSuggestionOrigin.SHARED_CONFIGURATION
-    ));
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(
+      BindingSuggestionOrigin.SHARED_CONFIGURATION));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsSharedConfigurationCount()).isEqualTo(1));
   }
@@ -96,12 +71,8 @@ class BindingTelemetryMediumTests {
   void should_count_new_binding_from_suggestion_properties_file(SonarLintTestHarness harness) {
     var backend = setupBackendUnboundWithTelemetry(harness);
 
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
-      CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.FROM_SUGGESTION,
-      BindingSuggestionOrigin.PROPERTIES_FILE
-    ));
+    backend.getTelemetryService().acceptedBindingSuggestion(new AcceptedBindingSuggestionParams(
+      BindingSuggestionOrigin.PROPERTIES_FILE));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getNewBindingsPropertiesFileCount()).isEqualTo(1));
   }
@@ -122,7 +93,6 @@ class BindingTelemetryMediumTests {
       assertThat(backend.telemetryFileContent().getNewBindingsProjectNameCount()).isZero();
       assertThat(backend.telemetryFileContent().getNewBindingsSharedConfigurationCount()).isZero();
       assertThat(backend.telemetryFileContent().getNewBindingsPropertiesFileCount()).isZero();
-      assertThat(backend.telemetryFileContent().getNewBindingsManualCount()).isZero();
     });
   }
 

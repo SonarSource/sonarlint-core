@@ -25,6 +25,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
@@ -115,15 +116,16 @@ public interface TelemetryRpcService {
   void fixSuggestionResolved(FixSuggestionResolvedParams params);
 
   /**
-   * @deprecated avoid calling this method if possible, since it will be removed once all the clients are migrated.
-   * Rely on providing the {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode)} and
-   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin)} while calling the
-   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding(DidUpdateBindingParams)} )}
-   * within the DidUpdateBindingParams.
+   * This method should be called when binding is created manually (not through binding suggestion or assistance).
    */
-  @Deprecated(forRemoval = true)
   @JsonNotification
   void addedManualBindings();
+
+  /**
+   * This method should be called when binding is created from a suggestion and .
+   */
+  @JsonNotification
+  void acceptedBindingSuggestion(AcceptedBindingSuggestionParams origin);
 
   /**
    * @deprecated avoid calling this method if possible, since it will be removed once all the clients are migrated.
