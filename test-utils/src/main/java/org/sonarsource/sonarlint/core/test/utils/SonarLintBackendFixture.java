@@ -153,6 +153,7 @@ public class SonarLintBackendFixture {
     private final Set<Language> extraEnabledLanguagesInConnectedMode = EnumSet.noneOf(Language.class);
     private final Set<String> disabledPluginKeysForAnalysis = new HashSet<>();
     private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
+    private Path customStorageRoot;
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
 
@@ -414,6 +415,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withStorageRoot(Path storageRoot) {
+      this.customStorageRoot = storageRoot;
+      return this;
+    }
+
     public SonarLintBackendBuilder withUserAgent(String userAgent) {
       this.userAgent = userAgent;
       return this;
@@ -494,7 +500,7 @@ public class SonarLintBackendFixture {
     public SonarLintTestRpcServer start(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
-      var storageParentPath = tempDirectory("storage");
+      var storageParentPath = customStorageRoot == null ? tempDirectory("storage") : customStorageRoot.getParent();
       serverStorages.forEach(storage -> storage.create(storageParentPath));
       var storageRoot = storageParentPath.resolve("storage");
       if (!configurationScopeStorages.isEmpty()) {

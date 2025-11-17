@@ -20,10 +20,16 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PreDestroy;
+import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
+
+import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.deleteInFolderWithPattern;
+import static org.sonarsource.sonarlint.core.tracking.XodusKnownFindingsStore.BACKUP_TAR_GZ;
+import static org.sonarsource.sonarlint.core.tracking.XodusKnownFindingsStore.KNOWN_FINDINGS_STORE;
 
 public class KnownFindingsStorageService {
 
@@ -34,6 +40,10 @@ public class KnownFindingsStorageService {
   public KnownFindingsStorageService(UserPaths userPaths) {
     this.projectsStorageBaseDir = userPaths.getStorageRoot();
     this.workDir = userPaths.getWorkDir();
+  }
+
+  public boolean exists() {
+    return Files.exists(projectsStorageBaseDir.resolve(XodusKnownFindingsStore.BACKUP_TAR_GZ));
   }
 
   public synchronized XodusKnownFindingsStore get() {
@@ -54,8 +64,17 @@ public class KnownFindingsStorageService {
   public void close() {
     var store = trackedIssuesStore.get();
     if (store != null) {
-      store.close();
+      store.backupAndClose();
     }
   }
 
+  public void delete() {
+    var store = trackedIssuesStore.getAndSet(null);
+    if (store != null) {
+      store.close();
+    }
+    FileUtils.deleteQuietly(projectsStorageBaseDir.resolve(BACKUP_TAR_GZ).toFile());
+    deleteInFolderWithPattern(workDir, KNOWN_FINDINGS_STORE + "*");
+    deleteInFolderWithPattern(projectsStorageBaseDir, "known_findings_backup*");
+  }
 }

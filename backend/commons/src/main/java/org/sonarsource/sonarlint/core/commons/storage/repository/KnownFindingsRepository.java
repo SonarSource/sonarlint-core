@@ -21,8 +21,10 @@ package org.sonarsource.sonarlint.core.commons.storage.repository;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.jooq.Configuration;
 import org.jooq.Record;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
@@ -30,6 +32,7 @@ import org.sonarsource.sonarlint.core.commons.KnownFindingType;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.KnownFindingsRecord;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.KNOWN_FINDINGS;
 
@@ -39,6 +42,47 @@ public class KnownFindingsRepository {
 
   public KnownFindingsRepository(SonarLintDatabase database) {
     this.database = database;
+  }
+
+  public void storeFindings(Map<String, Map<Path, Findings>> findingsPerFilePerConfigScopeId) {
+    database.dsl().batchMerge(findingsPerFilePerConfigScopeId.entrySet().stream()
+      .flatMap(configScopeEntry -> {
+        var configScopeId = configScopeEntry.getKey();
+        return configScopeEntry.getValue().entrySet().stream()
+          .flatMap(fileEntry -> {
+            var filePath = fileEntry.getKey();
+            var findings = fileEntry.getValue();
+            return Stream.<KnownFindingsRecord>concat(
+              findings.issues().stream()
+                .map(finding -> createRecord(finding, configScopeId, filePath, KnownFindingType.ISSUE)),
+              findings.hotspots().stream()
+                .map(finding -> createRecord(finding, configScopeId, filePath, KnownFindingType.HOTSPOT)));
+          });
+      })
+      .toList())
+      .execute();
+  }
+
+  private static KnownFindingsRecord createRecord(KnownFinding finding, String configScopeId, Path filePath, KnownFindingType type) {
+    var textRangeWithHash = finding.getTextRangeWithHash();
+    var lineWithHash = finding.getLineWithHash();
+    var introductionDate = LocalDateTime.ofInstant(finding.getIntroductionDate(), ZoneOffset.UTC);
+    return new KnownFindingsRecord(
+      finding.getId(),
+      configScopeId,
+      filePath.toString(),
+      finding.getServerKey(),
+      finding.getRuleKey(),
+      finding.getMessage(),
+      introductionDate,
+      type.name(),
+      textRangeWithHash == null ? null : textRangeWithHash.getStartLine(),
+      textRangeWithHash == null ? null : textRangeWithHash.getStartLineOffset(),
+      textRangeWithHash == null ? null : textRangeWithHash.getEndLine(),
+      textRangeWithHash == null ? null : textRangeWithHash.getEndLineOffset(),
+      textRangeWithHash == null ? null : textRangeWithHash.getHash(),
+      lineWithHash == null ? null : lineWithHash.getNumber(),
+      lineWithHash == null ? null : lineWithHash.getHash());
   }
 
   public void storeKnownIssues(String configurationScopeId, Path clientRelativePath, List<KnownFinding> newKnownIssues) {
@@ -69,7 +113,7 @@ public class KnownFindingsRepository {
       var lineWithHash = finding.getLineWithHash();
       var line = lineWithHash == null ? null : lineWithHash.getNumber();
       var lineHash = lineWithHash == null ? null : lineWithHash.getHash();
-      var introDate = LocalDateTime.ofInstant(finding.getIntroductionDate(), ZoneId.systemDefault());
+      var introDate = LocalDateTime.ofInstant(finding.getIntroductionDate(), ZoneOffset.UTC);
       trx.dsl().mergeInto(KNOWN_FINDINGS)
         .using(trx.dsl().selectOne())
         .on(KNOWN_FINDINGS.ID.eq(finding.getId()))
@@ -95,8 +139,7 @@ public class KnownFindingsRepository {
         .values(finding.getId(), configurationScopeId, clientRelativePath.toString(), finding.getServerKey(), finding.getRuleKey(),
           finding.getMessage(), introDate, type.name(),
           startLine, startLineOffset, endLine, endLineOffset, textRangeHash,
-          line, lineHash
-        )
+          line, lineHash)
         .execute();
     }));
   }
@@ -106,8 +149,7 @@ public class KnownFindingsRepository {
       .selectFrom(KNOWN_FINDINGS)
       .where(KNOWN_FINDINGS.CONFIGURATION_SCOPE_ID.eq(configurationScopeId)
         .and(KNOWN_FINDINGS.IDE_RELATIVE_FILE_PATH.eq(filePath.toString()))
-        .and(KNOWN_FINDINGS.FINDING_TYPE.eq(type.name()))
-      )
+        .and(KNOWN_FINDINGS.FINDING_TYPE.eq(type.name())))
       .fetch();
     return issuesInFile.stream()
       .map(KnownFindingsRepository::recordToKnownFinding)
@@ -116,7 +158,7 @@ public class KnownFindingsRepository {
 
   private static KnownFinding recordToKnownFinding(Record rec) {
     var id = rec.get(KNOWN_FINDINGS.ID);
-    var introductionDate = rec.get(KNOWN_FINDINGS.INTRODUCTION_DATE).atZone(ZoneId.systemDefault()).toInstant();
+    var introductionDate = rec.get(KNOWN_FINDINGS.INTRODUCTION_DATE).toInstant(ZoneOffset.UTC);
     var textRangeWithHash = getTextRangeWithHash(rec);
     var lineWithHash = getLineWithHash(rec);
     return new KnownFinding(
@@ -125,25 +167,27 @@ public class KnownFindingsRepository {
       textRangeWithHash, lineWithHash,
       rec.get(KNOWN_FINDINGS.RULE_KEY),
       rec.get(KNOWN_FINDINGS.MESSAGE),
-      introductionDate
-    );
+      introductionDate);
   }
 
   private static LineWithHash getLineWithHash(Record rec) {
-    if (rec.get(KNOWN_FINDINGS.LINE) == null) return null;
     var line = rec.get(KNOWN_FINDINGS.LINE);
+    if (line == null) {
+      return null;
+    }
     var hash = rec.get(KNOWN_FINDINGS.LINE_HASH);
     return new LineWithHash(line, hash);
   }
 
   private static TextRangeWithHash getTextRangeWithHash(Record rec) {
-    if (rec.get(KNOWN_FINDINGS.START_LINE) == null) return null;
     var startLine = rec.get(KNOWN_FINDINGS.START_LINE);
+    if (startLine == null) {
+      return null;
+    }
     var endLine = rec.get(KNOWN_FINDINGS.END_LINE);
     var startLineOffset = rec.get(KNOWN_FINDINGS.START_LINE_OFFSET);
     var endLineOffset = rec.get(KNOWN_FINDINGS.END_LINE_OFFSET);
     var hash = rec.get(KNOWN_FINDINGS.TEXT_RANGE_HASH);
     return new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
   }
-
 }

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -117,6 +118,24 @@ public class TrackingService {
     this.databaseService = databaseService;
   }
 
+  @PostConstruct
+  public void migrateData() {
+    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
+      if (knownFindingsStorageService.exists()) {
+        try {
+          var repository = new KnownFindingsRepository(databaseService.getDatabase());
+          var xodusKnownFindingsStore = knownFindingsStorageService.get();
+          var findingsPerConfigScope = xodusKnownFindingsStore.loadAll();
+          repository.storeFindings(findingsPerConfigScope);
+        } catch (Exception e) {
+          LOG.error("Unable to migrate known findings, will use fresh DB", e);
+        }
+      }
+      // always call to remove lingering temporary files
+      knownFindingsStorageService.delete();
+    }
+  }
+
   @EventListener
   public void onAnalysisStarted(AnalysisStartedEvent event) {
     var configurationScopeId = event.getConfigurationScopeId();
@@ -168,7 +187,6 @@ public class TrackingService {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    var knownFindingsStore = knownFindingsStorageService.get();
     var issuesToReport = matchingSession.getIssuesPerFile();
     var hotspotsToReport = matchingSession.getSecurityHotspotsPerFile();
     if (effectiveBindingOpt.isPresent() && activeBranchOpt.isPresent() && translationOpt.isPresent()) {
@@ -191,26 +209,26 @@ public class TrackingService {
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
-    issuesToReport.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
-    hotspotsToReport.forEach((clientRelativePath, trackedHotspots) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, trackedHotspots));
+    issuesToReport.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(configurationScopeId, clientRelativePath, trackedIssues));
+    hotspotsToReport.forEach((clientRelativePath, trackedHotspots) -> storeTrackedSecurityHotspots(configurationScopeId, clientRelativePath, trackedHotspots));
     eventPublisher.publishEvent(new MatchingSessionEndedEvent(matchingSession.countNewIssues(), matchingSession.countRemainingUnmatchedIssues()));
     return new MatchingResult(issuesToReport, hotspotsToReport);
   }
 
-  private void storeTrackedIssues(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
+  private void storeTrackedIssues(String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
     if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
       var knownFindingsRepository = new KnownFindingsRepository(databaseService.getDatabase());
       knownFindingsRepository.storeKnownIssues(configurationScopeId, clientRelativePath,
         newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
           i.getIntroductionDate())).toList());
     } else {
-      knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
+      knownFindingsStorageService.get().storeKnownIssues(configurationScopeId, clientRelativePath,
         newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
           i.getIntroductionDate())).toList());
     }
   }
 
-  private void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
+  private void storeTrackedSecurityHotspots(String configurationScopeId, Path clientRelativePath,
     Collection<TrackedIssue> newKnownSecurityHotspots) {
     if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
       var knownFindingsRepository = new KnownFindingsRepository(databaseService.getDatabase());
@@ -218,7 +236,7 @@ public class TrackingService {
         newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
           i.getIntroductionDate())).toList());
     } else {
-      knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
+      knownFindingsStorageService.get().storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
         newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
           i.getIntroductionDate())).toList());
     }
@@ -283,7 +301,7 @@ public class TrackingService {
       serverHotspot.getStatus().isResolved(), trackedHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, trackedHotspot.getRuleKey(),
       trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
       serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
-      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), null,  trackedHotspot.getRuleDescriptionContextKey(),
+      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), null, trackedHotspot.getRuleDescriptionContextKey(),
       trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
   }
 
@@ -301,7 +319,6 @@ public class TrackingService {
   }
 
   private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths, Set<URI> fileUris, UnaryOperator<String> fileContentProvider) {
-    var knownFindingsStore = knownFindingsStorageService.get();
     var dogfoodEnvironment = dogfoodEnvironmentDetectionService.isDogfoodEnvironment();
     Map<Path, List<KnownFinding>> issuesByRelativePath;
     Map<Path, List<KnownFinding>> hotspotsByRelativePath;
@@ -312,6 +329,7 @@ public class TrackingService {
       hotspotsByRelativePath = fileRelativePaths.stream()
         .collect(toMap(Function.identity(), relativePath -> knownFindingsRepository.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
     } else {
+      var knownFindingsStore = knownFindingsStorageService.get();
       issuesByRelativePath = fileRelativePaths.stream()
         .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadIssuesForFile(configurationScopeId, relativePath)));
       hotspotsByRelativePath = fileRelativePaths.stream()
