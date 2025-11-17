@@ -53,6 +53,8 @@ import static org.sonarsource.sonarlint.core.http.ThreadFactories.threadWithName
 
 public class HttpClientProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final int DEFAULT_MAX_RETRIES = 2;
+  private static final int DEFAULT_RETRY_INTERVAL = 3;
 
   private final CloseableHttpAsyncClient sharedClient;
   private final ExecutorService webSocketThreadPool;
@@ -63,19 +65,25 @@ public class HttpClientProvider {
    */
   public static HttpClientProvider forTesting() {
     return new HttpClientProvider("SonarLint tests", new HttpConfig(new SslConfig(null, null), null, null, null, null), null, ProxySelector.getDefault(),
-      new BasicCredentialsProvider());
+      new BasicCredentialsProvider(),
+      1, 0);
   }
 
   public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
     CredentialsProvider proxyCredentialsProvider) {
+    this(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider, DEFAULT_MAX_RETRIES, DEFAULT_RETRY_INTERVAL);
+  }
+
+  public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
+    CredentialsProvider proxyCredentialsProvider, int maxRetries, int retryInterval) {
     this.userAgent = userAgent;
     this.webSocketThreadPool = FailSafeExecutors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
-    sharedClient = buildSharedClient(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider);
+    sharedClient = buildSharedClient(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider, maxRetries, retryInterval);
     sharedClient.start();
   }
 
   private static CloseableHttpAsyncClient buildSharedClient(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate,
-    ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+    ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider, int maxRetries, int retryInterval) {
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
       .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.sslConfig(), trustManagerParametersPredicate)))
       .setDefaultTlsConfig(TlsConfig.custom()
@@ -93,7 +101,7 @@ public class HttpClientProvider {
       .setRoutePlanner(routePlanner)
       .setDefaultCredentialsProvider(proxyCredentialsProvider)
       .setDefaultRequestConfig(buildRequestConfig(httpConfig.connectionRequestTimeout(), httpConfig.responseTimeout()))
-      .setRetryStrategy(new RetryOnDemandStrategy(2, TimeValue.ofSeconds(3)))
+      .setRetryStrategy(new RetryOnDemandStrategy(maxRetries, TimeValue.ofSeconds(retryInterval)))
       .build();
   }
 
