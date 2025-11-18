@@ -19,14 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
-public enum ExecutableType {
+public enum HookScriptType {
   NODEJS("sonarqube_analysis_hook.js"),
   PYTHON("sonarqube_analysis_hook.py"),
   BASH("sonarqube_analysis_hook.sh");
 
   private final String fileName;
 
-  ExecutableType(String fileName) {
+  HookScriptType(String fileName) {
     this.fileName = fileName;
   }
 

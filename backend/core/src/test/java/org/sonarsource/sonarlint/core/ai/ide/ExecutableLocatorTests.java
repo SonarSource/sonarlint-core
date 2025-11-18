@@ -52,7 +52,7 @@ class ExecutableLocatorTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  void it_should_prefer_nodejs_when_available() {
+  void it_should_find_nodejs_when_available() {
     var system2 = mock(System2.class);
     var commandExecutor = mock(CommandExecutor.class);
     var nodeJsHelper = mock(NodeJsHelper.class);
@@ -65,11 +65,11 @@ class ExecutableLocatorTests {
 
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.NODEJS);
+      .contains(HookScriptType.NODEJS);
   }
 
   @Test
-  void it_should_prefer_python_when_nodejs_not_available() {
+  void it_should_find_python_when_nodejs_not_available() {
     var system2 = mock(System2.class);
     var commandExecutor = mock(CommandExecutor.class);
     var nodeJsHelper = mock(NodeJsHelper.class);
@@ -93,7 +93,7 @@ class ExecutableLocatorTests {
 
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.PYTHON);
+      .contains(HookScriptType.PYTHON);
   }
 
   @Test
@@ -118,7 +118,7 @@ class ExecutableLocatorTests {
 
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.BASH);
+      .contains(HookScriptType.BASH);
   }
 
   @Test
@@ -161,41 +161,11 @@ class ExecutableLocatorTests {
 
     assertThat(result1).isPresent();
     assertThat(result2).isPresent();
-    assertThat(result1).contains(ExecutableType.NODEJS);
-    assertThat(result2).contains(ExecutableType.NODEJS);
+    assertThat(result1).contains(HookScriptType.NODEJS);
+    assertThat(result2).contains(HookScriptType.NODEJS);
 
     // Verify autoDetect was only called once due to caching
     verify(nodeJsHelper, times(1)).autoDetect();
-  }
-
-  @Test
-  void it_should_detect_python3_before_python() {
-    var system2 = mock(System2.class);
-    var commandExecutor = mock(CommandExecutor.class);
-    var nodeJsHelper = mock(NodeJsHelper.class);
-    var pathHelper = Paths.get("/usr/libexec/path_helper");
-
-    when(nodeJsHelper.autoDetect()).thenReturn(null);
-    when(system2.isOsWindows()).thenReturn(false);
-
-    var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
-      @Override
-      String runSimpleCommand(@NotNull Command command) {
-        if (command.toCommandLine().contains("python3")) {
-          return "/usr/bin/python3";
-        }
-        if (command.toCommandLine().contains("python")) {
-          return "/usr/bin/python";
-        }
-        return null;
-      }
-    };
-
-    var result = locator.detectBestExecutable();
-
-    assertThat(result)
-      .isPresent()
-      .contains(ExecutableType.PYTHON);
   }
 
   @Test
@@ -225,7 +195,7 @@ class ExecutableLocatorTests {
 
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.PYTHON);
+      .contains(HookScriptType.PYTHON);
   }
 
   @Test
@@ -253,7 +223,7 @@ class ExecutableLocatorTests {
 
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.BASH);
+      .contains(HookScriptType.BASH);
   }
 
   @Test
@@ -281,7 +251,7 @@ class ExecutableLocatorTests {
     // Should fall back to Python
     assertThat(result)
       .isPresent()
-      .contains(ExecutableType.PYTHON);
+      .contains(HookScriptType.PYTHON);
   }
 
   @Test

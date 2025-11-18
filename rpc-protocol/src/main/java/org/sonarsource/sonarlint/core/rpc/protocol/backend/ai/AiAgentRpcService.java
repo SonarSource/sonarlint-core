@@ -35,7 +35,7 @@ public interface AiAgentRpcService {
 
   /**
    * Returns hook script content with auto-detected executable type and embedded server port.
-   * The hook script will analyze code after write events using the post_write_code hook.
+   * The hook script will analyze code after write events using the sonarqube_analysis_hook hook.
    */
   @JsonRequest
   CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params);
