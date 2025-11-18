@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandExecutor;
@@ -38,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -376,6 +380,77 @@ class ExecutableLocatorTests {
     assertThat(result).isEqualTo("/usr/bin/test");
     assertThat(logTester.logs()).anyMatch(log -> log.contains("stdout: /usr/bin/test"));
     assertThat(logTester.logs()).anyMatch(log -> log.contains("stderr: warning message"));
+  }
+
+  @Test
+  void it_should_return_empty_when_no_executable_found() {
+    var system2 = mock(System2.class);
+    var commandExecutor = mock(CommandExecutor.class);
+    var nodeJsHelper = mock(NodeJsHelper.class);
+    var pathHelper = Paths.get("/usr/libexec/path_helper");
+
+    when(nodeJsHelper.autoDetect()).thenReturn(null);
+    when(system2.isOsWindows()).thenReturn(true);
+
+    var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
+      @Override
+      String runSimpleCommand(@NotNull Command command) {
+        // Simulate no executable found for any command
+        return null;
+      }
+    };
+
+    var result = locator.detectBestExecutable();
+
+    assertThat(result).isEmpty();
+    assertThat(logTester.logs()).anyMatch(log -> 
+      log.contains("No suitable executable found") || 
+      log.contains("not found") ||
+      log.contains("not available"));
+  }
+
+  @Test
+  void it_should_not_set_path_env_when_path_helper_does_not_exist() {
+    var system2 = mock(System2.class);
+    var commandExecutor = mock(CommandExecutor.class);
+    var nodeJsHelper = mock(NodeJsHelper.class);
+    var pathHelper = Paths.get("/nonexistent/path_helper");
+
+    when(system2.isOsMac()).thenReturn(true);
+
+    var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper);
+
+    var testCommand = Command.create("test");
+    var commandLineBefore = testCommand.toCommandLine();
+    locator.computePathEnvForMacOs(testCommand);
+    var commandLineAfter = testCommand.toCommandLine();
+
+    // PATH should not be set
+    assertThat(commandLineAfter).isEqualTo(commandLineBefore);
+  }
+
+  @Test
+  void it_should_not_set_path_env_when_not_on_macos(@TempDir File tempDir) {
+    var system2 = mock(System2.class);
+    var commandExecutor = mock(CommandExecutor.class);
+    var nodeJsHelper = mock(NodeJsHelper.class);
+    var pathHelper = new File(tempDir, "path_helper").toPath();
+
+    when(system2.isOsMac()).thenReturn(false);
+
+    try (var filesMock = mockStatic(Files.class)) {
+      filesMock.when(() -> Files.exists(pathHelper)).thenReturn(true);
+
+      var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper);
+
+      var testCommand = Command.create("test");
+      var commandLineBefore = testCommand.toCommandLine();
+      locator.computePathEnvForMacOs(testCommand);
+      var commandLineAfter = testCommand.toCommandLine();
+
+      // PATH should not be set when not on macOS
+      assertThat(commandLineAfter).isEqualTo(commandLineBefore);
+    }
   }
 
 }

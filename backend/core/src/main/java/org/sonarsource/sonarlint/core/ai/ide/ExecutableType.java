@@ -20,24 +20,18 @@
 package org.sonarsource.sonarlint.core.ai.ide;
 
 public enum ExecutableType {
-  NODEJS("post_write_code.js", "#!/usr/bin/env node"),
-  PYTHON("post_write_code.py", "#!/usr/bin/env python3"),
-  BASH("post_write_code.sh", "#!/bin/bash");
+  NODEJS("sonarqube_analysis_hook.js"),
+  PYTHON("sonarqube_analysis_hook.py"),
+  BASH("sonarqube_analysis_hook.sh");
 
   private final String fileName;
-  private final String shebang;
 
-  ExecutableType(String fileName, String shebang) {
+  ExecutableType(String fileName) {
     this.fileName = fileName;
-    this.shebang = shebang;
   }
 
   public String getFileName() {
     return fileName;
-  }
-
-  public String getShebang() {
-    return shebang;
   }
 }
 

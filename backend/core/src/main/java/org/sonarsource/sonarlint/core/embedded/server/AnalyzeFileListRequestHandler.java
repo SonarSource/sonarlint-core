@@ -107,7 +107,7 @@ public class AnalyzeFileListRequestHandler implements HttpRequestHandler {
       .map(path -> Paths.get(path).toUri().normalize())
       .collect(Collectors.toSet());
 
-    LOG.debug("Analyzing {} files: {}", filePaths.size(), filePaths);
+    LOG.debug("Analyzing list of {} files: {}", filePaths.size(), filePaths);
 
     var filesByScope = clientFileSystemService.groupFilesByConfigScope(filePaths);
 
@@ -119,7 +119,7 @@ public class AnalyzeFileListRequestHandler implements HttpRequestHandler {
     var allIssues = filesByScope.entrySet().stream().flatMap(entry -> {
       var configScopeId = entry.getKey();
       var files = entry.getValue();
-      LOG.info("Analyzing {} files: {}", files.size(), files);
+      LOG.info("Analyzing list of {} files: {}", files.size(), files);
       try {
         var taints = getTaintsAsRawFindings(configScopeId, files, cancelMonitor);
         var issues = getIssuesAndHotspotsAsRawFindings(configScopeId, files, cancelMonitor);

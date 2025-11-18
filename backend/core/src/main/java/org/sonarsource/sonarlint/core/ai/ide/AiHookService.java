@@ -31,6 +31,23 @@ public class AiHookService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
+  private static final String BASH_HOOK = "sonarqube_analysis_hook.sh";
+  private static final String PYTHON_HOOK = "sonarqube_analysis_hook.py";
+  private static final String JS_HOOK = "sonarqube_analysis_hook.js";
+
+  private static final String WINDSURF_HOOK_CONFIG = """
+      {
+        "hooks": {
+          "post_write_code": [
+            {
+              "command": "{{SCRIPT_PATH}}",
+              "show_output": false
+            }
+          ]
+        }
+      }
+      """;
+
   private final EmbeddedServer embeddedServer;
   private final ExecutableLocator executableLocator;
 
@@ -56,9 +73,9 @@ public class AiHookService {
         "Please ensure Node.js, Python, or Bash is available on your system."));
 
     var scriptContent = switch (executableType) {
-      case NODEJS -> generateNodeJsScript(port, agent);
-      case PYTHON -> generatePythonScript(port, agent);
-      case BASH -> generateBashScript(port, agent);
+      case NODEJS -> loadTemplateAndReplacePlaceholders(JS_HOOK, port, agent);
+      case PYTHON -> loadTemplateAndReplacePlaceholders(PYTHON_HOOK, port, agent);
+      case BASH -> loadTemplateAndReplacePlaceholders(BASH_HOOK, port, agent);
     };
 
     var configContent = generateHookConfiguration(agent);
@@ -69,25 +86,9 @@ public class AiHookService {
 
   private static String generateHookConfiguration(AiAgent agent) {
     return switch (agent) {
-      case WINDSURF -> generateWindsurfHooksConfig();
+      case WINDSURF -> WINDSURF_HOOK_CONFIG;
       case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
     };
-  }
-
-  private static String generateWindsurfHooksConfig() {
-    var scriptPath = "{{SCRIPT_PATH}}";
-    return """
-      {
-        "hooks": {
-          "post_write_code": [
-            {
-              "command": "%s",
-              "show_output": true
-            }
-          ]
-        }
-      }
-      """.formatted(scriptPath);
   }
 
   private static String getConfigFileName(AiAgent agent) {
@@ -95,18 +96,6 @@ public class AiHookService {
       case WINDSURF -> "hooks.json";
       case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
     };
-  }
-
-  private static String generateBashScript(int port, AiAgent agent) {
-    return loadTemplateAndReplacePlaceholders("post_write_code.sh", port, agent);
-  }
-
-  private static String generatePythonScript(int port, AiAgent agent) {
-    return loadTemplateAndReplacePlaceholders("post_write_code.py", port, agent);
-  }
-
-  private static String generateNodeJsScript(int port, AiAgent agent) {
-    return loadTemplateAndReplacePlaceholders("post_write_code.js", port, agent);
   }
 
   private static String loadTemplateAndReplacePlaceholders(String templateFileName, int port, AiAgent agent) {
@@ -118,11 +107,20 @@ public class AiHookService {
       var template = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
       return template
         .replace("{{PORT}}", String.valueOf(port))
-        .replace("{{AGENT}}", agent.toString());
+        .replace("{{AGENT}}", getIdeName(agent));
     } catch (IOException e) {
       LOG.error("Failed to load hook script template: {}", templateFileName, e);
       throw new IllegalStateException("Failed to load hook script template: " + templateFileName, e);
     }
   }
+
+  private static String getIdeName(AiAgent agent) {
+    return switch (agent) {
+      case WINDSURF -> "Windsurf";
+      case CURSOR -> "Cursor";
+      case GITHUB_COPILOT -> "GitHub Copilot";
+    };
+  }
+
 }
 

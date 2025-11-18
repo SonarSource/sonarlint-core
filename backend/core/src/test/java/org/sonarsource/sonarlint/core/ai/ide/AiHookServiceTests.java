@@ -47,17 +47,19 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptFileName()).isEqualTo("post_write_code.js");
+    assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.js");
     assertThat(response.getScriptContent())
       .contains("#!/usr/bin/env node")
       .contains("hostname: 'localhost'")
-      .contains("port: 64120")
-      .contains("path: '/sonarlint/api/analysis/files'");
+      .contains("STARTING_PORT = 64120")
+      .contains("ENDING_PORT = 64130")
+      .contains("path: '/sonarlint/api/analysis/files'")
+      .contains("path: '/sonarlint/api/status'");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
-      .contains("\"show_output\": true");
+      .contains("\"show_output\": false");
   }
 
   @Test
@@ -86,15 +88,18 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptFileName()).isEqualTo("post_write_code.sh");
+    assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.sh");
     assertThat(response.getScriptContent())
       .contains("#!/bin/bash")
-      .contains("http://localhost:64122/sonarlint/api/analysis/files");
+      .contains("STARTING_PORT=64120")
+      .contains("ENDING_PORT=64130")
+      .contains("/sonarlint/api/analysis/files")
+      .contains("/sonarlint/api/status");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
-      .contains("\"show_output\": true");
+      .contains("\"show_output\": false");
   }
 
   @Test
@@ -137,7 +142,9 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptContent()).contains("SonarQube for IDE WINDSURF Hook");
+    assertThat(response.getScriptContent())
+      .contains("SonarQube for IDE Windsurf Hook")
+      .contains("EXPECTED_IDE_NAME = 'Windsurf'");
   }
 
   @Test
@@ -154,5 +161,21 @@ class AiHookServiceTests {
       .isInstanceOf(UnsupportedOperationException.class)
       .hasMessageContaining("hook configuration not yet implemented");
   }
+
+  @Test
+  void it_should_throw_exception_for_unsupported_github_copilot_agent() {
+    var embeddedServer = mock(EmbeddedServer.class);
+    var executableLocator = mock(ExecutableLocator.class);
+
+    when(embeddedServer.getPort()).thenReturn(64120);
+    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(ExecutableType.BASH));
+
+    var service = new AiHookService(embeddedServer, executableLocator);
+
+    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.GITHUB_COPILOT))
+      .isInstanceOf(UnsupportedOperationException.class)
+      .hasMessageContaining("hook configuration not yet implemented");
+  }
+
 }
 

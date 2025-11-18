@@ -134,7 +134,7 @@ public class ExecutableLocator {
     }
   }
 
-  private void computePathEnvForMacOs(Command command) {
+  void computePathEnvForMacOs(Command command) {
     if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
       var pathHelperCommand = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       var pathHelperOutput = runSimpleCommand(pathHelperCommand);
