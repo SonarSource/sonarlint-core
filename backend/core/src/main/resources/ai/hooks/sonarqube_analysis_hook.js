@@ -18,9 +18,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-// SonarQube for IDE {{AGENT}} Hook - post_write_code
+// SonarQube for IDE {{AGENT}} Hook - sonarqube_analysis_hook
 // Auto-generated script for Node.js
-// Connects to SonarQube for IDE backend
+// Connects AI Agents to SonarQube for IDE backend
 
 const http = require('node:http');
 
@@ -29,12 +29,7 @@ const ENDING_PORT = 64130;
 const EXPECTED_IDE_NAME = '{{AGENT}}';
 const PORT_SCAN_TIMEOUT = 100;
 
-function debug(message) {
-  console.error(`[DEBUG] ${message}`);
-}
-
 async function findBackendPort() {
-  debug(`Starting port scan from ${STARTING_PORT} to ${ENDING_PORT}`);
   const portPromises = [];
   for (let port = STARTING_PORT; port <= ENDING_PORT; port++) {
     portPromises.push(checkPort(port));
@@ -42,11 +37,9 @@ async function findBackendPort() {
   const results = await Promise.allSettled(portPromises);
   for (const result of results) {
     if (result.status === 'fulfilled' && result.value !== null) {
-      debug(`Found backend on port ${result.value}`);
       return result.value;
     }
   }
-  debug('No backend port found');
   return null;
 }
 
@@ -66,27 +59,21 @@ function checkPort(port) {
       res.on('end', () => {
         try {
           const status = JSON.parse(data);
-          debug(`Port ${port} responded with ideName: ${status.ideName}`);
           if (status.ideName === EXPECTED_IDE_NAME) {
-            debug(`Port ${port} matches expected IDE: ${EXPECTED_IDE_NAME}`);
             resolve(port);
           } else {
-            debug(`Port ${port} IDE mismatch. Expected: ${EXPECTED_IDE_NAME}, Got: ${status.ideName}`);
             resolve(null);
           }
         } catch (e) {
-          debug(`Port ${port} failed to parse JSON: ${e.message}`);
           resolve(null);
         }
       });
     });
     
-    req.on('error', (err) => {
-      debug(`Port ${port} error: ${err.message}`);
+    req.on('error', () => {
       resolve(null);
     });
     req.on('timeout', () => {
-      debug(`Port ${port} timeout`);
       req.destroy();
       resolve(null);
     });
@@ -94,7 +81,7 @@ function checkPort(port) {
 }
 
 function analyzeFile(port, filePath) {
-  debug(`Triggering analysis for file: ${filePath} on port ${port}`);
+  console.log(`Analyzing: ${filePath} (port ${port})`);
   const requestBody = JSON.stringify({ fileAbsolutePaths: [filePath] });
   const options = {
     hostname: 'localhost',
@@ -114,21 +101,16 @@ function analyzeFile(port, filePath) {
     socket.unref();
   });
   req.on('error', (err) => {
-    debug(`Analysis request error: ${err.message}`);
-  });
-  req.on('response', (res) => {
-    debug(`Analysis request response status: ${res.statusCode}`);
+    console.log(`Error: ${err.message}`);
   });
   req.write(requestBody);
   req.end();
-  debug('Analysis request sent (fire-and-forget)');
   setImmediate(() => {
     process.exit(0);
   });
 }
 
 // Read the event JSON from stdin
-debug('Hook script started');
 let eventJson = '';
 process.stdin.setEncoding('utf8');
 
@@ -138,25 +120,20 @@ process.stdin.on('data', (chunk) => {
 
 process.stdin.on('end', async () => {
   try {
-    debug('Received event from stdin');
     const event = JSON.parse(eventJson);
-    debug(`Parsed event: ${JSON.stringify(event, null, 2)}`);
     const filePath = event.tool_info?.file_path;
     if (!filePath) {
-      debug('No file_path in event');
-      console.log('No file to analyze');
+      console.log('No file path in event');
       return;
     }
-    debug(`File to analyze: ${filePath}`);
     const port = await findBackendPort();
     if (!port) {
-      debug('Backend not found, exiting with error');
-      console.error('SonarQube for IDE backend not found');
+      console.log('Backend not found');
       process.exit(1);
     }
     analyzeFile(port, filePath);
   } catch (e) {
-    debug(`Error: ${e.message}`);
+    console.log(`Error: ${e.message}`);
     process.exit(1);
   }
 });

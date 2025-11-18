@@ -31,14 +31,10 @@ public class AiHookService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static final String BASH_HOOK = "sonarqube_analysis_hook.sh";
-  private static final String PYTHON_HOOK = "sonarqube_analysis_hook.py";
-  private static final String JS_HOOK = "sonarqube_analysis_hook.js";
-
   private static final String WINDSURF_HOOK_CONFIG = """
       {
         "hooks": {
-          "post_write_code": [
+          "sonarqube_analysis_hook": [
             {
               "command": "{{SCRIPT_PATH}}",
               "show_output": false
@@ -68,33 +64,30 @@ public class AiHookService {
       throw new IllegalStateException("Embedded server is not started. Cannot generate hook script.");
     }
 
-    var executableType = executableLocator.detectBestExecutable()
+    var hookScriptType = executableLocator.detectBestExecutable()
       .orElseThrow(() -> new IllegalStateException("No suitable executable found for hook script generation. " +
         "Please ensure Node.js, Python, or Bash is available on your system."));
 
-    var scriptContent = switch (executableType) {
-      case NODEJS -> loadTemplateAndReplacePlaceholders(JS_HOOK, port, agent);
-      case PYTHON -> loadTemplateAndReplacePlaceholders(PYTHON_HOOK, port, agent);
-      case BASH -> loadTemplateAndReplacePlaceholders(BASH_HOOK, port, agent);
-    };
-
+    var scriptContent = loadTemplateAndReplacePlaceholders(hookScriptType.getFileName(), port, agent);
     var configContent = generateHookConfiguration(agent);
     var configFileName = getConfigFileName(agent);
 
-    return new GetHookScriptContentResponse(scriptContent, executableType.getFileName(), configContent, configFileName);
+    return new GetHookScriptContentResponse(scriptContent, hookScriptType.getFileName(), configContent, configFileName);
   }
 
   private static String generateHookConfiguration(AiAgent agent) {
     return switch (agent) {
       case WINDSURF -> WINDSURF_HOOK_CONFIG;
-      case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }
 
   private static String getConfigFileName(AiAgent agent) {
     return switch (agent) {
       case WINDSURF -> "hooks.json";
-      case CURSOR, GITHUB_COPILOT -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }
 
@@ -118,7 +111,7 @@ public class AiHookService {
     return switch (agent) {
       case WINDSURF -> "Windsurf";
       case CURSOR -> "Cursor";
-      case GITHUB_COPILOT -> "GitHub Copilot";
+      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }
 

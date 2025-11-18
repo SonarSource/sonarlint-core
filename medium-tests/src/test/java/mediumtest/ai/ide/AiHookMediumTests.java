@@ -49,10 +49,10 @@ class AiHookMediumTests {
       .join();
 
     // Check script content
-    assertThat(response.getScriptFileName()).matches("post_write_code\\.(js|py|sh)");
+    assertThat(response.getScriptFileName()).matches("sonarqube_analysis_hook\\.(js|py|sh)");
     assertThat(response.getScriptContent())
       .contains("SonarQube for IDE Windsurf Hook")
-      .contains("post_write_code")
+      .contains("sonarqube_analysis_hook")
       .contains("/sonarlint/api/analysis/files")
       .contains("/sonarlint/api/status")
       .contains("STARTING_PORT")
@@ -64,7 +64,7 @@ class AiHookMediumTests {
 
     // Check config content
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
-    assertThat(response.getConfigContent()).contains("\"post_write_code\"");
+    assertThat(response.getConfigContent()).contains("\"sonarqube_analysis_hook\"");
     assertThat(response.getConfigContent()).contains("{{SCRIPT_PATH}}");
     assertThat(response.getConfigContent()).contains("\"show_output\": false");
   }

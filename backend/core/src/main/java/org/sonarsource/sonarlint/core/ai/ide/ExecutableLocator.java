@@ -43,7 +43,7 @@ public class ExecutableLocator {
   private final NodeJsHelper nodeJsHelper;
 
   private boolean checkedForExecutable = false;
-  private ExecutableType detectedExecutable = null;
+  private HookScriptType detectedExecutable = null;
 
   public ExecutableLocator() {
     this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create(), new NodeJsHelper());
@@ -57,7 +57,7 @@ public class ExecutableLocator {
     this.nodeJsHelper = nodeJsHelper;
   }
 
-  public Optional<ExecutableType> detectBestExecutable() {
+  public Optional<HookScriptType> detectBestExecutable() {
     if (checkedForExecutable) {
       return Optional.ofNullable(detectedExecutable);
     }
@@ -65,13 +65,13 @@ public class ExecutableLocator {
     // Priority: Node.js > Python > Bash
     if (isNodeJsAvailable()) {
       LOG.debug("Detected Node.js for hook scripts");
-      detectedExecutable = ExecutableType.NODEJS;
+      detectedExecutable = HookScriptType.NODEJS;
     } else if (isPythonAvailable()) {
       LOG.debug("Detected Python for hook scripts");
-      detectedExecutable = ExecutableType.PYTHON;
+      detectedExecutable = HookScriptType.PYTHON;
     } else if (isBashAvailable()) {
       LOG.debug("Detected Bash for hook scripts");
-      detectedExecutable = ExecutableType.BASH;
+      detectedExecutable = HookScriptType.BASH;
     } else {
       LOG.debug("No suitable executable found for hook scripts");
       detectedExecutable = null;
