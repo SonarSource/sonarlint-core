@@ -34,7 +34,7 @@ public class AiHookService {
   private static final String WINDSURF_HOOK_CONFIG = """
       {
         "hooks": {
-          "sonarqube_analysis_hook": [
+          "post_write_code": [
             {
               "command": "{{SCRIPT_PATH}}",
               "show_output": false

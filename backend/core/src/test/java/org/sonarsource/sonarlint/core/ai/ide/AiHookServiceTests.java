@@ -57,7 +57,7 @@ class AiHookServiceTests {
       .contains("path: '/sonarlint/api/status'");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
-      .contains("\"sonarqube_analysis_hook\"")
+      .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": false");
   }
@@ -82,7 +82,7 @@ class AiHookServiceTests {
       .contains("/sonarlint/api/status");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
-      .contains("\"sonarqube_analysis_hook\"")
+      .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": false");
   }
@@ -107,7 +107,7 @@ class AiHookServiceTests {
       .contains("/sonarlint/api/status");
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent())
-      .contains("\"sonarqube_analysis_hook\"")
+      .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": false");
   }

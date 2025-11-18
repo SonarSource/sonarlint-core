@@ -34,7 +34,7 @@ public interface AiAgentRpcService {
   CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params);
 
   /**
-   * Returns hook script content with auto-detected executable type and embedded server port.
+   * Returns hook script content with auto-detected executable type.
    * The hook script will analyze code after write events using the sonarqube_analysis_hook hook.
    */
   @JsonRequest
