@@ -431,7 +431,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       assertThat(riskDetailsResponse)
         .usingRecursiveComparison()
-        .isEqualTo(new GetDependencyRiskDetailsResponse(firstDependencyRiskKey, DependencyRiskDto.Severity.MEDIUM,
+        .isEqualTo(new GetDependencyRiskDetailsResponse(firstDependencyRiskKey, DependencyRiskDto.Severity.LOW,
           DependencyRiskDto.SoftwareQuality.SECURITY, "com.fasterxml.woodstox:woodstox-core", "6.2.7",
           DependencyRiskDto.Type.VULNERABILITY, "CVE-2022-40152",
           "Those using Woodstox to parse XML data may be vulnerable to Denial of Service attacks (DOS) if DTD support is enabled. If the parser is running on user supplied input, an attacker may supply content that causes the parser to crash by stackoverflow. This effect may support a denial of service attack.",
