@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -36,6 +37,7 @@ import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.AI_COD
 
 public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final String SQ_IDE_DB_FILENAME = "sq-ide";
 
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
@@ -44,8 +46,9 @@ public final class SonarLintDatabase {
     JdbcConnectionPool ds;
     try {
       var baseDir = storageRoot.resolve("h2");
+      deleteLegacyDatabase(baseDir);
       Files.createDirectories(baseDir);
-      var dbBasePath = baseDir.resolve("sonarlint").toAbsolutePath();
+      var dbBasePath = baseDir.resolve(SQ_IDE_DB_FILENAME).toAbsolutePath();
       var url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
       // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
       var bindAddressProperty = "h2.bindAddress";
@@ -74,6 +77,14 @@ public final class SonarLintDatabase {
     System.setProperty("org.jooq.no-tips", "true");
     System.setProperty("org.jooq.no-logo", "true");
     this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
+  }
+
+  private static void deleteLegacyDatabase(Path baseDir) {
+    // see SLCORE-1847
+    var legacyDb = baseDir.resolve("sonarlint");
+    if (Files.exists(legacyDb)) {
+      FileUtils.deleteQuietly(legacyDb.toFile());
+    }
   }
 
   public DSLContext dsl() {

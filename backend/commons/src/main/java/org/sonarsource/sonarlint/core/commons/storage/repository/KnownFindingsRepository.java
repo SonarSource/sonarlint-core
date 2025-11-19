@@ -45,22 +45,28 @@ public class KnownFindingsRepository {
   }
 
   public void storeFindings(Map<String, Map<Path, Findings>> findingsPerFilePerConfigScopeId) {
-    database.dsl().batchMerge(findingsPerFilePerConfigScopeId.entrySet().stream()
-      .flatMap(configScopeEntry -> {
-        var configScopeId = configScopeEntry.getKey();
-        return configScopeEntry.getValue().entrySet().stream()
-          .flatMap(fileEntry -> {
-            var filePath = fileEntry.getKey();
-            var findings = fileEntry.getValue();
-            return Stream.<KnownFindingsRecord>concat(
-              findings.issues().stream()
-                .map(finding -> createRecord(finding, configScopeId, filePath, KnownFindingType.ISSUE)),
-              findings.hotspots().stream()
-                .map(finding -> createRecord(finding, configScopeId, filePath, KnownFindingType.HOTSPOT)));
-          });
-      })
-      .toList())
-      .execute();
+    var records = findingsPerFilePerConfigScopeId.entrySet().stream()
+      .flatMap(KnownFindingsRepository::expandConfigScope)
+      .toList();
+    database.dsl().batchMerge(records).execute();
+  }
+
+  private static Stream<KnownFindingsRecord> expandConfigScope(Map.Entry<String, Map<Path, Findings>> configScopeEntry) {
+    var configScopeId = configScopeEntry.getKey();
+    return configScopeEntry.getValue().entrySet().stream()
+      .flatMap(fileEntry -> expandFileFindings(configScopeId, fileEntry));
+  }
+
+  private static Stream<KnownFindingsRecord> expandFileFindings(String configScopeId, Map.Entry<Path, Findings> fileEntry) {
+    var filePath = fileEntry.getKey();
+    var findings = fileEntry.getValue();
+
+    return Stream.concat(
+      findings.issues().stream()
+        .map(f -> createRecord(f, configScopeId, filePath, KnownFindingType.ISSUE)),
+      findings.hotspots().stream()
+        .map(f -> createRecord(f, configScopeId, filePath, KnownFindingType.HOTSPOT))
+    );
   }
 
   private static KnownFindingsRecord createRecord(KnownFinding finding, String configScopeId, Path filePath, KnownFindingType type) {

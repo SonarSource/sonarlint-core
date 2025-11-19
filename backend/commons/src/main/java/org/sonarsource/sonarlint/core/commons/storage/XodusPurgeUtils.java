@@ -45,7 +45,7 @@ public class XodusPurgeUtils {
           }
         }
       } catch (Exception e) {
-        LOG.error("Unable to purge old temporary files for pattern " + pattern);
+        LOG.error("Unable to purge old temporary files for pattern " + pattern, e);
       }
     }
   }
