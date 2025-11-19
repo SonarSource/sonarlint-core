@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.storage.repository;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.nio.file.Path;
 import java.time.Instant;
@@ -28,27 +28,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jooq.Configuration;
+import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.LocalOnlyIssuesRecord;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.LOCAL_ONLY_ISSUES;
 
 public class LocalOnlyIssuesRepository {
 
-  private final SonarLintDatabase database;
+  private final DSLContext database;
 
-  public LocalOnlyIssuesRepository(SonarLintDatabase database) {
+  public LocalOnlyIssuesRepository(DSLContext database) {
     this.database = database;
   }
 
   public List<LocalOnlyIssue> loadForFile(String configurationScopeId, Path filePath) {
-    var issuesInFile = database.dsl()
+    var issuesInFile = database
       .selectFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.CONFIGURATION_SCOPE_ID.eq(configurationScopeId)
         .and(LOCAL_ONLY_ISSUES.SERVER_RELATIVE_PATH.eq(filePath.toString())))
@@ -59,7 +59,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public List<LocalOnlyIssue> loadAll(String configurationScopeId) {
-    var allIssues = database.dsl()
+    var allIssues = database
       .selectFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.CONFIGURATION_SCOPE_ID.eq(configurationScopeId))
       .fetch();
@@ -69,8 +69,8 @@ public class LocalOnlyIssuesRepository {
   }
 
   public void storeIssues(Map<String, List<LocalOnlyIssue>> issuesPerConfigScopeId) {
-    database.dsl().deleteFrom(LOCAL_ONLY_ISSUES).execute();
-    database.dsl().batchInsert(issuesPerConfigScopeId.entrySet().stream()
+    database.deleteFrom(LOCAL_ONLY_ISSUES).execute();
+    database.batchInsert(issuesPerConfigScopeId.entrySet().stream()
       .flatMap(entry -> {
         var configScopeId = entry.getKey();
         return entry.getValue().stream().map(
@@ -102,7 +102,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public void storeLocalOnlyIssue(String configurationScopeId, LocalOnlyIssue issue) {
-    database.dsl().transaction((Configuration trx) -> {
+    database.transaction((Configuration trx) -> {
       var textRangeWithHash = issue.getTextRangeWithHash();
       var startLine = textRangeWithHash == null ? null : textRangeWithHash.getStartLine();
       var startLineOffset = textRangeWithHash == null ? null : textRangeWithHash.getStartLineOffset();
@@ -174,7 +174,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public boolean removeIssue(UUID issueId) {
-    var deleted = database.dsl()
+    var deleted = database
       .deleteFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.ID.eq(issueId))
       .execute();
@@ -182,7 +182,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public boolean removeAllIssuesForFile(String configurationScopeId, Path filePath) {
-    var deleted = database.dsl()
+    var deleted = database
       .deleteFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.CONFIGURATION_SCOPE_ID.eq(configurationScopeId)
         .and(LOCAL_ONLY_ISSUES.SERVER_RELATIVE_PATH.eq(filePath.toString())))
@@ -191,7 +191,7 @@ public class LocalOnlyIssuesRepository {
   }
 
   public Optional<LocalOnlyIssue> find(UUID issueId) {
-    var issue = database.dsl()
+    var issue = database
       .selectFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.ID.eq(issueId))
       .fetchOne();
@@ -200,7 +200,7 @@ public class LocalOnlyIssuesRepository {
 
   public void purgeIssuesOlderThan(Instant limit) {
     var limitDateTime = LocalDateTime.ofInstant(limit, ZoneOffset.UTC);
-    database.dsl()
+    database
       .deleteFrom(LOCAL_ONLY_ISSUES)
       .where(LOCAL_ONLY_ISSUES.RESOLUTION_DATE.isNotNull()
         .and(LOCAL_ONLY_ISSUES.RESOLUTION_DATE.le(limitDateTime)))

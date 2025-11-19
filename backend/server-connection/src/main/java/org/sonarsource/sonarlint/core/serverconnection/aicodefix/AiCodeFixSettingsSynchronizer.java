@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.aicodefix;
 
 import java.util.List;
 import java.util.Set;
@@ -25,11 +25,12 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
 
 public class AiCodeFixSettingsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -37,10 +38,10 @@ public class AiCodeFixSettingsSynchronizer {
 
   private final ConnectionStorage storage;
   private final OrganizationSynchronizer organizationSynchronizer;
-  private final org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository;
+  private final AiCodeFixRepository aiCodeFixRepository;
 
   public AiCodeFixSettingsSynchronizer(ConnectionStorage storage, OrganizationSynchronizer organizationSynchronizer,
-    org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository aiCodeFixRepository) {
+    AiCodeFixRepository aiCodeFixRepository) {
     this.storage = storage;
     this.organizationSynchronizer = organizationSynchronizer;
     this.aiCodeFixRepository = aiCodeFixRepository;
