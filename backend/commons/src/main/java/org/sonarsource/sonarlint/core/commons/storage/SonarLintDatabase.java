@@ -59,21 +59,17 @@ public final class SonarLintDatabase {
     }
     this.dataSource = ds;
 
-    // Run Flyway migrations if available. Do not fail if none is found.
-    try {
-      var flyway = Flyway.configure()
-        .dataSource(this.dataSource)
-        .locations("classpath:db/migration")
-        .defaultSchema("PUBLIC")
-        .schemas("PUBLIC")
-        .createSchemas(true)
-        .baselineOnMigrate(true)
-        .failOnMissingLocations(false)
-        .load();
-      flyway.migrate();
-    } catch (RuntimeException e) {
-      LOG.error("Flyway migration skipped or failed: {}", e.getMessage());
-    }
+    var flyway = Flyway.configure()
+      .dataSource(this.dataSource)
+      .locations("classpath:db/migration")
+      .defaultSchema("PUBLIC")
+      .schemas("PUBLIC")
+      .createSchemas(true)
+      .baselineOnMigrate(true)
+      .failOnMissingLocations(false)
+      .load();
+    // this might throw but it's fine. If migrations fail, we want to fail starting the backend
+    flyway.migrate();
 
     System.setProperty("org.jooq.no-tips", "true");
     System.setProperty("org.jooq.no-logo", "true");
