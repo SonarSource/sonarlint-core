@@ -214,7 +214,7 @@ class TelemetryMediumTests {
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
-    telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
+    await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(equalToJson("{\n" +
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
@@ -224,7 +224,7 @@ class TelemetryMediumTests {
         "  \"nodejs\" : \"3.1.4\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
-        "}", true, true)));
+        "}", true, true))));
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
   }
 
@@ -242,7 +242,7 @@ class TelemetryMediumTests {
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
-    telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
+    await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(equalToJson("{\n" +
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
@@ -252,7 +252,7 @@ class TelemetryMediumTests {
         "  \"nodejs\" : \"3.1.4\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
-        "}", true, true)));
+        "}", true, true))));
 
     backend.getTelemetryService().disableTelemetry();
 

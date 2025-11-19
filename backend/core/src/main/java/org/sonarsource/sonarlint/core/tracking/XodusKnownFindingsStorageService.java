@@ -17,69 +17,64 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.local.only;
+package org.sonarsource.sonarlint.core.tracking;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.PreDestroy;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
 
 import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.deleteInFolderWithPattern;
-import static org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore.LOCAL_ONLY_ISSUE;
+import static org.sonarsource.sonarlint.core.tracking.XodusKnownFindingsStore.BACKUP_TAR_GZ;
+import static org.sonarsource.sonarlint.core.tracking.XodusKnownFindingsStore.KNOWN_FINDINGS_STORE;
 
-public class LocalOnlyIssueStorageService {
+public class XodusKnownFindingsStorageService {
 
   private final Path projectsStorageBaseDir;
   private final Path workDir;
-  private XodusLocalOnlyIssueStore localOnlyIssueStore;
+  private final AtomicReference<XodusKnownFindingsStore> trackedIssuesStore = new AtomicReference<>();
 
-  public LocalOnlyIssueStorageService(UserPaths userPaths) {
+  public XodusKnownFindingsStorageService(UserPaths userPaths) {
     this.projectsStorageBaseDir = userPaths.getStorageRoot();
     this.workDir = userPaths.getWorkDir();
   }
 
-  @PostConstruct
-  public void purgeOldIssues() {
-    if (exists()) {
-      get().purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
-    }
-  }
-
   public boolean exists() {
-    return Files.exists(projectsStorageBaseDir.resolve(XodusLocalOnlyIssueStore.BACKUP_TAR_GZ));
+    return Files.exists(projectsStorageBaseDir.resolve(XodusKnownFindingsStore.BACKUP_TAR_GZ));
   }
 
-  public XodusLocalOnlyIssueStore get() {
-    if (localOnlyIssueStore == null) {
+  public synchronized XodusKnownFindingsStore get() {
+    var store = trackedIssuesStore.get();
+    if (store == null) {
       try {
-        localOnlyIssueStore = new XodusLocalOnlyIssueStore(projectsStorageBaseDir, workDir);
-        return localOnlyIssueStore;
+        store = new XodusKnownFindingsStore(projectsStorageBaseDir, workDir);
+        trackedIssuesStore.set(store);
+        return store;
       } catch (IOException e) {
-        throw new IllegalStateException("Unable to create local-only issue database", e);
+        throw new IllegalStateException("Unable to create tracked issues database", e);
       }
     }
-    return localOnlyIssueStore;
+    return store;
   }
 
   @PreDestroy
   public void close() {
-    if (localOnlyIssueStore != null) {
-      localOnlyIssueStore.backupAndClose();
+    var store = trackedIssuesStore.get();
+    if (store != null) {
+      store.close();
     }
   }
 
   public void delete() {
-    if (localOnlyIssueStore != null) {
-      localOnlyIssueStore.close();
-      localOnlyIssueStore = null;
+    var store = trackedIssuesStore.getAndSet(null);
+    if (store != null) {
+      store.close();
     }
-    FileUtils.deleteQuietly(projectsStorageBaseDir.resolve(XodusLocalOnlyIssueStore.BACKUP_TAR_GZ).toFile());
-    deleteInFolderWithPattern(workDir, LOCAL_ONLY_ISSUE + "*");
-    deleteInFolderWithPattern(projectsStorageBaseDir, "local_only_issue_backup*");
+    FileUtils.deleteQuietly(projectsStorageBaseDir.resolve(BACKUP_TAR_GZ).toFile());
+    deleteInFolderWithPattern(workDir, KNOWN_FINDINGS_STORE + "*");
+    deleteInFolderWithPattern(projectsStorageBaseDir, "known_findings_backup*");
   }
 }

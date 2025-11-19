@@ -23,12 +23,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EntityMapperTests {
@@ -53,26 +55,45 @@ class EntityMapperTests {
   void should_serialize_issue_flows() {
     var flows = new ArrayList<ServerTaintIssue.Flow>();
     var path = Path.of("/file/path");
-    var uri = path.toUri().toString();
     flows.add(new ServerTaintIssue.Flow(List.of(
       new ServerTaintIssue.ServerIssueLocation(path,
-        new TextRangeWithHash(1, 2,3,4, "hash1"), "Message 1"),
+        new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1"),
       new ServerTaintIssue.ServerIssueLocation(path,
-        new TextRangeWithHash(5, 6,7,8, "hash2"), "Message 2"))));
+        new TextRangeWithHash(5, 6, 7, 8, "hash2"), "Message 2"))));
     flows.add(new ServerTaintIssue.Flow(List.of(
       new ServerTaintIssue.ServerIssueLocation(path,
-        new TextRangeWithHash(1, 2,3,4, "hash1"), "Message 1"))));
+        new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1"))));
     var taint = new ServerTaintIssue(null, null, true, null, null, null, null,
-      null, null,null, null,null, null,null);
-    taint.setFlows(flows);
+      null, null, null, null, null, null, null, flows);
 
     var json = underTest.serializeFlows(taint.getFlows());
 
-    assertEquals("[{\"locations\":[{\"filePath\":\"" + uri + "\"," +
+    assertEquals("[{\"locations\":[{\"filePath\":\"" + path + "\"," +
       "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}," +
-      "{\"filePath\":\"" + uri + "\",\"textRange\":{\"startLine\":5,\"startLineOffset\":6,\"endLine\":7,\"endLineOffset\":8,\"hash\":\"hash2\"}," +
-      "\"message\":\"Message 2\"}]},{\"locations\":[{\"filePath\":\"" + uri + "\"," +
+      "{\"filePath\":\"" + path + "\",\"textRange\":{\"startLine\":5,\"startLineOffset\":6,\"endLine\":7,\"endLineOffset\":8,\"hash\":\"hash2\"}," +
+      "\"message\":\"Message 2\"}]},{\"locations\":[{\"filePath\":\"" + path + "\"," +
       "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}]}]", json.data());
+  }
+
+  @Test
+  void should_deserialize_taint_flows() {
+    var path = Path.of("/file/path");
+
+    var flows = underTest.deserializeTaintFlows(JSON.valueOf("[{\"locations\":[{\"filePath\":\"" + path + "\"," +
+      "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}," +
+      "{\"filePath\":\"" + path + "\",\"textRange\":{\"startLine\":5,\"startLineOffset\":6,\"endLine\":7,\"endLineOffset\":8,\"hash\":\"hash2\"}," +
+      "\"message\":\"Message 2\"}]},{\"locations\":[{\"filePath\":\"" + path + "\"," +
+      "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}]}]"));
+
+    assertThat(flows).isEqualTo(List.of(
+      new ServerTaintIssue.Flow(List.of(
+        new ServerTaintIssue.ServerIssueLocation(path,
+          new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1"),
+        new ServerTaintIssue.ServerIssueLocation(path,
+          new TextRangeWithHash(5, 6, 7, 8, "hash2"), "Message 2"))),
+      new ServerTaintIssue.Flow(List.of(
+        new ServerTaintIssue.ServerIssueLocation(path,
+          new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1")))));
   }
 
 }
