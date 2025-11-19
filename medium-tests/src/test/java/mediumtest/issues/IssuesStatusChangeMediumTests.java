@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
@@ -653,16 +652,10 @@ class IssuesStatusChangeMediumTests {
   }
 
   private static List<LocalOnlyIssue> loadIssuesForFile(SonarLintTestRpcServer backend, Path path) {
-    if (backend.getDogfoodingService().isDogfoodingEnvironment().join().isDogfoodingEnvironment()) {
-      return new LocalOnlyIssuesRepository(backend.getSonarLintDatabase()).loadForFile(CONFIGURATION_SCOPE_ID, path);
-    }
-    return backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, path);
+    return backend.getLocalOnlyIssuesRepository().loadForFile(CONFIGURATION_SCOPE_ID, path);
   }
 
   private static List<LocalOnlyIssue> loadIssues(SonarLintTestRpcServer backend) {
-    if (backend.getDogfoodingService().isDogfoodingEnvironment().join().isDogfoodingEnvironment()) {
-      return new LocalOnlyIssuesRepository(backend.getSonarLintDatabase()).loadAll(CONFIGURATION_SCOPE_ID);
-    }
-    return backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
+    return backend.getLocalOnlyIssuesRepository().loadAll(CONFIGURATION_SCOPE_ID);
   }
 }

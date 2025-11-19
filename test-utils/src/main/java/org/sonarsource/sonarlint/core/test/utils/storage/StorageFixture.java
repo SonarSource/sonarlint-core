@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -38,30 +36,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 public class StorageFixture {
   public static StorageBuilder newStorage(String connectionId) {
     return new StorageBuilder(connectionId);
-  }
-
-  public static class Storage {
-    private final Path path;
-    private final List<Path> pluginPaths;
-    private final List<ProjectStorageFixture.ProjectStorage> projectStorages;
-
-    private Storage(Path path, List<Path> pluginPaths, List<ProjectStorageFixture.ProjectStorage> projectStorages) {
-      this.path = path;
-      this.pluginPaths = pluginPaths;
-      this.projectStorages = projectStorages;
-    }
-
-    public Path getPath() {
-      return path;
-    }
-
-    public List<Path> getPluginPaths() {
-      return pluginPaths;
-    }
-
-    public List<ProjectStorageFixture.ProjectStorage> getProjectStorages() {
-      return projectStorages;
-    }
   }
 
   public static class StorageBuilder {
@@ -110,19 +84,19 @@ public class StorageFixture {
     }
 
     public StorageBuilder withProject(String projectKey, Consumer<ProjectStorageFixture.ProjectStorageBuilder> consumer) {
-      var builder = new ProjectStorageFixture.ProjectStorageBuilder(projectKey);
+      var builder = new ProjectStorageFixture.ProjectStorageBuilder(connectionId, projectKey);
       consumer.accept(builder);
       projectBuilders.add(builder);
       return this;
     }
 
     public StorageBuilder withProject(String projectKey) {
-      projectBuilders.add(new ProjectStorageFixture.ProjectStorageBuilder(projectKey));
-      return this;
+      return withProject(projectKey, builder -> {
+      });
     }
 
     public StorageBuilder withAiCodeFixSettings(Consumer<AiCodeFixFixtures.Builder> consumer) {
-      var builder = new AiCodeFixFixtures.Builder();
+      var builder = new AiCodeFixFixtures.Builder(this.connectionId);
       consumer.accept(builder);
       aiCodeFixBuilder = builder;
       return this;
@@ -132,7 +106,7 @@ public class StorageFixture {
       return connectionId;
     }
 
-    public Storage create(Path rootPath) {
+    public void populate(Path rootPath, TestDatabase database) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
       var pluginsFolderPath = connectionStorage.resolve("plugins");
@@ -145,15 +119,13 @@ public class StorageFixture {
 
       createServerInfo(connectionStorage);
 
-      var pluginPaths = createPlugins(pluginsFolderPath);
+      createPlugins(pluginsFolderPath);
       createPluginReferences(pluginsFolderPath);
 
-      List<ProjectStorageFixture.ProjectStorage> projectStorages = new ArrayList<>();
-      projectBuilders.forEach(project -> projectStorages.add(project.create(projectsFolderPath)));
+      projectBuilders.forEach(project -> project.populate(projectsFolderPath, database));
       if (aiCodeFixBuilder != null) {
-        aiCodeFixBuilder.create(connectionStorage);
+        aiCodeFixBuilder.populate(database);
       }
-      return new Storage(storagePath, pluginPaths, projectStorages);
     }
 
     private void createServerInfo(Path connectionStorage) {
@@ -161,16 +133,15 @@ public class StorageFixture {
         var version = serverVersion == null ? "0.0.0" : serverVersion;
         var settings = globalSettings == null ? Map.<String, String>of() : globalSettings;
         ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder()
-            .setVersion(version)
-            .addAllSupportedFeatures(supportedFeatures.stream().map(Feature::getKey).toList())
-            .putAllGlobalSettings(settings)
-            .build(),
+          .setVersion(version)
+          .addAllSupportedFeatures(supportedFeatures.stream().map(Feature::getKey).toList())
+          .putAllGlobalSettings(settings)
+          .build(),
           connectionStorage.resolve("server_info.pb"));
       }
     }
 
-    private List<Path> createPlugins(Path pluginsFolderPath) {
-      List<Path> pluginPaths = new ArrayList<>();
+    private void createPlugins(Path pluginsFolderPath) {
       plugins.forEach(plugin -> {
         var pluginPath = pluginsFolderPath.resolve(plugin.jarName);
         try {
@@ -178,9 +149,7 @@ public class StorageFixture {
         } catch (IOException e) {
           throw new IllegalStateException("Cannot copy plugin " + plugin.jarName, e);
         }
-        pluginPaths.add(pluginPath);
       });
-      return pluginPaths;
     }
 
     private void createPluginReferences(Path pluginsFolderPath) {
@@ -193,26 +162,11 @@ public class StorageFixture {
       ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
     }
 
-    public void populateDatabase(SonarLintDatabase database) {
-      var aiCodeFixRepository = new AiCodeFixRepository(database);
-      if (aiCodeFixBuilder != null) {
-        aiCodeFixRepository.upsert(aiCodeFixBuilder.buildAiCodeFix(connectionId));
-      }
-      projectBuilders.forEach(project -> project.populateDatabase(database, connectionId));
+    private record Plugin(Path path, String jarName, String hash, String key) {
     }
+  }
 
-    private static class Plugin {
-      private final Path path;
-      private final String jarName;
-      private final String hash;
-      private final String key;
-
-      private Plugin(Path path, String jarName, String hash, String key) {
-        this.path = path;
-        this.jarName = jarName;
-        this.hash = hash;
-        this.key = key;
-      }
-    }
+  private StorageFixture() {
+    // utility class
   }
 }

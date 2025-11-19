@@ -27,7 +27,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -56,9 +55,8 @@ class PluginsSynchronizerTests {
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": false}" +
       "]}");
 
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.3"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -77,10 +75,9 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.4"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -101,10 +98,9 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
     mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text", "go"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -119,10 +115,9 @@ class PluginsSynchronizerTests {
       "{\"key\": \"goenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-enterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text", "go"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -142,10 +137,9 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
     mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text", "go"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -160,10 +154,9 @@ class PluginsSynchronizerTests {
       "{\"key\": \"go\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of("text", "go"));
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -173,13 +166,13 @@ class PluginsSynchronizerTests {
   @Test
   void should_synchronize_csharp_enterprise_if_language_enabled(@TempDir Path dest) {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
-      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}"
+      +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-go");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -189,13 +182,13 @@ class PluginsSynchronizerTests {
   @Test
   void should_not_synchronize_csharp_enterprise_if_language_disabled(@TempDir Path dest) {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
-      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}"
+      +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-csharp");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId", dogfoodEnvDetectionService, databaseService), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -208,10 +201,8 @@ class PluginsSynchronizerTests {
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-vb");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.VBNET), new ConnectionStorage(dest, dest, "connectionId",
-      dogfoodEnvDetectionService, databaseService), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.VBNET), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
@@ -224,11 +215,9 @@ class PluginsSynchronizerTests {
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-go");
-    var dogfoodEnvDetectionService = mock(DogfoodEnvironmentDetectionService.class);
     var databaseService = mock(SonarLintDatabase.class);
 
-    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId",
-      dogfoodEnvDetectionService, databaseService), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
