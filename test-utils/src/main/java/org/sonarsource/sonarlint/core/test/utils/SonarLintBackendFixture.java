@@ -109,6 +109,7 @@ import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.storage.ConfigurationScopeStorageFixture;
 import org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture;
+import org.sonarsource.sonarlint.core.test.utils.storage.TestDatabase;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
@@ -509,12 +510,14 @@ public class SonarLintBackendFixture {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = customStorageRoot == null ? tempDirectory("storage") : customStorageRoot.getParent();
-      serverStorages.forEach(storage -> storage.create(storageParentPath));
       var storageRoot = storageParentPath.resolve("storage");
-      if (!configurationScopeStorages.isEmpty()) {
-        configurationScopeStorages.forEach(storage -> storage.create(storageRoot));
-      }
       try {
+        var database = new TestDatabase(storageRoot);
+        serverStorages.forEach(storage -> storage.populate(storageParentPath, database));
+        if (!configurationScopeStorages.isEmpty()) {
+          configurationScopeStorages.forEach(storage -> storage.populate(storageRoot, database));
+        }
+        database.shutdown();
         var sonarLintBackend = createTestBackend(client);
         beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
@@ -538,10 +541,6 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
           .get();
-        serverStorages.forEach(storage ->
-          storage.populateDatabase(sonarLintBackend.getSonarLintDatabase())
-        );
-        configurationScopeStorages.forEach(storage -> storage.populateDatabase(sonarLintBackend.getSonarLintDatabase()));
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         if (afterStartCallback != null) {
           afterStartCallback.accept(sonarLintBackend);
@@ -885,7 +884,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public Set<String> getFileExclusions(String configurationScopeId) throws ConfigScopeNotFoundException {
+    public Set<String> getFileExclusions(String configurationScopeId) {
       return fileExclusionsByConfigScope.getOrDefault(configurationScopeId, emptySet());
     }
 

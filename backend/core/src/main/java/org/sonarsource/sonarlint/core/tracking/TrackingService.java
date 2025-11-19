@@ -44,14 +44,12 @@ import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
-import org.sonarsource.sonarlint.core.commons.storage.repository.KnownFindingsRepository;
-import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
-import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -61,7 +59,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatu
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.storage.SonarLintDatabaseService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.matching.IssueMatcher;
@@ -85,22 +82,20 @@ public class TrackingService {
   private final PathTranslationService pathTranslationService;
   private final FindingReportingService reportingService;
   private final Map<UUID, MatchingSession> matchingSessionByAnalysisId = new HashMap<>();
-  private final KnownFindingsStorageService knownFindingsStorageService;
+  private final XodusKnownFindingsStorageService knownFindingsStorageService;
   private final StorageService storageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
-  private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final FindingsSynchronizationService findingsSynchronizationService;
   private final NewCodeService newCodeService;
   private final ApplicationEventPublisher eventPublisher;
+  private final KnownFindingsRepository knownFindingsRepository;
+  private final LocalOnlyIssuesRepository localOnlyIssuesRepository;
   private final GitService gitService;
-  private final DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService;
-  private final SonarLintDatabaseService databaseService;
 
   public TrackingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-    PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, StorageService storageService,
-    LocalOnlyIssueRepository localOnlyIssueRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, FindingsSynchronizationService findingsSynchronizationService,
-    NewCodeService newCodeService, ApplicationEventPublisher eventPublisher, DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService,
-    SonarLintDatabaseService databaseService) {
+    PathTranslationService pathTranslationService, FindingReportingService reportingService, XodusKnownFindingsStorageService knownFindingsStorageService,
+    StorageService storageService, LocalOnlyIssueRepository localOnlyIssueRepository, FindingsSynchronizationService findingsSynchronizationService, NewCodeService newCodeService,
+    ApplicationEventPublisher eventPublisher, KnownFindingsRepository knownFindingsRepository, LocalOnlyIssuesRepository localOnlyIssuesRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
@@ -109,34 +104,30 @@ public class TrackingService {
     this.knownFindingsStorageService = knownFindingsStorageService;
     this.storageService = storageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
-    this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.findingsSynchronizationService = findingsSynchronizationService;
     this.newCodeService = newCodeService;
     this.eventPublisher = eventPublisher;
+    this.knownFindingsRepository = knownFindingsRepository;
+    this.localOnlyIssuesRepository = localOnlyIssuesRepository;
     this.gitService = GitService.create();
-    this.dogfoodEnvironmentDetectionService = dogfoodEnvironmentDetectionService;
-    this.databaseService = databaseService;
   }
 
   @PostConstruct
   public void migrateData() {
-    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
-      if (knownFindingsStorageService.exists()) {
-        try {
-          LOG.info("Migrating the Xodus known findings to H2");
-          var migrationStart = System.currentTimeMillis();
-          var repository = new KnownFindingsRepository(databaseService.getDatabase());
-          var xodusKnownFindingsStore = knownFindingsStorageService.get();
-          var findingsPerConfigScope = xodusKnownFindingsStore.loadAll();
-          repository.storeFindings(findingsPerConfigScope);
-          LOG.info("Migrated Xodus known findings to H2, took {}ms", System.currentTimeMillis() - migrationStart);
-        } catch (Exception e) {
-          LOG.error("Unable to migrate known findings, will use fresh DB", e);
-        }
+    if (knownFindingsStorageService.exists()) {
+      try {
+        LOG.info("Migrating the Xodus known findings to H2");
+        var migrationStart = System.currentTimeMillis();
+        var xodusKnownFindingsStore = knownFindingsStorageService.get();
+        var findingsPerConfigScope = xodusKnownFindingsStore.loadAll();
+        knownFindingsRepository.storeFindings(findingsPerConfigScope);
+        LOG.info("Migrated Xodus known findings to H2, took {}ms", System.currentTimeMillis() - migrationStart);
+      } catch (Exception e) {
+        LOG.error("Unable to migrate known findings, will use fresh DB", e);
       }
-      // always call to remove lingering temporary files
-      knownFindingsStorageService.delete();
     }
+    // always call to remove lingering temporary files
+    knownFindingsStorageService.delete();
   }
 
   @EventListener
@@ -200,7 +191,7 @@ public class TrackingService {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
-        var localOnlyIssues = loadLocalOnlyIssuesForFile(configurationScopeId, serverRelativePath);
+        var localOnlyIssues = localOnlyIssuesRepository.loadForFile(configurationScopeId, serverRelativePath);
         var matches = matchWithServerIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue());
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -219,31 +210,16 @@ public class TrackingService {
   }
 
   private void storeTrackedIssues(String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
-    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
-      var knownFindingsRepository = new KnownFindingsRepository(databaseService.getDatabase());
-      knownFindingsRepository.storeKnownIssues(configurationScopeId, clientRelativePath,
-        newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-          i.getIntroductionDate())).toList());
-    } else {
-      knownFindingsStorageService.get().storeKnownIssues(configurationScopeId, clientRelativePath,
-        newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-          i.getIntroductionDate())).toList());
-    }
+    knownFindingsRepository.storeKnownIssues(configurationScopeId, clientRelativePath,
+      newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).toList());
   }
 
   private void storeTrackedSecurityHotspots(String configurationScopeId, Path clientRelativePath,
     Collection<TrackedIssue> newKnownSecurityHotspots) {
-    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
-      var knownFindingsRepository = new KnownFindingsRepository(databaseService.getDatabase());
-      knownFindingsRepository.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
-        newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-          i.getIntroductionDate())).toList());
-    } else {
-      knownFindingsStorageService.get().storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
-        newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-          i.getIntroductionDate())).toList());
-    }
-
+    knownFindingsRepository.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
+      newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).toList());
   }
 
   private List<TrackedIssue> matchWithServerIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
@@ -322,23 +298,10 @@ public class TrackingService {
   }
 
   private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths, Set<URI> fileUris, UnaryOperator<String> fileContentProvider) {
-    var dogfoodEnvironment = dogfoodEnvironmentDetectionService.isDogfoodEnvironment();
-    Map<Path, List<KnownFinding>> issuesByRelativePath;
-    Map<Path, List<KnownFinding>> hotspotsByRelativePath;
-    if (dogfoodEnvironment) {
-      var knownFindingsRepository = new KnownFindingsRepository(databaseService.getDatabase());
-      issuesByRelativePath = fileRelativePaths.stream()
-        .collect(toMap(Function.identity(), relativePath -> knownFindingsRepository.loadIssuesForFile(configurationScopeId, relativePath)));
-      hotspotsByRelativePath = fileRelativePaths.stream()
-        .collect(toMap(Function.identity(), relativePath -> knownFindingsRepository.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
-    } else {
-      var knownFindingsStore = knownFindingsStorageService.get();
-      issuesByRelativePath = fileRelativePaths.stream()
-        .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadIssuesForFile(configurationScopeId, relativePath)));
-      hotspotsByRelativePath = fileRelativePaths.stream()
-        .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
-    }
-
+    var issuesByRelativePath = fileRelativePaths.stream()
+      .collect(toMap(Function.identity(), relativePath -> knownFindingsRepository.loadIssuesForFile(configurationScopeId, relativePath)));
+    var hotspotsByRelativePath = fileRelativePaths.stream()
+      .collect(toMap(Function.identity(), relativePath -> knownFindingsRepository.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
     var introductionDateProvider = getIntroductionDateProvider(configurationScopeId, fileRelativePaths, fileUris, fileContentProvider);
     var previousFindings = new KnownFindings(issuesByRelativePath, hotspotsByRelativePath);
     return new MatchingSession(previousFindings, introductionDateProvider);
@@ -380,15 +343,5 @@ public class TrackingService {
 
   private record MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport,
     Map<Path, List<TrackedIssue>> hotspotsToReport) {
-  }
-
-  // Helper method to abstract between Xodus and H2 storage
-  private List<LocalOnlyIssue> loadLocalOnlyIssuesForFile(String configurationScopeId, Path filePath) {
-    if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
-      var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
-      return repository.loadForFile(configurationScopeId, filePath);
-    } else {
-      return localOnlyIssueStorageService.get().loadForFile(configurationScopeId, filePath);
-    }
   }
 }

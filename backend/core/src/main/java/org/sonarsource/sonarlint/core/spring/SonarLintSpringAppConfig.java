@@ -27,6 +27,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.core5.util.Timeout;
+import org.jooq.DSLContext;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
@@ -55,12 +56,14 @@ import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetec
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
-import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
@@ -85,7 +88,7 @@ import org.sonarsource.sonarlint.core.http.ssl.CertificateStore;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
@@ -118,7 +121,7 @@ import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
-import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
+import org.sonarsource.sonarlint.core.tracking.XodusKnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
@@ -178,7 +181,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   WebSocketService.class,
   ServerEventsService.class,
   VersionSoonUnsupportedHelper.class,
-  LocalOnlyIssueStorageService.class,
+  XodusLocalOnlyIssueStorageService.class,
   StorageService.class,
   SeverityModeService.class,
   NewCodeService.class,
@@ -200,7 +203,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   MCPServerConfigurationProvider.class,
   AnalysisSchedulerCache.class,
   PromotionService.class,
-  KnownFindingsStorageService.class,
+  XodusKnownFindingsStorageService.class,
   TrackingService.class,
   FindingsSynchronizationService.class,
   FindingReportingService.class,
@@ -222,7 +225,9 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   LogService.class,
   ActiveRulesService.class,
   AiCodeFixRepository.class,
-  SonarLintDatabaseService.class
+  SonarLintDatabaseService.class,
+  LocalOnlyIssuesRepository.class,
+  KnownFindingsRepository.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -271,6 +276,11 @@ public class SonarLintSpringAppConfig {
   @Bean
   SonarLintDatabase provideDatabase(UserPaths userPaths) {
     return new SonarLintDatabase(userPaths.getStorageRoot());
+  }
+
+  @Bean
+  DSLContext provideDSLContext(SonarLintDatabase database) {
+    return database.dsl();
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {

@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.storage;
 
-import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
@@ -33,21 +31,16 @@ import org.springframework.context.event.EventListener;
 
 public class StorageService {
   private final Path globalStorageRoot;
-  private final Path workDir;
   private final Map<String, ConnectionStorage> connectionStorageById = new ConcurrentHashMap<>();
-  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
   private final SonarLintDatabaseService databaseService;
 
-  public StorageService(UserPaths userPaths, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService, SonarLintDatabaseService databaseService) {
+  public StorageService(UserPaths userPaths, SonarLintDatabaseService databaseService) {
     this.globalStorageRoot = userPaths.getStorageRoot();
-    this.workDir = userPaths.getWorkDir();
-    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
     this.databaseService = databaseService;
   }
 
   public ConnectionStorage connection(String connectionId) {
-    return connectionStorageById.computeIfAbsent(connectionId, k ->
-      new ConnectionStorage(globalStorageRoot, workDir, connectionId, dogfoodEnvDetectionService, databaseService.getDatabase()));
+    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, connectionId, databaseService.getDatabase()));
   }
 
   public SonarProjectStorage binding(Binding binding) {
@@ -58,13 +51,7 @@ public class StorageService {
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     var removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
     var connectionStorage = connection(removedConnectionId);
-    connectionStorage.close();
     connectionStorage.delete();
-  }
-
-  @PreDestroy
-  public void close() {
-    connectionStorageById.values().forEach(ConnectionStorage::close);
   }
 
 }

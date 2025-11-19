@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerDependencyRisksRecord;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerFindingsRecord;
@@ -69,10 +68,50 @@ public class EntityMapper {
 
   public JSON serializeFlows(List<ServerTaintIssue.Flow> flows) {
     try {
-      return JSON.valueOf(objectMapper.writeValueAsString(flows));
+      var flowsToSerialize = flows.stream().map(f -> new TaintFlow(f.locations().stream().map(l -> {
+        var filePath = l.filePath();
+        var textRangeWithHash = l.textRange();
+        return new TaintLocation(filePath == null ? null : filePath.toString(),
+          textRangeWithHash == null ? null
+            : new TextRangeWithHash(textRangeWithHash.getStartLine(), textRangeWithHash.getStartLineOffset(), textRangeWithHash.getEndLine(), textRangeWithHash.getEndLineOffset(),
+              textRangeWithHash.getHash()),
+          l.message());
+      }).toList())).toList();
+      return JSON.valueOf(objectMapper.writeValueAsString(flowsToSerialize));
     } catch (Exception e) {
       return JSON.valueOf("[]");
     }
+  }
+
+  List<ServerTaintIssue.Flow> deserializeTaintFlows(JSON flows) {
+    try {
+      return objectMapper.readValue(flows.data(), new TypeReference<List<TaintFlow>>() {
+      }).stream()
+        .map(flow -> new ServerTaintIssue.Flow(flow.locations.stream()
+          .map(l -> {
+            var textRange = l.textRange;
+            var filePath = l.filePath;
+            return new ServerTaintIssue.ServerIssueLocation(filePath == null ? null : Path.of(filePath),
+              textRange == null ? null
+                : new org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash(textRange.startLine, textRange.startLineOffset, textRange.endLine, textRange.endLineOffset,
+                  textRange.hash),
+              l.message);
+          }).toList()))
+        .toList();
+    } catch (Exception e) {
+      return List.of();
+    }
+  }
+
+  // only needed to allow deserializing with Jackson
+  record TaintFlow(List<TaintLocation> locations) {
+
+  }
+
+  record TaintLocation(@Nullable String filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
+  }
+
+  record TextRangeWithHash(int startLine, int startLineOffset, int endLine, int endLineOffset, String hash) {
   }
 
   public JSON serializeTransitions(@Nullable List<ServerDependencyRisk.Transition> transitions) {
@@ -280,7 +319,8 @@ public class EntityMapper {
         rec.getLine(), impacts);
     }
     if (rec.getStartLine() != null) {
-      var textRangeWithHash = new TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset(), rec.getTextRangeHash());
+      var textRangeWithHash = new org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(),
+        rec.getEndLineOffset(), rec.getTextRangeHash());
       return new RangeLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, textRangeWithHash, impacts);
     }
     return new FileLevelServerIssue(id, serverKey, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
@@ -307,28 +347,30 @@ public class EntityMapper {
     var resolutionStatus = rec.getIssueResolutionStatus() != null ? IssueStatus.valueOf(rec.getIssueResolutionStatus()) : null;
     var ruleKey = rec.getRuleKey();
     var message = rec.getMessage();
-    var filePath = Path.of((rec.getFilePath()));
+    var filePath = Path.of(rec.getFilePath());
     var creationDate = toInstant(rec.getCreationDate());
     var severity = rec.getUserSeverity() != null ? IssueSeverity.valueOf(rec.getUserSeverity()) : IssueSeverity.MAJOR;
     var type = rec.getRuleType() != null ? RuleType.valueOf(rec.getRuleType()) : RuleType.CODE_SMELL;
-    TextRangeWithHash textRangeWithHash = null;
+    org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash textRangeWithHash = null;
     if (rec.getStartLine() != null) {
-      textRangeWithHash = new TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset(), rec.getTextRangeHash());
+      textRangeWithHash = new org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash(rec.getStartLine(), rec.getStartLineOffset(), rec.getEndLine(), rec.getEndLineOffset(),
+        rec.getTextRangeHash());
     }
     var ruleDescCtx = rec.getRuleDescriptionContextKey();
     var cleanCodeAttr = rec.getCleanCodeAttribute() != null ? CleanCodeAttribute.valueOf(rec.getCleanCodeAttribute()) : null;
     var impactsJson = rec.getImpacts();
     var impacts = deserializeImpacts(impactsJson);
+    var flows = deserializeTaintFlows(rec.getFlows());
     return new ServerTaintIssue(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate,
-      severity, type, textRangeWithHash, ruleDescCtx, cleanCodeAttr, impacts);
+      severity, type, textRangeWithHash, ruleDescCtx, cleanCodeAttr, impacts, flows);
   }
 
   private static Instant toInstant(LocalDateTime ldt) {
-    return ldt.atZone(ZoneId.systemDefault()).toInstant();
+    return ldt.toInstant(ZoneOffset.UTC);
   }
 
-  private static LocalDateTime toLocalDateTime(Instant instant) {
-    return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+  static LocalDateTime toLocalDateTime(Instant instant) {
+    return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
   }
 
 }

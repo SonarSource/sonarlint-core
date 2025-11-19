@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.storage.repository;
+package org.sonarsource.sonarlint.core.serverconnection.aicodefix;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.sonarsource.sonarlint.core.commons.KnownFinding;
+import java.util.Set;
 
-public record Findings(List<KnownFinding> issues, List<KnownFinding> hotspots) {
-  public Findings mergeWith(Findings other) {
-    var mergedIssues = new ArrayList<>(issues);
-    mergedIssues.addAll(other.issues);
-    var mergedHotspots = new ArrayList<KnownFinding>(hotspots);
-    mergedHotspots.addAll(other.hotspots);
-    return new Findings(mergedIssues, mergedHotspots);
+public record AiCodeFixSettings(Set<String> supportedRules, boolean isOrganizationEligible, AiCodeFixFeatureEnablement enablement, Set<String> enabledProjectKeys) {
+  public boolean isFeatureEnabled(String projectKey) {
+    return isOrganizationEligible && (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS)
+      || (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS) && enabledProjectKeys.contains(projectKey)));
   }
 }
