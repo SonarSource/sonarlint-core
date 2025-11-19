@@ -32,8 +32,7 @@ import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.local.only.IssueStatusBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
@@ -48,14 +47,14 @@ public class ConfigurationScopeStorageFixture {
   public static class ConfigurationScopeStorageBuilder {
     private final List<LocalOnlyIssue> localOnlyIssues = new ArrayList<>();
     private final String configScopeId;
-    private boolean noH2;
+    private boolean usingXodus;
 
     public ConfigurationScopeStorageBuilder(String configScopeId) {
       this.configScopeId = configScopeId;
     }
 
-    public ConfigurationScopeStorageBuilder noH2() {
-      this.noH2 = true;
+    public ConfigurationScopeStorageBuilder usingXodus() {
+      this.usingXodus = true;
       return this;
     }
 
@@ -64,7 +63,11 @@ public class ConfigurationScopeStorageFixture {
       return this;
     }
 
-    public void create(Path storageRoot) {
+    public void populate(Path storageRoot, TestDatabase database) {
+      populateDatabase(database);
+      if (!usingXodus) {
+        return;
+      }
       var xodusTempDbPath = storageRoot.resolve("xodus_temp_db");
       var xodusBackupPath = storageRoot.resolve("local_only_issue_backup.tar.gz");
       try {
@@ -81,9 +84,9 @@ public class ConfigurationScopeStorageFixture {
         var scopeEntity = txn.newEntity("Scope");
         localOnlyIssues.stream()
           .collect(Collectors.groupingBy(LocalOnlyIssue::getServerRelativePath))
-          .forEach((filePath, localOnlyIssues) -> {
+          .forEach((filePath, issues) -> {
             var fileEntity = txn.newEntity("File");
-            localOnlyIssues.forEach(issue -> {
+            issues.forEach(issue -> {
               var issueEntity = txn.newEntity("Issue");
               issueEntity.setProperty("uuid", issue.getId());
               issueEntity.setProperty("ruleKey", issue.getRuleKey());
@@ -124,11 +127,15 @@ public class ConfigurationScopeStorageFixture {
       }
     }
 
-    public void populateDatabase(SonarLintDatabase database) {
-      if (!noH2) {
-        var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(database);
+    private void populateDatabase(TestDatabase database) {
+      if (!usingXodus) {
+        var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(database.dsl());
         localOnlyIssues.forEach(issue -> localOnlyIssuesRepository.storeLocalOnlyIssue(configScopeId, issue));
       }
     }
+  }
+
+  private ConfigurationScopeStorageFixture() {
+    // utility class
   }
 }

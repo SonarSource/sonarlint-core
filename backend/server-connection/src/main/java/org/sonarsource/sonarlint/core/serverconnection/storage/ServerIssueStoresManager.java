@@ -19,49 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 public class ServerIssueStoresManager {
 
-  Map<String, ProjectServerIssueStore> serverIssueStoreByKey = new ConcurrentHashMap<>();
-  private final Path projectsStorageBaseDir;
-  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
+  private final Map<String, ProjectServerIssueStore> serverIssueStoreByKey = new ConcurrentHashMap<>();
   private final SonarLintDatabase database;
-  private final Path workDir;
   private final String connectionId;
 
-  public ServerIssueStoresManager(Path projectsStorageBaseDir, Path workDir, String connectionId,
-    DogfoodEnvironmentDetectionService dogfoodEnvDetectionService, SonarLintDatabase database) {
-    this.projectsStorageBaseDir = projectsStorageBaseDir;
-    this.workDir = workDir;
-    this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
+  public ServerIssueStoresManager(String connectionId, SonarLintDatabase database) {
     this.database = database;
     this.connectionId = connectionId;
   }
 
   public ProjectServerIssueStore get(String projectKey) {
-    var xodusBackupPath = projectsStorageBaseDir.resolve(ProjectStoragePaths.encodeForFs(projectKey)).resolve("issues");
-    return serverIssueStoreByKey.computeIfAbsent(projectKey,
-      p -> {
-        try {
-          if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
-            return new ServerFindingRepository(database, connectionId, projectKey);
-          } else {
-            return new XodusServerIssueStore(xodusBackupPath, workDir);
-          }
-        } catch (IOException e) {
-          throw new IllegalStateException("Unable to create server issue database", e);
-        }
-      });
+    return serverIssueStoreByKey.computeIfAbsent(projectKey, p -> new ServerFindingRepository(database.dsl(), connectionId, projectKey));
   }
 
-  public void close() {
-    serverIssueStoreByKey.values().forEach(ProjectServerIssueStore::close);
-    serverIssueStoreByKey.clear();
+  public void delete() {
+    // removing connections via any repository is fine, it's the same tables behind
+    serverIssueStoreByKey.values().stream().findFirst()
+      .ifPresent(repository -> repository.removeFindingsForConnection(connectionId));
   }
 }

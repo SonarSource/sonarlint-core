@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,11 +47,13 @@ import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -65,15 +70,11 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ServerFindingRepo
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore.toProtoFlow;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore.toProtoImpact;
 
 public class ProjectStorageFixture {
 
-  public record ProjectStorage(Path path) {
-  }
-
   public static class ProjectStorageBuilder {
+    private final String connectionId;
     private final String projectKey;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
     private final List<BranchBuilder> branches = new ArrayList<>();
@@ -82,7 +83,8 @@ public class ProjectStorageFixture {
     private Sonarlint.NewCodeDefinition newCodeDefinition;
     private boolean shouldThrowOnReadLastEvenPollingTime = false;
 
-    public ProjectStorageBuilder(String projectKey) {
+    public ProjectStorageBuilder(String connectionId, String projectKey) {
+      this.connectionId = connectionId;
       this.projectKey = projectKey;
     }
 
@@ -140,7 +142,7 @@ public class ProjectStorageFixture {
       return this;
     }
 
-    ProjectStorage create(Path projectsRootPath) {
+    void populate(Path projectsRootPath, TestDatabase database) {
       var projectFolder = projectsRootPath.resolve(ProjectStoragePaths.encodeForFs(projectKey));
       try {
         FileUtils.forceMkdir(projectFolder.toFile());
@@ -154,7 +156,7 @@ public class ProjectStorageFixture {
       createFindings(projectFolder);
       createNewCodeDefinition(projectFolder);
 
-      return new ProjectStorage(projectFolder);
+      populateDatabase(database);
     }
 
     private void createNewCodeDefinition(Path projectFolder) {
@@ -295,7 +297,7 @@ public class ProjectStorageFixture {
         issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
         issueEntity.setBlobString("rangeHash", textRange.getHash());
       }
-      issueEntity.setBlob("impacts", toProtoImpact(issue.impacts()));
+      issueEntity.setBlob("impacts", toProtoImpacts(issue.impacts()));
 
       issueEntity.setLink("file", fileEntity);
       fileEntity.addLink("issues", issueEntity);
@@ -322,19 +324,63 @@ public class ProjectStorageFixture {
         taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
         taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
       }
-      taintIssueEntity.setBlob("flows", toProtoFlow(taint.flows()));
+      taintIssueEntity.setBlob("flows", toProtoFlows(taint.flows()));
       if (taint.ruleDescriptionContextKey() != null) {
         taintIssueEntity.setProperty("ruleDescriptionContextKey", taint.ruleDescriptionContextKey());
       }
       if (taint.cleanCodeAttribute() != null) {
         taintIssueEntity.setProperty("cleanCodeAttribute", taint.cleanCodeAttribute().name());
       }
-      taintIssueEntity.setBlob("impacts", toProtoImpact(taint.impacts()));
+      taintIssueEntity.setBlob("impacts", toProtoImpacts(taint.impacts()));
 
       taintIssueEntity.setLink("file", fileEntity);
       fileEntity.addLink("taintIssues", taintIssueEntity);
       branchEntity.addLink("taintIssues", taintIssueEntity);
       taintIssueEntity.setLink("branch", branchEntity);
+    }
+
+    public static InputStream toProtoFlows(List<ServerTaintIssue.Flow> flows) {
+      var buffer = new ByteArrayOutputStream();
+      ProtobufUtil.writeMessages(buffer, flows.stream().map(ProjectStorageBuilder::toProtoFlow).toList());
+      return new ByteArrayInputStream(buffer.toByteArray());
+    }
+
+    public static InputStream toProtoImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+      var buffer = new ByteArrayOutputStream();
+      ProtobufUtil.writeMessages(buffer, impacts.entrySet().stream().map(ProjectStorageBuilder::toProtoImpact).toList());
+      return new ByteArrayInputStream(buffer.toByteArray());
+    }
+
+    private static Sonarlint.Flow toProtoFlow(ServerTaintIssue.Flow javaFlow) {
+      var flowBuilder = Sonarlint.Flow.newBuilder();
+      javaFlow.locations().forEach(l -> flowBuilder.addLocation(toProtoLocation(l)));
+      return flowBuilder.build();
+    }
+
+    private static Sonarlint.Impact toProtoImpact(Map.Entry<SoftwareQuality, ImpactSeverity> impact) {
+      return Sonarlint.Impact.newBuilder()
+        .setSoftwareQuality(impact.getKey().name())
+        .setSeverity(impact.getValue().name())
+        .build();
+    }
+
+    private static Sonarlint.Location toProtoLocation(ServerTaintIssue.ServerIssueLocation l) {
+      var location = Sonarlint.Location.newBuilder();
+      var filePath = l.filePath();
+      if (filePath != null) {
+        location.setFilePath(filePath.toString());
+      }
+      location.setMessage(l.message());
+      var textRange = l.textRange();
+      if (textRange != null) {
+        location.setTextRange(Sonarlint.TextRange.newBuilder()
+          .setStartLine(textRange.getStartLine())
+          .setStartLineOffset(textRange.getStartLineOffset())
+          .setEndLine(textRange.getEndLine())
+          .setEndLineOffset(textRange.getEndLineOffset())
+          .setHash(textRange.getHash()));
+      }
+      return location.build();
     }
 
     private static void linkHotshotEntity(StoreTransaction txn, ServerSecurityHotspotFixture.ServerHotspot hotspot, Entity fileEntity) {
@@ -383,8 +429,8 @@ public class ProjectStorageFixture {
       dependencyRiskEntity.setLink("branch", branchEntity);
     }
 
-    public void populateDatabase(SonarLintDatabase database, String connectionId) {
-      var serverFindingRepository = new ServerFindingRepository(database, connectionId, projectKey);
+    public void populateDatabase(TestDatabase database) {
+      var serverFindingRepository = new ServerFindingRepository(database.dsl(), connectionId, projectKey);
       branches.forEach(branch -> {
 
         serverFindingRepository.replaceAllIssuesOfBranch(branch.name,
@@ -400,7 +446,8 @@ public class ProjectStorageFixture {
             issue.userSeverity(),
             issue.ruleType(),
             issue.textRangeWithHash(),
-            issue.impacts())).toList(), Set.of());
+            issue.impacts())).toList(),
+          Set.of());
 
         serverFindingRepository.replaceAllHotspotsOfBranch(branch.name,
           branch.serverHotspots.stream().map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build).map(hotspot -> new ServerHotspot(
@@ -413,7 +460,8 @@ public class ProjectStorageFixture {
             hotspot.introductionDate(),
             hotspot.status(),
             hotspot.vulnerabilityProbability(),
-            hotspot.assignee())).toList(), Set.of());
+            hotspot.assignee())).toList(),
+          Set.of());
 
         serverFindingRepository.replaceAllTaintsOfBranch(branch.name,
           branch.serverTaintIssues.stream().map(ServerTaintIssueFixtures.ServerTaintIssueBuilder::build).map(i -> new ServerTaintIssue(
@@ -430,7 +478,9 @@ public class ProjectStorageFixture {
             i.textRange(),
             i.ruleDescriptionContextKey(),
             i.cleanCodeAttribute(),
-            i.impacts())).toList(), Set.of());
+            i.impacts(),
+            List.of())).toList(),
+          Set.of());
 
         serverFindingRepository.replaceAllDependencyRisksOfBranch(branch.name,
           branch.serverDependencyRisks.stream().map(ServerDependencyRiskFixtures.ServerDependencyRiskBuilder::build).map(i -> new ServerDependencyRisk(

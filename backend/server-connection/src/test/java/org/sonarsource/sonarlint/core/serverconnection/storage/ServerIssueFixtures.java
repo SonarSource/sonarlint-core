@@ -96,8 +96,8 @@ public class ServerIssueFixtures {
       IssueSeverity.MINOR,
       RuleType.VULNERABILITY,
       new TextRangeWithHash(1, 2, 3, 4, "ab12"), "context",
-      CleanCodeAttribute.TRUSTWORTHY, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH))
-        .setFlows(List.of(aServerTaintIssueFlow()));
+      CleanCodeAttribute.TRUSTWORTHY, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH),
+      List.of(aServerTaintIssueFlow()));
   }
 
   public static ServerDependencyRisk aServerDependencyRisk() {
@@ -113,9 +113,7 @@ public class ServerIssueFixtures {
       "7.5",
       List.of(
         ServerDependencyRisk.Transition.CONFIRM,
-        ServerDependencyRisk.Transition.REOPEN
-      )
-    );
+        ServerDependencyRisk.Transition.REOPEN));
   }
 
   private static ServerTaintIssue.Flow aServerTaintIssueFlow() {

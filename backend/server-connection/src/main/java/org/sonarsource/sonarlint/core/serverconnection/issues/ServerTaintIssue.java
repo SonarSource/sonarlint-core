@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,18 +37,18 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 public class ServerTaintIssue implements ServerFinding {
   private final UUID id;
-  private String key;
+  private final String key;
   private boolean resolved;
   @Nullable
   private final IssueStatus resolutionStatus;
-  private String ruleKey;
-  private String message;
-  private Path filePath;
-  private Instant creationDate;
+  private final String ruleKey;
+  private final String message;
+  private final Path filePath;
+  private final Instant creationDate;
   private IssueSeverity severity;
   private RuleType type;
-  private List<Flow> flows = new ArrayList<>();
-  private TextRangeWithHash textRange;
+  private final List<Flow> flows;
+  private final TextRangeWithHash textRange;
   private Map<SoftwareQuality, ImpactSeverity> impacts;
   @Nullable
   private final String ruleDescriptionContextKey;
@@ -57,9 +56,9 @@ public class ServerTaintIssue implements ServerFinding {
   private final CleanCodeAttribute cleanCodeAttribute;
 
   public ServerTaintIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-                          String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
-                          @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
-                          Map<SoftwareQuality, ImpactSeverity> impacts) {
+    String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+    @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
+    Map<SoftwareQuality, ImpactSeverity> impacts, List<Flow> flows) {
     this.id = id;
     this.key = key;
     this.resolved = resolved;
@@ -74,6 +73,7 @@ public class ServerTaintIssue implements ServerFinding {
     this.ruleDescriptionContextKey = ruleDescriptionContextKey;
     this.cleanCodeAttribute = cleanCodeAttribute;
     this.impacts = impacts;
+    this.flows = flows;
   }
 
   public UUID getId() {
@@ -140,11 +140,6 @@ public class ServerTaintIssue implements ServerFinding {
     return impacts;
   }
 
-  public ServerTaintIssue setKey(String key) {
-    this.key = key;
-    return this;
-  }
-
   public ServerTaintIssue setResolved(boolean resolved) {
     this.resolved = resolved;
     return this;
@@ -152,26 +147,6 @@ public class ServerTaintIssue implements ServerFinding {
 
   public ServerTaintIssue setImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.impacts = impacts;
-    return this;
-  }
-
-  public ServerTaintIssue setRuleKey(String ruleKey) {
-    this.ruleKey = ruleKey;
-    return this;
-  }
-
-  public ServerTaintIssue setMessage(String message) {
-    this.message = message;
-    return this;
-  }
-
-  public ServerTaintIssue setFilePath(Path filePath) {
-    this.filePath = filePath;
-    return this;
-  }
-
-  public ServerTaintIssue setCreationDate(Instant creationDate) {
-    this.creationDate = creationDate;
     return this;
   }
 
@@ -185,17 +160,9 @@ public class ServerTaintIssue implements ServerFinding {
     return this;
   }
 
-  public ServerTaintIssue setTextRange(@Nullable TextRangeWithHash textRange) {
-    this.textRange = textRange;
-    return this;
+  public record Flow(List<ServerIssueLocation> locations) {
   }
 
-  public ServerTaintIssue setFlows(List<Flow> flows) {
-    this.flows = flows;
-    return this;
+  public record ServerIssueLocation(@Nullable Path filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
   }
-
-  public record Flow(List<ServerIssueLocation> locations) { }
-
-  public record ServerIssueLocation(@Nullable Path filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) { }
 }
