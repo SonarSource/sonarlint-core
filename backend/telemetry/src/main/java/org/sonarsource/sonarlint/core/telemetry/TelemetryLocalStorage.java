@@ -100,6 +100,10 @@ public class TelemetryLocalStorage {
   private boolean isMcpIntegrationEnabled;
   @Nullable
   private McpTransportMode mcpTransportModeUsed;
+  private boolean labsEnabled;
+  private boolean labsJoined;
+  private final Map<String, Integer> labsLinkClickedCount;
+  private final Map<String, Integer> labsFeedbackLinkClickedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -117,6 +121,8 @@ public class TelemetryLocalStorage {
     fixSuggestionResolved = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
     calledToolsByName = new HashMap<>();
+    labsLinkClickedCount = new HashMap<>();
+    labsFeedbackLinkClickedCount = new HashMap<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -267,6 +273,8 @@ public class TelemetryLocalStorage {
     mcpServerConfigurationRequestedCount = 0;
     isMcpIntegrationEnabled = false;
     mcpTransportModeUsed = null;
+    labsLinkClickedCount.clear();
+    labsFeedbackLinkClickedCount.clear();
   }
 
   public long numUseDays() {
@@ -724,5 +732,37 @@ public class TelemetryLocalStorage {
 
   public int getMcpServerConfigurationRequestedCount() {
     return mcpServerConfigurationRequestedCount;
+  }
+
+  public Map<String, Integer> getLabsFeedbackLinkClickedCount() {
+    return labsFeedbackLinkClickedCount;
+  }
+
+  public Map<String, Integer> getLabsLinkClickedCount() {
+    return labsLinkClickedCount;
+  }
+
+  public boolean isLabsJoined() {
+    return labsJoined;
+  }
+
+  public boolean isLabsEnabled() {
+    return labsEnabled;
+  }
+
+  public void setLabsJoined(boolean labsJoined) {
+    this.labsJoined = labsJoined;
+  }
+
+  public void setLabsEnabled(boolean labsEnabled) {
+    this.labsEnabled = labsEnabled;
+  }
+
+  public void ideLabsLinkClicked(String linkId) {
+    this.labsLinkClickedCount.merge(linkId, 1, Integer::sum);
+  }
+
+  public void ideLabsFeedbackLinkClicked(String featureId) {
+    this.labsFeedbackLinkClickedCount.merge(featureId, 1, Integer::sum);
   }
 }

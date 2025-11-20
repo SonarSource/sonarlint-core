@@ -51,10 +51,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToggleIdeLabsEnablementParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -707,6 +710,45 @@ class TelemetryMediumTests {
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
       .extracting(TelemetryLocalStorage::getNewIssuesFoundCount, TelemetryLocalStorage::getIssuesFixedCount)
       .containsExactly(2L, 1L));
+  }
+
+  @SonarLintTest
+  void it_should_record_toggle_lab_enablement(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().toggleIdeLabsEnablement(new ToggleIdeLabsEnablementParams(true));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().isLabsEnabled()).isTrue());
+  }
+
+  @SonarLintTest
+  void it_should_record_each_ide_labs_link_click_separately(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().ideLabsExternalLinkClicked(new IdeLabsExternalLinkClickedParams("item1"));
+    backend.getTelemetryService().ideLabsExternalLinkClicked(new IdeLabsExternalLinkClickedParams("item2"));
+    backend.getTelemetryService().ideLabsExternalLinkClicked(new IdeLabsExternalLinkClickedParams("item2"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getLabsLinkClickedCount())
+      .isEqualTo(Map.of(
+        "item1", 1,
+        "item2", 2
+      )));
+  }
+
+  @SonarLintTest
+  void it_should_record_each_ide_labs_feedback_link_click_separately(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().ideLabsFeedbackLinkClicked(new IdeLabsFeedbackLinkClickedParams("feature1"));
+    backend.getTelemetryService().ideLabsFeedbackLinkClicked(new IdeLabsFeedbackLinkClickedParams("feature2"));
+    backend.getTelemetryService().ideLabsFeedbackLinkClicked(new IdeLabsFeedbackLinkClickedParams("feature2"));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getLabsFeedbackLinkClickedCount())
+      .isEqualTo(Map.of(
+        "feature1", 1,
+        "feature2", 2
+      )));
   }
 
   private SonarLintTestRpcServer setupClientAndBackend(SonarLintTestHarness harness) {

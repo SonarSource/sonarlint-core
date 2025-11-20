@@ -30,8 +30,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisRepo
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToggleIdeLabsEnablementParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -174,5 +177,20 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void findingsFiltered(FindingsFilteredParams params) {
     notify(() -> getBean(TelemetryService.class).findingsFiltered(params.getFilterType()));
+  }
+
+  @Override
+  public void toggleIdeLabsEnablement(ToggleIdeLabsEnablementParams params) {
+    notify(() -> getBean(TelemetryService.class).toggleIdeLabsEnablement(params.getNewValue()));
+  }
+
+  @Override
+  public void ideLabsExternalLinkClicked(IdeLabsExternalLinkClickedParams params) {
+    notify(() -> getBean(TelemetryService.class).ideLabsLinkClicked(params.getLinkId()));
+  }
+
+  @Override
+  public void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params) {
+    notify(() -> getBean(TelemetryService.class).ideLabsFeedbackLinkClicked(params.getFeatureId()));
   }
 }

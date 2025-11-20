@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
+import org.sonarsource.sonarlint.core.event.JoinIdeLabsEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
@@ -86,6 +87,8 @@ public class TelemetryService {
     updateTelemetry(localStorage -> {
       localStorage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode());
       localStorage.setInitialAutomaticAnalysisEnablement(initializeParams.isAutomaticAnalysisEnabled());
+      localStorage.setLabsJoined(initializeParams.hasJoinedIdeLabs());
+      localStorage.setLabsEnabled(initializeParams.hasEnabledIdeLabs());
     });
     var initialDelay = Integer.parseInt(System.getProperty("sonarlint.internal.telemetry.initialDelay", "1"));
     scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
@@ -318,6 +321,18 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementMcpServerConfigurationRequestedCount);
   }
 
+  public void toggleIdeLabsEnablement(boolean newValue) {
+    updateTelemetry(storage -> storage.setLabsEnabled(newValue));
+  }
+
+  public void ideLabsLinkClicked(String linkId) {
+    updateTelemetry(storage -> storage.ideLabsLinkClicked(linkId));
+  }
+
+  public void ideLabsFeedbackLinkClicked(String featureId) {
+    updateTelemetry(storage -> storage.ideLabsFeedbackLinkClicked(featureId));
+  }
+
   @EventListener
   public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
     updateTelemetry(telemetryLocalStorage -> {
@@ -369,6 +384,12 @@ public class TelemetryService {
   @EventListener
   public void onAutomaticAnalysisSettingChanged(AutomaticAnalysisSettingChangedEvent event) {
     automaticAnalysisSettingToggled();
+  }
+
+  @EventListener
+  public void onJoiningIdeLabs(JoinIdeLabsEvent event) {
+    updateTelemetry(storage -> storage.setLabsJoined(true));
+    updateTelemetry(storage -> storage.setLabsEnabled(true));
   }
 
   @PreDestroy
