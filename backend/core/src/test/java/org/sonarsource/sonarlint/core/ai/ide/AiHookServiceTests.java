@@ -59,7 +59,7 @@ class AiHookServiceTests {
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
-      .contains("\"show_output\": false");
+      .contains("\"show_output\": true");
   }
 
   @Test
@@ -84,7 +84,7 @@ class AiHookServiceTests {
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
-      .contains("\"show_output\": false");
+      .contains("\"show_output\": true");
   }
 
   @Test
@@ -109,7 +109,7 @@ class AiHookServiceTests {
     assertThat(response.getConfigContent())
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
-      .contains("\"show_output\": false");
+      .contains("\"show_output\": true");
   }
 
   @Test

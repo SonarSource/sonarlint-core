@@ -37,7 +37,7 @@ public class AiHookService {
           "post_write_code": [
             {
               "command": "{{SCRIPT_PATH}}",
-              "show_output": false
+              "show_output": true
             }
           ]
         }
