@@ -64,7 +64,7 @@ class AiHookMediumTests {
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
     assertThat(response.getConfigContent()).contains("\"post_write_code\"");
     assertThat(response.getConfigContent()).contains("{{SCRIPT_PATH}}");
-    assertThat(response.getConfigContent()).contains("\"show_output\": false");
+    assertThat(response.getConfigContent()).contains("\"show_output\": true");
   }
 
   @SonarLintTest
