@@ -362,6 +362,13 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
+          <licenseSets>
+            <licenseSet>
+              <excludes combine.children="append">
+                <exclude>**/resources/ai/hooks/**</exclude>
+              </excludes>
+            </licenseSet>
+          </licenseSets>
           <includes combine.children="append">
             <include>src/*/proto/**/*.proto</include>
           </includes>

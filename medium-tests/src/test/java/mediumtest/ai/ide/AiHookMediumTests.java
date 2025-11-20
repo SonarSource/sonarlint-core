@@ -40,9 +40,7 @@ class AiHookMediumTests {
       .start(fakeClient);
 
     // Wait for embedded server to start
-    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-      assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0);
-    });
+    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0));
 
     var response = backend.getAiAgentService()
       .getHookScriptContent(new GetHookScriptContentParams(AiAgent.WINDSURF))
@@ -64,7 +62,7 @@ class AiHookMediumTests {
 
     // Check config content
     assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
-    assertThat(response.getConfigContent()).contains("\"sonarqube_analysis_hook\"");
+    assertThat(response.getConfigContent()).contains("\"post_write_code\"");
     assertThat(response.getConfigContent()).contains("{{SCRIPT_PATH}}");
     assertThat(response.getConfigContent()).contains("\"show_output\": false");
   }
@@ -78,9 +76,7 @@ class AiHookMediumTests {
       .start(fakeClient);
 
     // Wait for embedded server to start
-    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-      assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0);
-    });
+    await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0));
 
     var futureResponse = backend.getAiAgentService()
       .getHookScriptContent(new GetHookScriptContentParams(AiAgent.CURSOR));
