@@ -86,7 +86,13 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"automatic_analysis.toggled_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.configuration_requested\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.integration_enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"mcp.transport_mode\",\"value\":\"HTTP\",\"type\":\"string\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"mcp.transport_mode\",\"value\":\"HTTP\",\"type\":\"string\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.joined\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.link_clicked_count_changed_file_analysis_doc\",\"value\":\"10\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.link_clicked_count_privacy_policy\",\"value\":\"20\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.feedback_link_clicked_count_connected_mode\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ide_labs.feedback_link_clicked_count_manage_dependency_risk\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -133,6 +139,13 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", String.valueOf(true), BOOLEAN, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.transport_mode", McpTransportMode.HTTP.name(), STRING, DAILY));
 
+    values.add(new TelemetryMeasuresValue("ide_labs.joined", "true", BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.enabled", "true", BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.link_clicked_count_changed_file_analysis_doc", "10", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.link_clicked_count_privacy_policy", "20", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.feedback_link_clicked_count_connected_mode", "1", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY));
+
     return values;
   }
 
@@ -154,7 +167,13 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))
       .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY))
       .contains(tuple("mcp.integration_enabled", "true", BOOLEAN, DAILY))
-      .contains(tuple("mcp.transport_mode", "HTTP", STRING, DAILY));
+      .contains(tuple("mcp.transport_mode", "HTTP", STRING, DAILY))
+      .contains(tuple("ide_labs.joined", "true", BOOLEAN, DAILY))
+      .contains(tuple("ide_labs.enabled", "true", BOOLEAN, DAILY))
+      .contains(tuple("ide_labs.link_clicked_count_changed_file_analysis_doc", "10", INTEGER, DAILY))
+      .contains(tuple("ide_labs.link_clicked_count_privacy_policy", "20", INTEGER, DAILY))
+      .contains(tuple("ide_labs.feedback_link_clicked_count_connected_mode", "1", INTEGER, DAILY))
+      .contains(tuple("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY));
   }
 
 }

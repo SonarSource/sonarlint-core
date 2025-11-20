@@ -528,7 +528,7 @@ public class SonarLintBackendFixture {
             backendCapabilities,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel))
+            standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration, logLevel, false, false))
           .get();
         serverStorages.forEach(storage ->
           storage.populateDatabase(sonarLintBackend.getSonarLintDatabase())

@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
@@ -361,5 +362,66 @@ class TelemetryLocalStorageTests {
     assertThat(data.getMcpTransportModeUsed()).isNull();
     data.setMcpTransportModeUsed(McpTransportMode.HTTP);
     assertThat(data.getMcpTransportModeUsed()).isEqualTo(McpTransportMode.HTTP);
+  }
+
+  @Test
+  void should_set_labs_joined() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.isLabsJoined()).isFalse();
+    data.setLabsJoined(true);
+    assertThat(data.isLabsJoined()).isTrue();
+  }
+
+  @Test
+  void should_set_labs_enabled() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.isLabsEnabled()).isFalse();
+    data.setLabsEnabled(true);
+    assertThat(data.isLabsEnabled()).isTrue();
+  }
+
+  @Test
+  void should_increment_link_clicked_count_for_each_link_separately() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getLabsLinkClickedCount()).isEmpty();
+
+    data.ideLabsLinkClicked("1");
+    data.ideLabsLinkClicked("2");
+    data.ideLabsLinkClicked("2");
+
+    assertThat(data.getLabsLinkClickedCount())
+      .isEqualTo(Map.of(
+        "1", 1,
+        "2", 2));
+  }
+
+  @Test
+  void should_increment_feedback_link_clicked_count_for_each_link_separately() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getLabsFeedbackLinkClickedCount()).isEmpty();
+
+    data.ideLabsFeedbackLinkClicked("1");
+    data.ideLabsFeedbackLinkClicked("2");
+    data.ideLabsFeedbackLinkClicked("2");
+
+    assertThat(data.getLabsFeedbackLinkClickedCount())
+      .isEqualTo(Map.of(
+        "1", 1,
+        "2", 2));
+  }
+
+  @Test
+  void should_reset_link_clicked_data_after_ping() {
+    var data = new TelemetryLocalStorage();
+
+    data.ideLabsLinkClicked("1");
+    data.ideLabsLinkClicked("2");
+    data.ideLabsFeedbackLinkClicked("1");
+    data.ideLabsFeedbackLinkClicked("2");
+
+    data.clearAfterPing();
+
+    assertThat(data.getLabsLinkClickedCount()).isEmpty();
+    assertThat(data.getLabsFeedbackLinkClickedCount()).isEmpty();
   }
 }

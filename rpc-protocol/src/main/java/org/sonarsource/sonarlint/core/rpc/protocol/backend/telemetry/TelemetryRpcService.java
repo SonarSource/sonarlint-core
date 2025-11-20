@@ -31,10 +31,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToggleIdeLabsEnablementParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 
 @JsonSegment("telemetry")
@@ -169,4 +172,13 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void findingsFiltered(FindingsFilteredParams params);
+
+  @JsonNotification
+  void toggleIdeLabsEnablement(ToggleIdeLabsEnablementParams params);
+
+  @JsonNotification
+  void ideLabsExternalLinkClicked(IdeLabsExternalLinkClickedParams params);
+
+  @JsonNotification
+  void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params);
 }

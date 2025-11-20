@@ -123,6 +123,14 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.incrementFlightRecorderSessionsCount();
     telemetryLocalStorage.setMcpIntegrationEnabled(true);
     telemetryLocalStorage.setMcpTransportModeUsed(McpTransportMode.STDIO);
+    telemetryLocalStorage.setLabsJoined(true);
+    telemetryLocalStorage.setLabsEnabled(true);
+    telemetryLocalStorage.ideLabsLinkClicked("changed_file_analysis_doc");
+    telemetryLocalStorage.ideLabsLinkClicked("privacy_policy");
+    telemetryLocalStorage.ideLabsLinkClicked("privacy_policy");
+    telemetryLocalStorage.ideLabsFeedbackLinkClicked("connected_mode");
+    telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
+    telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -148,7 +156,13 @@ class TelemetryHttpClientTests {
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
             {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"},
-            {"key":"mcp.transport_mode","value":"STDIO","type":"string","granularity":"daily"}
+            {"key":"mcp.transport_mode","value":"STDIO","type":"string","granularity":"daily"},
+            {"key":"ide_labs.joined","value":"true","type":"boolean","granularity":"daily"},
+            {"key":"ide_labs.enabled","value":"true","type":"boolean","granularity":"daily"},
+            {"key":"ide_labs.link_clicked_count_changed_file_analysis_doc","value":"1","type":"integer","granularity":"daily"},
+            {"key":"ide_labs.link_clicked_count_privacy_policy","value":"2","type":"integer","granularity":"daily"},
+            {"key":"ide_labs.feedback_link_clicked_count_connected_mode","value":"1","type":"integer","granularity":"daily"},
+            {"key":"ide_labs.feedback_link_clicked_count_manage_dependency_risk","value":"2","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

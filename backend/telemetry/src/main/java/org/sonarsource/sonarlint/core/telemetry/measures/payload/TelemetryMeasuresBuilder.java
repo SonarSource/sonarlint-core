@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLiveAttributes;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
@@ -33,6 +34,9 @@ import static org.sonarsource.sonarlint.core.telemetry.measures.payload.Telemetr
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryMeasuresBuilder {
+
+  private static final String LINK_CLICKED_BASE_NAME = "link_clicked_count_";
+  private static final String FEEDBACK_CLICKED_BASE_NAME = "feedback_link_clicked_count_";
 
   private final String platform;
   private final String product;
@@ -76,6 +80,8 @@ public class TelemetryMeasuresBuilder {
     addFlightRecorderMeasures(values);
 
     addMCPMeasures(values);
+
+    addLabsMeasures(values);
 
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
@@ -221,4 +227,21 @@ public class TelemetryMeasuresBuilder {
     }
   }
 
+  private void addLabsMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("ide_labs.joined", String.valueOf(storage.isLabsJoined()), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.enabled", String.valueOf(storage.isLabsEnabled()), BOOLEAN, DAILY));
+    addAll(storage.getLabsLinkClickedCount(), LINK_CLICKED_BASE_NAME, values);
+    addAll(storage.getLabsFeedbackLinkClickedCount(), FEEDBACK_CLICKED_BASE_NAME, values);
+  }
+
+  private static void addAll(Map<String, Integer> clickCounts, String baseName, List<TelemetryMeasuresValue> values) {
+    clickCounts.entrySet().stream()
+      .filter(entry -> entry.getValue() > 0)
+      .map(entry -> new TelemetryMeasuresValue(
+        "ide_labs." + baseName + entry.getKey(),
+        String.valueOf(entry.getValue()),
+        INTEGER,
+        DAILY))
+      .forEach(values::add);
+  }
 }

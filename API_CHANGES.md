@@ -1,8 +1,17 @@
 # 10.37
 
 ## Breaking Changes
+
+* Add initial IDE Labs parameters to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`. Deprecated constructor uses default parameters.
+
+## Deprecation
+
 * Deprecate 4-parameter constructor and remove deprecation of 2-parameter one of `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams`. Move back to an old constructor as not all IDEs were able to provide all data to a new one.
 * Remove Deprecation from `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings` method. It should be used again for manual binding events instead of parametrized `didUpdateBinding`.
+
+## New features
+
+* Introduce 3 new methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to record Ide Labs telemetry: `toggleIdeLabsEnablement`, `externalLinkClicked`, `feedbackLinkClicked`.
 * Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.acceptedBindingSuggestion`. It should be used to for bindings created based on suggestions and pass `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` instead of parametrized `didUpdateBinding`. 
 
 # 10.36
