@@ -100,8 +100,6 @@ public class TelemetryLocalStorage {
   private boolean isMcpIntegrationEnabled;
   @Nullable
   private McpTransportMode mcpTransportModeUsed;
-  private boolean labsEnabled;
-  private boolean labsJoined;
   private final Map<String, Integer> labsLinkClickedCount;
   private final Map<String, Integer> labsFeedbackLinkClickedCount;
 
@@ -740,22 +738,6 @@ public class TelemetryLocalStorage {
 
   public Map<String, Integer> getLabsLinkClickedCount() {
     return labsLinkClickedCount;
-  }
-
-  public boolean isLabsJoined() {
-    return labsJoined;
-  }
-
-  public boolean isLabsEnabled() {
-    return labsEnabled;
-  }
-
-  public void setLabsJoined(boolean labsJoined) {
-    this.labsJoined = labsJoined;
-  }
-
-  public void setLabsEnabled(boolean labsEnabled) {
-    this.labsEnabled = labsEnabled;
   }
 
   public void ideLabsLinkClicked(String linkId) {

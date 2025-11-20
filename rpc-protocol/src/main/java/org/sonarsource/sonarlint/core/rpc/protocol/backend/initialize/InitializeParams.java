@@ -53,8 +53,6 @@ public class InitializeParams {
   private final boolean automaticAnalysisEnabled;
   private final TelemetryMigrationDto telemetryMigration;
   private final LogLevel logLevel;
-  private final boolean joinedIdeLabs;
-  private final boolean enabledIdeLabs;
 
   /**
    * @deprecated use newer constructor with log level
@@ -89,7 +87,7 @@ public class InitializeParams {
     this(clientConstantInfo, telemetryConstantAttributes, httpConfiguration, alternativeSonarCloudEnvironment, backendCapabilities, storageRoot, workDir, embeddedPluginPaths,
       connectedModeEmbeddedPluginPathsByKey, enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections,
       sonarCloudConnections, sonarlintUserHome, standaloneRuleConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration,
-      LogLevel.TRACE, false, false);
+      LogLevel.TRACE);
   }
 
   /**
@@ -120,9 +118,7 @@ public class InitializeParams {
     @Nullable LanguageSpecificRequirements languageSpecificRequirements,
     boolean automaticAnalysisEnabled,
     @Nullable TelemetryMigrationDto telemetryMigration,
-    LogLevel logLevel,
-    boolean joinedIdeLabs,
-    boolean enabledIdeLabs) {
+    LogLevel logLevel) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.httpConfiguration = httpConfiguration;
@@ -144,8 +140,6 @@ public class InitializeParams {
     this.automaticAnalysisEnabled = automaticAnalysisEnabled;
     this.telemetryMigration = telemetryMigration;
     this.logLevel = logLevel;
-    this.joinedIdeLabs = joinedIdeLabs;
-    this.enabledIdeLabs = enabledIdeLabs;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -235,13 +229,5 @@ public class InitializeParams {
 
   public LogLevel getLogLevel() {
     return logLevel;
-  }
-
-  public boolean hasJoinedIdeLabs() {
-    return joinedIdeLabs;
-  }
-
-  public boolean hasEnabledIdeLabs() {
-    return enabledIdeLabs;
   }
 }

@@ -44,7 +44,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
@@ -123,8 +122,6 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.incrementFlightRecorderSessionsCount();
     telemetryLocalStorage.setMcpIntegrationEnabled(true);
     telemetryLocalStorage.setMcpTransportModeUsed(McpTransportMode.STDIO);
-    telemetryLocalStorage.setLabsJoined(true);
-    telemetryLocalStorage.setLabsEnabled(true);
     telemetryLocalStorage.ideLabsLinkClicked("changed_file_analysis_doc");
     telemetryLocalStorage.ideLabsLinkClicked("privacy_policy");
     telemetryLocalStorage.ideLabsLinkClicked("privacy_policy");
@@ -158,7 +155,7 @@ class TelemetryHttpClientTests {
             {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"},
             {"key":"mcp.transport_mode","value":"STDIO","type":"string","granularity":"daily"},
             {"key":"ide_labs.joined","value":"true","type":"boolean","granularity":"daily"},
-            {"key":"ide_labs.enabled","value":"true","type":"boolean","granularity":"daily"},
+            {"key":"ide_labs.enabled","value":"false","type":"boolean","granularity":"daily"},
             {"key":"ide_labs.link_clicked_count_changed_file_analysis_doc","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_labs.link_clicked_count_privacy_policy","value":"2","type":"integer","granularity":"daily"},
             {"key":"ide_labs.feedback_link_clicked_count_connected_mode","value":"1","type":"integer","granularity":"daily"},
@@ -211,7 +208,7 @@ class TelemetryHttpClientTests {
     connectionsAttributes.add(new TelemetryConnectionAttributes("user-id-sqc", null, "org-id"));
     connectionsAttributes.add(new TelemetryConnectionAttributes(null, "server-id", null));
     var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", connectionsAttributes);
-    var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
+    var clientAttributes = new TelemetryClientLiveAttributesResponse(Map.of("joinedIdeLabs", true, "enabledIdeLabs", false));
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }
 }

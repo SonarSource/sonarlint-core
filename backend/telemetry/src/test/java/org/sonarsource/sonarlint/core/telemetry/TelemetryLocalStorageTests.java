@@ -365,22 +365,6 @@ class TelemetryLocalStorageTests {
   }
 
   @Test
-  void should_set_labs_joined() {
-    var data = new TelemetryLocalStorage();
-    assertThat(data.isLabsJoined()).isFalse();
-    data.setLabsJoined(true);
-    assertThat(data.isLabsJoined()).isTrue();
-  }
-
-  @Test
-  void should_set_labs_enabled() {
-    var data = new TelemetryLocalStorage();
-    assertThat(data.isLabsEnabled()).isFalse();
-    data.setLabsEnabled(true);
-    assertThat(data.isLabsEnabled()).isTrue();
-  }
-
-  @Test
   void should_increment_link_clicked_count_for_each_link_separately() {
     var data = new TelemetryLocalStorage();
     assertThat(data.getLabsLinkClickedCount()).isEmpty();

@@ -83,4 +83,12 @@ public class TelemetryLiveAttributes {
   public Map<String, Object> getAdditionalAttributes() {
     return clientAttributes.getAdditionalAttributes();
   }
+
+  public boolean hasJoinedIdeLabs() {
+    return clientAttributes.hasJoinedIdeLabs();
+  }
+
+  public boolean hasEnabledIdeLabs() {
+    return clientAttributes.hasEnabledIdeLabs();
+  }
 }
