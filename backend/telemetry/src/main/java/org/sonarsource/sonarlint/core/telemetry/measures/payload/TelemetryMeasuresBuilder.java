@@ -228,8 +228,8 @@ public class TelemetryMeasuresBuilder {
   }
 
   private void addLabsMeasures(ArrayList<TelemetryMeasuresValue> values) {
-    values.add(new TelemetryMeasuresValue("ide_labs.joined", String.valueOf(storage.isLabsJoined()), BOOLEAN, DAILY));
-    values.add(new TelemetryMeasuresValue("ide_labs.enabled", String.valueOf(storage.isLabsEnabled()), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.joined", String.valueOf(liveAttributes.hasJoinedIdeLabs()), BOOLEAN, DAILY));
+    values.add(new TelemetryMeasuresValue("ide_labs.enabled", String.valueOf(liveAttributes.hasEnabledIdeLabs()), BOOLEAN, DAILY));
     addAll(storage.getLabsLinkClickedCount(), LINK_CLICKED_BASE_NAME, values);
     addAll(storage.getLabsFeedbackLinkClickedCount(), FEEDBACK_CLICKED_BASE_NAME, values);
   }

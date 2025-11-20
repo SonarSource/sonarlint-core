@@ -35,4 +35,12 @@ public class TelemetryClientLiveAttributesResponse {
   public Map<String, Object> getAdditionalAttributes() {
     return additionalAttributes;
   }
+
+  public boolean hasJoinedIdeLabs() {
+    return this.additionalAttributes.containsKey("joinedIdeLabs") && (Boolean) this.additionalAttributes.get("joinedIdeLabs");
+  }
+
+  public boolean hasEnabledIdeLabs() {
+    return this.additionalAttributes.containsKey("enabledIdeLabs") && (Boolean) this.additionalAttributes.get("enabledIdeLabs");
+  }
 }

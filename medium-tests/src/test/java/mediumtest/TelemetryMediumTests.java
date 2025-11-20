@@ -51,13 +51,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToggleIdeLabsEnablementParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -710,15 +709,6 @@ class TelemetryMediumTests {
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
       .extracting(TelemetryLocalStorage::getNewIssuesFoundCount, TelemetryLocalStorage::getIssuesFixedCount)
       .containsExactly(2L, 1L));
-  }
-
-  @SonarLintTest
-  void it_should_record_toggle_lab_enablement(SonarLintTestHarness harness) {
-    var backend = setupClientAndBackend(harness);
-
-    backend.getTelemetryService().toggleIdeLabsEnablement(new ToggleIdeLabsEnablementParams(true));
-
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().isLabsEnabled()).isTrue());
   }
 
   @SonarLintTest

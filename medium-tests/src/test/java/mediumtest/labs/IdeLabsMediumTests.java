@@ -66,8 +66,6 @@ public class IdeLabsMediumTests {
     assertThat(response).succeedsWithin(2, TimeUnit.SECONDS);
     assertMarketingCloudEndpointCalled(sampleEmail, ideName);
     assertThat(response.join().isSuccess()).isTrue();
-    assertThat(backend.telemetryFileContent().isLabsJoined()).isTrue();
-    assertThat(backend.telemetryFileContent().isLabsEnabled()).isTrue();
   }
 
   @SonarLintTest
