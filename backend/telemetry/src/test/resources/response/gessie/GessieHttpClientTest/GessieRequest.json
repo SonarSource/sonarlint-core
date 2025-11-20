@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "event_id": "a36e25e8-5a92-4b5d-93b4-ba0045947b4c",
+    "source": {
+      "domain": "IntelliJ"
+    },
+    "event_type": "Analytics.Test.TestEvent",
+    "event_timestamp": "1761821877867",
+    "event_version": "0"
+  },
+  "event_payload": {
+    "message": "Test event",
+    "trigger": "test"
+  }
+}

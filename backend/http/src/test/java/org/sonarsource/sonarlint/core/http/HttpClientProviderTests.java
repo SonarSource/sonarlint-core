@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.http;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -112,4 +113,15 @@ class HttpClientProviderTests {
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
   }
 
+  @Test
+  void it_should_not_retry_non_idempotent_by_default() {
+    sonarqubeMock.stubFor(post("/error").willReturn(aResponse().withStatus(HttpStatus.SC_SERVICE_UNAVAILABLE)));
+
+    var underTest = HttpClientProvider.forTesting();
+
+    underTest.getHttpClient().post(sonarqubeMock.url("/error"), ContentType.TEXT_PLAIN.getMimeType(), "body");
+
+    sonarqubeMock.verify(1, postRequestedFor(urlEqualTo("/error"))
+      .withHeader("User-Agent", equalTo("SonarLint tests")));
+  }
 }
