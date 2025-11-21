@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.commons.KnownFindingType;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.KnownFindingsRecord;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.KNOWN_FINDINGS;
@@ -48,7 +49,8 @@ public class KnownFindingsRepository {
     var records = findingsPerFilePerConfigScopeId.entrySet().stream()
       .flatMap(KnownFindingsRepository::expandConfigScope)
       .toList();
-    database.dsl().batchMerge(records).execute();
+    database.dsl().deleteFrom(Tables.KNOWN_FINDINGS).execute();
+    database.dsl().batchInsert(records).execute();
   }
 
   private static Stream<KnownFindingsRecord> expandConfigScope(Map.Entry<String, Map<Path, Findings>> configScopeEntry) {

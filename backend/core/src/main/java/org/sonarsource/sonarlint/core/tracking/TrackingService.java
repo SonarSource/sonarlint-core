@@ -123,10 +123,13 @@ public class TrackingService {
     if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
       if (knownFindingsStorageService.exists()) {
         try {
+          LOG.info("Migrating the Xodus known findings to H2");
+          var migrationStart = System.currentTimeMillis();
           var repository = new KnownFindingsRepository(databaseService.getDatabase());
           var xodusKnownFindingsStore = knownFindingsStorageService.get();
           var findingsPerConfigScope = xodusKnownFindingsStore.loadAll();
           repository.storeFindings(findingsPerConfigScope);
+          LOG.info("Migrated Xodus known findings to H2, took {}ms", System.currentTimeMillis() - migrationStart);
         } catch (Exception e) {
           LOG.error("Unable to migrate known findings, will use fresh DB", e);
         }

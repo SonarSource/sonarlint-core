@@ -69,7 +69,8 @@ public class LocalOnlyIssuesRepository {
   }
 
   public void storeIssues(Map<String, List<LocalOnlyIssue>> issuesPerConfigScopeId) {
-    database.dsl().batchMerge(issuesPerConfigScopeId.entrySet().stream()
+    database.dsl().deleteFrom(LOCAL_ONLY_ISSUES).execute();
+    database.dsl().batchInsert(issuesPerConfigScopeId.entrySet().stream()
       .flatMap(entry -> {
         var configScopeId = entry.getKey();
         return entry.getValue().stream().map(
