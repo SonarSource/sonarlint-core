@@ -143,10 +143,13 @@ public class IssueService {
     if (dogfoodEnvironmentDetectionService.isDogfoodEnvironment()) {
       if (localOnlyIssueStorageService.exists()) {
         try {
+          LOG.info("Migrating the Xodus local-only issues to H2");
+          var migrationStart = System.currentTimeMillis();
           var repository = new LocalOnlyIssuesRepository(databaseService.getDatabase());
           var xodusLocalOnlyIssueStore = localOnlyIssueStorageService.get();
           var issuesPerConfigScope = xodusLocalOnlyIssueStore.loadAll();
           repository.storeIssues(issuesPerConfigScope);
+          LOG.info("Migrated Xodus local-only issues to H2, took {}ms", System.currentTimeMillis() - migrationStart);
         } catch (Exception e) {
           LOG.error("Unable to migrate local-only findings, will use fresh DB", e);
         }
