@@ -115,19 +115,23 @@ public class SonarCodeContextService {
   }
 
   private void handleGeneration(String configScopeId, Path baseDir, Binding binding) {
-    var paramsOpt = prepareCliParams(binding, configScopeId);
-    if (paramsOpt.isPresent()) {
-      var workingDir = computeWorkingBaseDir(baseDir);
-      if (initializedScopes.add(configScopeId)) {
-        runInit(workingDir);
+    try {
+      var paramsOpt = prepareCliParams(binding, configScopeId);
+      if (paramsOpt.isPresent()) {
+        var workingDir = computeWorkingBaseDir(baseDir);
+        if (initializedScopes.add(configScopeId)) {
+          runInit(workingDir);
+        }
+        runGenerateGuidelines(workingDir, paramsOpt.get());
+        runMergeMd(workingDir);
+        if (mdcInstalledScopes.add(configScopeId)) {
+          runInstall(workingDir);
+        }
+      } else {
+        LOG.debug("Missing parameters for SonarCodeContext CLI, skipping for configuration scope '{}'", configScopeId);
       }
-      runGenerateGuidelines(workingDir, paramsOpt.get());
-      runMergeMd(workingDir);
-      if (mdcInstalledScopes.add(configScopeId)) {
-        runInstall(workingDir);
-      }
-    } else {
-      LOG.debug("Missing parameters for SonarCodeContext CLI, skipping for configuration scope '{}'", configScopeId);
+    } catch (Exception e) {
+      LOG.debug("[DOGFOOD] Failed to run code context CLI", e.getMessage());
     }
   }
 
