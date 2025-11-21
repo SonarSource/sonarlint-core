@@ -464,7 +464,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         throw new IllegalStateException("Unexpected response code: " + response);
       }
       var jsonObject = new Gson().fromJson(response.getBodyAsString(), JsonObject.class);
-      return UUID.fromString(jsonObject.getAsJsonArray("issuesReleases").get(0).getAsJsonObject().get("key").getAsString());
+      var issuesReleases = jsonObject.getAsJsonArray("issuesReleases");
+      if (issuesReleases.size() > 1) {
+        throw new IllegalStateException("Expected only one dependency risk, got: " + issuesReleases);
+      }
+      return UUID.fromString(issuesReleases.get(0).getAsJsonObject().get("key").getAsString());
     }
   }
 
