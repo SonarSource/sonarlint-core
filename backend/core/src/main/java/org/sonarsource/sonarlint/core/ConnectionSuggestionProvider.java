@@ -109,8 +109,8 @@ public class ConnectionSuggestionProvider {
         return true;
       }
     }
-    // Check for .sonarlint/**/*.json files
-    var sonarlintConfigFiles = clientFs.getFilesByPattern(configScopeId, ".sonarlint/**/*.json");
+    // Check for .sonarlint/*.json files
+    var sonarlintConfigFiles = clientFs.getFilesByPattern(configScopeId, ".sonarlint/*.json");
     return !sonarlintConfigFiles.isEmpty();
   }
 

@@ -576,12 +576,20 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {
-    LOG.debug("Batch merging {} issues for branch '{}' and project '{}'", issues.size(), branchName, sonarProjectKey);
+    try {
+      LOG.debug("Batch merging {} issues for branch '{}' and project '{}'", issues.size(), branchName, sonarProjectKey);
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
     var start = Instant.now();
     trx.dsl().batchMerge(issues.stream()
       .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
-    LOG.debug("Batch merge completed in {} ms", Duration.between(start, Instant.now()).toMillis());
+    try {
+      LOG.debug("Batch merge completed in {} ms", Duration.between(start, Instant.now()).toMillis());
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
   }
 
   private void batchMergeTaints(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerTaintIssue> taints) {
