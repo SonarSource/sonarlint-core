@@ -34,7 +34,6 @@ import org.springframework.beans.factory.annotation.Value;
 public class GessieHttpClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String X_API_KEY_IDE = "value";
 
   private final Gson gson = configureGson();
   private final HttpClient client;
@@ -42,8 +41,10 @@ public class GessieHttpClient {
   @Value("${SONARLINT_TELEMETRY_LOG:false}")
   private boolean isTelemetryLogEnabled;
 
-  public GessieHttpClient(HttpClientProvider httpClientProvider, @Qualifier("gessieEndpoint") String gessieEndpoint) {
-    this.client = httpClientProvider.getHttpClientWithXApiKeyAndRetries(X_API_KEY_IDE);
+  public GessieHttpClient(HttpClientProvider httpClientProvider,
+    @Qualifier("gessieEndpoint") String gessieEndpoint,
+    @Qualifier("gessieApiKey") String gessieApiKey) {
+    this.client = httpClientProvider.getHttpClientWithXApiKeyAndRetries(gessieApiKey);
     this.endpoint = gessieEndpoint;
   }
 
@@ -56,8 +57,7 @@ public class GessieHttpClient {
 
   private void logGessiePayload(String json) {
     if (isTelemetryLogEnabled) {
-      LOG.info("Sending Gessie payload.");
-      LOG.info(json);
+      LOG.info("Sending Gessie payload.\n{}", json);
     }
   }
 
@@ -71,7 +71,8 @@ public class GessieHttpClient {
   private static void handleGessieResponse(CompletableFuture<HttpClient.Response> responseCompletableFuture) {
     responseCompletableFuture.thenAccept(response -> {
       if (!response.isSuccessful() && InternalDebug.isEnabled()) {
-        LOG.error("Failed to upload telemetry to Gessie: {}", response);
+        LOG.error("Failed to upload telemetry to Gessie: {} \n{}", response,
+          response.bodyAsString());
       }
     }).exceptionally(exception -> {
       if (InternalDebug.isEnabled()) {

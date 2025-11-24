@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieSpringConfig;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -53,7 +54,7 @@ import static org.awaitility.Awaitility.await;
 class GessieIntegrationMediumTests {
 
   private static final String IDE_ENDPOINT = "/ide";
-  public static final String FAILED_ONCE = "Failed once";
+  private static final String FAILED_ONCE = "Failed once";
 
   @SystemStub
   private EnvironmentVariables environmentVariables;
@@ -75,12 +76,14 @@ class GessieIntegrationMediumTests {
     this.oldDebugValue = InternalDebug.isEnabled();
     InternalDebug.setEnabled(true);
     environmentVariables.set("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS", "0");
+    System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY, "value");
   }
 
   @AfterEach
   void tearDown() {
     InternalDebug.setEnabled(oldDebugValue);
     environmentVariables.remove("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS");
+    System.clearProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY);
   }
 
   @SonarLintTest
