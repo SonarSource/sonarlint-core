@@ -145,7 +145,7 @@ class LazyFileSystemInitializationMediumTests {
    * Note: Full verification requires test harness extension to capture the RPC call.
    */
  @SonarLintTest
-  void should_request_cache_warmup_when_scope_added(SonarLintTestHarness harness, @TempDir Path tmp) {
+  void should_request_cache_warmup_when_scope_added(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of())
       .build();
@@ -193,12 +193,26 @@ class LazyFileSystemInitializationMediumTests {
       .withBackendCapability(FULL_SYNCHRONIZATION, PROJECT_SYNCHRONIZATION)
       .start(fakeClient);
 
-    // Submit files via chunks
+    // Submit files via chunks (simulating lazy loading)
     backend.getFileService().submitFileCacheChunk(
       new SubmitFileCacheChunkParams(CONFIG_SCOPE_ID, List.of(includedDto, excludedDto)));
 
-    // Note: File exclusion verification requires server-side configuration and synchronization
-    // This test validates that files submitted via chunks work with connected mode
+    // Verify both files are now in the cache and can be checked for exclusions
+    var filesStatus = backend.getFileService()
+      .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, 
+        List.of(includedFile.toUri(), excludedFile.toUri()))))
+      .join();
+
+    // Both files should be found and have exclusion status computed
+    assertThat(filesStatus.getFileStatuses()).hasSize(2);
+    assertThat(filesStatus.getFileStatuses()).containsKeys(
+      includedFile.toUri(), 
+      excludedFile.toUri()
+    );
+    
+    // Verify exclusion status can be computed for lazily loaded files
+    assertThat(filesStatus.getFileStatuses().get(includedFile.toUri())).isNotNull();
+    assertThat(filesStatus.getFileStatuses().get(excludedFile.toUri())).isNotNull();
   }
 
   /**
