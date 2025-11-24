@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
@@ -75,13 +74,20 @@ public class PathTranslationService {
 
   private FilePathTranslation matchPaths(String configScopeId, FileTreeMatcher fileMatcher, List<Path> serverFilePaths) {
     LOG.debug("Starting matching paths for config scope '{}'...", configScopeId);
-    var localFilePaths = clientFs.getFiles(configScopeId);
-    if (localFilePaths.isEmpty()) {
-      LOG.debug("No client files for config scope '{}'. Skipping path matching.", configScopeId);
+    // Use directories instead of files for path matching optimization
+    var localDirectories = clientFs.getDirectories(configScopeId);
+    if (localDirectories.isEmpty()) {
+      LOG.debug("No client directories for config scope '{}'. Skipping path matching.", configScopeId);
       // Maybe a config scope without files, or the filesystem has not been initialized yet
       return new FilePathTranslation(Paths.get(""), Paths.get(""));
     }
-    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).toList());
+    // Convert server file paths to directory paths
+    var serverDirectories = serverFilePaths.stream()
+      .map(Path::getParent)
+      .filter(java.util.Objects::nonNull)
+      .distinct()
+      .toList();
+    var match = fileMatcher.match(serverDirectories, localDirectories);
     LOG.debug("Matched paths for config scope '{}':\n  * idePrefix={}\n  * serverPrefix={}", configScopeId, match.idePrefix(), match.sqPrefix());
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }

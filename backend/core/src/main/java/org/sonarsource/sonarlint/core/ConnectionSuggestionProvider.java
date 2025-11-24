@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import jakarta.inject.Inject;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -87,10 +88,7 @@ public class ConnectionSuggestionProvider {
   @EventListener
   public void configurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
     var listConfigScopeIds = event.getConfigScopeIds().stream()
-      .map(clientFs::getFiles)
-      .flatMap(List::stream)
-      .filter(f -> ALL_BINDING_CLUE_FILENAMES.contains(f.getFileName()) || f.isSonarlintConfigurationFile())
-      .map(ClientFile::getConfigScopeId)
+      .filter(this::hasBindingClueFiles)
       .collect(Collectors.toSet());
 
     if (!listConfigScopeIds.isEmpty()) {
@@ -98,6 +96,22 @@ public class ConnectionSuggestionProvider {
     } else {
       bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(event.getConfigScopeIds());
     }
+  }
+
+  /**
+   * Check if a configuration scope has binding clue files using lazy loading.
+   * Avoids loading all files by checking specific file paths.
+   */
+  private boolean hasBindingClueFiles(String configScopeId) {
+    // Check for sonar-project.properties and .sonarcloud.properties
+    for (String filename : ALL_BINDING_CLUE_FILENAMES) {
+      if (clientFs.getFileByIdePath(configScopeId, Path.of(filename)) != null) {
+        return true;
+      }
+    }
+    // Check for .sonarlint/**/*.json files
+    var sonarlintConfigFiles = clientFs.getFilesByPattern(configScopeId, ".sonarlint/**/*.json");
+    return !sonarlintConfigFiles.isEmpty();
   }
 
   private void queueConnectionSuggestion(Set<String> listConfigScopeIds) {

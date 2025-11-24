@@ -100,8 +100,16 @@ public class FileExclusionService {
   public boolean computeIfExcluded(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {
-      LOG.debug("Unable to find client file for uri {}", fileUri);
-      return false;
+      // With lazy file system initialization, file might not be cached yet
+      // Ask the client if it exists before giving up
+      if (clientFileSystemService.doesFileExist(fileUri)) {
+        // Try to get it again now that we've loaded it
+        clientFile = clientFileSystemService.getClientFile(fileUri);
+      }
+      if (clientFile == null) {
+        LOG.debug("Unable to find client file for uri {}", fileUri);
+        return false;
+      }
     }
     var configScope = clientFile.getConfigScopeId();
     var effectiveBindingOpt = configRepo.getEffectiveBinding(configScope);

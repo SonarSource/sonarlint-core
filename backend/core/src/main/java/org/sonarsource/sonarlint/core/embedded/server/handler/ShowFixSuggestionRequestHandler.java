@@ -127,11 +127,11 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     if (optTranslation.isPresent()) {
       var translation = optTranslation.get();
       var idePath = translation.serverToIdePath(Paths.get(filePath));
+      // Use lazy loading instead of iterating over all files
       for (var scope : boundScopes) {
-        for (var file : clientFs.getFiles(scope)) {
-          if (Path.of(file.getUri()).endsWith(idePath)) {
-            return true;
-          }
+        var file = clientFs.getFileByIdePath(scope, idePath);
+        if (file != null) {
+          return true;
         }
       }
     }
