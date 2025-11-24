@@ -61,13 +61,19 @@ class UsersApiTests {
   }
 
   @Test
-  void should_return_null_on_sonarqube_server() {
+  void should_return_user_id_on_sonarqube_server() {
     var helperSqs = mockServer.serverApiHelper(null); // isSonarCloud = false
     var api = new UsersApi(helperSqs);
+    mockServer.addStringResponse("/api/users/current", """
+      {
+        "isLoggedIn": true,
+        "id": "00000000-0000-0000-0000-000000000001",
+        "login": "obiwan.kenobi"
+      }""");
 
     var id = api.getCurrentUserId(new SonarLintCancelMonitor());
 
-    assertThat(id).isNull();
+    assertThat(id).isEqualTo("00000000-0000-0000-0000-000000000001");
   }
 
   @Test
