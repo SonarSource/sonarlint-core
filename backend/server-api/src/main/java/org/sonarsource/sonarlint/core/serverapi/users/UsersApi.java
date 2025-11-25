@@ -35,14 +35,12 @@ public class UsersApi {
   }
 
   /**
-   * Fetch the current user info on SonarQube Cloud (SQC) using api/users/current.
-   * Returns null on SonarQube Server or if the response cannot be parsed.
+   * Fetch the current user info using api/users/current.
+   * Returns null if the response cannot be parsed or if the id field is not present.
+   * Note: The id field is available on SonarQube Cloud and SonarQube Server 2025.6+.
    */
   @CheckForNull
   public String getCurrentUserId(SonarLintCancelMonitor cancelMonitor) {
-    if (!helper.isSonarCloud()) {
-      return null;
-    }
     try (var response = helper.get("/api/users/current", cancelMonitor)) {
       var body = response.bodyAsString();
       try {

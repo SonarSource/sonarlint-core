@@ -32,13 +32,10 @@ public class UserSynchronizer {
   }
 
   /**
-   * Fetches and stores the user id on SQC. On SQS, does nothing (file won't be created).
+   * Fetches and stores the user id from the server.
+   * Available on SonarQube Cloud and SonarQube Server 2025.6+.
    */
   public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    if (!serverApi.isSonarCloud()) {
-      return;
-    }
-
     try {
       var userId = serverApi.users().getCurrentUserId(cancelMonitor);
       if (userId != null && !userId.trim().isEmpty()) {

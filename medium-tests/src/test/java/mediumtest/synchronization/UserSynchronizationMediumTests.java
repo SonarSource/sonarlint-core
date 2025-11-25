@@ -58,7 +58,7 @@ class UserSynchronizationMediumTests {
   }
 
   @SonarLintTest
-  void it_should_not_store_user_id_on_sonarqube_server(SonarLintTestHarness harness) {
+  void it_should_store_user_id_on_sonarqube_server(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer("10.3")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -71,7 +71,8 @@ class UserSynchronizationMediumTests {
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getUserFile(backend)).doesNotExist());
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getUserFile(backend)).exists()
+      .content().asString().contains("11111111-1111-1111-1111-111111111111"));
   }
 
   private void addConfigurationScope(SonarLintTestRpcServer backend, String configScopeId, String connectionId, String projectKey) {

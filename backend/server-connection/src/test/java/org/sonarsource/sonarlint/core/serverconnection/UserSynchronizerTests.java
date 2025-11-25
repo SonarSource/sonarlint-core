@@ -76,12 +76,21 @@ class UserSynchronizerTests {
   }
 
   @Test
-  void it_should_not_synchronize_on_sonarqube_server() {
+  void it_should_synchronize_user_id_on_sonarqube_server() {
+    mockServer.addStringResponse("/api/users/current", """
+      {
+        "isLoggedIn": true,
+        "id": "00000000-0000-0000-0000-000000000001",
+        "login": "obiwan.kenobi"
+      }""");
+
     var serverApi = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
     var storedUserId = storage.user().read();
-    assertThat(storedUserId).isEmpty();
+    assertThat(storedUserId)
+      .isPresent()
+      .contains("00000000-0000-0000-0000-000000000001");
   }
 
   @Test
