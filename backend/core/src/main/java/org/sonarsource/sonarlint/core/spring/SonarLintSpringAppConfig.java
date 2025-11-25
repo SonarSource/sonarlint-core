@@ -123,7 +123,6 @@ import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
