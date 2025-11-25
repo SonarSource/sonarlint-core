@@ -65,19 +65,15 @@ public class HttpClientProvider {
    */
   public static HttpClientProvider forTesting() {
     return new HttpClientProvider("SonarLint tests", new HttpConfig(new SslConfig(null, null), null, null, null, null), null, ProxySelector.getDefault(),
-      new BasicCredentialsProvider(),
-      1, 0);
+      new BasicCredentialsProvider());
   }
 
   public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
     CredentialsProvider proxyCredentialsProvider) {
-    this(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider, DEFAULT_MAX_RETRIES, DEFAULT_RETRY_INTERVAL);
-  }
-
-  public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
-    CredentialsProvider proxyCredentialsProvider, int maxRetries, int retryInterval) {
     this.userAgent = userAgent;
     this.webSocketThreadPool = FailSafeExecutors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
+    var maxRetries = Integer.parseInt(System.getProperty("sonarlint.http.max.retries", String.valueOf(DEFAULT_MAX_RETRIES)));
+    var retryInterval = Integer.parseInt(System.getProperty("sonarlint.http.retry.interval.seconds", String.valueOf(DEFAULT_RETRY_INTERVAL)));
     sharedClient = buildSharedClient(userAgent, httpConfig, trustManagerParametersPredicate, proxySelector, proxyCredentialsProvider, maxRetries, retryInterval);
     sharedClient.start();
   }
