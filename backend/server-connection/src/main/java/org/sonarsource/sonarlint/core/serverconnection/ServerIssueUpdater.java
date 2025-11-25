@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 import static java.util.stream.Collectors.toSet;
@@ -71,7 +70,7 @@ public class ServerIssueUpdater {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
-    Instant start = Instant.now();
+    var start = Instant.now();
     var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
     var downloadTime = Instant.now();
     LOG.debug("Downloaded {} issues took {}", result.getChangedIssues().size(), downloadTime.toEpochMilli() - start.toEpochMilli());

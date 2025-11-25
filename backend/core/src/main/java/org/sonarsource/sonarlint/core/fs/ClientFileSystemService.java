@@ -109,7 +109,7 @@ public class ClientFileSystemService {
   /**
    * @deprecated Use getFileByIdePath for specific files instead. This method will try lazy loading first.
    */
-  @Deprecated
+  @Deprecated(since = "10.12", forRemoval = true)
   public List<ClientFile> findFilesByNamesInScope(String configScopeId, List<String> filenames) {
     // Try lazy loading first
     var result = new ArrayList<ClientFile>();
@@ -131,7 +131,7 @@ public class ClientFileSystemService {
   /**
    * @deprecated Use getFilesByPattern for .sonarlint/**\/*.json instead. This method will try lazy loading first.
    */
-  @Deprecated
+  @Deprecated(since = "10.12", forRemoval = true)
   public List<ClientFile> findSonarlintConfigurationFilesByScope(String configScopeId) {
     // Try lazy loading first with glob pattern for .sonarlint/**/*.json
     var lazyFiles = getFilesByPattern(configScopeId, ".sonarlint/**/*.json");
@@ -285,11 +285,7 @@ public class ClientFileSystemService {
         return files.stream().map(ClientFileSystemService::fromDto).toList();
       }
     } catch (Exception e) {
-      try {
-        LOG.debug("Error getting files by pattern, falling back to cache", e);
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Error getting files by pattern, falling back to cache", e);
     }
     // Fall back to cache
     return getFiles(configScopeId).stream()
@@ -329,11 +325,7 @@ public class ClientFileSystemService {
         return clientFile;
       }
     } catch (Exception e) {
-      try {
-        LOG.debug("Error getting file by IDE path, falling back to cache", e);
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Error getting file by IDE path, falling back to cache", e);
     }
     // Fall back to cache
     return getFiles(configScopeId).stream()
@@ -367,11 +359,7 @@ public class ClientFileSystemService {
         return true;
       }
     } catch (Exception e) {
-      try {
-        LOG.debug("Error checking file existence", e);
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Error checking file existence", e);
     }
     return false;
   }
@@ -391,11 +379,7 @@ public class ClientFileSystemService {
           .toList();
       }
     } catch (Exception e) {
-      try {
-        LOG.debug("Error getting directories, falling back to cache", e);
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Error getting directories, falling back to cache", e);
     }
     // Fall back to extracting directories from cached files
     return getFiles(configScopeId).stream()
@@ -414,11 +398,7 @@ public class ClientFileSystemService {
   public void onConfigurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
     var configScopeIds = event.getConfigScopeIds();
     if (!configScopeIds.isEmpty()) {
-      try {
-        LOG.debug("Triggering cache warmup for {} newly added configuration scopes", configScopeIds.size());
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Triggering cache warmup for {} newly added configuration scopes", configScopeIds.size());
       requestCacheWarmup(configScopeIds);
     }
   }
@@ -430,17 +410,9 @@ public class ClientFileSystemService {
   public void requestCacheWarmup(Set<String> configScopeIds) {
     try {
       rpcClient.warmUpFileSystemCache(new WarmUpFileSystemCacheParams(configScopeIds));
-      try {
-        LOG.debug("Requested cache warmup for {} configuration scopes", configScopeIds.size());
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Requested cache warmup for {} configuration scopes", configScopeIds.size());
     } catch (Exception e) {
-      try {
-        LOG.debug("Error requesting cache warmup", e);
-      } catch (Exception ignored) {
-        // Logging might not be configured yet during initialization
-      }
+      logDebug("Error requesting cache warmup", e);
     }
   }
 
@@ -449,21 +421,25 @@ public class ClientFileSystemService {
    * @since 10.12
    */
   public void submitFileCacheChunk(String configScopeId, List<ClientFileDto> files) {
-    try {
-      LOG.debug("Received cache chunk with {} files for config scope '{}'", files.size(), configScopeId);
-    } catch (Exception ignored) {
-      // Logging might not be configured yet during initialization
-    }
+    logDebug("Received cache chunk with {} files for config scope '{}'", files.size(), configScopeId);
     addFilesToVirtualFileSystem(configScopeId, files);
   }
 
   /**
    * Simple glob to regex conversion for pattern matching.
    */
-  private String globToRegex(String glob) {
+  private static String globToRegex(String glob) {
     return glob.replace(".", "\\.")
       .replace("*", ".*")
       .replace("?", ".");
+  }
+
+  private static void logDebug(String message, Object... args) {
+    try {
+      LOG.debug(message, args);
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
   }
 
 }
