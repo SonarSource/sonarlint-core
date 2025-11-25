@@ -33,12 +33,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.gessie.GessieSpringConfig;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
-import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -56,15 +53,10 @@ class GessieIntegrationMediumTests {
   private static final String IDE_ENDPOINT = "/ide";
   private static final String FAILED_ONCE = "Failed once";
 
-  @SystemStub
-  private EnvironmentVariables environmentVariables;
-
   @RegisterExtension
   static WireMockExtension gessieEndpointMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
-
-  private boolean oldDebugValue;
 
   @BeforeAll
   static void mockGessieEndpoint() {
@@ -73,16 +65,13 @@ class GessieIntegrationMediumTests {
 
   @BeforeEach
   void setUp() {
-    this.oldDebugValue = InternalDebug.isEnabled();
-    InternalDebug.setEnabled(true);
-    environmentVariables.set("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS", "0");
+    System.setProperty("sonarlint.http.retry.interval.seconds", "0");
     System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY, "value");
   }
 
   @AfterEach
   void tearDown() {
-    InternalDebug.setEnabled(oldDebugValue);
-    environmentVariables.remove("SONARLINT_HTTP_RETRY_INTERVAL_SECONDS");
+    System.clearProperty("sonarlint.http.retry.interval.seconds");
     System.clearProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY);
   }
 
@@ -152,4 +141,5 @@ class GessieIntegrationMediumTests {
       .toURI();
     return Files.readString(Path.of(resource));
   }
+
 }

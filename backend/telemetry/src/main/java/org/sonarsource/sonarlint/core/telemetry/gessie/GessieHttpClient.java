@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.gessie;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -29,7 +30,6 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 
 public class GessieHttpClient {
 
@@ -38,8 +38,6 @@ public class GessieHttpClient {
   private final Gson gson = configureGson();
   private final HttpClient client;
   private final String endpoint;
-  @Value("${SONARLINT_TELEMETRY_LOG:false}")
-  private boolean isTelemetryLogEnabled;
 
   public GessieHttpClient(HttpClientProvider httpClientProvider,
     @Qualifier("gessieEndpoint") String gessieEndpoint,
@@ -56,7 +54,7 @@ public class GessieHttpClient {
   }
 
   private void logGessiePayload(String json) {
-    if (isTelemetryLogEnabled) {
+    if (isTelemetryLogEnabled()) {
       LOG.info("Sending Gessie payload.\n{}", json);
     }
   }
@@ -81,4 +79,10 @@ public class GessieHttpClient {
       return null;
     });
   }
+
+  @VisibleForTesting
+  boolean isTelemetryLogEnabled(){
+    return Boolean.parseBoolean(System.getenv("SONARLINT_TELEMETRY_LOG"));
+  }
+
 }
