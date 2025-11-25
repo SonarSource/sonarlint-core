@@ -193,6 +193,34 @@ class ServerFindingRepositoryTests {
   }
 
   @Test
+  void was_ever_updated_for_no_issues() {
+    repo.replaceAllIssuesOfBranch(branch, List.of(), Set.of());
+
+    assertThat(repo.wasEverUpdated()).isTrue();
+  }
+
+  @Test
+  void was_never_updated() {
+    assertThat(repo.wasEverUpdated()).isFalse();
+  }
+
+  @Test
+  void was_ever_updated_when_only_hotspots_synced() {
+    var h1 = hotspot("HOTSPOT_KEY_1", filePath, 1, HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.MEDIUM, null);
+    repo.mergeHotspots(branch, List.of(h1), Set.of(), Instant.now(), Set.of());
+
+    assertThat(repo.wasEverUpdated()).isTrue();
+  }
+
+  @Test
+  void was_ever_updated_when_only_taints_synced() {
+    var t1 = taint("TAINT_KEY_1", filePath);
+    repo.mergeTaintIssues(branch, List.of(t1), Set.of(), Instant.now(), Set.of());
+
+    assertThat(repo.wasEverUpdated()).isTrue();
+  }
+
+  @Test
   void update_issue_resolution_status() {
     var issueKey = "ISSUE_KEY";
     var file = Path.of("/file/path");
