@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.storage.repository;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -100,6 +101,22 @@ class KnownFindingsRepositoryTests {
     assertThat(knownHotspot.getTextRangeWithHash()).isEqualTo(hotspot1.getTextRangeWithHash());
     assertThat(knownHotspot.getLineWithHash().getNumber()).isEqualTo(hotspot1.getLineWithHash().getNumber());
     assertThat(knownHotspot.getLineWithHash().getHash()).isEqualTo(hotspot1.getLineWithHash().getHash());
+  }
+
+  @Test
+  void should_allow_for_a_long_message(@TempDir Path temp) {
+    var storageRoot = temp.resolve("storage");
+
+    db = new SonarLintDatabase(storageRoot);
+    var repo = new KnownFindingsRepository(db);
+    var longMessage = "m".repeat(10000);
+    var path = Path.of("path");
+    repo.storeKnownIssues("configScope", path, List.of(new KnownFinding(UUID.randomUUID(), "serverKey", null, null, "rule:key", longMessage, Instant.now())));
+
+    var issues = repo.loadIssuesForFile("configScope", path);
+
+    assertThat(issues).hasSize(1);
+    assertThat(issues.get(0).getMessage()).isEqualTo(longMessage);
   }
 
 }
