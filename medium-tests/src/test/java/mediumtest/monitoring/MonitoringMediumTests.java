@@ -167,7 +167,36 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void it_should_not_capture_silenced_exception(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void uncaughtExceptionShouldBeReportedToSentry(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var client = harness.newFakeClient().build();
+
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withBackendCapability(MONITORING)
+      .start(client);
+
+    var futureResponse = backend.getConnectionService().validateConnection(null);
+
+    try {
+      futureResponse.join();
+    } catch (Exception e) {
+    }
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(sentryServer.getAllServeEvents()).isNotEmpty());
+
+    var exceptionEvent = sentryServer.getAllServeEvents().stream()
+      .filter(e -> e.getRequest().getBodyAsString().contains("NullPointerException"))
+      .findFirst();
+
+    assertThat(exceptionEvent).isPresent();
+    var eventBody = exceptionEvent.get().getRequest().getBodyAsString();
+    assertThat(eventBody)
+      .contains("NullPointerException")
+      .contains("stacktrace.txt");
+  }
+
+  @SonarLintTest
+  void shouldNotCaptureSilencedException(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var content = """
       [3, 1, 4, 1, 5, 9]
       result = set(sorted(data))
