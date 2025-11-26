@@ -74,7 +74,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.ProjectBranch
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 

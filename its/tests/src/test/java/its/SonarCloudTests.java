@@ -372,6 +372,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     waitForAnalysisToBeReady(configScopeId);
 
     var issues = analyzeAndGetIssues(projectKey, "src/file.html", configScopeId);
+
     assertThat(issues).hasSize(1);
   }
 

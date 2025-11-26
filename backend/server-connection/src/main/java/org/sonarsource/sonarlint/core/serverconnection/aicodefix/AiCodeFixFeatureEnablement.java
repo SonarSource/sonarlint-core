@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.commons.storage.model;
+package org.sonarsource.sonarlint.core.serverconnection.aicodefix;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+public enum AiCodeFixFeatureEnablement {
+  DISABLED,
+  ENABLED_FOR_ALL_PROJECTS,
+  ENABLED_FOR_SOME_PROJECTS
+}

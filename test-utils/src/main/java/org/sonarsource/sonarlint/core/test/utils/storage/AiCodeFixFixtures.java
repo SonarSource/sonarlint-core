@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.storage;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFix;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixFeatureEnablement;
 
 public class AiCodeFixFixtures {
   private AiCodeFixFixtures() {
@@ -33,10 +31,15 @@ public class AiCodeFixFixtures {
   }
 
   public static class Builder {
+    private final String connectionId;
     private Set<String> supportedRules = Set.of();
     private boolean organizationEligible = true;
     private AiCodeFixFeatureEnablement enablement = AiCodeFixFeatureEnablement.DISABLED;
     private List<String> enabledProjectKeys = List.of();
+
+    public Builder(String connectionId) {
+      this.connectionId = connectionId;
+    }
 
     public Builder withSupportedRules(Set<String> supportedRules) {
       this.supportedRules = supportedRules;
@@ -64,18 +67,10 @@ public class AiCodeFixFixtures {
       return this;
     }
 
-    public AiCodeFix buildAiCodeFix(String connectionId) {
-      return new AiCodeFix(connectionId, supportedRules, organizationEligible, AiCodeFix.Enablement.valueOf(enablement.name()), Set.copyOf(enabledProjectKeys));
-    }
-
-    public void create(Path path) {
-      var settings = Sonarlint.AiCodeFixSettings.newBuilder()
-        .addAllSupportedRules(supportedRules)
-        .setOrganizationEligible(organizationEligible)
-        .setEnablement(Sonarlint.AiCodeFixEnablement.valueOf(enablement.name()))
-        .addAllEnabledProjectKeys(enabledProjectKeys)
-        .build();
-      ProtobufFileUtil.writeToFile(settings, path.resolve("ai_codefix.pb"));
+    public void populate(TestDatabase database) {
+      var aiCodeFixRepository = new AiCodeFixRepository(database.dsl());
+      aiCodeFixRepository
+        .upsert(new AiCodeFix(connectionId, supportedRules, organizationEligible, AiCodeFix.Enablement.valueOf(enablement.name()), Set.copyOf(enabledProjectKeys)));
     }
   }
 }
