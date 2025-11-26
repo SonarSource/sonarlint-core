@@ -21,13 +21,19 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.sentry.Attachment;
+import io.sentry.Hint;
+import io.sentry.Sentry;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -38,6 +44,7 @@ import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -112,6 +119,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
       .traceMessages(getMessageTracer())
+      .setExceptionHandler(this::handleError)
       .create();
 
     this.client = launcher.getRemoteProxy();
@@ -130,6 +138,35 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rootLogger.addAppender(rpcAppender);
 
     this.clientListener = launcher.startListening();
+  }
+
+  private ResponseError handleError(Throwable throwable) {
+    if (throwable instanceof ResponseErrorException) {
+      return ((ResponseErrorException) throwable).getResponseError();
+    } else if ((throwable instanceof CompletionException || throwable instanceof InvocationTargetException)
+      && throwable.getCause() instanceof ResponseErrorException) {
+      return ((ResponseErrorException) throwable.getCause()).getResponseError();
+    } else {
+      return fallbackResponseError("Internal error", throwable);
+    }
+  }
+
+  private static ResponseError fallbackResponseError(String header, Throwable throwable) {
+    LOG.error("{}: {}", header, throwable.getMessage(), throwable);
+    var error = new ResponseError();
+    error.setMessage(header + ".");
+    error.setCode(ResponseErrorCode.InternalError);
+    var stackTrace = new ByteArrayOutputStream();
+    var stackTraceWriter = new PrintWriter(stackTrace);
+    throwable.printStackTrace(stackTraceWriter);
+    stackTraceWriter.flush();
+
+    //Send to Sentry with hint being the full stacktrace
+    var stackTraceAttachment = new Attachment(stackTrace.toString().getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
+    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
+
+    error.setData(stackTrace.toString());
+    return error;
   }
 
   private static PrintWriter getMessageTracer() {
