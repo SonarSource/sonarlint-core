@@ -209,7 +209,13 @@ public class AiCodeFixService {
     // this is not perfect, the file content might have changed since the issue was detected
     var clientFile = clientFileSystemService.getClientFile(raisedIssue.fileUri());
     if (clientFile == null) {
-      throw new ResponseErrorException(new ResponseError(FILE_NOT_FOUND, "The provided issue ID corresponds to an unknown file", null));
+      // With lazy file system initialization, check if file exists before throwing error
+      if (clientFileSystemService.doesFileExist(raisedIssue.fileUri())) {
+        clientFile = clientFileSystemService.getClientFile(raisedIssue.fileUri());
+      }
+      if (clientFile == null) {
+        throw new ResponseErrorException(new ResponseError(FILE_NOT_FOUND, "The provided issue ID corresponds to an unknown file", null));
+      }
     }
     var issue = raisedIssue.issueDto();
     // the text range presence was checked earlier
@@ -225,6 +231,10 @@ public class AiCodeFixService {
     if (baseDir != null) {
       var fileUri = baseDir.resolve(taint.getIdeFilePath()).toUri();
       clientFile = clientFileSystemService.getClientFile(fileUri);
+      if (clientFile == null && clientFileSystemService.doesFileExist(fileUri)) {
+        // With lazy file system initialization, check if file exists before throwing error
+        clientFile = clientFileSystemService.getClientFile(fileUri);
+      }
     }
     if (clientFile == null) {
       throw new ResponseErrorException(new ResponseError(FILE_NOT_FOUND, "The provided taint ID corresponds to an unknown file", null));

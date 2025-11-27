@@ -484,6 +484,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues, Set<SonarLanguage> enabledLanguages) {
+    LOG.debug("Replacing all issues of branch {} with {} issues", branchName, issues.size());
+    var start = Instant.now();
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -501,6 +503,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         txn.flush();
       });
     }));
+    LOG.debug("Finished replacing all issues of branch {} in {} ms", branchName, Duration.between(start, Instant.now()).toMillis());
   }
 
   @Override

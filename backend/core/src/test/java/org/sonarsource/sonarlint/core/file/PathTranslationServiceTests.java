@@ -95,7 +95,7 @@ class PathTranslationServiceTests {
       .usingRecursiveComparison()
       .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleA")));
 
-    verify(clientFs, times(1)).getFiles(any());
+    verify(clientFs, times(1)).getDirectories(any());
   }
 
   @Test
@@ -125,10 +125,14 @@ class PathTranslationServiceTests {
   }
 
   private void mockClientFilePaths(String... paths) {
+    // Extract directory paths from file paths for the new getDirectories() method
     doReturn(Arrays.stream(paths)
-      .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null, null, true))
+      .map(path -> {
+        var filePath = Paths.get(path);
+        return filePath.getParent() != null ? filePath.getParent() : Paths.get("");
+      })
       .toList())
       .when(clientFs)
-      .getFiles(CONFIG_SCOPE);
+      .getDirectories(CONFIG_SCOPE);
   }
 }

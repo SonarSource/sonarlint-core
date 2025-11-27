@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
@@ -52,8 +53,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetClientFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetClientFileResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFileByIdePathParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFileByIdePathResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFilesByPatternParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFilesByPatternResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListDirectoriesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListDirectoriesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.WarmUpFileSystemCacheParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
@@ -235,9 +245,58 @@ public interface SonarLintRpcClient {
 
   /**
    * Must return all file paths for the given configuration scope.
+   * @deprecated This method will be replaced by lazy loading methods. Old clients should continue to implement this.
+   * New clients can return an empty list and implement the lazy loading methods instead.
    */
+  @Deprecated(since = "10.12")
   @JsonRequest
   CompletableFuture<ListFilesResponse> listFiles(ListFilesParams params);
+
+  /**
+   * Returns files matching a glob pattern in the given configuration scope.
+   * Used for lazy file system initialization - only requested files are loaded.
+   * Should be used to get *.json files from .sonarlint directory if any.
+   * Clients not implementing this should return an empty list and the backend will fall back to cached files.
+   * @since 10.12
+   */
+  @JsonRequest
+  default CompletableFuture<GetFilesByPatternResponse> getFilesByPattern(GetFilesByPatternParams params) {
+    return CompletableFuture.completedFuture(new GetFilesByPatternResponse(List.of()));
+  }
+
+  /**
+   * Returns a file by its IDE path if it exists in the given configuration scope.
+   * Used for lazy file system initialization - only requested files are loaded.
+   * Should be used to get sonar-project.properties and .sonarcloud.properties files.
+   * Clients not implementing this should return null and the backend will fall back to cached files.
+   * @since 10.12
+   */
+  @JsonRequest
+  default CompletableFuture<GetFileByIdePathResponse> getFileByIdePath(GetFileByIdePathParams params) {
+    return CompletableFuture.completedFuture(new GetFileByIdePathResponse(null));
+  }
+
+  /**
+   * Returns a client file for the given URI if it exists.
+   * Used for lazy file system initialization and to check file existence without loading all files.
+   * Clients not implementing this should return null and the backend will fall back to cached files.
+   * @since 10.12
+   */
+  @JsonRequest
+  default CompletableFuture<GetClientFileResponse> getClientFile(GetClientFileParams params) {
+    return CompletableFuture.completedFuture(new GetClientFileResponse(null));
+  }
+
+  /**
+   * Returns only directories (not files) for the given configuration scope.
+   * Similar to listFiles() but more efficient for path translation that only needs directory structure.
+   * Clients not implementing this should return an empty list and the backend will fall back to listFiles().
+   * @since 10.12
+   */
+  @JsonRequest
+  default CompletableFuture<ListDirectoriesResponse> listDirectories(ListDirectoriesParams params) {
+    return CompletableFuture.completedFuture(new ListDirectoriesResponse(List.of()));
+  }
 
   /**
    * Called whenever there is a change in the list of taint vulnerabilities of a configuration scope. The change can be caused by:
@@ -361,5 +420,16 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   default void embeddedServerStarted(EmbeddedServerStartedParams params) {
+  }
+
+  /**
+   * Request from backend to warm up the file system cache asynchronously.
+   * Client should load files in chunks and call submitFileCacheChunk on the backend.
+   * This helps mitigate analysis degradation with lazy file system initialization.
+   * Clients not implementing this can ignore the notification.
+   * @since 10.12
+   */
+  @JsonNotification
+  default void warmUpFileSystemCache(WarmUpFileSystemCacheParams params) {
   }
 }

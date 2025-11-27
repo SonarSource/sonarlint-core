@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.SubmitFileCacheChunkParams;
 
 public class FileRpcServiceDelegate extends AbstractRpcServiceDelegate implements FileRpcService {
 
@@ -56,5 +57,10 @@ public class FileRpcServiceDelegate extends AbstractRpcServiceDelegate implement
   @Override
   public void didCloseFile(DidCloseFileParams params) {
     notify(() -> getBean(ClientFileSystemService.class).didCloseFile(params.getConfigurationScopeId(), params.getFileUri()));
+  }
+
+  @Override
+  public void submitFileCacheChunk(SubmitFileCacheChunkParams params) {
+    notify(() -> getBean(ClientFileSystemService.class).submitFileCacheChunk(params.getConfigScopeId(), params.getFiles()));
   }
 }

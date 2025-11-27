@@ -37,10 +37,16 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetClientFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFileByIdePathParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetFilesByPatternParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListDirectoriesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.WarmUpFileSystemCacheParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -100,13 +106,39 @@ public class ClientFileSystemService {
     }
   }
 
+  /**
+   * @deprecated Use getFileByIdePath for specific files instead. This method will try lazy loading first.
+   */
+  @Deprecated(since = "10.12", forRemoval = true)
   public List<ClientFile> findFilesByNamesInScope(String configScopeId, List<String> filenames) {
-    return getFiles(configScopeId).stream()
-      .filter(f -> filenames.contains(f.getClientRelativePath().getFileName().toString()))
-      .toList();
+    // Try lazy loading first
+    var result = new ArrayList<ClientFile>();
+    for (String filename : filenames) {
+      var file = getFileByIdePath(configScopeId, Path.of(filename));
+      if (file != null) {
+        result.add(file);
+      }
+    }
+    // Fall back to cached files if lazy loading didn't find anything
+    if (result.isEmpty()) {
+      return getFiles(configScopeId).stream()
+        .filter(f -> filenames.contains(f.getClientRelativePath().getFileName().toString()))
+        .toList();
+    }
+    return result;
   }
 
+  /**
+   * @deprecated Use getFilesByPattern for .sonarlint/**\/*.json instead. This method will try lazy loading first.
+   */
+  @Deprecated(since = "10.12", forRemoval = true)
   public List<ClientFile> findSonarlintConfigurationFilesByScope(String configScopeId) {
+    // Try lazy loading first with glob pattern for .sonarlint/**/*.json
+    var lazyFiles = getFilesByPattern(configScopeId, ".sonarlint/**/*.json");
+    if (!lazyFiles.isEmpty()) {
+      return lazyFiles;
+    }
+    // Fall back to cached files
     return getFiles(configScopeId).stream()
       .filter(ClientFile::isSonarlintConfigurationFile)
       .toList();
@@ -236,6 +268,178 @@ public class ClientFileSystemService {
           Collectors.toSet()
         )
       ));
+  }
+
+  /**
+   * Get files matching a glob pattern using lazy loading.
+   * Tries the new RPC method first, falls back to cache.
+   * @since 10.12
+   */
+  public List<ClientFile> getFilesByPattern(String configScopeId, String globPattern) {
+    try {
+      var response = rpcClient.getFilesByPattern(new GetFilesByPatternParams(configScopeId, globPattern)).join();
+      var files = response.getFiles();
+      if (!files.isEmpty()) {
+        // Cache the files we just loaded
+        addFilesToVirtualFileSystem(configScopeId, files);
+        return files.stream().map(ClientFileSystemService::fromDto).toList();
+      }
+    } catch (Exception e) {
+      logDebug("Error getting files by pattern, falling back to cache", e);
+    }
+    // Fall back to cache
+    return getFiles(configScopeId).stream()
+      .filter(f -> f.getClientRelativePath().toString().matches(globToRegex(globPattern)))
+      .toList();
+  }
+
+  private void addFilesToVirtualFileSystem(String configScopeId, List<ClientFileDto> files) {
+    files.forEach(dto -> {
+      var clientFile = fromDto(dto);
+      filesByUri.put(dto.getUri(), clientFile);
+      var byScope = filesByConfigScopeIdCache.get(configScopeId);
+      if (byScope != null) {
+        byScope.put(dto.getUri(), clientFile);
+      }
+    });
+  }
+
+  /**
+   * Get a file by its IDE path using lazy loading.
+   * Tries the new RPC method first, falls back to cache.
+   * @since 10.12
+   */
+  @CheckForNull
+  public ClientFile getFileByIdePath(String configScopeId, Path filePath) {
+    try {
+      var response = rpcClient.getFileByIdePath(new GetFileByIdePathParams(configScopeId, filePath)).join();
+      var fileDto = response.getFile();
+      if (fileDto != null) {
+        var clientFile = fromDto(fileDto);
+        // Cache the file we just loaded
+        filesByUri.put(fileDto.getUri(), clientFile);
+        var byScope = filesByConfigScopeIdCache.get(configScopeId);
+        if (byScope != null) {
+          byScope.put(fileDto.getUri(), clientFile);
+        }
+        return clientFile;
+      }
+    } catch (Exception e) {
+      logDebug("Error getting file by IDE path, falling back to cache", e);
+    }
+    // Fall back to cache
+    return getFiles(configScopeId).stream()
+      .filter(f -> f.getClientRelativePath().equals(filePath))
+      .findFirst()
+      .orElse(null);
+  }
+
+  /**
+   * Check if a file exists using lazy loading.
+   * Tries the new RPC method first, falls back to cache.
+   * @since 10.12
+   */
+  public boolean doesFileExist(URI fileUri) {
+    // First check cache
+    if (filesByUri.containsKey(fileUri)) {
+      return true;
+    }
+    // Try lazy loading
+    try {
+      var response = rpcClient.getClientFile(new GetClientFileParams(fileUri)).join();
+      var fileDto = response.getFile();
+      if (fileDto != null) {
+        var clientFile = fromDto(fileDto);
+        // Cache the file we just loaded
+        filesByUri.put(fileDto.getUri(), clientFile);
+        var byScope = filesByConfigScopeIdCache.get(clientFile.getConfigScopeId());
+        if (byScope != null) {
+          byScope.put(fileDto.getUri(), clientFile);
+        }
+        return true;
+      }
+    } catch (Exception e) {
+      logDebug("Error checking file existence", e);
+    }
+    return false;
+  }
+
+  /**
+   * Get directories (not files) for a configuration scope using lazy loading.
+   * Tries the new RPC method first, falls back to extracting directories from cached files.
+   * @since 10.12
+   */
+  public List<Path> getDirectories(String configScopeId) {
+    try {
+      var response = rpcClient.listDirectories(new ListDirectoriesParams(configScopeId)).join();
+      var directories = response.getDirectories();
+      if (!directories.isEmpty()) {
+        return directories.stream()
+          .map(dto -> fromDto(dto).getClientRelativePath())
+          .toList();
+      }
+    } catch (Exception e) {
+      logDebug("Error getting directories, falling back to cache", e);
+    }
+    // Fall back to extracting directories from cached files
+    return getFiles(configScopeId).stream()
+      .map(ClientFile::getClientRelativePath)
+      .map(Path::getParent)
+      .filter(Objects::nonNull)
+      .distinct()
+      .toList();
+  }
+
+  /**
+   * Listen for configuration scopes added and trigger cache warmup.
+   * @since 10.12
+   */
+  @EventListener
+  public void onConfigurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    var configScopeIds = event.getConfigScopeIds();
+    if (!configScopeIds.isEmpty()) {
+      logDebug("Triggering cache warmup for {} newly added configuration scopes", configScopeIds.size());
+      requestCacheWarmup(configScopeIds);
+    }
+  }
+
+  /**
+   * Request asynchronous cache warmup for the given configuration scopes.
+   * @since 10.12
+   */
+  public void requestCacheWarmup(Set<String> configScopeIds) {
+    try {
+      rpcClient.warmUpFileSystemCache(new WarmUpFileSystemCacheParams(configScopeIds));
+      logDebug("Requested cache warmup for {} configuration scopes", configScopeIds.size());
+    } catch (Exception e) {
+      logDebug("Error requesting cache warmup", e);
+    }
+  }
+
+  /**
+   * Submit a chunk of files to the cache during warmup.
+   * @since 10.12
+   */
+  public void submitFileCacheChunk(String configScopeId, List<ClientFileDto> files) {
+    logDebug("Received cache chunk with {} files for config scope '{}'", files.size(), configScopeId);
+    addFilesToVirtualFileSystem(configScopeId, files);
+  }
+
+  /**
+   * Simple glob to regex conversion for pattern matching.
+   */
+  private static String globToRegex(String glob) {
+    return glob.replace(".", "\\.")
+      .replace("*", ".*")
+      .replace("?", ".");
+  }
+
+  private static void logDebug(String message, Object... args) {
+    try {
+      LOG.debug(message, args);
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
   }
 
 }

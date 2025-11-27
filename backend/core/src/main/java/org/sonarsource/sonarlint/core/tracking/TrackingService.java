@@ -172,6 +172,7 @@ public class TrackingService {
 
   @EventListener
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
+    LOG.debug("Analysis finished: {}", event);
     var analysisId = event.getAnalysisId();
     var matchingSession = matchingSessionByAnalysisId.remove(analysisId);
     if (matchingSession == null) {
