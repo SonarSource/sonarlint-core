@@ -77,7 +77,6 @@ jobs:
         run: |
           mvn -Pcoverage -Dcommercial verify
           maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
-          maven_goals+=("-Pcoverage" "-Dcommercial")
           sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
           sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}" "-Dsonar.scm.revision=$GITHUB_SHA")
           sonar_props+=("-Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
