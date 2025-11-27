@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.storage.repository;
+package org.sonarsource.sonarlint.core.serverconnection.aicodefix;
 
 import java.nio.file.Path;
 import java.util.Set;
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +43,7 @@ class AiCodeFixRepositoryTest {
     var storageRoot = temp.resolve("storage");
 
     var db = new SonarLintDatabase(storageRoot);
-    var aiCodeFixRepo = new AiCodeFixRepository(db);
+    var aiCodeFixRepo = new AiCodeFixRepository(db.dsl());
 
     var entityToStore = new AiCodeFix(
       "test-connection",
@@ -62,13 +61,13 @@ class AiCodeFixRepositoryTest {
 
     // Create a new repository with a fresh DB instance pointing to the same storage root
     var db2 = new SonarLintDatabase(storageRoot);
-    var repo2 = new AiCodeFixRepository(db2);
+    var repo2 = new AiCodeFixRepository(db2.dsl());
     // With a different connection id, no settings should be visible
     var loadedOptDifferent = repo2.get("test-connection-2");
     assertThat(loadedOptDifferent).isEmpty();
 
     // With the same connection id, we should read back exactly what we stored
-    var repoSame = new AiCodeFixRepository(db2);
+    var repoSame = new AiCodeFixRepository(db2.dsl());
     var loadedOpt = repoSame.get("test-connection");
     assertThat(loadedOpt).isPresent();
     var loaded = loadedOpt.get();

@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -61,7 +60,7 @@ class LocalOnlyResolvedIssuesStorageMediumTests {
         storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(Instant.now().minus(1, ChronoUnit.MINUTES).minus(7, ChronoUnit.DAYS))))
       .start();
 
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    var storedIssues = backend.getLocalOnlyIssuesRepository().loadAll("configScopeId");
 
     assertThat(storedIssues).isEmpty();
   }
@@ -75,12 +74,12 @@ class LocalOnlyResolvedIssuesStorageMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
-        storage -> storage.noH2()
+        storage -> storage
+          .usingXodus()
           .withLocalOnlyIssue(aLocalOnlyIssueResolved()))
       .start();
-    var localOnlyIssuesRepository = new LocalOnlyIssuesRepository(backend.getSonarLintDatabase());
 
-    var issues = localOnlyIssuesRepository.loadForFile("configScopeId", Paths.get("file/path"));
+    var issues = backend.getLocalOnlyIssuesRepository().loadForFile("configScopeId", Paths.get("file/path"));
 
     assertThat(issues).hasSize(1);
   }

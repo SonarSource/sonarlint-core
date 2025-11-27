@@ -22,9 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.serverconnection.storage.AiCodeFixStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
@@ -40,20 +38,17 @@ public class ConnectionStorage {
   private final Path projectsStorageRoot;
   private final PluginsStorage pluginsStorage;
   private final Path connectionStorageRoot;
-  private final AiCodeFixStorage aiCodeFixStorage;
   private final OrganizationStorage organizationStorage;
   private final String connectionId;
   private final UserStorage userStorage;
 
-  public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId,
-    DogfoodEnvironmentDetectionService dogfoodEnvDetectionService, SonarLintDatabase database) {
+  public ConnectionStorage(Path globalStorageRoot, String connectionId, SonarLintDatabase database) {
     this.connectionId = connectionId;
     this.connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
     this.projectsStorageRoot = connectionStorageRoot.resolve("projects");
-    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir, connectionId, dogfoodEnvDetectionService, database);
+    this.serverIssueStoresManager = new ServerIssueStoresManager(connectionId, database);
     this.serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
-    this.aiCodeFixStorage = new AiCodeFixStorage(connectionStorageRoot);
     this.organizationStorage = new OrganizationStorage(connectionStorageRoot);
     this.userStorage = new UserStorage(connectionStorageRoot);
   }
@@ -71,10 +66,6 @@ public class ConnectionStorage {
     return pluginsStorage;
   }
 
-  public AiCodeFixStorage aiCodeFix() {
-    return aiCodeFixStorage;
-  }
-
   public OrganizationStorage organization() {
     return organizationStorage;
   }
@@ -87,11 +78,8 @@ public class ConnectionStorage {
     return connectionId;
   }
 
-  public void close() {
-    serverIssueStoresManager.close();
-  }
-
   public void delete() {
     FileUtils.deleteRecursively(connectionStorageRoot);
+    serverIssueStoresManager.delete();
   }
 }
