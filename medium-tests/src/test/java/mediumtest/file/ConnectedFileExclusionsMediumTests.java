@@ -91,7 +91,6 @@ class ConnectedFileExclusionsMediumTests {
     var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null, null, true);
 
     var fakeClient = harness.newFakeClient()
-      .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto, mainFile2Dto, testFile1Dto, testFile2Dto))
       .build();
@@ -204,7 +203,6 @@ class ConnectedFileExclusionsMediumTests {
     var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null, true);
 
     var fakeClient = harness.newFakeClient()
-      .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto))
       .build();
@@ -234,7 +232,6 @@ class ConnectedFileExclusionsMediumTests {
     var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, "wrongCharset", mainFile1, "Toto", null, true);
 
     var fakeClient = harness.newFakeClient()
-      .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(mainFile1Dto))
       .build();
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
