@@ -20,11 +20,8 @@
 package org.sonarsource.sonarlint.core.test.utils;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -47,12 +44,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
-import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -521,7 +515,7 @@ public class SonarLintBackendFixture {
         configurationScopeStorages.forEach(storage -> storage.create(storageRoot));
       }
       try {
-        var sonarLintBackend = createTestBackend(client);
+        var sonarLintBackend = new SonarLintTestRpcServer(client);
         beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto(productKey, productKey,
           "1.2.3", "4.5.6", emptyMap());
@@ -560,62 +554,6 @@ public class SonarLintBackendFixture {
 
     private static URI createUriFromString(@Nullable String uri) {
       return uri == null ? null : URI.create(uri);
-    }
-
-    private static SonarLintTestRpcServer createTestBackend(SonarLintRpcClientDelegate client) throws IOException {
-      var clientToServerOutputStream = new PipedOutputStream() {
-        private final StringBuilder mem = new StringBuilder();
-        private int nextContentSize = -1;
-
-        @Override
-        public void write(@NotNull byte[] b) throws IOException {
-          var content = new String(b, StandardCharsets.UTF_8);
-          mem.append(content);
-          flushIfNeeded(content);
-          super.write(b);
-        }
-
-        private void flushIfNeeded(String b) {
-          int cr = mem.indexOf("\r\n");
-          if (cr != -1 && nextContentSize < 0) {
-            var contentLength = mem.substring(0, cr);
-            mem.replace(0, cr + 2, "");
-            nextContentSize = Integer.parseInt(contentLength.substring("Content-Length: ".length()));
-          }
-          if (nextContentSize > 0 && mem.length() >= nextContentSize + 2) {
-            var content = b.trim();
-            var bytes = mem.toString().getBytes(StandardCharsets.UTF_8);
-            var relevantBytes = new byte[nextContentSize];
-            System.arraycopy(bytes, 0, relevantBytes, 0, nextContentSize);
-            // Because of non-ASCII characters, a character might be longer than one byte, which makes Content-Length irrelevant
-            // As a workaround, we can directly extract the String from the byte array
-            var relevantString = new String(relevantBytes, StandardCharsets.UTF_8);
-
-            mem.replace(0, relevantString.length() + 2, "");
-            nextContentSize = -1;
-            System.out.println("--> " + content);
-          }
-        }
-      };
-      var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
-
-      var serverToClientOutputStream = new PipedOutputStream();
-      var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream) {
-        @Override
-        public synchronized int read(byte[] b, int off, int len) throws IOException {
-          int readLength = super.read(b, off, len);
-          if (readLength > 0) {
-            System.out.println("<-- " + new String(b, off, readLength, StandardCharsets.UTF_8));
-          }
-          return readLength;
-        }
-      };
-
-      var serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
-
-      var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
-
-      return new SonarLintTestRpcServer(serverLauncher, clientLauncher);
     }
 
     private static Path tempDirectory(String prefix) {

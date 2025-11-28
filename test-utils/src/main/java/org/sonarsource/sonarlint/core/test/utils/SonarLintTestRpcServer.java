@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.test.utils;
 import com.google.gson.GsonBuilder;
 import com.google.gson.ToNumberPolicy;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,9 +32,11 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -68,19 +72,28 @@ import static java.util.Objects.requireNonNull;
 public class SonarLintTestRpcServer implements SonarLintRpcServer {
   private final SonarLintRpcServer serverUsingRpc;
   private final SonarLintRpcServerImpl serverUsingJava;
-  @org.jetbrains.annotations.NotNull
   private final BackendJsonRpcLauncher serverLauncher;
   private final ClientJsonRpcLauncher clientLauncher;
+  private final JsonRpcSpyOutputStream clientToServerOutputStream;
+  private final PipedInputStream clientToServerInputStream;
+  private final PipedOutputStream serverToClientOutputStream;
+  private final JsonRpcSpyInputStream serverToClientInputStream;
   private Path userHome;
   private Path workDir;
   private Path storageRoot;
   private String productKey;
 
-  public SonarLintTestRpcServer(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher) {
+  public SonarLintTestRpcServer(SonarLintRpcClientDelegate client) throws IOException {
+    clientToServerOutputStream = new JsonRpcSpyOutputStream();
+    clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
+
+    serverToClientOutputStream = new PipedOutputStream();
+    serverToClientInputStream = new JsonRpcSpyInputStream(serverToClientOutputStream);
+
+    this.serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
+    this.clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
     this.serverUsingRpc = clientLauncher.getServerProxy();
     this.serverUsingJava = serverLauncher.getServer();
-    this.serverLauncher = serverLauncher;
-    this.clientLauncher = clientLauncher;
   }
 
   @Override
@@ -259,10 +272,69 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
         e.printStackTrace(System.err);
       }
     }
+    try {
+      this.clientToServerOutputStream.close();
+      this.serverToClientOutputStream.close();
+      this.clientToServerInputStream.close();
+      this.serverToClientInputStream.close();
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+    }
     return CompletableFuture.completedFuture(null);
   }
 
   public int getEmbeddedServerPort() {
     return serverUsingJava.getEmbeddedServerPort();
+  }
+
+  private static class JsonRpcSpyInputStream extends PipedInputStream {
+
+    public JsonRpcSpyInputStream(PipedOutputStream outputStream) throws IOException {
+      super(outputStream);
+    }
+
+    @Override
+    public synchronized int read(byte[] b, int off, int len) throws IOException {
+      int readLength = super.read(b, off, len);
+      if (readLength > 0) {
+        System.out.println("<-- " + new String(b, off, readLength, StandardCharsets.UTF_8) + "\n");
+      }
+      return readLength;
+    }
+  }
+
+  private static class JsonRpcSpyOutputStream extends PipedOutputStream {
+    private final StringBuilder mem = new StringBuilder();
+    private int nextContentSize = -1;
+
+    @Override
+    public void write(@NotNull byte[] b) throws IOException {
+      var content = new String(b, StandardCharsets.UTF_8);
+      mem.append(content);
+      flushIfNeeded(content);
+      super.write(b);
+    }
+
+    private void flushIfNeeded(String b) {
+      int cr = mem.indexOf("\r\n");
+      if (cr != -1 && nextContentSize < 0) {
+        var contentLength = mem.substring(0, cr);
+        mem.replace(0, cr + 2, "");
+        nextContentSize = Integer.parseInt(contentLength.substring("Content-Length: ".length()));
+      }
+      if (nextContentSize > 0 && mem.length() >= nextContentSize + 2) {
+        var content = b.trim();
+        var bytes = mem.toString().getBytes(StandardCharsets.UTF_8);
+        var relevantBytes = new byte[nextContentSize];
+        System.arraycopy(bytes, 0, relevantBytes, 0, nextContentSize);
+        // Because of non-ASCII characters, a character might be longer than one byte, which makes Content-Length irrelevant
+        // As a workaround, we can directly extract the String from the byte array
+        var relevantString = new String(relevantBytes, StandardCharsets.UTF_8);
+
+        mem.replace(0, relevantString.length() + 2, "");
+        nextContentSize = -1;
+        System.out.println("--> " + content + "\n");
+      }
+    }
   }
 }
