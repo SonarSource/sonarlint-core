@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.test.utils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -26,9 +27,12 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,15 +44,16 @@ import static org.mockito.Mockito.when;
 class SonarLintTestRpcServerTest {
 
   @Test
-  void it_should_throw_an_assertion_exception_when_telemetry_file_does_not_exist(@TempDir Path userHome) {
+  void it_should_throw_an_assertion_exception_when_telemetry_file_does_not_exist(@TempDir Path userHome) throws IOException {
     var clientLauncher = mock(ClientJsonRpcLauncher.class);
     var rpcServer = mock(SonarLintRpcServer.class);
     when(rpcServer.initialize(any())).thenReturn(CompletableFuture.completedFuture(null));
     when(clientLauncher.getServerProxy()).thenReturn(rpcServer);
-    var sonarLintTestRpcServer = new SonarLintTestRpcServer(mock(BackendJsonRpcLauncher.class), clientLauncher);
+    var sonarLintTestRpcServer = new SonarLintTestRpcServer(mock(SonarLintRpcClientDelegate.class));
     sonarLintTestRpcServer
       .initialize(
-        new InitializeParams(null, new TelemetryClientConstantAttributesDto("product", null, null, null, null), null, null, Set.of(), Paths.get(""), Paths.get(""), null, null,
+        new InitializeParams(new ClientConstantInfoDto("", ""), new TelemetryClientConstantAttributesDto("product", null, null, null, null),
+          new HttpConfigurationDto(new SslConfigurationDto(null, null, null, null, null, null), null, null, null, null), null, Set.of(), Paths.get(""), Paths.get(""), null, null,
           null, null, null, null, null, userHome.toString(), null, false, null, false, null))
       .join();
 

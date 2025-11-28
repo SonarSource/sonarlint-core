@@ -19,6 +19,7 @@
  */
 package mediumtest;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -30,10 +31,7 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
@@ -42,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class SonarLintTestHarnessShutdownTest {
+class SonarLintTestHarnessTest {
 
   private SonarLintTestHarness harness;
   private TestLogHandler logHandler;
@@ -58,8 +56,8 @@ class SonarLintTestHarnessShutdownTest {
   }
 
   @Test
-  void should_shutdown_normally() {
-    SonarLintTestRpcServer backend = new TestBackend(getMockedBackend(), getMockedClient(), CompletableFuture.completedFuture(null));
+  void should_shutdown_normally() throws IOException {
+    SonarLintTestRpcServer backend = new TestBackend(mock(SonarLintRpcClientDelegate.class), CompletableFuture.completedFuture(null));
     harness.addBackend(backend);
     TestServer server = new TestServer();
     harness.addServer(server);
@@ -72,10 +70,10 @@ class SonarLintTestHarnessShutdownTest {
   }
 
   @Test
-  void should_handle_exceptionally_callback() {
+  void should_handle_exceptionally_callback() throws IOException {
     CompletableFuture<Void> failingFuture = new CompletableFuture<>();
     failingFuture.completeExceptionally(new RuntimeException("Simulated exception"));
-    SonarLintTestRpcServer backend = new TestBackend(getMockedBackend(), getMockedClient(), failingFuture);
+    SonarLintTestRpcServer backend = new TestBackend(mock(SonarLintRpcClientDelegate.class), failingFuture);
     harness.addBackend(backend);
     TestServer server = new TestServer();
     harness.addServer(server);
@@ -93,9 +91,10 @@ class SonarLintTestHarnessShutdownTest {
   }
 
   @Test
-  void should_handle_catch_block_exceptions() {
-    SonarLintTestRpcServer backend1 = new ThrowingBackend(getMockedBackend(), getMockedClient(), new CompletionException("Simulated completion exception", new RuntimeException()));
-    SonarLintTestRpcServer backend2 = new ThrowingBackend(getMockedBackend(), getMockedClient(), new IllegalStateException("Simulated illegal state exception"));
+  void should_handle_catch_block_exceptions() throws IOException {
+    SonarLintTestRpcServer backend1 = new ThrowingBackend(mock(SonarLintRpcClientDelegate.class),
+      new CompletionException("Simulated completion exception", new RuntimeException()));
+    SonarLintTestRpcServer backend2 = new ThrowingBackend(mock(SonarLintRpcClientDelegate.class), new IllegalStateException("Simulated illegal state exception"));
     harness.addBackend(backend1);
     harness.addBackend(backend2);
     TestServer server = new TestServer();
@@ -119,8 +118,8 @@ class SonarLintTestHarnessShutdownTest {
   }
 
   @Test
-  void should_handle_server_exceptions() {
-    SonarLintTestRpcServer testBackend = new TestBackend(getMockedBackend(), getMockedClient(), CompletableFuture.completedFuture(null));
+  void should_handle_server_exceptions() throws IOException {
+    SonarLintTestRpcServer testBackend = new TestBackend(mock(SonarLintRpcClientDelegate.class), CompletableFuture.completedFuture(null));
     harness.addBackend(testBackend);
     ServerFixture.Server throwingServer1 = new ThrowingTestServer(new RuntimeException("Server 1 shutdown error"));
     ServerFixture.Server throwingServer2 = new ThrowingTestServer(new RuntimeException("Server 2 shutdown error"));
@@ -146,12 +145,12 @@ class SonarLintTestHarnessShutdownTest {
   }
 
   @Test
-  void should_handle_multiple_backends_and_servers() {
-    SonarLintTestRpcServer backend1 = new TestBackend(getMockedBackend(), getMockedClient(), CompletableFuture.completedFuture(null));
+  void should_handle_multiple_backends_and_servers() throws IOException {
+    SonarLintTestRpcServer backend1 = new TestBackend(mock(SonarLintRpcClientDelegate.class), CompletableFuture.completedFuture(null));
     CompletableFuture<Void> failingFuture = new CompletableFuture<>();
     failingFuture.completeExceptionally(new RuntimeException("Backend 2 error"));
-    SonarLintTestRpcServer backend2 = new TestBackend(getMockedBackend(), getMockedClient(), failingFuture);
-    SonarLintTestRpcServer backend3 = new ThrowingBackend(getMockedBackend(), getMockedClient(), new IllegalStateException("Backend 3 error"));
+    SonarLintTestRpcServer backend2 = new TestBackend(mock(SonarLintRpcClientDelegate.class), failingFuture);
+    SonarLintTestRpcServer backend3 = new ThrowingBackend(mock(SonarLintRpcClientDelegate.class), new IllegalStateException("Backend 3 error"));
     harness.addBackend(backend1);
     harness.addBackend(backend2);
     harness.addBackend(backend3);
@@ -197,11 +196,11 @@ class SonarLintTestHarnessShutdownTest {
     }
   }
 
-  static class TestBackend extends SonarLintTestRpcServer {
+  private static class TestBackend extends SonarLintTestRpcServer {
     private final CompletableFuture<Void> shutdownFuture;
 
-    TestBackend(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher, CompletableFuture<Void> shutdownFuture) {
-      super(serverLauncher, clientLauncher);
+    TestBackend(SonarLintRpcClientDelegate client, CompletableFuture<Void> shutdownFuture) throws IOException {
+      super(client);
       this.shutdownFuture = shutdownFuture;
     }
 
@@ -211,11 +210,11 @@ class SonarLintTestHarnessShutdownTest {
     }
   }
 
-  static class ThrowingBackend extends SonarLintTestRpcServer {
+  private static class ThrowingBackend extends SonarLintTestRpcServer {
     private final RuntimeException exceptionToThrow;
 
-    ThrowingBackend(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher, RuntimeException exceptionToThrow) {
-      super(serverLauncher, clientLauncher);
+    ThrowingBackend(SonarLintRpcClientDelegate client, RuntimeException exceptionToThrow) throws IOException {
+      super(client);
       this.exceptionToThrow = exceptionToThrow;
     }
 
@@ -254,18 +253,6 @@ class SonarLintTestHarnessShutdownTest {
     public void shutdown() {
       throw exceptionToThrow;
     }
-  }
-
-  private BackendJsonRpcLauncher getMockedBackend() {
-    var backend = mock(BackendJsonRpcLauncher.class);
-    when(backend.getServer()).thenReturn(mock(SonarLintRpcServerImpl.class));
-    return backend;
-  }
-
-  private ClientJsonRpcLauncher getMockedClient() {
-    var client = mock(ClientJsonRpcLauncher.class);
-    when(client.getServerProxy()).thenReturn(mock(SonarLintRpcServer.class));
-    return client;
   }
 
 }
