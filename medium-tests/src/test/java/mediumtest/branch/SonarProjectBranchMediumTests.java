@@ -150,7 +150,6 @@ class SonarProjectBranchMediumTests {
   @SonarLintTest
   void verify_that_multiple_quick_branch_notifications_are_not_running_in_race_conditions(SonarLintTestHarness harness) {
     var client = harness.newFakeClient()
-      .printLogsToStdOut()
       .build();
     doReturn("branchA", "branchB").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     var backend = harness.newBackend()
