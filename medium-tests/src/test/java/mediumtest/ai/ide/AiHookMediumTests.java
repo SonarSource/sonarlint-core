@@ -46,9 +46,12 @@ class AiHookMediumTests {
       .getHookScriptContent(new GetHookScriptContentParams(AiAgent.WINDSURF))
       .join();
 
-    // Check script content
-    assertThat(response.getScriptFileName()).matches("sonarqube_analysis_hook\\.(js|py|sh)");
-    assertThat(response.getScriptContent())
+    // Check scripts list
+    assertThat(response.getScripts()).hasSize(1);
+    var script = response.getScripts().get(0);
+    
+    assertThat(script.getFileName()).matches("sonarqube_analysis_hook\\.(js|py|sh)");
+    assertThat(script.getContent())
       .contains("SonarQube for IDE Windsurf Hook")
       .contains("sonarqube_analysis_hook")
       .contains("/sonarlint/api/analysis/files")
@@ -68,7 +71,7 @@ class AiHookMediumTests {
   }
 
   @SonarLintTest
-  void it_should_throw_exception_for_cursor_not_yet_implemented(SonarLintTestHarness harness) {
+  void it_should_return_hook_script_content_for_cursor_with_two_scripts(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
@@ -78,14 +81,45 @@ class AiHookMediumTests {
     // Wait for embedded server to start
     await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(backend.getEmbeddedServerPort()).isGreaterThan(0));
 
-    var futureResponse = backend.getAiAgentService()
-      .getHookScriptContent(new GetHookScriptContentParams(AiAgent.CURSOR));
+    var response = backend.getAiAgentService()
+      .getHookScriptContent(new GetHookScriptContentParams(AiAgent.CURSOR))
+      .join();
 
-    assertThat(futureResponse)
-      .failsWithin(Duration.ofSeconds(2))
-      .withThrowableThat()
-      .withCauseInstanceOf(UnsupportedOperationException.class)
-      .withMessageContaining("hook configuration not yet implemented");
+    // Check scripts list - Cursor should have 2 scripts
+    assertThat(response.getScripts()).hasSize(2);
+    
+    var trackScript = response.getScripts().get(0);
+    var analyzeScript = response.getScripts().get(1);
+    
+    // Check track script
+    assertThat(trackScript.getFileName()).matches("track_file_edit\\.(js|py|sh)");
+    assertThat(trackScript.getContent())
+      .contains("SonarQube for IDE Cursor Hook")
+      .contains("Track File Edits");
+    
+    // Check analyze script
+    assertThat(analyzeScript.getFileName()).matches("analyze_and_report\\.(js|py|sh)");
+    assertThat(analyzeScript.getContent())
+      .contains("SonarQube for IDE Cursor Hook")
+      .contains("Analyze and Report Issues")
+      .contains("/sonarlint/api/analysis/files")
+      .contains("/sonarlint/api/status")
+      .contains("STARTING_PORT")
+      .contains("ENDING_PORT")
+      .containsAnyOf(
+        "EXPECTED_IDE_NAME = 'Cursor'",  // JS/Python
+        "EXPECTED_IDE_NAME=\"Cursor\""   // Bash
+      );
+
+    // Check config content
+    assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
+    assertThat(response.getConfigContent())
+      .contains("\"version\": 1")
+      .contains("\"afterFileEdit\"")
+      .contains("\"stop\"")
+      .contains("{{TRACK_SCRIPT_PATH}}")
+      .contains("{{ANALYZE_SCRIPT_PATH}}")
+      .doesNotContain("\"show_output\"");
   }
 
 }

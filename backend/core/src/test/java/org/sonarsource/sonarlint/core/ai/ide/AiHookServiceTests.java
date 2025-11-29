@@ -47,8 +47,9 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.js");
-    assertThat(response.getScriptContent())
+    assertThat(response.getScripts()).hasSize(1);
+    assertThat(response.getScripts().get(0).getFileName()).isEqualTo("sonarqube_analysis_hook.js");
+    assertThat(response.getScripts().get(0).getContent())
       .contains("#!/usr/bin/env node")
       .contains("hostname: 'localhost'")
       .contains("STARTING_PORT = 64120")
@@ -73,8 +74,9 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.py");
-    assertThat(response.getScriptContent())
+    assertThat(response.getScripts()).hasSize(1);
+    assertThat(response.getScripts().get(0).getFileName()).isEqualTo("sonarqube_analysis_hook.py");
+    assertThat(response.getScripts().get(0).getContent())
       .contains("#!/usr/bin/env python3")
       .contains("STARTING_PORT = 64120")
       .contains("ENDING_PORT = 64130")
@@ -98,8 +100,9 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.sh");
-    assertThat(response.getScriptContent())
+    assertThat(response.getScripts()).hasSize(1);
+    assertThat(response.getScripts().get(0).getFileName()).isEqualTo("sonarqube_analysis_hook.sh");
+    assertThat(response.getScripts().get(0).getContent())
       .contains("#!/bin/bash")
       .contains("STARTING_PORT=64120")
       .contains("ENDING_PORT=64130")
@@ -152,24 +155,55 @@ class AiHookServiceTests {
     var service = new AiHookService(embeddedServer, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
-    assertThat(response.getScriptContent())
+    assertThat(response.getScripts().get(0).getContent())
       .contains("SonarQube for IDE Windsurf Hook")
       .contains("EXPECTED_IDE_NAME = 'Windsurf'");
   }
 
   @Test
-  void it_should_throw_exception_for_unsupported_cursor_agent() {
+  void it_should_embed_correct_agent_in_script_comment_for_cursor() {
     var embeddedServer = mock(EmbeddedServer.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
-    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.PYTHON));
+    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.NODEJS));
 
     var service = new AiHookService(embeddedServer, executableLocator);
+    var response = service.getHookScriptContent(AiAgent.CURSOR);
 
-    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.CURSOR))
-      .isInstanceOf(UnsupportedOperationException.class)
-      .hasMessageContaining("hook configuration not yet implemented");
+    assertThat(response.getScripts()).hasSize(2);
+    assertThat(response.getScripts().get(0).getFileName()).isEqualTo("track_file_edit.js");
+    assertThat(response.getScripts().get(1).getFileName()).isEqualTo("analyze_and_report.js");
+    
+    assertThat(response.getScripts().get(0).getContent())
+      .contains("SonarQube for IDE Cursor Hook")
+      .contains("Track File Edits");
+    
+    assertThat(response.getScripts().get(1).getContent())
+      .contains("SonarQube for IDE Cursor Hook")
+      .contains("Analyze and Report Issues")
+      .contains("EXPECTED_IDE_NAME = 'Cursor'");
+  }
+
+  @Test
+  void it_should_generate_cursor_hook_configuration() {
+    var embeddedServer = mock(EmbeddedServer.class);
+    var executableLocator = mock(ExecutableLocator.class);
+
+    when(embeddedServer.getPort()).thenReturn(64120);
+    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.NODEJS));
+
+    var service = new AiHookService(embeddedServer, executableLocator);
+    var response = service.getHookScriptContent(AiAgent.CURSOR);
+
+    assertThat(response.getConfigFileName()).isEqualTo("hooks.json");
+    assertThat(response.getConfigContent())
+      .contains("\"version\": 1")
+      .contains("\"afterFileEdit\"")
+      .contains("\"stop\"")
+      .contains("{{TRACK_SCRIPT_PATH}}")
+      .contains("{{ANALYZE_SCRIPT_PATH}}")
+      .doesNotContain("\"show_output\""); // Cursor config doesn't have show_output
   }
 
   @Test

@@ -19,25 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
+import java.util.List;
+
 public class GetHookScriptContentResponse {
-  private final String scriptContent;
-  private final String scriptFileName;
+  private final List<HookScript> scripts;
   private final String configContent;
   private final String configFileName;
 
-  public GetHookScriptContentResponse(String scriptContent, String scriptFileName, String configContent, String configFileName) {
-    this.scriptContent = scriptContent;
-    this.scriptFileName = scriptFileName;
+  public GetHookScriptContentResponse(List<HookScript> scripts, String configContent, String configFileName) {
+    this.scripts = scripts;
     this.configContent = configContent;
     this.configFileName = configFileName;
   }
 
-  public String getScriptContent() {
-    return scriptContent;
-  }
-
-  public String getScriptFileName() {
-    return scriptFileName;
+  public List<HookScript> getScripts() {
+    return scripts;
   }
 
   public String getConfigContent() {
@@ -46,6 +42,24 @@ public class GetHookScriptContentResponse {
 
   public String getConfigFileName() {
     return configFileName;
+  }
+
+  public static class HookScript {
+    private final String content;
+    private final String fileName;
+
+    public HookScript(String content, String fileName) {
+      this.content = content;
+      this.fileName = fileName;
+    }
+
+    public String getContent() {
+      return content;
+    }
+
+    public String getFileName() {
+      return fileName;
+    }
   }
 }
 
