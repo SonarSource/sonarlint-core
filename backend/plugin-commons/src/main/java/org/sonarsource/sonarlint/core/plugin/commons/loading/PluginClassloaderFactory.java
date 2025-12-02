@@ -59,7 +59,7 @@ public class PluginClassloaderFactory {
 
     for (var def : defs) {
       builder.newClassloader(def.getBasePluginKey());
-      builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, new Mask());
+      builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, Mask.ALL);
       builder.setLoadingOrder(def.getBasePluginKey(), PARENT_FIRST);
       for (var jar : def.getFiles()) {
         builder.addURL(def.getBasePluginKey(), fileToUrl(jar));
@@ -75,10 +75,10 @@ public class PluginClassloaderFactory {
    */
   private static void exportResources(PluginClassLoaderDef def, ClassloaderBuilder builder, Collection<PluginClassLoaderDef> allPlugins) {
     // export the resources to all other plugins
-    builder.setExportMask(def.getBasePluginKey(), def.getExportMask());
+    builder.setExportMask(def.getBasePluginKey(), def.getExportMaskBuilder().build());
     for (var other : allPlugins) {
       if (!other.getBasePluginKey().equals(def.getBasePluginKey())) {
-        builder.addSibling(def.getBasePluginKey(), other.getBasePluginKey(), new Mask());
+        builder.addSibling(def.getBasePluginKey(), other.getBasePluginKey(), Mask.ALL);
       }
     }
   }
@@ -115,16 +115,17 @@ public class PluginClassloaderFactory {
    * a transitive dependency of sonar-plugin-api</p>
    */
   private static Mask apiMask() {
-    return new Mask()
-      .addInclusion("org/sonar/api/")
-      .addInclusion("org/sonarsource/api/sonarlint/")
-      .addInclusion("org/sonar/check/")
-      .addInclusion("net/sourceforge/pmd/")
-      .addInclusion("com/sonarsource/plugins/license/api/")
-      .addInclusion("org/sonarsource/sonarlint/plugin/api/")
-      .addInclusion("org/slf4j/")
+    return Mask.builder()
+      .include("org/sonar/api/")
+      .include("org/sonarsource/api/sonarlint/")
+      .include("org/sonar/check/")
+      .include("net/sourceforge/pmd/")
+      .include("com/sonarsource/plugins/license/api/")
+      .include("org/sonarsource/sonarlint/plugin/api/")
+      .include("org/slf4j/")
 
       // API exclusions
-      .addExclusion("org/sonar/api/internal/");
+      .exclude("org/sonar/api/internal/")
+      .build();
   }
 }

@@ -51,9 +51,8 @@
       <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.codehaus.sonar</groupId>
+      <groupId>org.sonarsource.classloader</groupId>
       <artifactId>sonar-classloader</artifactId>
-      <version>1.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

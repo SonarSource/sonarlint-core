@@ -38,7 +38,7 @@ class PluginClassLoaderDef {
   private final String basePluginKey;
   private final Map<String, String> mainClassesByPluginKey = new HashMap<>();
   private final List<File> files = new ArrayList<>();
-  private final Mask mask = new Mask();
+  private final Mask.Builder mask = Mask.builder();
 
   PluginClassLoaderDef(String basePluginKey) {
     this.basePluginKey = basePluginKey;
@@ -56,7 +56,7 @@ class PluginClassLoaderDef {
     this.files.addAll(f);
   }
 
-  Mask getExportMask() {
+  Mask.Builder getExportMaskBuilder() {
     return mask;
   }
 

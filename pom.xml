@@ -271,6 +271,11 @@
         <artifactId>flyway-core</artifactId>
         <version>${flyway.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.sonarsource.classloader</groupId>
+        <artifactId>sonar-classloader</artifactId>
+        <version>1.2.0.2089</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
