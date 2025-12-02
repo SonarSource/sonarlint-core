@@ -82,7 +82,7 @@ class PluginClassloaderFactoryTests {
   private static PluginClassLoaderDef basePluginDef() {
     var def = new PluginClassLoaderDef(BASE_PLUGIN_KEY);
     def.addMainClass(BASE_PLUGIN_KEY, BASE_PLUGIN_CLASSNAME);
-    def.getExportMask().addInclusion("org/sonar/plugins/base/api/");
+    def.getExportMaskBuilder().include("org/sonar/plugins/base/api/");
     def.addFiles(List.of(testPluginJar("base-plugin/target/base-plugin-0.1-SNAPSHOT.jar")));
     return def;
   }
@@ -90,7 +90,7 @@ class PluginClassloaderFactoryTests {
   private static PluginClassLoaderDef dependentPluginDef() {
     var def = new PluginClassLoaderDef(DEPENDENT_PLUGIN_KEY);
     def.addMainClass(DEPENDENT_PLUGIN_KEY, DEPENDENT_PLUGIN_CLASSNAME);
-    def.getExportMask().addInclusion("org/sonar/plugins/dependent/api/");
+    def.getExportMaskBuilder().include("org/sonar/plugins/dependent/api/");
     def.addFiles(List.of(testPluginJar("dependent-plugin/target/dependent-plugin-0.1-SNAPSHOT.jar")));
     return def;
   }

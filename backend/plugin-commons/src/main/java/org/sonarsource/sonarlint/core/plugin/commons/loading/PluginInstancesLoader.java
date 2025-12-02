@@ -116,7 +116,7 @@ public class PluginInstancesLoader implements Closeable {
       def.addMainClass(info.getKey(), info.getMainClass());
 
       for (var defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
-        def.getExportMask().addInclusion(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
+        def.getExportMaskBuilder().include(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
       }
     }
     return classloadersByBasePlugin.values();
