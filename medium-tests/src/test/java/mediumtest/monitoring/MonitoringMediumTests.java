@@ -167,7 +167,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void uncaughtExceptionShouldBeReportedToSentry(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void uncaughtExceptionShouldBeReportedToSentry(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().build();
 
     var backend = harness.newBackend()
