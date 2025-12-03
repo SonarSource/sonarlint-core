@@ -150,9 +150,6 @@ public class SonarLintLogger {
   }
 
   private void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
-    if (t != null) {
-      Sentry.captureException(t);
-    }
     if (currentLevel.isMoreVerboseOrEqual(level) && (formattedMessage != null || t != null)) {
       var stacktrace = t == null ? null : LogOutput.stackTraceToString(t);
       log(formattedMessage, level, stacktrace);
