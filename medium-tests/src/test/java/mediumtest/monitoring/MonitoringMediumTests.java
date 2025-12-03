@@ -158,8 +158,8 @@ class MonitoringMediumTests {
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isEmpty());
-    // The mock Sentry server receives 2 events: one for the trace, one for the exception
-    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(2));
+    // The mock Sentry server receives 1 event: one for the trace
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
     assertThat(sentryServer.getAllServeEvents())
       .extracting(e -> e.getRequest().getBodyAsString())
       // Server name should be removed from events
