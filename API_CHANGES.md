@@ -1,3 +1,9 @@
+# 10.38
+
+## New features
+
+* Add a new `GESSIE_TELEMETRY` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables sending data to Gessie (Generic Event System) alongside previous telemetry implementation.
+
 # 10.37
 
 ## Deprecation
@@ -26,7 +32,6 @@
 * Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService` service and a `joinIdeLabsProgram` method.
   * Use it to allow users to join the SonarQube for IDE Labs program
   * The method accepts user email and IDE name as parameters
-* Add a new `GESSIE_TELEMETRY` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables sending data to Gessie (Generic Event System) alongside previous telemetry implementation.
 
 # 10.35
 
