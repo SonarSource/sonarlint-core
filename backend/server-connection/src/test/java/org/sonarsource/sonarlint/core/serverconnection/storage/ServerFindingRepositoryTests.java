@@ -221,6 +221,15 @@ class ServerFindingRepositoryTests {
   }
 
   @Test
+  void was_ever_updated_when_several_branches() {
+    var t1 = taint("TAINT_KEY_1", filePath);
+    repo.mergeTaintIssues(branch, List.of(t1), Set.of(), Instant.now(), Set.of());
+    repo.mergeTaintIssues("otherbranch", List.of(t1), Set.of(), Instant.now(), Set.of());
+
+    assertThat(repo.wasEverUpdated()).isTrue();
+  }
+
+  @Test
   void update_issue_resolution_status() {
     var issueKey = "ISSUE_KEY";
     var file = Path.of("/file/path");
