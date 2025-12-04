@@ -192,8 +192,6 @@ public interface ProjectServerIssueStore {
 
   void deleteHotspot(String hotspotKey);
 
-  void close();
-
   void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater);
 
   boolean containsIssue(String issueKey);
@@ -209,4 +207,6 @@ public interface ProjectServerIssueStore {
   List<ServerDependencyRisk> loadDependencyRisks(String branchName);
 
   void updateDependencyRiskStatus(UUID key, ServerDependencyRisk.Status newStatus, List<ServerDependencyRisk.Transition> transitions);
+
+  void removeFindingsForConnection(String connectionId);
 }

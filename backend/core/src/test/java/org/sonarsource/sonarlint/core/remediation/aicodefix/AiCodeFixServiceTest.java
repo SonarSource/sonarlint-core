@@ -29,21 +29,18 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
-import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFix;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * This test verifies that AiCodeFixService.getFeature() reads settings
@@ -69,7 +66,7 @@ class AiCodeFixServiceTest {
   @Test
   void getFeature_reads_from_h2_repository() {
     db = new SonarLintDatabase(tempDir);
-    var aiCodeFixRepo = new AiCodeFixRepository(db);
+    var aiCodeFixRepo = new AiCodeFixRepository(db.dsl());
 
     var connectionId = "conn-1";
     var projectKey = "project-A";
@@ -87,12 +84,9 @@ class AiCodeFixServiceTest {
     var clientFileSystemService = mock(ClientFileSystemService.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
     var taintService = mock(TaintVulnerabilityTrackingService.class);
-    var storageService = mock(StorageService.class);
-    var dogfoodingService = mock(DogfoodEnvironmentDetectionService.class);
-    when(dogfoodingService.isDogfoodEnvironment()).thenReturn(true);
 
-    var service = new AiCodeFixService(connectionRepository, configurationRepository, sonarQubeClientManager,
-      previouslyRaisedFindingsRepository, clientFileSystemService, eventPublisher, taintService, aiCodeFixRepo, storageService, dogfoodingService);
+    var service = new AiCodeFixService(connectionRepository, configurationRepository, sonarQubeClientManager, previouslyRaisedFindingsRepository, clientFileSystemService,
+      eventPublisher, taintService, aiCodeFixRepo);
 
     var binding = new Binding(connectionId, projectKey);
 

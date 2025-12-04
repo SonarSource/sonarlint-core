@@ -146,8 +146,8 @@ public class TaintIssueDownloader {
       IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
       primaryLocation.textRange(), ruleDescriptionContextKey,
-      cleanCodeAttribute, impacts)
-      .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey, cancelMonitor));
+      cleanCodeAttribute, impacts,
+      convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey, cancelMonitor));
   }
 
   @CheckForNull
@@ -208,17 +208,17 @@ public class TaintIssueDownloader {
         parseProtoSoftwareQuality(i),
         parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    var flows = liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).toList();
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), null, liteTaintIssueFromWs.getRuleKey(),
         mainLocation.getMessage(),
         filePath, creationDate, severity,
-        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey, cleanCodeAttribute, impacts);
+        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey, cleanCodeAttribute, impacts, flows);
     } else {
       taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), null, liteTaintIssueFromWs.getRuleKey(),
         mainLocation.getMessage(),
-        filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts);
+        filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts, flows);
     }
-    taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).toList());
     return taintIssue;
   }
 
