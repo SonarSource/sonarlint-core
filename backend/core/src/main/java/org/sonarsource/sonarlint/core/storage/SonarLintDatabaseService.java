@@ -21,21 +21,42 @@ package org.sonarsource.sonarlint.core.storage;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_BRANCHES;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 @Component
 @Lazy(false)
 public class SonarLintDatabaseService {
 
   private final SonarLintDatabase database;
-  private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final LocalOnlyIssuesRepository localOnlyIssuesRepository;
+  private final AiCodeFixRepository aiCodeFixRepository;
+  private final Set<String> initialConnectionIds;
 
-  public SonarLintDatabaseService(SonarLintDatabase database, ConnectionConfigurationRepository connectionConfigurationRepository) {
+  public SonarLintDatabaseService(SonarLintDatabase database, LocalOnlyIssuesRepository localOnlyIssuesRepository, AiCodeFixRepository aiCodeFixRepository,
+    InitializeParams params) {
     this.database = database;
-    this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.localOnlyIssuesRepository = localOnlyIssuesRepository;
+    this.aiCodeFixRepository = aiCodeFixRepository;
+    this.initialConnectionIds = Stream.concat(
+      params.getSonarQubeConnections().stream().map(SonarQubeConnectionConfigurationDto::getConnectionId),
+      params.getSonarCloudConnections().stream().map(SonarCloudConnectionConfigurationDto::getConnectionId))
+      .collect(Collectors.toSet());
   }
 
   public SonarLintDatabase getDatabase() {
@@ -44,8 +65,22 @@ public class SonarLintDatabaseService {
 
   @PostConstruct
   public void postConstruct() {
-    var existingConnectionIds = connectionConfigurationRepository.getConnectionsById().keySet();
-    database.cleanupNonExistingConnections(existingConnectionIds);
+    cleanupNonExistingConnections();
+    localOnlyIssuesRepository.purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
+  }
+
+  private void cleanupNonExistingConnections() {
+    aiCodeFixRepository.deleteUnknownConnections(initialConnectionIds);
+    // this should be moved to ServerFindingRepository but the current design does not allow it
+    database.dsl().deleteFrom(SERVER_FINDINGS)
+      .where(SERVER_FINDINGS.CONNECTION_ID.notIn(initialConnectionIds))
+      .execute();
+    database.dsl().deleteFrom(SERVER_DEPENDENCY_RISKS)
+      .where(SERVER_DEPENDENCY_RISKS.CONNECTION_ID.notIn(initialConnectionIds))
+      .execute();
+    database.dsl().deleteFrom(SERVER_BRANCHES)
+      .where(SERVER_BRANCHES.CONNECTION_ID.notIn(initialConnectionIds))
+      .execute();
   }
 
   @PreDestroy

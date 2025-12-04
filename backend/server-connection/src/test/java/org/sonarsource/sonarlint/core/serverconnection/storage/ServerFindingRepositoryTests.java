@@ -66,7 +66,7 @@ class ServerFindingRepositoryTests {
   void setUp() {
     var storageRoot = tempDir.resolve("storage");
     db = new SonarLintDatabase(storageRoot);
-    repo = new ServerFindingRepository(db, "conn-1", "project-1");
+    repo = new ServerFindingRepository(db.dsl(), "conn-1", "project-1");
     branch = "main";
     filePath = Path.of("/file/path");
   }
@@ -74,7 +74,6 @@ class ServerFindingRepositoryTests {
   @AfterEach
   void tearDown() {
     if (repo != null) {
-      repo.close();
       db.shutdown();
     }
   }
@@ -279,7 +278,7 @@ class ServerFindingRepositoryTests {
   @Test
   void merge_taints_removes_closed_and_upserts() {
     var t3 = new ServerTaintIssue(UUID.randomUUID(), "TAINT_KEY_3", false, null, "rule", "msg", filePath,
-      Instant.now(), IssueSeverity.MINOR, RuleType.CODE_SMELL, null, null, null, Map.of());
+      Instant.now(), IssueSeverity.MINOR, RuleType.CODE_SMELL, null, null, null, Map.of(), List.of());
     repo.mergeTaintIssues(branch, List.of(t3), Set.of("TAINT_KEY_1"), Instant.now(), Set.of());
 
     var afterMerge = repo.loadTaint(branch);
@@ -383,7 +382,7 @@ class ServerFindingRepositoryTests {
   private static ServerTaintIssue taint(String key, Path file) {
     return new ServerTaintIssue(UUID.randomUUID(), key, false, null, "java:S" + Math.abs(key.hashCode() % 1000),
       "Taint message " + key, file, Instant.now(), IssueSeverity.MAJOR, RuleType.SECURITY_HOTSPOT,
-      new TextRangeWithHash(3, 1, 3, 5, "hash-" + key), null, null, Map.of());
+      new TextRangeWithHash(3, 1, 3, 5, "hash-" + key), null, null, Map.of(), List.of());
   }
 
   private static LineLevelServerIssue lineIssue(String key, Path file, int line) {
