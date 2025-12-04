@@ -20,6 +20,7 @@
 package mediumtest.monitoring;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import io.sentry.Sentry;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetec
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -50,6 +52,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FLIGHT_RECORDER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
@@ -225,5 +228,95 @@ class MonitoringMediumTests {
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error processing file event"));
     await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).isEmpty());
+  }
+
+  @SonarLintTest
+  void should_configure_dogfood_environment(SonarLintTestHarness harness) {
+    startMonitoringBackend(harness);
+
+    assertThat(Sentry.getCurrentScopes().getOptions().getEnvironment()).isEqualTo("dogfood");
+  }
+
+  @SonarLintTest
+  void should_configure_production_environment_when_dogfood_disabled(SonarLintTestHarness harness) {
+    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
+
+    startMonitoringBackend(harness);
+
+    assertThat(Sentry.getCurrentScopes().getOptions().getEnvironment()).isEqualTo("production");
+  }
+
+  @SonarLintTest
+  void should_configure_flight_recorder_environment_when_capability_enabled(SonarLintTestHarness harness) {
+    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
+
+    startMonitoringBackend(harness, FLIGHT_RECORDER);
+
+    assertThat(Sentry.getCurrentScopes().getOptions().getEnvironment()).isEqualTo("flight_recorder");
+  }
+
+  @SonarLintTest
+  void should_use_sample_rate_from_system_property(SonarLintTestHarness harness) {
+    withSampleRateProperty("0.42", () -> {
+      startMonitoringBackend(harness);
+
+      assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isEqualTo(0.42);
+    });
+  }
+
+  @SonarLintTest
+  void should_default_sample_rate_to_zero_when_property_invalid_and_not_dogfood(SonarLintTestHarness harness) {
+    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
+
+    withSampleRateProperty("invalid", () -> {
+      startMonitoringBackend(harness);
+
+      assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isZero();
+    });
+  }
+
+  @SonarLintTest
+  void should_default_sample_rate_to_dogfood_value_when_property_invalid(SonarLintTestHarness harness) {
+    withSampleRateProperty("invalid", () -> {
+      startMonitoringBackend(harness);
+
+      assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isEqualTo(0.01);
+    });
+  }
+
+  @SonarLintTest
+  void should_use_flight_recorder_sample_rate_when_capability_enabled(SonarLintTestHarness harness) {
+    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
+
+    withSampleRateProperty("invalid", () -> {
+      startMonitoringBackend(harness, FLIGHT_RECORDER);
+
+      assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isEqualTo(1D);
+    });
+  }
+
+  private void withSampleRateProperty(String value, Runnable action) {
+    var previousValue = System.getProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY);
+    try {
+      System.setProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY, value);
+      action.run();
+    } finally {
+      if (previousValue == null) {
+        System.clearProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY);
+      } else {
+        System.setProperty(MonitoringService.TRACES_SAMPLE_RATE_PROPERTY, previousValue);
+      }
+    }
+  }
+
+  private void startMonitoringBackend(SonarLintTestHarness harness, BackendCapability... extraCapabilities) {
+    var client = harness.newFakeClient().build();
+    var backendBuilder = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withBackendCapability(MONITORING);
+    for (var capability : extraCapabilities) {
+      backendBuilder = backendBuilder.withBackendCapability(capability);
+    }
+    backendBuilder.start(client);
   }
 }
