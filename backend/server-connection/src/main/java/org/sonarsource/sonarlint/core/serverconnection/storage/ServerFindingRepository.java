@@ -64,13 +64,11 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
 
   @Override
   public boolean wasEverUpdated() {
-    return database.dsl().select(SERVER_BRANCHES.LAST_ISSUE_SYNC_TS, SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS, SERVER_BRANCHES.LAST_TAINT_SYNC_TS)
-      .from(SERVER_BRANCHES)
-      .where(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId)
-        .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-      .fetchOptional()
-      .filter(r -> r.value1() != null || r.value2() != null || r.value3() != null)
-      .isPresent();
+    return database.dsl().fetchExists(
+      database.dsl().selectFrom(SERVER_BRANCHES)
+        .where(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId)
+          .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey))
+          .and(SERVER_BRANCHES.LAST_ISSUE_SYNC_TS.isNotNull().or(SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS.isNotNull()).or(SERVER_BRANCHES.LAST_TAINT_SYNC_TS.isNotNull()))));
   }
 
   @Override
