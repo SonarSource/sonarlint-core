@@ -115,31 +115,24 @@ public class ClientFile {
     if (isDirty) {
       return clientProvidedContent;
     }
-    if (fsPath == null) {
-      throw new IllegalStateException("File " + uri + " is not dirty but has no OS Path defined");
-    }
     var charsetToUse = getCharset();
-    try {
-      return IOUtils.toString(inputStream(), charsetToUse);
+    try (var inputStream = inputStream()) {
+      return IOUtils.toString(inputStream, charsetToUse);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to read file " + fsPath + "content with charset " + charsetToUse, e);
     }
   }
 
-  public InputStream inputStream() {
+  public InputStream inputStream() throws IOException {
     if (isDirty && clientProvidedContent != null) {
       return new ByteArrayInputStream(clientProvidedContent.getBytes(getCharset()));
     }
     if (fsPath == null) {
       throw new IllegalStateException("File " + uri + " is not dirty or does not have content but has no OS Path defined");
     }
-    try {
-      return BOMInputStream.builder().setInputStream(Files.newInputStream(fsPath))
-        // order list of BOMs by length descending, as anyway a sort is made in the constructor
-        .setByteOrderMarks(ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE).get();
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
+    return BOMInputStream.builder().setInputStream(Files.newInputStream(fsPath))
+      // order list of BOMs by length descending, as anyway a sort is made in the constructor
+      .setByteOrderMarks(ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE).get();
   }
 
   public Charset getCharset() {
