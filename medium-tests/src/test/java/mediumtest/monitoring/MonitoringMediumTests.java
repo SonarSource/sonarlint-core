@@ -97,7 +97,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void simplePhpWithMonitoring(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void simple_php_with_monitoring(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "foo.php", """
       <?php
       function writeMsg($fname) {
@@ -127,7 +127,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void analysisErrorsWithTracing(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void analysis_errors_with_tracing(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var content = """
       <?php
       function writeMsg($fname) {
@@ -167,7 +167,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void uncaughtExceptionShouldBeReportedToSentry(SonarLintTestHarness harness) {
+  void uncaught_exception_should_be_reported_to_sentry(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().build();
 
     var backend = harness.newBackend()
@@ -196,7 +196,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void shouldNotCaptureSilencedException(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void should_not_capture_silenced_exception(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var content = """
       [3, 1, 4, 1, 5, 9]
       result = set(sorted(data))

@@ -44,6 +44,7 @@ public class MonitoringService {
 
   private static final String ENVIRONMENT_FLIGHT_RECORDER = "flight_recorder";
   private static final String ENVIRONMENT_PRODUCTION = "production";
+  private static final String ENVIRONMENT_DOGFOOD = "dogfood";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -109,7 +110,10 @@ public class MonitoringService {
   private String getEnvironment() {
     if (initializeParams.flightRecorderEnabled()) {
       return ENVIRONMENT_FLIGHT_RECORDER;
+    } else if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+      return ENVIRONMENT_DOGFOOD;
     }
+
     return ENVIRONMENT_PRODUCTION;
   }
 
