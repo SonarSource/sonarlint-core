@@ -19,10 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import jakarta.inject.Inject;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class AiAgentService {
+
+  private final TelemetryService telemetryService;
+
+  @Inject
+  public AiAgentService(TelemetryService telemetryService) {
+    this.telemetryService = telemetryService;
+  }
+
   public GetRuleFileContentResponse getRuleFileContent(AiAgent agent) {
     var header = switch (agent) {
       case CURSOR, WINDSURF -> """
@@ -40,7 +50,7 @@ public class AiAgentService {
 
         """;
     };
-    return new GetRuleFileContentResponse(header
+    var response = new GetRuleFileContentResponse(header
       + """
         These are some guidelines when using the SonarQube MCP server.
 
@@ -83,5 +93,9 @@ public class AiAgentService {
         - Remind users that snippet analysis doesn't replace full project scans
         - Provide full file content for better analysis results
         """);
+
+    telemetryService.mcpRuleFileRequested();
+
+    return response;
   }
 }

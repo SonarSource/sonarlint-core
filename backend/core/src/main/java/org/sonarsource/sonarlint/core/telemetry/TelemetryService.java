@@ -319,6 +319,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementMcpServerConfigurationRequestedCount);
   }
 
+  public void mcpRuleFileRequested() {
+    updateTelemetry(TelemetryLocalStorage::incrementMcpRuleFileRequestedCount);
+  }
+
   public void ideLabsLinkClicked(String linkId) {
     updateTelemetry(storage -> storage.ideLabsLinkClicked(linkId));
   }

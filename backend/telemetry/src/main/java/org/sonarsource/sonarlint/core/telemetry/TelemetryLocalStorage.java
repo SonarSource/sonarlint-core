@@ -99,6 +99,7 @@ public class TelemetryLocalStorage {
   private int automaticAnalysisToggledCount;
   private int flightRecorderSessionsCount;
   private int mcpServerConfigurationRequestedCount;
+  private int mcpRuleFileRequestedCount;
   private boolean isMcpIntegrationEnabled;
   @Nullable
   private McpTransportMode mcpTransportModeUsed;
@@ -273,6 +274,7 @@ public class TelemetryLocalStorage {
     automaticAnalysisToggledCount = 0;
     flightRecorderSessionsCount = 0;
     mcpServerConfigurationRequestedCount = 0;
+    mcpRuleFileRequestedCount = 0;
     isMcpIntegrationEnabled = false;
     mcpTransportModeUsed = null;
     labsLinkClickedCount.clear();
@@ -735,6 +737,15 @@ public class TelemetryLocalStorage {
 
   public int getMcpServerConfigurationRequestedCount() {
     return mcpServerConfigurationRequestedCount;
+  }
+
+  public void incrementMcpRuleFileRequestedCount() {
+    markSonarLintAsUsedToday();
+    mcpRuleFileRequestedCount++;
+  }
+
+  public int getMcpRuleFileRequestedCount() {
+    return mcpRuleFileRequestedCount;
   }
 
   public Map<String, Integer> getLabsFeedbackLinkClickedCount() {
