@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -36,6 +37,7 @@ import org.jooq.Record1;
 import org.jooq.TableField;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerBranchesRecord;
@@ -50,7 +52,7 @@ import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
-
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final EntityMapper mapper = new EntityMapper();
   private final SonarLintDatabase database;
   private final String connectionId;
@@ -573,9 +575,20 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {
+    try {
+      LOG.debug("Batch merging {} issues for branch '{}' and project '{}'", issues.size(), branchName, sonarProjectKey);
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
+    var start = Instant.now();
     trx.dsl().batchMerge(issues.stream()
       .map(issue -> mapper.serverIssueToRecord(issue, branchName, connectionId, sonarProjectKey)).toList())
       .execute();
+    try {
+      LOG.debug("Batch merge completed in {} ms", Duration.between(start, Instant.now()).toMillis());
+    } catch (Exception ignored) {
+      // Logging might not be configured yet during initialization
+    }
   }
 
   private void batchMergeTaints(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerTaintIssue> taints) {

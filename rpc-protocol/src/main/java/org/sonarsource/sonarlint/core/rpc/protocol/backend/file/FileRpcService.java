@@ -48,4 +48,12 @@ public interface FileRpcService {
    */
   @JsonNotification
   void didCloseFile(DidCloseFileParams params);
+
+  /**
+   * Submit a chunk of files to the backend file system cache.
+   * Used during asynchronous cache warmup initiated by the backend.
+   * @since 10.12
+   */
+  @JsonNotification
+  void submitFileCacheChunk(SubmitFileCacheChunkParams params);
 }

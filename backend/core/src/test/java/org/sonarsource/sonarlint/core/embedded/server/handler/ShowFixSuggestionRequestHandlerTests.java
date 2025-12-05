@@ -96,7 +96,7 @@ class ShowFixSuggestionRequestHandlerTests {
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
     clientFile = mock(ClientFile.class);
     var clientFs = mock(ClientFileSystemService.class);
-    when(clientFs.getFiles(any())).thenReturn(List.of(clientFile));
+    when(clientFs.getFileByIdePath(any(), any())).thenReturn(clientFile);
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
