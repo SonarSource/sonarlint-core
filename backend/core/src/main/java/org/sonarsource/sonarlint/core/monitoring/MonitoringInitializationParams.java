@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.monitoring;
 
-import org.apache.commons.lang3.SystemUtils;
+import java.util.UUID;
 
-public class DogfoodEnvironmentDetectionService {
-  public static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
-
-  public boolean isDogfoodEnvironment() {
-    return "1".equals(SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0"));
-  }
-}
+public record MonitoringInitializationParams(
+  boolean monitoringEnabled,
+  boolean flightRecorderEnabled,
+  boolean isTelemetryEnabled,
+  UUID flightRecorderSessionId,
+  String productKey,
+  String sonarQubeForIdeVersion,
+  String ideVersion
+) {}

@@ -28,14 +28,14 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.commons.monitoring.Step;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
+import org.sonarsource.sonarlint.core.commons.tracing.Step;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import static java.util.Collections.emptyList;
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChildren;
+import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChildren;
 
 public class SpringComponentContainer implements StartableContainer {
 

@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doReturn;
@@ -57,7 +58,8 @@ class TelemetryServiceTests {
 
     when(telemetryManager.isTelemetryEnabledByUser()).thenReturn(true);
 
-    underTest = spy(new TelemetryService(init, client, telemetryServerAttributesProvider, telemetryManager));
+    var applicationEventPublisher = mock(ApplicationEventPublisher.class);
+    underTest = spy(new TelemetryService(init, client, telemetryServerAttributesProvider, telemetryManager, applicationEventPublisher));
     doReturn(true).when(underTest).isEnabled();
 
     clearInvocations(telemetryManager);

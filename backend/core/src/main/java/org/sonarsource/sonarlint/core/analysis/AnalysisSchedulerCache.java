@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.event.EventListener;
 
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
 public class AnalysisSchedulerCache {
   private final Path workDir;

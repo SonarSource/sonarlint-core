@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.monitoring;
 
-import io.sentry.ISpan;
-import io.sentry.SpanStatus;
-
-public class Span {
-
-  private final ISpan sentrySpan;
-
-  Span(ISpan sentrySpan) {
-    this.sentrySpan = sentrySpan;
-  }
-
-  public void finishExceptionally(Throwable throwable) {
-    this.sentrySpan.setThrowable(throwable);
-    this.sentrySpan.finish(SpanStatus.INTERNAL_ERROR);
-  }
-
-  public void finishSuccessfully() {
-    this.sentrySpan.finish(SpanStatus.OK);
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.repository.KnownFindingsRepository;
 import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;

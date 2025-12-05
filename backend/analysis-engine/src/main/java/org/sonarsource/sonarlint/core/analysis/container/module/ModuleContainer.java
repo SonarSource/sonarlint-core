@@ -32,11 +32,11 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Lan
 import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensionInstaller;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
 public class ModuleContainer extends SpringComponentContainer {
 

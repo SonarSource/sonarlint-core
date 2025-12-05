@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.TelemetryUpdatedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
@@ -51,6 +52,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Optional.ofNullable;
@@ -67,13 +69,15 @@ public class TelemetryService {
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
   private final boolean isTelemetryFeatureEnabled;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
-    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
+    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager, ApplicationEventPublisher applicationEventPublisher) {
     this.isTelemetryFeatureEnabled = initializeParams.getBackendCapabilities().contains(TELEMETRY);
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     this.telemetryManager = telemetryManager;
+    this.applicationEventPublisher = applicationEventPublisher;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
 
     initTelemetryAndScheduleUpload(initializeParams);
@@ -111,6 +115,7 @@ public class TelemetryService {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
       telemetryManager.enable(telemetryLiveAttributes);
+      applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(true));
     }
   }
 
@@ -118,6 +123,7 @@ public class TelemetryService {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
       telemetryManager.disable(telemetryLiveAttributes);
+      applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(false));
     }
   }
 

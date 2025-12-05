@@ -38,9 +38,9 @@ import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
 /**
  * Execute Sensors.
