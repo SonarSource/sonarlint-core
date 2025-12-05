@@ -222,6 +222,7 @@ public class TelemetryMeasuresBuilder {
 
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("mcp.rule_file_requested", String.valueOf(storage.getMcpRuleFileRequestedCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", Boolean.toString(storage.isMcpIntegrationEnabled()), BOOLEAN, DAILY));
     var mcpTransportModeUsed = storage.getMcpTransportModeUsed();
     if (mcpTransportModeUsed != null) {

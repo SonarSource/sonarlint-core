@@ -85,6 +85,7 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"automatic_analysis.enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
       "{\"key\":\"automatic_analysis.toggled_count\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.configuration_requested\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"mcp.rule_file_requested\",\"value\":\"4\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.integration_enabled\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
       "{\"key\":\"mcp.transport_mode\",\"value\":\"HTTP\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"ide_labs.joined\",\"value\":\"true\",\"type\":\"boolean\",\"granularity\":\"daily\"}," +
@@ -138,6 +139,7 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(1), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(3), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("mcp.rule_file_requested", String.valueOf(4), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", String.valueOf(true), BOOLEAN, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.transport_mode", McpTransportMode.HTTP.name(), STRING, DAILY));
 
@@ -171,6 +173,8 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY))
       .contains(tuple("automatic_analysis.enabled", "true", BOOLEAN, DAILY))
       .contains(tuple("automatic_analysis.toggled_count", "1", INTEGER, DAILY))
+      .contains(tuple("mcp.configuration_requested", "3", INTEGER, DAILY))
+      .contains(tuple("mcp.rule_file_requested", "4", INTEGER, DAILY))
       .contains(tuple("mcp.integration_enabled", "true", BOOLEAN, DAILY))
       .contains(tuple("mcp.transport_mode", "HTTP", STRING, DAILY))
       .contains(tuple("ide_labs.joined", "true", BOOLEAN, DAILY))
