@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse.HookScript;
 
 public class AiHookService {
 
@@ -38,6 +40,24 @@ public class AiHookService {
             {
               "command": "{{SCRIPT_PATH}}",
               "show_output": true
+            }
+          ]
+        }
+      }
+      """;
+
+  private static final String CURSOR_HOOK_CONFIG = """
+      {
+        "version": 1,
+        "hooks": {
+          "afterFileEdit": [
+            {
+              "command": "{{TRACK_SCRIPT_PATH}}"
+            }
+          ],
+          "stop": [
+            {
+              "command": "{{ANALYZE_SCRIPT_PATH}}"
             }
           ]
         }
@@ -68,25 +88,60 @@ public class AiHookService {
       .orElseThrow(() -> new IllegalStateException("No suitable executable found for hook script generation. " +
         "Please ensure Node.js, Python, or Bash is available on your system."));
 
-    var scriptContent = loadTemplateAndReplacePlaceholders(hookScriptType.getFileName(), port, agent);
-    var configContent = generateHookConfiguration(agent);
+    var scripts = new ArrayList<HookScript>();
+    String configContent;
+    
+    if (agent == AiAgent.CURSOR) {
+      // Cursor needs two scripts: one for tracking, one for analyzing
+      var trackScriptName = getTrackScriptName(hookScriptType);
+      var analyzeScriptName = getAnalyzeScriptName(hookScriptType);
+      
+      var trackScriptContent = loadTemplateAndReplacePlaceholders(trackScriptName, port, agent);
+      var analyzeScriptContent = loadTemplateAndReplacePlaceholders(analyzeScriptName, port, agent);
+      
+      scripts.add(new HookScript(trackScriptContent, trackScriptName));
+      scripts.add(new HookScript(analyzeScriptContent, analyzeScriptName));
+      
+      configContent = generateHookConfiguration(agent);
+    } else {
+      // Windsurf needs single script
+      var scriptContent = loadTemplateAndReplacePlaceholders(hookScriptType.getFileName(), port, agent);
+      scripts.add(new HookScript(scriptContent, hookScriptType.getFileName()));
+      configContent = generateHookConfiguration(agent);
+    }
+    
     var configFileName = getConfigFileName(agent);
 
-    return new GetHookScriptContentResponse(scriptContent, hookScriptType.getFileName(), configContent, configFileName);
+    return new GetHookScriptContentResponse(scripts, configContent, configFileName);
   }
 
   private static String generateHookConfiguration(AiAgent agent) {
     return switch (agent) {
       case WINDSURF -> WINDSURF_HOOK_CONFIG;
-      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case CURSOR -> CURSOR_HOOK_CONFIG;
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
+    };
+  }
+
+  private static String getTrackScriptName(HookScriptType type) {
+    return switch (type) {
+      case NODEJS -> "track_file_edit.js";
+      case PYTHON -> "track_file_edit.py";
+      case BASH -> "track_file_edit.sh";
+    };
+  }
+
+  private static String getAnalyzeScriptName(HookScriptType type) {
+    return switch (type) {
+      case NODEJS -> "analyze_and_report.js";
+      case PYTHON -> "analyze_and_report.py";
+      case BASH -> "analyze_and_report.sh";
     };
   }
 
   private static String getConfigFileName(AiAgent agent) {
     return switch (agent) {
-      case WINDSURF -> "hooks.json";
-      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case WINDSURF, CURSOR -> "hooks.json";
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }

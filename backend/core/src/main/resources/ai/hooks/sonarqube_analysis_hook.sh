@@ -61,7 +61,8 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
-FILE_PATH=$(echo "$EVENT_JSON" | jq -r '.tool_info.file_path // empty' 2>/dev/null || echo "")
+# Support both Windsurf (tool_info.file_path) and Cursor (file_path) event formats
+FILE_PATH=$(echo "$EVENT_JSON" | jq -r '.file_path // .tool_info.file_path // empty' 2>/dev/null || echo "")
 
 if [ -z "$FILE_PATH" ]; then
   echo "No file path in event"
