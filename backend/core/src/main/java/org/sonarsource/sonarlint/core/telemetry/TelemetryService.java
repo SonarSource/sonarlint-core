@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
@@ -324,6 +325,10 @@ public class TelemetryService {
 
   public void ideLabsFeedbackLinkClicked(String featureId) {
     updateTelemetry(storage -> storage.ideLabsFeedbackLinkClicked(featureId));
+  }
+
+  public void aiHookInstalled(AiAgent aiAgent) {
+    updateTelemetry(storage -> storage.aiHookInstalled(aiAgent));
   }
 
   @EventListener

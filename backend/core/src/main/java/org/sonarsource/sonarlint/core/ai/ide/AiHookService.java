@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class AiHookService {
 
@@ -46,15 +47,17 @@ public class AiHookService {
 
   private final EmbeddedServer embeddedServer;
   private final ExecutableLocator executableLocator;
+  private final TelemetryService telemetryService;
 
   @Inject
-  public AiHookService(EmbeddedServer embeddedServer) {
-    this(embeddedServer, new ExecutableLocator());
+  public AiHookService(EmbeddedServer embeddedServer, TelemetryService telemetryService) {
+    this(embeddedServer, telemetryService, new ExecutableLocator());
   }
 
   // For testing
-  AiHookService(EmbeddedServer embeddedServer, ExecutableLocator executableLocator) {
+  AiHookService(EmbeddedServer embeddedServer, TelemetryService telemetryService, ExecutableLocator executableLocator) {
     this.embeddedServer = embeddedServer;
+    this.telemetryService = telemetryService;
     this.executableLocator = executableLocator;
   }
 
@@ -71,6 +74,8 @@ public class AiHookService {
     var scriptContent = loadTemplateAndReplacePlaceholders(hookScriptType.getFileName(), port, agent);
     var configContent = generateHookConfiguration(agent);
     var configFileName = getConfigFileName(agent);
+
+    telemetryService.aiHookInstalled(agent);
 
     return new GetHookScriptContentResponse(scriptContent, hookScriptType.getFileName(), configContent, configFileName);
   }

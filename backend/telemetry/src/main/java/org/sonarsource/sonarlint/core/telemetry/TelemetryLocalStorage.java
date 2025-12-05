@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
@@ -102,6 +104,7 @@ public class TelemetryLocalStorage {
   private McpTransportMode mcpTransportModeUsed;
   private final Map<String, Integer> labsLinkClickedCount;
   private final Map<String, Integer> labsFeedbackLinkClickedCount;
+  private final Map<AiAgent, Integer> aiHooksInstalledCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -121,6 +124,7 @@ public class TelemetryLocalStorage {
     calledToolsByName = new HashMap<>();
     labsLinkClickedCount = new HashMap<>();
     labsFeedbackLinkClickedCount = new HashMap<>();
+    aiHooksInstalledCount = new EnumMap<>(AiAgent.class);
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -273,6 +277,7 @@ public class TelemetryLocalStorage {
     mcpTransportModeUsed = null;
     labsLinkClickedCount.clear();
     labsFeedbackLinkClickedCount.clear();
+    aiHooksInstalledCount.clear();
   }
 
   public long numUseDays() {
@@ -747,4 +752,14 @@ public class TelemetryLocalStorage {
   public void ideLabsFeedbackLinkClicked(String featureId) {
     this.labsFeedbackLinkClickedCount.merge(featureId, 1, Integer::sum);
   }
+
+  public void aiHookInstalled(AiAgent aiAgent) {
+    markSonarLintAsUsedToday();
+    this.aiHooksInstalledCount.merge(aiAgent, 1, Integer::sum);
+  }
+
+  public Map<AiAgent, Integer> getAiHooksInstalledCount() {
+    return aiHooksInstalledCount;
+  }
+
 }
