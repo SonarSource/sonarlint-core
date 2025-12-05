@@ -118,6 +118,7 @@ import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -134,6 +135,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_P
 import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_STORE_TYPE;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FLIGHT_RECORDER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 
 @Configuration
 // Can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our beans manually
@@ -258,10 +260,11 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, FlightRecorderSession flightRecorderSession) {
+  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, FlightRecorderSession flightRecorderSession, TelemetryService telemetryService) {
     return new MonitoringInitializationParams(
       params.getBackendCapabilities().contains(MONITORING),
       params.getBackendCapabilities().contains(FLIGHT_RECORDER),
+      telemetryService.isEnabled(),
       flightRecorderSession.sessionId(),
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),

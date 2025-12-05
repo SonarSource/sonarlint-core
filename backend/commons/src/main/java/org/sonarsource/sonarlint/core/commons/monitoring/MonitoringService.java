@@ -47,6 +47,7 @@ public class MonitoringService {
   private static final String ENVIRONMENT_DOGFOOD = "dogfood";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final String INTELLIJ_PRODUCT_KEY = "idea";
 
   private final MonitoringInitializationParams initializeParams;
   private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
@@ -67,13 +68,20 @@ public class MonitoringService {
       return;
     }
 
-    var sentryConfiguration = getSentryConfiguration();
-    LOG.info("Initializing Sentry");
-    Sentry.init(sentryConfiguration);
-    active = true;
-    if (initializeParams.flightRecorderEnabled()) {
-      configureFlightRecorderSession();
+    if (shouldInitializeSentry()) {
+      var sentryConfiguration = getSentryConfiguration();
+      LOG.info("Initializing Sentry");
+      Sentry.init(sentryConfiguration);
+      active = true;
+      if (initializeParams.flightRecorderEnabled()) {
+        configureFlightRecorderSession();
+      }
     }
+  }
+
+  private boolean shouldInitializeSentry() {
+    return (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) ||
+      (initializeParams.productKey().equals(INTELLIJ_PRODUCT_KEY) && initializeParams.isTelemetryEnabled());
   }
 
   public boolean isActive() {
