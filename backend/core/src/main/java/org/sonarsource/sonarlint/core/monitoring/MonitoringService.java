@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.monitoring;
 
 import io.sentry.Hint;
 import io.sentry.ScopeType;
@@ -30,7 +30,11 @@ import io.sentry.protocol.User;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
+import org.sonarsource.sonarlint.core.event.TelemetryUpdatedEvent;
+import org.springframework.context.event.EventListener;
 
 public class MonitoringService {
 
@@ -47,6 +51,7 @@ public class MonitoringService {
   private static final String ENVIRONMENT_DOGFOOD = "dogfood";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final String INTELLIJ_PRODUCT_KEY = "idea";
 
   private final MonitoringInitializationParams initializeParams;
   private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
@@ -67,13 +72,20 @@ public class MonitoringService {
       return;
     }
 
-    var sentryConfiguration = getSentryConfiguration();
-    LOG.info("Initializing Sentry");
-    Sentry.init(sentryConfiguration);
-    active = true;
-    if (initializeParams.flightRecorderEnabled()) {
-      configureFlightRecorderSession();
+    if (shouldInitializeSentry()) {
+      var sentryConfiguration = getSentryConfiguration();
+      LOG.info("Initializing Sentry");
+      Sentry.init(sentryConfiguration);
+      active = true;
+      if (initializeParams.flightRecorderEnabled()) {
+        configureFlightRecorderSession();
+      }
     }
+  }
+
+  private boolean shouldInitializeSentry() {
+    return (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) ||
+      (initializeParams.productKey().equals(INTELLIJ_PRODUCT_KEY) && initializeParams.isTelemetryEnabled());
   }
 
   public boolean isActive() {
@@ -163,5 +175,22 @@ public class MonitoringService {
 
   public Trace newTrace(String name, String operation) {
     return Trace.begin(name, operation);
+  }
+
+  @EventListener
+  public void onTelemetryUpdated(TelemetryUpdatedEvent event) {
+    if (!event.isTelemetryEnabled()) {
+      Sentry.close();
+      active = false;
+    } else if (!active && initializeParams.monitoringEnabled() && shouldInitializeSentry()) {
+      var sentryConfiguration = getSentryConfiguration();
+      LOG.info("Initializing Sentry after telemetry was enabled");
+      Sentry.init(sentryConfiguration);
+      active = true;
+      if (initializeParams.flightRecorderEnabled()) {
+        configureFlightRecorderSession();
+      }
+    }
+
   }
 }

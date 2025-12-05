@@ -28,7 +28,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.storage.model.AiCodeFix;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;

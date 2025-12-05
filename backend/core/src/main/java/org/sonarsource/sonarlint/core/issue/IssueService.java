@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.storage.repository.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;

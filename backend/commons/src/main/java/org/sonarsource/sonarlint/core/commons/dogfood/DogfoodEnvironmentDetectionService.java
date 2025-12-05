@@ -17,34 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.commons.dogfood;
 
-import io.sentry.ITransaction;
-import javax.annotation.Nullable;
+import org.apache.commons.lang3.SystemUtils;
 
-public class Step {
+public class DogfoodEnvironmentDetectionService {
+  public static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
 
-  private final String task;
-  private final Runnable operation;
-
-  public Step(String task, Runnable operation) {
-    this.task = task;
-    this.operation = operation;
+  public boolean isDogfoodEnvironment() {
+    return "1".equals(SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0"));
   }
-
-  public void execute() {
-    operation.run();
-  }
-
-  public void executeTransaction(ITransaction transaction, @Nullable String description) {
-    var span = new Span(transaction.startChild(task, description));
-    try {
-      operation.run();
-      span.finishSuccessfully();
-    } catch (Exception exception) {
-      span.finishExceptionally(exception);
-      throw exception;
-    }
-  }
-
 }

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;

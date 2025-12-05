@@ -47,7 +47,7 @@ import utils.TestPlugin;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
+import static org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 
 @ExtendWith(SystemStubsExtension.class)
 class SonarCodeContextMediumTests {

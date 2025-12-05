@@ -46,12 +46,12 @@ import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 
-import static org.sonarsource.sonarlint.core.commons.monitoring.Trace.startChild;
+import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
 public class AnalyzeCommand extends Command {

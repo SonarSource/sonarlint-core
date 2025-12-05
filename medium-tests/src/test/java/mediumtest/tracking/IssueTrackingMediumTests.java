@@ -87,7 +87,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
+import static org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;

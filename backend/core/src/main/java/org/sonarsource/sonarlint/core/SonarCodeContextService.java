@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.util.git.ProcessWrapperFactory;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;

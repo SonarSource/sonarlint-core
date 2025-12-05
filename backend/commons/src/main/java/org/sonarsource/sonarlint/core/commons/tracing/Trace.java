@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.commons.tracing;
 
 import io.sentry.ITransaction;
 import io.sentry.Sentry;
@@ -34,7 +34,7 @@ public class Trace {
     this.transaction = transaction;
   }
 
-  static Trace begin(String name, String operation) {
+  public static Trace begin(String name, String operation) {
     return new Trace(Sentry.startTransaction(name, operation));
   }
 

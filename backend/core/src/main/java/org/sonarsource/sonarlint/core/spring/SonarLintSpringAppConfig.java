@@ -51,16 +51,14 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
-import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
-import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.commons.storage.repository.AiCodeFixRepository;
-import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
+import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
@@ -88,6 +86,8 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.log.LogService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
+import org.sonarsource.sonarlint.core.monitoring.MonitoringInitializationParams;
+import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -118,6 +118,7 @@ import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -258,10 +259,11 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, FlightRecorderSession flightRecorderSession) {
+  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, FlightRecorderSession flightRecorderSession, TelemetryService telemetryService) {
     return new MonitoringInitializationParams(
       params.getBackendCapabilities().contains(MONITORING),
       params.getBackendCapabilities().contains(FLIGHT_RECORDER),
+      telemetryService.isEnabled(),
       flightRecorderSession.sessionId(),
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),

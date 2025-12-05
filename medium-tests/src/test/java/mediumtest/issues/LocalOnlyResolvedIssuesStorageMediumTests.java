@@ -35,7 +35,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
+import static org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
 @ExtendWith(SystemStubsExtension.class)

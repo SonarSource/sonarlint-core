@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.IsDogfoodingEnvironmentResponse;
 
