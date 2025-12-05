@@ -24,6 +24,7 @@ import java.util.UUID;
 public record MonitoringInitializationParams(
   boolean monitoringEnabled,
   boolean flightRecorderEnabled,
+  boolean isTelemetryEnabled,
   UUID flightRecorderSessionId,
   String productKey,
   String sonarQubeForIdeVersion,
