@@ -25,10 +25,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiHookServiceTests {
@@ -39,12 +41,13 @@ class AiHookServiceTests {
   @Test
   void it_should_generate_nodejs_script_when_nodejs_detected() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.NODEJS));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
     assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.js");
@@ -60,17 +63,19 @@ class AiHookServiceTests {
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": true");
+    verify(telemetryService).aiHookInstalled(AiAgent.WINDSURF);
   }
 
   @Test
   void it_should_generate_python_script_when_python_detected() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64121);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.PYTHON));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
     assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.py");
@@ -85,17 +90,19 @@ class AiHookServiceTests {
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": true");
+    verify(telemetryService).aiHookInstalled(AiAgent.WINDSURF);
   }
 
   @Test
   void it_should_generate_bash_script_when_bash_detected() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64122);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.BASH));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
     assertThat(response.getScriptFileName()).isEqualTo("sonarqube_analysis_hook.sh");
@@ -110,16 +117,18 @@ class AiHookServiceTests {
       .contains("\"post_write_code\"")
       .contains("{{SCRIPT_PATH}}")
       .contains("\"show_output\": true");
+    verify(telemetryService).aiHookInstalled(AiAgent.WINDSURF);
   }
 
   @Test
   void it_should_throw_exception_when_embedded_server_not_started() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(-1);
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
 
     assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.WINDSURF))
       .isInstanceOf(IllegalStateException.class)
@@ -129,12 +138,13 @@ class AiHookServiceTests {
   @Test
   void it_should_throw_exception_when_no_executable_found() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.empty());
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
 
     assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.WINDSURF))
       .isInstanceOf(IllegalStateException.class)
@@ -144,28 +154,31 @@ class AiHookServiceTests {
   @Test
   void it_should_embed_correct_agent_in_script_comment_for_windsurf() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.NODEJS));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
     var response = service.getHookScriptContent(AiAgent.WINDSURF);
 
     assertThat(response.getScriptContent())
       .contains("SonarQube for IDE Windsurf Hook")
       .contains("EXPECTED_IDE_NAME = 'Windsurf'");
+    verify(telemetryService).aiHookInstalled(AiAgent.WINDSURF);
   }
 
   @Test
   void it_should_throw_exception_for_unsupported_cursor_agent() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.PYTHON));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
 
     assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.CURSOR))
       .isInstanceOf(UnsupportedOperationException.class)
@@ -175,12 +188,13 @@ class AiHookServiceTests {
   @Test
   void it_should_throw_exception_for_unsupported_github_copilot_agent() {
     var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
     var executableLocator = mock(ExecutableLocator.class);
 
     when(embeddedServer.getPort()).thenReturn(64120);
     when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.BASH));
 
-    var service = new AiHookService(embeddedServer, executableLocator);
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
 
     assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.GITHUB_COPILOT))
       .isInstanceOf(UnsupportedOperationException.class)

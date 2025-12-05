@@ -83,6 +83,8 @@ public class TelemetryMeasuresBuilder {
 
     addLabsMeasures(values);
 
+    addAiHooksMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -244,4 +246,16 @@ public class TelemetryMeasuresBuilder {
         DAILY))
       .forEach(values::add);
   }
+
+  private void addAiHooksMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    storage.getAiHooksInstalledCount().entrySet().stream()
+      .filter(entry -> entry.getValue() > 0)
+      .map(entry -> new TelemetryMeasuresValue(
+        "ai_hooks." + entry.getKey().name().toLowerCase(Locale.ROOT) + "_installed",
+        String.valueOf(entry.getValue()),
+        INTEGER,
+        DAILY))
+      .forEach(values::add);
+  }
+
 }

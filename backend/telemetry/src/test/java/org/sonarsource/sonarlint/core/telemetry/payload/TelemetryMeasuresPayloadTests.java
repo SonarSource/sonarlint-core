@@ -92,7 +92,9 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"ide_labs.link_clicked_count_changed_file_analysis_doc\",\"value\":\"10\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"ide_labs.link_clicked_count_privacy_policy\",\"value\":\"20\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"ide_labs.feedback_link_clicked_count_connected_mode\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"ide_labs.feedback_link_clicked_count_manage_dependency_risk\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"ide_labs.feedback_link_clicked_count_manage_dependency_risk\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ai_hooks.windsurf_installed\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"ai_hooks.cursor_installed\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -146,6 +148,9 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("ide_labs.feedback_link_clicked_count_connected_mode", "1", INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY));
 
+    values.add(new TelemetryMeasuresValue("ai_hooks.windsurf_installed", "2", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("ai_hooks.cursor_installed", "5", INTEGER, DAILY));
+
     return values;
   }
 
@@ -173,7 +178,9 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("ide_labs.link_clicked_count_changed_file_analysis_doc", "10", INTEGER, DAILY))
       .contains(tuple("ide_labs.link_clicked_count_privacy_policy", "20", INTEGER, DAILY))
       .contains(tuple("ide_labs.feedback_link_clicked_count_connected_mode", "1", INTEGER, DAILY))
-      .contains(tuple("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY));
+      .contains(tuple("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY))
+      .contains(tuple("ai_hooks.windsurf_installed", "2", INTEGER, DAILY))
+      .contains(tuple("ai_hooks.cursor_installed", "5", INTEGER, DAILY));
   }
 
 }

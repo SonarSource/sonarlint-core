@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
@@ -128,6 +129,8 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("connected_mode");
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
+    telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
+    telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -159,7 +162,8 @@ class TelemetryHttpClientTests {
             {"key":"ide_labs.link_clicked_count_changed_file_analysis_doc","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_labs.link_clicked_count_privacy_policy","value":"2","type":"integer","granularity":"daily"},
             {"key":"ide_labs.feedback_link_clicked_count_connected_mode","value":"1","type":"integer","granularity":"daily"},
-            {"key":"ide_labs.feedback_link_clicked_count_manage_dependency_risk","value":"2","type":"integer","granularity":"daily"}
+            {"key":"ide_labs.feedback_link_clicked_count_manage_dependency_risk","value":"2","type":"integer","granularity":"daily"},
+            {"key":"ai_hooks.windsurf_installed","value":"2","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));
