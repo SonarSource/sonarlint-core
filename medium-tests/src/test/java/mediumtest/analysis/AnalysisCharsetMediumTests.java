@@ -66,7 +66,7 @@ class AnalysisCharsetMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
     assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
-    assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
     assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
       .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
       .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.INFO));

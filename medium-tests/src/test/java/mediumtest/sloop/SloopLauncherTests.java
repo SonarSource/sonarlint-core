@@ -131,13 +131,13 @@ class SloopLauncherTests {
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
-    assertThat(result.getRulesByKey()).hasSize(219);
+    assertThat(result.getRulesByKey()).hasSize(222);
 
     server.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));
 
     var result2 = server.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("myConfigScope", "php:S100", null)).join();
-    assertThat(result2.details().getName()).isEqualTo("Method and function names should comply with a naming convention");
+    assertThat(result2.details().getName()).isEqualTo("Function names should comply with a naming convention");
   }
 
   @Test

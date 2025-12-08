@@ -103,7 +103,7 @@ class StandaloneIssueMediumTests {
 
     assertThat(issues)
       .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), RaisedIssueDto::getRuleDescriptionContextKey, StandaloneIssueMediumTests::extractMqrDetails)
-      .containsOnly(tuple("javascript:S1481", 2, null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+      .containsOnly(tuple("javascript:S1481", 2, null, tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
     client.cleanRaisedIssues();
 
     // SLCORE-160
@@ -252,9 +252,7 @@ class StandaloneIssueMediumTests {
     var issues = client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getTextRange().getStartLineOffset())
       .containsOnly(
-        tuple("c:S3805", 1, 0),
-        // FIXME no sonar is not supported by the CFamily analyzer
-        tuple("c:S3805", 2, 0));
+        tuple("c:S3805", 1, 0));
   }
 
   @SonarLintTest
@@ -284,7 +282,6 @@ class StandaloneIssueMediumTests {
       .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine())
       .containsOnly(
         tuple("php:S1172", 2),
-        tuple("php:S1808", 2),
         tuple("php:S1780", 6));
   }
 
@@ -444,7 +441,7 @@ class StandaloneIssueMediumTests {
         tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
         tuple("java:S106", new TextRangeDto(4, 4, 4, 14), tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), tuple(CleanCodeAttribute.COMPLETE, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), tuple(CleanCodeAttribute.COMPLETE, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.INFO)))));
   }
 
   @SonarLintTest
@@ -561,7 +558,7 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void it_should_get_issue_details_for_standalone_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "secret.py",
-      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+      "aws_secret_access_key=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");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir,
@@ -583,12 +580,13 @@ class StandaloneIssueMediumTests {
     assertThat(result.getDetails()).isNotNull();
     // standalone mode should have Clean Code attribute
     assertThat(result.getDetails().getSeverityDetails().isRight()).isTrue();
-    assertThat(result.getDetails().getSeverityDetails().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(result.getDetails().getSeverityDetails().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.TRUSTWORTHY);
     assertThat(result.getDetails().getRuleKey()).isEqualTo("secrets:S6290");
     assertThat(result.getDetails().getName()).isEqualTo("Amazon Web Services credentials should not be disclosed");
     assertThat(result.getDetails().getRuleDescriptionContextKey()).isNull();
     assertThat(result.getDetails().getVulnerabilityProbability()).isNull();
-    assertThat(result.getDetails().getDescription().isLeft()).isTrue();
+    assertThat(result.getDetails().getDescription().isRight()).isTrue();
+    assertThat(result.getDetails().getDescription().getRight().getIntroductionHtmlContent()).contains("Secret leaks often occur");
     assertThat(result.getDetails().getLanguage().name()).isEqualTo("SECRETS");
   }
 
