@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -48,15 +49,34 @@ public class RulesExtractionHelper {
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {
     logger.debug("Extracting standalone rules metadata");
-    return ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getAllPluginInstancesByKeys(),
+    var pluginInstancesByKeys = pluginsService.getEmbeddedPlugins().getAllPluginInstancesByKeys();
+    logger.debug("Extracting rules from {} embedded plugins: {}", pluginInstancesByKeys.size(), pluginInstancesByKeys.keySet());
+    var rules = ruleExtractor.extractRules(pluginInstancesByKeys,
       languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false, false, new RuleSettings(Map.of()));
+    logExtractedRulesSummary(rules, "standalone");
+    return rules;
   }
 
   public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId, Map<String, String> globalSettings) {
     logger.debug("Extracting rules metadata for connection '{}'", connectionId);
+    var pluginInstancesByKeys = pluginsService.getPlugins(connectionId).getAllPluginInstancesByKeys();
+    logger.debug("Extracting rules from {} plugins for connection '{}': {}", pluginInstancesByKeys.size(), connectionId, pluginInstancesByKeys.keySet());
     var settings = new RuleSettings(globalSettings);
-    return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getAllPluginInstancesByKeys(),
+    var rules = ruleExtractor.extractRules(pluginInstancesByKeys,
       languageSupportRepository.getEnabledLanguagesInConnectedMode(), true, enableSecurityHotspots, settings);
+    logExtractedRulesSummary(rules, "connection '" + connectionId + "'");
+    return rules;
+  }
+
+  private void logExtractedRulesSummary(List<SonarLintRuleDefinition> rules, String context) {
+    if (rules.isEmpty()) {
+      logger.warn("No rules extracted for {}", context);
+      return;
+    }
+    logger.debug("Extracted {} rules for {}", rules.size(), context);
+    var rulesByLanguage = rules.stream()
+      .collect(Collectors.groupingBy(r -> r.getLanguage().getSonarLanguageKey(), Collectors.counting()));
+    logger.debug("Rules by language for {}: {}", context, rulesByLanguage);
   }
 
 }

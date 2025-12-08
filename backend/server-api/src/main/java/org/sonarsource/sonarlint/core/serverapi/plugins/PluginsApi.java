@@ -42,9 +42,25 @@ public class PluginsApi {
       () -> get("/api/plugins/installed", cancelMonitor),
       response -> {
         var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
-        return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).toList();
+        var result = Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).toList();
+        logPluginsSummary(result);
+        return result;
       },
       duration -> LOG.info("Downloaded plugin list in {}ms", duration));
+  }
+
+  private static void logPluginsSummary(List<ServerPlugin> plugins) {
+    LOG.debug("Server has {} plugins installed", plugins.size());
+    var sonarLintSupported = plugins.stream().filter(ServerPlugin::isSonarLintSupported).toList();
+    var notSonarLintSupported = plugins.stream().filter(p -> !p.isSonarLintSupported()).toList();
+    LOG.debug("  SonarLint-supported plugins ({}): {}",
+      sonarLintSupported.size(),
+      sonarLintSupported.stream().map(ServerPlugin::getKey).toList());
+    if (!notSonarLintSupported.isEmpty()) {
+      LOG.debug("  Non-SonarLint-supported plugins ({}): {}",
+        notSonarLintSupported.size(),
+        notSonarLintSupported.stream().map(ServerPlugin::getKey).toList());
+    }
   }
 
   private static ServerPlugin toInstalledPlugin(InstalledPluginPayload payload) {

@@ -139,15 +139,32 @@ public class PluginsService {
 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
-    pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
-    pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
+    var storedPluginPathsByKey = pluginsStorage.getStoredPluginPathsByKey();
+    pluginsToLoadByKey.putAll(storedPluginPathsByKey);
+    logger.debug("Found {} plugins in storage for connection '{}'", storedPluginPathsByKey.size(), connectionId);
+    if (!storedPluginPathsByKey.isEmpty()) {
+      logger.debug("Stored plugins: {}", storedPluginPathsByKey.keySet());
+    }
+
+    var embeddedPluginPathsByKey = getEmbeddedPluginPathsByKey(connectionId);
+    pluginsToLoadByKey.putAll(embeddedPluginPathsByKey);
+    logger.debug("Using {} embedded plugins for connection '{}'", embeddedPluginPathsByKey.size(), connectionId);
+    if (!embeddedPluginPathsByKey.isEmpty()) {
+      logger.debug("Embedded plugins: {}", embeddedPluginPathsByKey.keySet());
+    }
+
     if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.CS)) {
       if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpSupport.csharpEnterprisePluginPath != null) {
         pluginsToLoadByKey.put(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, csharpSupport.csharpEnterprisePluginPath);
+        logger.debug("Using enterprise C# analyzer for connection '{}'", connectionId);
       } else if (csharpSupport.csharpOssPluginPath != null) {
         pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpOssPluginPath);
+        logger.debug("Using OSS C# analyzer for connection '{}'", connectionId);
+      } else {
+        logger.debug("No C# analyzer available for connection '{}'", connectionId);
       }
     }
+    logger.debug("Total {} plugin paths to load for connection '{}'", pluginsToLoadByKey.size(), connectionId);
     return Set.copyOf(pluginsToLoadByKey.values());
   }
 
