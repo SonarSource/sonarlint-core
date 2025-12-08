@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +56,7 @@ class DefaultSonarLintIssueTests {
   private Path baseDir;
 
   @BeforeEach
-  void prepare() throws IOException {
+  void prepare() {
     project = new SonarLintInputProject();
   }
 
@@ -215,6 +214,47 @@ class DefaultSonarLintIssueTests {
       .gap(10.0);
 
     assertThat(issue.codeVariants()).isEmpty();
+  }
+
+  @Test
+  void supports_adding_internal_tags_one_by_one() {
+    var storage = mock(SensorStorage.class);
+    var issue = (DefaultSonarLintIssue) new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(project)
+        .message("Wrong way!"))
+      .forRule(RuleKey.of("repo", "rule"))
+      .addInternalTag("tag1")
+      .addInternalTag("tag2");
+
+    assertThat(issue.internalTags()).containsExactly("tag1", "tag2");
+  }
+
+  @Test
+  void supports_adding_many_internal_tags() {
+    var storage = mock(SensorStorage.class);
+    var issue = (DefaultSonarLintIssue) new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(project)
+        .message("Wrong way!"))
+      .forRule(RuleKey.of("repo", "rule"))
+      .addInternalTags(List.of("tag1", "tag2"))
+      .addInternalTags(List.of("tag3"));
+
+    assertThat(issue.internalTags()).containsExactly("tag1", "tag2", "tag3");
+  }
+
+  @Test
+  void supports_setting_many_internal_tags() {
+    var storage = mock(SensorStorage.class);
+    var issue = (DefaultSonarLintIssue) new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(project)
+        .message("Wrong way!"))
+      .forRule(RuleKey.of("repo", "rule"))
+      .setInternalTags(List.of("tag1", "tag2"));
+
+    assertThat(issue.internalTags()).containsExactly("tag1", "tag2");
   }
 
 }

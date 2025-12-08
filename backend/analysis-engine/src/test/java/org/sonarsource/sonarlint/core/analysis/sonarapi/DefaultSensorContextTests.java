@@ -111,6 +111,7 @@ class DefaultSensorContextTests {
     ctx.markForPublishing(null);
     assertThat(ctx.canSkipUnchangedFiles()).isFalse();
     assertThat(ctx.isCacheEnabled()).isFalse();
+    assertThat(ctx.isFeatureAvailable("any")).isFalse();
     assertThrows(UnsupportedOperationException.class, () -> ctx.newExternalIssue());
     assertThrows(UnsupportedOperationException.class, () -> ctx.previousCache());
     assertThrows(UnsupportedOperationException.class, () -> ctx.nextCache());
