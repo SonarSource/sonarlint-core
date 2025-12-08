@@ -113,17 +113,26 @@ public class PluginsSynchronizer {
   }
 
   private static void logSynchronizationSummary(Map<ServerPlugin, Optional<DownloadSkipReason>> downloadSkipReasonByServerPlugin) {
-    var pluginsByReason = downloadSkipReasonByServerPlugin.entrySet().stream()
-      .collect(Collectors.groupingBy(
-        entry -> entry.getValue().orElse(null),
-        Collectors.mapping(entry -> entry.getKey().getKey(), Collectors.toList())
-      ));
+    var toDownload = new java.util.ArrayList<String>();
+    var embedded = new java.util.ArrayList<String>();
+    var upToDate = new java.util.ArrayList<String>();
+    var notSupported = new java.util.ArrayList<String>();
+    var languageDisabled = new java.util.ArrayList<String>();
 
-    var toDownload = pluginsByReason.getOrDefault(null, Collections.emptyList());
-    var embedded = pluginsByReason.getOrDefault(DownloadSkipReason.EMBEDDED, Collections.emptyList());
-    var upToDate = pluginsByReason.getOrDefault(DownloadSkipReason.UP_TO_DATE, Collections.emptyList());
-    var notSupported = pluginsByReason.getOrDefault(DownloadSkipReason.NOT_SONARLINT_SUPPORTED, Collections.emptyList());
-    var languageDisabled = pluginsByReason.getOrDefault(DownloadSkipReason.LANGUAGE_NOT_ENABLED, Collections.emptyList());
+    for (var entry : downloadSkipReasonByServerPlugin.entrySet()) {
+      var pluginKey = entry.getKey().getKey();
+      var reason = entry.getValue();
+      if (reason.isEmpty()) {
+        toDownload.add(pluginKey);
+      } else {
+        switch (reason.get()) {
+          case EMBEDDED -> embedded.add(pluginKey);
+          case UP_TO_DATE -> upToDate.add(pluginKey);
+          case NOT_SONARLINT_SUPPORTED -> notSupported.add(pluginKey);
+          case LANGUAGE_NOT_ENABLED -> languageDisabled.add(pluginKey);
+        }
+      }
+    }
 
     LOG.debug("[SYNC] Plugin synchronization summary: {} to download, {} embedded, {} up-to-date, {} not SonarLint-supported, {} language disabled",
       toDownload.size(), embedded.size(), upToDate.size(), notSupported.size(), languageDisabled.size());
