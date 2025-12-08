@@ -274,7 +274,7 @@
       <dependency>
         <groupId>org.sonarsource.classloader</groupId>
         <artifactId>sonar-classloader</artifactId>
-        <version>1.2.0.2089</version>
+        <version>1.2.1.2095</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
