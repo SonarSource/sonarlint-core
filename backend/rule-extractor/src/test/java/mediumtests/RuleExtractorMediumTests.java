@@ -49,16 +49,16 @@ class RuleExtractorMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 8;
-  private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 15;
-  private static final int COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 77;
-  private static final int NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 267;
-  private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 1789;
-  private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 3723;
+  private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 11;
+  private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 16;
+  private static final int COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 88;
+  private static final int NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 326;
+  private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 2661;
+  private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 4746;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
-  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
-  private static final Optional<Version> NODE_VERSION = Optional.of(Version.create("20.0"));
+  private static final boolean COMMERCIAL_ENABLED = true;
+  private static final Optional<Version> NODE_VERSION = Optional.of(Version.create("20.12.0"));
   private static final RuleSettings EMPTY_SETTINGS = new RuleSettings(Map.of());
   private static Set<Path> allJars;
 
@@ -96,7 +96,7 @@ class RuleExtractorMediumTests {
       assertThat(rule.getParams())
         .hasSize(1)
         .hasEntrySatisfying("legalTrailingCommentPattern", param -> {
-          assertThat(param.defaultValue()).isEqualTo("^#\\s*+([^\\s]++|fmt.*|type.*)$");
+          assertThat(param.defaultValue()).isEqualTo("^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$");
           assertThat(param.description())
             .isEqualTo("Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.");
           assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
@@ -105,7 +105,7 @@ class RuleExtractorMediumTests {
           assertThat(param.possibleValues()).isEmpty();
           assertThat(param.type()).isEqualTo(SonarLintRuleParamType.STRING);
         });
-      assertThat(rule.getDefaultParams()).containsOnly(entry("legalTrailingCommentPattern", "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+      assertThat(rule.getDefaultParams()).containsOnly(entry("legalTrailingCommentPattern", "^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$"));
       assertThat(rule.getDeprecatedKeys()).isEmpty();
       assertThat(rule.getHtmlDescription()).contains("<p>This rule verifies that single-line comments are not located");
       assertThat(rule.getTags()).containsOnly("convention");
@@ -168,7 +168,6 @@ class RuleExtractorMediumTests {
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false, EMPTY_SETTINGS);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage).distinct()).hasSameElementsAs(enabledLanguages);
-
   }
 
   @Test

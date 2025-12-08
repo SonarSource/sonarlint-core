@@ -85,7 +85,7 @@ class SloopLauncherWithJreTests {
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false, null)).join();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().join();
-    assertThat(result.getRulesByKey()).hasSize(219);
+    assertThat(result.getRulesByKey()).hasSize(222);
     var expectedJreLog = "Using JRE from " + (SystemUtils.IS_OS_WINDOWS ? JreLocator.getWindowsJrePath() : JreLocator.getLinuxJrePath());
     assertThat(client.getLogs()).extracting(LogParams::getMessage).contains(expectedJreLog);
   }

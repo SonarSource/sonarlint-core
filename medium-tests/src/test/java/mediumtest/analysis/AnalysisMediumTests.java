@@ -327,7 +327,7 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_notify_client_on_secret_detection(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "secret.py",
-      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+      "aws_secret_access_key=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");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
@@ -403,7 +403,7 @@ class AnalysisMediumTests {
   @SonarLintTest
   void analysis_response_should_contain_raw_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "secret.py",
-      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+      "aws_secret_access_key=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");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
