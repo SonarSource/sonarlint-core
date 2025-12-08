@@ -179,7 +179,18 @@ public class PluginsSynchronizer {
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private static Set<String> getSonarSourceDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(SonarLanguage.values()).collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
+    var languagesByPluginKey = Arrays.stream(SonarLanguage.values())
+      .filter(lang -> {
+        if (lang == null) {
+          LOG.debug("Language is null");
+          return false;
+        }
+        if (lang.getPluginKey() == null) {
+          LOG.debug("Language plugin key is null: {}", lang.getSonarLanguageKey());
+        }
+        return lang.getPluginKey() != null;
+      })
+      .collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
     var disabledPluginKeys = languagesByPluginKey.entrySet().stream()
       .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
       .map(Map.Entry::getKey)

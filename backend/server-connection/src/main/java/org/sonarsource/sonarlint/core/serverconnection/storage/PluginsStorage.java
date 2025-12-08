@@ -101,7 +101,15 @@ public class PluginsStorage {
   }
 
   private static Map<String, StoredPlugin> byKey(List<StoredPlugin> plugins) {
-    return plugins.stream().collect(Collectors.toMap(StoredPlugin::getKey, Function.identity()));
+    return plugins.stream()
+      .filter(plugin -> {
+        if (plugin.getKey() == null) {
+          LOG.warn("Skipping stored plugin with null key: {}", plugin.getJarPath());
+          return false;
+        }
+        return true;
+      })
+      .collect(Collectors.toMap(StoredPlugin::getKey, Function.identity()));
   }
 
   private static Sonarlint.PluginReferences.PluginReference adapt(ServerPlugin plugin) {
@@ -121,7 +129,15 @@ public class PluginsStorage {
 
   public void cleanUpUnknownPlugins(List<ServerPlugin> serverPluginsExpectedInStorage) {
     var expectedPluginPaths = serverPluginsExpectedInStorage.stream().map(plugin -> rootPath.resolve(plugin.getFilename())).collect(Collectors.toSet());
-    var pluginsByKey = serverPluginsExpectedInStorage.stream().collect(Collectors.toMap(ServerPlugin::getKey, PluginsStorage::adapt));
+    var pluginsByKey = serverPluginsExpectedInStorage.stream()
+      .filter(plugin -> {
+        if (plugin.getKey() == null) {
+          LOG.warn("Skipping server plugin with null key: {}", plugin.getFilename());
+          return false;
+        }
+        return true;
+      })
+      .collect(Collectors.toMap(ServerPlugin::getKey, PluginsStorage::adapt, (existing, replacement) -> existing));
     var currentReferences = Sonarlint.PluginReferences.newBuilder();
     currentReferences.putAllPluginsByKey(pluginsByKey);
     rwLock.write(() -> {
