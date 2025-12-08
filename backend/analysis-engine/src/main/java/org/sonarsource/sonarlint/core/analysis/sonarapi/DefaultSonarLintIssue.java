@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -58,6 +59,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   private final List<QuickFix> quickFixes;
   private Optional<String> ruleDescriptionContextKey = Optional.empty();
   private final Map<SoftwareQuality, org.sonar.api.issue.impact.Severity> overriddenImpacts;
+  private final List<String> internalTags = new ArrayList<>();
 
   public DefaultSonarLintIssue(SonarLintInputProject project, Path baseDir, @Nullable SensorStorage storage) {
     super(storage);
@@ -81,6 +83,27 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
     // not implemented
+    return this;
+  }
+
+  @Override
+  public NewIssue addInternalTag(String tag) {
+    internalTags.add(tag);
+    return this;
+  }
+
+  @Override
+  public NewIssue addInternalTags(Collection<String> tags) {
+    internalTags.addAll(tags);
+    return this;
+  }
+
+  @Override
+  public NewIssue setInternalTags(@Nullable Collection<String> tags) {
+    internalTags.clear();
+    if (tags != null) {
+      addInternalTags(tags);
+    }
     return this;
   }
 
@@ -221,6 +244,11 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public List<String> codeVariants() {
     return Collections.emptyList();
+  }
+
+  @Override
+  public List<String> internalTags() {
+    return Collections.unmodifiableList(internalTags);
   }
 
   @Override

@@ -226,4 +226,9 @@ public class DefaultSensorContext implements SensorContext {
     // PLUGINAPI-117 analysis data storage
     // NO OP
   }
+
+  @Override
+  public boolean isFeatureAvailable(String s) {
+    return false;
+  }
 }
