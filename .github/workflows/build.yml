@@ -63,6 +63,12 @@ jobs:
           secrets: |
             development/kv/data/next url | NEXT_URL;
             development/kv/data/next token | NEXT_TOKEN;
+      - name: Cache Sonar Scanner artifacts
+        id: sonar-scanner-cache
+        uses: SonarSource/ci-github-actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: sonar-scanner-${{ runner.os }}
       - uses: SonarSource/ci-github-actions/config-maven@v1
         id: config
         with:
