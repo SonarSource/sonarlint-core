@@ -272,22 +272,54 @@ public class PluginsService {
   }
 
   static class CSharpSupport {
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
+
     final Path csharpOssPluginPath;
     final Path csharpEnterprisePluginPath;
 
     CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
       if (languageSpecificRequirements == null) {
+        LOG.debug("C#/VB.NET support: languageSpecificRequirements is null");
         csharpOssPluginPath = null;
         csharpEnterprisePluginPath = null;
       } else {
         var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
         if (omnisharpRequirements == null) {
+          LOG.debug("C#/VB.NET support: omnisharpRequirements is null");
           csharpOssPluginPath = null;
           csharpEnterprisePluginPath = null;
         } else {
           csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
           csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
+          logAnalyzerPathInfo("OSS", csharpOssPluginPath);
+          logAnalyzerPathInfo("Enterprise", csharpEnterprisePluginPath);
+          if (csharpOssPluginPath == null && csharpEnterprisePluginPath == null) {
+            LOG.warn("C#/VB.NET support: Both OSS and Enterprise analyzer paths are null. C#/VB.NET analysis will not work.");
+          }
         }
+      }
+    }
+
+    private static void logAnalyzerPathInfo(String analyzerType, @Nullable Path path) {
+      if (path == null) {
+        LOG.debug("C#/VB.NET support: {} analyzer path = null", analyzerType);
+        return;
+      }
+      var pathString = path.toString();
+      if (pathString.isBlank()) {
+        LOG.warn("C#/VB.NET support: {} analyzer path is blank: '{}'", analyzerType, pathString);
+        return;
+      }
+      LOG.debug("C#/VB.NET support: {} analyzer path = {}", analyzerType, path);
+      var file = path.toFile();
+      if (!file.exists()) {
+        LOG.warn("C#/VB.NET support: {} analyzer file does NOT exist: {}", analyzerType, path);
+      } else if (!file.isFile()) {
+        LOG.warn("C#/VB.NET support: {} analyzer path is not a file: {}", analyzerType, path);
+      } else {
+        var sizeBytes = file.length();
+        var sizeMB = sizeBytes / (1024.0 * 1024.0);
+        LOG.debug("C#/VB.NET support: {} analyzer file exists, size = {} bytes ({} MB)", analyzerType, sizeBytes, String.format("%.2f", sizeMB));
       }
     }
   }
