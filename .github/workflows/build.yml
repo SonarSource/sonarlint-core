@@ -81,13 +81,13 @@ jobs:
           SCANNER_VERSION: 5.1.0.4751
           PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
         run: |
-          mvn -Pcoverage -Dcommercial verify
+          mvn -B -Pcoverage -Dcommercial verify
           maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
           sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
           sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}")
           sonar_props+=("-Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
           echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
-          mvn "${maven_goals[@]}" "${sonar_props[@]}"
+          mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
@@ -128,7 +128,7 @@ jobs:
           MAVEN_OPTS: -Xmx4g
           PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
         run: |
-          mvn -Dcommercial "-Dmaven.test.redirectTestOutputToFile=false" verify
+          mvn -B -Dcommercial verify
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
