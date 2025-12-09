@@ -57,7 +57,7 @@ class RuleExtractorMediumTests {
   private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 4746;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
-  private static final boolean COMMERCIAL_ENABLED = true;
+  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
   private static final Optional<Version> NODE_VERSION = Optional.of(Version.create("20.12.0"));
   private static final RuleSettings EMPTY_SETTINGS = new RuleSettings(Map.of());
   private static Set<Path> allJars;
