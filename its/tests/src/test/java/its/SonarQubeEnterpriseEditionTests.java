@@ -54,8 +54,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.AnnotatedElementContext;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.io.TempDirFactory;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
@@ -135,7 +138,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   private static WsClient adminWsClient;
 
-  @TempDir
+  @TempDir(factory = CustomTempDirFactory.class)
   private static Path sonarUserHome;
 
   private static SonarLintRpcServer backend;
@@ -198,6 +201,27 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
     ((MockSonarLintRpcClientDelegate) client).clear();
+  }
+
+  private static class CustomTempDirFactory extends TempDirFactory.Standard {
+
+    private Path tempDirectory;
+
+    @Override
+    public Path createTempDirectory(AnnotatedElementContext elementContext, ExtensionContext extensionContext) throws IOException {
+      tempDirectory = super.createTempDirectory(elementContext, extensionContext);
+      return tempDirectory;
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (Files.exists(tempDirectory)) {
+        System.out.println("TempDir was not deleted " + tempDirectory);
+        try (var files = Files.walk(tempDirectory)) {
+          files.forEach(file -> System.out.println("File " + file + "still exists"));
+        }
+      }
+    }
   }
 
   @Nested
