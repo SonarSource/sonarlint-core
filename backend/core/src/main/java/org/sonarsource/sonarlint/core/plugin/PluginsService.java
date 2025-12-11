@@ -165,6 +165,8 @@ public class PluginsService {
       }
     }
     logger.debug("Total {} plugin paths to load for connection '{}'", pluginsToLoadByKey.size(), connectionId);
+    // Log detailed plugin paths for debugging
+    pluginsToLoadByKey.forEach((key, path) -> logger.debug("  Plugin '{}' -> {}", key, path));
     return Set.copyOf(pluginsToLoadByKey.values());
   }
 
