@@ -38,19 +38,34 @@ public class RuleDefinitionsLoader {
   public RuleDefinitionsLoader(Optional<List<RulesDefinition>> pluginDefs) {
     context = new RulesDefinition.Context();
     for (var pluginDefinition : pluginDefs.orElse(List.of())) {
-      var reposBefore = new HashSet<>(context.repositories().stream().map(RulesDefinition.Repository::key).collect(Collectors.toSet()));
+      // Capture state before
+      var reposBefore = context.repositories().stream()
+        .collect(Collectors.toMap(RulesDefinition.Repository::key, r -> r.rules().size()));
       try {
         pluginDefinition.define(context);
-        var reposAfter = context.repositories().stream().map(RulesDefinition.Repository::key).collect(Collectors.toSet());
-        var newRepos = reposAfter.stream().filter(r -> !reposBefore.contains(r)).collect(Collectors.toList());
-        if (!newRepos.isEmpty()) {
-          var rulesCount = newRepos.stream()
+        // Capture state after
+        var reposAfter = context.repositories().stream()
+          .collect(Collectors.toMap(RulesDefinition.Repository::key, r -> r.rules().size()));
+        
+        // Find new repos
+        var newRepos = reposAfter.keySet().stream()
+          .filter(r -> !reposBefore.containsKey(r))
+          .collect(Collectors.toList());
+        
+        // Find updated repos (rule count changed)
+        var updatedRepos = reposAfter.entrySet().stream()
+          .filter(e -> reposBefore.containsKey(e.getKey()) && !reposBefore.get(e.getKey()).equals(e.getValue()))
+          .map(e -> e.getKey() + " (" + reposBefore.get(e.getKey()) + " -> " + e.getValue() + " rules)")
+          .collect(Collectors.toList());
+        
+        if (!newRepos.isEmpty() || !updatedRepos.isEmpty()) {
+          var newRulesCount = newRepos.stream()
             .mapToInt(repoKey -> context.repository(repoKey).rules().size())
             .sum();
-          LOG.debug("Plugin '{}' registered {} rule repositories with {} rules total: {}",
-            pluginDefinition.getClass().getSimpleName(), newRepos.size(), rulesCount, newRepos);
+          LOG.debug("Plugin '{}': new repos {} with {} rules, updated repos {}",
+            pluginDefinition.getClass().getSimpleName(), newRepos, newRulesCount, updatedRepos);
         } else {
-          LOG.debug("Plugin '{}' did not register any rule repositories", pluginDefinition.getClass().getSimpleName());
+          LOG.debug("Plugin '{}' did not register or update any rule repositories", pluginDefinition.getClass().getSimpleName());
         }
       } catch (Exception e) {
         LOG.warn(String.format("Failed to load rule definitions for %s, associated rules will be skipped", pluginDefinition), e);

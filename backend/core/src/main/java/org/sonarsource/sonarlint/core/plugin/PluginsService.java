@@ -225,32 +225,44 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    var result = shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    logger.debug("shouldUseEnterpriseCSharpAnalyzer('{}') = {}", connectionId, result);
+    return result;
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
-    if (isSonarCloud) {
-      return true;
-    } else {
-      var connectionStorage = storageService.connection(connectionId);
-      var serverInfo = connectionStorage.serverInfo().read();
-      if (serverInfo.isEmpty()) {
-        return false;
-      } else {
-        // For SQ versions older than 10.8, enterprise C# and VB.NET analyzers were packaged in all editions.
-        // For newer versions, we need to check if enterprise plugin is present on the server
-        var serverVersion = serverInfo.get().version();
-        var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
-        var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch(analyzerName::equals);
-        return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
-      }
+    if (connection == null) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: connection '{}' not found, returning false", connectionId);
+      return false;
     }
+    var isSonarCloud = connection.getKind() == ConnectionKind.SONARCLOUD;
+    if (isSonarCloud) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: connection '{}' is SonarCloud, returning true", connectionId);
+      return true;
+    }
+    var connectionStorage = storageService.connection(connectionId);
+    var serverInfo = connectionStorage.serverInfo().read();
+    if (serverInfo.isEmpty()) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: no server info for '{}', returning false", connectionId);
+      return false;
+    }
+    // For SQ versions older than 10.8, enterprise C# and VB.NET analyzers were packaged in all editions.
+    // For newer versions, we need to check if enterprise plugin is present on the server
+    var serverVersion = serverInfo.get().version();
+    var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
+    var storedPluginKeys = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).toList();
+    var hasEnterprisePlugin = storedPluginKeys.contains(analyzerName);
+    var result = !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
+    logger.debug("shouldUseEnterpriseDotNetAnalyzer for '{}': serverVersion={}, supportsRepackaged={}, storedPlugins={}, hasEnterprise={} => {}",
+      analyzerName, serverVersion, supportsRepackagedDotnetAnalyzer, storedPluginKeys, hasEnterprisePlugin, result);
+    return result;
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    var result = shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    logger.debug("shouldUseEnterpriseVbAnalyzer('{}') = {}", connectionId, result);
+    return result;
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
