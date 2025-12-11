@@ -139,15 +139,34 @@ public class PluginsService {
 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
-    pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
-    pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
+    var storedPluginPathsByKey = pluginsStorage.getStoredPluginPathsByKey();
+    pluginsToLoadByKey.putAll(storedPluginPathsByKey);
+    logger.debug("Found {} plugins in storage for connection '{}'", storedPluginPathsByKey.size(), connectionId);
+    if (!storedPluginPathsByKey.isEmpty()) {
+      logger.debug("Stored plugins: {}", storedPluginPathsByKey.keySet());
+    }
+
+    var embeddedPluginPathsByKey = getEmbeddedPluginPathsByKey(connectionId);
+    pluginsToLoadByKey.putAll(embeddedPluginPathsByKey);
+    logger.debug("Using {} embedded plugins for connection '{}'", embeddedPluginPathsByKey.size(), connectionId);
+    if (!embeddedPluginPathsByKey.isEmpty()) {
+      logger.debug("Embedded plugins: {}", embeddedPluginPathsByKey.keySet());
+    }
+
     if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.CS)) {
       if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpSupport.csharpEnterprisePluginPath != null) {
         pluginsToLoadByKey.put(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, csharpSupport.csharpEnterprisePluginPath);
+        logger.debug("Using enterprise C# analyzer for connection '{}'", connectionId);
       } else if (csharpSupport.csharpOssPluginPath != null) {
         pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpOssPluginPath);
+        logger.debug("Using OSS C# analyzer for connection '{}'", connectionId);
+      } else {
+        logger.debug("No C# analyzer available for connection '{}'", connectionId);
       }
     }
+    logger.debug("Total {} plugin paths to load for connection '{}'", pluginsToLoadByKey.size(), connectionId);
+    // Log detailed plugin paths for debugging
+    pluginsToLoadByKey.forEach((key, path) -> logger.debug("  Plugin '{}' -> {}", key, path));
     return Set.copyOf(pluginsToLoadByKey.values());
   }
 
@@ -206,32 +225,44 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    var result = shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    logger.debug("shouldUseEnterpriseCSharpAnalyzer('{}') = {}", connectionId, result);
+    return result;
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
-    if (isSonarCloud) {
-      return true;
-    } else {
-      var connectionStorage = storageService.connection(connectionId);
-      var serverInfo = connectionStorage.serverInfo().read();
-      if (serverInfo.isEmpty()) {
-        return false;
-      } else {
-        // For SQ versions older than 10.8, enterprise C# and VB.NET analyzers were packaged in all editions.
-        // For newer versions, we need to check if enterprise plugin is present on the server
-        var serverVersion = serverInfo.get().version();
-        var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
-        var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch(analyzerName::equals);
-        return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
-      }
+    if (connection == null) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: connection '{}' not found, returning false", connectionId);
+      return false;
     }
+    var isSonarCloud = connection.getKind() == ConnectionKind.SONARCLOUD;
+    if (isSonarCloud) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: connection '{}' is SonarCloud, returning true", connectionId);
+      return true;
+    }
+    var connectionStorage = storageService.connection(connectionId);
+    var serverInfo = connectionStorage.serverInfo().read();
+    if (serverInfo.isEmpty()) {
+      logger.debug("shouldUseEnterpriseDotNetAnalyzer: no server info for '{}', returning false", connectionId);
+      return false;
+    }
+    // For SQ versions older than 10.8, enterprise C# and VB.NET analyzers were packaged in all editions.
+    // For newer versions, we need to check if enterprise plugin is present on the server
+    var serverVersion = serverInfo.get().version();
+    var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
+    var storedPluginKeys = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).toList();
+    var hasEnterprisePlugin = storedPluginKeys.contains(analyzerName);
+    var result = !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
+    logger.debug("shouldUseEnterpriseDotNetAnalyzer for '{}': serverVersion={}, supportsRepackaged={}, storedPlugins={}, hasEnterprise={} => {}",
+      analyzerName, serverVersion, supportsRepackagedDotnetAnalyzer, storedPluginKeys, hasEnterprisePlugin, result);
+    return result;
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    var result = shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    logger.debug("shouldUseEnterpriseVbAnalyzer('{}') = {}", connectionId, result);
+    return result;
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
@@ -255,22 +286,54 @@ public class PluginsService {
   }
 
   static class CSharpSupport {
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
+
     final Path csharpOssPluginPath;
     final Path csharpEnterprisePluginPath;
 
     CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
       if (languageSpecificRequirements == null) {
+        LOG.debug("C#/VB.NET support: languageSpecificRequirements is null");
         csharpOssPluginPath = null;
         csharpEnterprisePluginPath = null;
       } else {
         var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
         if (omnisharpRequirements == null) {
+          LOG.debug("C#/VB.NET support: omnisharpRequirements is null");
           csharpOssPluginPath = null;
           csharpEnterprisePluginPath = null;
         } else {
           csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
           csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
+          logAnalyzerPathInfo("OSS", csharpOssPluginPath);
+          logAnalyzerPathInfo("Enterprise", csharpEnterprisePluginPath);
+          if (csharpOssPluginPath == null && csharpEnterprisePluginPath == null) {
+            LOG.warn("C#/VB.NET support: Both OSS and Enterprise analyzer paths are null. C#/VB.NET analysis will not work.");
+          }
         }
+      }
+    }
+
+    private static void logAnalyzerPathInfo(String analyzerType, @Nullable Path path) {
+      if (path == null) {
+        LOG.debug("C#/VB.NET support: {} analyzer path = null", analyzerType);
+        return;
+      }
+      var pathString = path.toString();
+      if (pathString.isBlank()) {
+        LOG.warn("C#/VB.NET support: {} analyzer path is blank: '{}'", analyzerType, pathString);
+        return;
+      }
+      LOG.debug("C#/VB.NET support: {} analyzer path = {}", analyzerType, path);
+      var file = path.toFile();
+      if (!file.exists()) {
+        LOG.warn("C#/VB.NET support: {} analyzer file does NOT exist: {}", analyzerType, path);
+      } else if (!file.isFile()) {
+        LOG.warn("C#/VB.NET support: {} analyzer path is not a file: {}", analyzerType, path);
+      } else {
+        var sizeBytes = file.length();
+        var sizeMB = sizeBytes / (1024.0 * 1024.0);
+        LOG.debug("C#/VB.NET support: {} analyzer file exists, size = {} bytes ({} MB)", analyzerType, sizeBytes, String.format("%.2f", sizeMB));
       }
     }
   }
