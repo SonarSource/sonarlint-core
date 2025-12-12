@@ -21,10 +21,12 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.filter.LevelFilter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.util.FileSize;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.sentry.Attachment;
@@ -214,7 +216,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     });
   }
 
-  private void setupFileAppender(ch.qos.logback.classic.Logger root, Path storageRoot) {
+  private static void setupFileAppender(ch.qos.logback.classic.Logger root, Path storageRoot) {
     var loggerContext = root.getLoggerContext();
 
     var encoder = new PatternLayoutEncoder();
@@ -241,6 +243,14 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rollingPolicy.setMinIndex(1);
     rollingPolicy.setMinIndex(10);
 
+    var debugAcceptFilter = new LevelFilter();
+    debugAcceptFilter.setContext(loggerContext);
+    debugAcceptFilter.setLevel(Level.DEBUG);
+    debugAcceptFilter.setOnMatch(FilterReply.ACCEPT);
+    debugAcceptFilter.setOnMismatch(FilterReply.DENY);
+    rollingFileAppender.addFilter(debugAcceptFilter);
+
+    debugAcceptFilter.start();
     rollingPolicy.start();
     triggeringPolicy.start();
     rollingFileAppender.start();
