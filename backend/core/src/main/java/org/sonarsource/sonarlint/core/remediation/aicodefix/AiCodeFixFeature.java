@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
 import org.sonarsource.sonarlint.core.repository.reporting.RaisedIssue;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixSettings;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 

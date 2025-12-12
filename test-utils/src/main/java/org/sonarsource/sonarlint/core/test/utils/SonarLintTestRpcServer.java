@@ -34,7 +34,7 @@ import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -242,8 +242,8 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     return gson.fromJson(decoded, TelemetryLocalStorage.class);
   }
 
-  public LocalOnlyIssueStorageService getLocalOnlyIssueStorageService() {
-    return serverUsingJava.getLocalOnlyIssueStorageService();
+  public LocalOnlyIssuesRepository getLocalOnlyIssuesRepository() {
+    return serverUsingJava.getLocalOnlyIssuesRepository();
   }
 
   public StorageService getIssueStorageService() {
