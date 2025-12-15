@@ -113,7 +113,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
       .traceMessages(getMessageTracer())
-      .setExceptionHandler(this::handleError)
+      .setExceptionHandler(SonarLintRpcServerImpl::handleError)
       .create();
 
     this.client = launcher.getRemoteProxy();
@@ -134,7 +134,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     this.clientListener = launcher.startListening();
   }
 
-  private org.eclipse.lsp4j.jsonrpc.messages.ResponseError handleError(Throwable throwable) {
+  private static ResponseError handleError(Throwable throwable) {
     var error = RpcErrorHandler.handleError(throwable);
     if (RpcErrorHandler.isInternalError(throwable)) {
       LOG.error("Internal error: {}", throwable.getMessage(), throwable);
