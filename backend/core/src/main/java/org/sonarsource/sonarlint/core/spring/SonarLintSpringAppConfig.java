@@ -275,7 +275,8 @@ public class SonarLintSpringAppConfig {
       params.getTelemetryConstantAttributes().getIdeVersion());
   }
 
-  @Bean
+  // disable automatic destroy call, shutdown is handled by SonarLintDatabaseService
+  @Bean(destroyMethod = "")
   SonarLintDatabase provideDatabase(UserPaths userPaths) {
     return new SonarLintDatabase(userPaths.getStorageRoot());
   }
