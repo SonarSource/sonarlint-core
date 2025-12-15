@@ -243,6 +243,6 @@ class ConnectionSetupMediumTests {
       .validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("foo", "bar"))))).get();
 
     assertThat(connectionResponse.isSuccess()).isFalse();
-    assertThat(connectionResponse.getMessage()).contains("notexists");
+    assertThat(connectionResponse.getMessage()).contains("Request failed");
   }
 }

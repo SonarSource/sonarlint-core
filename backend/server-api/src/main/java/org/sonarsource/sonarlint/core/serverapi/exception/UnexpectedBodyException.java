@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
-
-public class UnexpectedBodyException extends SonarLintException {
+public class UnexpectedBodyException extends ServerRequestException {
   public UnexpectedBodyException(Throwable cause) {
     super("Unexpected body received", cause);
   }

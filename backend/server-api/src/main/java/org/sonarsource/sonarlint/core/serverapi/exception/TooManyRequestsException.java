@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
-public class TooManyRequestsException extends RuntimeException {
+public class TooManyRequestsException extends ServerRequestException {
   public TooManyRequestsException(String message) {
     super(message);
   }

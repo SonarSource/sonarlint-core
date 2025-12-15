@@ -183,7 +183,7 @@ class ConnectionValidatorMediumTests {
       Either.forLeft(new TokenDto("token"))))).join();
 
     assertThat(response.isSuccess()).isFalse();
-    assertThat(response.getMessage()).startsWith("java.net.UnknownHostException:");
+    assertThat(response.getMessage()).startsWith("Request failed");
   }
 
 }
