@@ -24,10 +24,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 
 public class SonarQubeEventStream {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private EventStream eventStream;
   private final Set<String> subscribedProjectKeys = new LinkedHashSet<>();
   private final Set<SonarLanguage> enabledLanguages;
@@ -67,8 +70,12 @@ public class SonarQubeEventStream {
 
   private void attemptSubscription(Set<String> projectKeys) {
     if (!enabledLanguages.isEmpty()) {
-      sonarQubeClientManager.withActiveClient(connectionId,
-        serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
+      try {
+        sonarQubeClientManager.withActiveClient(connectionId,
+          serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
+      } catch (Exception e) {
+        LOG.debug("Error while subscribing to event-stream", e);
+      }
     }
   }
 
