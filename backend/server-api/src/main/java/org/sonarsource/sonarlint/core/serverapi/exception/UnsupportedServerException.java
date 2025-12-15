@@ -19,11 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
-
-public class UnsupportedServerException extends SonarLintException {
+public class UnsupportedServerException extends ServerRequestException {
 
   public UnsupportedServerException(String msg) {
-    super(msg, null);
+    super(msg);
   }
 }

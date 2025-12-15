@@ -80,6 +80,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -141,14 +142,16 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   private ResponseError handleError(Throwable throwable) {
-    if (throwable instanceof ResponseErrorException) {
-      return ((ResponseErrorException) throwable).getResponseError();
+    if (throwable instanceof ResponseErrorException responseErrorException) {
+      return responseErrorException.getResponseError();
     } else if ((throwable instanceof CompletionException || throwable instanceof InvocationTargetException)
-      && throwable.getCause() instanceof ResponseErrorException) {
-      return ((ResponseErrorException) throwable.getCause()).getResponseError();
-    } else {
-      return fallbackResponseError("Internal error", throwable);
-    }
+      && throwable.getCause() instanceof ResponseErrorException responseErrorException) {
+        return responseErrorException.getResponseError();
+      } else if (throwable instanceof ServerRequestException) {
+        return new ResponseError(ResponseErrorCode.RequestFailed, throwable.getMessage(), toStringStacktrace(throwable));
+      } else {
+        return fallbackResponseError("Internal error", throwable);
+      }
   }
 
   private static ResponseError fallbackResponseError(String header, Throwable throwable) {
@@ -156,17 +159,22 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var error = new ResponseError();
     error.setMessage(header + ".");
     error.setCode(ResponseErrorCode.InternalError);
+    var string = toStringStacktrace(throwable);
+    error.setData(string);
+
+    // Send to Sentry with hint being the full stacktrace
+    var stackTraceAttachment = new Attachment(string.getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
+    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
+    return error;
+  }
+
+  private static String toStringStacktrace(Throwable throwable) {
     var stackTrace = new ByteArrayOutputStream();
     var stackTraceWriter = new PrintWriter(stackTrace);
     throwable.printStackTrace(stackTraceWriter);
     stackTraceWriter.flush();
 
-    //Send to Sentry with hint being the full stacktrace
-    var stackTraceAttachment = new Attachment(stackTrace.toString().getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
-    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
-
-    error.setData(stackTrace.toString());
-    return error;
+    return stackTrace.toString(StandardCharsets.UTF_8);
   }
 
   private static PrintWriter getMessageTracer() {

@@ -19,11 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
-
-public class NotFoundException extends SonarLintException {
-
+public class NotFoundException extends ServerRequestException {
   public NotFoundException(String msg) {
-    super(msg, null);
+    super(msg);
   }
 }

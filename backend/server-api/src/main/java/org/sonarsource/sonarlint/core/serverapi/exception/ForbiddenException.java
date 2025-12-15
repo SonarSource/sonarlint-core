@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.exception;
 
-public class ForbiddenException extends RuntimeException {
+public class ForbiddenException extends ServerRequestException {
   public ForbiddenException(String message) {
     super(message);
   }

@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
+import org.sonarsource.sonarlint.core.serverapi.exception.NetworkException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
@@ -156,7 +157,7 @@ public class ServerApiHelper {
       return response;
     } catch (Exception e) {
       logFailure(method, startTime, url, e.getMessage());
-      throw e;
+      throw new NetworkException("Request failed", e);
     }
   }
 
