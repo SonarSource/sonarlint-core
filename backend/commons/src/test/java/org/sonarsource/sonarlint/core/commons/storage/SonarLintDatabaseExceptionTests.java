@@ -19,7 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import io.sentry.Sentry;
+import io.sentry.ScopeCallback;
+import io.sentry.logger.ILoggerApi;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,20 +31,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 
 class SonarLintDatabaseExceptionTests {
 
   @RegisterExtension
-  static SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private SonarLintDatabase db;
+  private MockedStatic<Sentry> sentryMock;
 
   @BeforeEach
   void setUp() {
     DatabaseExceptionReporter.clearRecentExceptions();
+    sentryMock = mockStatic(Sentry.class);
+    sentryMock.when(Sentry::logger).thenReturn(mock(ILoggerApi.class));
   }
 
   @AfterEach
@@ -48,6 +61,7 @@ class SonarLintDatabaseExceptionTests {
     if (db != null) {
       db.shutdown();
     }
+    sentryMock.close();
     DatabaseExceptionReporter.clearRecentExceptions();
   }
 
@@ -59,7 +73,14 @@ class SonarLintDatabaseExceptionTests {
     assertThatThrownBy(() -> db.dsl().execute("SELECT * FROM non_existent_table"))
       .isInstanceOf(DataAccessException.class);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+
+    var capturedException = exceptionCaptor.getValue();
+    assertThat(capturedException).isInstanceOf(SQLException.class);
+    var sqlException = (SQLException) capturedException;
+    assertThat(sqlException.getSQLState()).isEqualTo("42S02");
+    assertThat(sqlException.getMessage()).contains("NON_EXISTENT_TABLE");
   }
 
   @Test
@@ -70,7 +91,13 @@ class SonarLintDatabaseExceptionTests {
     assertThatThrownBy(() -> db.dsl().execute("INVALID SQL SYNTAX HERE"))
       .isInstanceOf(DataAccessException.class);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+
+    var capturedException = exceptionCaptor.getValue();
+    assertThat(capturedException).isInstanceOf(SQLException.class);
+    var sqlException = (SQLException) capturedException;
+    assertThat(sqlException.getSQLState()).isEqualTo("42001");
   }
 
   @Test
@@ -84,7 +111,14 @@ class SonarLintDatabaseExceptionTests {
     assertThatThrownBy(() -> db.dsl().execute("INSERT INTO test_table (id, name) VALUES (1, 'duplicate')"))
       .isInstanceOf(DataAccessException.class);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+
+    var capturedException = exceptionCaptor.getValue();
+    assertThat(capturedException).isInstanceOf(SQLException.class);
+    var sqlException = (SQLException) capturedException;
+    assertThat(sqlException.getSQLState()).isEqualTo("23505");
+    assertThat(sqlException.getMessage()).contains("Unique index or primary key violation");
   }
 
   @Test
@@ -93,7 +127,7 @@ class SonarLintDatabaseExceptionTests {
     db = new SonarLintDatabase(storageRoot);
 
     assertThat(db.dsl()).isNotNull();
-    assertThat(logTester.logs()).noneMatch(log -> log.contains("startup") && log.contains("h2.pool.create"));
+    sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
   }
 
   @Test
@@ -104,8 +138,7 @@ class SonarLintDatabaseExceptionTests {
     db.shutdown();
     db = null;
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("H2Database disposed"));
-    assertThat(logTester.logs()).noneMatch(log -> log.contains("shutdown") && log.contains("h2.pool.dispose") && log.contains("Reporting"));
+    sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
   }
 
   @Test
@@ -118,7 +151,7 @@ class SonarLintDatabaseExceptionTests {
     var result = db.dsl().fetch("SELECT * FROM valid_table WHERE id = 1");
 
     assertThat(result).hasSize(1);
-    assertThat(logTester.logs()).noneMatch(log -> log.contains("Reporting database exception to Sentry"));
+    sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
   }
 
 }

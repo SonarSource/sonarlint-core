@@ -20,13 +20,13 @@
 package org.sonarsource.sonarlint.core.commons.storage;
 
 import org.jooq.ExecuteContext;
-import org.jooq.impl.DefaultExecuteListener;
+import org.jooq.ExecuteListener;
 
 /**
  * A jOOQ ExecuteListener that intercepts SQL execution exceptions and reports them
  * to Sentry via {@link DatabaseExceptionReporter}.
  */
-public class JooqDatabaseExceptionListener extends DefaultExecuteListener {
+public class JooqDatabaseExceptionListener implements ExecuteListener {
 
   @Override
   public void exception(ExecuteContext ctx) {

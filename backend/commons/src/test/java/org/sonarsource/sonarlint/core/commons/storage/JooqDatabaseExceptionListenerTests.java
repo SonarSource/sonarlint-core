@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import io.sentry.Sentry;
+import io.sentry.ScopeCallback;
+import io.sentry.logger.ILoggerApi;
 import java.sql.SQLException;
 import org.jooq.ExecuteContext;
 import org.junit.jupiter.api.AfterEach;
@@ -26,26 +29,35 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class JooqDatabaseExceptionListenerTests {
 
   @RegisterExtension
-  static SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private JooqDatabaseExceptionListener listener;
+  private MockedStatic<Sentry> sentryMock;
 
   @BeforeEach
   void setUp() {
     listener = new JooqDatabaseExceptionListener();
     DatabaseExceptionReporter.clearRecentExceptions();
+    sentryMock = mockStatic(Sentry.class);
+    sentryMock.when(Sentry::logger).thenReturn(mock(ILoggerApi.class));
   }
 
   @AfterEach
   void tearDown() {
+    sentryMock.close();
     DatabaseExceptionReporter.clearRecentExceptions();
   }
 
@@ -61,7 +73,10 @@ class JooqDatabaseExceptionListenerTests {
 
     listener.exception(ctx);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+    assertThat(exceptionCaptor.getValue()).isInstanceOf(SQLException.class);
+    assertThat(((SQLException) exceptionCaptor.getValue()).getSQLState()).isEqualTo("42000");
   }
 
   @Test
@@ -75,7 +90,9 @@ class JooqDatabaseExceptionListenerTests {
 
     listener.exception(ctx);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+    assertThat(exceptionCaptor.getValue()).isSameAs(runtimeException);
   }
 
   @Test
@@ -86,7 +103,7 @@ class JooqDatabaseExceptionListenerTests {
 
     listener.exception(ctx);
 
-    assertThat(logTester.logs()).noneMatch(log -> log.contains("Reporting database exception to Sentry"));
+    sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
   }
 
   @Test
@@ -100,7 +117,9 @@ class JooqDatabaseExceptionListenerTests {
 
     listener.exception(ctx);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+    assertThat(exceptionCaptor.getValue()).isSameAs(exception);
   }
 
   @Test
@@ -115,6 +134,8 @@ class JooqDatabaseExceptionListenerTests {
 
     listener.exception(ctx);
 
-    assertThat(logTester.logs()).anyMatch(log -> log.contains("Reporting database exception to Sentry"));
+    var exceptionCaptor = ArgumentCaptor.forClass(Throwable.class);
+    sentryMock.verify(() -> Sentry.captureException(exceptionCaptor.capture(), any(ScopeCallback.class)));
+    assertThat(exceptionCaptor.getValue()).isSameAs(sqlException);
   }
 }
