@@ -27,8 +27,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyR
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ListAllDependencyRisksResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
@@ -65,12 +63,6 @@ public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate
         throw new ResponseErrorException(error);
       }
     }, params.getConfigurationScopeId());
-  }
-
-  @Override
-  public CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params) {
-    return requestAsync(cancelMonitor -> getBean(DependencyRiskService.class)
-      .getDependencyRiskDetails(params.getConfigurationScopeId(), params.getDependencyRiskKey(), cancelMonitor), params.getConfigurationScopeId());
   }
 
   @Override

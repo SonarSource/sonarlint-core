@@ -55,12 +55,6 @@ public interface DependencyRiskRpcService {
   @JsonRequest
   CompletableFuture<Void> changeStatus(ChangeDependencyRiskStatusParams params);
 
-  /**
-   * Returns the details of a dependency risk including description and affected packages.
-   */
-  @JsonRequest
-  CompletableFuture<GetDependencyRiskDetailsResponse> getDependencyRiskDetails(GetDependencyRiskDetailsParams params);
-
   @JsonRequest
   CompletableFuture<Void> openDependencyRiskInBrowser(OpenDependencyRiskInBrowserParams params);
 

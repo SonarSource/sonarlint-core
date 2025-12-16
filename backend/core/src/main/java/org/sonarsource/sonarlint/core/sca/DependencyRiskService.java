@@ -39,17 +39,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskTransition;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.RecommendationDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
-import org.sonarsource.sonarlint.core.serverapi.sca.GetIssueReleaseResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
@@ -212,23 +208,6 @@ public class DependencyRiskService {
     });
   }
 
-  public GetDependencyRiskDetailsResponse getDependencyRiskDetails(String configurationScopeId, UUID dependencyRiskKey, SonarLintCancelMonitor cancelMonitor) {
-    var configScope = configurationRepository.getConfigurationScope(configurationScopeId);
-    if (configScope == null) {
-      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configurationScopeId, configurationScopeId);
-      throw new ResponseErrorException(error);
-    }
-    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    if (effectiveBinding.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND,
-        "The provided configuration scope is not bound to a SonarQube/SonarCloud project: " + configurationScopeId, configurationScopeId);
-      throw new ResponseErrorException(error);
-    }
-    var apiClient = sonarQubeClientManager.getClientOrThrow(effectiveBinding.get().connectionId());
-    var serverResponse = apiClient.withClientApiAndReturn(serverApi -> serverApi.sca().getIssueRelease(dependencyRiskKey, cancelMonitor));
-    return convertToRpcResponse(serverResponse);
-  }
-
   private static ServerDependencyRisk.Transition adaptTransition(DependencyRiskTransition transition) {
     return switch (transition) {
       case REOPEN -> ServerDependencyRisk.Transition.REOPEN;
@@ -236,38 +215,6 @@ public class DependencyRiskService {
       case ACCEPT -> ServerDependencyRisk.Transition.ACCEPT;
       case SAFE -> ServerDependencyRisk.Transition.SAFE;
     };
-  }
-
-  private static GetDependencyRiskDetailsResponse convertToRpcResponse(GetIssueReleaseResponse serverResponse) {
-    var vulnerability = serverResponse.vulnerability();
-    var affectedPackages = vulnerability == null ? List.<AffectedPackageDto>of() : vulnerability.affectedPackages()
-      .stream().map(pkg -> {
-        var recommendationDetails = pkg.recommendationDetails();
-        RecommendationDetailsDto recommendationDetailsDto = null;
-        if (recommendationDetails != null) {
-          recommendationDetailsDto = RecommendationDetailsDto.builder()
-            .impactScore(recommendationDetails.impactScore())
-            .impactDescription(recommendationDetails.impactDescription())
-            .realIssue(recommendationDetails.realIssue())
-            .falsePositiveReason(recommendationDetails.falsePositiveReason())
-            .includesDev(recommendationDetails.includesDev())
-            .specificMethodsAffected(recommendationDetails.specificMethodsAffected())
-            .specificMethodsDescription(recommendationDetails.specificMethodsDescription())
-            .otherConditions(recommendationDetails.otherConditions())
-            .otherConditionsDescription(recommendationDetails.otherConditionsDescription())
-            .workaroundAvailable(recommendationDetails.workaroundAvailable())
-            .workaroundDescription(recommendationDetails.workaroundDescription())
-            .visibility(recommendationDetails.visibility()).build();
-        }
-        return new AffectedPackageDto(pkg.purl(), pkg.recommendation(), recommendationDetailsDto);
-      }).toList();
-    var vulnerabilityId = vulnerability == null ? null : vulnerability.vulnerabilityId();
-    var description = vulnerability == null ? null : vulnerability.description();
-
-    return new GetDependencyRiskDetailsResponse(serverResponse.key(), DependencyRiskDto.Severity.valueOf(serverResponse.severity().name()),
-      DependencyRiskDto.SoftwareQuality.valueOf(serverResponse.quality().name()),serverResponse.release().packageName(),
-      serverResponse.release().version(), DependencyRiskDto.Type.valueOf(serverResponse.type().name()), vulnerabilityId,
-      description, affectedPackages);
   }
 
   public void openDependencyRiskInBrowser(String configurationScopeId, UUID dependencyKey) {
