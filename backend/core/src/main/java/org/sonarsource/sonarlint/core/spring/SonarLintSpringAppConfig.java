@@ -276,8 +276,9 @@ public class SonarLintSpringAppConfig {
   }
 
   // disable automatic destroy call, shutdown is handled by SonarLintDatabaseService
+  // MonitoringService dependency ensures Sentry is initialized before database migrations run
   @Bean(destroyMethod = "")
-  SonarLintDatabase provideDatabase(UserPaths userPaths) {
+  SonarLintDatabase provideDatabase(UserPaths userPaths, MonitoringService monitoringService) {
     return new SonarLintDatabase(userPaths.getStorageRoot());
   }
 
