@@ -1,3 +1,9 @@
+# 10.39
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails` method and associated DTOs.
+
 # 10.38
 
 ## New features

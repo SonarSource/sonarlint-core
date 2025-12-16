@@ -19,10 +19,7 @@
  */
 package its;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.sonar.orchestrator.container.Edition;
-import com.sonar.orchestrator.http.HttpMethod;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
@@ -76,11 +73,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.AffectedPackageDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.RecommendationDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -421,26 +413,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void should_return_risk_dependency_details() {
-      var configScopeId = "should_honor_the_web_api_contract";
-      analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
-      bindProject(configScopeId, PROJECT_KEY_SCA, PROJECT_KEY_SCA);
-      var firstDependencyRiskKey = getFirstDependencyRiskKey(PROJECT_KEY_SCA);
-
-      var riskDetailsResponse = backend.getDependencyRiskService().getDependencyRiskDetails(new GetDependencyRiskDetailsParams(configScopeId, firstDependencyRiskKey)).join();
-
-      assertThat(riskDetailsResponse)
-        .usingRecursiveComparison()
-        .isEqualTo(new GetDependencyRiskDetailsResponse(firstDependencyRiskKey, DependencyRiskDto.Severity.MEDIUM,
-          DependencyRiskDto.SoftwareQuality.SECURITY, "com.fasterxml.woodstox:woodstox-core", "6.2.7",
-          DependencyRiskDto.Type.VULNERABILITY, "CVE-2022-40152",
-          "Those using Woodstox to parse XML data may be vulnerable to Denial of Service attacks (DOS) if DTD support is enabled. If the parser is running on user supplied input, an attacker may supply content that causes the parser to crash by stackoverflow. This effect may support a denial of service attack.",
-          List.of(new AffectedPackageDto("pkg:maven/com.fasterxml.woodstox/woodstox-core", "upgrade",
-            RecommendationDetailsDto.builder().impactDescription("Vulnerability occurs if attacker can provide specifically crafted XML document with DTD reference.")
-              .impactScore(5).realIssue(true).visibility("external").build()))));
-    }
-
-    @Test
     void sca_feature_should_be_enabled() {
       var configScopeId = "sca_check_enabled";
       analyzeMavenProject(ORCHESTRATOR, "sample-sca", Map.of("sonar.projectKey", PROJECT_KEY_SCA));
@@ -450,25 +422,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       assertThat(supportedResponse.isSupported()).isTrue();
       assertThat(supportedResponse.getReason()).isNull();
-    }
-
-    private UUID getFirstDependencyRiskKey(String projectKey) {
-      var response = ORCHESTRATOR.getServer()
-        .newHttpCall("/api/v2/sca/issues-releases")
-        .setMethod(HttpMethod.GET)
-        .setAdminCredentials()
-        .setParam("projectKey", projectKey)
-        .setParam("branchName", MAIN_BRANCH_NAME)
-        .execute();
-      if (!response.isSuccessful()) {
-        throw new IllegalStateException("Unexpected response code: " + response);
-      }
-      var jsonObject = new Gson().fromJson(response.getBodyAsString(), JsonObject.class);
-      var issuesReleases = jsonObject.getAsJsonArray("issuesReleases");
-      if (issuesReleases.size() > 1) {
-        throw new IllegalStateException("Expected only one dependency risk, got: " + issuesReleases);
-      }
-      return UUID.fromString(issuesReleases.get(0).getAsJsonObject().get("key").getAsString());
     }
   }
 
