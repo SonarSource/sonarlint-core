@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
@@ -34,6 +35,8 @@ import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 public class WebSocketManager {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private SonarCloudWebSocket sonarCloudWebSocket;
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private String connectionIdUsedToCreateConnection;
@@ -85,10 +88,14 @@ public class WebSocketManager {
   public void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (!hasOpenConnection()) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri,
-        connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
-        this::handleSonarServerEvent, this::reopenConnectionOnClose);
-      this.connectionIdUsedToCreateConnection = connectionId;
+      try {
+        this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri,
+          connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
+          this::handleSonarServerEvent, this::reopenConnectionOnClose);
+        this.connectionIdUsedToCreateConnection = connectionId;
+      } catch (Exception e) {
+        LOG.error("Error while creating WebSocket connection", e);
+      }
     }
   }
 

@@ -46,7 +46,7 @@ public class ConnectionAwareHttpClientProvider {
       return credentials.map(
         tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), shouldUseBearer),
         userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
-    } catch (IllegalStateException e) {
+    } catch (Exception e) {
       client.invalidToken(new InvalidTokenParams(connectionId));
       throw e;
     }
