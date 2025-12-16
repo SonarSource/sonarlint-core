@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.verify;
 
 class DatabaseExceptionReporterTests {
@@ -57,6 +58,7 @@ class DatabaseExceptionReporterTests {
   void tearDown() {
     sentryMock.close();
     DatabaseExceptionReporter.clearRecentExceptions();
+    System.clearProperty(DatabaseExceptionReporter.DEDUP_WINDOW_PROPERTY);
   }
 
   @Test
@@ -157,23 +159,19 @@ class DatabaseExceptionReporterTests {
   }
 
   @Test
-  void should_cleanup_old_entries_after_dedup_window() throws InterruptedException {
+  void should_cleanup_old_entries_after_dedup_window() {
     System.setProperty(DatabaseExceptionReporter.DEDUP_WINDOW_PROPERTY, "50");
-    try {
-      DatabaseExceptionReporter.capture(new RuntimeException("Error 1"), "runtime", "op1");
-      DatabaseExceptionReporter.capture(new RuntimeException("Error 2"), "runtime", "op2");
-      DatabaseExceptionReporter.capture(new RuntimeException("Error 3"), "runtime", "op3");
 
-      assertThat(DatabaseExceptionReporter.getRecentExceptionsCount()).isEqualTo(3);
+    DatabaseExceptionReporter.capture(new RuntimeException("Error 1"), "runtime", "op1");
+    DatabaseExceptionReporter.capture(new RuntimeException("Error 2"), "runtime", "op2");
+    DatabaseExceptionReporter.capture(new RuntimeException("Error 3"), "runtime", "op3");
 
-      Thread.sleep(100);
+    assertThat(DatabaseExceptionReporter.getRecentExceptionsCount()).isEqualTo(3);
 
+    await().atLeast(java.time.Duration.ofMillis(100)).untilAsserted(() -> {
       DatabaseExceptionReporter.capture(new RuntimeException("Error 4"), "runtime", "op4");
-
       assertThat(DatabaseExceptionReporter.getRecentExceptionsCount()).isEqualTo(1);
-    } finally {
-      System.clearProperty(DatabaseExceptionReporter.DEDUP_WINDOW_PROPERTY);
-    }
+    });
   }
 
   @Test
@@ -287,17 +285,14 @@ class DatabaseExceptionReporterTests {
   @Test
   void should_use_default_dedup_window_when_property_is_invalid() {
     System.setProperty(DatabaseExceptionReporter.DEDUP_WINDOW_PROPERTY, "not-a-number");
-    try {
-      var exception1 = new RuntimeException("Error");
-      var exception2 = new RuntimeException("Error");
 
-      DatabaseExceptionReporter.capture(exception1, "runtime", "op1");
-      DatabaseExceptionReporter.capture(exception2, "runtime", "op2");
+    var exception1 = new RuntimeException("Error");
+    var exception2 = new RuntimeException("Error");
 
-      // Should still deduplicate using default window (not crash)
-      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
-    } finally {
-      System.clearProperty(DatabaseExceptionReporter.DEDUP_WINDOW_PROPERTY);
-    }
+    DatabaseExceptionReporter.capture(exception1, "runtime", "op1");
+    DatabaseExceptionReporter.capture(exception2, "runtime", "op2");
+
+    // Should still deduplicate using default window (not crash)
+    sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
   }
 }
