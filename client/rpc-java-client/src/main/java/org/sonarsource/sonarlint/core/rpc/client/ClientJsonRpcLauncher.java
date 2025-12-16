@@ -30,12 +30,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.core.rpc.protocol.RpcErrorHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 
 public class ClientJsonRpcLauncher implements Closeable {
-
   private final SonarLintRpcServer serverProxy;
   private final Future<Void> future;
   private final ExecutorService messageReaderExecutor;
@@ -66,6 +66,7 @@ public class ClientJsonRpcLauncher implements Closeable {
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor,
         ex -> client.logClientSideError("Error consuming RPC message", ex)))
       .traceMessages(getMessageTracer())
+      .setExceptionHandler(RpcErrorHandler::handleError)
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
