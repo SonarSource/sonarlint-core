@@ -70,10 +70,10 @@ public final class SonarLintDatabase {
       .baselineOnMigrate(true)
       .failOnMissingLocations(false)
       .load();
-    // this might throw but it's fine. If migrations fail, we want to fail starting the backend
     try {
       flyway.migrate();
     } catch (Exception e) {
+      // We are catching the exception for Sentry and rethrowing here to fail starting the backend
       DatabaseExceptionReporter.capture(e, "startup", "flyway.migrate");
       throw e;
     }
