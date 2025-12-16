@@ -60,11 +60,13 @@ public class PluginsSynchronizer {
     if (enabledLanguages.contains(SonarLanguage.CS)) {
       // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
       this.notSonarLintSupportedPluginsToSynchronize.add(CSHARP_ENTERPRISE_PLUGIN_ID);
+      // SLCORE-1898 Synchronize of OSS plugins for dotnet in connected mode, should be removed with SLVS-2778
       this.notSonarLintSupportedPluginsToSynchronize.add(CSHARP_OSS_PLUGIN_ID);
     }
     if (enabledLanguages.contains(SonarLanguage.VBNET)) {
       // SLCORE-1179 Force synchronize "VB.NET Enterprise" after repackaging (SQS 10.8+)
       this.notSonarLintSupportedPluginsToSynchronize.add(VBNET_ENTERPRISE_PLUGIN_ID);
+      // SLCORE-1898 Synchronize of OSS plugins for dotnet in connected mode, should be removed with SLVS-2778
       this.notSonarLintSupportedPluginsToSynchronize.add(VBNET_OSS_PLUGIN_ID);
     }
     this.storage = storage;
