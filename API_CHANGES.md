@@ -4,6 +4,12 @@
 
 * Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails` method and associated DTOs.
 
+## New features
+
+* Added caching for file contents during analysis. Following environment variables are used to control it: 
+  * `CACHE_STATS_ENABLED_PROPERTY` - when `true`, it enables cache stats gathering (like amount of cache hits/misses and evictions caused by overflow).
+  * `SONARLINT_CACHE_SIZE` - to set another cap to total length of strings in the cache, 1.000.000 by default.
+
 # 10.38
 
 ## New features

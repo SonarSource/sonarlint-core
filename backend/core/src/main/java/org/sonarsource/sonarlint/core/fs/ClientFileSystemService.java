@@ -58,20 +58,22 @@ public class ClientFileSystemService {
   private final TelemetryService telemetryService;
   private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
     new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
+  private final ReadThroughFileCache readThroughFileCache;
 
   public ClientFileSystemService(SonarLintRpcClient rpcClient, ApplicationEventPublisher eventPublisher, OpenFilesRepository openFilesRepository,
-    TelemetryService telemetryService) {
+    TelemetryService telemetryService, ReadThroughFileCache readThroughFileCache) {
     this.rpcClient = rpcClient;
     this.eventPublisher = eventPublisher;
     this.openFilesRepository = openFilesRepository;
     this.telemetryService = telemetryService;
+    this.readThroughFileCache = readThroughFileCache;
   }
 
   public List<ClientFile> getFiles(String configScopeId) {
     return List.copyOf(filesByConfigScopeIdCache.get(configScopeId).values());
   }
 
-  private static ClientFile fromDto(ClientFileDto clientFileDto) {
+  private ClientFile fromDto(ClientFileDto clientFileDto) {
     var charset = charsetFromDto(clientFileDto.getCharset());
     var forcedLanguage = clientFileDto.getDetectedLanguage();
     var forcedSonarLanguage = forcedLanguage == null ? null : SonarLanguage.valueOf(forcedLanguage.name());
@@ -81,7 +83,9 @@ public class ClientFileSystemService {
       charset,
       clientFileDto.getFsPath(),
       forcedSonarLanguage,
-      clientFileDto.isUserDefined());
+      clientFileDto.isUserDefined(),
+      readThroughFileCache
+    );
     if (clientFileDto.getContent() != null) {
       file.setDirty(clientFileDto.getContent());
     }
@@ -140,6 +144,7 @@ public class ClientFileSystemService {
       if (clientFile != null) {
         filesByConfigScopeIdCache.get(clientFile.getConfigScopeId()).remove(uri);
         removed.add(clientFile);
+        readThroughFileCache.remove(Path.of(uri), clientFile.getCharset());
       }
     });
 
@@ -167,6 +172,7 @@ public class ClientFileSystemService {
       }
       var byScope = filesByConfigScopeIdCache.get(clientFileDto.getConfigScopeId());
       byScope.put(clientFileDto.getUri(), clientFile);
+      readThroughFileCache.remove(clientFileDto.getFsPath(), clientFile.getCharset());
     });
 
     eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, added, updated));

@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.fs.ReadThroughFileCache;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
@@ -56,11 +57,12 @@ class BindingClueProviderTests {
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
   private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
+  private final ReadThroughFileCache cache = mock(ReadThroughFileCache.class);
   BindingClueProvider underTest = new BindingClueProvider(connectionRepository, clientFs, SonarCloudActiveEnvironment.prod());
 
   @Test
   void should_detect_sonar_scanner_for_sonarqube() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
@@ -76,7 +78,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarqube_with_project_key() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)));
+      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
@@ -89,7 +91,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_match_multiple_connections() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_2)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "http://Mysonarqube.org/", true));
@@ -104,7 +106,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_url() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
+      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_2, MY_ORG_2, SonarCloudRegion.EU, true));
@@ -121,7 +123,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_url_and_region() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
+      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.US, true));
 
@@ -139,7 +141,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_organization() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.organization=" + MY_ORG_2)));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.organization=" + MY_ORG_2)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_2, MY_ORG_2, SonarCloudRegion.EU, true));
@@ -155,7 +157,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_detect_autoscan_for_sonarcloud() {
-    mockFindFileByNamesInScope(List.of(buildClientFile(".sonarcloud.properties", "path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -171,7 +173,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_detect_autoscan_for_sonarcloud_and_region() {
-    mockFindFileByNamesInScope(List.of(buildClientFile(".sonarcloud.properties", "path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.US, true));
 
@@ -189,7 +191,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_detect_unknown_with_project_key() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -205,7 +207,7 @@ class BindingClueProviderTests {
 
   @Test
   void ignore_scanner_file_without_clue() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.sources=src")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.sources=src")));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -217,7 +219,7 @@ class BindingClueProviderTests {
 
   @Test
   void ignore_scanner_file_invalid_content() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "\\usonar.projectKey=" + PROJECT_KEY_1)));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "\\usonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -230,7 +232,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_wrong_content() {
-    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/.sonarlint/connectedMode.json", "{\"sonarCloudOrganization\": \"org\",\"sonarQubeUri\": \"http://mysonarqube.org\"}")));
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("/path/to/.sonarlint/connectedMode.json", "{\"sonarCloudOrganization\": \"org\",\"sonarQubeUri\": \"http://mysonarqube.org\"}")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
@@ -241,7 +243,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_not_in_right_folder() {
-    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/connections/connectedMode.json", "{\"projectKey\": \"pKey\",\"sonarQubeUri\": \"http://mysonarqube.org\"}")));
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("/path/to/connections/connectedMode.json", "{\"projectKey\": \"pKey\",\"sonarQubeUri\": \"http://mysonarqube.org\"}")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
@@ -252,14 +254,14 @@ class BindingClueProviderTests {
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_not_json() {
-    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.txt"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint/connectedMode.txt"), false, null, null, null, true);
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.txt"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint/connectedMode.txt"), false, null, null, null, true, cache);
 
     assertThat(file.isSonarlintConfigurationFile()).isFalse();
   }
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_wrong_folder() {
-    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null, null, true);
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null, null, true, cache);
 
     assertThat(file.isSonarlintConfigurationFile()).isFalse();
   }
@@ -267,7 +269,7 @@ class BindingClueProviderTests {
   @Test
   void should_set_origin_properties_file_when_clue_created_from_properties() {
     mockFindFileByNamesInScope(List.of(
-      buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)
+      buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)
     ));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -282,7 +284,7 @@ class BindingClueProviderTests {
   @Test
   void should_set_origin_shared_configuration_when_clue_created_from_shared_config() {
     // Simulate a shared configuration file
-    var file = new ClientFile(URI.create("file:///path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Paths.get("/path/to/.sonarlint/connectedMode.json"), false, null, null, null, true);
+    var file = new ClientFile(URI.create("file:///path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Paths.get("/path/to/.sonarlint/connectedMode.json"), false, null, null, null, true, cache);
     file.setDirty("{\"projectKey\": \"" + PROJECT_KEY_1 + "\", \"sonarQubeUri\": \"http://mysonarqube.org\"}");
     mockFindSonarlintConfigurationFilesByScope(List.of(file));
 
@@ -295,8 +297,8 @@ class BindingClueProviderTests {
     assertThat(clue.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
-  private ClientFile buildClientFile(String filename, String relativePath, String content) {
-    var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null, true);
+  private ClientFile buildClientFile(String relativePath, String content) {
+    var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null, true, cache);
     file.setDirty(content);
     return file;
   }

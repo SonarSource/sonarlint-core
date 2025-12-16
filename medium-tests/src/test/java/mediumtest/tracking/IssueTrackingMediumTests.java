@@ -138,13 +138,14 @@ class IssueTrackingMediumTests {
     var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, client, fileUri, ruleKey);
 
     assertThat(firstAnalysisPublishedIssues).hasSize(1);
-    changeFileContent(baseDir, ideFilePath,
-      """
-        package sonar;
-        // FIXME foo bar
-        public interface Foo {
-        // FIXME bar baz
-        }""");
+    var newContent = """
+      package sonar;
+      // FIXME foo bar
+      public interface Foo {
+      // FIXME bar baz
+      }""";
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, newContent, null, true)), List.of()));
     var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, client, fileUri, ruleKey);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
 
@@ -996,6 +997,8 @@ class IssueTrackingMediumTests {
     changeFileContent(baseDir, filePath.getFileName().toString(), """
         # TODO try that
       """);
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)), List.of()));
     raisedIssueDtos = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(raisedIssueDtos).hasSize(1);
 
@@ -1003,6 +1006,8 @@ class IssueTrackingMediumTests {
         # TODO try this
         # TODO try that
       """);
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)), List.of()));
     raisedIssueDtos = analyzeFileAndGetAllIssues(backend, client, fileUri);
     assertThat(raisedIssueDtos)
       .hasSize(2);

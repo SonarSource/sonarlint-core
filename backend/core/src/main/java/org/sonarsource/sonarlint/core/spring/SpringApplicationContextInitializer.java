@@ -39,6 +39,7 @@ public class SpringApplicationContextInitializer implements AutoCloseable {
     applicationContext.register(TelemetrySpringConfig.class);
     applicationContext.register(GessieSpringConfig.class);
     applicationContext.register(IdeLabsSpringConfig.class);
+    applicationContext.register(CacheConfig.class);
     applicationContext.registerBean("sonarlintClient", SonarLintRpcClient.class, () -> requireNonNull(client));
     applicationContext.registerBean("initializeParams", InitializeParams.class, () -> params);
     applicationContext.refresh();

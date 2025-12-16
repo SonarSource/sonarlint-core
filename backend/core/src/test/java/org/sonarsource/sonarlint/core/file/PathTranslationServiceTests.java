@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.fs.ReadThroughFileCache;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,7 @@ class PathTranslationServiceTests {
   private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
   private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
   private final ServerFilePathsProvider serverFilePathsProvider = mock(ServerFilePathsProvider.class);
+  private final ReadThroughFileCache cache = mock(ReadThroughFileCache.class);
   private final PathTranslationService underTest = new PathTranslationService(clientFs, configurationRepository, serverFilePathsProvider);
 
   @BeforeEach
@@ -126,7 +128,7 @@ class PathTranslationServiceTests {
 
   private void mockClientFilePaths(String... paths) {
     doReturn(Arrays.stream(paths)
-      .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null, null, true))
+      .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null, null, true, cache))
       .toList())
       .when(clientFs)
       .getFiles(CONFIG_SCOPE);
