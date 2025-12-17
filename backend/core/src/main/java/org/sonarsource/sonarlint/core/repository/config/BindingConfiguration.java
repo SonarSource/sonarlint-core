@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
@@ -36,18 +35,6 @@ public record BindingConfiguration(@Nullable String connectionId, @Nullable Stri
 
   public boolean isBound() {
     return connectionId != null && sonarProjectKey != null;
-  }
-
-  public boolean isBoundTo(String connectionId, String projectKey) {
-    return Objects.equals(connectionId, this.connectionId) && Objects.equals(projectKey, this.sonarProjectKey);
-  }
-
-  public boolean isBoundToConnection(String connectionId) {
-    return Objects.equals(connectionId, this.connectionId) && sonarProjectKey != null;
-  }
-
-  public boolean isBoundToProject(String projectKey) {
-    return connectionId != null && Objects.equals(projectKey, this.sonarProjectKey);
   }
 
   public <G> Optional<G> ifBound(BiFunction<String, String, G> calledIfBound) {
