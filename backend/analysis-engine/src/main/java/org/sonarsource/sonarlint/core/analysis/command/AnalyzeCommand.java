@@ -27,8 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -46,12 +46,11 @@ import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
+import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 
-import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
 public class AnalyzeCommand extends Command {
@@ -169,10 +168,6 @@ public class AnalyzeCommand extends Command {
       return new AnalysisResults();
     }
     var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
-    if (moduleContainer == null) {
-      moduleContainer = startChild(trace, "createTransientContainer", null,
-        () -> moduleRegistry.createTransientContainer(configuration.inputFiles()));
-    }
     Throwable originalException = null;
     doIfTraceIsSet(t -> {
       int filesCount = configuration.inputFiles().size();

@@ -53,11 +53,9 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
@@ -92,10 +90,15 @@ class AnalysisSchedulerMediumTests {
     var analysisGlobalConfig = AnalysisSchedulerConfiguration.builder()
       .setClientPid(1234L)
       .setWorkDir(workDir)
+      .setFileSystemProvider(this::provideFileSystem)
       .build();
     var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, false, Optional.empty()), Set.of());
     this.analysisScheduler = new AnalysisScheduler(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
     engineStopped = false;
+  }
+
+  private ClientModuleFileSystem provideFileSystem(String moduleKey) {
+    return aModuleFileSystem();
   }
 
   @AfterEach
@@ -119,7 +122,6 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    analysisScheduler.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())));
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, TASK_MANAGER,
       NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
     analysisScheduler.post(analyzeCommand);

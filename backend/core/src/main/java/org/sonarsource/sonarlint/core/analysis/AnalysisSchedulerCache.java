@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,8 +29,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
@@ -96,8 +94,7 @@ public class AnalysisSchedulerCache {
 
   private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId, @Nullable Trace trace) {
     return connectedSchedulerByConnectionId.computeIfAbsent(connectionId,
-      k ->
-        createScheduler(pluginsService.getPlugins(connectionId), pluginsService.getDotnetSupport(connectionId), trace));
+      k -> createScheduler(pluginsService.getPlugins(connectionId), pluginsService.getDotnetSupport(connectionId), trace));
   }
 
   @CheckForNull
@@ -138,7 +135,7 @@ public class AnalysisSchedulerCache {
       .setClientPid(ProcessHandle.current().pid())
       .setExtraProperties(fullExtraProperties)
       .setNodeJs(nodeJsPath)
-      .setModulesProvider(this::getModules)
+      .setFileSystemProvider(this::getFileSystem)
       .build();
   }
 
@@ -154,12 +151,8 @@ public class AnalysisSchedulerCache {
     }
   }
 
-  private List<ClientModuleInfo> getModules() {
-    var leafConfigScopeIds = configurationRepository.getLeafConfigScopeIds();
-    return leafConfigScopeIds.stream().map(scopeId -> {
-      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
-      return new ClientModuleInfo(scopeId, backendModuleFileSystem);
-    }).toList();
+  private ClientModuleFileSystem getFileSystem(String configurationScopeId) {
+    return new BackendModuleFileSystem(clientFileSystemService, configurationScopeId);
   }
 
   @EventListener
@@ -219,15 +212,6 @@ public class AnalysisSchedulerCache {
     var scheduler = connectedSchedulerByConnectionId.remove(connectionId);
     if (scheduler != null) {
       scheduler.stop();
-    }
-  }
-
-  public void registerModuleIfLeafConfigScope(String scopeId) {
-    var analysisScheduler = getAnalysisSchedulerIfStarted(scopeId);
-    if (analysisScheduler != null && configurationRepository.isLeafConfigScope(scopeId)) {
-      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
-      var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
-      analysisScheduler.post(new RegisterModuleCommand(clientModuleInfo));
     }
   }
 

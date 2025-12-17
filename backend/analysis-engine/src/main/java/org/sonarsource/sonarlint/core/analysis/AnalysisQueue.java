@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -175,10 +174,9 @@ public class AnalysisQueue {
 
   private static class CommandComparator implements Comparator<QueuedCommand> {
     private static final Map<Class<?>, Integer> COMMAND_TYPES_ORDERED = Map.ofEntries(
-      // registering and unregistering modules have the highest priority
+      // unregistering commands have the highest priority
       // even if inserted later, they should be pulled first from the queue, before file events and analyzes: they might make them irrelevant
-      // they both have the same priority so insertion order is respected
-      entry(RegisterModuleCommand.class, 0), entry(UnregisterModuleCommand.class, 0),
+      entry(UnregisterModuleCommand.class, 0),
       // forwarding file events takes priority over analyses, to make sure they give more accurate results
       entry(NotifyModuleEventCommand.class, 1),
       // analyses have the lowest priority
