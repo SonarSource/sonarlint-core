@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
@@ -33,6 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
@@ -169,6 +171,18 @@ public class AnalysisSchedulerCache {
   @EventListener
   public void onClientNodeJsPathChanged(ClientNodeJsPathChanged event) {
     resetStartedSchedulers();
+  }
+
+  @EventListener
+  public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
+    var schedulerBeforeBindingChange = event.previousConfig().isBound() ? getConnectedSchedulerIfStarted(Objects.requireNonNull(event.previousConfig().connectionId()))
+      : getStandaloneSchedulerIfStarted();
+    var schedulerAfterBindingChange = getAnalysisSchedulerIfStarted(event.configScopeId());
+    if (schedulerBeforeBindingChange != null && schedulerAfterBindingChange != schedulerBeforeBindingChange) {
+      schedulerBeforeBindingChange.post(new UnregisterModuleCommand(event.configScopeId()));
+      configurationRepository.getChildrenWithInheritedBinding(event.configScopeId())
+        .forEach(childId -> schedulerBeforeBindingChange.post(new UnregisterModuleCommand(childId)));
+    }
   }
 
   @PreDestroy
