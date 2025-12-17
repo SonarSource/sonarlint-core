@@ -23,9 +23,8 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -38,14 +37,14 @@ public class AnalysisSchedulerConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final long clientPid;
-  private final Supplier<List<ClientModuleInfo>> modulesProvider;
+  private final Function<String, ClientModuleFileSystem> fileSystemProvider;
 
   private AnalysisSchedulerConfiguration(Builder builder) {
     this.workDir = builder.workDir;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
     this.clientPid = builder.clientPid;
-    this.modulesProvider = builder.modulesProvider;
+    this.fileSystemProvider = builder.fileSystemProvider;
   }
 
   public static Builder builder() {
@@ -60,8 +59,8 @@ public class AnalysisSchedulerConfiguration {
     return clientPid;
   }
 
-  public Supplier<List<ClientModuleInfo>> getModulesProvider() {
-    return modulesProvider;
+  public Function<String, ClientModuleFileSystem> getFileSystemProvider() {
+    return fileSystemProvider;
   }
 
   public Map<String, String> getEffectiveSettings() {
@@ -77,7 +76,7 @@ public class AnalysisSchedulerConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private long clientPid;
-    private Supplier<List<ClientModuleInfo>> modulesProvider = List::of;
+    private Function<String, ClientModuleFileSystem> fileSystemProvider = key -> null;
 
     private Builder() {
 
@@ -112,8 +111,8 @@ public class AnalysisSchedulerConfiguration {
       return this;
     }
 
-    public Builder setModulesProvider(Supplier<List<ClientModuleInfo>> modulesProvider) {
-      this.modulesProvider = modulesProvider;
+    public Builder setFileSystemProvider(Function<String, ClientModuleFileSystem> fileSystemProvider) {
+      this.fileSystemProvider = fileSystemProvider;
       return this;
     }
 

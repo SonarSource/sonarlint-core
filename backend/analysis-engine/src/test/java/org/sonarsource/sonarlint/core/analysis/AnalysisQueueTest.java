@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
@@ -39,16 +39,16 @@ class AnalysisQueueTest {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  void it_should_prioritize_register_module_commands_over_analyses() throws InterruptedException {
+  void it_should_prioritize_unregister_module_commands_over_analyses() throws InterruptedException {
     var analysisQueue = new AnalysisQueue();
     var taskManager = mock(TaskManager.class);
-    analysisQueue.post(new AnalyzeCommand(null, UUID.randomUUID(), null, null, null, null, null, taskManager, null, () -> true, Set.of(), Map.of()));
-    var registerModuleCommand = new RegisterModuleCommand(null);
-    analysisQueue.post(registerModuleCommand);
+    analysisQueue.post(new AnalyzeCommand("key", UUID.randomUUID(), null, null, null, null, new SonarLintCancelMonitor(), taskManager, null, () -> true, Set.of(), Map.of()));
+    var unregisterModuleCommand = new UnregisterModuleCommand("key");
+    analysisQueue.post(unregisterModuleCommand);
 
     var command = analysisQueue.takeNextCommand();
 
-    assertThat(command).isEqualTo(registerModuleCommand);
+    assertThat(command).isEqualTo(unregisterModuleCommand);
   }
 
   @Test

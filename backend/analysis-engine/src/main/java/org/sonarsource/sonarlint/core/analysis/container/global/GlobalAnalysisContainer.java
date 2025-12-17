@@ -68,7 +68,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
     declarePluginProperties();
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, analysisGlobalConfig.getModulesProvider());
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, analysisGlobalConfig.getFileSystemProvider());
   }
 
   @Override

@@ -500,7 +500,7 @@ class AnalysisMediumTests {
   }
 
   @SonarLintTest
-  void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_report_issues_for_multi_file_analysis_on_child_and_parent_config_scopes(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var file1Issue = createFile(baseDir, "file1Issue.py",
       """
         from file1FuncDef import foo
@@ -552,7 +552,8 @@ class AnalysisMediumTests {
       analysisId, List.of(file1IssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(parentConfigScope)).isEmpty());
+    raisedIssueDto = awaitRaisedIssuesNotification(client, parentConfigScope).get(0);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
   }
 
   @SonarLintTest

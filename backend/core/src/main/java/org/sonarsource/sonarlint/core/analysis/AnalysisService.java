@@ -294,7 +294,6 @@ public class AnalysisService {
   @EventListener
   public void onConfigurationScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
     var configScopeIds = event.getConfigScopeIds();
-    configScopeIds.forEach(schedulerCache::registerModuleIfLeafConfigScope);
     checkIfReadyForAnalysis(configScopeIds);
   }
 
