@@ -147,11 +147,16 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     } else if ((throwable instanceof CompletionException || throwable instanceof InvocationTargetException)
       && throwable.getCause() instanceof ResponseErrorException responseErrorException) {
         return responseErrorException.getResponseError();
-      } else if (throwable instanceof ServerRequestException) {
+      } else if (shouldSkipExceptionCapture(throwable)) {
         return new ResponseError(ResponseErrorCode.RequestFailed, throwable.getMessage(), toStringStacktrace(throwable));
       } else {
         return fallbackResponseError("Internal error", throwable);
       }
+  }
+
+  private static boolean shouldSkipExceptionCapture(Throwable throwable) {
+    return throwable instanceof ServerRequestException
+      || (throwable instanceof CompletionException && throwable.getCause() instanceof ServerRequestException);
   }
 
   private static ResponseError fallbackResponseError(String header, Throwable throwable) {
