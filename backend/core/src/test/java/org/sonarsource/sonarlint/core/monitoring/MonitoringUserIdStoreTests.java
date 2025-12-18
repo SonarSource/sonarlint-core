@@ -86,8 +86,9 @@ class MonitoringUserIdStoreTests {
     var store = createStore();
     var userId = store.getOrCreate();
 
-    assertThat(userId).isPresent();
-    assertThat(userId.get()).isEqualTo(existingUuid);
+    assertThat(userId)
+      .isPresent()
+      .contains(existingUuid);
   }
 
   @Test
@@ -99,7 +100,7 @@ class MonitoringUserIdStoreTests {
 
     assertThat(firstCall).isPresent();
     assertThat(secondCall).isPresent();
-    assertThat(firstCall.get()).isEqualTo(secondCall.get());
+    assertThat(firstCall).contains(secondCall.get());
   }
 
   @Test
@@ -135,8 +136,9 @@ class MonitoringUserIdStoreTests {
     var store = createStore();
     var userId = store.getOrCreate();
 
-    assertThat(userId).isPresent();
-    assertThat(userId.get()).isEqualTo(existingUuid);
+    assertThat(userId)
+      .isPresent()
+      .contains(existingUuid);
   }
 
   private void writeEncodedUuid(UUID uuid) throws IOException {
@@ -148,12 +150,12 @@ class MonitoringUserIdStoreTests {
   void concurrent_calls_should_return_same_uuid() {
     var store = createStore();
 
-    int nThreads = 10;
-    var executorService = Executors.newFixedThreadPool(nThreads);
+    int numberOfThreads = 10;
+    var executorService = Executors.newFixedThreadPool(numberOfThreads);
     CountDownLatch latch = new CountDownLatch(1);
     List<Future<UUID>> futures = new ArrayList<>();
 
-    IntStream.range(0, nThreads).forEach(i -> {
+    IntStream.range(0, numberOfThreads).forEach(i -> {
       futures.add(executorService.submit(() -> {
         try {
           latch.await();
@@ -178,7 +180,8 @@ class MonitoringUserIdStoreTests {
       }
     }).toList();
 
-    assertThat(results).hasSize(nThreads);
-    assertThat(results).allMatch(uuid -> uuid != null && uuid.equals(results.get(0)));
+    assertThat(results)
+      .hasSize(numberOfThreads)
+      .allMatch(uuid -> uuid != null && uuid.equals(results.get(0)));
   }
 }
