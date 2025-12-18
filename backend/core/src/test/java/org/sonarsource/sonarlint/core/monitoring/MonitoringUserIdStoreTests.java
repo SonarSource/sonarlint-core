@@ -34,8 +34,10 @@ import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.UserPaths;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -43,6 +45,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class MonitoringUserIdStoreTests {
+
+  @RegisterExtension
+  static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private Path userHome;
   private Path userIdFilePath;
