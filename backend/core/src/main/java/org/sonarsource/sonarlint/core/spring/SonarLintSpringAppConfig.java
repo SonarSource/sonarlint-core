@@ -88,6 +88,7 @@ import org.sonarsource.sonarlint.core.log.LogService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringInitializationParams;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.monitoring.MonitoringUserIdStore;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -214,6 +215,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   OpenFilesRepository.class,
   DogfoodEnvironmentDetectionService.class,
   MonitoringService.class,
+  MonitoringUserIdStore.class,
   AiCodeFixService.class,
   ClientAwareTaskManager.class,
   ScaSynchronizationService.class,

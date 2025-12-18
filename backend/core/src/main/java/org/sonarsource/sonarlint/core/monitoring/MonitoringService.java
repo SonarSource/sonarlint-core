@@ -55,13 +55,16 @@ public class MonitoringService {
 
   private final MonitoringInitializationParams initializeParams;
   private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
+  private final MonitoringUserIdStore userIdStore;
 
   private boolean active;
 
   @Inject
-  public MonitoringService(MonitoringInitializationParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
+  public MonitoringService(MonitoringInitializationParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService,
+    MonitoringUserIdStore userIdStore) {
     this.initializeParams = initializeParams;
     this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
+    this.userIdStore = userIdStore;
 
     this.init();
   }
@@ -110,6 +113,7 @@ public class MonitoringService {
     sentryOptions.setTag("ideVersion", initializeParams.ideVersion());
     sentryOptions.setTag("platform", SystemUtils.OS_NAME);
     sentryOptions.setTag("architecture", SystemUtils.OS_ARCH);
+    userIdStore.getOrCreate().ifPresent(userId -> sentryOptions.setTag("userId", userId.toString()));
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.api\\.RecognitionException.*");
