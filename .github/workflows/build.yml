@@ -165,26 +165,33 @@ jobs:
             sc: true
             sc_token_path: sonarcloud-it
             region: EU
+            java: 17
           - name: SonarCloudUS
             sq_version: SonarCloudUS
             category: "-Dgroups=SonarCloud"
             sc: true
             sc_token_path: sonarcloud-it-US
             region: US
+            java: 17
           - name: SQDogfood
             sq_version: DEV
             category: "-DexcludedGroups=SonarCloud"
+            java: 21
           - name: SQLatest
             sq_version: LATEST_RELEASE
             category: "-DexcludedGroups=SonarCloud"
+            java: 17
           - name: SQLts99
             sq_version: "LATEST_RELEASE[9.9]"
             category: "-DexcludedGroups=SonarCloud"
+            java: 17
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
+      - name: Select Java ${{ matrix.java }}
+        run: mise use java@${{ matrix.java }}
       - name: Compute month key
         #Avoid caching for DEV since it is frequently changing
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
