@@ -114,7 +114,7 @@ class SslMediumTests {
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg", SonarCloudRegion.EU));
       var thrown = assertThrows(CompletionException.class, future::join);
-      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("Internal error.");
+      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("org.sonarsource.sonarlint.core.serverapi.exception.NetworkException: Request failed");
       assertThat(future).isCompletedExceptionally();
     }
 
@@ -204,7 +204,7 @@ class SslMediumTests {
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg", SonarCloudRegion.EU));
 
       var thrown = assertThrows(CompletionException.class, future::join);
-      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("Internal error.");
+      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("org.sonarsource.sonarlint.core.serverapi.exception.NetworkException: Request failed");
       assertThat(future).isCompletedExceptionally();
 
     }
