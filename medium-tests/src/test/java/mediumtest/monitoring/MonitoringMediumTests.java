@@ -443,7 +443,8 @@ class MonitoringMediumTests {
       .contains("sonarQubeForIDEVersion")
       .contains("ideVersion")
       .contains("platform")
-      .contains("architecture");
+      .contains("architecture")
+      .contains("userId");
   }
 
   @SonarLintTest
