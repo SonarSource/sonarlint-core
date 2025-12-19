@@ -55,7 +55,7 @@ class MonitoringUserIdStoreTests {
   @BeforeEach
   void setUp(@TempDir Path temp) {
     userHome = temp;
-    userIdFilePath = userHome.resolve("user_id.txt");
+    userIdFilePath = userHome.resolve("id");
   }
 
   private MonitoringUserIdStore createStore() {

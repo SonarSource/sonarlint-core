@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 public class MonitoringUserIdStore {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String USER_ID_FILE_NAME = "user_id.txt";
+  private static final String USER_ID_FILE_NAME = "id";
 
   private final Path path;
   @Nullable
@@ -46,17 +46,10 @@ public class MonitoringUserIdStore {
     this.path = userPaths.getUserHome().resolve(USER_ID_FILE_NAME);
   }
 
-  public Optional<UUID> getOrCreate() {
+  public synchronized Optional<UUID> getOrCreate() {
     var cached = cachedUserId;
     if (cached != null) {
       return Optional.of(cached);
-    }
-    return getOrCreateFromFile();
-  }
-
-  private synchronized Optional<UUID> getOrCreateFromFile() {
-    if (cachedUserId != null) {
-      return Optional.of(cachedUserId);
     }
     try {
       Files.createDirectories(path.getParent());
@@ -97,7 +90,7 @@ public class MonitoringUserIdStore {
       }
       return UUID.fromString(content);
     } catch (IllegalArgumentException e) {
-      LOG.debug("Invalid encoded UUID in user_id.txt", e);
+      LOG.debug("Invalid encoded UUID in " + USER_ID_FILE_NAME, e);
       return null;
     }
   }
