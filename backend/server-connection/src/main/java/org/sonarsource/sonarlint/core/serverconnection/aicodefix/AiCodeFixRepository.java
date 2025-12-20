@@ -56,33 +56,16 @@ public class AiCodeFixRepository {
   }
 
   public void upsert(AiCodeFix entity) {
-
-    try {
-      int updated = database.update(AI_CODEFIX_SETTINGS)
-        .set(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, entity.supportedRules())
-        .set(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, entity.organizationEligible())
-        .set(AI_CODEFIX_SETTINGS.ENABLEMENT, entity.enablement().name())
-        .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, entity.enabledProjectKeys())
-        .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.eq(entity.connectionId()))
-        .execute();
-      if (updated == 0) {
-        database.insertInto(AI_CODEFIX_SETTINGS,
-            AI_CODEFIX_SETTINGS.CONNECTION_ID,
-            AI_CODEFIX_SETTINGS.SUPPORTED_RULES,
-            AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE,
-            AI_CODEFIX_SETTINGS.ENABLEMENT,
-            AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS)
-          .values(entity.connectionId(),
-            entity.supportedRules(),
-            entity.organizationEligible(),
-            entity.enablement().name(),
-            entity.enabledProjectKeys())
-          .execute();
-      }
-    } catch (RuntimeException ex) {
-      LOG.debug("Upsert failed: " + ex.getMessage());
-      throw ex;
-    }
+    database
+      .insertInto(AI_CODEFIX_SETTINGS, AI_CODEFIX_SETTINGS.CONNECTION_ID, AI_CODEFIX_SETTINGS.SUPPORTED_RULES, AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE,
+        AI_CODEFIX_SETTINGS.ENABLEMENT, AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS)
+      .values(entity.connectionId(), entity.supportedRules(), entity.organizationEligible(), entity.enablement().name(), entity.enabledProjectKeys())
+      .onDuplicateKeyUpdate()
+      .set(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, entity.supportedRules())
+      .set(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, entity.organizationEligible())
+      .set(AI_CODEFIX_SETTINGS.ENABLEMENT, entity.enablement().name())
+      .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, entity.enabledProjectKeys())
+      .execute();
   }
 
   public void deleteUnknownConnections(Set<String> knownConnectionIds) {

@@ -268,31 +268,20 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     return ldt.toInstant(ZoneOffset.UTC);
   }
 
-  private void upsertBranchMetadata(String branchName,
-    TableField<ServerBranchesRecord, LocalDateTime> tsField,
-    TableField<ServerBranchesRecord, String[]> langsField,
-    Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
+  private void upsertBranchMetadata(String branchName, TableField<ServerBranchesRecord, LocalDateTime> lastSyncField,
+    TableField<ServerBranchesRecord, String[]> enabledLanguagesField, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
+    var lastSyncTime = LocalDateTime.ofInstant(syncTimestamp, ZoneOffset.UTC);
+    var enabledLanguagesAsJson = mapper.serializeLanguages(enabledLanguages);
 
-    var ldt = LocalDateTime.ofInstant(syncTimestamp, ZoneOffset.UTC);
-    var langsJson = mapper.serializeLanguages(enabledLanguages);
-
-    int updated = database.update(SERVER_BRANCHES)
-      .set(tsField, ldt)
-      .set(langsField, langsJson)
-      .where(SERVER_BRANCHES.BRANCH_NAME.eq(branchName)
-        .and(SERVER_BRANCHES.CONNECTION_ID.eq(connectionId))
-        .and(SERVER_BRANCHES.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
+    database.insertInto(SERVER_BRANCHES, SERVER_BRANCHES.BRANCH_NAME, SERVER_BRANCHES.CONNECTION_ID, SERVER_BRANCHES.SONAR_PROJECT_KEY, lastSyncField, enabledLanguagesField)
+      .values(branchName, connectionId, sonarProjectKey, lastSyncTime, enabledLanguagesAsJson)
+      .onDuplicateKeyUpdate()
+      .set(lastSyncField, lastSyncTime)
+      .set(enabledLanguagesField, enabledLanguagesAsJson)
       .execute();
-    if (updated == 0) {
-      database.insertInto(SERVER_BRANCHES)
-        .columns(SERVER_BRANCHES.BRANCH_NAME, SERVER_BRANCHES.CONNECTION_ID, SERVER_BRANCHES.SONAR_PROJECT_KEY, tsField, langsField)
-        .values(branchName, connectionId, sonarProjectKey, ldt, langsJson)
-        .execute();
-    }
   }
 
-  private Set<SonarLanguage> readLanguages(String branchName,
-    TableField<ServerBranchesRecord, String[]> langsField) {
+  private Set<SonarLanguage> readLanguages(String branchName, TableField<ServerBranchesRecord, String[]> langsField) {
     var table = SERVER_BRANCHES;
     var rec = database.select(langsField)
       .from(table)
