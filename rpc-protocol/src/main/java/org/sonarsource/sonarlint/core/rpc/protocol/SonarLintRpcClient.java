@@ -67,6 +67,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParam
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -107,6 +109,18 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void showMessage(ShowMessageParams params);
+
+  /**
+   * Display a message to the user, usually in a small notification.
+   * This message has options that the user can pick from. Once user clicked on option, its String key is returned.
+   * If the user explicitly dismisses/closes the notification without clicking option, then it returns null.
+   * IMPORTANT: As users might not react to the notification at all, the returned future might block for an indefinite amount of time.
+   * So the caller should not block waiting for the result, but provide a callback instead.
+   */
+  @JsonRequest
+  default CompletableFuture<ShowMessageRequestResponse> showMessageRequest(ShowMessageRequestParams params) {
+    return CompletableFuture.completedFuture(null);
+  }
 
   @JsonNotification
   void log(LogParams params);
