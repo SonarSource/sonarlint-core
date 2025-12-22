@@ -124,7 +124,8 @@ public interface TelemetryRpcService {
   void addedManualBindings();
 
   /**
-   * This method should be called when binding is created from a suggestion and .
+   * This method should be called when binding is created from a suggestion and pass where the suggestion originated from
+   * (that is provided to the clients with the suggestions themselves).
    */
   @JsonNotification
   void acceptedBindingSuggestion(AcceptedBindingSuggestionParams origin);
