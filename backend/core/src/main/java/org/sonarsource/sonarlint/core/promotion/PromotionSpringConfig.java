@@ -17,41 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.promotion;
 
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.UserPaths;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.promotion.campaign.CampaignService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import({
-  TelemetryService.class,
-  TelemetryManager.class,
-  TelemetryLocalStorageManager.class,
-  TelemetryHttpClient.class,
-  TelemetryServerAttributesProvider.class
+  LanguagePromotionService.class,
+  CampaignService.class
 })
-public class TelemetrySpringConfig {
+public class PromotionSpringConfig {
 
-  public static final String PROPERTY_TELEMETRY_ENDPOINT = "sonarlint.internal.telemetry.endpoint";
-  private static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
-
-  @Bean(name = "telemetryPath")
-  Path provideTelemetryPath(UserPaths userPaths) {
-    return userPaths.getHomeIdeSpecificDir("telemetry").resolve("usage");
+  @Bean
+  Path campaignsPath(UserPaths userPaths) {
+    return userPaths.getHomeIdeSpecificDir("campaigns").resolve("campaigns.json");
   }
-
-  @Bean(name = "telemetryEndpoint")
-  String provideTelemetryEndpoint() {
-    return System.getProperty(PROPERTY_TELEMETRY_ENDPOINT, TELEMETRY_ENDPOINT);
-  }
-
-  @Bean(name = "initializeParams")
-  InitializeParams provideInitializeParams(InitializeParams params) {
-    return params;
-  }
-
 }
