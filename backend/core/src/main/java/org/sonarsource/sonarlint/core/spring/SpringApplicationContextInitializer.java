@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.spring;
 
 import org.sonarsource.sonarlint.core.labs.IdeLabsSpringConfig;
+import org.sonarsource.sonarlint.core.promotion.PromotionSpringConfig;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig;
@@ -39,6 +40,7 @@ public class SpringApplicationContextInitializer implements AutoCloseable {
     applicationContext.register(TelemetrySpringConfig.class);
     applicationContext.register(GessieSpringConfig.class);
     applicationContext.register(IdeLabsSpringConfig.class);
+    applicationContext.register(PromotionSpringConfig.class);
     applicationContext.registerBean("sonarlintClient", SonarLintRpcClient.class, () -> requireNonNull(client));
     applicationContext.registerBean("initializeParams", InitializeParams.class, () -> params);
     applicationContext.refresh();
