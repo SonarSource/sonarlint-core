@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
@@ -53,7 +54,7 @@ public class TelemetryLocalStorageManager {
   @Nullable
   private final TelemetryMigrationDto telemetryMigration;
 
-  public TelemetryLocalStorageManager(Path telemetryPath, InitializeParams initializeParams) {
+  public TelemetryLocalStorageManager(@Qualifier("telemetryPath") Path telemetryPath, InitializeParams initializeParams) {
     this.path = telemetryPath;
     this.telemetryMigration = initializeParams.getTelemetryMigration();
     this.gson = new GsonBuilder()
