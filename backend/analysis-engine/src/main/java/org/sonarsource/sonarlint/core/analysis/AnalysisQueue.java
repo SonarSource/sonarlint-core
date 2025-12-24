@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.ResetPluginsCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -174,13 +175,14 @@ public class AnalysisQueue {
 
   private static class CommandComparator implements Comparator<QueuedCommand> {
     private static final Map<Class<?>, Integer> COMMAND_TYPES_ORDERED = Map.ofEntries(
-      // unregistering commands have the highest priority
-      // even if inserted later, they should be pulled first from the queue, before file events and analyzes: they might make them irrelevant
-      entry(UnregisterModuleCommand.class, 0),
-      // forwarding file events takes priority over analyses, to make sure they give more accurate results
-      entry(NotifyModuleEventCommand.class, 1),
-      // analyses have the lowest priority
-      entry(AnalyzeCommand.class, 2));
+      // reset commands should be pulled first from the queue, they cancel unregister and file event commands and make use of more up-to-date plugins for subsequent analyses
+      entry(ResetPluginsCommand.class, 0),
+      // then unregister commands might make file events and analyses irrelevant
+      entry(UnregisterModuleCommand.class, 1),
+      // then forwarding file events takes priority over analyses, to make sure they give more accurate results
+      entry(NotifyModuleEventCommand.class, 2),
+      // then analyses have the lowest priority
+      entry(AnalyzeCommand.class, 3));
 
     @Override
     public int compare(QueuedCommand queuedCommand, QueuedCommand otherQueuedCommand) {

@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
+import org.sonarsource.sonarlint.core.analysis.command.ResetPluginsCommand;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -43,20 +45,14 @@ public class AnalysisScheduler {
   public AnalysisScheduler(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput) {
     this.logOutput = logOutput;
     // if the container cannot be started, the thread won't be started
-    startContainer(analysisGlobalConfig, loadedPlugins);
+    var analysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
+    analysisContainer.startComponents();
+    globalAnalysisContainer.set(analysisContainer);
     analysisThread.start();
   }
 
-  public void reset(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
-    // recreate the context
-    globalAnalysisContainer.get().stopComponents();
-    startContainer(analysisGlobalConfig, loadedPlugins);
-    analysisQueue.clearAllButAnalyses();
-  }
-
-  private void startContainer(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
-    globalAnalysisContainer.set(new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins));
-    globalAnalysisContainer.get().startComponents();
+  public void reset(AnalysisSchedulerConfiguration analysisGlobalConfig, Supplier<LoadedPlugins> pluginsSupplier) {
+    post(new ResetPluginsCommand(analysisGlobalConfig, globalAnalysisContainer, analysisQueue, pluginsSupplier));
   }
 
   public void wakeUp() {
