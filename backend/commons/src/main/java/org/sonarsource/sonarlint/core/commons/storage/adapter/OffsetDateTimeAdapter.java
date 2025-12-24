@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.promotion;
+package org.sonarsource.sonarlint.core.commons.storage.adapter;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.UserPaths;
-import org.sonarsource.sonarlint.core.promotion.campaign.CampaignService;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 
-@Configuration
-@Import({
-  LanguagePromotionService.class,
-  CampaignService.class
-})
-public class PromotionSpringConfig {
+public class OffsetDateTimeAdapter extends TypeAdapter<OffsetDateTime> {
 
-  @Bean
-  Path campaignsPath(UserPaths userPaths) {
-    return userPaths.getHomeIdeSpecificDir("campaigns").resolve("campaigns");
+  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+
+  @Override
+  public void write(JsonWriter jsonWriter, OffsetDateTime offsetDateTime) throws IOException {
+    jsonWriter.value(FORMATTER.format(offsetDateTime));
+  }
+
+  @Override
+  public OffsetDateTime read(JsonReader jsonReader) throws IOException {
+    return OffsetDateTime.parse(jsonReader.nextString(), FORMATTER);
   }
 }

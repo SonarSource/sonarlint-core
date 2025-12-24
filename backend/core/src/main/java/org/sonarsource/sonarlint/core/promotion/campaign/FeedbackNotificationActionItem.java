@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.promotion.campaign;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
 
-public class OffsetDateTimeAdapter extends TypeAdapter<OffsetDateTime> {
+public enum FeedbackNotificationActionItem {
+  LOVE_IT("Yes, I love it!", true),
+  SHARE_FEEDBACK("Share feedback", true),
+  MAYBE_LATER("Maybe Later", false);
 
-  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+  private final String message;
+  private final boolean isPrimaryAction;
 
-  @Override
-  public void write(JsonWriter jsonWriter, OffsetDateTime offsetDateTime) throws IOException {
-    jsonWriter.value(FORMATTER.format(offsetDateTime));
+  FeedbackNotificationActionItem(String message, boolean isPrimaryAction) {
+    this.message = message;
+    this.isPrimaryAction = isPrimaryAction;
   }
 
-  @Override
-  public OffsetDateTime read(JsonReader jsonReader) throws IOException {
-    return OffsetDateTime.parse(jsonReader.nextString(), FORMATTER);
+  public MessageActionItem toMessageActionItem() {
+    return new MessageActionItem(name(), message, isPrimaryAction);
   }
 }

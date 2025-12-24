@@ -19,29 +19,40 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
-import java.util.List;
+/**
+ * An option to be presented to the user.
+ */
+public class MessageActionItem {
 
-public class ShowMessageRequestParams {
+  /**
+   * A unique key that identifies the option.
+   */
+  private final String key;
+  /**
+   * A text to display to the user while presenting choices.
+   */
+  private final String displayText;
+  /**
+   * Describes if the action should be somehow additionally highlighted (for example with color).
+   * There can be multiple primary actions. It doesn't mean that this option should be a default or first one.
+   */
+  private final boolean isPrimaryAction;
 
-  private final MessageType type;
-  private final String text;
-  private final List<MessageActionItem> actions;
-
-  public ShowMessageRequestParams(MessageType type, String text, List<MessageActionItem> actions) {
-    this.type = type;
-    this.text = text;
-    this.actions = actions;
+  public MessageActionItem(String key, String displayText, boolean isPrimaryAction) {
+    this.key = key;
+    this.displayText = displayText;
+    this.isPrimaryAction = isPrimaryAction;
   }
 
-  public MessageType getType() {
-    return type;
+  public String getKey() {
+    return key;
   }
 
-  public String getText() {
-    return text;
+  public String getDisplayText() {
+    return displayText;
   }
 
-  public List<MessageActionItem> getActions() {
-    return actions;
+  public boolean isPrimaryAction() {
+    return isPrimaryAction;
   }
 }

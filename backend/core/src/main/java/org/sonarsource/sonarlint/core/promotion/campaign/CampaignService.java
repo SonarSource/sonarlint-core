@@ -19,53 +19,80 @@
  */
 package org.sonarsource.sonarlint.core.promotion.campaign;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.apache.commons.lang3.EnumUtils;
+import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.telemetry.LocalDateAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
+
+import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.*;
+import static org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage.Campaign;
 
 public class CampaignService {
 
-  private final SonarLintLogger logger = SonarLintLogger.get();
+  private static final Set<FeedbackNotificationActionItem> RESPONSES_TO_OPEN_URL = EnumSet.of(LOVE_IT, SHARE_FEEDBACK);
 
-  private final Path campaignsPath;
+  private final String productKey;
   private final SonarLintRpcClient client;
-  private final Gson gson;
-  private CampaignsLocalStorage campaigns;
+  private final FileStorageManager<CampaignsLocalStorage> fileStorageManager;
 
-  public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client) {
-    this.campaignsPath = campaignsPath;
+  public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams) {
+    this.productKey = initializeParams.getTelemetryConstantAttributes().getProductKey();
     this.client = client;
-    this.gson = new GsonBuilder()
-      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
-      .create();
+    this.fileStorageManager = new FileStorageManager<>(campaignsPath, CampaignsLocalStorage::new, CampaignsLocalStorage.class);
   }
 
   @PostConstruct
   public void initCampaigns() {
-    this.campaigns = tryReadCampaigns();
-
+    // Scheduling and conditional logic in scope of https://sonarsource.atlassian.net/browse/SLCORE-1897
+    // todo make the schedule configurable for test purposes.
+    fileStorageManager.tryUpdateAtomically(storage ->
+      storage.campaigns()
+        .put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+          new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), "IGNORE")));
+    var userChoice = client.showMessageRequest(new ShowMessageRequestParams(
+      MessageType.INFO,
+      "Enjoying SonarQube for IDE? We'd love to hear what you think.",
+      Stream.of(values())
+        .map(FeedbackNotificationActionItem::toMessageActionItem)
+        .toList()
+    ));
+    userChoice.thenAccept(this::handleResponse);
   }
 
-  private CampaignsLocalStorage tryReadCampaigns() {
-    var readCampaigns = new CampaignsLocalStorage();
-    if (Files.exists(campaignsPath)) {
-      try {
-        var json = Files.readString(campaignsPath);
-        readCampaigns = gson.fromJson(json, CampaignsLocalStorage.class);
-      } catch (IOException | JsonParseException e) {
-        logger.warn("Unable to read campaigns from campaigns file", e);
+  private void handleResponse(ShowMessageRequestResponse response) {
+    Optional.ofNullable(response)
+      .map(ShowMessageRequestResponse::getSelectedKey)
+      .ifPresent(this::handleResponse);
+  }
+
+  private void handleResponse(String responseOption) {
+    fileStorageManager.tryUpdateAtomically(storage -> storage.campaigns().put(
+      CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+      new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), responseOption)));
+
+    var response = EnumUtils.getEnum(FeedbackNotificationActionItem.class, responseOption);
+    if (RESPONSES_TO_OPEN_URL.contains(response)) {
+      var url = CampaignConstants.urlToOpen(response, productKey);
+      if (url != null) {
+        client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
+      } else {
+        client.showMessage(new ShowMessageParams(MessageType.ERROR,
+          "Wasn't able to find a marketplace link for " + productKey + ". Please report it here: https://community.sonarsource.com/"));
       }
     }
-    return readCampaigns;
   }
 }
