@@ -20,13 +20,14 @@
 package org.sonarsource.sonarlint.core.promotion.campaign.storage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.storage.local.LocalStorage;
 
-public record CampaignsLocalStorage(List<Campaign> campaigns) {
+public record CampaignsLocalStorage(Map<String, Campaign> campaigns) implements LocalStorage {
 
   public CampaignsLocalStorage() {
-    this(new ArrayList<>());
+    this(new HashMap<>());
   }
 
   public record Campaign(String campaignName, LocalDate lastNotificationShownOn, String lastUserResponse) {
