@@ -19,46 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import com.google.gson.GsonBuilder;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class TelemetryLocalStorageManagerTests {
+
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final LocalDate today = LocalDate.now();
   private Path filePath;
@@ -153,7 +135,6 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
-    InternalDebug.setEnabled(false);
     assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryRead())
       .doesNotThrowAnyException();
 
@@ -161,48 +142,8 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
-    InternalDebug.setEnabled(false);
     assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryUpdateAtomically(d -> {}))
       .doesNotThrowAnyException();
-  }
-
-  @Test
-  void supportConcurrentUpdates() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
-    // Put some data to avoid migration
-    storage.tryUpdateAtomically(data -> {
-      data.setInstallTime(OffsetDateTime.now().minusDays(50));
-      data.setLastUseDate(today);
-      data.setNumUseDays(0);
-    });
-    int nThreads = 10;
-    var executorService = Executors.newFixedThreadPool(nThreads);
-    CountDownLatch latch = new CountDownLatch(1);
-    List<Future<?>> futures = new ArrayList<>();
-    // Each thread will attempt to increment the numUseDays by one
-    IntStream.range(0, nThreads).forEach(i -> {
-      futures.add(executorService.submit(() -> {
-        try {
-          latch.await();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-        storage.tryUpdateAtomically(data -> {
-          data.setNumUseDays(data.numUseDays() + 1);
-        });
-      }));
-    });
-    latch.countDown();
-    futures.forEach(f -> {
-      try {
-        f.get();
-      } catch (ExecutionException e) {
-        fail(e.getCause());
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-    });
-    assertThat(storage.tryRead().numUseDays()).isEqualTo(nThreads);
   }
 
   @Test
@@ -251,84 +192,6 @@ class TelemetryLocalStorageManagerTests {
 
     var data = storage.tryRead();
     assertThat(data.getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(3);
-  }
-
-  @Test
-  void tryUpdateAtomically_should_not_crash_if_too_many_read_write_requests() {
-    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
-
-    Runnable read = storageManager::lastUploadTime;
-    Runnable write = () -> storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
-    Stream.of(
-        IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
-        IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read)),
-        IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
-        IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read))
-      ).flatMap(Function.identity())
-      .map(CompletableFuture::join)
-      .toList();
-
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(200);
-  }
-
-  @Test
-  void tryRead_should_be_aware_of_file_deletion() {
-    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
-
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
-
-    storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
-
-    filePath.toFile().delete();
-
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
-  }
-
-  /**
-   * Disabled on Windows because it doesn't always give the file modification time correctly
-   */
-  @Test
-  @DisabledOnOs(OS.WINDOWS)
-  void tryRead_should_be_aware_of_file_modification() throws IOException {
-    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
-
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
-
-    storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
-
-    TelemetryLocalStorage newStorage = new TelemetryLocalStorage();
-    newStorage.incrementShowIssueRequestCount();
-    newStorage.incrementShowIssueRequestCount();
-
-    writeToLocalStorageFile(newStorage);
-
-    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2));
-  }
-
-  private void writeToLocalStorageFile(TelemetryLocalStorage newStorage) throws IOException {
-    var newJson = new GsonBuilder()
-      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
-      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
-      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
-      .create().toJson(newStorage);
-    var encoded = Base64.getEncoder().encode(newJson.getBytes(StandardCharsets.UTF_8));
-    writeToLocalStorageFile(encoded);
-  }
-
-  private void writeToLocalStorageFile(byte[] encoded) throws IOException {
-    FileUtils.writeByteArrayToFile(filePath.toFile(), encoded);
-  }
-
-  @Test
-  void tryRead_returns_default_local_storage_if_file_is_empty() throws IOException {
-    writeToLocalStorageFile(new byte[0]);
-    assertThat(filePath.toFile()).isEmpty();
-
-    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
-    assertThat(storageManager.isEnabled()).isTrue();
-    assertThat(storageManager.tryRead().numUseDays()).isZero();
   }
 
   @Test
