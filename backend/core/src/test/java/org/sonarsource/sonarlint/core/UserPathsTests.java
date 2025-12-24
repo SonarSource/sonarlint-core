@@ -19,10 +19,15 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class UserPathsTests {
 
@@ -34,5 +39,19 @@ class UserPathsTests {
   @Test
   void env_setting_should_override_default_home() {
     assertThat(UserPaths.computeUserHome("clientPath")).isEqualTo(Paths.get("clientPath"));
+  }
+
+  @Test
+  void should_return_telemetry_home() {
+    var initializeParams = mock(InitializeParams.class);
+    when(initializeParams.getSonarlintUserHome()).thenReturn("~/.sonarlint");
+    when(initializeParams.getTelemetryConstantAttributes()).thenReturn(
+      new TelemetryClientConstantAttributesDto("eclipse", "---", "1.2.3", "4.5.6", null));
+
+    var userPaths = UserPaths.from(initializeParams);
+    var telemetryDir = userPaths.getHomeIdeSpecificDir("telemetry");
+
+    assertThat(telemetryDir)
+      .isEqualTo(Path.of("~/.sonarlint/telemetry/eclipse"));
   }
 }

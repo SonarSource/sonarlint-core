@@ -28,7 +28,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
+import org.sonarsource.sonarlint.core.commons.storage.adapter.OffsetDateTimeAdapter;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 
 /**
