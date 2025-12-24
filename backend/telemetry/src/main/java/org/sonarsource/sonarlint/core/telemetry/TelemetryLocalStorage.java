@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.storage.local.LocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
@@ -43,7 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransport
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-public class TelemetryLocalStorage {
+public class TelemetryLocalStorage implements LocalStorage {
   @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
@@ -330,7 +331,8 @@ public class TelemetryLocalStorage {
     return first == null || (second != null && first.isBefore(second));
   }
 
-  void validateAndMigrate() {
+  @Override
+  public void validateAndMigrate() {
     var today = LocalDate.now();
 
     // migrate deprecated installDate

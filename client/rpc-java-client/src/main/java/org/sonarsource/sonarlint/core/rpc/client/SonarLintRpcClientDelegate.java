@@ -52,7 +52,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDt
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -88,6 +90,17 @@ public interface SonarLintRpcClientDelegate {
    * The message is informative and does not imply applying an action.
    */
   void showMessage(MessageType type, String text);
+
+  /**
+   * Display a message to the user, usually in a small notification.
+   * This message has options that the user can pick from. Once user clicked on option, its String key is returned.
+   * If the user explicitly dismisses/closes the notification without clicking option, then it returns null.
+   * IMPORTANT: As users might not react to the notification at all, the returned future might block for an indefinite amount of time.
+   * So the caller should not block waiting for the result, but provide a callback instead.
+   */
+  default ShowMessageRequestResponse showMessageRequest(MessageType type, String text, List<MessageActionItem> actions) {
+    return null;
+  }
 
   void log(LogParams params);
 

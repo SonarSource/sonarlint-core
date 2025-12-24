@@ -62,9 +62,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpc
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.LocalDateAdapter;
-import org.sonarsource.sonarlint.core.telemetry.LocalDateTimeAdapter;
-import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
+import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateAdapter;
+import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateTimeAdapter;
+import org.sonarsource.sonarlint.core.commons.storage.adapter.OffsetDateTimeAdapter;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 
 import static java.util.Objects.requireNonNull;
