@@ -34,7 +34,7 @@ public class NotifyModuleEventCommand extends Command {
 
   @Override
   public void execute(ModuleRegistry moduleRegistry) {
-    var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
+    var moduleContainer = moduleRegistry.getContainerIfStarted(moduleKey);
     if (moduleContainer != null) {
       moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
     }

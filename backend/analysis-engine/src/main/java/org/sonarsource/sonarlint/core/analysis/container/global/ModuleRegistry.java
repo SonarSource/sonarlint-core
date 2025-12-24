@@ -43,6 +43,11 @@ public class ModuleRegistry {
     return moduleContainersByKey.computeIfAbsent(moduleKey, key -> createContainer(key, fileSystemProvider.apply(key)));
   }
 
+  @Nullable
+  public ModuleContainer getContainerIfStarted(String moduleKey) {
+    return moduleContainersByKey.get(moduleKey);
+  }
+
   private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
     LOG.debug("Creating container for module '" + moduleKey + "'");
     var moduleContainer = new ModuleContainer(parent, false);
