@@ -76,6 +76,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -195,6 +197,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void showMessage(ShowMessageParams params) {
     notify(() -> delegate.showMessage(params.getType(), params.getText()));
+  }
+
+  @Override
+  public CompletableFuture<ShowMessageRequestResponse> showMessageRequest(ShowMessageRequestParams params) {
+    return requestAsync(cancelChecker -> delegate.showMessageRequest(params.getType(), params.getText(), params.getActions()));
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.promotion;
+package org.sonarsource.sonarlint.core.commons.storage.local;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.UserPaths;
-import org.sonarsource.sonarlint.core.promotion.campaign.CampaignService;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+public interface LocalStorage {
+  default void validateAndMigrate() {
 
-@Configuration
-@Import({
-  LanguagePromotionService.class,
-  CampaignService.class
-})
-public class PromotionSpringConfig {
-
-  @Bean
-  Path campaignsPath(UserPaths userPaths) {
-    return userPaths.getHomeIdeSpecificDir("campaigns").resolve("campaigns");
   }
 }
