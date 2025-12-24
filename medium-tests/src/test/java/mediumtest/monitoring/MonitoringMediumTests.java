@@ -223,12 +223,15 @@ class MonitoringMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withBackendCapability(MONITORING)
       .start(client);
+    // analyze once to start the analysis scheduler
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false)).join();
 
     var updatedFile = new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, newContent, Language.PYTHON, true);
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(updatedFile), List.of()));
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error processing file event"));
-    await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).isEmpty());
+    // only a single event for the analysis
+    await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
   }
 
   @SonarLintTest

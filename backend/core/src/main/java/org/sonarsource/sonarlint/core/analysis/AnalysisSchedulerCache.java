@@ -164,8 +164,11 @@ public class AnalysisSchedulerCache {
 
   @EventListener
   public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
-    var newPlugins = pluginsService.reloadPluginsFromStorage(event.connectionId());
-    resetScheduler(event.connectionId(), newPlugins);
+    var connectionId = event.connectionId();
+    var scheduler = connectedSchedulerByConnectionId.get(connectionId);
+    if (scheduler != null) {
+      scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)), () -> pluginsService.reloadPluginsFromStorage(connectionId));
+    }
   }
 
   @EventListener
@@ -194,22 +197,13 @@ public class AnalysisSchedulerCache {
     }
   }
 
-  private synchronized void resetScheduler(String connectionId, LoadedPlugins newPlugins) {
-    connectedSchedulerByConnectionId.computeIfPresent(connectionId, (k, scheduler) -> {
-
-      scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)), newPlugins);
-      return scheduler;
-    });
-  }
-
   private synchronized void resetStartedSchedulers() {
     var standaloneAnalysisScheduler = this.standaloneScheduler.get();
     if (standaloneAnalysisScheduler != null) {
-      standaloneAnalysisScheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(null)), pluginsService.getEmbeddedPlugins());
+      standaloneAnalysisScheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(null)), pluginsService::getEmbeddedPlugins);
     }
     connectedSchedulerByConnectionId.forEach(
-      (connectionId, scheduler) -> scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)),
-        pluginsService.getPlugins(connectionId)));
+      (connectionId, scheduler) -> scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)), () -> pluginsService.getPlugins(connectionId)));
   }
 
   private synchronized void stopAll() {
