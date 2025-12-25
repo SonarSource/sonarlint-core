@@ -276,6 +276,16 @@
         <artifactId>sonar-classloader</artifactId>
         <version>1.2.1.2095</version>
       </dependency>
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>3.2.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-cache</artifactId>
+        <version>4.0.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

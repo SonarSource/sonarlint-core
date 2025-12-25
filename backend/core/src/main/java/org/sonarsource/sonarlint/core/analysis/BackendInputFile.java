@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
+import org.apache.commons.io.IOUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.util.FileUtils;
@@ -56,8 +56,8 @@ public class BackendInputFile implements ClientInputFile {
   }
 
   @Override
-  public InputStream inputStream() throws IOException {
-    return clientFile.inputStream();
+  public InputStream inputStream() {
+    return IOUtils.toInputStream(contents(), getCharset());
   }
 
   @Override

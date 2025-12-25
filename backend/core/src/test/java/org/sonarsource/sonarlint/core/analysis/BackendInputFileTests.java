@@ -23,17 +23,21 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.fs.ReadThroughFileCache;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class BackendInputFileTests {
+
+  private final ReadThroughFileCache cache = mock(ReadThroughFileCache.class);
 
   @Test
   void ascii_path_should_be_the_same() {
     var path = Path.of("/test/file.php");
     var pathAsString = path.toString().replace(File.separatorChar, '/');
-    var clientFile = new ClientFile(URI.create("file://" + pathAsString), "configScopeId", path, false, null, null, null, true);
+    var clientFile = new ClientFile(URI.create("file://" + pathAsString), "configScopeId", path, false, null, null, null, true, cache);
 
     var inputFile = new BackendInputFile(clientFile);
 
@@ -44,7 +48,7 @@ class BackendInputFileTests {
   void non_ascii_path_should_be_the_same() {
     var path = Path.of("/中文字符/file.php");
     var pathAsString = path.toString().replace(File.separatorChar, '/');
-    var clientFile = new ClientFile(URI.create("file://" + pathAsString), "configScopeId", path, false, null, null, null, true);
+    var clientFile = new ClientFile(URI.create("file://" + pathAsString), "configScopeId", path, false, null, null, null, true, cache);
 
     var inputFile = new BackendInputFile(clientFile);
 

@@ -19,18 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.apache.commons.compress.utils.FileNameUtils;
-import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
@@ -83,8 +78,10 @@ public class ClientFile {
 
   private final boolean isUserDefined;
 
+  private final ReadThroughFileCache fileContents;
+
   public ClientFile(URI uri, String configScopeId, Path relativePath, @Nullable Boolean isTest, @Nullable Charset charset, @Nullable Path fsPath,
-    @Nullable SonarLanguage detectedLanguage, boolean isUserDefined) {
+    @Nullable SonarLanguage detectedLanguage, boolean isUserDefined, ReadThroughFileCache fileContents) {
     this.uri = uri;
     this.configScopeId = configScopeId;
     this.relativePath = relativePath;
@@ -93,6 +90,7 @@ public class ClientFile {
     this.fsPath = fsPath;
     this.detectedLanguage = detectedLanguage;
     this.isUserDefined = isUserDefined;
+    this.fileContents = fileContents;
   }
 
   public Path getClientRelativePath() {
@@ -115,24 +113,14 @@ public class ClientFile {
     if (isDirty) {
       return clientProvidedContent;
     }
-    var charsetToUse = getCharset();
-    try (var inputStream = inputStream()) {
-      return IOUtils.toString(inputStream, charsetToUse);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to read file " + fsPath + "content with charset " + charsetToUse, e);
-    }
-  }
-
-  public InputStream inputStream() throws IOException {
-    if (isDirty && clientProvidedContent != null) {
-      return new ByteArrayInputStream(clientProvidedContent.getBytes(getCharset()));
-    }
     if (fsPath == null) {
       throw new IllegalStateException("File " + uri + " is not dirty or does not have content but has no OS Path defined");
     }
-    return BOMInputStream.builder().setInputStream(Files.newInputStream(fsPath))
-      // order list of BOMs by length descending, as anyway a sort is made in the constructor
-      .setByteOrderMarks(ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE).get();
+    try {
+      return fileContents.content(fsPath, getCharset());
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to read file " + fsPath + "content with charset " + getCharset(), e);
+    }
   }
 
   public Charset getCharset() {
