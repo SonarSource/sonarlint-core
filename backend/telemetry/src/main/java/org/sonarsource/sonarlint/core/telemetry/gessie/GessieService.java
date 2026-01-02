@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry.gessie;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.UUID;
+import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
@@ -39,8 +40,9 @@ public class GessieService {
   private final GessieHttpClient client;
   private final TelemetryUserSetting userSetting;
 
-  public GessieService(InitializeParams initializeParams, GessieHttpClient client, TelemetryUserSetting userSetting) {
-    this.isGessieFeatureEnabled = initializeParams.getBackendCapabilities().contains(GESSIE_TELEMETRY);
+  public GessieService(InitializeParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvironmentDetectionService, GessieHttpClient client,
+    TelemetryUserSetting userSetting) {
+    this.isGessieFeatureEnabled = initializeParams.getBackendCapabilities().contains(GESSIE_TELEMETRY) && dogfoodEnvironmentDetectionService.isDogfoodEnvironment();
     this.telemetryConstantAttributes = initializeParams.getTelemetryConstantAttributes();
     this.client = client;
     this.userSetting = userSetting;
@@ -55,8 +57,7 @@ public class GessieService {
           "Analytics.Editor.PluginActivated",
           Long.toString(Instant.now().toEpochMilli()),
           "0"),
-        new MessagePayload("Gessie integration test event", "slcore_start")
-      ));
+        new MessagePayload("Gessie integration test event", "slcore_start")));
     }
   }
 }
