@@ -86,7 +86,7 @@ public class MonitoringService {
   }
 
   private void start() {
-    Sentry.init(getSentryConfiguration());
+    Sentry.init(this::configure);
     userIdStore.getOrCreate().ifPresent(userId -> {
       var user = new User();
       user.setId(userId.toString());
@@ -102,8 +102,7 @@ public class MonitoringService {
     return active;
   }
 
-  SentryOptions getSentryConfiguration() {
-    var sentryOptions = new SentryOptions();
+  private void configure(SentryOptions sentryOptions) {
     sentryOptions.setDsn(getDsn());
     sentryOptions.setRelease(SonarLintCoreVersion.getLibraryVersion());
     sentryOptions.setEnvironment(getEnvironment());
@@ -126,7 +125,6 @@ public class MonitoringService {
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.impl\\.LexerException.*");
     sentryOptions.setBeforeSend(MonitoringService::beforeSend);
     sentryOptions.setBeforeSendTransaction(MonitoringService::beforeSend);
-    return sentryOptions;
   }
 
   private String getEnvironment() {
