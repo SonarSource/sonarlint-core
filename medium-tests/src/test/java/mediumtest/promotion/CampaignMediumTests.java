@@ -24,34 +24,64 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
+import org.sonarsource.sonarlint.core.promotion.campaign.CampaignConstants;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(SystemStubsExtension.class)
 class CampaignMediumTests {
+
+  private static final int MORE_THAN_TWO_WEEKS_AGO = 16;
+  private static final String DEFAULT_KEY = "mediumTests";
+
+  @SystemStub
+  SystemProperties propertiesStubs;
+
+  private TelemetryLocalStorageManager telemetryStorageManager;
+  private Path userHome;
+
+  @BeforeEach
+  void setUp(@TempDir Path temp) {
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "0");
+    userHome = temp.resolve("sonarHome");
+  }
 
   @SonarLintTest
   void it_should_initialize_campaigns_file(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, "mediumTests");
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     await().until(() -> Files.exists(campaignsFile));
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
@@ -62,12 +92,14 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_only_update_campaign_file_on_returning_null(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
 
-    var backend = harness.newBackend()
+    harness.newBackend()
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, "mediumTests");
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     await().until(() -> Files.exists(campaignsFile));
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
@@ -79,6 +111,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_only_update_campaign_file_on_ignore(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
       .thenAnswer(new Answer<>() {
@@ -89,10 +122,11 @@ class CampaignMediumTests {
         }
       });
 
-    var backend = harness.newBackend()
+    harness.newBackend()
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, "mediumTests");
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     await().until(() -> Files.exists(campaignsFile));
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
@@ -126,35 +160,42 @@ class CampaignMediumTests {
       "LOVE_IT", "windsurf", "https://open-vsx.org/extension/SonarSource/sonarlint-vscode/reviews");
   }
 
-  // fixme Google form is a stub for now, we need to make sure we put the right one before going live!
   @SonarLintTest
   void it_should_update_campaigns_file_and_open_idea_google_form_url_on_share_feedback(SonarLintTestHarness harness) throws MalformedURLException {
     verifyOpenUrlOnResponse(harness,
-      "SHARE_FEEDBACK", "idea", "https://docs.google.com/forms/d/1ch2YxyF3n62JN3eiWHeMQOH6S7R6LHO6JWnLNdPWRYE/preview");
+      "SHARE_FEEDBACK", "idea", "https://forms.gle/kDyQ7sDyBfpPEBsy6");
   }
 
   @SonarLintTest
   void it_should_update_campaigns_file_and_open_visualstudio_google_form_url_on_share_feedback(SonarLintTestHarness harness) throws MalformedURLException {
     verifyOpenUrlOnResponse(harness,
-      "SHARE_FEEDBACK", "visualstudio", "https://docs.google.com/forms/d/1ch2YxyF3n62JN3eiWHeMQOH6S7R6LHO6JWnLNdPWRYE/preview");
+      "SHARE_FEEDBACK", "visualstudio", "https://forms.gle/LjKGKWECDdJw1PmU7");
   }
 
   @SonarLintTest
   void it_should_update_campaigns_file_and_open_vscode_google_form_url_on_share_feedback(SonarLintTestHarness harness) throws MalformedURLException {
     verifyOpenUrlOnResponse(harness,
-      "SHARE_FEEDBACK", "vscode", "https://docs.google.com/forms/d/1ch2YxyF3n62JN3eiWHeMQOH6S7R6LHO6JWnLNdPWRYE/preview");
+      "SHARE_FEEDBACK", "vscode", "https://forms.gle/TncKAVK4EWM7z4RV6");
+  }
+
+  @SonarLintTest
+  void it_should_update_campaigns_file_and_open_vscode_google_form_url_on_share_feedback_for_forks(SonarLintTestHarness harness) throws MalformedURLException {
+    verifyOpenUrlOnResponse(harness,
+      "SHARE_FEEDBACK", "windsurf", "https://forms.gle/TncKAVK4EWM7z4RV6");
   }
 
   @SonarLintTest
   void it_should_only_update_campaign_file_on_maybe_later(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("MAYBE_LATER"));
 
-    var backend = harness.newBackend()
+    harness.newBackend()
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, "mediumTests");
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     await().until(() -> Files.exists(campaignsFile));
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
@@ -166,14 +207,16 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_show_message_on_invalid_projectKey(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
 
-    var backend = harness.newBackend()
+    harness.newBackend()
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, "mediumTests");
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     await().until(() -> Files.exists(campaignsFile));
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
@@ -185,25 +228,124 @@ class CampaignMediumTests {
       "Wasn't able to find a marketplace link for mediumTests. Please report it here: https://community.sonarsource.com/");
   }
 
-  private static void verifyOpenUrlOnResponse(SonarLintTestHarness harness, String response, String productKey, String expectedUrl) throws MalformedURLException {
+  @SonarLintTest
+  void it_should_delay_the_notification_configured_amount_of_time(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "2");
+    var client = harness.newFakeClient().build();
+    when(client.showMessageRequest(any(), any(), any()))
+      .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    await().atLeast(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client).showMessageRequest(
+        eq(MessageType.INFO),
+        eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
+        any()));
+  }
+
+  @SonarLintTest
+  void it_should_not_trigger_notification_for_recent_installation(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(5);
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client, never()).showMessageRequest(any(), any(), any());
+  }
+
+  @SonarLintTest
+  void it_should_trigger_notification_again_after_week_for_maybe_later(SonarLintTestHarness harness) {
+    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusDays(8), "MAYBE_LATER");
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client).showMessageRequest(
+      eq(MessageType.INFO),
+      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
+      any());
+  }
+
+  @SonarLintTest
+  void it_should_not_trigger_notification_again_after_less_then_week_for_maybe_later(SonarLintTestHarness harness) {
+    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusDays(6), "MAYBE_LATER");
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client, never()).showMessageRequest(any(), any(), any());
+  }
+
+  @SonarLintTest
+  void it_should_trigger_notification_again_after_6_months_for_ignore(SonarLintTestHarness harness) {
+    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusMonths(6).minusDays(1), "IGNORE");
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client).showMessageRequest(
+      eq(MessageType.INFO),
+      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
+      any());
+  }
+
+  @SonarLintTest
+  void it_should_not_trigger_notification_again_after_less_then_6_months_for_ignore(SonarLintTestHarness harness) {
+    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusMonths(6).plusDays(1), "IGNORE");
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client, never()).showMessageRequest(any(), any(), any());
+  }
+
+  private void verifyOpenUrlOnResponse(SonarLintTestHarness harness, String response, String productKey, String expectedUrl) throws MalformedURLException {
+    saveTelemetryInstallTime(productKey, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient()
       .build();
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse(response));
 
-    var backend = harness.newBackend()
+    harness.newBackend()
       .withProductKey(productKey)
+      .withUserHome(userHome)
       .start(client);
 
-    var campaignsFile = getCampaignsFile(backend, productKey);
+    var campaignsFile = getCampaignsPath(productKey);
     await().untilAsserted(
       () -> assertThat(getCampaigns(campaignsFile))
         .hasSize(1)
         .contains(Map.entry(
-          "feedback_2025_12",
-          new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), response)))
+          CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), response)))
     );
     verify(client).openUrlInBrowser(new URL(expectedUrl));
+  }
+
+  private void saveFeedbackCampaign(String productKey, LocalDate lastShown, String lastResponse) {
+    var campaignsStorage = new FileStorageManager<>(getCampaignsPath(productKey), CampaignsLocalStorage::new, CampaignsLocalStorage.class);
+    campaignsStorage.tryUpdateAtomically(data -> {
+      data.campaigns().put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+        new CampaignsLocalStorage.Campaign(
+          CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+          lastShown,
+          lastResponse
+        ));
+    });
   }
 
   private static Map<String, CampaignsLocalStorage.Campaign> getCampaigns(Path campaignsFile) {
@@ -211,7 +353,22 @@ class CampaignMediumTests {
     return campaignsStorage.getStorage().campaigns();
   }
 
-  private static Path getCampaignsFile(SonarLintTestRpcServer backend, String productKey) {
-    return backend.getUserHome().resolve("campaigns/" + productKey + "/campaigns");
+  private void saveTelemetryInstallTime(String productKey, int daysAgo) {
+    var telemetryPath = getTelemetryPath(productKey);
+    telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
+    telemetryStorageManager.tryUpdateAtomically(data ->
+      data.setInstallTime(OffsetDateTime.now().minusDays(daysAgo)));
+  }
+
+  private void saveTelemetryInstallTime(int daysAgo) {
+    saveTelemetryInstallTime(DEFAULT_KEY, daysAgo);
+  }
+
+  private Path getCampaignsPath(String productKey) {
+    return userHome.resolve("campaigns").resolve(productKey).resolve("campaigns");
+  }
+
+  private Path getTelemetryPath(String productKey) {
+    return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
   }
 }

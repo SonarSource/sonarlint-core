@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -148,6 +149,10 @@ public class TelemetryService {
 
   public boolean isEnabled() {
     return isTelemetryFeatureEnabled && telemetryManager.isTelemetryEnabledByUser();
+  }
+
+  public OffsetDateTime installTime() {
+    return telemetryManager.installTime();
   }
 
   private void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
