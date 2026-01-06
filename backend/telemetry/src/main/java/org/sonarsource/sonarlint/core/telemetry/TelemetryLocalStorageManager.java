@@ -83,4 +83,8 @@ public class TelemetryLocalStorageManager {
   public boolean isEnabled() {
     return getStorage().enabled();
   }
+
+  public OffsetDateTime installTime() {
+    return getStorage().installTime();
+  }
 }
