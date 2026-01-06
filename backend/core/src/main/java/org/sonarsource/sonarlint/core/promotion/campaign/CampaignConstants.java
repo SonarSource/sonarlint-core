@@ -21,12 +21,14 @@ package org.sonarsource.sonarlint.core.promotion.campaign;
 
 public class CampaignConstants {
 
-  static final String FEEDBACK_2025_12_CAMPAIGN = "feedback_2025_12";
-  private static final String GOOGLE_FORM = "https://docs.google.com/forms/d/1ch2YxyF3n62JN3eiWHeMQOH6S7R6LHO6JWnLNdPWRYE/preview";
+  public static final String FEEDBACK_2025_12_CAMPAIGN = "feedback_2025_12";
   private static final String JETBRAINS_MARKETPLACE = "https://plugins.jetbrains.com/plugin/7973-sonarqube-for-ide/reviews";
   private static final String VS_MARKETPLACE = "https://marketplace.visualstudio.com/items?itemName=SonarSource.SonarLintforVisualStudio2022&ssr=false#review-details";
   private static final String VSCODE_MARKETPLACE = "https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarlint-vscode&ssr=false#review-details";
   private static final String OPEN_VSX = "https://open-vsx.org/extension/SonarSource/sonarlint-vscode/reviews";
+  private static final String INTELLIJ_GOOGLE_FORM = "https://forms.gle/kDyQ7sDyBfpPEBsy6";
+  private static final String VISUAL_STUDIO_GOOGLE_FORM = "https://forms.gle/LjKGKWECDdJw1PmU7";
+  private static final String VS_CODE_GOOGLE_FORM = "https://forms.gle/TncKAVK4EWM7z4RV6";
 
   private CampaignConstants() {
   }
@@ -40,7 +42,12 @@ public class CampaignConstants {
         case "windsurf", "cursor" -> OPEN_VSX;
         default -> null;
       };
-      case SHARE_FEEDBACK -> GOOGLE_FORM;
+      case SHARE_FEEDBACK -> switch (productKey) {
+        case "idea" -> INTELLIJ_GOOGLE_FORM;
+        case "visualstudio" -> VISUAL_STUDIO_GOOGLE_FORM;
+        case "vscode", "windsurf", "cursor" -> VS_CODE_GOOGLE_FORM;
+        default -> null;
+      };
       default -> null;
     };
   }
