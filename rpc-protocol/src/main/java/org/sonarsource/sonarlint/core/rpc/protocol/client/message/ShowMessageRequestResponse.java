@@ -19,14 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 public class ShowMessageRequestResponse {
 
+  @Nullable
   private final String selectedKey;
 
-  public ShowMessageRequestResponse(String selectedKey) {
+  public ShowMessageRequestResponse(@Nullable String selectedKey) {
     this.selectedKey = selectedKey;
   }
 
+  @CheckForNull
   public String getSelectedKey() {
     return selectedKey;
   }
