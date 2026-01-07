@@ -180,7 +180,7 @@ jobs:
           - name: SQLatest
             sq_version: LATEST_RELEASE
             category: "-DexcludedGroups=SonarCloud"
-            java: 17
+            java: 21
           - name: SQLts99
             sq_version: "LATEST_RELEASE[9.9]"
             category: "-DexcludedGroups=SonarCloud"
