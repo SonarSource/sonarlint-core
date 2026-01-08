@@ -1,3 +1,7 @@
+# 10.40
+
+* Add a new `PROMOTIONAL_CAMPAIGNS` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables promotional campaign notifications and tracking user responses to not show again or postpone showing them. Data about shown notifications and user responses is saved separately for each IDE in the similar manner to telemetry in path: `{sonarUserHome}/campaigns/{productKey}/campaigns`
+
 # 10.39
 
 ## Breaking changes

@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
@@ -71,6 +72,7 @@ public class CampaignService {
   private final FileStorageManager<CampaignsLocalStorage> fileStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final ApplicationEventPublisher eventPublisher;
+  private final boolean isEnabled;
 
   public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams, TelemetryService telemetryService,
     ApplicationEventPublisher eventPublisher) {
@@ -80,11 +82,12 @@ public class CampaignService {
     this.fileStorageManager = new FileStorageManager<>(campaignsPath, CampaignsLocalStorage::new, CampaignsLocalStorage.class);
     this.eventPublisher = eventPublisher;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
+    this.isEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.PROMOTIONAL_CAMPAIGNS);
   }
 
   @PostConstruct
   public void checkCampaigns() {
-    if (shouldShowFeedbackNotification()) {
+    if (isEnabled && shouldShowFeedbackNotification()) {
       var initialDelayProperty = System.getProperty("sonarlint.internal.promotion.initialDelay", SIX_MINUTES_OF_SECONDS);
       var initialDelay = NumberUtils.toInt(initialDelayProperty, 360);
       scheduledExecutor.schedule(this::showFeedbackMessage, initialDelay, SECONDS);

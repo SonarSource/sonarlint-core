@@ -35,11 +35,13 @@ import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
 import org.sonarsource.sonarlint.core.promotion.campaign.CampaignConstants;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
@@ -64,7 +66,6 @@ class CampaignMediumTests {
   @SystemStub
   SystemProperties propertiesStubs;
 
-  private TelemetryLocalStorageManager telemetryStorageManager;
   private Path userHome;
 
   @BeforeEach
@@ -78,8 +79,7 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
@@ -96,8 +96,7 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
@@ -123,8 +122,7 @@ class CampaignMediumTests {
         }
       });
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
@@ -192,8 +190,7 @@ class CampaignMediumTests {
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("MAYBE_LATER"));
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
@@ -213,8 +210,7 @@ class CampaignMediumTests {
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
@@ -237,8 +233,7 @@ class CampaignMediumTests {
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     await().atLeast(2, TimeUnit.SECONDS)
@@ -253,8 +248,7 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, 5);
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     verify(client, never()).showMessageRequest(any(), any(), any());
@@ -265,8 +259,7 @@ class CampaignMediumTests {
     saveFeedbackCampaign(LocalDate.now().minusDays(8), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     verify(client).showMessageRequest(
@@ -280,8 +273,7 @@ class CampaignMediumTests {
     saveFeedbackCampaign(LocalDate.now().minusDays(6), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     verify(client, never()).showMessageRequest(any(), any(), any());
@@ -292,8 +284,7 @@ class CampaignMediumTests {
     saveFeedbackCampaign(LocalDate.now().minusMonths(6).minusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     verify(client).showMessageRequest(
@@ -307,8 +298,7 @@ class CampaignMediumTests {
     saveFeedbackCampaign(LocalDate.now().minusMonths(6).plusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
-    harness.newBackend()
-      .withUserHome(userHome)
+    baseBackend(harness)
       .start(client);
 
     verify(client, never()).showMessageRequest(any(), any(), any());
@@ -319,9 +309,8 @@ class CampaignMediumTests {
     // make a little delay as telemetry event listeners take some time to be seen by the context
     propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "1");
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
-    var backend = harness.newBackend()
+    var backend = baseBackend(harness)
       .withTelemetryEnabled()
-      .withUserHome(userHome)
       .start();
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
@@ -339,15 +328,26 @@ class CampaignMediumTests {
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
 
-    var backend = harness.newBackend()
+    var backend = baseBackend(harness)
       .withTelemetryEnabled()
-      .withUserHome(userHome)
       .start(client);
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
       .extracting(TelemetryLocalStorage::getCampaignsResolutions)
       .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN))
       .isEqualTo("LOVE_IT"));
+  }
+
+  @SonarLintTest
+  void it_should_not_trigger_notification_with_no_backend_capability(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withUserHome(userHome)
+      .start(client);
+
+    verify(client, never()).showMessageRequest(any(), any(), any());
   }
 
   private void verifyOpenUrlOnResponse(SonarLintTestHarness harness, String response, String productKey, String expectedUrl) throws MalformedURLException {
@@ -357,9 +357,8 @@ class CampaignMediumTests {
     when(client.showMessageRequest(any(), any(), any()))
       .thenReturn(new ShowMessageRequestResponse(response));
 
-    harness.newBackend()
+    baseBackend(harness)
       .withProductKey(productKey)
-      .withUserHome(userHome)
       .start(client);
 
     var campaignsFile = getCampaignsPath(productKey);
@@ -391,7 +390,7 @@ class CampaignMediumTests {
 
   private void saveTelemetryInstallTime(String productKey, int daysAgo) {
     var telemetryPath = getTelemetryPath(productKey);
-    telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
+    TelemetryLocalStorageManager telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
     telemetryStorageManager.tryUpdateAtomically(data ->
       data.setInstallTime(OffsetDateTime.now().minusDays(daysAgo)));
   }
@@ -402,5 +401,11 @@ class CampaignMediumTests {
 
   private Path getTelemetryPath(String productKey) {
     return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
+  }
+
+  private SonarLintBackendFixture.SonarLintBackendBuilder baseBackend(SonarLintTestHarness harness) {
+    return harness.newBackend()
+      .withUserHome(userHome)
+      .withBackendCapability(BackendCapability.PROMOTIONAL_CAMPAIGNS);
   }
 }
