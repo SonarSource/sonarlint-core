@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.promotion.campaign;
 
+import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -29,21 +31,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
+import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
@@ -52,11 +58,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.LOVE_IT;
 import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.MAYBE_LATER;
 import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.SHARE_FEEDBACK;
-import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.values;
 import static org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage.Campaign;
 
 public class CampaignService {
 
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Set<FeedbackNotificationActionItem> RESPONSES_TO_OPEN_URL = EnumSet.of(LOVE_IT, SHARE_FEEDBACK);
   private static final Map<String, Period> POSTPONE_PERIODS = Map.of(
     MAYBE_LATER.name(), Period.ofWeeks(1),
@@ -71,6 +77,7 @@ public class CampaignService {
   private final FileStorageManager<CampaignsLocalStorage> fileStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final ApplicationEventPublisher eventPublisher;
+  private final boolean isEnabled;
 
   public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams, TelemetryService telemetryService,
     ApplicationEventPublisher eventPublisher) {
@@ -80,11 +87,12 @@ public class CampaignService {
     this.fileStorageManager = new FileStorageManager<>(campaignsPath, CampaignsLocalStorage::new, CampaignsLocalStorage.class);
     this.eventPublisher = eventPublisher;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
+    this.isEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.PROMOTIONAL_CAMPAIGNS);
   }
 
   @PostConstruct
   public void checkCampaigns() {
-    if (shouldShowFeedbackNotification()) {
+    if (isEnabled && shouldShowFeedbackNotification()) {
       var initialDelayProperty = System.getProperty("sonarlint.internal.promotion.initialDelay", SIX_MINUTES_OF_SECONDS);
       var initialDelay = NumberUtils.toInt(initialDelayProperty, 360);
       scheduledExecutor.schedule(this::showFeedbackMessage, initialDelay, SECONDS);
@@ -93,7 +101,7 @@ public class CampaignService {
 
   private boolean shouldShowFeedbackNotification() {
     var campaigns = fileStorageManager.getStorage().campaigns();
-    var feedbackCampaign = campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN);
+    var feedbackCampaign = campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN);
     if (feedbackCampaign != null) {
       var lastResponse = feedbackCampaign.lastUserResponse();
       return isPostponeResponse(lastResponse)
@@ -120,34 +128,34 @@ public class CampaignService {
   private void showFeedbackMessage() {
     fileStorageManager.tryUpdateAtomically(storage ->
       storage.campaigns()
-        .put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
-          new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), "IGNORE")));
-    eventPublisher.publishEvent(new CampaignShownEvent(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN));
+        .put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "IGNORE")));
+    eventPublisher.publishEvent(new CampaignShownEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN));
     var userChoice = client.showMessageRequest(new ShowMessageRequestParams(
       MessageType.INFO,
       "Enjoying SonarQube for IDE? We'd love to hear what you think.",
-      getActions()
+      getFeedbackNotificationActions()
     ));
     userChoice.thenAccept(this::handleFeedbackResponse);
   }
 
-  private static List<MessageActionItem> getActions() {
-    return Stream.of(values())
+  private static List<MessageActionItem> getFeedbackNotificationActions() {
+    return Stream.of(FeedbackNotificationActionItem.values())
       .map(FeedbackNotificationActionItem::toMessageActionItem)
       .toList();
   }
 
-  private void handleFeedbackResponse(ShowMessageRequestResponse response) {
-    Optional.of(response)
+  private void handleFeedbackResponse(@Nullable ShowMessageRequestResponse response) {
+    Optional.ofNullable(response)
       .map(ShowMessageRequestResponse::getSelectedKey)
       .ifPresent(this::handleFeedbackResponse);
   }
 
   private void handleFeedbackResponse(String responseOption) {
     fileStorageManager.tryUpdateAtomically(storage -> storage.campaigns().put(
-      CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
-      new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), responseOption)));
-    eventPublisher.publishEvent(new CampaignResolvedEvent(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+      CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+      new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), responseOption)));
+    eventPublisher.publishEvent(new CampaignResolvedEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
       responseOption));
 
     var response = EnumUtils.getEnum(FeedbackNotificationActionItem.class, responseOption);
@@ -156,9 +164,28 @@ public class CampaignService {
       if (url != null) {
         client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
       } else {
-        client.showMessage(new ShowMessageParams(MessageType.ERROR,
-          "Wasn't able to find a marketplace link for " + productKey + ". Please report it here: https://community.sonarsource.com/"));
+        redirectToCommunityIfNoLinkFound();
       }
+    }
+  }
+
+  private void redirectToCommunityIfNoLinkFound() {
+    var showMessageRequestParams = new ShowMessageRequestParams(MessageType.INFO,
+      "Could not find feedback link for " + productKey + ". Please consider sharing your feedback directly on our community forum",
+      List.of(new MessageActionItem("OPEN_COMMUNITY", "Open Community Forum", true)));
+
+    client.showMessageRequest(showMessageRequestParams)
+      .thenAccept(response -> {
+        if (response.getSelectedKey() != null && response.getSelectedKey().equals("OPEN_COMMUNITY")) {
+          client.openUrlInBrowser(new OpenUrlInBrowserParams("https://community.sonarsource.com/c/sl/11"));
+        }
+      });
+  }
+
+  @PreDestroy
+  public void close() {
+    if ((!MoreExecutors.shutdownAndAwaitTermination(scheduledExecutor, 1, TimeUnit.SECONDS)) && (InternalDebug.isEnabled())) {
+      LOG.error("Failed to stop Campaign Service executor");
     }
   }
 }

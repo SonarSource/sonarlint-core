@@ -1,12 +1,10 @@
 # 10.42
 
 * Add `org.sonarsource.sonarlint.core.rpc.client.Sloop.getPid` to return the pid of the backend process.
+* Add a new `PROMOTIONAL_CAMPAIGNS` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables promotional campaign notifications and tracking user responses to not show again or postpone showing them. Data about shown notifications and user responses is saved separately for each IDE in the similar manner to telemetry in path: `{sonarUserHome}/campaigns/{productKey}/campaigns`
+* Add a new `KIRO` value to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent` enum.
 
 # 10.39
-
-## New features
-
-* Add a new `KIRO` value to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent` enum.
 
 ## Breaking changes
 

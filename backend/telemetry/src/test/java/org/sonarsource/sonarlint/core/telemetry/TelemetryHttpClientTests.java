@@ -133,8 +133,8 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
     telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
     telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
-    telemetryLocalStorage.campaignShown("feedback_2025_12");
-    telemetryLocalStorage.campaignResolved("feedback_2025_12", "MAYBE_LATER");
+    telemetryLocalStorage.campaignShown("feedback_2026_01");
+    telemetryLocalStorage.campaignResolved("feedback_2026_01", "MAYBE_LATER");
     telemetryLocalStorage.campaignShown("feedback_2077_03");
     telemetryLocalStorage.campaignResolved("feedback_2077_03", "IGNORE");
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
@@ -171,8 +171,8 @@ class TelemetryHttpClientTests {
             {"key":"ide_labs.link_clicked_count_privacy_policy","value":"2","type":"integer","granularity":"daily"},
             {"key":"ide_labs.feedback_link_clicked_count_connected_mode","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_labs.feedback_link_clicked_count_manage_dependency_risk","value":"2","type":"integer","granularity":"daily"},
-            {"key":"campaigns.feedback_2025_12_shown", "value":"1", "type": "integer", "granularity":"daily"},
-            {"key":"campaigns.feedback_2025_12_resolution", "value":"MAYBE_LATER", "type": "string", "granularity":"daily"},
+            {"key":"campaigns.feedback_2026_01_shown", "value":"1", "type": "integer", "granularity":"daily"},
+            {"key":"campaigns.feedback_2026_01_resolution", "value":"MAYBE_LATER", "type": "string", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_shown", "value":"1", "type": "integer", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_resolution", "value":"IGNORE", "type": "string", "granularity":"daily"},
             {"key":"ai_hooks.windsurf_installed","value":"2","type":"integer","granularity":"daily"}

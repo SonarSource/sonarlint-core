@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.promotion.campaign;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
 
 public enum FeedbackNotificationActionItem {
-  LOVE_IT("Yes, I love it!", true),
-  SHARE_FEEDBACK("Share feedback", true),
+  LOVE_IT("Love it!", true),
+  SHARE_FEEDBACK("Share Feedback", true),
   MAYBE_LATER("Maybe Later", false);
 
   private final String message;
