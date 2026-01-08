@@ -1,3 +1,7 @@
+# 10.42
+
+* Add `org.sonarsource.sonarlint.core.rpc.client.Sloop.getPid` to return the pid of the backend process.
+
 # 10.39
 
 ## Breaking changes

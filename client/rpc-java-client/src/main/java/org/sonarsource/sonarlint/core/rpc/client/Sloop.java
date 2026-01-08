@@ -49,4 +49,8 @@ public class Sloop {
   public boolean isAlive() {
     return process.isAlive();
   }
+
+  public long getPid() {
+    return process.pid();
+  }
 }
