@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageReq
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.sonarsource.sonarlint.core.promotion.campaign.FeedbackNotificationActionItem.LOVE_IT;
@@ -69,12 +70,15 @@ public class CampaignService {
   private final TelemetryService telemetryService;
   private final FileStorageManager<CampaignsLocalStorage> fileStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
+  private final ApplicationEventPublisher eventPublisher;
 
-  public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams, TelemetryService telemetryService) {
+  public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams, TelemetryService telemetryService,
+    ApplicationEventPublisher eventPublisher) {
     this.productKey = initializeParams.getTelemetryConstantAttributes().getProductKey();
     this.client = client;
     this.telemetryService = telemetryService;
     this.fileStorageManager = new FileStorageManager<>(campaignsPath, CampaignsLocalStorage::new, CampaignsLocalStorage.class);
+    this.eventPublisher = eventPublisher;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
   }
 
@@ -83,7 +87,7 @@ public class CampaignService {
     if (shouldShowFeedbackNotification()) {
       var initialDelayProperty = System.getProperty("sonarlint.internal.promotion.initialDelay", SIX_MINUTES_OF_SECONDS);
       var initialDelay = NumberUtils.toInt(initialDelayProperty, 360);
-      scheduledExecutor.schedule(this::showMessage, initialDelay, SECONDS);
+      scheduledExecutor.schedule(this::showFeedbackMessage, initialDelay, SECONDS);
     }
   }
 
@@ -113,17 +117,18 @@ public class CampaignService {
     return lastShown.plus(postpone).isBefore(LocalDate.now());
   }
 
-  private void showMessage() {
+  private void showFeedbackMessage() {
     fileStorageManager.tryUpdateAtomically(storage ->
       storage.campaigns()
         .put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
           new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), "IGNORE")));
+    eventPublisher.publishEvent(new CampaignShownEvent(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN));
     var userChoice = client.showMessageRequest(new ShowMessageRequestParams(
       MessageType.INFO,
       "Enjoying SonarQube for IDE? We'd love to hear what you think.",
       getActions()
     ));
-    userChoice.thenAccept(this::handleResponse);
+    userChoice.thenAccept(this::handleFeedbackResponse);
   }
 
   private static List<MessageActionItem> getActions() {
@@ -132,16 +137,18 @@ public class CampaignService {
       .toList();
   }
 
-  private void handleResponse(ShowMessageRequestResponse response) {
-    Optional.ofNullable(response)
+  private void handleFeedbackResponse(ShowMessageRequestResponse response) {
+    Optional.of(response)
       .map(ShowMessageRequestResponse::getSelectedKey)
-      .ifPresent(this::handleResponse);
+      .ifPresent(this::handleFeedbackResponse);
   }
 
-  private void handleResponse(String responseOption) {
+  private void handleFeedbackResponse(String responseOption) {
     fileStorageManager.tryUpdateAtomically(storage -> storage.campaigns().put(
       CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
       new Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), responseOption)));
+    eventPublisher.publishEvent(new CampaignResolvedEvent(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+      responseOption));
 
     var response = EnumUtils.getEnum(FeedbackNotificationActionItem.class, responseOption);
     if (RESPONSES_TO_OPEN_URL.contains(response)) {

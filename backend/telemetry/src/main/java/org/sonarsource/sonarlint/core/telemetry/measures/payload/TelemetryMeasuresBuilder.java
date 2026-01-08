@@ -85,6 +85,8 @@ public class TelemetryMeasuresBuilder {
 
     addAiHooksMeasures(values);
 
+    addCampaignsMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -259,4 +261,21 @@ public class TelemetryMeasuresBuilder {
       .forEach(values::add);
   }
 
+  private void addCampaignsMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    storage.getCampaignsShown().entrySet().stream()
+      .filter(entry -> entry.getValue() > 0)
+      .map(campaignShown -> new TelemetryMeasuresValue(
+        "campaigns."  + campaignShown.getKey() + "_shown",
+        String.valueOf(campaignShown.getValue()),
+        INTEGER,
+        DAILY))
+      .forEach(values::add);
+    storage.getCampaignsResolutions().entrySet().stream()
+      .map(campaignsResolution -> new TelemetryMeasuresValue(
+        "campaigns."  + campaignsResolution.getKey() + "_resolution",
+        campaignsResolution.getValue(),
+        STRING,
+        DAILY))
+      .forEach(values::add);
+  }
 }
