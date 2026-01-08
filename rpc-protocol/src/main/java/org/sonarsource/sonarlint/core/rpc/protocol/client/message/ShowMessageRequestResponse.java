@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 
 public class ShowMessageRequestResponse {
 
+  // Selected key can be null in case user explicitly dismisses the notification or does not act on it at all
   @Nullable
   private final String selectedKey;
 
