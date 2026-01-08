@@ -186,6 +186,22 @@ class AiHookServiceTests {
   }
 
   @Test
+  void it_should_throw_exception_for_unsupported_kiro_agent() {
+    var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
+    var executableLocator = mock(ExecutableLocator.class);
+
+    when(embeddedServer.getPort()).thenReturn(64120);
+    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.PYTHON));
+
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
+
+    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.KIRO))
+      .isInstanceOf(UnsupportedOperationException.class)
+      .hasMessageContaining("hook configuration not yet implemented");
+  }
+
+  @Test
   void it_should_throw_exception_for_unsupported_github_copilot_agent() {
     var embeddedServer = mock(EmbeddedServer.class);
     var telemetryService = mock(TelemetryService.class);
