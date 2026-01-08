@@ -95,7 +95,11 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"ide_labs.feedback_link_clicked_count_connected_mode\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"ide_labs.feedback_link_clicked_count_manage_dependency_risk\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"ai_hooks.windsurf_installed\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"ai_hooks.cursor_installed\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"ai_hooks.cursor_installed\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"campaigns.feedback_2025_12_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"campaigns.feedback_2025_12_resolution\",\"value\":\"MAYBE_LATER\",\"type\":\"string\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"campaigns.feedback_2077_03_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"campaigns.feedback_2077_03_resolution\",\"value\":\"IGNORE\",\"type\":\"string\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -153,6 +157,11 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("ai_hooks.windsurf_installed", "2", INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("ai_hooks.cursor_installed", "5", INTEGER, DAILY));
 
+    values.add(new TelemetryMeasuresValue("campaigns.feedback_2025_12_shown", "1", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("campaigns.feedback_2025_12_resolution", "MAYBE_LATER", STRING, DAILY));
+    values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_resolution", "IGNORE", STRING, DAILY));
+
     return values;
   }
 
@@ -184,7 +193,11 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("ide_labs.feedback_link_clicked_count_connected_mode", "1", INTEGER, DAILY))
       .contains(tuple("ide_labs.feedback_link_clicked_count_manage_dependency_risk", "2", INTEGER, DAILY))
       .contains(tuple("ai_hooks.windsurf_installed", "2", INTEGER, DAILY))
-      .contains(tuple("ai_hooks.cursor_installed", "5", INTEGER, DAILY));
+      .contains(tuple("ai_hooks.cursor_installed", "5", INTEGER, DAILY))
+      .contains(tuple("campaigns.feedback_2025_12_shown", "1", INTEGER, DAILY))
+      .contains(tuple("campaigns.feedback_2025_12_resolution", "MAYBE_LATER", STRING, DAILY))
+      .contains(tuple("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY))
+      .contains(tuple("campaigns.feedback_2077_03_resolution", "IGNORE", STRING, DAILY));
   }
 
 }
