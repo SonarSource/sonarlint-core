@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -249,7 +250,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_not_trigger_notification_for_recent_installation(SonarLintTestHarness harness) {
-    saveTelemetryInstallTime(5);
+    saveTelemetryInstallTime(DEFAULT_KEY, 5);
     var client = harness.newFakeClient().build();
 
     harness.newBackend()
@@ -261,7 +262,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_trigger_notification_again_after_week_for_maybe_later(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusDays(8), "MAYBE_LATER");
+    saveFeedbackCampaign(LocalDate.now().minusDays(8), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
     harness.newBackend()
@@ -276,7 +277,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_not_trigger_notification_again_after_less_then_week_for_maybe_later(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusDays(6), "MAYBE_LATER");
+    saveFeedbackCampaign(LocalDate.now().minusDays(6), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
     harness.newBackend()
@@ -288,7 +289,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_trigger_notification_again_after_6_months_for_ignore(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusMonths(6).minusDays(1), "IGNORE");
+    saveFeedbackCampaign(LocalDate.now().minusMonths(6).minusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
     harness.newBackend()
@@ -303,7 +304,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_not_trigger_notification_again_after_less_then_6_months_for_ignore(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(DEFAULT_KEY, LocalDate.now().minusMonths(6).plusDays(1), "IGNORE");
+    saveFeedbackCampaign(LocalDate.now().minusMonths(6).plusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
     harness.newBackend()
@@ -311,6 +312,42 @@ class CampaignMediumTests {
       .start(client);
 
     verify(client, never()).showMessageRequest(any(), any(), any());
+  }
+
+  @SonarLintTest
+  void it_should_record_notification_shown_in_telemetry(SonarLintTestHarness harness) {
+    // make a little delay as telemetry event listeners take some time to be seen by the context
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "1");
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    var backend = harness.newBackend()
+      .withTelemetryEnabled()
+      .withUserHome(userHome)
+      .start();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::getCampaignsShown)
+      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN))
+      .isEqualTo(1));
+  }
+
+  @SonarLintTest
+  void it_should_record_notification_responded_in_telemetry(SonarLintTestHarness harness) {
+    // make a little delay as telemetry event listeners take some time to be seen by the context
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "1");
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    var client = harness.newFakeClient().build();
+    when(client.showMessageRequest(any(), any(), any()))
+      .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+
+    var backend = harness.newBackend()
+      .withTelemetryEnabled()
+      .withUserHome(userHome)
+      .start(client);
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::getCampaignsResolutions)
+      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN))
+      .isEqualTo("LOVE_IT"));
   }
 
   private void verifyOpenUrlOnResponse(SonarLintTestHarness harness, String response, String productKey, String expectedUrl) throws MalformedURLException {
@@ -336,16 +373,15 @@ class CampaignMediumTests {
     verify(client).openUrlInBrowser(new URL(expectedUrl));
   }
 
-  private void saveFeedbackCampaign(String productKey, LocalDate lastShown, String lastResponse) {
-    var campaignsStorage = new FileStorageManager<>(getCampaignsPath(productKey), CampaignsLocalStorage::new, CampaignsLocalStorage.class);
-    campaignsStorage.tryUpdateAtomically(data -> {
-      data.campaigns().put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+  private void saveFeedbackCampaign(LocalDate lastShown, String lastResponse) {
+    var campaignsStorage = new FileStorageManager<>(getCampaignsPath(CampaignMediumTests.DEFAULT_KEY), CampaignsLocalStorage::new, CampaignsLocalStorage.class);
+    campaignsStorage.tryUpdateAtomically(data -> data.campaigns()
+      .put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
         new CampaignsLocalStorage.Campaign(
           CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
           lastShown,
           lastResponse
-        ));
-    });
+        )));
   }
 
   private static Map<String, CampaignsLocalStorage.Campaign> getCampaigns(Path campaignsFile) {
@@ -358,10 +394,6 @@ class CampaignMediumTests {
     telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
     telemetryStorageManager.tryUpdateAtomically(data ->
       data.setInstallTime(OffsetDateTime.now().minusDays(daysAgo)));
-  }
-
-  private void saveTelemetryInstallTime(int daysAgo) {
-    saveTelemetryInstallTime(DEFAULT_KEY, daysAgo);
   }
 
   private Path getCampaignsPath(String productKey) {
