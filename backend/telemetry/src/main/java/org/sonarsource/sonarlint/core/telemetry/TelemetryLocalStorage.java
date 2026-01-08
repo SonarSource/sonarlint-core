@@ -107,6 +107,8 @@ public class TelemetryLocalStorage implements LocalStorage {
   private final Map<String, Integer> labsLinkClickedCount;
   private final Map<String, Integer> labsFeedbackLinkClickedCount;
   private final Map<AiAgent, Integer> aiHooksInstalledCount;
+  private final Map<String, Integer> campaignsShown;
+  private final Map<String, String> campaignsResolutions;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -127,6 +129,8 @@ public class TelemetryLocalStorage implements LocalStorage {
     labsLinkClickedCount = new HashMap<>();
     labsFeedbackLinkClickedCount = new HashMap<>();
     aiHooksInstalledCount = new EnumMap<>(AiAgent.class);
+    campaignsShown = new HashMap<>();
+    campaignsResolutions = new HashMap<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -281,6 +285,8 @@ public class TelemetryLocalStorage implements LocalStorage {
     labsLinkClickedCount.clear();
     labsFeedbackLinkClickedCount.clear();
     aiHooksInstalledCount.clear();
+    campaignsShown.clear();
+    campaignsResolutions.clear();
   }
 
   public long numUseDays() {
@@ -775,4 +781,19 @@ public class TelemetryLocalStorage implements LocalStorage {
     return aiHooksInstalledCount;
   }
 
+  public void campaignShown(String campaignName) {
+    campaignsShown.merge(campaignName, 1, Integer::sum);
+  }
+
+  public void campaignResolved(String campaignName, String campaignResolution) {
+    campaignsResolutions.put(campaignName, campaignResolution);
+  }
+
+  public Map<String, Integer> getCampaignsShown() {
+    return campaignsShown;
+  }
+
+  public Map<String, String> getCampaignsResolutions() {
+    return campaignsResolutions;
+  }
 }
