@@ -257,7 +257,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void should_not_configure_production_environment_when_product_is_not_intellij(SonarLintTestHarness harness) {
+  void should_configure_production_environment_when_product_is_not_intellij(SonarLintTestHarness harness) {
     environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
 
     var client = harness.newFakeClient().build();
@@ -268,11 +268,11 @@ class MonitoringMediumTests {
       .withTelemetryEnabled()
       .start(client);
 
-    assertThat(Sentry.isEnabled()).isFalse();
+    assertThat(Sentry.isEnabled()).isTrue();
   }
 
   @SonarLintTest
-  void should_not_configure_production_environment_when_product_is_not_intellij_and_telemetry_enabled_event_happens(SonarLintTestHarness harness) {
+  void should_configure_production_environment_when_product_is_not_intellij_and_telemetry_enabled_event_happens(SonarLintTestHarness harness) {
     environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
 
     var client = harness.newFakeClient().build();
@@ -283,7 +283,7 @@ class MonitoringMediumTests {
       .withTelemetryEnabled()
       .start(client);
 
-    assertThat(Sentry.isEnabled()).isFalse();
+    assertThat(Sentry.isEnabled()).isTrue();
 
     backend.getTelemetryService().disableTelemetry();
     await().atMost(2, TimeUnit.SECONDS)
@@ -293,7 +293,7 @@ class MonitoringMediumTests {
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isTrue());
 
-    assertThat(Sentry.isEnabled()).isFalse();
+    assertThat(Sentry.isEnabled()).isTrue();
   }
 
   @SonarLintTest
