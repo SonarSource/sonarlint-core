@@ -21,15 +21,10 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.MoreExecutors;
-import io.sentry.Attachment;
-import io.sentry.Hint;
-import io.sentry.Sentry;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -51,9 +46,9 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.log.LogService;
+import org.sonarsource.sonarlint.core.rpc.protocol.RpcErrorHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -81,6 +76,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpc
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -142,16 +138,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   private ResponseError handleError(Throwable throwable) {
-    if (throwable instanceof ResponseErrorException responseErrorException) {
-      return responseErrorException.getResponseError();
-    } else if ((throwable instanceof CompletionException || throwable instanceof InvocationTargetException)
-      && throwable.getCause() instanceof ResponseErrorException responseErrorException) {
-        return responseErrorException.getResponseError();
-      } else if (shouldSkipExceptionCapture(throwable)) {
-        return new ResponseError(ResponseErrorCode.RequestFailed, throwable.getMessage(), toStringStacktrace(throwable));
-      } else {
-        return fallbackResponseError("Internal error", throwable);
-      }
+    if (shouldSkipExceptionCapture(throwable)) {
+      return new ResponseError(ResponseErrorCode.RequestFailed, throwable.getMessage(), toStringStacktrace(throwable));
+    }
+    return RpcErrorHandler.handleError(throwable);
   }
 
   private static boolean shouldSkipExceptionCapture(Throwable throwable) {
@@ -159,27 +149,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       || (throwable instanceof CompletionException && throwable.getCause() instanceof ServerRequestException);
   }
 
-  private static ResponseError fallbackResponseError(String header, Throwable throwable) {
-    LOG.error("{}: {}", header, throwable.getMessage(), throwable);
-    var error = new ResponseError();
-    error.setMessage(header + ".");
-    error.setCode(ResponseErrorCode.InternalError);
-    var string = toStringStacktrace(throwable);
-    error.setData(string);
-
-    // Send to Sentry with hint being the full stacktrace
-    var stackTraceAttachment = new Attachment(string.getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
-    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
-    return error;
-  }
-
   private static String toStringStacktrace(Throwable throwable) {
-    var stackTrace = new ByteArrayOutputStream();
-    var stackTraceWriter = new PrintWriter(stackTrace);
-    throwable.printStackTrace(stackTraceWriter);
-    stackTraceWriter.flush();
-
-    return stackTrace.toString(StandardCharsets.UTF_8);
+    var sw = new java.io.StringWriter();
+    throwable.printStackTrace(new PrintWriter(sw));
+    return sw.toString();
   }
 
   private static PrintWriter getMessageTracer() {

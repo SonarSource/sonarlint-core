@@ -81,8 +81,7 @@ public class MonitoringService {
   }
 
   private boolean shouldInitializeSentry() {
-    return (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) ||
-      (initializeParams.productKey().equals(INTELLIJ_PRODUCT_KEY) && initializeParams.isTelemetryEnabled());
+    return (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) || initializeParams.isTelemetryEnabled();
   }
 
   private void start() {

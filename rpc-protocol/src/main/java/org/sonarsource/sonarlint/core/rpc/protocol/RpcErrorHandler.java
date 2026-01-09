@@ -46,10 +46,6 @@ public class RpcErrorHandler {
     }
   }
 
-  public static boolean isInternalError(Throwable throwable) {
-    return !(throwable instanceof ResponseErrorException) && !isWrappedResponseErrorException(throwable);
-  }
-
   private static boolean isWrappedResponseErrorException(Throwable throwable) {
     return (throwable instanceof CompletionException || throwable instanceof InvocationTargetException)
       && throwable.getCause() instanceof ResponseErrorException;
@@ -59,16 +55,21 @@ public class RpcErrorHandler {
     var error = new ResponseError();
     error.setMessage(header + ".");
     error.setCode(ResponseErrorCode.InternalError);
+    var stackTraceString = toStringStacktrace(throwable);
+
+    // Send to Sentry with hint being the full stacktrace
+    var stackTraceAttachment = new Attachment(stackTraceString.getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
+    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
+
+    error.setData(stackTraceString);
+    return error;
+  }
+
+  private static String toStringStacktrace(Throwable throwable) {
     var stackTrace = new ByteArrayOutputStream();
     var stackTraceWriter = new PrintWriter(stackTrace);
     throwable.printStackTrace(stackTraceWriter);
     stackTraceWriter.flush();
-
-    // Send to Sentry with hint being the full stacktrace
-    var stackTraceAttachment = new Attachment(stackTrace.toString().getBytes(StandardCharsets.UTF_8), "stacktrace.txt");
-    Sentry.captureException(throwable, Hint.withAttachment(stackTraceAttachment));
-
-    error.setData(stackTrace.toString());
-    return error;
+    return stackTrace.toString(StandardCharsets.UTF_8);
   }
 }
