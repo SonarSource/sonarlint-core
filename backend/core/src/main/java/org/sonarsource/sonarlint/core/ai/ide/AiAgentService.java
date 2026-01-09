@@ -43,6 +43,12 @@ public class AiAgentService {
         ---
 
         """;
+      case KIRO -> """
+        ---
+        inclusion: always
+        ---
+
+        """;
       case GITHUB_COPILOT -> """
         ---
         applyTo: "**/*"

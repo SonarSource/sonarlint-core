@@ -83,7 +83,7 @@ public class AiHookService {
   private static String generateHookConfiguration(AiAgent agent) {
     return switch (agent) {
       case WINDSURF -> WINDSURF_HOOK_CONFIG;
-      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }
@@ -91,7 +91,7 @@ public class AiHookService {
   private static String getConfigFileName(AiAgent agent) {
     return switch (agent) {
       case WINDSURF -> "hooks.json";
-      case CURSOR -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
+      case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }
@@ -116,6 +116,7 @@ public class AiHookService {
     return switch (agent) {
       case WINDSURF -> "Windsurf";
       case CURSOR -> "Cursor";
+      case KIRO -> "Kiro";
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
     };
   }

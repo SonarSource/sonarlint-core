@@ -68,4 +68,17 @@ class AiAgentMediumTests {
     assertThat(response.getContent()).contains("Important Tool Guidelines");
   }
 
+  @SonarLintTest
+  void it_should_return_the_rule_file_content_for_kiro(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .start();
+
+    var response = backend.getAiAgentService().getRuleFileContent(new GetRuleFileContentParams(AiAgent.KIRO)).join();
+
+    assertThat(response.getContent()).contains("inclusion: always");
+    assertThat(response.getContent()).contains("IMPORTANT");
+    assertThat(response.getContent()).contains("analyze_file_list");
+    assertThat(response.getContent()).contains("Important Tool Guidelines");
+  }
+
 }

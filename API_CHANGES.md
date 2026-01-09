@@ -4,6 +4,10 @@
 
 # 10.39
 
+## New features
+
+* Add a new `KIRO` value to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent` enum.
+
 ## Breaking changes
 
 * Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails` method and associated DTOs.

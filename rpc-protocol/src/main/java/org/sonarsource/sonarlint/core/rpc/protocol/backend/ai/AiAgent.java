@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, WINDSURF
+  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF
 }
