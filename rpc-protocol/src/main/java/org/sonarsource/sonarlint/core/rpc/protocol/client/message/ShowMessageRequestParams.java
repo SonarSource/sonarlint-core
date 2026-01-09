@@ -24,12 +24,12 @@ import java.util.List;
 public class ShowMessageRequestParams {
 
   private final MessageType type;
-  private final String text;
+  private final String message;
   private final List<MessageActionItem> actions;
 
-  public ShowMessageRequestParams(MessageType type, String text, List<MessageActionItem> actions) {
+  public ShowMessageRequestParams(MessageType type, String message, List<MessageActionItem> actions) {
     this.type = type;
-    this.text = text;
+    this.message = message;
     this.actions = actions;
   }
 
@@ -37,8 +37,8 @@ public class ShowMessageRequestParams {
     return type;
   }
 
-  public String getText() {
-    return text;
+  public String getMessage() {
+    return message;
   }
 
   public List<MessageActionItem> getActions() {

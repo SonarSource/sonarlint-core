@@ -129,7 +129,7 @@ public class FileStorageManager<T extends LocalStorage> {
     updateLastModified();
   }
 
-  public T read(FileChannel fileChannel) {
+  private T read(FileChannel fileChannel) {
     try {
       if (fileChannel.size() == 0) {
         return defaultSupplier.get();

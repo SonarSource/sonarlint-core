@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 
 class TelemetryLocalStorageManagerTests {
 
+  @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final LocalDate today = LocalDate.now();
@@ -135,6 +137,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
+    InternalDebug.setEnabled(false);
     assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryRead())
       .doesNotThrowAnyException();
 
@@ -142,6 +145,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
+    InternalDebug.setEnabled(false);
     assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryUpdateAtomically(d -> {}))
       .doesNotThrowAnyException();
   }

@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.promotion.campaign;
 
 public class CampaignConstants {
 
-  public static final String FEEDBACK_2025_12_CAMPAIGN = "feedback_2025_12";
+  public static final String FEEDBACK_2026_01_CAMPAIGN = "feedback_2026_01";
   private static final String JETBRAINS_MARKETPLACE = "https://plugins.jetbrains.com/plugin/7973-sonarqube-for-ide/reviews";
   private static final String VS_MARKETPLACE = "https://marketplace.visualstudio.com/items?itemName=SonarSource.SonarLintforVisualStudio2022&ssr=false#review-details";
   private static final String VSCODE_MARKETPLACE = "https://marketplace.visualstudio.com/items?itemName=SonarSource.sonarlint-vscode&ssr=false#review-details";
