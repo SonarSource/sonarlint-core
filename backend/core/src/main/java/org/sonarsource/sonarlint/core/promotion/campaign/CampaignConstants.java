@@ -39,13 +39,13 @@ public class CampaignConstants {
         case "idea" -> JETBRAINS_MARKETPLACE;
         case "visualstudio" -> VS_MARKETPLACE;
         case "vscode" -> VSCODE_MARKETPLACE;
-        case "windsurf", "cursor" -> OPEN_VSX;
+        case "windsurf", "cursor", "kiro" -> OPEN_VSX;
         default -> null;
       };
       case SHARE_FEEDBACK -> switch (productKey) {
         case "idea" -> INTELLIJ_GOOGLE_FORM;
         case "visualstudio" -> VISUAL_STUDIO_GOOGLE_FORM;
-        case "vscode", "windsurf", "cursor" -> VS_CODE_GOOGLE_FORM;
+        case "vscode", "windsurf", "cursor", "kiro" -> VS_CODE_GOOGLE_FORM;
         default -> null;
       };
       default -> null;
