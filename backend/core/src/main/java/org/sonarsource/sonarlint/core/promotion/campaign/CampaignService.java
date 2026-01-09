@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -145,8 +144,8 @@ public class CampaignService {
       .toList();
   }
 
-  private void handleFeedbackResponse(@Nullable ShowMessageRequestResponse response) {
-    Optional.ofNullable(response)
+  private void handleFeedbackResponse(ShowMessageRequestResponse response) {
+    Optional.of(response)
       .map(ShowMessageRequestResponse::getSelectedKey)
       .ifPresent(this::handleFeedbackResponse);
   }
