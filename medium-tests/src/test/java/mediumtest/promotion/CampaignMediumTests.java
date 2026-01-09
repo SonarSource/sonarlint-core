@@ -25,11 +25,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
@@ -37,6 +39,7 @@ import org.sonarsource.sonarlint.core.promotion.campaign.CampaignConstants;
 import org.sonarsource.sonarlint.core.promotion.campaign.storage.CampaignsLocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageActionItem;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
@@ -54,6 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,8 +91,8 @@ class CampaignMediumTests {
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
-        "feedback_2025_12",
-        new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), "IGNORE")));
+        "feedback_2026_01",
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
   }
 
   @SonarLintTest
@@ -104,8 +108,8 @@ class CampaignMediumTests {
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
-        "feedback_2025_12",
-        new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), "IGNORE")));
+        "feedback_2026_01",
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -130,8 +134,8 @@ class CampaignMediumTests {
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
-        "feedback_2025_12",
-        new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), "IGNORE")));
+        "feedback_2026_01",
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -198,17 +202,19 @@ class CampaignMediumTests {
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
-        "feedback_2025_12",
-        new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), "MAYBE_LATER")));
+        "feedback_2026_01",
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "MAYBE_LATER")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
   @SonarLintTest
-  void it_should_show_message_on_invalid_projectKey(SonarLintTestHarness harness) {
+  void it_should_redirect_to_community_on_invalid_productKey(SonarLintTestHarness harness) {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
-    when(client.showMessageRequest(any(), any(), any()))
+    when(client.showMessageRequest(any(), eq("Enjoying SonarQube for IDE? We'd love to hear what you think."), any()))
       .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+    when(client.showMessageRequest(any(), eq("Could not find feedback link for mediumTests. Please consider sharing your feedback directly on our community forum"), any()))
+      .thenReturn(new ShowMessageRequestResponse("OPEN_COMMUNITY"));
 
     baseBackend(harness)
       .start(client);
@@ -218,11 +224,25 @@ class CampaignMediumTests {
     assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
-        "feedback_2025_12",
-        new CampaignsLocalStorage.Campaign("feedback_2025_12", LocalDate.now(), "LOVE_IT")));
-    verify(client, never()).openUrlInBrowser(any());
-    verify(client).showMessage(MessageType.ERROR,
-      "Wasn't able to find a marketplace link for mediumTests. Please report it here: https://community.sonarsource.com/");
+        "feedback_2026_01",
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "LOVE_IT")));
+
+    ArgumentCaptor<List<MessageActionItem>> actionsArgumentCaptor = ArgumentCaptor.forClass(List.class);
+    var messageTypeCaptor = ArgumentCaptor.forClass(MessageType.class);
+    var messageCaptor = ArgumentCaptor.forClass(String.class);
+    var openInBrowserCaptor = ArgumentCaptor.forClass(URL.class);
+
+    verify(client, times(2)).showMessageRequest(messageTypeCaptor.capture(),
+      messageCaptor.capture(),
+      actionsArgumentCaptor.capture());
+    // showMessageRequest will be called twice - once for the feedback, and second time for the community fallback
+    assertThat(messageTypeCaptor.getAllValues().get(1)).isEqualTo(MessageType.INFO);
+    assertThat(messageCaptor.getAllValues().get(1)).isEqualTo("Could not find feedback link for mediumTests. Please consider sharing your feedback directly on our community forum");
+    assertThat(actionsArgumentCaptor.getAllValues().get(1)).hasSize(1);
+    assertThat(actionsArgumentCaptor.getAllValues().get(1).get(0)).extracting(MessageActionItem::getKey, MessageActionItem::getDisplayText, MessageActionItem::isPrimaryAction)
+      .containsExactly("OPEN_COMMUNITY", "Open Community Forum", true);
+    verify(client, times(1)).openUrlInBrowser(openInBrowserCaptor.capture());
+    assertThat(openInBrowserCaptor.getValue()).hasToString("https://community.sonarsource.com/c/sl/11");
   }
 
   @SonarLintTest
@@ -315,7 +335,7 @@ class CampaignMediumTests {
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
       .extracting(TelemetryLocalStorage::getCampaignsShown)
-      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN))
+      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN))
       .isEqualTo(1));
   }
 
@@ -334,7 +354,7 @@ class CampaignMediumTests {
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
       .extracting(TelemetryLocalStorage::getCampaignsResolutions)
-      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN))
+      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN))
       .isEqualTo("LOVE_IT"));
   }
 
@@ -366,8 +386,8 @@ class CampaignMediumTests {
       () -> assertThat(getCampaigns(campaignsFile))
         .hasSize(1)
         .contains(Map.entry(
-          CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
-          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN, LocalDate.now(), response)))
+          CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), response)))
     );
     verify(client).openUrlInBrowser(new URL(expectedUrl));
   }
@@ -375,9 +395,9 @@ class CampaignMediumTests {
   private void saveFeedbackCampaign(LocalDate lastShown, String lastResponse) {
     var campaignsStorage = new FileStorageManager<>(getCampaignsPath(CampaignMediumTests.DEFAULT_KEY), CampaignsLocalStorage::new, CampaignsLocalStorage.class);
     campaignsStorage.tryUpdateAtomically(data -> data.campaigns()
-      .put(CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+      .put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
         new CampaignsLocalStorage.Campaign(
-          CampaignConstants.FEEDBACK_2025_12_CAMPAIGN,
+          CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
           lastShown,
           lastResponse
         )));

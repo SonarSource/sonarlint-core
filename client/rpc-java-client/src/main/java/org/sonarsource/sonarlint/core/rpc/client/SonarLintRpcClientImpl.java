@@ -201,7 +201,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<ShowMessageRequestResponse> showMessageRequest(ShowMessageRequestParams params) {
-    return requestAsync(cancelChecker -> delegate.showMessageRequest(params.getType(), params.getText(), params.getActions()));
+    return requestAsync(cancelChecker -> delegate.showMessageRequest(params.getType(), params.getMessage(), params.getActions()));
   }
 
   @Override
