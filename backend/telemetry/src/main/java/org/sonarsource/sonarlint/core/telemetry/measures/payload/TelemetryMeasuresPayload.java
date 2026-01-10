@@ -23,7 +23,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import java.time.OffsetDateTime;
 import java.util.List;
-import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
+import org.sonarsource.sonarlint.core.commons.storage.adapter.OffsetDateTimeAdapter;
 
 public record TelemetryMeasuresPayload(@SerializedName("message_uuid") String messageUuid,
                                        @SerializedName("os") String os,

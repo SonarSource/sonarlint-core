@@ -31,12 +31,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtra
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
 
-public class PromotionService {
+public class LanguagePromotionService {
   private final ConfigurationRepository configurationRepository;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
   private final SonarLintRpcClient client;
 
-  public PromotionService(ConfigurationRepository configurationRepository, InitializeParams initializeParams, SonarLintRpcClient client) {
+  public LanguagePromotionService(ConfigurationRepository configurationRepository, InitializeParams initializeParams, SonarLintRpcClient client) {
     this.configurationRepository = configurationRepository;
     this.extraEnabledLanguagesInConnectedMode = initializeParams.getExtraEnabledLanguagesInConnectedMode();
     this.client = client;

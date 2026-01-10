@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
@@ -91,5 +92,9 @@ public class TelemetryManager implements TelemetryUserSetting {
   @Override
   public boolean isTelemetryEnabledByUser() {
     return storageManager.isEnabled();
+  }
+
+  public OffsetDateTime installTime() {
+    return storageManager.installTime();
   }
 }

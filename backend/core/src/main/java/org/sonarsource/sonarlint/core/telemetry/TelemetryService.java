@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,6 +40,8 @@ import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.TelemetryUpdatedEvent;
+import org.sonarsource.sonarlint.core.promotion.campaign.CampaignResolvedEvent;
+import org.sonarsource.sonarlint.core.promotion.campaign.CampaignShownEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
@@ -148,6 +151,10 @@ public class TelemetryService {
 
   public boolean isEnabled() {
     return isTelemetryFeatureEnabled && telemetryManager.isTelemetryEnabledByUser();
+  }
+
+  public OffsetDateTime installTime() {
+    return telemetryManager.installTime();
   }
 
   private void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
@@ -392,6 +399,16 @@ public class TelemetryService {
       .map(RaisedFindingDto::getId)
       .collect(Collectors.toSet());
     updateTelemetry(localStorage -> localStorage.addIssuesWithPossibleAiFixFromIde(issuesToReport));
+  }
+
+  @EventListener
+  public void onCampaignShown(CampaignShownEvent event) {
+    updateTelemetry(localStorage -> localStorage.campaignShown(event.campaignName()));
+  }
+
+  @EventListener
+  public void onCampaignResolved(CampaignResolvedEvent event) {
+    updateTelemetry(localStorage -> localStorage.campaignResolved(event.campaignName(), event.resolution()));
   }
 
   @PreDestroy

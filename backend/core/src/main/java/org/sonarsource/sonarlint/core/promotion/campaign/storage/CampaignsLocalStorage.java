@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.promotion.campaign.storage;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  GESSIE_TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-  CONTEXT_GENERATION,
-  PROMOTIONAL_CAMPAIGNS
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.storage.local.LocalStorage;
+
+public record CampaignsLocalStorage(Map<String, Campaign> campaigns) implements LocalStorage {
+
+  public CampaignsLocalStorage() {
+    this(new HashMap<>());
+  }
+
+  public record Campaign(String campaignName, LocalDate lastNotificationShownOn, String lastUserResponse) {
+
+  }
 }

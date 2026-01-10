@@ -17,22 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  GESSIE_TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-  CONTEXT_GENERATION,
-  PROMOTIONAL_CAMPAIGNS
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+public class ShowMessageRequestResponse {
+
+  // Selected key can be null in case user explicitly dismisses the notification or does not act on it at all
+  @Nullable
+  private final String selectedKey;
+
+  public ShowMessageRequestResponse(@Nullable String selectedKey) {
+    this.selectedKey = selectedKey;
+  }
+
+  @CheckForNull
+  public String getSelectedKey() {
+    return selectedKey;
+  }
 }

@@ -17,22 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
-public enum BackendCapability {
-  SMART_NOTIFICATIONS,
-  PROJECT_SYNCHRONIZATION,
-  EMBEDDED_SERVER,
-  SECURITY_HOTSPOTS,
-  SERVER_SENT_EVENTS,
-  DATAFLOW_BUG_DETECTION,
-  FULL_SYNCHRONIZATION,
-  TELEMETRY,
-  GESSIE_TELEMETRY,
-  MONITORING,
-  ISSUE_STREAMING,
-  SCA_SYNCHRONIZATION,
-  FLIGHT_RECORDER,
-  CONTEXT_GENERATION,
-  PROMOTIONAL_CAMPAIGNS
+import java.util.List;
+
+public class ShowMessageRequestParams {
+
+  private final MessageType type;
+  private final String message;
+  private final List<MessageActionItem> actions;
+
+  public ShowMessageRequestParams(MessageType type, String message, List<MessageActionItem> actions) {
+    this.type = type;
+    this.message = message;
+    this.actions = actions;
+  }
+
+  public MessageType getType() {
+    return type;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  public List<MessageActionItem> getActions() {
+    return actions;
+  }
 }

@@ -37,7 +37,7 @@ public class UserPaths {
     createFolderIfNeeded(workDir);
     var storageRoot = Optional.ofNullable(initializeParams.getStorageRoot()).orElse(userHome.resolve("storage"));
     createFolderIfNeeded(storageRoot);
-    return new UserPaths(userHome, workDir, storageRoot);
+    return new UserPaths(userHome, workDir, storageRoot, initializeParams.getTelemetryConstantAttributes().getProductKey());
   }
 
   static Path computeUserHome(@Nullable String clientUserHome) {
@@ -58,11 +58,13 @@ public class UserPaths {
   private final Path userHome;
   private final Path workDir;
   private final Path storageRoot;
+  private final String productKey;
 
-  private UserPaths(Path userHome, Path workDir, Path storageRoot) {
+  private UserPaths(Path userHome, Path workDir, Path storageRoot, String productKey) {
     this.userHome = userHome;
     this.workDir = workDir;
     this.storageRoot = storageRoot;
+    this.productKey = productKey;
   }
 
   public Path getUserHome() {
@@ -75,5 +77,9 @@ public class UserPaths {
 
   public Path getStorageRoot() {
     return storageRoot;
+  }
+
+  public Path getHomeIdeSpecificDir(String intermediateDir) {
+    return userHome.resolve(intermediateDir).resolve(productKey);
   }
 }

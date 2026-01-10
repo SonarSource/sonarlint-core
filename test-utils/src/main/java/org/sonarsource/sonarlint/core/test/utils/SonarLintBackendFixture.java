@@ -151,6 +151,7 @@ public class SonarLintBackendFixture {
     private final Set<String> disabledPluginKeysForAnalysis = new HashSet<>();
     private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
     private Path customStorageRoot;
+    private Path customUserHome;
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
 
@@ -418,6 +419,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withUserHome(Path userHome) {
+      this.customUserHome = userHome;
+      return this;
+    }
+
     public SonarLintBackendBuilder withUserAgent(String userAgent) {
       this.userAgent = userAgent;
       return this;
@@ -507,7 +513,7 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintTestRpcServer start(SonarLintRpcClientDelegate client) {
-      var sonarlintUserHome = tempDirectory("slUserHome");
+      var sonarlintUserHome = customUserHome == null ? tempDirectory("slUserHome") : customUserHome;
       var workDir = tempDirectory("work");
       var storageParentPath = customStorageRoot == null ? tempDirectory("storage") : customStorageRoot.getParent();
       var storageRoot = storageParentPath.resolve("storage");

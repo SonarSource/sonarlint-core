@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.storage.local.LocalStorage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
@@ -43,7 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransport
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-public class TelemetryLocalStorage {
+public class TelemetryLocalStorage implements LocalStorage {
   @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
@@ -106,6 +107,8 @@ public class TelemetryLocalStorage {
   private final Map<String, Integer> labsLinkClickedCount;
   private final Map<String, Integer> labsFeedbackLinkClickedCount;
   private final Map<AiAgent, Integer> aiHooksInstalledCount;
+  private final Map<String, Integer> campaignsShown;
+  private final Map<String, String> campaignsResolutions;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -126,6 +129,8 @@ public class TelemetryLocalStorage {
     labsLinkClickedCount = new HashMap<>();
     labsFeedbackLinkClickedCount = new HashMap<>();
     aiHooksInstalledCount = new EnumMap<>(AiAgent.class);
+    campaignsShown = new HashMap<>();
+    campaignsResolutions = new HashMap<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -280,6 +285,8 @@ public class TelemetryLocalStorage {
     labsLinkClickedCount.clear();
     labsFeedbackLinkClickedCount.clear();
     aiHooksInstalledCount.clear();
+    campaignsShown.clear();
+    campaignsResolutions.clear();
   }
 
   public long numUseDays() {
@@ -330,7 +337,8 @@ public class TelemetryLocalStorage {
     return first == null || (second != null && first.isBefore(second));
   }
 
-  void validateAndMigrate() {
+  @Override
+  public void validateAndMigrate() {
     var today = LocalDate.now();
 
     // migrate deprecated installDate
@@ -773,4 +781,19 @@ public class TelemetryLocalStorage {
     return aiHooksInstalledCount;
   }
 
+  public void campaignShown(String campaignName) {
+    campaignsShown.merge(campaignName, 1, Integer::sum);
+  }
+
+  public void campaignResolved(String campaignName, String campaignResolution) {
+    campaignsResolutions.put(campaignName, campaignResolution);
+  }
+
+  public Map<String, Integer> getCampaignsShown() {
+    return campaignsShown;
+  }
+
+  public Map<String, String> getCampaignsResolutions() {
+    return campaignsResolutions;
+  }
 }

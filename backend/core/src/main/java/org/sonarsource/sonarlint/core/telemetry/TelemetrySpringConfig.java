@@ -40,9 +40,8 @@ public class TelemetrySpringConfig {
   private static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
 
   @Bean(name = "telemetryPath")
-  Path provideTelemetryPath(InitializeParams params, UserPaths userPaths) {
-    String productKey = params.getTelemetryConstantAttributes().getProductKey();
-    return userPaths.getUserHome().resolve("telemetry").resolve(productKey).resolve("usage");
+  Path provideTelemetryPath(UserPaths userPaths) {
+    return userPaths.getHomeIdeSpecificDir("telemetry").resolve("usage");
   }
 
   @Bean(name = "telemetryEndpoint")
