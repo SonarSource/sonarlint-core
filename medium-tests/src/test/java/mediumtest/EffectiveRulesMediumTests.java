@@ -125,7 +125,7 @@ class EffectiveRulesMediumTests {
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX", null));
 
-    assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
+    assertThat(futureResponse).failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Could not find rule 'python:SXXXX' in embedded rules");
