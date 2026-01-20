@@ -57,7 +57,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConn
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.flightrecorder.FlightRecorderStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
@@ -424,11 +423,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void invalidToken(InvalidTokenParams params) {
     notify(() -> delegate.invalidToken(params.getConnectionId()));
-  }
-
-  @Override
-  public void flightRecorderStarted(FlightRecorderStartedParams params) {
-    notify(() -> delegate.flightRecorderStarted(params));
   }
 
   @Override

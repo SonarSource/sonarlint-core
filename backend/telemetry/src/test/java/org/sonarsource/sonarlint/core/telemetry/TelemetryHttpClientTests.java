@@ -120,7 +120,6 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.incrementToolCalledCount("tool_name", false);
     telemetryLocalStorage.addFixedIssues(2);
     telemetryLocalStorage.findingsFiltered("severity");
-    telemetryLocalStorage.incrementFlightRecorderSessionsCount();
     telemetryLocalStorage.incrementMcpServerConfigurationRequestedCount();
     telemetryLocalStorage.incrementMcpRuleFileRequestedCount();
     telemetryLocalStorage.setMcpIntegrationEnabled(true);
@@ -160,7 +159,6 @@ class TelemetryHttpClientTests {
             {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
-            {"key":"flight_recorder.sessions_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.configuration_requested","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.rule_file_requested","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"},

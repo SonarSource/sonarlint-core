@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.spring;
 import java.net.ProxySelector;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
@@ -66,9 +65,6 @@ import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHa
 import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
-import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderService;
-import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderSession;
-import org.sonarsource.sonarlint.core.flight.recorder.FlightRecorderStorageService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
@@ -136,7 +132,6 @@ import org.springframework.scheduling.support.TaskUtils;
 
 import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_PASSWORD;
 import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_STORE_TYPE;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FLIGHT_RECORDER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 
@@ -218,8 +213,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ClientAwareTaskManager.class,
   ScaSynchronizationService.class,
   DependencyRiskService.class,
-  FlightRecorderService.class,
-  FlightRecorderStorageService.class,
   ToggleAutomaticAnalysisRequestHandler.class,
   AnalyzeFileListRequestHandler.class,
   AiAgentService.class,
@@ -260,17 +253,10 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  FlightRecorderSession provideFlightRecorderSession() {
-    return new FlightRecorderSession(UUID.randomUUID());
-  }
-
-  @Bean
-  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, FlightRecorderSession flightRecorderSession, TelemetryLocalStorageManager telemetryService) {
+  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params, TelemetryLocalStorageManager telemetryService) {
     return new MonitoringInitializationParams(
       params.getBackendCapabilities().contains(MONITORING),
-      params.getBackendCapabilities().contains(FLIGHT_RECORDER),
       params.getBackendCapabilities().contains(TELEMETRY) && telemetryService.isEnabled(),
-      flightRecorderSession.sessionId(),
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());

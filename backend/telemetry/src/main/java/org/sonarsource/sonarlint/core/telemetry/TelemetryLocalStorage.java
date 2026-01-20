@@ -98,7 +98,6 @@ public class TelemetryLocalStorage implements LocalStorage {
   private int dependencyRiskInvestigatedLocallyCount;
   private boolean isAutomaticAnalysisEnabled;
   private int automaticAnalysisToggledCount;
-  private int flightRecorderSessionsCount;
   private int mcpServerConfigurationRequestedCount;
   private int mcpRuleFileRequestedCount;
   private boolean isMcpIntegrationEnabled;
@@ -277,7 +276,6 @@ public class TelemetryLocalStorage implements LocalStorage {
     dependencyRiskInvestigatedLocallyCount = 0;
     dependencyRiskInvestigatedRemotelyCount = 0;
     automaticAnalysisToggledCount = 0;
-    flightRecorderSessionsCount = 0;
     mcpServerConfigurationRequestedCount = 0;
     mcpRuleFileRequestedCount = 0;
     isMcpIntegrationEnabled = false;
@@ -727,15 +725,6 @@ public class TelemetryLocalStorage implements LocalStorage {
     markSonarLintAsUsedToday();
     this.isAutomaticAnalysisEnabled = !this.isAutomaticAnalysisEnabled;
     automaticAnalysisToggledCount++;
-  }
-
-  public void incrementFlightRecorderSessionsCount() {
-    markSonarLintAsUsedToday();
-    flightRecorderSessionsCount ++;
-  }
-
-  public int getFlightRecorderSessionsCount() {
-    return flightRecorderSessionsCount;
   }
 
   public void incrementMcpServerConfigurationRequestedCount() {

@@ -1,3 +1,9 @@
+# 10.43
+
+## Breaking changes
+
+* Remove the flight recorder feature. This should be handled by clients
+
 # 10.42
 
 * Add `org.sonarsource.sonarlint.core.rpc.client.Sloop.getPid` to return the pid of the backend process.

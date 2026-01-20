@@ -77,8 +77,6 @@ public class TelemetryMeasuresBuilder {
 
     addAutomaticAnalysisMeasures(values);
 
-    addFlightRecorderMeasures(values);
-
     addMCPMeasures(values);
 
     addLabsMeasures(values);
@@ -213,13 +211,6 @@ public class TelemetryMeasuresBuilder {
   private void addAutomaticAnalysisMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("automatic_analysis.enabled", String.valueOf(storage.isAutomaticAnalysisEnabled()), BOOLEAN, DAILY));
     values.add(new TelemetryMeasuresValue("automatic_analysis.toggled_count", String.valueOf(storage.getAutomaticAnalysisToggledCount()), INTEGER, DAILY));
-  }
-
-  private void addFlightRecorderMeasures(List<TelemetryMeasuresValue> values) {
-    var flightRecorderSessionsCount = storage.getFlightRecorderSessionsCount();
-    if (flightRecorderSessionsCount > 0) {
-      values.add(new TelemetryMeasuresValue("flight_recorder.sessions_count", String.valueOf(flightRecorderSessionsCount), INTEGER, DAILY));
-    }
   }
 
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {

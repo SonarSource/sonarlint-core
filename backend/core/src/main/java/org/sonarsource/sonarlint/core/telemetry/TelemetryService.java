@@ -324,10 +324,6 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementAutomaticAnalysisToggledCount);
   }
 
-  public void flightRecorderStarted() {
-    updateTelemetry(TelemetryLocalStorage::incrementFlightRecorderSessionsCount);
-  }
-
   public void mcpServerConfigurationRequested() {
     updateTelemetry(TelemetryLocalStorage::incrementMcpServerConfigurationRequestedCount);
   }
