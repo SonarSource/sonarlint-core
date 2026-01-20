@@ -52,7 +52,6 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FLIGHT_RECORDER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
@@ -127,7 +126,7 @@ class MonitoringMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine()).contains(tuple("php:S1172", 2));
 
     // The mock Sentry server receives 1 event for the analysis trace
-    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(sentryServer.getAllServeEvents()).hasSize(1));
   }
 
   @SonarLintTest
@@ -163,7 +162,7 @@ class MonitoringMediumTests {
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isEmpty());
     // The mock Sentry server receives 1 event: one for the trace
-    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(sentryServer.getAllServeEvents()).hasSize(1));
     assertThat(sentryServer.getAllServeEvents())
       .extracting(e -> e.getRequest().getBodyAsString())
       // Server name should be removed from events
@@ -204,19 +203,20 @@ class MonitoringMediumTests {
     var content = """
       [3, 1, 4, 1, 5, 9]
       result = set(sorted(data))
-      
+
       result = set(sordata))
       """;
     var newContent = """
       [3, 1, 4, 1, 5, 9]
       result = set(sorted(data))
-      
+
       result = set(sordata))
       """;
     var filePath = createFile(baseDir, "invalid.py", content);
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
-      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, content, null, true)))
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir,
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, content, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -231,7 +231,7 @@ class MonitoringMediumTests {
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error processing file event"));
     // only a single event for the analysis
-    await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() ->  assertThat(sentryServer.getAllServeEvents()).hasSize(1));
+    await().atLeast(100, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(sentryServer.getAllServeEvents()).hasSize(1));
   }
 
   @SonarLintTest
@@ -324,15 +324,6 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void should_configure_flight_recorder_environment_when_capability_enabled(SonarLintTestHarness harness) {
-    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
-
-    startMonitoringBackend(harness, FLIGHT_RECORDER);
-
-    assertThat(Sentry.getCurrentScopes().getOptions().getEnvironment()).isEqualTo("flight_recorder");
-  }
-
-  @SonarLintTest
   void should_use_sample_rate_from_system_property(SonarLintTestHarness harness) {
     withSampleRateProperty("0.42", () -> {
       startMonitoringBackend(harness);
@@ -364,17 +355,6 @@ class MonitoringMediumTests {
       startMonitoringBackend(harness);
 
       assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isEqualTo(0.01);
-    });
-  }
-
-  @SonarLintTest
-  void should_use_flight_recorder_sample_rate_when_capability_enabled(SonarLintTestHarness harness) {
-    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
-
-    withSampleRateProperty("invalid", () -> {
-      startMonitoringBackend(harness, FLIGHT_RECORDER);
-
-      assertThat(Sentry.getCurrentScopes().getOptions().getTracesSampleRate()).isEqualTo(1D);
     });
   }
 
@@ -450,29 +430,7 @@ class MonitoringMediumTests {
   }
 
   @SonarLintTest
-  void should_configure_flight_recorder_user_id_when_enabled(SonarLintTestHarness harness) {
-    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
-
-    startMonitoringBackend(harness, FLIGHT_RECORDER);
-
-    Sentry.configureScope(scope -> {
-      var user = scope.getUser();
-      assertThat(user).isNotNull();
-      assertThat(user.getId()).isNotNull();
-    });
-  }
-
-  @SonarLintTest
-  void should_enable_sentry_logs_when_flight_recorder_enabled(SonarLintTestHarness harness) {
-    environmentVariables.set(DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY, null);
-
-    startMonitoringBackend(harness, FLIGHT_RECORDER);
-
-    assertThat(Sentry.getCurrentScopes().getOptions().getLogs().isEnabled()).isTrue();
-  }
-
-  @SonarLintTest
-  void should_not_enable_sentry_logs_when_flight_recorder_not_enabled(SonarLintTestHarness harness) {
+  void should_not_enable_sentry_logs(SonarLintTestHarness harness) {
     startMonitoringBackend(harness);
 
     assertThat(Sentry.getCurrentScopes().getOptions().getLogs().isEnabled()).isFalse();

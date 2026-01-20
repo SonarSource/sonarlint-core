@@ -215,11 +215,13 @@ class TelemetryLocalStorageTests {
     var suggestionId = UUID.randomUUID().toString();
     data.fixSuggestionResolved(suggestionId, FixSuggestionStatus.ACCEPTED, 0);
 
-    assertThat(data.getFixSuggestionResolved().get(suggestionId)).extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
+    assertThat(data.getFixSuggestionResolved().get(suggestionId))
+      .extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
       .containsExactly(tuple(FixSuggestionStatus.ACCEPTED, 0));
 
     data.fixSuggestionResolved(suggestionId, FixSuggestionStatus.DECLINED, 0);
-    assertThat(data.getFixSuggestionResolved().get(suggestionId)).extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
+    assertThat(data.getFixSuggestionResolved().get(suggestionId))
+      .extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
       .containsExactly(tuple(FixSuggestionStatus.DECLINED, 0));
   }
 
@@ -233,7 +235,7 @@ class TelemetryLocalStorageTests {
     data.findingsFiltered("severity");
 
     data.findingsFiltered("location");
-    
+
     data.findingsFiltered("fix_availability");
     assertThat(data.getFindingsFilteredCountersByType()).hasSize(3);
     assertThat(data.getFindingsFilteredCountersByType().get("location").getFindingsFilteredCount()).isEqualTo(1);
@@ -244,7 +246,7 @@ class TelemetryLocalStorageTests {
   @Test
   void should_clear_findings_filtered_counters() {
     var data = new TelemetryLocalStorage();
-    
+
     data.findingsFiltered("severity");
     data.findingsFiltered("location");
     assertThat(data.getFindingsFilteredCountersByType()).hasSize(2);
@@ -327,16 +329,6 @@ class TelemetryLocalStorageTests {
     data.incrementSuggestedRemoteBindingsCount();
     data.incrementSuggestedRemoteBindingsCount();
     assertThat(data.getSuggestedRemoteBindingsCount()).isEqualTo(2);
-  }
-
-  @Test
-  void should_increment_flight_recorder_sessions_count() {
-    var data = new TelemetryLocalStorage();
-    assertThat(data.getFlightRecorderSessionsCount()).isZero();
-    data.incrementFlightRecorderSessionsCount();
-    data.incrementFlightRecorderSessionsCount();
-    data.incrementFlightRecorderSessionsCount();
-    assertThat(data.getFlightRecorderSessionsCount()).isEqualTo(3);
   }
 
   @Test

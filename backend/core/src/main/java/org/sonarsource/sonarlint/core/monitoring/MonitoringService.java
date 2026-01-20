@@ -20,11 +20,8 @@
 package org.sonarsource.sonarlint.core.monitoring;
 
 import io.sentry.Hint;
-import io.sentry.ScopeType;
 import io.sentry.Sentry;
-import io.sentry.SentryAttributeType;
 import io.sentry.SentryBaseEvent;
-import io.sentry.SentryLogEventAttributeValue;
 import io.sentry.SentryOptions;
 import io.sentry.protocol.User;
 import jakarta.inject.Inject;
@@ -44,14 +41,11 @@ public class MonitoringService {
   public static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
   private static final double TRACES_SAMPLE_RATE_DEFAULT = 0D;
   private static final double TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT = 0.01D;
-  private static final double TRACES_SAMPLE_RATE_FLIGHT_RECORDER = 1D;
 
-  private static final String ENVIRONMENT_FLIGHT_RECORDER = "flight_recorder";
   private static final String ENVIRONMENT_PRODUCTION = "production";
   private static final String ENVIRONMENT_DOGFOOD = "dogfood";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  public static final String INTELLIJ_PRODUCT_KEY = "idea";
 
   private final MonitoringInitializationParams initializeParams;
   private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
@@ -81,7 +75,7 @@ public class MonitoringService {
   }
 
   private boolean shouldInitializeSentry() {
-    return (dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.flightRecorderEnabled()) || initializeParams.isTelemetryEnabled();
+    return dogfoodEnvDetectionService.isDogfoodEnvironment() || initializeParams.isTelemetryEnabled();
   }
 
   private void start() {
@@ -92,9 +86,6 @@ public class MonitoringService {
       Sentry.setUser(user);
     });
     active = true;
-    if (initializeParams.flightRecorderEnabled()) {
-      configureFlightRecorderSession();
-    }
   }
 
   public boolean isActive() {
@@ -105,14 +96,6 @@ public class MonitoringService {
     sentryOptions.setDsn(getDsn());
     sentryOptions.setRelease(SonarLintCoreVersion.getLibraryVersion());
     sentryOptions.setEnvironment(getEnvironment());
-    if (initializeParams.flightRecorderEnabled()) {
-      sentryOptions.getLogs().setEnabled(true);
-      var sessionId = new SentryLogEventAttributeValue(SentryAttributeType.STRING, initializeParams.flightRecorderSessionId().toString());
-      sentryOptions.getLogs().setBeforeSend(logEvent -> {
-        logEvent.getAttributes().put("user.id", sessionId);
-        return logEvent;
-      });
-    }
     sentryOptions.setTag("productKey", initializeParams.productKey());
     sentryOptions.setTag("sonarQubeForIDEVersion", initializeParams.sonarQubeForIdeVersion());
     sentryOptions.setTag("ideVersion", initializeParams.ideVersion());
@@ -127,9 +110,7 @@ public class MonitoringService {
   }
 
   private String getEnvironment() {
-    if (initializeParams.flightRecorderEnabled()) {
-      return ENVIRONMENT_FLIGHT_RECORDER;
-    } else if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
       return ENVIRONMENT_DOGFOOD;
     }
 
@@ -139,12 +120,6 @@ public class MonitoringService {
   private static <T extends SentryBaseEvent> T beforeSend(T event, Hint hint) {
     event.setServerName(null);
     return event;
-  }
-
-  private void configureFlightRecorderSession() {
-    var user = new User();
-    user.setId(initializeParams.flightRecorderSessionId().toString());
-    Sentry.configureScope(ScopeType.GLOBAL, scope -> scope.setUser(user));
   }
 
   private static String getDsn() {
@@ -161,9 +136,6 @@ public class MonitoringService {
       var sampleRate = TRACES_SAMPLE_RATE_DEFAULT;
       if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
         sampleRate = TRACES_SAMPLE_RATE_DOGFOOD_DEFAULT;
-      }
-      if (initializeParams.flightRecorderEnabled()) {
-        sampleRate = TRACES_SAMPLE_RATE_FLIGHT_RECORDER;
       }
       LOG.debug("Using default trace sample rate: {}", sampleRate);
       return sampleRate;
