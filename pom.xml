@@ -71,7 +71,7 @@
     <kotlin.version>1.9.21</kotlin.version>
     <lsp4j.version>0.22.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <logback.version>1.5.19</logback.version>
+    <logback.version>1.5.25</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.7</system.stubs.version>
 
