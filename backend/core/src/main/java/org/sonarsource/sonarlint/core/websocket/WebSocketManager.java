@@ -85,7 +85,10 @@ public class WebSocketManager {
     }
   }
 
-  public void createConnectionIfNeeded(String connectionId) {
+  /**
+   * @return true if the connection was or has been opened, else false
+   */
+  public boolean createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (!hasOpenConnection()) {
       try {
@@ -95,14 +98,17 @@ public class WebSocketManager {
         this.connectionIdUsedToCreateConnection = connectionId;
       } catch (Exception e) {
         LOG.error("Error while creating WebSocket connection", e);
+        return false;
       }
     }
+    return true;
   }
 
   public void reopenConnection(String connectionId, String reason) {
     closeSocket(reason);
-    createConnectionIfNeeded(connectionId);
-    resubscribeAll();
+    if (createConnectionIfNeeded(connectionId)) {
+      resubscribeAll();
+    }
   }
 
   protected void reopenConnectionOnClose() {
@@ -122,7 +128,9 @@ public class WebSocketManager {
   }
 
   public void subscribe(String configScopeId, Binding binding) {
-    this.createConnectionIfNeeded(binding.connectionId());
+    if (!createConnectionIfNeeded(binding.connectionId())) {
+      return;
+    }
     var projectKey = binding.sonarProjectKey();
     if (subscribedProjectKeysByConfigScopes.containsKey(configScopeId) && !subscribedProjectKeysByConfigScopes.get(configScopeId).equals(projectKey)) {
       this.forget(configScopeId);
@@ -153,13 +161,9 @@ public class WebSocketManager {
 
   public void forget(String configScopeId) {
     var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
-    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey) && sonarCloudWebSocket != null) {
+    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey) && hasOpenConnection()) {
       sonarCloudWebSocket.unsubscribe(projectKey);
     }
-  }
-
-  public SonarCloudWebSocket getSonarCloudWebSocket() {
-    return sonarCloudWebSocket;
   }
 
   public Map<String, String> getSubscribedProjectKeysByConfigScopes() {
