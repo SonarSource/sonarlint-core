@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -41,7 +42,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -62,17 +62,16 @@ public class WebSocketService {
   private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-websocket-subscriber");
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, InitializeParams params, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
+    SonarQubeClientManager sonarQubeClientManager, InitializeParams params, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     ApplicationEventPublisher eventPublisher) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.shouldEnableWebSockets = params.getBackendCapabilities().contains(SERVER_SENT_EVENTS);
     this.webSocketsByRegion = Map.of(
       SonarCloudRegion.US,
-      new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),
+      new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),
       SonarCloudRegion.EU,
-      new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.EU))
-    );
+      new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.EU)));
   }
 
   @EventListener

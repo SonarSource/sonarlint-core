@@ -361,6 +361,23 @@ class WebSocketMediumTests {
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServerEU.getConnections()).isEmpty());
     }
+
+    @SonarLintTest
+    void should_not_subscribe_if_connection_is_invalid(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
+        // return an invalid token
+        .withToken("connectionId", null)
+        .build();
+      var backend = newBackendWithWebSockets(harness)
+        // start with disabled notifications
+        .withSonarCloudConnection("connectionId", "organizationKey", true, null)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .start(client);
+
+      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "organizationKey", SonarCloudRegion.EU, false))));
+
+      await().during(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServerEU.getConnections()).isEmpty());
+    }
   }
 
   @Nested
