@@ -254,8 +254,7 @@ public class WebSocketService {
   }
 
   public boolean hasOpenConnection(SonarCloudRegion region) {
-    var sonarCloudWebSocket = webSocketsByRegion.get(region).getSonarCloudWebSocket();
-    return sonarCloudWebSocket != null && sonarCloudWebSocket.isOpen();
+    return webSocketsByRegion.get(region).hasOpenConnection();
   }
 
   @PreDestroy
