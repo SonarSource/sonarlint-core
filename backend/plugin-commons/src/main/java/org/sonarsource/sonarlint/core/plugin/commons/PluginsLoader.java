@@ -65,7 +65,10 @@ public class PluginsLoader {
       configuration.nodeCurrentVersion, configuration.enableDataflowBugDetection);
 
     var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
+    var skippedPlugins = getSkippedPlugins(pluginCheckResultByKeys);
+
     logPlugins(nonSkippedPlugins);
+    logSkippedPlugins(skippedPlugins);
 
     var instancesLoader = new PluginInstancesLoader();
     var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
@@ -97,10 +100,28 @@ public class PluginsLoader {
     }
   }
 
+  private static void logSkippedPlugins(Collection<PluginRequirementsCheckResult> skippedPlugins) {
+    if (skippedPlugins.isEmpty()) {
+      return;
+    }
+    LOG.debug("Skipped {} plugins:", skippedPlugins.size());
+    for (PluginRequirementsCheckResult result : skippedPlugins) {
+      var plugin = result.getPlugin();
+      var skipReason = result.getSkipReason().map(Object::toString).orElse("unknown reason");
+      LOG.debug("  * {} {} ({}) - {}", plugin.getName(), plugin.getVersion(), plugin.getKey(), skipReason);
+    }
+  }
+
   private static Collection<PluginInfo> getNonSkippedPlugins(Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
     return pluginCheckResultByKeys.values().stream()
       .filter(not(PluginRequirementsCheckResult::isSkipped))
       .map(PluginRequirementsCheckResult::getPlugin)
+      .toList();
+  }
+
+  private static Collection<PluginRequirementsCheckResult> getSkippedPlugins(Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
+    return pluginCheckResultByKeys.values().stream()
+      .filter(PluginRequirementsCheckResult::isSkipped)
       .toList();
   }
 }

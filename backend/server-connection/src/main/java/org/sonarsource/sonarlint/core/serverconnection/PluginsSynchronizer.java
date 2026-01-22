@@ -91,6 +91,7 @@ public class PluginsSynchronizer {
 
     var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
     var serverPlugins = serverApi.plugins().getInstalled(cancelMonitor);
+    LOG.debug("[SYNC] Found {} plugins on the server", serverPlugins.size());
     var downloadSkipReasonByServerPlugin = serverPlugins.stream()
       .collect(Collectors.toMap(Function.identity(), plugin -> determineIfShouldSkipDownload(plugin, storedPluginsByKey)));
 
@@ -103,14 +104,54 @@ public class PluginsSynchronizer {
       .map(Map.Entry::getKey)
       .toList();
 
+    logSynchronizationSummary(downloadSkipReasonByServerPlugin);
+
     if (pluginsToDownload.isEmpty()) {
+      LOG.debug("[SYNC] No plugins to download");
       storage.plugins().storeNoPlugins();
       storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
       return new PluginSynchronizationSummary(false);
     }
+    LOG.debug("[SYNC] {} plugins will be downloaded", pluginsToDownload.size());
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
     storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
     return new PluginSynchronizationSummary(true);
+  }
+
+  private static void logSynchronizationSummary(Map<ServerPlugin, Optional<DownloadSkipReason>> downloadSkipReasonByServerPlugin) {
+    var toDownload = new java.util.ArrayList<String>();
+    var embedded = new java.util.ArrayList<String>();
+    var upToDate = new java.util.ArrayList<String>();
+    var notSupported = new java.util.ArrayList<String>();
+    var languageDisabled = new java.util.ArrayList<String>();
+
+    for (var entry : downloadSkipReasonByServerPlugin.entrySet()) {
+      var pluginKey = entry.getKey().getKey();
+      var reason = entry.getValue();
+      if (reason.isEmpty()) {
+        toDownload.add(pluginKey);
+      } else {
+        switch (reason.get()) {
+          case EMBEDDED -> embedded.add(pluginKey);
+          case UP_TO_DATE -> upToDate.add(pluginKey);
+          case NOT_SONARLINT_SUPPORTED -> notSupported.add(pluginKey);
+          case LANGUAGE_NOT_ENABLED -> languageDisabled.add(pluginKey);
+        }
+      }
+    }
+
+    LOG.debug("[SYNC] Plugin synchronization summary: {} to download, {} embedded, {} up-to-date, {} not SonarLint-supported, {} language disabled",
+      toDownload.size(), embedded.size(), upToDate.size(), notSupported.size(), languageDisabled.size());
+
+    if (!toDownload.isEmpty()) {
+      LOG.debug("[SYNC] Plugins to download: {}", toDownload);
+    }
+    if (!notSupported.isEmpty()) {
+      LOG.debug("[SYNC] Plugins not supporting SonarLint (sonarLintSupported=false): {}", notSupported);
+    }
+    if (!languageDisabled.isEmpty()) {
+      LOG.debug("[SYNC] Plugins skipped due to disabled language: {}", languageDisabled);
+    }
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
@@ -153,7 +194,18 @@ public class PluginsSynchronizer {
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private static Set<String> getSonarSourceDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(SonarLanguage.values()).collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
+    var languagesByPluginKey = Arrays.stream(SonarLanguage.values())
+      .filter(lang -> {
+        if (lang == null) {
+          LOG.debug("Language is null");
+          return false;
+        }
+        if (lang.getPluginKey() == null) {
+          LOG.debug("Language plugin key is null: {}", lang.getSonarLanguageKey());
+        }
+        return lang.getPluginKey() != null;
+      })
+      .collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
     var disabledPluginKeys = languagesByPluginKey.entrySet().stream()
       .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
       .map(Map.Entry::getKey)

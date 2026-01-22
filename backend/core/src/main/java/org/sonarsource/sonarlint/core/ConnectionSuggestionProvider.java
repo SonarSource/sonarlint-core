@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -87,8 +88,14 @@ public class ConnectionSuggestionProvider {
   @EventListener
   public void configurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
     var listConfigScopeIds = event.getConfigScopeIds().stream()
-      .map(clientFs::getFiles)
-      .flatMap(List::stream)
+      .flatMap(configScopeId -> {
+        try {
+          return clientFs.getFiles(configScopeId).stream();
+        } catch (Exception e) {
+          // Config scope might not exist or have been removed
+          return Stream.empty();
+        }
+      })
       .filter(f -> ALL_BINDING_CLUE_FILENAMES.contains(f.getFileName()) || f.isSonarlintConfigurationFile())
       .map(ClientFile::getConfigScopeId)
       .collect(Collectors.toSet());
