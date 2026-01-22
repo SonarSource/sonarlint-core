@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
@@ -138,6 +139,10 @@ public class SonarQubeClientManager {
         },
         userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
+  }
+
+  public Optional<WebSocketClient> getWebSocketClient(String connectionId) {
+    return getValidClient(connectionId).isEmpty() ? Optional.empty() : Optional.of(awareHttpClientProvider.getWebSocketClient(connectionId));
   }
 
   private boolean checkIfBearerIsSupported(EndpointParams params) {
