@@ -71,13 +71,10 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - name: Skip releasability
-        run: |
-          echo "Skip releasability for testing"
-    #   - name: Check Releasability Status
-    #     uses: SonarSource/release-github-actions/check-releasability-status@v1
-    #     with:
-    #       branch: ${{ inputs.branch }}
+      - name: Check Releasability Status
+        uses: SonarSource/release-github-actions/check-releasability-status@v1
+        with:
+          branch: ${{ inputs.branch }}
 
   prepare-release:
     name: Prepare release
@@ -132,7 +129,7 @@ jobs:
     steps:
       - name: Create Jira Release Ticket
         id: create-ticket
-        uses: SonarSource/release-github-actions/create-jira-release-ticket@task/vt/SLCORE-1792-add-custom-field-to-jira-ticket-workflow
+        uses: SonarSource/release-github-actions/create-jira-release-ticket@d5df5405e903528483ed689b88c0a988f06cbd58
         with:
           project-name: ${{ inputs.project-name }}
           short-description: ${{ inputs.short-description }}
