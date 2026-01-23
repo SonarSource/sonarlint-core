@@ -1,32 +1,16 @@
 name: Automate release
 
-env:
-  JIRA_PROJECT_KEY: ${{ inputs.jira-project-key }}
-  USE_JIRA_SANDBOX: ${{ inputs.is-test-run }}
-
 on:
   workflow_dispatch:
     inputs:
-      new-version:
-        description: "New version to release"
-        required: true
-        type: string
       short-description:
         description: 'A short description for the release ticket'
         required: true
         type: string
       branch:
-        description: 'The branch from which to check the releasability status.'
+        description: 'The branch from which to release.'
         required: false
         default: 'master'
-        type: string
-      jira-project-key:
-        description: "Jira project key"
-        required: true
-        type: string
-      project-name:
-        description: "Project name"
-        required: true
         type: string
       pm-email:
         description: "Product manager email"
@@ -34,220 +18,66 @@ on:
         type: string
       is-test-run:
         description: "For testing: use Jira sandbox and create draft releases in GitHub"
-        required: false
+        required: true
         type: boolean
-        default: true
-      release-notes:
-        description: "Release notes"
-        required: false
-        type: string
+        default: false
       documentation-status:
         description: "Status of the documentation field for Jira Release"
         required: false
         default: 'N/A'
         type: string
-
-    # outputs:
-    #   new-version:
-    #     description: "New version to release"
-    #     value: ${{ jobs.release-in-jira.outputs.new-version }}
+      lock-branch:
+        description: "If you want to lock given branch for the duration of the release"
+        default: true
+        type: boolean
 
 jobs:
-  # lock-branch:
-  #   name: Lock ${{ inputs.branch }} branch
-  #   uses: ./.github/workflows/ToggleLockBranch.yml
-  #   permissions:
-  #     id-token: write
-  #   with:
-  #     branch: ${{ inputs.branch }}
+  lock-branch:
+    name: Lock ${{ inputs.branch }} branch
+    uses: ./.github/workflows/ToggleLockBranch.yml
+    if: ${{ inputs.lock-branch }}
+    permissions:
+      id-token: write
+    with:
+      branch: ${{ inputs.branch }}
 
-  pre-release-checks:
-    name: Pre-release checks
-    runs-on: ubuntu-latest
-    # needs: lock-branch
+  release:
+    name: Release
+    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@v1
+    if: always() && !failure() && !cancelled()
     permissions:
       statuses: read
-      contents: write
-      pull-requests: write
-      id-token: write
-    steps:
-      - name: Skip releasability
-        run: |
-          echo "Skip releasability for testing"
-    #   - name: Check Releasability Status
-    #     uses: SonarSource/release-github-actions/check-releasability-status@v1
-    #     with:
-    #       branch: ${{ inputs.branch }}
-
-  prepare-release:
-    name: Prepare release
-    runs-on: ubuntu-latest
-    needs: pre-release-checks
-    permissions:
-      statuses: read
-      contents: read
-      id-token: write
-    outputs:
-      release-version: ${{ steps.get-release-version.outputs.release-version }}
-      jira-version-name: ${{ steps.get-jira-version.outputs.jira-version-name }}
-      jira-release-url: ${{ steps.get-jira-release-notes.outputs.jira-release-url }}
-      due-date: ${{ steps.calculate-due-date.outputs.due-date }}
-    steps:
-        # Full version (with build number)
-      - name: Get Release Version
-        id: get-release-version
-        uses: SonarSource/release-github-actions/get-release-version@v1
-        with:
-          branch: ${{ inputs.branch }}
-
-        # Short version
-      - name: Get Jira Version
-        id: get-jira-version
-        uses: SonarSource/release-github-actions/get-jira-version@v1
-
-        # We need only link from here 
-      - name: Get Jira Release Notes
-        id: get-jira-release-notes
-        uses: SonarSource/release-github-actions/get-jira-release-notes@v1
-      
-        # Due date value
-      - name: Calculate due date
-        id: calculate-due-date
-        run: |
-          DUE_DATE=$(date -d "+ 2 days" +"%Y-%m-%d")
-          echo "Setting due date to 2 days from now: $DUE_DATE"
-          echo "due-date=$DUE_DATE" >> $GITHUB_OUTPUT
-
-  create-release-ticket:
-    name: Create release ticket
-    runs-on: ubuntu-latest
-    needs: prepare-release
-    permissions:
-      statuses: read
-      contents: read
-      id-token: write
-    outputs:
-      release-ticket-key: ${{ steps.create-ticket.outputs.release-ticket-key }}
-      release-ticket-url: ${{ steps.create-ticket.outputs.release-ticket-url }}
-    steps:
-      - name: Create Jira Release Ticket
-        id: create-ticket
-        uses: SonarSource/release-github-actions/create-jira-release-ticket@task/vt/SLCORE-1792-add-custom-field-to-jira-ticket-workflow
-        with:
-          project-name: ${{ inputs.project-name }}
-          short-description: ${{ inputs.short-description }}
-          documentation-status: ${{ inputs.documentation-status }}
-          due-date: ${{ needs.prepare-release.outputs.due-date }}
-          jira-release-url: ${{ needs.prepare-release.outputs.jira-release-url }}
-          start-progress: true
-          version: ${{ needs.prepare-release.outputs.release-version }}
-
-  publish-github-release:
-    name: Publish github release
-    runs-on: ubuntu-latest
-    needs: [ prepare-release, create-release-ticket ]
-    permissions:
       id-token: write
       contents: write
       actions: write
-    outputs:
-      github-release-url: ${{ steps.publish-github-release.outputs.release-url }}
-    steps:
-      - name: Publish GitHub Release
-        id: publish-github-release
-        uses: SonarSource/release-github-actions/publish-github-release@v1
-        with:
-          release-version: ${{ needs.prepare-release.outputs.release-version }}
-          release-notes: ${{ inputs.release-notes != '' && inputs.release-notes || format('For full release notes, see [JIRA]({0})', needs.prepare-release.outputs.jira-release-url) }}
-          draft: ${{ inputs.is-test-run }}
-          branch: ${{ inputs.branch }}
+      pull-requests: write
+    needs: 
+      - lock-branch
+    with:
+      jira-project-key: "SLCORE"
+      project-name: "SonarLint Core"
+      pm-email: ${{ inputs.pm-email }}
+      short-description: ${{ inputs.short-description }}
+      is-test-run: ${{ inputs.is-test-run }}
+      branch: ${{ inputs.branch }}
+      documentation-status: ${{ inputs.documentation-status }}
+      with-optional-checks: true
 
-  release-in-jira:
-    name: Release in Jira
-    runs-on: ubuntu-latest
-    needs: [ prepare-release, publish-github-release, create-release-ticket ]
+  unlock-branch:
+    name: Unlock ${{ inputs.branch }} branch
+    uses: ./.github/workflows/ToggleLockBranch.yml
+    needs: release
+    if: ${{ inputs.lock-branch }}
     permissions:
-      statuses: read
-      contents: read
       id-token: write
-    outputs:
-      new-version: ${{ steps.create-jira-version.outputs.jira-new-version-name }}
-    steps:
-      - name: Release in Jira
-        uses: SonarSource/release-github-actions/release-jira-version@v1
-        with:
-          jira-version-name: ${{ needs.prepare-release.outputs.jira-version-name }}
-
-      - name: Create new release in jira
-        id: create-jira-version
-        uses: SonarSource/release-github-actions/create-jira-version@v1
-        with:
-          jira-version-name: ${{ needs.prepare-release.outputs.jira-version-name }}
-          jira-new-version-name: ${{ inputs.new-version }}
-
-      - name: Move release ticket to Technical release Done
-        uses: SonarSource/release-github-actions/update-release-ticket-status@v1
-        with:
-          release-ticket-key: ${{ needs.create-release-ticket.outputs.release-ticket-key }}
-          status: "Technical Release Done"
-          assignee: ${{ inputs.pm-email }} # TODO take it from vault
-
-  summarize_release:
-    name: Release
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [ pre-release-checks, prepare-release, publish-github-release, create-release-ticket, release-in-jira ]
-    steps:
-      - name: Post Summary to Workflow
-        run: |
-          ALL_SUCCESS=$([[ "${{ needs.pre-release-checks.result }}" == "success" && \
-                          "${{ needs.prepare-release.result }}" == "success" && \
-                          "${{ needs.publish-github-release.result }}" == "success" && \
-                          "${{ needs.create-release-ticket.result }}" == "success" && \
-                          "${{ needs.release-in-jira.result }}" == "success" ]] && echo "true" || echo "false")
-          
-          if [[ "$ALL_SUCCESS" == "true" ]]; then
-            echo "### 🎉🚀 Congratulations! Release Successful! 🚀🎉" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Summary of the release:**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ❌💥 Release Failed! 💥❌" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Summary of the failed release:**" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          echo "- **Released Version:** ${{ needs.prepare-release.outputs.release-version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **New Version:** ${{ needs.release-in-jira.outputs.new-version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Jira Release URL:** ${{ needs.prepare-release.outputs.jira-release-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release Ticket URL:** ${{ needs.create-release-ticket.outputs.release-ticket-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **GitHub Release URL:** ${{ needs.publish-github-release.outputs.github-release-url }}" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "$ALL_SUCCESS" == "true" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "PS: Don't forget to review and merge the bump version!" >> $GITHUB_STEP_SUMMARY
-            echo "For more information please check the release instructions at:" >> $GITHUB_STEP_SUMMARY
-            echo "https://xtranet-sonarsource.atlassian.net/wiki/spaces/CodeRemedi/pages/3464134704/Release+processes" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "For fixes to common issues and other useful information please check the release instructions at:" >> $GITHUB_STEP_SUMMARY
-            echo "https://xtranet-sonarsource.atlassian.net/wiki/spaces/CodeRemedi/pages/3464134704/Release+processes" >> $GITHUB_STEP_SUMMARY
-          fi
-
-  # unlock-branch:
-  #   name: Unlock ${{ inputs.branch }} branch
-  #   uses: ./.github/workflows/ToggleLockBranch.yml
-  #   needs: summarize_release
-  #   permissions:
-  #     id-token: write
-  #   with:
-  #     branch: ${{ inputs.branch }}
+    with:
+      branch: ${{ inputs.branch }}
 
   bump-version:
     name: Create a PR to bump version
     runs-on: github-ubuntu-latest-s
-    needs:  
-      - summarize_release
-      # - unlock-branch 
+    needs:
+      - release
     permissions:
       contents: write # write for peter-evans/create-pull-request, read for actions/checkout
       pull-requests: write # write for peter-evans/create-pull-request
@@ -255,7 +85,7 @@ jobs:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: bump-version
         env: 
-          NEW_VERSION: ${{ inputs.new-version }}
+          NEW_VERSION: ${{ needs.release.outputs.new-version }}
         run: |
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$NEW_VERSION-SNAPSHOT"
       - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7
