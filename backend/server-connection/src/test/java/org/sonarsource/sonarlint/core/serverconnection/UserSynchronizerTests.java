@@ -64,7 +64,7 @@ class UserSynchronizerTests {
         "login": "obiwan.kenobi"
       }""");
 
-    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
+    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClientWithoutAuth());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
     var storedUserId = storage.user().read();
@@ -82,7 +82,7 @@ class UserSynchronizerTests {
         "login": "obiwan.kenobi"
       }""");
 
-    var serverApi = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient());
+    var serverApi = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
     var storedUserId = storage.user().read();
@@ -95,7 +95,7 @@ class UserSynchronizerTests {
   void it_should_not_store_null_user_id() {
     mockServer.addStringResponse("/api/users/current", "{}");
 
-    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
+    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClientWithoutAuth());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
     var storedUserId = storage.user().read();
@@ -111,7 +111,7 @@ class UserSynchronizerTests {
         "login": "test.user"
       }""");
 
-    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClient());
+    var serverApi = new ServerApi(mockServer.endpointParams("orgKey"), HttpClientProvider.forTesting().getHttpClientWithoutAuth());
     synchronizer.synchronize(serverApi, new SonarLintCancelMonitor());
 
     var connectionPath = tmpDir.resolve("636f6e6e656374696f6e4964");

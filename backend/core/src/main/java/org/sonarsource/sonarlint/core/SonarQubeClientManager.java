@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.connection.SonarQubeClient;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -41,7 +40,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -52,16 +55,14 @@ public class SonarQubeClientManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
   private final HttpClientProvider httpClientProvider;
   private final SonarLintRpcClient client;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
-  private final Map<String, SonarQubeClient> clientsByConnectionId = new ConcurrentHashMap<>();
+  private final Map<String, Optional<SonarQubeClient>> clientsByConnectionId = new ConcurrentHashMap<>();
 
-  public SonarQubeClientManager(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider,
-    HttpClientProvider httpClientProvider, SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
+  public SonarQubeClientManager(ConnectionConfigurationRepository connectionRepository, HttpClientProvider httpClientProvider,
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
     this.connectionRepository = connectionRepository;
-    this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
     this.client = client;
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
@@ -70,10 +71,9 @@ public class SonarQubeClientManager {
   /**
    * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
    */
-  public SonarQubeClient getClientOrThrow(String connectionId) {
-    return clientsByConnectionId.computeIfAbsent(connectionId, connId ->
-      Optional.ofNullable(getSonarQubeClient(connId))
-        .orElseThrow(() -> new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId))));
+  public SonarQubeClient getValidClientOrThrow(String connectionId) {
+    return clientsByConnectionId.computeIfAbsent(connectionId, this::createSonarQubeClient)
+      .orElseThrow(() -> new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is not valid", connectionId)));
   }
 
   public void withActiveClient(String connectionId, Consumer<ServerApi> serverApiConsumer) {
@@ -89,21 +89,27 @@ public class SonarQubeClientManager {
   }
 
   private Optional<SonarQubeClient> getValidClient(String connectionId) {
-    return Optional.ofNullable(clientsByConnectionId.computeIfAbsent(connectionId, this::getSonarQubeClient))
+    return clientsByConnectionId.computeIfAbsent(connectionId, this::createSonarQubeClient)
       .filter(connection -> isConnectionActive(connectionId, connection));
   }
 
-  @Nullable
-  private SonarQubeClient getSonarQubeClient(String connectionId) {
+  private Optional<SonarQubeClient> createSonarQubeClient(String connectionId) {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection == null) {
       LOG.debug("Connection '{}' is gone", connectionId);
-      return null;
+      return Optional.empty();
+    }
+    var credentials = getValidCredentialsFromClient(connectionId);
+    if (credentials.isEmpty()) {
+      client.invalidToken(new InvalidTokenParams(connectionId));
+      return Optional.empty();
     }
     var endpointParams = connection.getEndpointParams();
     var isBearerSupported = checkIfBearerIsSupported(endpointParams);
-    var serverApi = getServerApi(connectionId, endpointParams, isBearerSupported);
-    return new SonarQubeClient(connectionId, serverApi, client);
+    var httpClient = credentials.get().map(
+      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), isBearerSupported),
+      userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+    return Optional.of(new SonarQubeClient(connectionId, new ServerApi(endpointParams, httpClient), credentials.get(), client));
   }
 
   private static boolean isConnectionActive(String connectionId, SonarQubeClient connection) {
@@ -112,15 +118,6 @@ public class SonarQubeClientManager {
       LOG.debug("Connection '{}' is invalid", connectionId);
     }
     return isValid;
-  }
-
-  @Nullable
-  private ServerApi getServerApi(String connectionId, EndpointParams endpointParams, boolean isBearerSupported) {
-    try {
-      return new ServerApi(endpointParams, awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported));
-    } catch (IllegalStateException e) {
-      return null;
-    }
   }
 
   public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
@@ -141,20 +138,65 @@ public class SonarQubeClientManager {
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
   }
 
-  public Optional<WebSocketClient> getWebSocketClient(String connectionId) {
-    return getValidClient(connectionId).isEmpty() ? Optional.empty() : Optional.of(awareHttpClientProvider.getWebSocketClient(connectionId));
+  public Optional<WebSocketClient> getValidWebSocketClient(String connectionId) {
+    return getValidClient(connectionId)
+      .map(validClient -> {
+        var credentials = validClient.getCredentials();
+        if (credentials.isRight()) {
+          // We are normally only supporting tokens for SonarCloud connections
+          throw new IllegalStateException("Expected token for connection " + connectionId);
+        }
+        return httpClientProvider.getWebSocketClient(credentials.getLeft().getToken());
+      });
   }
 
   private boolean checkIfBearerIsSupported(EndpointParams params) {
     if (params.isSonarCloud()) {
       return true;
     }
-    var httpClient = awareHttpClientProvider.getHttpClient();
     var cancelMonitor = new SonarLintCancelMonitor();
-    var serverApi = new ServerApi(params, httpClient);
+    var serverApi = new ServerApi(params, httpClientProvider.getHttpClientWithoutAuth());
     var status = serverApi.system().getStatus(cancelMonitor);
     var serverChecker = new ServerVersionAndStatusChecker(serverApi);
     return serverChecker.isSupportingBearer(status);
+  }
+
+  private Optional<Either<TokenDto, UsernamePasswordDto>> getValidCredentialsFromClient(String connectionId) {
+    var response = client.getCredentials(new GetCredentialsParams(connectionId)).join();
+    var credentials = response.getCredentials();
+    return validateCredentials(connectionId, credentials);
+  }
+
+  private static Optional<Either<TokenDto, UsernamePasswordDto>> validateCredentials(String connectionId, @Nullable Either<TokenDto, UsernamePasswordDto> credentials) {
+    if (credentials == null) {
+      LOG.error("No credentials for connection " + connectionId);
+      return Optional.empty();
+    }
+    if (credentials.isLeft()) {
+      if (isNullOrEmpty(credentials.getLeft().getToken())) {
+        LOG.error("No token for connection " + connectionId);
+        return Optional.empty();
+      }
+      return Optional.of(credentials);
+    }
+    var right = credentials.getRight();
+    if (right == null) {
+      LOG.error("No username/password for connection " + connectionId);
+      return Optional.empty();
+    }
+    if (isNullOrEmpty(right.getUsername())) {
+      LOG.error("No username for connection " + connectionId);
+      return Optional.empty();
+    }
+    if (isNullOrEmpty(right.getPassword())) {
+      LOG.error("No password for connection " + connectionId);
+      return Optional.empty();
+    }
+    return Optional.of(credentials);
+  }
+
+  private static boolean isNullOrEmpty(@Nullable String s) {
+    return s == null || s.trim().isEmpty();
   }
 
   @EventListener

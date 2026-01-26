@@ -55,7 +55,7 @@ class HotspotApiTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()).hotspot();
+    underTest = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()).hotspot();
   }
 
   @Test

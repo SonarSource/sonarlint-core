@@ -26,6 +26,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
@@ -33,21 +36,26 @@ public class SonarQubeClient {
 
   private static final Period WRONG_TOKEN_NOTIFICATION_INTERVAL = Period.ofDays(1);
   private final String connectionId;
-  @Nullable
   private final ServerApi serverApi;
+  private final Either<TokenDto, UsernamePasswordDto> credentials;
   private final SonarLintRpcClient client;
   private SonarQubeClientState state = SonarQubeClientState.ACTIVE;
   @Nullable
   private Instant lastNotificationTime;
 
-  public SonarQubeClient(String connectionId, @Nullable ServerApi serverApi, SonarLintRpcClient client) {
+  public SonarQubeClient(String connectionId, ServerApi serverApi, Either<TokenDto, UsernamePasswordDto> credentials, SonarLintRpcClient client) {
     this.connectionId = connectionId;
     this.serverApi = serverApi;
+    this.credentials = credentials;
     this.client = client;
   }
 
+  public Either<TokenDto, UsernamePasswordDto> getCredentials() {
+    return credentials;
+  }
+
   public boolean isActive() {
-    return serverApi != null && state == SonarQubeClientState.ACTIVE;
+    return state == SonarQubeClientState.ACTIVE;
   }
 
   public <T> T withClientApiAndReturn(Function<ServerApi, T> serverApiConsumer) {

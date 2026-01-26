@@ -52,7 +52,7 @@ class HttpClientProviderTests {
   void it_should_use_user_agent() {
     var underTest = HttpClientProvider.forTesting();
 
-    underTest.getHttpClient().get(sonarqubeMock.url("/test"));
+    underTest.getHttpClientWithoutAuth().get(sonarqubeMock.url("/test"));
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/test"))
       .withHeader("User-Agent", equalTo("SonarLint tests")));
@@ -66,7 +66,7 @@ class HttpClientProviderTests {
 
     var underTest = HttpClientProvider.forTesting();
 
-    var future = underTest.getHttpClient().getAsync(sonarqubeMock.url("/delayed"));
+    var future = underTest.getHttpClientWithoutAuth().getAsync(sonarqubeMock.url("/delayed"));
     assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
     assertThat(future.cancel(true)).isTrue();
     assertThat(future).isCancelled();
@@ -82,7 +82,7 @@ class HttpClientProviderTests {
         .withStatus(HttpStatus.SC_MOVED_PERMANENTLY)
         .withHeader("Location", sonarqubeMock.url("/afterMove"))));
 
-    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/permanentMoved"), "text/html", "Foo");
+    HttpClientProvider.forTesting().getHttpClientWithoutAuth().post(sonarqubeMock.url("/permanentMoved"), "text/html", "Foo");
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
   }
@@ -95,7 +95,7 @@ class HttpClientProviderTests {
         .withStatus(HttpStatus.SC_MOVED_TEMPORARILY)
         .withHeader("Location", sonarqubeMock.url("/afterMove"))));
 
-    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/tempMoved"), "text/html", "Foo");
+    HttpClientProvider.forTesting().getHttpClientWithoutAuth().post(sonarqubeMock.url("/tempMoved"), "text/html", "Foo");
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
   }
@@ -108,7 +108,7 @@ class HttpClientProviderTests {
         .withStatus(HttpStatus.SC_SEE_OTHER)
         .withHeader("Location", sonarqubeMock.url("/afterMove"))));
 
-    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/seeOther"), "text/html", "Foo");
+    HttpClientProvider.forTesting().getHttpClientWithoutAuth().post(sonarqubeMock.url("/seeOther"), "text/html", "Foo");
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
   }
@@ -119,7 +119,7 @@ class HttpClientProviderTests {
 
     var underTest = HttpClientProvider.forTesting();
 
-    underTest.getHttpClient().post(sonarqubeMock.url("/error"), ContentType.TEXT_PLAIN.getMimeType(), "body");
+    underTest.getHttpClientWithoutAuth().post(sonarqubeMock.url("/error"), ContentType.TEXT_PLAIN.getMimeType(), "body");
 
     sonarqubeMock.verify(1, postRequestedFor(urlEqualTo("/error"))
       .withHeader("User-Agent", equalTo("SonarLint tests")));

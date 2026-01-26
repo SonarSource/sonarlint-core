@@ -47,7 +47,7 @@ class OrganizationApiTests {
 
   @Test
   void testListUserOrganizationWithMoreThan20Pages() {
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClientWithoutAuth()));
 
     for (var i = 0; i < 21; i++) {
       mockOrganizationsPage(i + 1, 10500);
@@ -68,7 +68,7 @@ class OrganizationApiTests {
         .build())
       .build());
     mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=2", SearchWsResponse.newBuilder().build());
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()));
 
     var organization = underTest.searchOrganization("org:key", new SonarLintCancelMonitor());
 
@@ -87,7 +87,7 @@ class OrganizationApiTests {
         "uuidV4": "f9cb252d-9f81-4e40-8b77-99fa13190b74"
       }]
       """);
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("org:key"), HttpClientProvider.forTesting().getHttpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("org:key"), HttpClientProvider.forTesting().getHttpClientWithoutAuth()));
 
     var organization = underTest.getOrganizationByKey(new SonarLintCancelMonitor());
 
@@ -102,7 +102,7 @@ class OrganizationApiTests {
         "id": "orgId",
         "uuidV4": "f9cb252d-
       """);
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("org:key"), HttpClientProvider.forTesting().getHttpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("org:key"), HttpClientProvider.forTesting().getHttpClientWithoutAuth()));
 
     var throwable = catchThrowable(() -> underTest.getOrganizationByKey(new SonarLintCancelMonitor()));
 

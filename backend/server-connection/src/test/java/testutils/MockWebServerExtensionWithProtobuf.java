@@ -71,7 +71,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   }
 
   public ServerApiHelper serverApiHelper(@Nullable String organizationKey) {
-    return new ServerApiHelper(endpointParams(organizationKey), HttpClientProvider.forTesting().getHttpClient());
+    return new ServerApiHelper(endpointParams(organizationKey), HttpClientProvider.forTesting().getHttpClientWithoutAuth());
   }
 
   public EndpointParams endpointParams() {

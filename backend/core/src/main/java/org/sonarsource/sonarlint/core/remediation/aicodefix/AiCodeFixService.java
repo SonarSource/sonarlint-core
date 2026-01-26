@@ -99,7 +99,7 @@ public class AiCodeFixService {
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
     var bindingWithOrg = ensureBound(configurationScopeId);
-    var connection = sonarQubeClientManager.getClientOrThrow(bindingWithOrg.binding().connectionId());
+    var connection = sonarQubeClientManager.getValidClientOrThrow(bindingWithOrg.binding().connectionId());
     var responseBodyDto = connection.withClientApiAndReturn(serverApi -> {
       var issueOptional = previouslyRaisedFindingsRepository.findRaisedIssueById(issueId);
       if (issueOptional.isPresent()) {

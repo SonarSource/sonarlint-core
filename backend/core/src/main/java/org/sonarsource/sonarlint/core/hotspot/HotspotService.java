@@ -123,7 +123,7 @@ public class HotspotService {
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
-    var r = sonarQubeClientManager.getClientOrThrow(connectionId)
+    var r = sonarQubeClientManager.getValidClientOrThrow(connectionId)
       .withClientApiAndReturn(serverApi -> serverApi.hotspot().show(hotspotKey, cancelMonitor));
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
