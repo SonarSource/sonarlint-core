@@ -68,7 +68,7 @@ class ServerInfoSynchronizerTests {
     Files.createDirectory(connectionPath);
     ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()),
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()),
       new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
@@ -89,7 +89,7 @@ class ServerInfoSynchronizerTests {
         .setValue("true"))
       .build());
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()),
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()),
       new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
@@ -106,7 +106,7 @@ class ServerInfoSynchronizerTests {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"DOWN\"}");
 
     var throwable = catchThrowable(
-      () -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor()));
+      () -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()), new SonarLintCancelMonitor()));
 
     assertThat(throwable)
       .isInstanceOf(IllegalStateException.class)

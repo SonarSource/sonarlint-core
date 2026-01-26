@@ -72,7 +72,6 @@ import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
-import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpConfig;
 import org.sonarsource.sonarlint.core.http.ssl.CertificateStore;
@@ -142,7 +141,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AskClientCertificatePredicate.class,
   ClientProxySelector.class,
   ClientProxyCredentialsProvider.class,
-  ConnectionAwareHttpClientProvider.class,
   ConfigurationService.class,
   ConfigurationRepository.class,
   RulesService.class,

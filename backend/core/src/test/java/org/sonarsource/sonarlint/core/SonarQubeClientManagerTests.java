@@ -28,18 +28,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,7 +55,6 @@ class SonarQubeClientManagerTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
-  private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
   private SonarLintRpcClient client;
   private SonarQubeClientManager underTest;
@@ -60,43 +62,43 @@ class SonarQubeClientManagerTests {
   @BeforeEach
   void setUp() {
     client = mock(SonarLintRpcClient.class);
-    underTest = new SonarQubeClientManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
-      SonarCloudActiveEnvironment.prod(), client);
+    when(client.getCredentials(any())).thenReturn(CompletableFuture.completedFuture(new GetCredentialsResponse(new TokenDto("token"))));
+    underTest = new SonarQubeClientManager(connectionRepository, httpClientProvider, SonarCloudActiveEnvironment.prod(), client);
   }
 
   @Test
-  void getClientOrThrow_for_sonarqube() {
+  void getValidClientOrThrow_for_sonarqube() {
     setupServerConnection("sqs1", "serverUrl");
 
-    var connection = underTest.getClientOrThrow("sqs1");
+    var connection = underTest.getValidClientOrThrow("sqs1");
 
     assertThat(connection.isActive()).isTrue();
   }
 
   @Test
-  void getClientOrThrow_for_sonarcloud() {
+  void getValidClientOrThrow_for_sonarcloud() {
     setupCloudConnection("sqc1", SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri());
 
-    var connection = underTest.getClientOrThrow("sqc1");
+    var connection = underTest.getValidClientOrThrow("sqc1");
 
     assertThat(connection.isActive()).isTrue();
   }
 
   @Test
-  void getClientOrThrow_for_sonarcloud_with_trailing_slash_notConnected() {
+  void getValidClientOrThrow_for_sonarcloud_with_trailing_slash_notConnected() {
     var uriWithSlash = URI.create(SonarCloudRegion.EU.getProductionUri() + "/");
     setupCloudConnection("sqc-with-slash", uriWithSlash, SonarCloudRegion.EU.getApiProductionUri());
 
-    var connection = underTest.getClientOrThrow("sqc-with-slash");
+    var connection = underTest.getValidClientOrThrow("sqc-with-slash");
 
     assertThat(connection.isActive()).isTrue();
   }
 
   @Test
-  void getClientOrThrow_should_throw_if_connection_doesnt_exists() {
-    var throwable = catchThrowable(() -> underTest.getClientOrThrow("sqc1"));
+  void getValidClientOrThrow_should_throw_if_connection_doesnt_exist() {
+    var throwable = catchThrowable(() -> underTest.getValidClientOrThrow("sqc1"));
 
-    assertThat(throwable.getMessage()).isEqualTo("Connection 'sqc1' is gone");
+    assertThat(throwable.getMessage()).isEqualTo("Connection 'sqc1' is not valid");
   }
 
   @Test
@@ -125,7 +127,9 @@ class SonarQubeClientManagerTests {
     setupServerConnection("sqs1", "serverUrl");
     var consumerExecuted = new AtomicBoolean(false);
 
-    underTest.withActiveClient("sqs1", api -> { throw new UnauthorizedException("401"); });
+    underTest.withActiveClient("sqs1", api -> {
+      throw new UnauthorizedException("401");
+    });
     underTest.withActiveClient("sqs1", api -> consumerExecuted.set(true));
 
     assertThat(consumerExecuted.get()).isFalse();
@@ -143,7 +147,7 @@ class SonarQubeClientManagerTests {
     underTest.withActiveClient("sqs1", api -> executionCount.incrementAndGet());
 
     assertThat(executionCount.get()).isEqualTo(3);
-    verify(awareHttpClientProvider, times(1)).getHttpClient("sqs1", false);
+    verify(httpClientProvider, times(1)).getHttpClientWithPreemptiveAuth("token", false);
   }
 
   @Test
@@ -166,7 +170,9 @@ class SonarQubeClientManagerTests {
   void withActiveClientAndReturn_should_return_empty_when_client_inactive() {
     setupServerConnection("sqs1", "serverUrl");
 
-    underTest.withActiveClient("sqs1", api -> { throw new UnauthorizedException("401"); });
+    underTest.withActiveClient("sqs1", api -> {
+      throw new UnauthorizedException("401");
+    });
 
     var result = underTest.withActiveClientAndReturn("sq1", api -> "test-result");
     assertThat(result).isEmpty();
@@ -200,26 +206,26 @@ class SonarQubeClientManagerTests {
   @Test
   void withActiveClient_should_not_execute_consumer_when_invalid_credentials() {
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     setupSuccessfulStatusResponse(httpClient, "serverUrl" + API_SYSTEM_STATUS);
     when(connectionRepository.getConnectionById("connectionId"))
       .thenReturn(new SonarQubeConnectionConfiguration("connectionId", "serverUrl", true));
-    when(awareHttpClientProvider.getHttpClient("connectionId", false))
-      .thenThrow(new IllegalStateException("No token was provided"));
+    when(client.getCredentials(any())).thenReturn(CompletableFuture.completedFuture(new GetCredentialsResponse(new TokenDto(null))));
 
     var consumerExecuted = new AtomicBoolean(false);
 
     underTest.withActiveClient("connectionId", api -> consumerExecuted.set(true));
 
     assertThat(consumerExecuted.get()).isFalse();
+    verify(client).invalidToken(refEq(new InvalidTokenParams("connectionId")));
   }
 
   private void setupServerConnection(String connectionId, String serverUrl) {
     when(connectionRepository.getConnectionById(connectionId))
       .thenReturn(new SonarQubeConnectionConfiguration(connectionId, serverUrl, true));
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient(connectionId, false)).thenReturn(httpClient);
-    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", false)).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     setupSuccessfulStatusResponse(httpClient, serverUrl + API_SYSTEM_STATUS);
   }
 
@@ -227,8 +233,8 @@ class SonarQubeClientManagerTests {
     when(connectionRepository.getConnectionById(connectionId))
       .thenReturn(new SonarCloudConnectionConfiguration(prodUri, apiUri, connectionId, "organizationKey", SonarCloudRegion.EU, false));
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient(connectionId, true)).thenReturn(httpClient);
-    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", true)).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     setupSuccessfulStatusResponse(httpClient, API_SYSTEM_STATUS);
   }
 

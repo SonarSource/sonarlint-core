@@ -90,7 +90,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
-      .withMessage("Connection 'connectionId' is gone");
+      .withMessage("Connection 'connectionId' is not valid");
   }
 
   @SonarLintTest

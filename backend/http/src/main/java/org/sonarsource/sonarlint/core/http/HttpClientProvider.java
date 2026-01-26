@@ -147,7 +147,7 @@ public class HttpClientProvider {
     return requestConfig.build();
   }
 
-  public HttpClient getHttpClient() {
+  public HttpClient getHttpClientWithoutAuth() {
     return ApacheHttpClientAdapter.builder()
       .withInnerClient(sharedClient)
       .build();

@@ -66,7 +66,7 @@ public class TelemetryHttpClient {
     this.ideVersion = attributes.getIdeVersion();
     this.platform = SystemUtils.OS_NAME;
     this.architecture = SystemUtils.OS_ARCH;
-    this.client = httpClientProvider.getHttpClient();
+    this.client = httpClientProvider.getHttpClientWithoutAuth();
     this.endpoint = telemetryEndpoint;
     this.additionalAttributes = attributes.getAdditionalAttributes();
   }

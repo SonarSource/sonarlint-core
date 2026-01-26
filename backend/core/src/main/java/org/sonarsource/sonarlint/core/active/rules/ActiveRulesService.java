@@ -406,7 +406,7 @@ public class ActiveRulesService {
 
   private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.connectionId();
-    sonarQubeClientManager.getClientOrThrow(connectionId);
+    sonarQubeClientManager.getValidClientOrThrow(connectionId);
 
     var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
 
@@ -459,7 +459,7 @@ public class ActiveRulesService {
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
-    var serverConnection = sonarQubeClientManager.getClientOrThrow(connectionId);
+    var serverConnection = sonarQubeClientManager.getValidClientOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
       var templateRule = rulesRepository.getRule(connectionId, templateKey);
       if (templateRule.isEmpty()) {

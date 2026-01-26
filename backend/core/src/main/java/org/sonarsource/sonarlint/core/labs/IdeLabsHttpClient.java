@@ -31,7 +31,7 @@ public class IdeLabsHttpClient {
   private final Gson gson = new Gson();
 
   public IdeLabsHttpClient(HttpClientProvider httpClientProvider, @Qualifier("labsSubscriptionEndpoint") String labsSubscriptionEndpoint) {
-    this.httpClient = httpClientProvider.getHttpClient();
+    this.httpClient = httpClientProvider.getHttpClientWithoutAuth();
     this.labsSubscriptionEndpoint = labsSubscriptionEndpoint;
   }
 

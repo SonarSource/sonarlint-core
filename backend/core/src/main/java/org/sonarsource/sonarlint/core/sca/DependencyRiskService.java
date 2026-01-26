@@ -165,7 +165,7 @@ public class DependencyRiskService {
   public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,
     SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    var serverConnection = sonarQubeClientManager.getClientOrThrow(binding.connectionId());
+    var serverConnection = sonarQubeClientManager.getValidClientOrThrow(binding.connectionId());
     var projectServerIssueStore = storageService.binding(binding).findings();
     var branchName = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
 

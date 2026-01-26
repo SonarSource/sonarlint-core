@@ -140,4 +140,8 @@ public class ServerApi {
   public Optional<String> getOrganizationKey() {
     return helper.getOrganizationKey();
   }
+
+  public ServerApiHelper getHelper() {
+    return helper;
+  }
 }

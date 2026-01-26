@@ -153,7 +153,7 @@ class AuthenticationMediumTests {
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOf(ResponseErrorException.class)
-      .hasMessage("Internal error.");
+      .hasMessage("Connection 'connectionId' is not valid");
   }
 
   @SonarLintTest
@@ -175,7 +175,7 @@ class AuthenticationMediumTests {
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOf(ResponseErrorException.class)
-      .hasMessage("Internal error.");
+      .hasMessage("Connection 'connectionId' is not valid");
   }
 
   @SonarLintTest
@@ -197,7 +197,7 @@ class AuthenticationMediumTests {
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOf(ResponseErrorException.class)
-      .hasMessage("Internal error.");
+      .hasMessage("Connection 'connectionId' is not valid");
   }
 
   @SonarLintTest
@@ -219,7 +219,7 @@ class AuthenticationMediumTests {
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOf(ResponseErrorException.class)
-      .hasMessage("Internal error.");
+      .hasMessage("Connection 'connectionId' is not valid");
   }
 
   @SonarLintTest
@@ -241,7 +241,7 @@ class AuthenticationMediumTests {
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOf(ResponseErrorException.class)
-      .hasMessage("Internal error.");
+      .hasMessage("Connection 'connectionId' is not valid");
   }
 
   private void getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
