@@ -23,6 +23,7 @@ jobs:
           run-shadow-scans: true
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
+          scanner-java-opts: '-Xmx2g'
       - name: Run IRIS sync
         uses: SonarSource/unified-dogfooding-actions/run-iris@v1
         with:
