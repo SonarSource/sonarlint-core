@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 public class SystemApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -42,7 +43,7 @@ public class SystemApi {
           var status = new Gson().fromJson(responseStr, SystemStatus.class);
           return new ServerStatusInfo(status.id, status.status, status.version);
         } catch (Exception e) {
-          throw new IllegalStateException("Unable to parse server infos from: " + responseStr, e);
+          throw new UnexpectedBodyException(e);
         }
       },
       duration -> LOG.debug("Downloaded server infos in {}ms", duration));
