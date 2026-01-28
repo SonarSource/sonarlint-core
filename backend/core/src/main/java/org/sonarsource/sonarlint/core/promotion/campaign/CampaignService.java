@@ -125,17 +125,39 @@ public class CampaignService {
   }
 
   private void showFeedbackMessage() {
-    fileStorageManager.tryUpdateAtomically(storage ->
-      storage.campaigns()
-        .put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+    // Check if notification was already shown today before actually showing it
+    // This prevents duplicate notifications if multiple instances scheduled it
+    var shouldShow = tryMarkAsShownToday();
+    if (shouldShow) {
+      eventPublisher.publishEvent(new CampaignShownEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN));
+      var userChoice = client.showMessageRequest(new ShowMessageRequestParams(
+        MessageType.INFO,
+        "Enjoying SonarQube for IDE? We'd love to hear what you think.",
+        getFeedbackNotificationActions()
+      ));
+      userChoice.thenAccept(this::handleFeedbackResponse);
+    }
+  }
+
+  private synchronized boolean tryMarkAsShownToday() {
+    var campaigns = fileStorageManager.getStorage().campaigns();
+    var existingCampaign = campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN);
+
+    if (existingCampaign == null || !wasShownRecently(existingCampaign.lastNotificationShownOn())) {
+      fileStorageManager.tryUpdateAtomically(storage ->
+        storage.campaigns().put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
           new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "IGNORE")));
-    eventPublisher.publishEvent(new CampaignShownEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN));
-    var userChoice = client.showMessageRequest(new ShowMessageRequestParams(
-      MessageType.INFO,
-      "Enjoying SonarQube for IDE? We'd love to hear what you think.",
-      getFeedbackNotificationActions()
-    ));
-    userChoice.thenAccept(this::handleFeedbackResponse);
+      return true;
+    }
+
+    return false;
+  }
+
+  private static boolean wasShownRecently(LocalDate lastShown) {
+    var today = LocalDate.now();
+    var yesterday = today.minusDays(1);
+    // Consider "recently shown" if shown today or yesterday, this prevents midnight edge case where notification fires just after midnight
+    return lastShown.equals(today) || lastShown.equals(yesterday);
   }
 
   private static List<MessageActionItem> getFeedbackNotificationActions() {

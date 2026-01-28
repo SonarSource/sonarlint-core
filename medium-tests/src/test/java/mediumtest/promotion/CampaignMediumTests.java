@@ -370,6 +370,33 @@ class CampaignMediumTests {
     verify(client, never()).showMessageRequest(any(), any(), any());
   }
 
+  @SonarLintTest
+  void it_should_not_show_notification_multiple_times_when_multiple_backends_start_before_delay(SonarLintTestHarness harness) {
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "3");
+    var client = harness.newFakeClient().build();
+
+    baseBackend(harness).start(client);
+    baseBackend(harness).start(client);
+
+    await().atMost(5, TimeUnit.SECONDS)
+      .untilAsserted(() -> {
+        var campaignsFile = getCampaignsPath(DEFAULT_KEY);
+        assertThat(Files.exists(campaignsFile)).isTrue();
+      });
+
+    await().atMost(5, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client, times(1)).showMessageRequest(
+        eq(MessageType.INFO),
+        eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
+        any()));
+
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
+    assertThat(getCampaigns(campaignsFile))
+      .hasSize(1)
+      .containsKey(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN);
+  }
+
   private void verifyOpenUrlOnResponse(SonarLintTestHarness harness, String response, String productKey, String expectedUrl) throws MalformedURLException {
     saveTelemetryInstallTime(productKey, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient()
