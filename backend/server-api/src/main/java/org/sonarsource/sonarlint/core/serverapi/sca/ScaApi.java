@@ -80,16 +80,13 @@ public class ScaApi {
     var url = urlPrefix + "/sca/issues-releases/change-status";
 
     if (serverApiHelper.isSonarCloud()) {
-      serverApiHelper.apiPost(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+      serverApiHelper.apiPostJson(url, body, cancelMonitor);
     } else {
-      serverApiHelper.post(url, JSON_CONTENT_TYPE, body.toJson(), cancelMonitor);
+      serverApiHelper.postJson(url, body, cancelMonitor);
     }
   }
 
   private record ChangeStatusRequestBody(String issueReleaseKey, String transitionKey, @Nullable String comment) {
-    public String toJson() {
-      return new Gson().toJson(this);
-    }
   }
 
   public GetScaEnablementResponse isScaEnabled(SonarLintCancelMonitor cancelMonitor) {
@@ -97,8 +94,9 @@ public class ScaApi {
     if (organizationKey.isEmpty()) {
       return new GetScaEnablementResponse(false);
     }
-    try (var response = serverApiHelper.apiGet("/sca/feature-enabled?organization=" + UrlUtils.urlEncode(organizationKey.get()), cancelMonitor)) {
-      return new Gson().fromJson(new InputStreamReader(response.bodyAsStream(), StandardCharsets.UTF_8), GetScaEnablementResponse.class);
+    try {
+      return serverApiHelper.apiGetJson("/sca/feature-enabled?organization=" + UrlUtils.urlEncode(organizationKey.get()),
+        GetScaEnablementResponse.class, cancelMonitor);
     } catch (Exception e) {
       return new GetScaEnablementResponse(false);
     }

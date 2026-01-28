@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.projectbindings;
 
-import com.google.gson.Gson;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -41,17 +40,12 @@ public class ProjectBindingsApi {
 
     var path = "/dop-translation/project-bindings?url=" + encodedUrl;
 
-    try (var response = serverApiHelper.apiGet(path, cancelMonitor)) {
-      if (response.isSuccessful()) {
-        var responseBody = response.bodyAsString();
-        var dto = new Gson().fromJson(responseBody, SQCProjectBindingsResponseDto.class);
-        var bindings = dto.bindings();
+    try {
+      var dto = serverApiHelper.apiGetJson(path, SQCProjectBindingsResponseDto.class, cancelMonitor);
+      var bindings = dto.bindings();
 
-        if (!bindings.isEmpty()) {
-          return new SQCProjectBindingsResponse(bindings.get(0).projectId());
-        }
-      } else {
-        LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
+      if (!bindings.isEmpty()) {
+        return new SQCProjectBindingsResponse(bindings.get(0).projectId());
       }
     } catch (Exception e) {
       LOG.error("Error retrieving project bindings for URL: {}", url, e);
@@ -63,25 +57,11 @@ public class ProjectBindingsApi {
   @CheckForNull
   public SQSProjectBindingsResponse getSQSProjectBindings(String url, SonarLintCancelMonitor cancelMonitor) {
     var encodedUrl = UrlUtils.urlEncode(url);
-
-    var path = "/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl;
-
-    try (var response = serverApiHelper.get(path, cancelMonitor)) {
-      if (response.isSuccessful()) {
-        var responseBody = response.bodyAsString();
-        var dto = new Gson().fromJson(responseBody, SQSProjectBindingsResponseDto.class);
-        var bindings = dto.projectBindings();
-
-        if (!bindings.isEmpty()) {
-          return new SQSProjectBindingsResponse(dto.projectBindings().get(0).projectId(), dto.projectBindings().get(0).projectKey());
-        }
-      } else {
-        LOG.warn("Failed to retrieve project bindings for URL: {} (status: {})", url, response.code());
-      }
-    } catch (Exception e) {
-      LOG.error("Error retrieving project bindings for URL: {}", url, e);
+    var dto = serverApiHelper.getJson("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl, SQSProjectBindingsResponseDto.class, cancelMonitor);
+    var bindings = dto.projectBindings();
+    if (!bindings.isEmpty()) {
+      return new SQSProjectBindingsResponse(dto.projectBindings().get(0).projectId(), dto.projectBindings().get(0).projectKey());
     }
-
     return null;
   }
 }

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +26,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 
 public class OrganizationApi {
@@ -53,11 +51,12 @@ public class OrganizationApi {
 
   public GetOrganizationsResponseDto getOrganizationByKey(SonarLintCancelMonitor cancelMonitor) {
     var organizationKey = helper.getOrganizationKey().orElseThrow(() -> new IllegalArgumentException("Organizations are only supported for SonarQube Cloud"));
-    try (var response = helper.apiGet("/organizations/organizations?organizationKey=" + UrlUtils.urlEncode(organizationKey) + "&excludeEligibility=true", cancelMonitor)) {
-      return new Gson().fromJson(response.bodyAsString(), GetOrganizationsResponseDto[].class)[0];
+    try {
+      return helper.apiGetJson("/organizations/organizations?organizationKey=" + UrlUtils.urlEncode(organizationKey) + "&excludeEligibility=true",
+        GetOrganizationsResponseDto[].class, cancelMonitor)[0];
     } catch (Exception e) {
       LOG.error("Error while fetching the organization", e);
-      throw new UnexpectedBodyException(e);
+      throw e;
     }
   }
 

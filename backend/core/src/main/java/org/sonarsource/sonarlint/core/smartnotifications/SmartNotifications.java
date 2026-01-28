@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
+import org.sonarsource.sonarlint.core.serverapi.developers.SearchEventsResponseDto;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
@@ -111,10 +111,16 @@ public class SmartNotifications {
       .collect(Collectors.toMap(Function.identity(),
         p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
-    var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
+    List<SearchEventsResponseDto.Event> notifications;
+    try {
+      notifications = developersApi.searchEvents(projectKeysByLastEventPolling, cancelMonitor).events();
+    } catch (Exception e) {
+      logger.error("Failed to get notifications", e);
+      notifications = List.of();
+    }
 
     for (var n : notifications) {
-      var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
+      var scopeIds = boundScopesPerProjectKey.get(n.project()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
       var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
         n.category(), connectionId);
       client.showSmartNotification(smartNotification);
@@ -143,18 +149,6 @@ public class SmartNotifications {
   private static ZonedDateTime getLastNotificationTime(ZonedDateTime lastTime) {
     var oneDayAgo = ZonedDateTime.now().minusDays(1);
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
-  }
-
-  private static List<ServerNotification> retrieveServerNotifications(DevelopersApi developersApi,
-    Map<String, ZonedDateTime> projectKeysByLastEventPolling, SonarLintCancelMonitor cancelMonitor) {
-    return developersApi.getEvents(projectKeysByLastEventPolling, cancelMonitor)
-      .stream().map(e -> new ServerNotification(
-        e.getCategory(),
-        e.getMessage(),
-        e.getLink(),
-        e.getProjectKey(),
-        e.getTime()))
-      .toList();
   }
 
   @EventListener

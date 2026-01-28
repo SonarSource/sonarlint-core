@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.features;
 
-import com.google.gson.Gson;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 public class FeaturesApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -38,13 +36,12 @@ public class FeaturesApi {
   }
 
   public Set<Feature> list(SonarLintCancelMonitor cancelMonitor) {
-    try (var response = helper.rawGet("api/features/list", cancelMonitor)) {
-      var responseStr = response.bodyAsString();
-      var featureKeys = new Gson().fromJson(responseStr, String[].class);
+    try {
+      var featureKeys = helper.getJson("api/features/list", String[].class, cancelMonitor);
       return Arrays.stream(featureKeys).flatMap(key -> Feature.fromKey(key).stream()).collect(Collectors.toSet());
     } catch (Exception e) {
       LOG.error("Error while fetching the list of features", e);
-      throw new UnexpectedBodyException(e);
+      throw e;
     }
   }
 }

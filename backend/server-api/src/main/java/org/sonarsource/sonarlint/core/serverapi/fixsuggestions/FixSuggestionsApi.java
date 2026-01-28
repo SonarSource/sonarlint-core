@@ -19,16 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
-
-import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 
 public class FixSuggestionsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -40,36 +35,36 @@ public class FixSuggestionsApi {
   }
 
   public AiSuggestionResponseBodyDto getAiSuggestion(AiSuggestionRequestBodyDto dto, SonarLintCancelMonitor cancelMonitor) {
-    // avoid Gson replacing characters like < > or = with Unicode representation
-    var gson = new GsonBuilder().disableHtmlEscaping().create();
-    try (var response = helper.isSonarCloud() ? helper.apiPost("/fix-suggestions/ai-suggestions", JSON_CONTENT_TYPE, gson.toJson(dto), cancelMonitor)
-      : helper.post("/api/v2/fix-suggestions/ai-suggestions", JSON_CONTENT_TYPE, gson.toJson(dto), cancelMonitor)) {
-      return gson.fromJson(response.bodyAsString(), AiSuggestionResponseBodyDto.class);
+    try {
+      return helper.isSonarCloud()
+        ? helper.apiPostJson("/fix-suggestions/ai-suggestions", dto, AiSuggestionResponseBodyDto.class, cancelMonitor)
+        : helper.postJson("/api/v2/fix-suggestions/ai-suggestions", dto, AiSuggestionResponseBodyDto.class, cancelMonitor);
     } catch (TooManyRequestsException e) {
       throw e;
     } catch (Exception e) {
       LOG.error("Error while generating an AI CodeFix", e);
-      throw new UnexpectedBodyException(e);
+      throw e;
     }
   }
 
   public SupportedRulesResponseDto getSupportedRules(SonarLintCancelMonitor cancelMonitor) {
-    try (
-      var response = helper.isSonarCloud() ? helper.apiGet("/fix-suggestions/supported-rules", cancelMonitor)
-        : helper.get("/api/v2/fix-suggestions/supported-rules", cancelMonitor)) {
-      return new Gson().fromJson(response.bodyAsString(), SupportedRulesResponseDto.class);
+    try {
+      return helper.isSonarCloud()
+        ? helper.apiGetJson("/fix-suggestions/supported-rules", SupportedRulesResponseDto.class, cancelMonitor)
+        : helper.getJson("/api/v2/fix-suggestions/supported-rules", SupportedRulesResponseDto.class, cancelMonitor);
     } catch (Exception e) {
       LOG.error("Error while fetching the list of AI CodeFix supported rules", e);
-      throw new UnexpectedBodyException(e);
+      throw e;
     }
   }
 
   public OrganizationConfigsResponseDto getOrganizationConfigs(String organizationId, SonarLintCancelMonitor cancelMonitor) {
-    try (var response = helper.apiGet("/fix-suggestions/organization-configs/" + UrlUtils.urlEncode(organizationId), cancelMonitor)) {
-      return new Gson().fromJson(response.bodyAsString(), OrganizationConfigsResponseDto.class);
+    try {
+      return helper.apiGetJson("/fix-suggestions/organization-configs/" + UrlUtils.urlEncode(organizationId),
+        OrganizationConfigsResponseDto.class, cancelMonitor);
     } catch (Exception e) {
       LOG.error("Error while fetching the AI CodeFix organization config", e);
-      throw new UnexpectedBodyException(e);
+      throw e;
     }
   }
 }

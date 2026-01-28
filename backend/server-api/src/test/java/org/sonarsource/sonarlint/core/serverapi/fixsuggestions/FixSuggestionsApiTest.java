@@ -53,7 +53,7 @@ class FixSuggestionsApiTest {
 
     @Test
     void it_should_throw_an_exception_if_the_body_is_malformed() {
-      mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
+      mockServer.addStringResponse("/api/v2/fix-suggestions/ai-suggestions", """
         {
           "id": "XXX
         }
@@ -120,7 +120,7 @@ class FixSuggestionsApiTest {
 
     @Test
     void it_should_throw_an_exception_if_the_body_is_malformed() {
-      mockServer.addStringResponse("/fix-suggestions/supported-rules", """
+      mockServer.addStringResponse("/api/v2/fix-suggestions/supported-rules", """
         [
         """);
 

@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
-import com.google.gson.Gson;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class PluginsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final String API_PLUGINS_INSTALLED_PATH = "/api/plugins/installed";
 
   private final ServerApiHelper helper;
 
@@ -38,39 +39,32 @@ public class PluginsApi {
   }
 
   public List<ServerPlugin> getInstalled(SonarLintCancelMonitor cancelMonitor) {
-    return ServerApiHelper.processTimed(
-      () -> get("/api/plugins/installed", cancelMonitor),
-      response -> {
-        var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
-        return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).toList();
-      },
-      duration -> LOG.info("Downloaded plugin list in {}ms", duration));
+    var start = System.currentTimeMillis();
+    var plugins = helper.isSonarCloud()
+      ? helper.getAnonymousJson(API_PLUGINS_INSTALLED_PATH, InstalledPluginsPayloadDto.class, cancelMonitor)
+      : helper.getJson(API_PLUGINS_INSTALLED_PATH, InstalledPluginsPayloadDto.class, cancelMonitor);
+    var result = Arrays.stream(plugins.plugins()).map(PluginsApi::toInstalledPlugin).toList();
+    var duration = System.currentTimeMillis() - start;
+    LOG.info("Downloaded plugin list in {}ms", duration);
+    return result;
   }
 
-  private static ServerPlugin toInstalledPlugin(InstalledPluginPayload payload) {
-    return new ServerPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
+  private static ServerPlugin toInstalledPlugin(InstalledPluginsPayloadDto.InstalledPluginPayloadDto payload) {
+    return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported());
   }
 
-  public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
+  public void getPlugin(String key, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
     var url = "api/plugins/download?plugin=" + key;
-    ServerApiHelper.consumeTimed(
-      () -> get(url, cancelMonitor),
-      response -> pluginFileConsumer.accept(response.bodyAsStream()),
-      duration -> LOG.info("Downloaded '{}' in {}ms", key, duration));
+    var start = System.currentTimeMillis();
+    try (var response = get(url, cancelMonitor)) {
+      pluginFileConsumer.accept(response.bodyAsStream());
+      var duration = System.currentTimeMillis() - start;
+      LOG.info("Downloaded '{}' in {}ms", key, duration);
+    }
   }
 
   private HttpClient.Response get(String path, SonarLintCancelMonitor cancelMonitor) {
     return helper.isSonarCloud() ? helper.getAnonymous(path, cancelMonitor) : helper.get(path, cancelMonitor);
   }
 
-  private static class InstalledPluginsPayload {
-    InstalledPluginPayload[] plugins;
-  }
-
-  static class InstalledPluginPayload {
-    String key;
-    String hash;
-    String filename;
-    boolean sonarLintSupported;
-  }
 }

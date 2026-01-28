@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,43 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.smartnotifications;
+package org.sonarsource.sonarlint.core.serverapi.developers;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
-public class ServerNotification {
-  private final String category;
-  private final String message;
-  private final String link;
-  private final String projectKey;
-  private final ZonedDateTime time;
+import static java.util.Objects.requireNonNull;
 
-  public ServerNotification(String category, String message, String link, String projectKey, ZonedDateTime time) {
-    this.category = category;
-    this.message = message;
-    this.link = link;
-    this.projectKey = projectKey;
-    this.time = time;
+public record SearchEventsResponseDto(List<Event> events) {
+  public record Event(String category, String message, String link, String project, ZonedDateTime date) {
+    public Event {
+      requireNonNull(category);
+      requireNonNull(message);
+      requireNonNull(link);
+      requireNonNull(project);
+      requireNonNull(date);
+    }
   }
-
-  public String category() {
-    return category;
-  }
-
-  public String message() {
-    return message;
-  }
-
-  public String link() {
-    return link;
-  }
-
-  public String projectKey() {
-    return projectKey;
-  }
-
-  public ZonedDateTime time() {
-    return time;
-  }
-
 }

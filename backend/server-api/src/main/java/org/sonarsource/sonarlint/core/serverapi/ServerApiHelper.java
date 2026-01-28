@@ -19,13 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.serverapi;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -50,8 +58,10 @@ import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 
 /**
  * Wrapper around HttpClient to avoid repetitive code, like support of pagination, and log timing of requests
@@ -66,6 +76,11 @@ public class ServerApiHelper {
 
   private final HttpClient client;
   private final EndpointParams endpointParams;
+  // avoid Gson replacing characters like < > or = with Unicode representation
+  private static final Gson gson = new GsonBuilder()
+    .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
+    .disableHtmlEscaping()
+    .create();
 
   public ServerApiHelper(EndpointParams endpointParams, HttpClient client) {
     this.endpointParams = endpointParams;
@@ -77,11 +92,17 @@ public class ServerApiHelper {
   }
 
   public HttpClient.Response getAnonymous(String path, SonarLintCancelMonitor cancelMonitor) {
-    var response = rawGetAnonymous(path, cancelMonitor);
+    var response = rawGetUrlAnonymous(buildEndpointUrl(path), cancelMonitor);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
     return response;
+  }
+
+  public <T> T getAnonymousJson(String path, Class<T> responseClass, SonarLintCancelMonitor cancelMonitor) {
+    try (var response = getAnonymous(path, cancelMonitor)) {
+      return deserializeJsonBody(response, responseClass);
+    }
   }
 
   public HttpClient.Response get(String path, SonarLintCancelMonitor cancelMonitor) {
@@ -92,20 +113,45 @@ public class ServerApiHelper {
     return response;
   }
 
-  public HttpClient.Response apiGet(String path, SonarLintCancelMonitor cancelMonitor) {
-    var response = rawGetUrl(buildApiEndpointUrl(path), cancelMonitor);
-    if (!response.isSuccessful()) {
-      throw handleError(response);
+  public <T> T getJson(String path, Class<T> responseClass, SonarLintCancelMonitor cancelMonitor) {
+    try (var response = get(path, cancelMonitor)) {
+      return deserializeJsonBody(response, responseClass);
     }
-    return response;
+  }
+
+  public <T> T apiGetJson(String path, Class<T> responseClass, SonarLintCancelMonitor cancelMonitor) {
+    try (var response = rawGetUrl(buildApiEndpointUrl(path), cancelMonitor)) {
+      if (!response.isSuccessful()) {
+        throw handleError(response);
+      }
+      return deserializeJsonBody(response, responseClass);
+    }
   }
 
   public HttpClient.Response post(String relativePath, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
     return postUrl(buildEndpointUrl(relativePath), contentType, body, cancelMonitor);
   }
 
-  public HttpClient.Response apiPost(String relativePath, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
-    return postUrl(buildApiEndpointUrl(relativePath), contentType, body, cancelMonitor);
+  public void postJson(String relativePath, Object requestBody, SonarLintCancelMonitor cancelMonitor) {
+    postJson(relativePath, requestBody, null, cancelMonitor);
+  }
+
+  public <T> T postJson(String relativePath, Object requestBody, @Nullable Class<T> responseClass, SonarLintCancelMonitor cancelMonitor) {
+    var body = gson.toJson(requestBody);
+    try (var response = post(relativePath, JSON_CONTENT_TYPE, body, cancelMonitor)) {
+      return responseClass == null ? null : deserializeJsonBody(response, responseClass);
+    }
+  }
+
+  public void apiPostJson(String relativePath, Object requestBody, SonarLintCancelMonitor cancelMonitor) {
+    apiPostJson(relativePath, requestBody, null, cancelMonitor);
+  }
+
+  public <T> T apiPostJson(String relativePath, Object requestBody, @Nullable Class<T> responseClass, SonarLintCancelMonitor cancelMonitor) {
+    var body = gson.toJson(requestBody);
+    try (var response = postUrl(buildApiEndpointUrl(relativePath), JSON_CONTENT_TYPE, body, cancelMonitor)) {
+      return responseClass == null ? null : deserializeJsonBody(response, responseClass);
+    }
   }
 
   private HttpClient.Response postUrl(String url, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
@@ -114,13 +160,6 @@ public class ServerApiHelper {
       throw handleError(response);
     }
     return response;
-  }
-
-  /**
-   * Execute GET without credentials and don't check response
-   */
-  public HttpClient.Response rawGetAnonymous(String relativePath, SonarLintCancelMonitor cancelMonitor) {
-    return rawGetUrlAnonymous(buildEndpointUrl(relativePath), cancelMonitor);
   }
 
   /**
@@ -349,4 +388,30 @@ public class ServerApiHelper {
     void accept(T t) throws IOException;
   }
 
+  /**
+   * Deserialize JSON response body to the specified type.
+   *
+   * @param response the HTTP response containing JSON body
+   * @param responseClass the class to deserialize to
+   * @return the deserialized object
+   * @throws UnexpectedBodyException if the response body cannot be deserialized
+   */
+  private static <T> T deserializeJsonBody(HttpClient.Response response, Class<T> responseClass) {
+    try {
+      var responseStr = response.bodyAsString();
+      return gson.fromJson(responseStr, responseClass);
+    } catch (Exception e) {
+      throw new UnexpectedBodyException(e);
+    }
+  }
+
+  private static class ZonedDateTimeDeserializer implements JsonDeserializer<ZonedDateTime> {
+    private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
+
+    @Override
+    public ZonedDateTime deserialize(JsonElement json, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+      return ZonedDateTime.parse(json.getAsJsonPrimitive().getAsString(), TIME_FORMATTER);
+    }
+  }
 }

@@ -19,21 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.authentication;
 
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
-
-public class AuthenticationApi {
-
-  private final ServerApiHelper serverApiHelper;
-
-  public AuthenticationApi(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
-  }
-
-  public ValidationResult validate(SonarLintCancelMonitor cancelMonitor) {
-    var validateResponse = serverApiHelper.getJson("api/authentication/validate?format=json", ValidateResponseDto.class, cancelMonitor);
-    return new ValidationResult(validateResponse.valid(), validateResponse.valid() ? "Authentication successful" : "Authentication failed");
-  }
-
+public record ValidateResponseDto(boolean valid) {
 }

@@ -27,8 +27,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
 
 class DevelopersApiTests {
@@ -57,15 +60,15 @@ class DevelopersApiTests {
       "]" +
       "}");
 
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
+    var response = underTest.searchEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
 
-    assertThat(events)
-      .extracting("category", "message", "link", "projectKey", "time")
+    assertThat(response.events())
+      .extracting("category", "message", "link", "project", "date")
       .containsOnly(tuple("cat", "msg", "lnk", "projectKey", ZonedDateTime.parse("2022-01-01T08:00:00Z")));
   }
 
   @Test
-  void should_return_no_event_if_a_field_is_missing_in_one_of_them() {
+  void should_throw_if_a_field_is_missing_in_one_of_them() {
     mockServer.addStringResponse("/api/developers/search_events?projects=projectKey&from=2022-01-01T12%3A00%3A00%2B0000", "{\"events\": [" +
       "{" +
       "\"message\": \"msg\"," +
@@ -76,15 +79,15 @@ class DevelopersApiTests {
       "]" +
       "}");
 
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
+    var throwable = catchThrowable(() -> underTest.searchEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor()));
 
-    assertThat(events).isEmpty();
+    assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
   }
 
   @Test
-  void should_return_no_event_if_the_request_fails() {
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
+  void should_throw_if_the_request_fails() {
+    var throwable = catchThrowable(() -> underTest.searchEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor()));
 
-    assertThat(events).isEmpty();
+    assertThat(throwable).isInstanceOf(NotFoundException.class);
   }
 }

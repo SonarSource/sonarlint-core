@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.users;
 
-import com.google.gson.Gson;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class UsersApi {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   private final ServerApiHelper helper;
 
   public UsersApi(ServerApiHelper helper) {
@@ -41,21 +37,7 @@ public class UsersApi {
    */
   @CheckForNull
   public String getCurrentUserId(SonarLintCancelMonitor cancelMonitor) {
-    try (var response = helper.get("/api/users/current", cancelMonitor)) {
-      var body = response.bodyAsString();
-      try {
-        var userResponse = new Gson().fromJson(body, CurrentUserResponse.class);
-        return userResponse == null ? null : userResponse.id;
-      } catch (Exception e) {
-        LOG.error("Error while parsing /api/users/current response", e);
-        return null;
-      }
-    }
-  }
-
-  private static class CurrentUserResponse {
-    String id;
+    var userResponse = helper.getJson("/api/users/current", CurrentUserResponseDto.class, cancelMonitor);
+    return userResponse == null ? null : userResponse.id();
   }
 }
-
-

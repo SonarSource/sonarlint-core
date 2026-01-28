@@ -17,23 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.authentication;
+package org.sonarsource.sonarlint.core.serverapi.plugins;
 
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
-
-public class AuthenticationApi {
-
-  private final ServerApiHelper serverApiHelper;
-
-  public AuthenticationApi(ServerApiHelper serverApiHelper) {
-    this.serverApiHelper = serverApiHelper;
+public record InstalledPluginsPayloadDto(InstalledPluginPayloadDto[] plugins) {
+  public record InstalledPluginPayloadDto(String key, String hash, String filename, boolean sonarLintSupported) {
   }
-
-  public ValidationResult validate(SonarLintCancelMonitor cancelMonitor) {
-    var validateResponse = serverApiHelper.getJson("api/authentication/validate?format=json", ValidateResponseDto.class, cancelMonitor);
-    return new ValidationResult(validateResponse.valid(), validateResponse.valid() ? "Authentication successful" : "Authentication failed");
-  }
-
 }
