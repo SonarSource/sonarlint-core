@@ -29,8 +29,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class ProjectBindingsApiTests {
   @RegisterExtension
@@ -124,27 +127,27 @@ class ProjectBindingsApiTests {
     }
 
     @Test
-    void should_return_empty_when_invalid_json() {
+    void should_throw_when_invalid_json() {
       var url = "https://github.com/foo/bar";
       var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
       mockServer.addStringResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
         "this is not json");
 
-      var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
+      var throwable = catchThrowable(() -> underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor()));
 
-      assertThat(result).isNull();
+      assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
     }
 
     @Test
-    void should_return_empty_when_request_fails() {
+    void should_throw_when_request_fails() {
       var url = "https://github.com/foo/bar";
       var encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
       mockServer.addResponse("/api/v2/dop-translation/project-bindings?repositoryUrl=" + encodedUrl,
         new MockResponse.Builder().code(500).body("Internal error").build());
 
-      var result = underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor());
+      var throwable = catchThrowable(() -> underTest.getSQSProjectBindings(url, new SonarLintCancelMonitor()));
 
-      assertThat(result).isNull();
+      assertThat(throwable).isInstanceOf(ServerErrorException.class);
     }
   }
 }

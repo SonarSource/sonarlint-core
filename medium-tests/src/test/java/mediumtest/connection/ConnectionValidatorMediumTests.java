@@ -170,7 +170,7 @@ class ConnectionValidatorMediumTests {
       Either.forRight(new UsernamePasswordDto("foo", "bar"))))).join();
 
     assertThat(response.isSuccess()).isFalse();
-    assertThat(response.getMessage()).isEqualTo("Unable to parse server infos from: {\"id\": }");
+    assertThat(response.getMessage()).isEqualTo("Unexpected body received");
   }
 
   @SonarLintTest

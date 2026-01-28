@@ -17,42 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.developers;
+package org.sonarsource.sonarlint.core.serverapi.users;
 
-import java.time.ZonedDateTime;
-
-public class Event {
-  private final String category;
-  private final String message;
-  private final String link;
-  private final String projectKey;
-  private final ZonedDateTime time;
-
-  public Event(String category, String message, String link, String projectKey, ZonedDateTime time) {
-    this.category = category;
-    this.message = message;
-    this.link = link;
-    this.projectKey = projectKey;
-    this.time = time;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public String getMessage() {
-    return message;
-  }
-
-  public String getLink() {
-    return link;
-  }
-
-  public String getProjectKey() {
-    return projectKey;
-  }
-
-  public ZonedDateTime getTime() {
-    return time;
-  }
+public record CurrentUserResponseDto(String id) {
 }

@@ -26,8 +26,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class AuthenticationApiTests {
   @RegisterExtension
@@ -66,9 +68,8 @@ class AuthenticationApiTests {
   void test_connection_issue() {
     mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse.Builder().code(500).body("Foo").build());
 
-    var validationResult = underTest.validate(new SonarLintCancelMonitor());
+    var throwable = catchThrowable(() -> underTest.validate(new SonarLintCancelMonitor()));
 
-    assertThat(validationResult.success()).isFalse();
-    assertThat(validationResult.message()).isEqualTo("HTTP Connection failed (500): Foo");
+    assertThat(throwable).isInstanceOf(ServerErrorException.class);
   }
 }

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +78,7 @@ class ServerVersionAndStatusCheckerTests {
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
-    assertThat(throwable).hasMessage("Unable to parse server infos from: bla bla");
+    assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
   }
 
 }

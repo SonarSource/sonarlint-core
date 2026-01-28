@@ -19,14 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.developers;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -46,49 +40,8 @@ public class DevelopersApi {
     this.helper = helper;
   }
 
-  public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps, SonarLintCancelMonitor cancelMonitor) {
-    var path = getWsPath(projectTimestamps);
-    try (var wsResponse = helper.rawGet(path, cancelMonitor)) {
-      if (!wsResponse.isSuccessful()) {
-        LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
-        return Collections.emptyList();
-      }
-
-      return parseResponse(wsResponse.bodyAsString());
-    }
-  }
-
-  private static List<Event> parseResponse(String contents) {
-    List<Event> notifications = new ArrayList<>();
-
-    try {
-      var root = JsonParser.parseString(contents).getAsJsonObject();
-      var events = root.get("events").getAsJsonArray();
-
-      for (JsonElement el : events) {
-        var event = el.getAsJsonObject();
-        var category = getOrFail(event, "category");
-        var message = getOrFail(event, "message");
-        var link = getOrFail(event, "link");
-        var projectKey = getOrFail(event, "project");
-        var dateTime = getOrFail(event, "date");
-        var time = ZonedDateTime.parse(dateTime, TIME_FORMATTER);
-        notifications.add(new Event(category, message, link, projectKey, time));
-      }
-
-    } catch (Exception e) {
-      LOG.error("Failed to parse SonarQube notifications response", e);
-      return Collections.emptyList();
-    }
-    return notifications;
-  }
-
-  private static String getOrFail(JsonObject parent, String name) {
-    var element = parent.get(name);
-    if (element == null) {
-      throw new IllegalStateException("Failed to parse response. Missing field '" + name + "'.");
-    }
-    return element.getAsString();
+  public SearchEventsResponseDto searchEvents(Map<String, ZonedDateTime> projectTimestamps, SonarLintCancelMonitor cancelMonitor) {
+    return helper.getJson(getWsPath(projectTimestamps), SearchEventsResponseDto.class, cancelMonitor);
   }
 
   private static String getWsPath(Map<String, ZonedDateTime> projectTimestamps) {

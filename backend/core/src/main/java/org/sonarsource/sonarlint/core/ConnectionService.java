@@ -184,6 +184,7 @@ public class ConnectionService {
       }
       return new ValidateConnectionResponse(validateCredentials.success(), validateCredentials.message());
     } catch (Exception e) {
+      LOG.error("Error validating connection", e);
       return new ValidateConnectionResponse(false, e.getMessage());
     }
   }
