@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.EnumUtils;
@@ -139,18 +140,21 @@ public class CampaignService {
     }
   }
 
-  private synchronized boolean tryMarkAsShownToday() {
-    var campaigns = fileStorageManager.getStorage().campaigns();
-    var existingCampaign = campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN);
+  private boolean tryMarkAsShownToday() {
+    var shouldShow = new AtomicBoolean(false);
 
-    if (existingCampaign == null || !wasShownRecently(existingCampaign.lastNotificationShownOn())) {
-      fileStorageManager.tryUpdateAtomically(storage ->
-        storage.campaigns().put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "IGNORE")));
-      return true;
-    }
+    fileStorageManager.tryUpdateAtomically(storage -> {
+      var campaigns = storage.campaigns();
+      var existingCampaign = campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN);
 
-    return false;
+      if (existingCampaign == null || !wasShownRecently(existingCampaign.lastNotificationShownOn())) {
+        campaigns.put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "IGNORE"));
+        shouldShow.set(true);
+      }
+    });
+
+    return shouldShow.get();
   }
 
   private static boolean wasShownRecently(LocalDate lastShown) {
