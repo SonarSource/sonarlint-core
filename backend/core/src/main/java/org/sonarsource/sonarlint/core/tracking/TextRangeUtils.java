@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
@@ -128,23 +127,8 @@ public class TextRangeUtils {
       : new TextRangeWithHashDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
   }
 
-  @CheckForNull
-  public static TextRangeWithHashDto toTextRangeWithHashDto(@Nullable TextRange textRange, @Nullable ClientInputFile clientInputFile) {
-    return adapt(getTextRangeWithHash(textRange, clientInputFile));
-  }
-
   static String hash(String codeSnippet) {
     String codeSnippetWithoutWhitespaces = MATCH_ALL_WHITESPACES.matcher(codeSnippet).replaceAll("");
     return DigestUtils.md5Hex(codeSnippetWithoutWhitespaces);
-  }
-
-  @CheckForNull
-  public static LineWithHashDto getLineWithHashDto(@Nullable TextRange textRange, @Nullable ClientInputFile clientInputFile) {
-    var lineWithHash = getLineWithHash(textRange, clientInputFile);
-    return lineWithHash != null ? toLineWithHashDto(lineWithHash) : null;
-  }
-
-  private static LineWithHashDto toLineWithHashDto(LineWithHash lineWithHash) {
-    return new LineWithHashDto(lineWithHash.getNumber(), lineWithHash.getHash());
   }
 }
