@@ -29,8 +29,6 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
-import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
-
 public class ScaApi {
 
   private final ServerApiHelper serverApiHelper;

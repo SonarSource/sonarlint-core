@@ -23,13 +23,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class DevelopersApi {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String API_PATH = "api/developers/search_events";
   public static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
