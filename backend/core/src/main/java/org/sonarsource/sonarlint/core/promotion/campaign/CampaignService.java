@@ -70,6 +70,7 @@ public class CampaignService {
   );
   private static final String SIX_MINUTES_OF_SECONDS = "360";
   private static final int TWO_WEEKS = 14;
+  private static final String CLOSED_BY_USER_ACTION_KEY = "CLOSED";
 
   private final String productKey;
   private final SonarLintRpcClient client;
@@ -172,7 +173,7 @@ public class CampaignService {
 
   private void handleFeedbackResponse(ShowMessageRequestResponse response) {
     Optional.of(response)
-      .map(ShowMessageRequestResponse::getSelectedKey)
+      .map(r -> r.isClosedByUser() ? CLOSED_BY_USER_ACTION_KEY : r.getSelectedKey())
       .ifPresent(this::handleFeedbackResponse);
   }
 

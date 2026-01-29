@@ -99,7 +99,7 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"campaigns.feedback_2026_01_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"campaigns.feedback_2026_01_resolution\",\"value\":\"MAYBE_LATER\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"campaigns.feedback_2077_03_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"campaigns.feedback_2077_03_resolution\",\"value\":\"IGNORE\",\"type\":\"string\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"campaigns.feedback_2077_03_resolution\",\"value\":\"CLOSED\",\"type\":\"string\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -160,7 +160,7 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("campaigns.feedback_2026_01_shown", "1", INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("campaigns.feedback_2026_01_resolution", "MAYBE_LATER", STRING, DAILY));
     values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_resolution", "IGNORE", STRING, DAILY));
+    values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_resolution", "CLOSED", STRING, DAILY));
 
     return values;
   }
@@ -197,7 +197,7 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("campaigns.feedback_2026_01_shown", "1", INTEGER, DAILY))
       .contains(tuple("campaigns.feedback_2026_01_resolution", "MAYBE_LATER", STRING, DAILY))
       .contains(tuple("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY))
-      .contains(tuple("campaigns.feedback_2077_03_resolution", "IGNORE", STRING, DAILY));
+      .contains(tuple("campaigns.feedback_2077_03_resolution", "CLOSED", STRING, DAILY));
   }
 
 }
