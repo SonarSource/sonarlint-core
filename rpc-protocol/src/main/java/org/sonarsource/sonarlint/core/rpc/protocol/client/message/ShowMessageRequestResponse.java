@@ -28,12 +28,20 @@ public class ShowMessageRequestResponse {
   @Nullable
   private final String selectedKey;
 
-  public ShowMessageRequestResponse(@Nullable String selectedKey) {
+  // Depicts if user explicitly closed the notification or not (e.g. by clicking X). If true, selectedKey should be null.
+  private final boolean closedByUser;
+
+  public ShowMessageRequestResponse(@Nullable String selectedKey, boolean closedByUser) {
     this.selectedKey = selectedKey;
+    this.closedByUser = closedByUser;
   }
 
   @CheckForNull
   public String getSelectedKey() {
     return selectedKey;
+  }
+
+  public boolean isClosedByUser() {
+    return closedByUser;
   }
 }

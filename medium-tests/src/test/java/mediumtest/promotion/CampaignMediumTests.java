@@ -140,6 +140,34 @@ class CampaignMediumTests {
   }
 
   @SonarLintTest
+  void it_should_update_campaign_file_and_telemetry_on_close(SonarLintTestHarness harness) {
+    propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "1");
+    saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
+    var client = harness.newFakeClient().build();
+    when(client.showMessageRequest(any(), any(), any()))
+      .thenReturn(new ShowMessageRequestResponse(null, true));
+
+    var backend = baseBackend(harness)
+      .withProductKey(DEFAULT_KEY)
+      .withTelemetryEnabled()
+      .start(client);
+
+    var campaignsFile = getCampaignsPath(DEFAULT_KEY);
+    await().untilAsserted(
+      () -> assertThat(getCampaigns(campaignsFile))
+        .hasSize(1)
+        .contains(Map.entry(
+          CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
+          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "CLOSED")))
+    );
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
+      .extracting(TelemetryLocalStorage::getCampaignsResolutions)
+      .extracting(campaigns -> campaigns.get(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN))
+      .isEqualTo("CLOSED"));
+  }
+
+  @SonarLintTest
   void it_should_update_campaigns_file_and_open_idea_url_on_love_it(SonarLintTestHarness harness) throws MalformedURLException {
     verifyOpenUrlOnResponse(harness,
       "LOVE_IT", "idea", "https://plugins.jetbrains.com/plugin/7973-sonarqube-for-ide/reviews");
@@ -192,7 +220,7 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
-      .thenReturn(new ShowMessageRequestResponse("MAYBE_LATER"));
+      .thenReturn(new ShowMessageRequestResponse("MAYBE_LATER", false));
 
     baseBackend(harness)
       .start(client);
@@ -212,9 +240,9 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), eq("Enjoying SonarQube for IDE? We'd love to hear what you think."), any()))
-      .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+      .thenReturn(new ShowMessageRequestResponse("LOVE_IT", false));
     when(client.showMessageRequest(any(), eq("Could not find feedback link for mediumTests. Please consider sharing your feedback directly on our community forum"), any()))
-      .thenReturn(new ShowMessageRequestResponse("OPEN_COMMUNITY"));
+      .thenReturn(new ShowMessageRequestResponse("OPEN_COMMUNITY", false));
 
     baseBackend(harness)
       .start(client);
@@ -251,7 +279,7 @@ class CampaignMediumTests {
     propertiesStubs.set("sonarlint.internal.promotion.initialDelay", "2");
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
-      .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+      .thenReturn(new ShowMessageRequestResponse("LOVE_IT", false));
 
     baseBackend(harness)
       .start(client);
@@ -346,7 +374,7 @@ class CampaignMediumTests {
     saveTelemetryInstallTime(DEFAULT_KEY, MORE_THAN_TWO_WEEKS_AGO);
     var client = harness.newFakeClient().build();
     when(client.showMessageRequest(any(), any(), any()))
-      .thenReturn(new ShowMessageRequestResponse("LOVE_IT"));
+      .thenReturn(new ShowMessageRequestResponse("LOVE_IT", false));
 
     var backend = baseBackend(harness)
       .withTelemetryEnabled()
@@ -402,7 +430,7 @@ class CampaignMediumTests {
     var client = harness.newFakeClient()
       .build();
     when(client.showMessageRequest(any(), any(), any()))
-      .thenReturn(new ShowMessageRequestResponse(response));
+      .thenReturn(new ShowMessageRequestResponse(response, false));
 
     baseBackend(harness)
       .withProductKey(productKey)

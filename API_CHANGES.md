@@ -1,3 +1,9 @@
+# 10.44
+
+## Breaking changes
+
+* Add `closedByUser` flag to `org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse`. It must be set to `true` if the `showMessageRequest` was explicitly closed by the user (e.g. via clicking X on the notification)
+
 # 10.43
 
 ## Breaking changes

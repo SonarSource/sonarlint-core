@@ -114,13 +114,14 @@ public interface SonarLintRpcClient {
   /**
    * Display a message to the user, usually in a small notification.
    * This message has options that the user can pick from. Once user clicked on option, its String key is returned.
-   * If the user explicitly dismisses/closes the notification without clicking option, then the selectedKey in the ShowMessageRequestResponse will be null.
+   * If the user explicitly dismisses/closes the notification without clicking option, then the selectedKey in the ShowMessageRequestResponse
+   * will be null AND closedByUser will be true.
    * IMPORTANT: As users might not react to the notification at all, the returned future might block for an indefinite amount of time.
    * So the caller should not block waiting for the result, but provide a callback instead.
    */
   @JsonRequest
   default CompletableFuture<ShowMessageRequestResponse> showMessageRequest(ShowMessageRequestParams params) {
-    return CompletableFuture.completedFuture(new ShowMessageRequestResponse(null));
+    return CompletableFuture.completedFuture(new ShowMessageRequestResponse(null, false));
   }
 
   @JsonNotification
