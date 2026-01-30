@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
@@ -66,6 +68,7 @@ import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.sources.RawRequest;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -115,6 +118,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.HTML;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
@@ -227,14 +231,16 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
   }
 
-  private static void provisionProject(String key, String name) {
+  private static String provisionProject(String key, String name) {
+    var projectKey = projectKey(key);
     var request = new PostRequest("api/projects/create");
     request.setParam("name", name);
-    request.setParam("project", projectKey(key));
+    request.setParam("project", projectKey);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     try (var response = adminWsClient.wsConnector().call(request)) {
       assertIsOk(response);
     }
+    return projectKey;
   }
 
   private static String projectKey(String key) {
@@ -564,11 +570,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class TaintVulnerabilities {
     private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
+    private String projectKey;
 
     @BeforeAll
     void prepare() throws Exception {
       restoreProfile("java-sonarlint-with-taint.xml");
-      provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+      this.projectKey = provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
       associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
       analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
     }
@@ -580,10 +587,24 @@ class SonarCloudTests extends AbstractConnectedTests {
       waitForAnalysisToBeReady(configScopeId);
 
       // Ensure a vulnerability has been reported on server side
-      var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT))))
-        .getIssuesList();
-      assertThat(issuesList).hasSize(1);
-      var issueKey = issuesList.get(0).getKey();
+      AtomicReference<Issues.Issue> issue = new AtomicReference<>();
+      await().untilAsserted(() -> {
+        var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT))))
+          .getIssuesList();
+        assertThat(issuesList).hasSize(1);
+        issue.set(issuesList.get(0));
+      });
+      // Ensure the source is available, it can take some time to propagate after the analysis, especially on SQC US
+      await().untilAsserted(() -> {
+        try {
+          var rawSource = adminWsClient.sources().raw(new RawRequest().setKey(projectKey + ":src/main/java/foo/DbHelper.java"));
+          assertThat(rawSource).isNotEmpty();
+        } catch (Exception e) {
+          fail("The source is not yet available", e);
+        }
+      });
+
+      var issueKey = issue.get().getKey();
 
       var taintVulnerabilities = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId, true)).get().getTaintVulnerabilities();
 
