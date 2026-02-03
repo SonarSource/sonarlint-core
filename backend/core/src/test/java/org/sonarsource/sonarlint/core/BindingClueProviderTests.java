@@ -267,7 +267,7 @@ class BindingClueProviderTests {
   @Test
   void should_set_origin_properties_file_when_clue_created_from_properties() {
     mockFindFileByNamesInScope(List.of(
-      buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)
+      buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)
     ));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
@@ -295,7 +295,7 @@ class BindingClueProviderTests {
     assertThat(clue.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
-  private ClientFile buildClientFile(String relativePath, String content) {
+  private ClientFile buildClientFile(String filename, String relativePath, String content) {
     var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null, true);
     file.setDirty(content);
     return file;
