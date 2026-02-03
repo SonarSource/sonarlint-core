@@ -78,7 +78,7 @@ public class MatchingResult<LEFT, RIGHT> {
     return leftToRight.get(left);
   }
 
-  public Optional<RIGHT> getMatchOpt(LEFT left) {
+  public Optional<R> getMatchOpt(L left) {
     return Optional.ofNullable(getMatch(left));
   }
 
