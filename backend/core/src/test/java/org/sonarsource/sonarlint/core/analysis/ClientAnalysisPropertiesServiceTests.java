@@ -35,7 +35,7 @@ class ClientAnalysisPropertiesServiceTests {
   UserAnalysisPropertiesRepository underTest;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     underTest = new UserAnalysisPropertiesRepository();
   }
 
