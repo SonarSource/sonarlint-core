@@ -66,6 +66,6 @@ public class ClientProxySelector extends ProxySelector {
 
   @Override
   public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
-
+    // Intentionally left blank: connection failures are handled by the HTTP client, no additional action required here
   }
 }
