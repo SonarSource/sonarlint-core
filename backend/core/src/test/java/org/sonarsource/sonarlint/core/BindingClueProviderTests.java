@@ -295,7 +295,7 @@ class BindingClueProviderTests {
     assertThat(clue.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
-  private ClientFile buildClientFile(String filename, String relativePath, String content) {
+  private ClientFile buildClientFile(String relativePath, String content) {
     var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null, true);
     file.setDirty(content);
     return file;
