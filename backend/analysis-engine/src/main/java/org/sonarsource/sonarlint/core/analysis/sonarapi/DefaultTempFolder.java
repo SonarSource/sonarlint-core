@@ -92,7 +92,7 @@ public class DefaultTempFolder implements TempFolder, Startable {
   public void clean() {
     try {
       if (tempDir.exists()) {
-        Files.walkFileTree(tempDir.toPath(), DeleteRecursivelyFileVisitor.INSTANCE);
+        Files.walkFileTree(tempDir.toPath(), new DeleteRecursivelyFileVisitor());
       }
     } catch (IOException e) {
       LOG.error("Failed to delete temp folder", e);
@@ -112,6 +112,7 @@ public class DefaultTempFolder implements TempFolder, Startable {
   }
 
   private static final class DeleteRecursivelyFileVisitor extends SimpleFileVisitor<Path> {
+    public static final DeleteRecursivelyFileVisitor INSTANCE = new DeleteRecursivelyFileVisitor();
 
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
