@@ -266,7 +266,7 @@ final class MessageFormatter {
     try {
       var oAsString = o.toString();
       sbuf.append(oAsString);
-    } catch (Throwable t) {
+    } catch (Exception e) {
       sbuf.append("[FAILED toString()]");
     }
   }
