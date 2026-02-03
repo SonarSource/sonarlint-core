@@ -83,10 +83,10 @@ class TelemetryServerAttributesProviderTests {
 
     var configurationRepository = mock(ConfigurationRepository.class);
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
-      new BoundScope(configurationScopeId_1, connectionId_1, projectKey_1),
-      new BoundScope(configurationScopeId_2, connectionId_2, projectKey_2)));
+      new BoundScope(configurationScopeId1, connectionId1, projectKey1),
+      new BoundScope(configurationScopeId2, connectionId2, projectKey2)));
 
-    when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId2, configurationScopeId3));
+    when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId_2, configurationScopeId_3));
 
     when(configurationRepository.getConfigurationScope(configurationScopeId_1)).thenReturn(new ConfigurationScope(configurationScopeId_1, null, false, "1"));
     when(configurationRepository.getConfigurationScope(configurationScopeId_2)).thenReturn(new ConfigurationScope(configurationScopeId_2, configurationScopeId_1, false, "2"));
