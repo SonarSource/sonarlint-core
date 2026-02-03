@@ -74,11 +74,11 @@ public class MatchingResult<LEFT, RIGHT> {
   }
 
   @CheckForNull
-  public RIGHT getMatch(LEFT left) {
+  public R getMatch(L left) {
     return leftToRight.get(left);
   }
 
-  public Optional<R> getMatchOpt(L left) {
+  public Optional<RIGHT> getMatchOpt(LEFT left) {
     return Optional.ofNullable(getMatch(left));
   }
 
