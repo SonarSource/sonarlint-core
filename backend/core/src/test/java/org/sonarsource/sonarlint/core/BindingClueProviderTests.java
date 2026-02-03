@@ -104,7 +104,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_url() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
+      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_2, MY_ORG_2, SonarCloudRegion.EU, true));
@@ -121,7 +121,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_url_and_region() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
+      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.US, true));
 
