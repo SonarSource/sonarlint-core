@@ -38,9 +38,9 @@ public class MatchingResult<LEFT, RIGHT> {
   /**
    * Matched issues -> a left issue is associated to a right issue
    */
-  private final IdentityHashMap<LEFT, RIGHT> leftToRight = new IdentityHashMap<>();
+  private final IdentityHashMap<L, R> leftToRight = new IdentityHashMap<>();
 
-  private final Collection<L> lefts;
+  private final Collection<LEFT> lefts;
 
   public MatchingResult(Collection<LEFT> leftIssues) {
     this.lefts = leftIssues;
