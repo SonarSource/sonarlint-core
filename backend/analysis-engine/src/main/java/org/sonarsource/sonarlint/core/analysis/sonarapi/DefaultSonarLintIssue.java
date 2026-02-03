@@ -44,11 +44,10 @@ import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.SensorQuickFix;
 import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
-import org.sonarsource.sonarlint.plugin.api.issue.NewSonarLintIssue;
 
 import static java.util.Objects.requireNonNull;
 
-public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue {
+public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue {
 
   private final SonarLintInputProject project;
   private final Path baseDir;
