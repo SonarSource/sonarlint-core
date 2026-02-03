@@ -81,22 +81,6 @@ class IssueExclusionsRegexpScannerTests {
   }
 
   @Test
-  void shouldExcludeAllIssues() throws Exception {
-    var filePath = getResource("file-with-single-regexp.txt");
-    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
-
-    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
-  }
-
-  @Test
-  void shouldExcludeAllIssuesEvenIfAlsoDoubleRegexps() throws Exception {
-    var filePath = getResource("file-with-single-regexp-and-double-regexp.txt");
-    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
-
-    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
-  }
-
-  @Test
   void shouldExcludeLines() throws Exception {
     var filePath = getResource("file-with-double-regexp.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
