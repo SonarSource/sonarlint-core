@@ -112,7 +112,6 @@ public class DefaultTempFolder implements TempFolder, Startable {
   }
 
   private static final class DeleteRecursivelyFileVisitor extends SimpleFileVisitor<Path> {
-    public static final DeleteRecursivelyFileVisitor INSTANCE = new DeleteRecursivelyFileVisitor();
 
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
