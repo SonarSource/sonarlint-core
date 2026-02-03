@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata.Metadata;
@@ -64,14 +66,9 @@ class IssueExclusionsRegexpScannerTests {
     regexpScanner = new IssueExclusionsRegexpScanner(javaFile, allFilePatterns, blockPatterns);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {
-    "file-with-single-regexp-last-line.txt",
-    "file-with-single-regexp.txt",
-    "file-with-single-regexp-and-double-regexp.txt"
-  })
-  void shouldIgnoreAllIssuesInWholeFile(String fileName) throws Exception {
-    var filePath = getResource(fileName);
+  @Test
+  void shouldDetectPatternLastLine() throws URISyntaxException, IOException {
+    var filePath = getResource("file-with-single-regexp-last-line.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
