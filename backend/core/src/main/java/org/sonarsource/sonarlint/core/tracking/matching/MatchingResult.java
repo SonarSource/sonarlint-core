@@ -42,7 +42,7 @@ public class MatchingResult<LEFT, RIGHT> {
 
   private final Collection<LEFT> lefts;
 
-  public MatchingResult(Collection<LEFT> leftIssues) {
+  public MatchingResult(Collection<L> leftIssues) {
     this.lefts = leftIssues;
   }
 
@@ -51,9 +51,9 @@ public class MatchingResult<LEFT, RIGHT> {
    * that the traversal does not fail if method {@link #recordMatch(LEFT, RIGHT)}
    * is called.
    */
-  public Iterable<L> getUnmatchedLefts() {
-    List<L> result = new ArrayList<>();
-    for (L left : lefts) {
+  public Iterable<LEFT> getUnmatchedLefts() {
+    List<LEFT> result = new ArrayList<>();
+    for (LEFT left : lefts) {
       if (!leftToRight.containsKey(left)) {
         result.add(left);
       }
