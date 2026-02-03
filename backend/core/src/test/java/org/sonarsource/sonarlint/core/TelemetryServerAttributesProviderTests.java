@@ -73,18 +73,18 @@ class TelemetryServerAttributesProviderTests {
 
   @Test
   void it_should_calculate_connectedMode_notUsesSC_disabledDevNotifications_telemetry_attrs() {
-    var configurationScopeId_1 = "scopeId_1";
-    var configurationScopeId_2 = "scopeId_2";
-    var configurationScopeId_3 = "scopeId_3";
-    var connectionId_1 = "connectionId_1";
-    var connectionId_2 = "connectionId_2";
-    var projectKey_1 = "projectKey1";
-    var projectKey_2 = "projectKey2";
+    var configurationScopeId1 = "scopeId_1";
+    var configurationScopeId2 = "scopeId_2";
+    var configurationScopeId3 = "scopeId_3";
+    var connectionId1 = "connectionId_1";
+    var connectionId2 = "connectionId_2";
+    var projectKey1 = "projectKey1";
+    var projectKey2 = "projectKey2";
 
     var configurationRepository = mock(ConfigurationRepository.class);
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
-      new BoundScope(configurationScopeId1, connectionId1, projectKey1),
-      new BoundScope(configurationScopeId2, connectionId2, projectKey2)));
+      new BoundScope(configurationScopeId_1, connectionId_1, projectKey_1),
+      new BoundScope(configurationScopeId_2, connectionId_2, projectKey_2)));
 
     when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId_2, configurationScopeId_3));
 
