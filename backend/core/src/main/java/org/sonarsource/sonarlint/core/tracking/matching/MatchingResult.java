@@ -40,9 +40,9 @@ public class MatchingResult<LEFT, RIGHT> {
    */
   private final IdentityHashMap<LEFT, RIGHT> leftToRight = new IdentityHashMap<>();
 
-  private final Collection<LEFT> lefts;
+  private final Collection<L> lefts;
 
-  public MatchingResult(Collection<L> leftIssues) {
+  public MatchingResult(Collection<LEFT> leftIssues) {
     this.lefts = leftIssues;
   }
 
