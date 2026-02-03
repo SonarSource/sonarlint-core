@@ -33,12 +33,12 @@ import javax.annotation.CheckForNull;
  * @param <LEFT>  type of the issues that are in the first collection
  * @param <RIGHT> type of the issues that are in the second collection
  */
-public class MatchingResult<LEFT, RIGHT> {
+public class MatchingResult<L, R> {
 
   /**
    * Matched issues -> a left issue is associated to a right issue
    */
-  private final IdentityHashMap<L, R> leftToRight = new IdentityHashMap<>();
+  private final IdentityHashMap<LEFT, RIGHT> leftToRight = new IdentityHashMap<>();
 
   private final Collection<LEFT> lefts;
 
