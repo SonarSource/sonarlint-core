@@ -65,8 +65,8 @@ public abstract class AbstractPatternInitializer {
         continue;
       }
       var ruleKeyPattern = config.get(propPrefix + "ruleKey").orElse(null);
-      if (StringUtils.isBlank(ruleKeyPattern)) {
-        LOG.debug("Issue exclusions are misconfigured. Rule key pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
+      if (StringUtils.isBlank(filePathPattern) || StringUtils.isBlank(ruleKeyPattern)) {
+        LOG.debug("Issue exclusions are misconfigured. File pattern and rule key pattern are mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
         continue;
       }
       var pattern = new IssuePattern(filePathPattern, ruleKeyPattern);
