@@ -50,7 +50,7 @@ public class AskClientCertificatePredicate implements Predicate<TrustManagerPara
       Thread.currentThread().interrupt();
       return false;
     } catch (ExecutionException ex) {
-      throw new RuntimeException(ex);
+      throw new SonarLintWrappedRuntimeException(ex.getCause());
     }
   }
 }
