@@ -121,7 +121,7 @@ class VersionTests {
     assertThat(version.getMajor()).isEqualTo(1);
     assertThat(version.getMinor()).isEqualTo(10);
     assertThat(version.getPatch()).isEqualTo(2);
-    assertThat(version.getBuild()).isEqualTo(0);
+    assertThat(version.getBuild()).isZero();
   }
 
   @Test
