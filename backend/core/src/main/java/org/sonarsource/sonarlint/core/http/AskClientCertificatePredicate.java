@@ -26,6 +26,8 @@ import nl.altindag.ssl.model.TrustManagerParameters;
 import nl.altindag.ssl.util.CertificateUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintWrappedRuntimeException;
+
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
 
 public class AskClientCertificatePredicate implements Predicate<TrustManagerParameters> {
@@ -50,7 +52,7 @@ public class AskClientCertificatePredicate implements Predicate<TrustManagerPara
       Thread.currentThread().interrupt();
       return false;
     } catch (ExecutionException ex) {
-      throw new SonarLintWrappedRuntimeException(ex.getCause());
+      throw new RuntimeException(ex);
     }
   }
 }
