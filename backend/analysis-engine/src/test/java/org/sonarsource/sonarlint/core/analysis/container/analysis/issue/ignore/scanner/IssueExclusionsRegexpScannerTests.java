@@ -64,9 +64,14 @@ class IssueExclusionsRegexpScannerTests {
     regexpScanner = new IssueExclusionsRegexpScanner(javaFile, allFilePatterns, blockPatterns);
   }
 
-  @Test
-  void shouldDetectPatternLastLine() throws URISyntaxException, IOException {
-    var filePath = getResource("file-with-single-regexp-last-line.txt");
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "file-with-single-regexp-last-line.txt",
+    "file-with-single-regexp.txt",
+    "file-with-single-regexp-and-double-regexp.txt"
+  })
+  void shouldIgnoreAllIssuesInWholeFile(String fileName) throws Exception {
+    var filePath = getResource(fileName);
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
@@ -78,6 +83,22 @@ class IssueExclusionsRegexpScannerTests {
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
+  }
+
+  @Test
+  void shouldExcludeAllIssues() throws Exception {
+    var filePath = getResource("file-with-single-regexp.txt");
+    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
+
+    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
+  }
+
+  @Test
+  void shouldExcludeAllIssuesEvenIfAlsoDoubleRegexps() throws Exception {
+    var filePath = getResource("file-with-single-regexp-and-double-regexp.txt");
+    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
+
+    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
   }
 
   @Test
