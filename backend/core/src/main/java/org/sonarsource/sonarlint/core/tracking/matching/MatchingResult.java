@@ -61,11 +61,11 @@ public class MatchingResult<LEFT, RIGHT> {
     return result;
   }
 
-  public Map<LEFT, RIGHT> getMatchedLefts() {
+  public Map<L, R> getMatchedLefts() {
     return leftToRight;
   }
 
-  void recordMatch(L left, R right) {
+  void recordMatch(LEFT left, RIGHT right) {
     leftToRight.put(left, right);
   }
 
