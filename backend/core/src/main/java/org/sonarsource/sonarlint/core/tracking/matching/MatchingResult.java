@@ -51,9 +51,9 @@ public class MatchingResult<LEFT, RIGHT> {
    * that the traversal does not fail if method {@link #recordMatch(LEFT, RIGHT)}
    * is called.
    */
-  public Iterable<LEFT> getUnmatchedLefts() {
-    List<LEFT> result = new ArrayList<>();
-    for (LEFT left : lefts) {
+  public Iterable<L> getUnmatchedLefts() {
+    List<L> result = new ArrayList<>();
+    for (L left : lefts) {
       if (!leftToRight.containsKey(left)) {
         result.add(left);
       }
@@ -61,7 +61,7 @@ public class MatchingResult<LEFT, RIGHT> {
     return result;
   }
 
-  public Map<L, R> getMatchedLefts() {
+  public Map<LEFT, RIGHT> getMatchedLefts() {
     return leftToRight;
   }
 
