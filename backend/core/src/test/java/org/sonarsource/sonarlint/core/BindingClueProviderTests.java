@@ -76,7 +76,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarqube_with_project_key() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)));
+      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
@@ -89,7 +89,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_match_multiple_connections() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_2)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "http://Mysonarqube.org/", true));
