@@ -89,7 +89,7 @@ class BindingClueProviderTests {
 
   @Test
   void should_match_multiple_connections() {
-    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_2)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "http://Mysonarqube.org/", true));
@@ -104,7 +104,7 @@ class BindingClueProviderTests {
   @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_url() {
     mockFindFileByNamesInScope(
-      List.of(buildClientFile("path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
+      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.EU, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID_2, MY_ORG_2, SonarCloudRegion.EU, true));
