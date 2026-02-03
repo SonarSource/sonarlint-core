@@ -113,23 +113,35 @@ public class IssueService {
   private final AiCodeFixService aiCodeFixService;
   private final LocalOnlyIssuesRepository localOnlyIssuesRepository;
 
-  public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
-    XodusLocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository, ApplicationEventPublisher eventPublisher,
-    FindingReportingService findingReportingService, SeverityModeService severityModeService, NewCodeService newCodeService, ActiveRulesService activeRulesService,
-    TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService, LocalOnlyIssuesRepository localOnlyIssuesRepository) {
-    this.configurationRepository = configurationRepository;
-    this.sonarQubeClientManager = sonarQubeClientManager;
-    this.storageService = storageService;
-    this.localOnlyIssueStorageService = localOnlyIssueStorageService;
-    this.localOnlyIssueRepository = localOnlyIssueRepository;
-    this.eventPublisher = eventPublisher;
-    this.findingReportingService = findingReportingService;
-    this.severityModeService = severityModeService;
-    this.newCodeService = newCodeService;
-    this.activeRulesService = activeRulesService;
-    this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
-    this.aiCodeFixService = aiCodeFixService;
-    this.localOnlyIssuesRepository = localOnlyIssuesRepository;
+  private record IssueServiceDependencies(ConfigurationRepository configurationRepository,
+      SonarQubeClientManager sonarQubeClientManager,
+      StorageService storageService,
+      XodusLocalOnlyIssueStorageService localOnlyIssueStorageService,
+      LocalOnlyIssueRepository localOnlyIssueRepository,
+      ApplicationEventPublisher eventPublisher,
+      FindingReportingService findingReportingService,
+      SeverityModeService severityModeService,
+      NewCodeService newCodeService,
+      ActiveRulesService activeRulesService,
+      TaintVulnerabilityTrackingService taintVulnerabilityTrackingService,
+      AiCodeFixService aiCodeFixService,
+      LocalOnlyIssuesRepository localOnlyIssuesRepository) {
+  }
+
+  public IssueService(IssueServiceDependencies dependencies) {
+    this.configurationRepository = dependencies.configurationRepository();
+    this.sonarQubeClientManager = dependencies.sonarQubeClientManager();
+    this.storageService = dependencies.storageService();
+    this.localOnlyIssueStorageService = dependencies.localOnlyIssueStorageService();
+    this.localOnlyIssueRepository = dependencies.localOnlyIssueRepository();
+    this.eventPublisher = dependencies.eventPublisher();
+    this.findingReportingService = dependencies.findingReportingService();
+    this.severityModeService = dependencies.severityModeService();
+    this.newCodeService = dependencies.newCodeService();
+    this.activeRulesService = dependencies.activeRulesService();
+    this.taintVulnerabilityTrackingService = dependencies.taintVulnerabilityTrackingService();
+    this.aiCodeFixService = dependencies.aiCodeFixService();
+    this.localOnlyIssuesRepository = dependencies.localOnlyIssuesRepository();
   }
 
   @PostConstruct
