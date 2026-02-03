@@ -96,8 +96,8 @@ class TelemetryServerAttributesProviderTests {
     when(configurationRepository.getBindingConfiguration(configurationScopeId_3)).thenReturn(new BindingConfiguration(null, null, false));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
-    when(connectionConfigurationRepository.getConnectionById(connectionId_2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_2, "www.squrl2.org", true));
+    when(connectionConfigurationRepository.getConnectionById(connectionId1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId1, "www.squrl1.org", false));
+    when(connectionConfigurationRepository.getConnectionById(connectionId2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId2, "www.squrl2.org", true));
     var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class), mock(NodeJsService.class), mock(StorageService.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
