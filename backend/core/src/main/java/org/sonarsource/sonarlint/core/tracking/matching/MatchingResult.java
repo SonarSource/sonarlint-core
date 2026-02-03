@@ -65,7 +65,7 @@ public class MatchingResult<LEFT, RIGHT> {
     return leftToRight;
   }
 
-  void recordMatch(LEFT left, RIGHT right) {
+  void recordMatch(L left, R right) {
     leftToRight.put(left, right);
   }
 
@@ -74,7 +74,7 @@ public class MatchingResult<LEFT, RIGHT> {
   }
 
   @CheckForNull
-  public R getMatch(L left) {
+  public RIGHT getMatch(LEFT left) {
     return leftToRight.get(left);
   }
 
