@@ -301,6 +301,9 @@ class SpringComponentContainerTests {
     public ExtensionWithMultipleConstructorsAndNoAnnotations(A a) {
     }
 
+      if (a == null || b == null) {
+        throw new IllegalArgumentException("Arguments 'a' and 'b' must not be null");
+      }
     public ExtensionWithMultipleConstructorsAndNoAnnotations(A a, B b) {
       gotBothArgs = true;
     }
