@@ -78,7 +78,9 @@ class DefaultTempFolderTests {
       tooLong.append("tooooolong");
     }
 
-    var thrown = assertThrows(IllegalStateException.class, () -> underTest.newFile(tooLong.toString(), ".txt"));
+    var tooLongString = tooLong.toString();
+
+    var thrown = assertThrows(IllegalStateException.class, () -> underTest.newFile(tooLongString, ".txt"));
     assertThat(thrown).hasMessage("Failed to create temp file");
   }
 
