@@ -128,5 +128,7 @@ class HotspotDownloaderTests {
     assertThat(serverHotspot2.getTextRange().getEndLineOffset()).isEqualTo(8);
     assertThat(((TextRangeWithHash) serverHotspot2.getTextRange()).getHash()).isEqualTo("not a hash either");
     assertThat(serverHotspot2.getRuleKey()).isEqualTo("java:S123");
+
+
   }
 }
