@@ -24,11 +24,11 @@ import java.util.Map;
 public class Settings {
   private final Map<String, String> settings;
 
-  public Settings(Map<String, String> settings) {
-    this.settings = settings;
+  public Settings(Map<String, String> values) {
+    this.values = values;
   }
 
   public Map<String, String> getAll() {
-    return values;
+    return settings;
   }
 }
