@@ -95,7 +95,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
   }
 
   private void processLine(String line) {
-    if (line.trim().length() == 0) {
+    if (line.trim().isEmpty()) {
       return;
     }
 
