@@ -22,10 +22,10 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.Map;
 
 public class Settings {
-  private final Map<String, String> settings;
+  private final Map<String, String> values;
 
-  public Settings(Map<String, String> values) {
-    this.values = values;
+  public Settings(Map<String, String> settings) {
+    this.settings = settings;
   }
 
   public Map<String, String> getAll() {
