@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
 public class SettingsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
+  private static final String API_SETTINGS_PATH = System.getProperty("sonarlint.api.settings.path", "/api/settings/values.protobuf");
 
   private final ServerApiHelper helper;
 
