@@ -231,7 +231,10 @@ public class PluginInfo {
     info.setJarFile(jarPath.toFile());
     info.setName(manifest.getName());
     info.setMainClass(manifest.getMainClass());
-    info.setVersion(Version.create(manifest.getVersion()));
+    var version = manifest.getVersion();
+    if (version != null) {
+      info.setVersion(Version.create(version));
+    }
 
     info.setMinimalSqVersion(manifest.getSonarMinVersion().orElse(null));
     info.setBasePlugin(manifest.getBasePluginKey());
