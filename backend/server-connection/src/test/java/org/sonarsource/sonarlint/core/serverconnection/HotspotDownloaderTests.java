@@ -112,8 +112,6 @@ class HotspotDownloaderTests {
     assertThat(serverHotspot1.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(serverHotspot1.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(serverHotspot1.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(((TextRangeWithHash) serverHotspot1.getTextRange()).getHash()).isEqualTo("clearly not a hash");
-    assertThat(serverHotspot1.getRuleKey()).isEqualTo("java:S123");
 
     var serverHotspot2 = result.getChangedHotspots().get(1);
     assertThat(serverHotspot2.getKey()).isEqualTo("otherHotspotKey");
@@ -126,5 +124,7 @@ class HotspotDownloaderTests {
     assertThat(serverHotspot2.getTextRange().getStartLineOffset()).isEqualTo(6);
     assertThat(serverHotspot2.getTextRange().getEndLine()).isEqualTo(7);
     assertThat(serverHotspot2.getTextRange().getEndLineOffset()).isEqualTo(8);
+    assertThat(((TextRangeWithHash) serverHotspot2.getTextRange()).getHash()).isEqualTo("not a hash either");
+    assertThat(serverHotspot2.getRuleKey()).isEqualTo("java:S123");
   }
 }
