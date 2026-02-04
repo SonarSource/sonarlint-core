@@ -72,7 +72,7 @@ public class RulesApi {
 
   public Optional<ServerRule> getRule(String ruleKey, SonarLintCancelMonitor cancelMonitor) {
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);
-    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAMETER).append(UrlUtils.urlEncode(org)));
     try (var response = serverApiHelper.get(builder.toString(), cancelMonitor)) {
       var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
       var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
@@ -137,7 +137,7 @@ public class RulesApi {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
     builder.append(UrlUtils.urlEncode(qualityProfileKey));
-    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAMETER).append(UrlUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key");
     return builder.toString();
   }
