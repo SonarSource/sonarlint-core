@@ -177,6 +177,9 @@ public interface SonarLintRpcClientDelegate {
    * @param authType the key exchange algorithm used
    */
   boolean checkServerTrusted(List<X509CertificateDto> chain, String authType);
+  /**
+   * @deprecated since 10.3. Replaced by {@link #raiseHotspots(String, Map, boolean, UUID)}.
+   */
 
   @Deprecated(since = "10.3")
   default void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
