@@ -25,6 +25,10 @@ import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class ServerUpdaterUtils {
+  private ServerUpdaterUtils() {
+    // utility class
+  }
+
 
   /**
    * @return empty if there is no exact match for languages to indicate all issues must be fetched
