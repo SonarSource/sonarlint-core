@@ -48,7 +48,7 @@ import org.sonarsource.sonarlint.plugin.api.issue.NewSonarLintIssue;
 
 import static java.util.Objects.requireNonNull;
 
-public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue {
+public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue {
 
   private final SonarLintInputProject project;
   private final Path baseDir;
