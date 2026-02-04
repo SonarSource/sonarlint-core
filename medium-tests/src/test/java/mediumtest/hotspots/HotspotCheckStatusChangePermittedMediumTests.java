@@ -91,7 +91,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey",
-          hotspot -> hotspot.withoutStatusChangePermission())))
+          HotspotBuilder::withoutStatusChangePermission)))
       .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
