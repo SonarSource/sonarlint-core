@@ -148,7 +148,7 @@ class SloopLauncherTests {
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, Set.of(), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false, null)).join();
-    sloop.onExit().thenAccept(exitValue -> this.exitValue = exitValue);
+    sloop.onExit().thenAccept(processExitValue -> this.exitValue = processExitValue);
 
     shutdownRequested = true;
     sloop.shutdown().join();
