@@ -243,7 +243,7 @@ class SonarProjectBranchMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start(client);
 
-    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("myBranch"));
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "myBranch");
 
     // Emulate a binding change to a project having no branches
     bind(backend, "configScopeId", "connectionId", "projectKey2");
