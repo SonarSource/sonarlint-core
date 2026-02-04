@@ -63,6 +63,8 @@ public class RulesApi {
   public static final Set<String> TAINT_REPOS = Set.copyOf(TAINT_REPOS_BY_LANGUAGE.values());
 
   public static final String RULE_SHOW_URL = "/api/rules/show.protobuf?key=";
+  private static final String ORGANIZATION_PARAMETER = "&organization=";
+
 
   private final ServerApiHelper serverApiHelper;
 
@@ -72,7 +74,7 @@ public class RulesApi {
 
   public Optional<ServerRule> getRule(String ruleKey, SonarLintCancelMonitor cancelMonitor) {
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);
-    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAMETER).append(UrlUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     try (var response = serverApiHelper.get(builder.toString(), cancelMonitor)) {
       var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
       var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
