@@ -264,7 +264,7 @@ class FileTreeMatcherTests {
 
     assertThat(r1.equals(r1)).isTrue();
     assertThat(r1.equals(r4)).isTrue();
-    assertThat(r1.hashCode()).isEqualTo(r4.hashCode());
+    assertThat(r1).hasSameHashCodeAs(r4);
 
     assertThat(r1.equals(r3)).isFalse();
     assertThat(r3.equals(r2)).isFalse();
