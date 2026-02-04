@@ -85,7 +85,7 @@ jobs:
           maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
           sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
           sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}")
-          sonar_props+=("-Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
+          sonar_props+=("-Dsonar.coverage.jacoco.aggregateXmlReportPath=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
           echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
           mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
