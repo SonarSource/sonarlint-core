@@ -271,6 +271,7 @@ class SloopLauncherTests {
       return false;
     }
 
+    @Deprecated
     @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
 
