@@ -20,7 +20,6 @@
 package mediumtest;
 
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
@@ -84,7 +83,8 @@ class BindingTelemetryMediumTests {
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
       CONFIG_SCOPE_ID,
       new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingSuggestionOrigin.REMOTE_URL
+      BindingMode.FROM_SUGGESTION,
+      null
     ));
 
     await().untilAsserted(() -> {
