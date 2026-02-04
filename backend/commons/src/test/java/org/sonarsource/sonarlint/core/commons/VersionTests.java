@@ -108,8 +108,9 @@ class VersionTests {
     var version1dot1 = Version.create("1.1");
     var version1dot9 = Version.create("1.9");
 
-    assertThat(version1dot10.compareTo(version1dot1) > 0).isTrue();
-    assertThat(version1dot10.compareTo(version1dot9) > 0).isTrue();
+    assertThat(version1dot10)
+      .isGreaterThan(version1dot1)
+      .isGreaterThan(version1dot9);
   }
 
   @Test
