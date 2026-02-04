@@ -137,7 +137,7 @@ public class RulesApi {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
     builder.append(UrlUtils.urlEncode(qualityProfileKey));
-    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAMETER).append(UrlUtils.urlEncode(org)));
     builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key");
     return builder.toString();
   }
@@ -158,7 +158,7 @@ public class RulesApi {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?repositories=");
     builder.append(repositories.stream().map(UrlUtils::urlEncode).collect(joining(",")));
-    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAMETER).append(UrlUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     // Add only f=repo even if we don't need it, else too many fields are returned by default
     builder.append("&f=repo&s=key");
     return builder.toString();
