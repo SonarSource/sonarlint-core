@@ -29,6 +29,6 @@ public class Settings {
   }
 
   public Map<String, String> getAll() {
-    return settings;
+    return values;
   }
 }
