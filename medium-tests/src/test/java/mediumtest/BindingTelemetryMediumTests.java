@@ -84,8 +84,7 @@ class BindingTelemetryMediumTests {
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(
       CONFIG_SCOPE_ID,
       new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, true),
-      BindingMode.FROM_SUGGESTION,
-      null
+      BindingSuggestionOrigin.REMOTE_URL
     ));
 
     await().untilAsserted(() -> {
