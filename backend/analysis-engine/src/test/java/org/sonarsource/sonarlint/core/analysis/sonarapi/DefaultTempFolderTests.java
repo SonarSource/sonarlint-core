@@ -36,7 +36,7 @@ class DefaultTempFolderTests {
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  void createTempFolderAndFile(@TempDir File rootTempFolder) throws Exception {
+  void createTempFolderAndFile(@TempDir File rootTempFolder) {
     var underTest = new DefaultTempFolder(rootTempFolder);
     var dir = underTest.newDir();
     assertThat(dir).exists().isDirectory();
@@ -48,7 +48,7 @@ class DefaultTempFolderTests {
   }
 
   @Test
-  void createTempFolderWithName(@TempDir File rootTempFolder) throws Exception {
+  void createTempFolderWithName(@TempDir File rootTempFolder) {
     var underTest = new DefaultTempFolder(rootTempFolder);
     var dir = underTest.newDir("sample");
     assertThat(dir).exists().isDirectory();
@@ -59,19 +59,21 @@ class DefaultTempFolderTests {
   }
 
   @Test
-  void newDir_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) throws Exception {
+  void newDir_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) {
     var underTest = new DefaultTempFolder(rootTempFolder);
     var tooLong = new StringBuilder("tooooolong");
     for (var i = 0; i < 50; i++) {
       tooLong.append("tooooolong");
     }
 
-    var thrown = assertThrows(IllegalStateException.class, () -> underTest.newDir(tooLong.toString()));
+    var tooLongString = tooLong.toString();
+
+    var thrown = assertThrows(IllegalStateException.class, () -> underTest.newDir(tooLongString));
     assertThat(thrown).hasMessageStartingWith("Failed to create temp directory");
   }
 
   @Test
-  void newFile_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) throws Exception {
+  void newFile_throws_ISE_if_name_is_not_valid(@TempDir File rootTempFolder) {
     var underTest = new DefaultTempFolder(rootTempFolder);
     var tooLong = new StringBuilder("tooooolong");
     for (var i = 0; i < 50; i++) {
@@ -95,7 +97,7 @@ class DefaultTempFolderTests {
   }
 
   @Test
-  void clean_does_not_fail_if_directory_has_already_been_deleted(@TempDir File dir) throws Exception {
+  void clean_does_not_fail_if_directory_has_already_been_deleted(@TempDir File dir) {
     var underTest = new DefaultTempFolder(dir);
     underTest.clean();
     assertThat(dir).doesNotExist();
