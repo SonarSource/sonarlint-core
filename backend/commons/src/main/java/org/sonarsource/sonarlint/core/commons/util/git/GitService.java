@@ -88,10 +88,9 @@ public class GitService {
     if (baseDir == null) {
       return Set.of();
     }
-    try {
-      var repo = buildGitRepository(baseDir);
+    try (var repo = buildGitRepository(baseDir);
+         var git = new Git(repo)) {
       var workTreePath = repo.getWorkTree().toPath();
-      var git = new Git(repo);
       var status = git.status().call();
       var uncommitted = status.getUncommittedChanges().stream();
       var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
@@ -134,35 +133,35 @@ public class GitService {
     @Nullable UnaryOperator<String> fileContentProvider) {
     LOG.debug("Falling back to JGit");
     var startTime = System.currentTimeMillis();
-    var gitRepo = buildGitRepository(projectBaseDir);
+    try (var gitRepo = buildGitRepository(projectBaseDir)) {
+      var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
 
-    var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
+      var gitRepoRelativeFilePaths = projectBaseRelativeFilePaths.stream()
+        .map(gitRepoRelativeProjectBaseDir::resolve)
+        .map(Path::toString)
+        .map(FilenameUtils::separatorsToUnix)
+        .collect(Collectors.toSet());
 
-    var gitRepoRelativeFilePaths = projectBaseRelativeFilePaths.stream()
-      .map(gitRepoRelativeProjectBaseDir::resolve)
-      .map(Path::toString)
-      .map(FilenameUtils::separatorsToUnix)
-      .collect(Collectors.toSet());
+      var blameCommand = new RepositoryBlameCommand(gitRepo)
+        .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
+        .setMultithreading(true)
+        .setFilePaths(gitRepoRelativeFilePaths);
+      ofNullable(fileContentProvider)
+        .ifPresent(provider -> blameCommand.setFileContentProvider(adaptToPlatformBasedPath(provider)));
 
-    var blameCommand = new RepositoryBlameCommand(gitRepo)
-      .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
-      .setMultithreading(true)
-      .setFilePaths(gitRepoRelativeFilePaths);
-    ofNullable(fileContentProvider)
-      .ifPresent(provider -> blameCommand.setFileContentProvider(adaptToPlatformBasedPath(provider)));
-
-    try {
-      var blameResult = blameCommand.call();
-      var multiFileBlameResult = new MultiFileBlameResult(
-        blameResult.getFileBlameByPath().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> new BlameResult(Arrays.asList(e.getValue().getCommitDates())))),
-        gitRepoRelativeProjectBaseDir);
-      LOG.debug("Blamed {} files in {}ms", projectBaseRelativeFilePaths.size(), System.currentTimeMillis() - startTime);
-      return multiFileBlameResult;
-    } catch (NoHeadException e) {
-      // it means that the repository has no commits, so we can't get any blame information
-      return MultiFileBlameResult.empty(gitRepoRelativeProjectBaseDir);
-    } catch (GitAPIException e) {
-      throw new IllegalStateException("Failed to blame repository files", e);
+      try {
+        var blameResult = blameCommand.call();
+        var multiFileBlameResult = new MultiFileBlameResult(
+          blameResult.getFileBlameByPath().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> new BlameResult(Arrays.asList(e.getValue().getCommitDates())))),
+          gitRepoRelativeProjectBaseDir);
+        LOG.debug("Blamed {} files in {}ms", projectBaseRelativeFilePaths.size(), System.currentTimeMillis() - startTime);
+        return multiFileBlameResult;
+      } catch (NoHeadException e) {
+        // it means that the repository has no commits, so we can't get any blame information
+        return MultiFileBlameResult.empty(gitRepoRelativeProjectBaseDir);
+      } catch (GitAPIException e) {
+        throw new IllegalStateException("Failed to blame repository files", e);
+      }
     }
   }
 
@@ -198,8 +197,7 @@ public class GitService {
     if (baseDir == null) {
       return new SonarLintGitIgnore(new IgnoreNode());
     }
-    try {
-      var gitRepo = buildGitRepository(baseDir);
+    try (var gitRepo = buildGitRepository(baseDir)) {
       var ignoreNode = buildIgnoreNode(gitRepo);
       return new SonarLintGitIgnore(ignoreNode);
     } catch (GitRepoNotFoundException e) {
