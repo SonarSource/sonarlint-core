@@ -33,4 +33,4 @@ jobs:
       dryRun: ${{ inputs.dryRun }}
       publishToBinaries: false
       mavenCentralSync: true
-      slackChannel: squad-ide
+      slackChannel: squad-ide-private
