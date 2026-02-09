@@ -77,7 +77,7 @@ class IssueExclusionPatternInitializerTests {
     assertThat(patternsInitializer.hasFileContentPattern()).isTrue();
     assertThat(patternsInitializer.hasMulticriteriaPatterns()).isFalse();
     assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
-    assertThat(patternsInitializer.getBlockPatterns().size()).isEqualTo(3);
+    assertThat(patternsInitializer.getBlockPatterns()).hasSize(3);
     assertThat(patternsInitializer.getAllFilePatterns()).isEmpty();
   }
 
@@ -105,7 +105,7 @@ class IssueExclusionPatternInitializerTests {
     assertThat(patternsInitializer.hasMulticriteriaPatterns()).isFalse();
     assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
     assertThat(patternsInitializer.getBlockPatterns()).isEmpty();
-    assertThat(patternsInitializer.getAllFilePatterns().size()).isEqualTo(2);
+    assertThat(patternsInitializer.getAllFilePatterns()).hasSize(2);
   }
 
   @Test
