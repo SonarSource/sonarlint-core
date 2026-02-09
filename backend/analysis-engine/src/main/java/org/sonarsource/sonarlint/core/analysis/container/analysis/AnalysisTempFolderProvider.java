@@ -28,7 +28,7 @@ public class AnalysisTempFolderProvider {
 
   private final NoTempFilesDuringAnalysis instance = new NoTempFilesDuringAnalysis();
 
-  @Bean("TempFolder")
+  @Bean("tempFolder")
   public TempFolder provide() {
     return instance;
   }
