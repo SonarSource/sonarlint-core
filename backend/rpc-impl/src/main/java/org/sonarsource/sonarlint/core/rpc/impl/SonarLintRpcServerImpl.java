@@ -20,12 +20,21 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.filter.LevelFilter;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import ch.qos.logback.core.spi.FilterReply;
+import ch.qos.logback.core.util.FileSize;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -43,6 +52,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
@@ -66,6 +76,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
@@ -175,8 +186,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       SonarLintLogger.get().setLevel(LogService.convert(params.getLogLevel()));
       SonarLintLogger.get().setTarget(logOutput);
+      var root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
       // for flyway logging level
-      setLogbackRootLogger(params);
+      setLogbackRootLogger(root, params.getLogLevel());
+      setupFileAppender(root, UserPaths.from(params).getStorageRoot());
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
@@ -188,17 +201,57 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     });
   }
 
-  private static void setLogbackRootLogger(InitializeParams params) {
-    var root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-    var logLevel = switch (params.getLogLevel()) {
+  private static void setupFileAppender(ch.qos.logback.classic.Logger root, Path storageRoot) {
+    var loggerContext = root.getLoggerContext();
+
+    var encoder = new PatternLayoutEncoder();
+    encoder.setContext(loggerContext);
+    encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{30} - %msg%n");
+    encoder.start();
+
+    var rollingPolicy = new FixedWindowRollingPolicy();
+    rollingPolicy.setContext(loggerContext);
+
+    // This is the file appender we will configure later
+    var baseFileName = "slcore";
+    var triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
+    triggeringPolicy.setMaxFileSize(new FileSize(10 * 1024 * 1024L));
+    var rollingFileAppender = new RollingFileAppender<ILoggingEvent>();
+    rollingFileAppender.setContext(loggerContext);
+    rollingFileAppender.setName("ROLLING_FILE");
+    rollingFileAppender.setFile(storageRoot.resolve("logs").resolve(baseFileName + ".log").toAbsolutePath().toString());
+    rollingFileAppender.setEncoder(encoder);
+    rollingFileAppender.setRollingPolicy(rollingPolicy);
+    rollingFileAppender.setTriggeringPolicy(triggeringPolicy);
+    rollingPolicy.setParent(rollingFileAppender);
+    rollingPolicy.setFileNamePattern(baseFileName + ".%i.log");
+    rollingPolicy.setMinIndex(1);
+    rollingPolicy.setMinIndex(10);
+
+    var debugAcceptFilter = new LevelFilter();
+    debugAcceptFilter.setContext(loggerContext);
+    debugAcceptFilter.setLevel(Level.DEBUG);
+    debugAcceptFilter.setOnMatch(FilterReply.ACCEPT);
+    debugAcceptFilter.setOnMismatch(FilterReply.DENY);
+    rollingFileAppender.addFilter(debugAcceptFilter);
+
+    debugAcceptFilter.start();
+    rollingPolicy.start();
+    triggeringPolicy.start();
+    rollingFileAppender.start();
+
+    root.addAppender(rollingFileAppender);
+  }
+
+  private static void setLogbackRootLogger(ch.qos.logback.classic.Logger root, LogLevel logLevel) {
+    root.setLevel(switch (logLevel) {
       case OFF -> Level.OFF;
       case ERROR -> Level.ERROR;
       case WARN -> Level.WARN;
       case INFO -> Level.INFO;
       case DEBUG -> Level.DEBUG;
       case TRACE -> Level.TRACE;
-    };
-    root.setLevel(logLevel);
+    });
   }
 
   public ConfigurableApplicationContext getInitializedApplicationContext() {
