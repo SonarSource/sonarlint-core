@@ -20,27 +20,30 @@
 package org.sonarsource.sonarlint.core.test.utils.server.sse;
 
 import java.io.File;
+import java.net.URI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.sonarsource.sonarlint.core.test.utils.server.NetworkUtils;
 
 public class SSEServer {
 
-  public static final int DEFAULT_PORT = 54321;
   private Tomcat tomcat;
   private SSEServlet sseServlet;
 
-  public void start() {
+  public URI start() {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
-      tomcat.setPort(DEFAULT_PORT);
+      var port = NetworkUtils.getNextAvailablePort();
+      tomcat.setPort(port);
       var context = tomcat.addContext("", baseDir);
       sseServlet = new SSEServlet();
       Tomcat.addServlet(context, "sse", sseServlet).addMapping("/");
       // needed to start the endpoint
       tomcat.getConnector();
       tomcat.start();
+      return URI.create("http://localhost:" + port);
     } catch (LifecycleException e) {
       throw new IllegalStateException(e);
     }
@@ -53,10 +56,6 @@ public class SSEServer {
     } catch (LifecycleException e) {
       throw new IllegalStateException(e);
     }
-  }
-
-  public String getUrl() {
-    return "http://localhost:" + DEFAULT_PORT;
   }
 
   public void sendEventToAllClients(String eventPayload) {
