@@ -249,7 +249,7 @@ class AnalysisExtensionInstallerTests {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-
+      // Intentionally left blank: tests only require a Sensor implementation type
     }
 
     @Override
