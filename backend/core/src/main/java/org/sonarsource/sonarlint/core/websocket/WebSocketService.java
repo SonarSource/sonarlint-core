@@ -145,7 +145,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
+    String removedConnectionId = connectionConfigurationRemovedEvent.removedConnectionId();
     executorService.execute(() ->
       webSocketsByRegion.forEach((region, webSocketManager) ->
         webSocketManager.forgetConnection(removedConnectionId, "Connection was removed")

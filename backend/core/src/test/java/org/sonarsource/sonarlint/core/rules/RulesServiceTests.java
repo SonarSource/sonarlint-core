@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
@@ -45,9 +44,8 @@ class RulesServiceTests {
   @BeforeEach
   void prepare() {
     extractionHelper = mock(RulesExtractionHelper.class);
-    var configurationRepository = mock(ConfigurationRepository.class);
     var storageService = mock(StorageService.class);
-    rulesRepository = new RulesRepository(extractionHelper, configurationRepository, storageService);
+    rulesRepository = new RulesRepository(extractionHelper, storageService);
   }
 
   @Test

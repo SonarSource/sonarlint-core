@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -297,16 +296,11 @@ public class ActiveRulesService {
     };
   }
 
-  @EventListener
-  public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
-    var iterator = activeRulesPerBinding.entrySet().iterator();
-    while (iterator.hasNext()) {
-      var binding = iterator.next().getKey();
-      if (binding.connectionId().equals(event.getRemovedConnectionId())) {
-        // evict the cache, active rules will be lazily loaded next time they are needed
-        iterator.remove();
-      }
-    }
+  public void evictFor(String connectionId) {
+    LOG.debug("Evict cached active rules for connection '{}'", connectionId);
+    activeRulesPerBinding.entrySet().removeIf(
+      entry -> entry.getKey().connectionId().equals(connectionId)
+    );
   }
 
   @EventListener

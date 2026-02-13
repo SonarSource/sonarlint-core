@@ -49,7 +49,7 @@ public class StorageService {
 
   @EventListener
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
-    var removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
+    var removedConnectionId = connectionConfigurationRemovedEvent.removedConnectionId();
     var connectionStorage = connection(removedConnectionId);
     connectionStorage.delete();
   }

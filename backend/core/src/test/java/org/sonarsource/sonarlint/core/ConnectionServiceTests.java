@@ -194,7 +194,7 @@ class ConnectionServiceTests {
     verify(eventPublisher, times(2)).publishEvent(captor.capture());
     var events = captor.getAllValues();
 
-    assertThat(events).extracting(ConnectionConfigurationRemovedEvent::getRemovedConnectionId).containsExactly("sc1", "sq1");
+    assertThat(events).extracting(ConnectionConfigurationRemovedEvent::removedConnectionId).containsExactly("sc1", "sq1");
   }
 
   @Test

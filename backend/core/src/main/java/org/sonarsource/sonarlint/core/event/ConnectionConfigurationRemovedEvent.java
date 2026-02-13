@@ -19,15 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-public class ConnectionConfigurationRemovedEvent {
-
-  private final String removedConnectionId;
-
-  public ConnectionConfigurationRemovedEvent(String removedConnectionId) {
-    this.removedConnectionId = removedConnectionId;
-  }
-
-  public String getRemovedConnectionId() {
-    return removedConnectionId;
-  }
+public record ConnectionConfigurationRemovedEvent(String removedConnectionId) {
 }
