@@ -186,6 +186,10 @@ public class ConfigurationRepository {
       .toList();
   }
 
+  public boolean hasScopesBoundToConnection(String connectionId) {
+    return !getBoundScopesToConnection(connectionId).isEmpty();
+  }
+
   /**
    * Return the set of Sonar Project keys used in at least one binding for the given connection.
    */

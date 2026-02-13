@@ -90,8 +90,8 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    var removedScope = event.getRemovedConfigurationScope();
-    var removedBindingConfiguration = event.getRemovedBindingConfiguration();
+    var removedScope = event.removedConfigurationScope();
+    var removedBindingConfiguration = event.removedBindingConfiguration();
     var bindingConfigurationFromRepository = configurationRepository.getBindingConfiguration(removedScope.id());
     if (bindingConfigurationFromRepository == null
       || isBindingDifferent(removedBindingConfiguration, bindingConfigurationFromRepository)) {
@@ -130,7 +130,7 @@ public class ServerEventsService {
       return;
     }
     executorService.execute(() -> {
-      var stream = streamsPerConnectionId.remove(event.getRemovedConnectionId());
+      var stream = streamsPerConnectionId.remove(event.removedConnectionId());
       if (stream != null) {
         stream.stop();
       }

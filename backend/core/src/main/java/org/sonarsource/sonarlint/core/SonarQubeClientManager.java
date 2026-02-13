@@ -201,7 +201,7 @@ public class SonarQubeClientManager {
 
   @EventListener
   public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
-    clientsByConnectionId.remove(event.getRemovedConnectionId());
+    clientsByConnectionId.remove(event.removedConnectionId());
   }
 
   @EventListener

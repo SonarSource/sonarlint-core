@@ -244,7 +244,7 @@ public class SynchronizationService {
     var scopeId = event.getRemovedConfigurationScopeId();
     LOG.debug("Config scope {} removed, managing caches", scopeId);
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(scopeId);
-    var previousBinding = event.getRemovedBindingConfiguration();
+    var previousBinding = event.removedBindingConfiguration();
     if (previousBinding.isBound()) {
       var connectionId = requireNonNull(previousBinding.connectionId());
       var projectKey = requireNonNull(previousBinding.sonarProjectKey());

@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
@@ -48,7 +47,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSp
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
@@ -94,11 +92,6 @@ public class PluginsService {
       .filter(PluginRequirementsCheckResult::isSkipped)
       .map(plugin -> new SkippedPlugin(plugin.getPlugin().getKey(), plugin.getSkipReason().get()))
       .toList();
-  }
-
-  public LoadedPlugins reloadPluginsFromStorage(String connectionId) {
-    pluginsRepository.unload(connectionId);
-    return getPlugins(connectionId);
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -195,12 +188,7 @@ public class PluginsService {
     return new PluginsLoader().load(config, disabledPluginKeysForAnalysis);
   }
 
-  @EventListener
-  public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
-    evictAll(e.getRemovedConnectionId());
-  }
-
-  private void evictAll(String connectionId) {
+  public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
     pluginsRepository.unload(connectionId);
   }

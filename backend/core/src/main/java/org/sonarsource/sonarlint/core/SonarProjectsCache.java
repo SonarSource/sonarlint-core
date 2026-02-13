@@ -95,7 +95,7 @@ public class SonarProjectsCache {
 
   @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
-    evictAll(e.getRemovedConnectionId());
+    evictAll(e.removedConnectionId());
   }
 
   @EventListener

@@ -38,12 +38,12 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
+import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
@@ -53,15 +53,17 @@ public class AnalysisSchedulerCache {
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
   private final PluginsService pluginsService;
+  private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
   private final Map<String, String> extraProperties = new HashMap<>();
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final Map<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
   public AnalysisSchedulerCache(InitializeParams initializeParams, UserPaths userPaths, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
-    PluginsService pluginsService, ClientFileSystemService clientFileSystemService) {
+    PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
+    this.pluginLifecycleService = pluginLifecycleService;
     this.nodeJsService = nodeJsService;
     this.workDir = userPaths.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
@@ -159,15 +161,18 @@ public class AnalysisSchedulerCache {
 
   @EventListener
   public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
-    stop(event.getRemovedConnectionId());
+    stop(event.removedConnectionId());
   }
 
-  @EventListener
-  public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
-    var connectionId = event.connectionId();
+  public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)), () -> pluginsService.reloadPluginsFromStorage(connectionId));
+      scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)),
+        () -> pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId));
+    } else {
+      // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
+      // This ensures that when the scheduler is eventually created, it won't use stale cached data
+      pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
     }
   }
 
@@ -207,10 +212,9 @@ public class AnalysisSchedulerCache {
   }
 
   private synchronized void stopAll() {
-    var standaloneAnalysisScheduler = this.standaloneScheduler.get();
+    var standaloneAnalysisScheduler = this.standaloneScheduler.getAndSet(null);
     if (standaloneAnalysisScheduler != null) {
       standaloneAnalysisScheduler.stop();
-      this.standaloneScheduler.set(null);
     }
     connectedSchedulerByConnectionId.forEach((connectionId, scheduler) -> scheduler.stop());
     connectedSchedulerByConnectionId.clear();
@@ -221,12 +225,19 @@ public class AnalysisSchedulerCache {
     if (scheduler != null) {
       scheduler.stop();
     }
+    pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
   }
 
   public void unregisterModule(String scopeId, @Nullable String connectionId) {
     var analysisScheduler = connectionId == null ? getStandaloneSchedulerIfStarted() : getConnectedSchedulerIfStarted(connectionId);
     if (analysisScheduler != null) {
-      analysisScheduler.post(new UnregisterModuleCommand(scopeId));
+      if (connectionId != null && !configurationRepository.hasScopesBoundToConnection(connectionId)) {
+        stop(connectionId);
+      } else {
+        analysisScheduler.post(new UnregisterModuleCommand(scopeId));
+      }
+    } else if (connectionId != null && !configurationRepository.hasScopesBoundToConnection(connectionId)) {
+      pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
     }
   }
 }
