@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.BatchFixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
@@ -131,6 +132,13 @@ public interface SonarLintRpcClientDelegate {
    * The fix is only on a single files, but it may contain different locations
    */
   default void showFixSuggestion(String configurationScopeId, String issueKey, FixSuggestionDto fixSuggestion) {
+
+  }
+
+  /**
+   * Sends a notification to show a batch fix suggestion spanning multiple files
+   */
+  default void showBatchFixSuggestion(String configurationScopeId, String issueKey, BatchFixSuggestionDto batchFixSuggestion) {
 
   }
 

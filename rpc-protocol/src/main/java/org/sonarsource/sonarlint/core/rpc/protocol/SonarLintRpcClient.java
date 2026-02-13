@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowBatchFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
@@ -161,6 +162,14 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   default void showFixSuggestion(ShowFixSuggestionParams params) {
+
+  }
+
+  /**
+   * Sends a notification to show a batch fix suggestion spanning multiple files
+   */
+  @JsonNotification
+  default void showBatchFixSuggestion(ShowBatchFixSuggestionParams params) {
 
   }
 
