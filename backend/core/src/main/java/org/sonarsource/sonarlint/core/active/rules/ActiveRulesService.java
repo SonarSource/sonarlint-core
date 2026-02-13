@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
+import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
@@ -301,6 +302,13 @@ public class ActiveRulesService {
     activeRulesPerBinding.entrySet().removeIf(
       entry -> entry.getKey().connectionId().equals(connectionId)
     );
+  }
+
+  @EventListener
+  public void settingsChanged(SonarServerSettingsChangedEvent event) {
+    // settings have an impact on rule definitions
+    rulesRepository.evictFor(event.connectionId());
+    evictFor(event.connectionId());
   }
 
   @EventListener

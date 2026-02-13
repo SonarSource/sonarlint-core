@@ -344,7 +344,7 @@ public class SynchronizationService {
         // XXX we might want to group those 2 events under one
         if (!analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
           applicationEventPublisher.publishEvent(
-            new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey()));
+            new SonarServerSettingsChangedEvent(connectionId, configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey()));
         }
         applicationEventPublisher.publishEvent(new AnalyzerConfigurationSynchronized(binding, configScopeIds));
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey, cancelMonitor);

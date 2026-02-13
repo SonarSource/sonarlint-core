@@ -22,21 +22,5 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.Map;
 import java.util.Set;
 
-public class SonarServerSettingsChangedEvent {
-
-  private final Set<String> configScopeIds;
-  private final Map<String, String> updatedSettingsValueByKey;
-
-  public SonarServerSettingsChangedEvent(Set<String> configScopeIds, Map<String, String> updatedSettingsValueByKey) {
-    this.configScopeIds = configScopeIds;
-    this.updatedSettingsValueByKey = updatedSettingsValueByKey;
-  }
-
-  public Set<String> getConfigScopeIds() {
-    return configScopeIds;
-  }
-
-  public Map<String, String> getUpdatedSettingsValueByKey() {
-    return updatedSettingsValueByKey;
-  }
+public record SonarServerSettingsChangedEvent(String connectionId, Set<String> configScopeIds, Map<String, String> updatedSettingsValueByKey) {
 }

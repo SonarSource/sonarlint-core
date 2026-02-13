@@ -171,10 +171,10 @@ public class FileExclusionService {
 
   @EventListener
   public void onFileExclusionSettingsChanged(SonarServerSettingsChangedEvent event) {
-    var settingsDiff = event.getUpdatedSettingsValueByKey();
+    var settingsDiff = event.updatedSettingsValueByKey();
     if (isFileExclusionSettingsDifferent(settingsDiff)) {
       LOG.debug("File exclusion settings changed, recompute all file exclusions...");
-      event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
+      event.configScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
         .forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri())));
     }
   }
