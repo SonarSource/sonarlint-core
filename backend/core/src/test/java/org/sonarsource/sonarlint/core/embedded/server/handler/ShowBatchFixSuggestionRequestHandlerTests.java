@@ -118,32 +118,20 @@ class ShowBatchFixSuggestionRequestHandlerTests {
     when(request.getMethod()).thenReturn(Method.POST.name());
     when(request.getEntity()).thenReturn(new StringEntity("""
       {
-        "fileEdits": [
+        "edits": [
           {
             "path": "src/main/java/Main.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 0,
-                "endLine": 1
-              },
-              "before": "",
-              "after": "var fix = 1;"
-            }]
+            "beforeLineRange": { "startLine": 0, "endLine": 1 },
+            "before": "",
+            "after": "var fix = 1;"
           },
           {
             "path": "src/main/java/Other.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 5,
-                "endLine": 8
-              },
-              "before": "old code",
-              "after": "new code"
-            }]
+            "beforeLineRange": { "startLine": 5, "endLine": 8 },
+            "before": "old code",
+            "after": "new code"
           }
-        ],
-        "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-        "explanation": "Modifying the variable name is good"
+        ]
       }
       """));
     var response = mock(ClassicHttpResponse.class);
@@ -171,32 +159,20 @@ class ShowBatchFixSuggestionRequestHandlerTests {
       "&organizationKey=sample-organization");
     request.setEntity(new StringEntity("""
       {
-        "fileEdits": [
+        "edits": [
           {
             "path": "src/main/java/Main.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 0,
-                "endLine": 1
-              },
-              "before": "",
-              "after": "var fix = 1;"
-            }]
+            "beforeLineRange": { "startLine": 0, "endLine": 1 },
+            "before": "",
+            "after": "var fix = 1;"
           },
           {
             "path": "src/main/java/Other.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 5,
-                "endLine": 8
-              },
-              "before": "old code",
-              "after": "new code"
-            }]
+            "beforeLineRange": { "startLine": 5, "endLine": 8 },
+            "before": "old code",
+            "after": "new code"
           }
-        ],
-        "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-        "explanation": "Modifying the variable name is good"
+        ]
       }
       """));
     var params = Map.of(
@@ -215,11 +191,9 @@ class ShowBatchFixSuggestionRequestHandlerTests {
     assertThat(showBatchFixSuggestionQuery.getBranch()).isEqualTo("branch");
     assertThat(showBatchFixSuggestionQuery.getTokenName()).isNull();
     assertThat(showBatchFixSuggestionQuery.getTokenValue()).isNull();
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().explanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().fileEdits()).hasSize(2);
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().fileEdits().get(0).path()).isEqualTo("src/main/java/Main.java");
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().fileEdits().get(1).path()).isEqualTo("src/main/java/Other.java");
+    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().edits()).hasSize(2);
+    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().edits().get(0).path()).isEqualTo("src/main/java/Main.java");
+    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().edits().get(1).path()).isEqualTo("src/main/java/Other.java");
   }
 
   @Test
@@ -231,21 +205,14 @@ class ShowBatchFixSuggestionRequestHandlerTests {
       "&tokenValue=123");
     request.setEntity(new StringEntity("""
       {
-        "fileEdits": [
+        "edits": [
           {
             "path": "src/main/java/Main.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 0,
-                "endLine": 1
-              },
-              "before": "",
-              "after": "var fix = 1;"
-            }]
+            "beforeLineRange": { "startLine": 0, "endLine": 1 },
+            "before": "",
+            "after": "var fix = 1;"
           }
-        ],
-        "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-        "explanation": "Modifying the variable name is good"
+        ]
       }
       """));
     var params = Map.of(
@@ -263,7 +230,7 @@ class ShowBatchFixSuggestionRequestHandlerTests {
     assertThat(showBatchFixSuggestionQuery.getTokenName()).isEqualTo("abc");
     assertThat(showBatchFixSuggestionQuery.getOrganizationKey()).isEqualTo("sample-organization");
     assertThat(showBatchFixSuggestionQuery.getTokenValue()).isEqualTo("123");
-    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
+    assertThat(showBatchFixSuggestionQuery.getBatchFixSuggestion().edits()).hasSize(1);
   }
 
   @Test
@@ -276,11 +243,8 @@ class ShowBatchFixSuggestionRequestHandlerTests {
   }
 
   @Test
-  void should_validate_batch_fix_suggestion_with_empty_file_edits() {
-    var emptyPayload = new ShowBatchFixSuggestionRequestHandler.BatchFixSuggestionPayload(
-      List.of(),
-      "suggestionId",
-      "explanation");
+  void should_validate_batch_fix_suggestion_with_empty_edits() {
+    var emptyPayload = new ShowBatchFixSuggestionRequestHandler.BatchFixSuggestionPayload(List.of());
     assertThat(new ShowBatchFixSuggestionRequestHandler.ShowBatchFixSuggestionQuery(null, "project", "issue", "branch", "name", "value",
       "organizationKey", true, emptyPayload).isValid()).isFalse();
   }
@@ -293,32 +257,20 @@ class ShowBatchFixSuggestionRequestHandlerTests {
       "&organizationKey=sample-organization");
     request.setEntity(new StringEntity("""
       {
-        "fileEdits": [
+        "edits": [
           {
             "path": "src/main/java/Main.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 0,
-                "endLine": 1
-              },
-              "before": "",
-              "after": "var fix = 1;"
-            }]
+            "beforeLineRange": { "startLine": 0, "endLine": 1 },
+            "before": "",
+            "after": "var fix = 1;"
           },
           {
             "path": "src/main/java/Other.java",
-            "changes": [{
-              "beforeLineRange": {
-                "startLine": 5,
-                "endLine": 8
-              },
-              "before": "old code",
-              "after": "new code"
-            }]
+            "beforeLineRange": { "startLine": 5, "endLine": 8 },
+            "before": "old code",
+            "after": "new code"
           }
-        ],
-        "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-        "explanation": "Modifying the variable name is good"
+        ]
       }
       """));
     var response = mock(ClassicHttpResponse.class);
@@ -349,20 +301,16 @@ class ShowBatchFixSuggestionRequestHandlerTests {
   private static ShowBatchFixSuggestionRequestHandler.BatchFixSuggestionPayload generateBatchFixSuggestionPayload() {
     return new ShowBatchFixSuggestionRequestHandler.BatchFixSuggestionPayload(
       List.of(
-        new ShowBatchFixSuggestionRequestHandler.FileEditPayload(
-          List.of(new ShowBatchFixSuggestionRequestHandler.ChangesPayload(
-            new ShowBatchFixSuggestionRequestHandler.TextRangePayload(0, 1),
-            "before",
-            "after")),
-          "path1"),
-        new ShowBatchFixSuggestionRequestHandler.FileEditPayload(
-          List.of(new ShowBatchFixSuggestionRequestHandler.ChangesPayload(
-            new ShowBatchFixSuggestionRequestHandler.TextRangePayload(5, 10),
-            "before2",
-            "after2")),
-          "path2")),
-      "suggestionId",
-      "explanation");
+        new ShowBatchFixSuggestionRequestHandler.SingleEditPayload(
+          "path1",
+          new ShowBatchFixSuggestionRequestHandler.TextRangePayload(0, 1),
+          "before",
+          "after"),
+        new ShowBatchFixSuggestionRequestHandler.SingleEditPayload(
+          "path2",
+          new ShowBatchFixSuggestionRequestHandler.TextRangePayload(5, 10),
+          "before2",
+          "after2")));
   }
 
 }

@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.Strings;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -52,9 +53,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudC
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.BatchFixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ChangesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.LineRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowBatchFixSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.SingleEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
@@ -63,7 +64,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.sanitizeAgainstRTLO;
 
 public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler {
@@ -98,10 +98,9 @@ public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler 
       return;
     }
 
-    var totalChangesCount = showBatchFixSuggestionQuery.getBatchFixSuggestion().fileEdits.stream()
-      .mapToInt(fe -> fe.changes.size())
-      .sum();
-    eventPublisher.publishEvent(new FixSuggestionReceivedEvent(showBatchFixSuggestionQuery.getBatchFixSuggestion().suggestionId,
+    var totalChangesCount = showBatchFixSuggestionQuery.getBatchFixSuggestion().edits.size();
+    var suggestionId = UUID.randomUUID().toString();
+    eventPublisher.publishEvent(new FixSuggestionReceivedEvent(suggestionId,
       showBatchFixSuggestionQuery.isSonarCloud ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
       totalChangesCount, true));
 
@@ -112,7 +111,7 @@ public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler 
       showBatchFixSuggestionQuery.projectKey, origin,
       (connectionId, boundScopes, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          if (doAllClientFilesExist(configScopeId, showBatchFixSuggestionQuery.batchFixSuggestion.fileEdits, boundScopes)) {
+          if (doAllClientFilesExist(configScopeId, showBatchFixSuggestionQuery.batchFixSuggestion.edits, boundScopes)) {
             showBatchFixSuggestionForScope(configScopeId, showBatchFixSuggestionQuery.issueKey, showBatchFixSuggestionQuery.batchFixSuggestion);
           } else {
             client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a batch fix suggestion for files that are " +
@@ -125,12 +124,12 @@ public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler 
     response.setEntity(new StringEntity("OK"));
   }
 
-  private boolean doAllClientFilesExist(String configScopeId, List<FileEditPayload> fileEdits, Collection<String> boundScopes) {
+  private boolean doAllClientFilesExist(String configScopeId, List<SingleEditPayload> edits, Collection<String> boundScopes) {
     var optTranslation = pathTranslationService.getOrComputePathTranslation(configScopeId);
     if (optTranslation.isPresent()) {
       var translation = optTranslation.get();
-      for (var fileEdit : fileEdits) {
-        var idePath = translation.serverToIdePath(Paths.get(fileEdit.path));
+      for (var edit : edits) {
+        var idePath = translation.serverToIdePath(Paths.get(edit.path));
         var fileFound = false;
         for (var scope : boundScopes) {
           for (var file : clientFs.getFiles(scope)) {
@@ -165,23 +164,17 @@ public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler 
 
   private void showBatchFixSuggestionForScope(String configScopeId, String issueKey, BatchFixSuggestionPayload batchFixSuggestion) {
     pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> {
-      var fileEditDtos = batchFixSuggestion.fileEdits.stream()
-        .map(fileEdit -> new FileEditDto(
-          translation.serverToIdePath(Paths.get(fileEdit.path)),
-          fileEdit.changes.stream().map(c ->
-            new ChangesDto(
-              new LineRangeDto(c.beforeLineRange.startLine, c.beforeLineRange.endLine),
-              c.before,
-              c.after)
-          ).toList()
+      var singleEditDtos = batchFixSuggestion.edits.stream()
+        .map(edit -> new SingleEditDto(
+          translation.serverToIdePath(Paths.get(edit.path)),
+          new ChangesDto(
+            new LineRangeDto(edit.beforeLineRange.startLine, edit.beforeLineRange.endLine),
+            edit.before,
+            edit.after)
         ))
         .toList();
 
-      var batchFixSuggestionDto = new BatchFixSuggestionDto(
-        batchFixSuggestion.suggestionId,
-        batchFixSuggestion.explanation(),
-        fileEditDtos
-      );
+      var batchFixSuggestionDto = new BatchFixSuggestionDto(singleEditDtos);
       client.showBatchFixSuggestion(new ShowBatchFixSuggestionParams(configScopeId, issueKey, batchFixSuggestionDto));
     });
   }
@@ -294,40 +287,26 @@ public class ShowBatchFixSuggestionRequestHandler implements HttpRequestHandler 
   }
 
   @VisibleForTesting
-  public record BatchFixSuggestionPayload(List<FileEditPayload> fileEdits, String suggestionId, String explanation) {
-
-    public BatchFixSuggestionPayload(List<FileEditPayload> fileEdits, String suggestionId, String explanation) {
-      this.fileEdits = fileEdits;
-      this.suggestionId = suggestionId;
-      this.explanation = escapeHtml4(explanation);
-    }
+  public record BatchFixSuggestionPayload(List<SingleEditPayload> edits) {
 
     public boolean isValid() {
-      return fileEdits != null && !fileEdits.isEmpty() && fileEdits.stream().allMatch(FileEditPayload::isValid) && !suggestionId.isBlank();
+      return edits != null && !edits.isEmpty() && edits.stream().allMatch(SingleEditPayload::isValid);
     }
 
   }
 
   @VisibleForTesting
-  public record FileEditPayload(List<ChangesPayload> changes, String path) {
+  public record SingleEditPayload(String path, TextRangePayload beforeLineRange, String before, String after) {
 
-    public boolean isValid() {
-      return path != null && !path.isBlank() && changes != null && changes.stream().allMatch(ChangesPayload::isValid);
-    }
-
-  }
-
-  @VisibleForTesting
-  public record ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
-
-    public ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
+    public SingleEditPayload(String path, TextRangePayload beforeLineRange, String before, String after) {
+      this.path = path;
       this.beforeLineRange = beforeLineRange;
       this.before = sanitizeAgainstRTLO(before);
       this.after = sanitizeAgainstRTLO(after);
     }
 
     public boolean isValid() {
-      return beforeLineRange != null && beforeLineRange.isValid();
+      return path != null && !path.isBlank() && beforeLineRange != null && beforeLineRange.isValid();
     }
 
   }

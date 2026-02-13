@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,10 +42,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.BatchFixSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -78,61 +75,22 @@ class OpenBatchFixSuggestionInIdeMediumTests {
   private static final String ORG_KEY = "orgKey";
   private static final String BATCH_FIX_PAYLOAD = """
     {
-    "fileEdits": [
-      {
-        "path": "Main.java",
-        "changes": [{
-          "beforeLineRange": {
-            "startLine": 0,
-            "endLine": 1
-          },
+      "edits": [
+        {
+          "path": "Main.java",
+          "beforeLineRange": { "startLine": 0, "endLine": 1 },
           "before": "",
           "after": "var fix = 1;"
-        }]
-      },
-      {
-        "path": "Other.java",
-        "changes": [{
-          "beforeLineRange": {
-            "startLine": 5,
-            "endLine": 8
-          },
+        },
+        {
+          "path": "Other.java",
+          "beforeLineRange": { "startLine": 5, "endLine": 8 },
           "before": "old code",
           "after": "new code"
-        }]
-      }
-    ],
-    "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
-    "explanation": "Modifying the variable name is good"
+        }
+      ]
     }
     """;
-
-  @SonarLintTest
-  void it_should_update_the_telemetry_on_show_batch_fix(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
-    var inputFile1 = createFile(baseDir, "Main.java", "");
-    var inputFile2 = createFile(baseDir, "Other.java", "");
-    var fakeClient = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile1.toUri(), baseDir.relativize(inputFile1), CONFIG_SCOPE_ID, false, null, inputFile1, null, null, true),
-        new ClientFileDto(inputFile2.toUri(), baseDir.relativize(inputFile2), CONFIG_SCOPE_ID, false, null, inputFile2, null, null, true)))
-      .build();
-    var scServer = buildSonarCloudServer(harness).start();
-    var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
-      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withBackendCapability(EMBEDDED_SERVER)
-      .withTelemetryEnabled()
-      .start(fakeClient);
-
-    assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter()).isEmpty();
-
-    var statusCode = executeOpenBatchFixSuggestionRequestWithoutToken(backend, scServer, BATCH_FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
-
-    assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter())
-        .isEqualTo(Map.of("eb93b2b4-f7b0-4b5c-9460-50893968c264", new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 2, true))));
-  }
 
   @SonarLintTest
   void it_should_open_a_batch_fix_suggestion_in_ide(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
@@ -161,17 +119,13 @@ class OpenBatchFixSuggestionInIdeMediumTests {
 
     var batchFixSuggestion = captor.getValue();
     assertThat(batchFixSuggestion).isNotNull();
-    assertThat(batchFixSuggestion.suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
-    assertThat(batchFixSuggestion.explanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(batchFixSuggestion.fileEdits()).hasSize(2);
-    assertThat(batchFixSuggestion.fileEdits().get(0).idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("Main.java")).toString());
-    assertThat(batchFixSuggestion.fileEdits().get(1).idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("Other.java")).toString());
-    assertThat(batchFixSuggestion.fileEdits().get(0).changes()).hasSize(1);
-    assertThat(batchFixSuggestion.fileEdits().get(1).changes()).hasSize(1);
-    var change1 = batchFixSuggestion.fileEdits().get(0).changes().get(0);
+    assertThat(batchFixSuggestion.edits()).hasSize(2);
+    assertThat(batchFixSuggestion.edits().get(0).idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("Main.java")).toString());
+    assertThat(batchFixSuggestion.edits().get(1).idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("Other.java")).toString());
+    var change1 = batchFixSuggestion.edits().get(0).change();
     assertThat(change1.before()).isEmpty();
     assertThat(change1.after()).isEqualTo("var fix = 1;");
-    var change2 = batchFixSuggestion.fileEdits().get(1).changes().get(0);
+    var change2 = batchFixSuggestion.edits().get(1).change();
     assertThat(change2.before()).isEqualTo("old code");
     assertThat(change2.after()).isEqualTo("new code");
   }

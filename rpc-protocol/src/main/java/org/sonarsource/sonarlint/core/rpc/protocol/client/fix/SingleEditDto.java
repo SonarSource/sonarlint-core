@@ -19,18 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.fix;
 
-import java.util.List;
+import java.nio.file.Path;
 
-public class BatchFixSuggestionDto {
+public class SingleEditDto {
 
-  private final List<SingleEditDto> edits;
+  private final Path idePath;
+  private final ChangesDto change;
 
-  public BatchFixSuggestionDto(List<SingleEditDto> edits) {
-    this.edits = edits;
+  public SingleEditDto(Path idePath, ChangesDto change) {
+    this.idePath = idePath;
+    this.change = change;
   }
 
-  public List<SingleEditDto> edits() {
-    return edits;
+  public Path idePath() {
+    return idePath;
+  }
+
+  public ChangesDto change() {
+    return change;
   }
 
 }
