@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.handler.ShowBatchFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHandler;
@@ -164,6 +165,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ShowHotspotRequestHandler.class,
   ShowIssueRequestHandler.class,
   ShowFixSuggestionRequestHandler.class,
+  ShowBatchFixSuggestionRequestHandler.class,
   BindingSuggestionProvider.class,
   ConnectionSuggestionProvider.class,
   BindingClueProvider.class,

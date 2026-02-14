@@ -1,5 +1,14 @@
 # 10.44
 
+## New features
+
+* Add `showBatchFixSuggestion` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`
+  * This method is similar to `showFixSuggestion` but supports fix suggestions that span multiple files
+  * When using this method, you will receive a batch fix suggestion containing edits for multiple files
+  * The `BatchFixSuggestionDto` contains `List<SingleEditDto>` where each `SingleEditDto` has a single `idePath` and a single `ChangesDto`
+  * A new endpoint `/sonarlint/api/fix/batch/show` is available in the embedded server to receive batch fix suggestions from SonarQube/SonarCloud
+  * The endpoint expects a JSON body with an `edits` array of flat edit objects (path + change per item)
+
 ## Breaking changes
 
 * Add `closedByUser` flag to `org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse`. It must be set to `true` if the `showMessageRequest` was explicitly closed by the user (e.g. via clicking X on the notification)

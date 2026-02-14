@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowBatchFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
@@ -236,6 +237,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void showFixSuggestion(ShowFixSuggestionParams params) {
     notify(() -> delegate.showFixSuggestion(params.getConfigurationScopeId(), params.getIssueKey(), params.getFixSuggestion()));
+  }
+
+  @Override
+  public void showBatchFixSuggestion(ShowBatchFixSuggestionParams params) {
+    notify(() -> delegate.showBatchFixSuggestion(params.getConfigurationScopeId(), params.getIssueKey(), params.getBatchFixSuggestion()));
   }
 
   @Override
