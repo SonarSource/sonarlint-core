@@ -21,18 +21,24 @@ package org.sonarsource.sonarlint.core.serverapi;
 
 import java.net.HttpURLConnection;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedServerResponseException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ServerApiHelperTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
   void concat_should_handle_base_url_with_trailing_slash() {
@@ -144,7 +150,21 @@ class ServerApiHelperTests {
     var error = ServerApiHelper.handleError(response);
     
     assertThat(error)
-      .isInstanceOf(IllegalStateException.class)
+      .isInstanceOf(UnexpectedServerResponseException.class)
+      .hasMessageContaining("Error 400 on http://localhost:9000/api/test: Bad request");
+  }
+
+  @Test
+  void handleError_should_throw_unexpected_response_body_exception_when_error_body_unexpected() {
+    var response = mock(HttpClient.Response.class);
+    when(response.code()).thenReturn(HttpURLConnection.HTTP_BAD_REQUEST);
+    when(response.url()).thenReturn("http://localhost:9000/api/test");
+    when(response.bodyAsString()).thenReturn("not json");
+
+    var error = ServerApiHelper.handleError(response);
+
+    assertThat(error)
+      .isInstanceOf(UnexpectedServerResponseException.class)
       .hasMessageContaining("Error 400 on http://localhost:9000/api/test");
   }
 

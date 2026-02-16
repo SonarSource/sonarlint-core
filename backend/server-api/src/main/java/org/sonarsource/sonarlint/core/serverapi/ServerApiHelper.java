@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.exception.TooManyRequestsException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedServerResponseException;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
@@ -247,8 +248,7 @@ public class ServerApiHelper {
       }
 
       var errorMsg = tryParseAsJsonError(failedResponse);
-
-      return new IllegalStateException(formatHttpFailedResponse(failedResponse, errorMsg));
+      return new UnexpectedServerResponseException(formatHttpFailedResponse(failedResponse, errorMsg));
     }
   }
 
@@ -258,20 +258,25 @@ public class ServerApiHelper {
 
   @CheckForNull
   private static String tryParseAsJsonError(HttpClient.Response response) {
-    var content = response.bodyAsString();
-    if (StringUtils.isBlank(content)) {
-      return null;
+    try {
+      var content = response.bodyAsString();
+      if (StringUtils.isBlank(content)) {
+        return null;
+      }
+      var obj = JsonParser.parseString(content).getAsJsonObject();
+      var errors = obj.getAsJsonArray("errors");
+      if (errors == null) {
+        return null;
+      }
+      List<String> errorMessages = new ArrayList<>();
+      for (JsonElement e : errors) {
+        errorMessages.add(e.getAsJsonObject().get("msg").getAsString());
+      }
+      return String.join(", ", errorMessages);
+    } catch (Exception e) {
+      LOG.error("Error parsing JSON error", e);
     }
-    var obj = JsonParser.parseString(content).getAsJsonObject();
-    var errors = obj.getAsJsonArray("errors");
-    if (errors == null) {
-      return null;
-    }
-    List<String> errorMessages = new ArrayList<>();
-    for (JsonElement e : errors) {
-      errorMessages.add(e.getAsJsonObject().get("msg").getAsString());
-    }
-    return String.join(", ", errorMessages);
+    return null;
   }
 
   public Optional<String> getOrganizationKey() {
