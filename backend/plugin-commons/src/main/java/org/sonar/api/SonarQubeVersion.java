@@ -34,7 +34,6 @@ import static java.util.Objects.requireNonNull;
 @ServerSide
 @ComputeEngineSide
 @Immutable
-@Deprecated
 public class SonarQubeVersion {
 
   private final Version version;
