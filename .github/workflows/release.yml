@@ -1,10 +1,6 @@
 name: sonar-release
-# This workflow is triggered when publishing a new GitHub release
-on:
-  release:
-    types:
-      - published
 
+on:
   workflow_dispatch:
     inputs:
       version:
