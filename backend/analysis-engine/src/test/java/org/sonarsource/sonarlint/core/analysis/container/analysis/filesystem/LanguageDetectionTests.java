@@ -161,7 +161,7 @@ class LanguageDetectionTests {
 
     @Override
     public String getName() {
-      return key;
+      return getKey();
     }
 
     @Override
