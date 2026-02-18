@@ -57,7 +57,7 @@ class HotspotDownloaderTests {
   }
 
   @Test
-  void test_download_one_hotspot_pull_ws() {
+  void test_download_two_hotspots_pull_ws() {
     var timestamp = Hotspots.HotspotPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
     var hotspot1 = Hotspots.HotspotLite.newBuilder()
       .setKey("someHotspotKey")
@@ -101,7 +101,14 @@ class HotspotDownloaderTests {
     assertThat(result.getChangedHotspots()).hasSize(2);
     assertThat(result.getClosedHotspotKeys()).isEmpty();
 
-    var serverHotspot1 = result.getChangedHotspots().get(0);
+    var serverHotspot1 = (HotspotWithTextRange) result.getChangedHotspots().get(0);
+    assertHotspot1(serverHotspot1);
+
+    var serverHotspot2 = (HotspotWithTextRange) result.getChangedHotspots().get(1);
+    assertHotspot2(serverHotspot2);
+  }
+
+  private void assertHotspot1(HotspotWithTextRange serverHotspot1) {
     assertThat(serverHotspot1.getKey()).isEqualTo("someHotspotKey");
     assertThat(serverHotspot1.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverHotspot1.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
@@ -113,9 +120,10 @@ class HotspotDownloaderTests {
     assertThat(serverHotspot1.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(serverHotspot1.getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(((TextRangeWithHash) serverHotspot1.getTextRange()).getHash()).isEqualTo("clearly not a hash");
+  }
     assertThat(serverHotspot1.getRuleKey()).isEqualTo("java:S123");
 
-    var serverHotspot2 = result.getChangedHotspots().get(1);
+  private void assertHotspot2(HotspotWithTextRange serverHotspot2) {
     assertThat(serverHotspot2.getKey()).isEqualTo("otherHotspotKey");
     assertThat(serverHotspot2.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverHotspot2.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
@@ -128,5 +136,6 @@ class HotspotDownloaderTests {
     assertThat(serverHotspot2.getTextRange().getEndLineOffset()).isEqualTo(8);
     assertThat(((TextRangeWithHash) serverHotspot2.getTextRange()).getHash()).isEqualTo("not a hash either");
     assertThat(serverHotspot2.getRuleKey()).isEqualTo("java:S123");
+
   }
 }
