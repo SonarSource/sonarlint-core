@@ -249,7 +249,7 @@ class AnalysisExtensionInstallerTests {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
-
+      // Intentionally left blank: FakeSensor does not need to configure the descriptor for these tests
     }
 
     @Override

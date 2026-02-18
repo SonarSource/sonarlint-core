@@ -138,7 +138,8 @@ class DefaultFilePredicatesTests {
 
   @Test
   void has_path() {
-    assertThrows(UnsupportedOperationException.class, () -> predicates.hasPath("src/main/java/struts/Action.java").apply(javaFile));
+    var predicate = predicates.hasPath("src/main/java/struts/Action.java");
+    assertThrows(UnsupportedOperationException.class, () -> predicate.apply(javaFile));
   }
 
   @Test

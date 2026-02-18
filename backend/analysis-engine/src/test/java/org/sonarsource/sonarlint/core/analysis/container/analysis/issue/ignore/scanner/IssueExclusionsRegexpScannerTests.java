@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -64,9 +66,14 @@ class IssueExclusionsRegexpScannerTests {
     regexpScanner = new IssueExclusionsRegexpScanner(javaFile, allFilePatterns, blockPatterns);
   }
 
-  @Test
-  void shouldDetectPatternLastLine() throws URISyntaxException, IOException {
-    var filePath = getResource("file-with-single-regexp-last-line.txt");
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "file-with-single-regexp-last-line.txt",
+    "file-with-single-regexp.txt",
+    "file-with-single-regexp-and-double-regexp.txt"
+  })
+  void shouldExcludeAllIssuesForSingleRegexpFiles(String fileName) throws URISyntaxException, IOException {
+    var filePath = getResource(fileName);
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
@@ -80,21 +87,6 @@ class IssueExclusionsRegexpScannerTests {
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
   }
 
-  @Test
-  void shouldExcludeAllIssues() throws Exception {
-    var filePath = getResource("file-with-single-regexp.txt");
-    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
-
-    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
-  }
-
-  @Test
-  void shouldExcludeAllIssuesEvenIfAlsoDoubleRegexps() throws Exception {
-    var filePath = getResource("file-with-single-regexp-and-double-regexp.txt");
-    fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
-
-    assertThat(javaFile.isIgnoreAllIssues()).isTrue();
-  }
 
   @Test
   void shouldExcludeLines() throws Exception {

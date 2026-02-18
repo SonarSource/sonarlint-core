@@ -27,7 +27,7 @@ public class GlobalConfigurationProvider {
 
   private Configuration globalConfig;
 
-  @Bean("Configuration")
+  @Bean
   public Configuration provide(GlobalSettings settings) {
     if (globalConfig == null) {
       this.globalConfig = new ConfigurationBridge(settings);
