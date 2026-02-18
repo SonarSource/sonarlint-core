@@ -1,4 +1,4 @@
-name: Automate release
+name: Full release
 
 on:
   workflow_dispatch:
@@ -12,30 +12,11 @@ on:
         required: false
         default: 'master'
         type: string
-      pm-email:
-        description: "Product manager email"
-        required: true
-        type: string
-      is-test-run:
-        description: "For testing: use Jira sandbox and create draft releases in GitHub"
-        required: true
-        type: boolean
-        default: false
-      documentation-status:
-        description: "Status of the documentation field for Jira Release"
-        required: false
-        default: 'N/A'
-        type: string
-      lock-branch:
-        description: "If you want to lock given branch for the duration of the release"
-        default: true
-        type: boolean
 
 jobs:
   lock-branch:
     name: Lock ${{ inputs.branch }} branch
     uses: ./.github/workflows/ToggleLockBranch.yml
-    if: ${{ inputs.lock-branch }}
     permissions:
       id-token: write
     with:
@@ -56,18 +37,14 @@ jobs:
     with:
       jira-project-key: "SLCORE"
       project-name: "SonarLint Core"
-      pm-email: ${{ inputs.pm-email }}
       short-description: ${{ inputs.short-description }}
-      is-test-run: ${{ inputs.is-test-run }}
       branch: ${{ inputs.branch }}
-      documentation-status: ${{ inputs.documentation-status }}
       with-optional-checks: true
 
   unlock-branch:
     name: Unlock ${{ inputs.branch }} branch
     uses: ./.github/workflows/ToggleLockBranch.yml
     needs: release
-    if: ${{ inputs.lock-branch }}
     permissions:
       id-token: write
     with:
