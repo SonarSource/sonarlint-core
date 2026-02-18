@@ -270,6 +270,7 @@ class SloopLauncherTests {
     public boolean checkServerTrusted(List<X509CertificateDto> chain, String authType) {
       return false;
     }
+    @SuppressWarnings("deprecation")
 
     @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
