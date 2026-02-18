@@ -155,6 +155,9 @@ jobs:
     permissions:
       id-token: write
       contents: write
+    env:
+      SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+      SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
     strategy:
       fail-fast: false
       matrix:
