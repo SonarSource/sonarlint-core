@@ -234,6 +234,9 @@ jobs:
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
           GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+          SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
         run: |
           mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
