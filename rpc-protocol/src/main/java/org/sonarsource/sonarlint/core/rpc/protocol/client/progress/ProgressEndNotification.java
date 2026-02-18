@@ -19,5 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.progress;
 
-public class ProgressEndNotification {
+public interface ProgressEndNotification {
 }
