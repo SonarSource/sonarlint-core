@@ -302,7 +302,7 @@ class SpringComponentContainerTests {
     }
 
     public ExtensionWithMultipleConstructorsAndNoAnnotations(A a, B b) {
-      gotBothArgs = true;
+      gotBothArgs = a != null && b != null;
     }
   }
 
