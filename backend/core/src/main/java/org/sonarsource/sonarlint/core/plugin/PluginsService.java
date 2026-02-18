@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -84,6 +85,38 @@ public class PluginsService {
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
+  }
+
+  public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
+    return Arrays.stream(SonarLanguage.values())
+      .map(language -> getPluginStatus(connectionId, language))
+      .toList();
+  }
+
+  private PluginStatus getPluginStatus(@Nullable String connectionId, SonarLanguage language) {
+    var pluginKey = language.getPluginKey();
+    if (isFromConnectedMode(connectionId, pluginKey)) {
+      var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+      var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.SYNCED;
+      return new PluginStatus(language.getName(), state, source, null, null);
+    }
+    if (couldBeAvailableInConnectedMode(language)) {
+      return new PluginStatus(language.getName(), PluginState.PREMIUM, null, null, null);
+    }
+    if (getEmbeddedPlugins().hasPlugin(pluginKey)) {
+      var state = getEmbeddedPlugins().hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.ACTIVE;
+      return new PluginStatus(language.getName(), state, ArtifactSource.EMBEDDED, null, null);
+    }
+    return PluginStatus.unsupported(language);
+  }
+
+  private boolean isFromConnectedMode(@Nullable String connectionId, String pluginKey) {
+    return connectionId != null && getPlugins(connectionId).hasPlugin(pluginKey);
+  }
+
+  private boolean couldBeAvailableInConnectedMode(SonarLanguage language) {
+    return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(language)
+      && !languageSupportRepository.getEnabledLanguagesInStandaloneMode().contains(language);
   }
 
   @NotNull
@@ -198,9 +231,7 @@ public class PluginsService {
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
-    if (isSonarCloud) {
+    if (isSonarCloud(connectionId)) {
       return true;
     } else {
       var connectionStorage = storageService.connection(connectionId);
@@ -216,6 +247,11 @@ public class PluginsService {
         return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
       }
     }
+  }
+
+  private boolean isSonarCloud(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    return connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {

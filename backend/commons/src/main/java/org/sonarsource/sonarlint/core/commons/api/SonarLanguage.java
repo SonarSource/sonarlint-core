@@ -31,52 +31,54 @@ import java.util.stream.Stream;
 
 public enum SonarLanguage {
 
-  ABAP("abap", "abap", new String[]{".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
-  APEX("apex", "sonarapex", new String[]{".cls", ".trigger"}, "sonar.apex.file.suffixes"),
-  C("c", "cpp", new String[]{".c", ".h"}, "sonar.c.file.suffixes"),
-  CPP("cpp", "cpp", new String[]{".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
-  CS("cs", "csharp", new String[]{".cs", ".razor"}, "sonar.cs.file.suffixes"),
-  CSS("css", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".css", ".less", ".scss"}, "sonar.css.file.suffixes"),
-  OBJC("objc", "cpp", new String[]{".m"}, "sonar.objc.file.suffixes"),
-  COBOL("cobol", "cobol", new String[0], "sonar.cobol.file.suffixes"),
-  HTML("web", "web", new String[]{".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),
-  IPYTHON("ipynb", "python", new String[]{".ipynb"}, "sonar.ipython.file.suffixes"),
-  JAVA("java", "java", new String[]{".java", ".jav"}, "sonar.java.file.suffixes"),
-  JCL("jcl", "jcl", new String[]{".jcl"}, "sonar.jcl.file.suffixes"),
-  JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
-  KOTLIN("kotlin", "kotlin", new String[]{".kt", ".kts"}, "sonar.kotlin.file.suffixes"),
-  PHP("php", "php", new String[]{"php", "php3", "php4", "php5", "phtml", "inc"}, "sonar.php.file.suffixes"),
-  PLI("pli", "pli", new String[]{".pli"}, "sonar.pli.file.suffixes"),
-  PLSQL("plsql", "plsql", new String[]{".sql", ".pks", ".pkb"}, "sonar.plsql.file.suffixes"),
-  PYTHON("py", "python", new String[]{".py"}, "sonar.python.file.suffixes"),
-  RPG("rpg", "rpg", new String[]{".rpg", ".rpgle"}, "sonar.rpg.file.suffixes"),
-  RUBY("ruby", "ruby", new String[]{".rb"}, "sonar.ruby.file.suffixes"),
-  SCALA("scala", "sonarscala", new String[]{".scala"}, "sonar.scala.file.suffixes"),
-  SECRETS("secrets", "text", new String[0], "sonar.secrets.file.suffixes"),
-  TEXT("text", "text", new String[0], "sonar.text.file.suffixes"),
-  SWIFT("swift", "swift", new String[]{".swift"}, "sonar.swift.file.suffixes"),
-  TSQL("tsql", "tsql", new String[]{".tsql"}, "sonar.tsql.file.suffixes"),
-  TS("ts", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".ts", ".tsx"},
+  ABAP("abap", "abap", "Abap", new String[]{".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
+  APEX("apex", "sonarapex", "Apex", new String[]{".cls", ".trigger"}, "sonar.apex.file.suffixes"),
+  C("c", "cpp", "C", new String[]{".c", ".h"}, "sonar.c.file.suffixes"),
+  CPP("cpp", "cpp", "C++", new String[]{".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
+  CS("cs", "csharp", "C#", new String[]{".cs", ".razor"}, "sonar.cs.file.suffixes"),
+  CSS("css", Constants.JAVASCRIPT_PLUGIN_KEY, "CSS", new String[]{".css", ".less", ".scss"}, "sonar.css.file.suffixes"),
+  OBJC("objc", "cpp", "Objective-C", new String[]{".m"}, "sonar.objc.file.suffixes"),
+  COBOL("cobol", "cobol", "COBOL", new String[0], "sonar.cobol.file.suffixes"),
+  HTML("web", "web", "HTML", new String[]{".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),
+  IPYTHON("ipynb", "python", "IPython Notebook", new String[]{".ipynb"}, "sonar.ipython.file.suffixes"),
+  JAVA("java", "java", "Java", new String[]{".java", ".jav"}, "sonar.java.file.suffixes"),
+  JCL("jcl", "jcl", "JCL", new String[]{".jcl"}, "sonar.jcl.file.suffixes"),
+  JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, "JavaScript", new String[]{".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
+  KOTLIN("kotlin", "kotlin", "Kotlin", new String[]{".kt", ".kts"}, "sonar.kotlin.file.suffixes"),
+  PHP("php", "php", "PHP", new String[]{"php", "php3", "php4", "php5", "phtml", "inc"}, "sonar.php.file.suffixes"),
+  PLI("pli", "pli", "PL/I", new String[]{".pli"}, "sonar.pli.file.suffixes"),
+  PLSQL("plsql", "plsql", "PL/SQL", new String[]{".sql", ".pks", ".pkb"}, "sonar.plsql.file.suffixes"),
+  PYTHON("py", "python", "Python", new String[]{".py"}, "sonar.python.file.suffixes"),
+  RPG("rpg", "rpg", "RPG", new String[]{".rpg", ".rpgle"}, "sonar.rpg.file.suffixes"),
+  RUBY("ruby", "ruby", "Ruby", new String[]{".rb"}, "sonar.ruby.file.suffixes"),
+  SCALA("scala", "sonarscala", "Scala", new String[]{".scala"}, "sonar.scala.file.suffixes"),
+  SECRETS("secrets", "text", "Secrets", new String[0], "sonar.secrets.file.suffixes"),
+  TEXT("text", "text", "Text", new String[0], "sonar.text.file.suffixes"),
+  SWIFT("swift", "swift", "Swift", new String[]{".swift"}, "sonar.swift.file.suffixes"),
+  TSQL("tsql", "tsql", "T-SQL", new String[]{".tsql"}, "sonar.tsql.file.suffixes"),
+  TS("ts", Constants.JAVASCRIPT_PLUGIN_KEY, "TypeScript", new String[]{".ts", ".tsx"},
     "sonar.typescript.file.suffixes"),
-  JSP("jsp", "web", new String[]{".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
-  VBNET("vbnet", "vbnet", new String[]{".vb"}, "sonar.vbnet.file.suffixes"),
-  XML("xml", "xml", new String[]{".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
-  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".yml", "yaml"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  JSON("json", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".json"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  GO("go", "go", new String[]{".go"}, "sonar.go.file.suffixes"),
-  CLOUDFORMATION("cloudformation", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  DOCKER("docker", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  KUBERNETES("kubernetes", "iac", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  TERRAFORM("terraform", "iac", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
-  AZURERESOURCEMANAGER("azureresourcemanager", "iac", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  ANSIBLE("ansible", "iacenterprise", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  GITHUBACTIONS("githubactions", "iacenterprise", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
+  JSP("jsp", "web", "JSP", new String[]{".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
+  VBNET("vbnet", "vbnet", "VB.NET", new String[]{".vb"}, "sonar.vbnet.file.suffixes"),
+  XML("xml", "xml", "XML", new String[]{".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
+  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[]{".yml", "yaml"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  JSON("json", Constants.JAVASCRIPT_PLUGIN_KEY, "JSON", new String[]{".json"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  GO("go", "go", "Go", new String[]{".go"}, "sonar.go.file.suffixes"),
+  CLOUDFORMATION("cloudformation", "iac", "CloudFormation", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  DOCKER("docker", "iac", "Docker", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  TERRAFORM("terraform", "iac", "Terraform", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
+  AZURERESOURCEMANAGER("azureresourcemanager", "iac", "Azure Resource Manager", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  ANSIBLE("ansible", "iacenterprise", "Ansible", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  GITHUBACTIONS("githubactions", "iacenterprise", "GitHub Actions", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
+
   private final String sonarLanguageKey;
 
   /**
    * The Sonar Plugin declaring this language
    */
   private final String pluginKey;
+  private final String name;
   private final String[] defaultFileSuffixes;
   private final String fileSuffixesPropKey;
 
@@ -90,9 +92,10 @@ public enum SonarLanguage {
     return mMap;
   }
 
-  SonarLanguage(String sonarLanguageKey, String pluginKey, String[] defaultFileSuffixes, String fileSuffixesPropKey) {
+  SonarLanguage(String sonarLanguageKey, String pluginKey, String name, String[] defaultFileSuffixes, String fileSuffixesPropKey) {
     this.sonarLanguageKey = sonarLanguageKey;
     this.pluginKey = pluginKey;
+    this.name = name;
     this.defaultFileSuffixes = defaultFileSuffixes;
     this.fileSuffixesPropKey = fileSuffixesPropKey;
   }
@@ -103,6 +106,10 @@ public enum SonarLanguage {
 
   public String getPluginKey() {
     return pluginKey;
+  }
+
+  public String getName() {
+    return name;
   }
 
   public String[] getDefaultFileSuffixes() {

@@ -50,6 +50,14 @@ public class LoadedPlugins {
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  public boolean hasPlugin(String pluginKey) {
+    return pluginInstancesByKeys.containsKey(pluginKey);
+  }
+
+  public boolean hasDisabledPlugin(String pluginKey) {
+    return hasPlugin(pluginKey) && disabledPluginKeys.contains(pluginKey);
+  }
+
   public Set<String> getAdditionalAllowedPlugins() {
     return additionalAllowedPlugins;
   }
