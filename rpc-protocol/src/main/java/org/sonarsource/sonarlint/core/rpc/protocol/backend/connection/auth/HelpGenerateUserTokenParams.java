@@ -28,7 +28,6 @@ public class HelpGenerateUserTokenParams {
 
   private final Utm utm;
 
-  @Deprecated
   public HelpGenerateUserTokenParams(String serverUrl) {
     this(serverUrl, null);
   }

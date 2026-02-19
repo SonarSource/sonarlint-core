@@ -24,15 +24,12 @@ public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
-  @Deprecated(forRemoval = true)
-  private final boolean isFromSharedConfiguration;
   private final BindingSuggestionOrigin origin;
 
   public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName, BindingSuggestionOrigin origin) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.sonarProjectName = sonarProjectName;
-    this.isFromSharedConfiguration = origin == BindingSuggestionOrigin.SHARED_CONFIGURATION;
     this.origin = origin;
   }
 
@@ -53,11 +50,7 @@ public class BindingSuggestionDto {
    * @deprecated avoid calling this method if possible, since it will be removed once all the clients are migrated.
    * Rely on {@link #getOrigin()}  instead.
    */
-  @Deprecated(forRemoval = true)
-  public boolean isFromSharedConfiguration() {
-    return isFromSharedConfiguration;
-  }
-
+  
   public BindingSuggestionOrigin getOrigin() {
     return origin;
   }
