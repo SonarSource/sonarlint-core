@@ -191,6 +191,7 @@ class BranchSpecificSynchronizationMediumTests {
   }
 
   private static Condition<String> isUUID() {
+      @Override
     return new Condition<>() {
       public boolean matches(String value) {
         try {
