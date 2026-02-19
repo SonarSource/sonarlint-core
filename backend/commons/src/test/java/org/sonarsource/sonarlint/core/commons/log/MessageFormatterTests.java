@@ -267,8 +267,8 @@ class MessageFormatterTests {
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", multiOA}).getMessage();
     assertEquals("a[[1, 2, 3], [10, 20, 30]]", result);
 
-    var _3DOA = new Object[][][] {multiOA, multiOA};
-    result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", _3DOA}).getMessage();
+    var threeDOA = new Object[][][] {multiOA, multiOA};
+    result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", threeDOA}).getMessage();
     assertEquals("a[[[1, 2, 3], [10, 20, 30]], [[1, 2, 3], [10, 20, 30]]]", result);
   }
 
