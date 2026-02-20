@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -45,8 +44,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransport
 import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TelemetryLocalStorage implements LocalStorage {
-  @Deprecated
-  private LocalDate installDate;
   private LocalDate lastUseDate;
   private LocalDateTime lastUploadDateTime;
   private OffsetDateTime installTime;
@@ -153,16 +150,6 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   public Map<String, Integer> getQuickFixCountByRuleKey() {
     return quickFixCountByRuleKey;
-  }
-
-  @Deprecated
-  void setInstallDate(LocalDate date) {
-    this.installDate = date;
-  }
-
-  @Deprecated
-  public LocalDate installDate() {
-    return installDate;
   }
 
   public OffsetDateTime installTime() {
@@ -338,11 +325,6 @@ public class TelemetryLocalStorage implements LocalStorage {
   @Override
   public void validateAndMigrate() {
     var today = LocalDate.now();
-
-    // migrate deprecated installDate
-    if (installDate != null && (installTime == null || installTime.toLocalDate().isAfter(installDate))) {
-      setInstallTime(installDate.atTime(OffsetTime.now()));
-    }
 
     // fix install time if necessary
     if (installTime == null || installTime.isAfter(OffsetDateTime.now())) {
