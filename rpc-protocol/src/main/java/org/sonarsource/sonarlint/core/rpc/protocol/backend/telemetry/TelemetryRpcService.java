@@ -137,18 +137,10 @@ public interface TelemetryRpcService {
    * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding(DidUpdateBindingParams)} )}
    * within the DidUpdateBindingParams.
    */
-  @Deprecated(forRemoval = true)
+  @Deprecated(since = "10.1")
   @JsonNotification
   void addedImportedBindings();
 
-  /**
-   * @deprecated avoid calling this method if possible, since it will be removed once all the clients are migrated.
-   * Rely on providing the {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode)} and
-   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin)} while calling the
-   * {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding(DidUpdateBindingParams)} )}
-   * within the DidUpdateBindingParams.
-   */
-  @Deprecated(forRemoval = true)
   @JsonNotification
   void addedAutomaticBindings();
 

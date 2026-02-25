@@ -160,11 +160,6 @@ public class TelemetryLocalStorage implements LocalStorage {
     this.installDate = date;
   }
 
-  @Deprecated
-  public LocalDate installDate() {
-    return installDate;
-  }
-
   public OffsetDateTime installTime() {
     return installTime;
   }
