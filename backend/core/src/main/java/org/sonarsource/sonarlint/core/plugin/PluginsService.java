@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSp
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
@@ -70,9 +71,11 @@ public class PluginsService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
   private final boolean enableDataflowBugDetection;
+  private final ApplicationEventPublisher eventPublisher;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository, LanguageSupportRepository languageSupportRepository,
-    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService) {
+    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService,
+    ApplicationEventPublisher eventPublisher) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -85,6 +88,7 @@ public class PluginsService {
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
+    this.eventPublisher = eventPublisher;
   }
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
@@ -138,6 +142,7 @@ public class PluginsService {
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null));
     }
     return loadedEmbeddedPlugins;
   }
@@ -149,6 +154,7 @@ public class PluginsService {
       loadedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
       skippedPluginsRepository.setSkippedPlugins(connectionId, getSkippedPlugins(result));
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
     }
     return loadedPlugins;
   }
@@ -223,7 +229,11 @@ public class PluginsService {
 
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
+    var wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
     pluginsRepository.unload(connectionId);
+    if (wasLoaded) {
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
+    }
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {

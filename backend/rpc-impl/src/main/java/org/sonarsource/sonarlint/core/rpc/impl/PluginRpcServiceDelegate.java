@@ -19,21 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.PluginState;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import org.sonarsource.sonarlint.core.plugin.PluginStatusMapper;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 
 public class PluginRpcServiceDelegate extends AbstractRpcServiceDelegate implements PluginRpcService {
 
@@ -47,7 +41,7 @@ public class PluginRpcServiceDelegate extends AbstractRpcServiceDelegate impleme
       var configScopeId = params.getConfigurationScopeId();
       var connectionId = resolveConnectionId(configScopeId);
       var statuses = getBean(PluginsService.class).getPluginStatuses(connectionId);
-      return new GetPluginStatusesResponse(toDto(statuses));
+      return new GetPluginStatusesResponse(PluginStatusMapper.toDto(statuses));
     }, params.getConfigurationScopeId());
   }
 
@@ -60,43 +54,6 @@ public class PluginRpcServiceDelegate extends AbstractRpcServiceDelegate impleme
       .getEffectiveBinding(configurationScopeId)
       .map(Binding::connectionId)
       .orElse(null);
-  }
-
-  private static List<PluginStatusDto> toDto(List<PluginStatus> statuses) {
-    return statuses.stream().map(PluginRpcServiceDelegate::toDto).toList();
-  }
-
-  private static PluginStatusDto toDto(PluginStatus status) {
-    return new PluginStatusDto(
-      status.pluginName(),
-      toDto(status.state()),
-      toDto(status.source()),
-      status.actualVersion() == null ? null : status.actualVersion().toString(),
-      status.overriddenVersion() == null ? null : status.overriddenVersion().toString());
-  }
-
-  private static PluginStateDto toDto(PluginState state) {
-    return switch (state) {
-      case ACTIVE -> PluginStateDto.ACTIVE;
-      case SYNCED -> PluginStateDto.SYNCED;
-      case DOWNLOADING -> PluginStateDto.DOWNLOADING;
-      case FAILED -> PluginStateDto.FAILED;
-      case PREMIUM -> PluginStateDto.PREMIUM;
-      case UNSUPPORTED -> PluginStateDto.UNSUPPORTED;
-    };
-  }
-
-  @Nullable
-  private static ArtifactSourceDto toDto(@Nullable ArtifactSource source) {
-    if (source == null) {
-      return null;
-    }
-    return switch (source) {
-      case EMBEDDED -> ArtifactSourceDto.EMBEDDED;
-      case ON_DEMAND -> ArtifactSourceDto.ON_DEMAND;
-      case SONARQUBE_SERVER -> ArtifactSourceDto.SONARQUBE_SERVER;
-      case SONARQUBE_CLOUD -> ArtifactSourceDto.SONARQUBE_CLOUD;
-    };
   }
 
 }

@@ -71,6 +71,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessagePar
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
@@ -383,4 +384,15 @@ public interface SonarLintRpcClient {
   @JsonNotification
   default void embeddedServerStarted(EmbeddedServerStartedParams params) {
   }
+
+  /**
+   * Called whenever the status of one or more analyzer plugins changes.
+   * This can happen when plugins are loaded, unloaded, synced from a connection, or when a connection is removed.
+   * The parameters contain the full updated list of plugin statuses (one entry per known language).
+   * Clients should use this to refresh the "Supported Languages" panel.
+   */
+  @JsonNotification
+  default void didChangePluginStatuses(DidChangePluginStatusesParams params) {
+  }
+
 }

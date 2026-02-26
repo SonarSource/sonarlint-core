@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSugge
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
@@ -245,4 +246,14 @@ public interface SonarLintRpcClientDelegate {
 
   default void embeddedServerStarted(EmbeddedServerStartedParams params) {
   }
+
+  /**
+   * Called whenever the status of one or more analyzer plugins changes.
+   * This can happen when plugins are loaded, unloaded, synced from a connection, or when a connection is removed.
+   * The parameters contain the full updated list of plugin statuses (one entry per known language).
+   * Clients should use this to refresh the "Supported Languages" panel.
+   */
+  default void didChangePluginStatuses(List<PluginStatusDto> pluginStatuses) {
+  }
+
 }

@@ -50,9 +50,14 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PluginsServiceTest {
@@ -68,6 +73,7 @@ class PluginsServiceTest {
   private ServerInfoStorage serverInfoStorage;
   private PluginsStorage pluginStorage;
   private InitializeParams initializeParams;
+  private ApplicationEventPublisher eventPublisher;
 
   @BeforeEach
   void prepare() {
@@ -80,9 +86,10 @@ class PluginsServiceTest {
     when(connectionStorage.plugins()).thenReturn(pluginStorage);
     initializeParams = mock(InitializeParams.class);
     languageSupportRepository = mock(LanguageSupportRepository.class);
+    eventPublisher = mock(ApplicationEventPublisher.class);
     mockOmnisharpLanguageRequirements();
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), languageSupportRepository, storageService,
-      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class));
+      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher);
   }
 
   @Test
@@ -447,6 +454,25 @@ class PluginsServiceTest {
 
     assertThat(result).contains(new PluginStatus("Python", PluginState.PREMIUM, null, null, null))
       .doesNotContain(new PluginStatus("Java", PluginState.PREMIUM, null, null, null));
+  }
+
+  @Test
+  void unloadPlugins_should_publish_event_when_plugins_were_loaded() {
+    var connectionId = "connection1";
+    mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
+
+    underTest.unloadPlugins(connectionId);
+
+    verify(eventPublisher).publishEvent(new PluginStatusesChangedEvent(connectionId));
+  }
+
+  @Test
+  void unloadPlugins_should_not_publish_event_when_no_plugins_were_loaded() {
+    var connectionId = "connection1";
+
+    underTest.unloadPlugins(connectionId);
+
+    verify(eventPublisher, never()).publishEvent(any());
   }
 
   private void mockNoConnection(String connectionId) {
