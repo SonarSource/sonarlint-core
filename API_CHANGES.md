@@ -1,3 +1,12 @@
+# 10.46
+
+## New features
+
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService`
+  * Use `getPluginStatuses` to populate the "Supported Languages" panel with the full list of known analyzer statuses (one entry per language, including unsupported ones).
+  * Pass a `configurationScopeId` to get statuses in the context of its bound connection, or `null` for standalone statuses.
+  * Each `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto` contains: plugin name, state, source, actual version, and overridden version if applicable.
+
 # 10.44
 
 ## Breaking changes

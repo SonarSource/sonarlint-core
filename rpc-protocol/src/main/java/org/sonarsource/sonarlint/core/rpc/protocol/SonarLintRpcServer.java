@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
@@ -107,6 +108,9 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   IdeLabsRpcService getIdeLabsService();
+
+  @JsonDelegate
+  PluginRpcService getPluginService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

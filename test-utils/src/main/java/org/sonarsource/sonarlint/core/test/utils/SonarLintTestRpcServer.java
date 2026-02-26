@@ -34,6 +34,7 @@ import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -197,6 +198,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public IdeLabsRpcService getIdeLabsService() {
     return serverUsingRpc.getIdeLabsService();
+  }
+
+  @Override
+  public PluginRpcService getPluginService() {
+    return serverUsingRpc.getPluginService();
   }
 
   public Path getWorkDir() {
