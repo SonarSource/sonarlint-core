@@ -19,6 +19,7 @@
  */
 package mediumtest.plugin;
 
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
@@ -82,7 +83,7 @@ class PluginRpcServiceMediumTests {
       .getPluginStatuses(new GetPluginStatusesParams(null))
       .join();
 
-    assertThat(response.getPluginStatuses()).isNotEmpty();
+    assertThat(response.getPluginStatuses()).hasSize(SonarLanguage.values().length);
   }
 
   @SonarLintTest
