@@ -39,7 +39,6 @@ jobs:
       project-name: "SonarLint Core"
       short-description: ${{ inputs.short-description }}
       branch: ${{ inputs.branch }}
-      with-optional-checks: true
 
   unlock-branch:
     name: Unlock ${{ inputs.branch }} branch
