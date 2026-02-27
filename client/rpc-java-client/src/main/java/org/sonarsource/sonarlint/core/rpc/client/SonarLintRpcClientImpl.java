@@ -78,6 +78,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessagePar
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
@@ -429,4 +430,10 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void embeddedServerStarted(EmbeddedServerStartedParams params) {
     notify(() -> delegate.embeddedServerStarted(params));
   }
+
+  @Override
+  public void didChangePluginStatuses(DidChangePluginStatusesParams params) {
+    notify(() -> delegate.didChangePluginStatuses(params.getPluginStatuses()));
+  }
+
 }

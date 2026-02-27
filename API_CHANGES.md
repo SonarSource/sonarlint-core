@@ -2,10 +2,13 @@
 
 ## New features
 
-* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService`
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService`, accessible via `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getPluginService`.
   * Use `getPluginStatuses` to populate the "Supported Languages" panel with the full list of known analyzer statuses (one entry per language, including unsupported ones).
   * Pass a `configurationScopeId` to get statuses in the context of its bound connection, or `null` for standalone statuses.
-  * Each `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto` contains: plugin name, state, source, actual version, and overridden version if applicable.
+  * Each `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto` contains: plugin name, state (`org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`), source (`org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto`), actual version, and overridden version if applicable.
+* Add a new `didChangePluginStatuses` notification to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * Implement it to keep the "Supported Languages" panel up to date after the initial load.
+  * Called when plugin statuses change, e.g. after a sync with a connection or when a connection is removed.
 
 # 10.44
 
