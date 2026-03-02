@@ -17,12 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-number:
+    outputs:
+      BUILD_NUMBER: ${{ steps.build-number.outputs.BUILD_NUMBER }}
+    runs-on: github-ubuntu-latest-m
+    name: Get build number
+    permissions:
+      id-token: write
+    steps:
+      - uses: SonarSource/ci-github-actions/get-build-number@v1
+        id: build-number
+
   build:
     runs-on: github-ubuntu-latest-m
+    needs: build-number
     name: Build
     permissions:
       id-token: write
       contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     outputs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
@@ -43,12 +57,14 @@ jobs:
           mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
 
   test-linux:
-    needs: [ build ]
+    needs: [ build-number, build ]
     runs-on: github-ubuntu-latest-m
     name: Test (Linux, Sonar Next)
     permissions:
       id-token: write
       contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -108,12 +124,14 @@ jobs:
             **/target/failsafe-reports/**
 
   test-windows:
-    needs: [ build ]
+    needs: [ build-number, build ]
     runs-on: github-windows-latest-m
     name: Test (Windows)
     permissions:
       id-token: write
       contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
@@ -149,12 +167,14 @@ jobs:
             **/target/failsafe-reports/**
 
   qa:
-    needs: [ build ]
+    needs: [ build-number, build ]
     runs-on: github-ubuntu-latest-m
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
       contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     strategy:
       fail-fast: false
       matrix:
@@ -232,7 +252,6 @@ jobs:
           MAVEN_OPTS: -Xmx4g
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets-sc.outputs.vault && fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
-          BUILD_NUMBER: ${{ needs.build.outputs.build_number }}
           GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
@@ -282,12 +301,14 @@ jobs:
           fi
 
   promote:
-    needs: [ build, qa, test-linux, test-windows ]
+    needs: [ build-number, build, qa, test-linux, test-windows ]
     runs-on: github-ubuntu-latest-s
     name: Promote
     permissions:
       id-token: write
       contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: SonarSource/ci-github-actions/promote@v1
