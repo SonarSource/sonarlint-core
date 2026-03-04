@@ -116,7 +116,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.slang</groupId>
                   <artifactId>sonar-scala-plugin</artifactId>
-                  <version>1.20.1.1884</version>
+                  <version>1.21.0.1997</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
