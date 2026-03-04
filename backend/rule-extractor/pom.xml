@@ -168,7 +168,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.abap</groupId>
                       <artifactId>sonar-abap-plugin</artifactId>
-                      <version>3.16.0.7570</version>
+                      <version>3.17.0.7722</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
