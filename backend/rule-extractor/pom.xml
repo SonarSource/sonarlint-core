@@ -180,7 +180,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.cobol</groupId>
                       <artifactId>sonar-cobol-plugin</artifactId>
-                      <version>5.10.1.9866</version>
+                      <version>5.11.0.10062</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
