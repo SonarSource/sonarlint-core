@@ -186,7 +186,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.pli</groupId>
                       <artifactId>sonar-pli-plugin</artifactId>
-                      <version>1.18.0.6925</version>
+                      <version>1.21.0.7212</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
