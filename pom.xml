@@ -93,7 +93,7 @@
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
-    <flyway.version>11.14.0</flyway.version>
+    <flyway.version>11.20.3</flyway.version>
   </properties>
 
   <dependencyManagement>
