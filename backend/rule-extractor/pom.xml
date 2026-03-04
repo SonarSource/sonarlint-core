@@ -104,7 +104,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.kotlin</groupId>
                   <artifactId>sonar-kotlin-plugin</artifactId>
-                  <version>3.3.1.7792</version>
+                  <version>3.4.0.8957</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
