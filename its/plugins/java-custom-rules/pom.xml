@@ -18,7 +18,7 @@
   <description>Java Custom Rules</description>
 
   <properties>
-    <sonarjava.version>7.16.0.30901</sonarjava.version>
+    <sonarjava.version>7.35.0.36271</sonarjava.version>
     <analyzer.commons.version>2.1.0.1111</analyzer.commons.version>
     <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
   </properties>
