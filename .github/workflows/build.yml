@@ -106,7 +106,7 @@ jobs:
           mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@e17be7e0078fc00f61965f3b4032f1e1fdc7fcfb # v2.4.0
+        uses: dorny/test-reporter@3d76b34a4535afbd0600d347b09a6ee5deb3ed7f # v2.6.0
         with:
           name: QA Linux Test Report
           reporter: java-junit
@@ -149,7 +149,7 @@ jobs:
           mvn -B -Dcommercial verify
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@e17be7e0078fc00f61965f3b4032f1e1fdc7fcfb # v2.4.0
+        uses: dorny/test-reporter@3d76b34a4535afbd0600d347b09a6ee5deb3ed7f # v2.6.0
         with:
           name: QA Windows Test Report
           reporter: java-junit
