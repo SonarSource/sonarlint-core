@@ -62,7 +62,7 @@
     <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
     <protobuf.version>4.28.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.0.0-alpha.16</okhttp.version>
+    <okhttp.version>5.3.2</okhttp.version>
     <junit.jupiter.version>5.13.1</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
