@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
-          version: 2025.9.12
+          version: 2026.3.2
       - uses: SonarSource/ci-github-actions/build-maven@v1
         id: build
         with:
@@ -71,7 +71,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
-          version: 2025.9.12
+          version: 2026.3.2
       - name: Vault
         id: secrets
         uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32 # 3.1.0
@@ -136,7 +136,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
-          version: 2025.9.12
+          version: 2026.3.2
       - uses: SonarSource/ci-github-actions/config-maven@v1
         id: config
         with:
@@ -209,7 +209,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
-          version: 2025.9.12
+          version: 2026.3.2
       - name: Select Java ${{ matrix.java }}
         run: mise use java@${{ matrix.java }}
       - name: Compute month key
