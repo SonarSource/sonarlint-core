@@ -204,7 +204,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.swift</groupId>
                       <artifactId>sonar-swift-plugin</artifactId>
-                      <version>5.0.0.12095</version>
+                      <version>5.1.0.12421</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
