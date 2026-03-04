@@ -260,7 +260,7 @@ jobs:
           mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
         if: failure()
-        uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3
+        uses: dorny/test-reporter@3d76b34a4535afbd0600d347b09a6ee5deb3ed7f
         with:
           name: QA ${{ matrix.name }} Test Report
           reporter: java-junit
