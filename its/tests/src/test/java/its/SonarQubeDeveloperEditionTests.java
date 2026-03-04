@@ -1253,35 +1253,25 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)) {
+      var riskTabContentPrefix = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)
         // SONARJAVA-4739 Rule S4792 is deprecated
-        assertThat(extendedDescription.getTabs())
-          .flatExtracting(this::extractTabContent)
-          .containsOnly(
-            "What's the risk?",
-            "<p>This rule is deprecated, and will eventually...",
-            "Assess the risk",
-            "<h2>Ask Yourself Whether</h2>\n"
-              + "<ul>\n"
-              + "  <li> unaut...",
-            "How can I fix it?",
-            "<h2>Recommended Secure Coding Practices</h2>\n"
-              + "<u...");
-      } else {
-        assertThat(extendedDescription.getTabs())
-          .flatExtracting(this::extractTabContent)
-          .containsOnly(
-            "What's the risk?",
-            "<p>Configuring loggers is security-sensitive. I...",
-            "Assess the risk",
-            "<h2>Ask Yourself Whether</h2>\n"
-              + "<ul>\n"
-              + "  <li> unaut...",
-            "How can I fix it?",
-            "<h2>Recommended Secure Coding Practices</h2>\n"
-              + "<u...");
-      }
-
+        ? "<p>This rule is deprecated, and will eventually"
+        : "<p>Configuring loggers is security-sensitive.";
+      assertThat(extendedDescription.getTabs())
+        .hasSize(3)
+        .satisfiesExactlyInAnyOrder(
+          tab -> {
+            assertThat(tab.getTitle()).isEqualTo("What's the risk?");
+            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith(riskTabContentPrefix);
+          },
+          tab -> {
+            assertThat(tab.getTitle()).isEqualTo("Assess the risk");
+            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith("<h2>Ask Yourself Whether</h2>\n<ul>\n  <li>");
+          },
+          tab -> {
+            assertThat(tab.getTitle()).isEqualTo("How can I fix it?");
+            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith("<h2>Recommended Secure Coding Practices</h2>");
+          });
     }
 
     private List<String> extractTabContent(RuleDescriptionTabDto tab) {
