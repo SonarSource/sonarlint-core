@@ -233,7 +233,7 @@
       <dependency>
         <groupId>io.github.hakky54</groupId>
         <artifactId>ayza</artifactId>
-        <version>10.0.0</version>
+        <version>10.0.3</version>
       </dependency>
       <!-- Use the Jetty 12 variant that supports Servlet 6, to not conflict with Tomcat -->
       <dependency>
