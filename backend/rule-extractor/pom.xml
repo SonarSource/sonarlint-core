@@ -198,7 +198,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.rpg</groupId>
                       <artifactId>sonar-rpg-plugin</artifactId>
-                      <version>3.11.0.7089</version>
+                      <version>3.13.0.7515</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
