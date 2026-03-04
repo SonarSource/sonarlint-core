@@ -19,7 +19,7 @@
 
   <properties>
     <sonarjava.version>7.16.0.30901</sonarjava.version>
-    <analyzer.commons.version>2.1.0.1111</analyzer.commons.version>
+    <analyzer.commons.version>2.21.0.4626</analyzer.commons.version>
     <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
   </properties>
 
