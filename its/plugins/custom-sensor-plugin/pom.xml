@@ -19,8 +19,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>9.17.0.587</sonar.apiVersion>
-    <sonar.testing-harness>9.9.9.104369</sonar.testing-harness>
+    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <sonar.testing-harness>9.9.0.65466</sonar.testing-harness>
     <jdk.min.version>11</jdk.min.version>
   </properties>
 
