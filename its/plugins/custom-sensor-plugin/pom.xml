@@ -60,7 +60,7 @@
       <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
-        <version>1.23.0.740</version>
+        <version>1.17</version>
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonarsource.plugins.example.ExamplePlugin</pluginClass>
@@ -70,7 +70,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.15.0</version>
+        <version>3.5.1</version>
         <configuration>
           <source>${jdk.min.version}</source>
           <target>${jdk.min.version}</target>
