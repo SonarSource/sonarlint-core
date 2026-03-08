@@ -25,7 +25,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@v1
+      - uses: SonarSource/ci-github-actions/get-build-number@1.3.25
         id: build-number
 
   build:
@@ -44,7 +44,7 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
-      - uses: SonarSource/ci-github-actions/build-maven@v1
+      - uses: SonarSource/ci-github-actions/build-maven@1.3.25
         id: build
         with:
           sonar-platform: none
@@ -81,11 +81,11 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@v1
+        uses: SonarSource/ci-github-actions/cache@1.3.25
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@v1
+      - uses: SonarSource/ci-github-actions/config-maven@1.3.25
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -137,7 +137,7 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.9.12
-      - uses: SonarSource/ci-github-actions/config-maven@v1
+      - uses: SonarSource/ci-github-actions/config-maven@1.3.25
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -224,7 +224,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@v1
+      - uses: SonarSource/ci-github-actions/cache@1.3.25
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -243,7 +243,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@v1
+      - uses: SonarSource/ci-github-actions/config-maven@1.3.25
         with:
           artifactory-reader-role: private-reader
       - name: Run QA
@@ -311,6 +311,6 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: SonarSource/ci-github-actions/promote@v1
+      - uses: SonarSource/ci-github-actions/promote@1.3.25
         with:
           promote-pull-request: true
