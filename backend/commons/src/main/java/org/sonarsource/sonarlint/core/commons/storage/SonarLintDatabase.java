@@ -46,7 +46,7 @@ public final class SonarLintDatabase {
       var baseDir = storageRoot.resolve("h2");
       deleteLegacyDatabase(baseDir);
       Files.createDirectories(baseDir);
-      var dbBasePath = baseDir.resolve(SQ_IDE_DB_FILENAME).toAbsolutePath();
+      var dbBasePath = baseDir.toRealPath().resolve(SQ_IDE_DB_FILENAME).toAbsolutePath();
       var url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
       // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
       var bindAddressProperty = "h2.bindAddress";
