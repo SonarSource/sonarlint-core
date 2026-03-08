@@ -63,6 +63,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.pa
 public class TaintIssueDownloader {
 
   private static final Pattern MATCH_ALL_WHITESPACES = Pattern.compile("\\s");
+  private static final int MAX_TAINT_FLOWS = 1000;
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Set<SonarLanguage> enabledLanguages;
@@ -83,6 +84,7 @@ public class TaintIssueDownloader {
       .stream()
       .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey, cancelMonitor))
       .filter(Objects::nonNull)
+      .filter(TaintIssueDownloader::hasValidFlows)
       .forEach(result::add);
 
     return result;
@@ -105,6 +107,7 @@ public class TaintIssueDownloader {
       .filter(i -> i.getMainLocation().hasFilePath())
       .filter(not(TaintVulnerabilityLite::getClosed))
       .map(TaintIssueDownloader::convertLiteTaintIssue)
+      .filter(TaintIssueDownloader::hasValidFlows)
       .toList();
     var closedIssueKeys = apiResult.getTaintIssues()
       .stream()
@@ -115,6 +118,17 @@ public class TaintIssueDownloader {
       .collect(Collectors.toSet());
 
     return new PullTaintResult(Instant.ofEpochMilli(apiResult.getTimestamp().getQueryTimestamp()), changedIssues, closedIssueKeys);
+  }
+
+  private static boolean hasValidFlows(ServerTaintIssue issue) {
+    var totalFlowLocations = issue.getFlows().stream()
+      .mapToInt(f -> f.locations().size())
+      .sum();
+    if (totalFlowLocations > MAX_TAINT_FLOWS) {
+      LOG.warn("Taint vulnerability '{}' has too many flow locations ({}) and will not be synchronized", issue.getSonarServerKey(), totalFlowLocations);
+      return false;
+    }
+    return true;
   }
 
   @CheckForNull

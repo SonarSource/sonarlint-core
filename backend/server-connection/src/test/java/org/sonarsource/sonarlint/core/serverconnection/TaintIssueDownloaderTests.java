@@ -232,6 +232,46 @@ class TaintIssueDownloaderTests {
   }
 
   @Test
+  void test_filter_taint_issues_with_too_many_flows_from_issue_search() {
+    var issueBuilder = Issues.Issue.newBuilder()
+      .setKey("uuid1")
+      .setRule("javasecurity:S789")
+      .setMessage("Primary message 2")
+      .setCreationDate("2021-01-11T18:17:31+0000")
+      .setComponent(FILE_1_KEY)
+      .setType(Common.RuleType.VULNERABILITY)
+      .setSeverity(Severity.INFO);
+
+    // Create 1001 flows with 1 location each
+    for (int i = 0; i < 1001; i++) {
+        issueBuilder.addFlows(Flow.newBuilder().addLocations(Common.Location.newBuilder().setMsg("Flow location").setComponent(FILE_1_KEY)));
+    }
+
+    var issueSearchResponse = Issues.SearchWsResponse.newBuilder()
+      .addIssues(issueBuilder.build())
+      .addComponents(Issues.Component.newBuilder().setKey(FILE_1_KEY).setPath("foo/bar/Hello.java"))
+      .setPaging(Paging.newBuilder().setPageIndex(1).setPageSize(500).setTotal(1))
+      .build();
+
+    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
+      .setTotal(1)
+      .addRules(Rules.Rule.newBuilder().setKey("javasecurity:S789"))
+      .build();
+
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,kotlinsecurity,phpsecurity,pythonsecurity,tssecurity,vbnetsecurity,gosecurity&f=repo&s=key&ps=500&p=1",
+      ruleSearchResponse);
+    mockServer.addProtobufResponse(
+      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
+      issueSearchResponse);
+
+    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
+
+    assertThat(issues).isEmpty();
+    assertThat(logTester.logs()).contains("Taint vulnerability 'uuid1' has too many flow locations (1001) and will not be synchronized");
+  }
+
+  @Test
   void test_download_taint_issues_from_pull_ws() {
     var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
     var taint1 = TaintVulnerabilityLite.newBuilder()
@@ -312,6 +352,31 @@ class TaintIssueDownloaderTests {
 
     var resolvedTaint = result.getChangedTaintIssues().get(2);
     assertThat(resolvedTaint.isResolved()).isTrue();
+  }
+
+  @Test
+  void test_filter_taint_issues_with_too_many_flows_from_pull_ws() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    
+    var taintBuilder = TaintVulnerabilityLite.newBuilder()
+      .setKey("uuid1")
+      .setRuleKey("sonarjava:S123")
+      .setType(Common.RuleType.VULNERABILITY)
+      .setSeverity(Severity.MAJOR)
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
+      .setCreationDate(123456789L);
+
+    // Create 1001 flows with 1 location each
+    for (int i = 0; i < 1001; i++) {
+        taintBuilder.addFlows(Issues.Flow.newBuilder().addLocations(Location.newBuilder().setMessage("Flow location").setFilePath("foo/bar/Hello.java")));
+    }
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taintBuilder.build());
+
+    var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
+
+    assertThat(result.getChangedTaintIssues()).isEmpty();
+    assertThat(logTester.logs()).contains("Taint vulnerability 'uuid1' has too many flow locations (1001) and will not be synchronized");
   }
 
   @Test
