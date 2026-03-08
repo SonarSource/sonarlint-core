@@ -195,10 +195,9 @@ class HotspotEventsMediumTests {
       var filePath = createFile(baseDir, "Foo.java",
         """
           public class Foo {
-
-            void foo() {
-              String password = "blue";
-              String passwordD = "red";
+            void foo() throws Exception {
+              java.security.MessageDigest md1 = java.security.MessageDigest.getInstance("MD5");
+              java.security.MessageDigest md2 = java.security.MessageDigest.getInstance("SHA1");
             }
           }
           """);
@@ -216,7 +215,7 @@ class HotspotEventsMediumTests {
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
       var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
         .withServerSentEventsEnabled()
-        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S4790", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))
         .withProject(projectKey,
           project -> project
@@ -227,8 +226,8 @@ class HotspotEventsMediumTests {
                   .withStatus(HotspotReviewStatus.TO_REVIEW)
                   .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
                   .withTextRange(new TextRange(4, 11, 4, 19))
-                  .withRuleKey("java:S2068")
-                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withRuleKey("java:S4790")
+                  .withMessage("Make sure this weak hash algorithm is not used in a sensitive context here.")
                   .withCreationDate(introductionDate)
                   .withAuthor("author"))
                 .withHotspot(serverHotspotKey2, hotspot -> hotspot
@@ -236,8 +235,8 @@ class HotspotEventsMediumTests {
                   .withStatus(HotspotReviewStatus.TO_REVIEW)
                   .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
                   .withTextRange(new TextRange(5, 11, 5, 20))
-                  .withRuleKey("java:S2068")
-                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withRuleKey("java:S4790")
+                  .withMessage("Make sure this weak hash algorithm is not used in a sensitive context here.")
                   .withCreationDate(introductionDate)
                   .withAuthor("author"))))
         .withPlugin(TestPlugin.JAVA)
@@ -434,9 +433,8 @@ class HotspotEventsMediumTests {
       var filePath = createFile(baseDir, "Foo.java",
         """
           public class Foo {
-
-            void foo() {
-              String password = "blue";
+            void foo() throws Exception {
+              java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             }
           }
           """);
@@ -453,7 +451,7 @@ class HotspotEventsMediumTests {
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
       var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
         .withServerSentEventsEnabled()
-        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S4790", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))
         .withProject(projectKey,
           project -> project
@@ -464,8 +462,8 @@ class HotspotEventsMediumTests {
                 .withStatus(HotspotReviewStatus.TO_REVIEW)
                 .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
                 .withTextRange(new TextRange(4, 11, 4, 19))
-                .withRuleKey("java:S2068")
-                .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                .withRuleKey("java:S4790")
+                .withMessage("Make sure this weak hash algorithm is not used in a sensitive context here.")
                 .withCreationDate(introductionDate)
                 .withAuthor("author"))))
         .withPlugin(TestPlugin.JAVA)
