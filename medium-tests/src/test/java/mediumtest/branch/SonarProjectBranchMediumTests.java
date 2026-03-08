@@ -216,13 +216,13 @@ class SonarProjectBranchMediumTests {
       .start(client);
 
     // Wait for first sync
-    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("main"));
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "main");
     verify(client, timeout(5000)).didSynchronizeConfigurationScopes(Set.of("configScopeId"));
 
     // Now emulate a branch change
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
 
-    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("myBranch"));
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "myBranch");
     verify(client, timeout(5000).times(2)).didSynchronizeConfigurationScopes(Set.of("configScopeId"));
   }
 
@@ -243,7 +243,7 @@ class SonarProjectBranchMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start(client);
 
-    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("myBranch"));
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "myBranch");
 
     // Emulate a binding change to a project having no branches
     bind(backend, "configScopeId", "connectionId", "projectKey2");
