@@ -73,31 +73,31 @@ class TelemetryServerAttributesProviderTests {
 
   @Test
   void it_should_calculate_connectedMode_notUsesSC_disabledDevNotifications_telemetry_attrs() {
-    var configurationScopeId_1 = "scopeId_1";
-    var configurationScopeId_2 = "scopeId_2";
-    var configurationScopeId_3 = "scopeId_3";
-    var connectionId_1 = "connectionId_1";
-    var connectionId_2 = "connectionId_2";
-    var projectKey_1 = "projectKey1";
-    var projectKey_2 = "projectKey2";
+    var configurationScopeId1 = "scopeId_1";
+    var configurationScopeId2 = "scopeId_2";
+    var configurationScopeId3 = "scopeId_3";
+    var connectionId1 = "connectionId_1";
+    var connectionId2 = "connectionId_2";
+    var projectKey1 = "projectKey1";
+    var projectKey2 = "projectKey2";
 
     var configurationRepository = mock(ConfigurationRepository.class);
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
-      new BoundScope(configurationScopeId_1, connectionId_1, projectKey_1),
-      new BoundScope(configurationScopeId_2, connectionId_2, projectKey_2)));
+      new BoundScope(configurationScopeId1, connectionId1, projectKey1),
+      new BoundScope(configurationScopeId2, connectionId2, projectKey2)));
 
-    when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId_2, configurationScopeId_3));
+    when(configurationRepository.getLeafConfigScopeIds()).thenReturn(Set.of(configurationScopeId2, configurationScopeId3));
 
-    when(configurationRepository.getConfigurationScope(configurationScopeId_1)).thenReturn(new ConfigurationScope(configurationScopeId_1, null, false, "1"));
-    when(configurationRepository.getConfigurationScope(configurationScopeId_2)).thenReturn(new ConfigurationScope(configurationScopeId_2, configurationScopeId_1, false, "2"));
-    when(configurationRepository.getConfigurationScope(configurationScopeId_3)).thenReturn(new ConfigurationScope(configurationScopeId_3, configurationScopeId_1, false, "3"));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId_1)).thenReturn(new BindingConfiguration(configurationScopeId_1, projectKey_1, false));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId_2)).thenReturn(new BindingConfiguration(configurationScopeId_2, projectKey_2, false));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId_3)).thenReturn(new BindingConfiguration(null, null, false));
+    when(configurationRepository.getConfigurationScope(configurationScopeId1)).thenReturn(new ConfigurationScope(configurationScopeId1, null, false, "1"));
+    when(configurationRepository.getConfigurationScope(configurationScopeId2)).thenReturn(new ConfigurationScope(configurationScopeId2, configurationScopeId1, false, "2"));
+    when(configurationRepository.getConfigurationScope(configurationScopeId3)).thenReturn(new ConfigurationScope(configurationScopeId3, configurationScopeId1, false, "3"));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId1)).thenReturn(new BindingConfiguration(configurationScopeId1, projectKey1, false));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId2)).thenReturn(new BindingConfiguration(configurationScopeId2, projectKey2, false));
+    when(configurationRepository.getBindingConfiguration(configurationScopeId3)).thenReturn(new BindingConfiguration(null, null, false));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
-    when(connectionConfigurationRepository.getConnectionById(connectionId_2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_2, "www.squrl2.org", true));
+    when(connectionConfigurationRepository.getConnectionById(connectionId1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId1, "www.squrl1.org", false));
+    when(connectionConfigurationRepository.getConnectionById(connectionId2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId2, "www.squrl2.org", true));
     var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class), mock(NodeJsService.class), mock(StorageService.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
