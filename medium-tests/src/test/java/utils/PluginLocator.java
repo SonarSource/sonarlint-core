@@ -27,7 +27,7 @@ public class PluginLocator {
   public static final String SONAR_JAVA_PLUGIN_VERSION = "8.25.0.42802";
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-" + SONAR_JAVA_PLUGIN_VERSION + ".jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "fa425ffda3272aef1abc137941a64772";
-  public static final String SONAR_JAVA_SE_PLUGIN_VERSION = "8.25.0.42802";
+  public static final String SONAR_JAVA_SE_PLUGIN_VERSION = "8.19.0.1586";
   public static final String SONAR_JAVA_SE_PLUGIN_JAR = "sonar-java-symbolic-execution-plugin-" + SONAR_JAVA_SE_PLUGIN_VERSION + ".jar";
   public static final String SONAR_JAVA_SE_PLUGIN_JAR_HASH = "unused";
 
