@@ -105,6 +105,7 @@ public class ServerFilePathsProvider {
         return paths;
       });
     } catch (CancellationException e) {
+      LOG.error("Test 123", e);
       throw e;
     } catch (Exception e) {
       LOG.debug("Error while getting server file paths for project '{}'", binding.sonarProjectKey(), e);
