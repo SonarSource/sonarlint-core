@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>10.47-SNAPSHOT</version>
+    <version>10.47.0.84837</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-plugin-commons</artifactId>
@@ -57,7 +57,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-csv</artifactId>
-      <version>1.13.0</version>
+      <version>1.14.0</version>
     </dependency>
 
     <!-- Tests -->

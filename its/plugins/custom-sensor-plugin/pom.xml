@@ -19,8 +19,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
-    <sonar.testing-harness>9.9.0.65466</sonar.testing-harness>
+    <sonar.apiVersion>9.15.0.435</sonar.apiVersion>
+    <sonar.testing-harness>9.9.1.69595</sonar.testing-harness>
     <jdk.min.version>11</jdk.min.version>
   </properties>
 
@@ -35,7 +35,7 @@
       <!-- packaged with the plugin -->
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>3.19.0</version>
     </dependency>
 
 
@@ -60,7 +60,7 @@
       <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
-        <version>1.17</version>
+        <version>1.18.0.372</version>
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonarsource.plugins.example.ExamplePlugin</pluginClass>
@@ -70,7 +70,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.6.0</version>
         <configuration>
           <source>${jdk.min.version}</source>
           <target>${jdk.min.version}</target>
