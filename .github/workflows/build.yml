@@ -28,6 +28,7 @@ jobs:
       - uses: SonarSource/ci-github-actions/get-build-number@v1
         id: build-number
 
+# test commit for build
   build:
     runs-on: github-ubuntu-latest-m
     needs: build-number
