@@ -275,6 +275,7 @@
                   <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.7_7.zip</url>
                   <unpack>true</unpack>
                   <outputDirectory>${project.build.directory}/jre-windows</outputDirectory>
+                  <cacheDirectory>${user.home}/.cache/sonarlint-jre/medium-tests</cacheDirectory>
                   <sha256>62e82c1afa7509424813e9cb22d8becfec4346d7505e6d2fc8770af4dcd5b9a0</sha256>
                 </configuration>
               </execution>
@@ -336,6 +337,7 @@
                   <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.7_7.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${project.build.directory}/jre-linux</outputDirectory>
+                  <cacheDirectory>${user.home}/.cache/sonarlint-jre/medium-tests</cacheDirectory>
                   <sha256>bb025133b96266f6415d5084bb9b260340a813968007f1d2d14690f20bd021ca</sha256>
                 </configuration>
               </execution>
