@@ -37,7 +37,7 @@ public interface ClientInputFile {
    * or {@link inputStream} yet, and will attempt to access the file directly.
    * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
    */
-  @Deprecated
+  @Deprecated(since = "1.1")
   String getPath();
 
   /**

@@ -106,7 +106,8 @@ class DefaultFilePredicatesTests {
 
   @Test
   void has_relative_path_unsupported() {
-    assertThrows(UnsupportedOperationException.class, () -> predicates.hasRelativePath("src/main/java/struts/Action.java").apply(javaFile));
+    var predicate = predicates.hasRelativePath("src/main/java/struts/Action.java");
+    assertThrows(UnsupportedOperationException.class, () -> predicate.apply(javaFile));
   }
 
   @Test
