@@ -42,8 +42,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
@@ -55,11 +53,10 @@ public class AnalysisSchedulerCache {
   private final PluginsService pluginsService;
   private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
-  private final Map<String, String> extraProperties = new HashMap<>();
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final Map<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
-  public AnalysisSchedulerCache(InitializeParams initializeParams, UserPaths userPaths, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
+  public AnalysisSchedulerCache(UserPaths userPaths, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
     PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
@@ -67,16 +64,6 @@ public class AnalysisSchedulerCache {
     this.nodeJsService = nodeJsService;
     this.workDir = userPaths.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
-    var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
-    var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
-    if (shouldSupportCsharp && languageSpecificRequirements != null) {
-      var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
-      if (omnisharpRequirements != null) {
-        extraProperties.put("sonar.cs.internal.omnisharpMonoLocation", omnisharpRequirements.getMonoDistributionPath().toString());
-        extraProperties.put("sonar.cs.internal.omnisharpWinLocation", omnisharpRequirements.getDotNet472DistributionPath().toString());
-        extraProperties.put("sonar.cs.internal.omnisharpNet6Location", omnisharpRequirements.getDotNet6DistributionPath().toString());
-      }
-    }
   }
 
   @CheckForNull
@@ -131,28 +118,30 @@ public class AnalysisSchedulerCache {
   private AnalysisSchedulerConfiguration createSchedulerConfiguration(DotnetSupport dotnetSupport, @Nullable Trace trace) {
     var activeNodeJs = startChild(trace, "getActiveNodeJs", "createSchedulerConfiguration", nodeJsService::getActiveNodeJs);
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var fullExtraProperties = new HashMap<>(extraProperties);
-    enhanceDotnetExtraProperties(fullExtraProperties, dotnetSupport);
 
     return AnalysisSchedulerConfiguration.builder()
       .setWorkDir(workDir)
       .setClientPid(ProcessHandle.current().pid())
-      .setExtraProperties(fullExtraProperties)
+      .setExtraProperties(buildDotnetExtraProperties(dotnetSupport))
       .setNodeJs(nodeJsPath)
       .setFileSystemProvider(this::getFileSystem)
       .build();
   }
 
-  private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
+  private static Map<String, String> buildDotnetExtraProperties(DotnetSupport dotnetSupport) {
+    var properties = new HashMap<String, String>();
     if (dotnetSupport.getActualCsharpAnalyzerPath() != null) {
-      fullExtraProperties.put("sonar.cs.internal.analyzerPath", dotnetSupport.getActualCsharpAnalyzerPath().toString());
+      properties.put("sonar.cs.internal.analyzerPath", dotnetSupport.getActualCsharpAnalyzerPath().toString());
     }
     if (dotnetSupport.isSupportsCsharp()) {
-      fullExtraProperties.put("sonar.cs.internal.shouldUseCsharpEnterprise", String.valueOf(dotnetSupport.isShouldUseCsharpEnterprise()));
+      properties.put("sonar.cs.internal.shouldUseCsharpEnterprise", String.valueOf(dotnetSupport.isShouldUseCsharpEnterprise()));
     }
     if (dotnetSupport.isSupportsVbNet()) {
-      fullExtraProperties.put("sonar.cs.internal.shouldUseVbEnterprise", String.valueOf(dotnetSupport.isShouldUseVbNetEnterprise()));
+      properties.put("sonar.cs.internal.shouldUseVbEnterprise", String.valueOf(dotnetSupport.isShouldUseVbNetEnterprise()));
     }
+    dotnetSupport.getOmnisharpArtifacts().forEach(
+      (key, path) -> properties.put("sonar.cs.internal." + key, path.toString()));
+    return properties;
   }
 
   private ClientModuleFileSystem getFileSystem(String configurationScopeId) {
@@ -174,6 +163,21 @@ public class AnalysisSchedulerCache {
       // This ensures that when the scheduler is eventually created, it won't use stale cached data
       pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
     }
+  }
+
+  public synchronized void reloadStandalonePlugins() {
+    var scheduler = standaloneScheduler.get();
+    if (scheduler != null) {
+      scheduler.reset(
+        createSchedulerConfiguration(pluginsService.getDotnetSupport(null)),
+        pluginLifecycleService::reloadEmbeddedPluginsAndEvictCaches);
+    } else {
+      pluginLifecycleService.unloadEmbeddedPluginsAndEvictCaches();
+    }
+  }
+
+  public synchronized void reloadAllConnectedPlugins() {
+    connectedSchedulerByConnectionId.keySet().forEach(this::reloadPlugins);
   }
 
   @EventListener

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -63,7 +64,7 @@ class DotnetSupportTest {
   void should_initialize_properties_as_expected(Language language, @Nullable Path csharpAnalyzerPath, boolean shouldUseCsharpEnterprise, boolean shouldUseVbNetEnterprise) {
     mockEnabledLanguages(language);
 
-    var underTest = new DotnetSupport(initializeParams, csharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise);
+    var underTest = new DotnetSupport(initializeParams, csharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise, Map.of());
 
     assertThat(underTest.isSupportsCsharp()).isEqualTo(language == Language.CS);
     assertThat(underTest.isSupportsVbNet()).isEqualTo(language == Language.VBNET);

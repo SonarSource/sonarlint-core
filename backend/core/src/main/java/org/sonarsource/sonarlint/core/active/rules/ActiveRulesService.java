@@ -297,6 +297,11 @@ public class ActiveRulesService {
     };
   }
 
+  public synchronized void evictStandalone() {
+    LOG.debug("Evict cached standalone active rules");
+    standaloneActiveRules = null;
+  }
+
   public void evictFor(String connectionId) {
     LOG.debug("Evict cached active rules for connection '{}'", connectionId);
     activeRulesPerBinding.entrySet().removeIf(

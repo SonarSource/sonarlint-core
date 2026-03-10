@@ -19,11 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.languages;
 
-import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -35,19 +33,15 @@ public class LanguageSupportRepository {
   private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
 
   public LanguageSupportRepository(InitializeParams params) {
-    this.enabledLanguagesInStandaloneMode = toEnumSet(
-      adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
+    this.enabledLanguagesInStandaloneMode = adaptLanguage(params.getEnabledLanguagesInStandaloneMode());
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
   }
 
-  @NotNull
-  private static List<SonarLanguage> adaptLanguage(Set<Language> languagesDto) {
-    return languagesDto.stream().map(e -> SonarLanguage.valueOf(e.name())).toList();
-  }
-
-  private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {
-    return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
+  private static EnumSet<SonarLanguage> adaptLanguage(Set<Language> languagesDto) {
+    return languagesDto.stream()
+      .map(e -> SonarLanguage.valueOf(e.name()))
+      .collect(Collectors.toCollection(() -> EnumSet.noneOf(SonarLanguage.class)));
   }
 
   public Set<SonarLanguage> getEnabledLanguagesInStandaloneMode() {
@@ -56,6 +50,14 @@ public class LanguageSupportRepository {
 
   public Set<SonarLanguage> getEnabledLanguagesInConnectedMode() {
     return enabledLanguagesInConnectedMode;
+  }
+
+  public boolean isEnabledInStandaloneMode(SonarLanguage language) {
+    return enabledLanguagesInStandaloneMode.contains(language);
+  }
+
+  public boolean isEnabledInConnectedMode(SonarLanguage language) {
+    return enabledLanguagesInConnectedMode.contains(language);
   }
 
   public boolean areTaintVulnerabilitiesSupported() {

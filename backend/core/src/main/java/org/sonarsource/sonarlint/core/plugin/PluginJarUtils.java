@@ -22,29 +22,23 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 
-/**
- * @param language          the language this plugin covers
- * @param state             current state of the plugin at the backend
- * @param source            source where the plugin jar came from
- * @param actualVersion     used version of the plugin
- * @param overriddenVersion a version of the plugin that is overridden by the actualVersion, if any
- * @param path              path to the plugin jar on disk; populated for SYNCED/ACTIVE, null for DOWNLOADING/FAILED
- */
-public record PluginStatus(
-  SonarLanguage language,
-  ArtifactState state,
-  @Nullable ArtifactSource source,
-  @Nullable Version actualVersion,
-  @Nullable Version overriddenVersion,
-  @Nullable Path path) {
+public class PluginJarUtils {
 
-  public String pluginName() {
-    return language.getName();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private PluginJarUtils() {
   }
 
-  public static PluginStatus unsupported(SonarLanguage language) {
-    return new PluginStatus(language, ArtifactState.UNSUPPORTED, null, null, null, null);
+  @Nullable
+  public static Version readVersion(Path jarPath) {
+    try {
+      return PluginInfo.create(jarPath).getVersion();
+    } catch (IllegalStateException e) {
+      LOG.debug("Failed to read version from {}", jarPath, e);
+      return null;
+    }
   }
 }

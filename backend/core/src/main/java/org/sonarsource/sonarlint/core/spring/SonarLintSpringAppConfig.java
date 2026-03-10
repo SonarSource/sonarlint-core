@@ -151,6 +151,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   RulesRepository.class,
   RulesExtractionHelper.class,
   PluginsService.class,
+  PluginsConfig.class,
   SkippedPluginsNotifierService.class,
   PluginStatusNotifierService.class,
   PluginsRepository.class,

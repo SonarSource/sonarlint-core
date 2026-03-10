@@ -19,22 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-public enum PluginState {
+import java.nio.file.Path;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.Version;
 
-  ACTIVE("Active"),
-  SYNCED("Synced"),
-  DOWNLOADING("Downloading…"),
-  FAILED("Failed"),
-  PREMIUM("Premium"),
-  UNSUPPORTED("Unsupported");
+public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactSource source, @Nullable Version version) {
 
-  private final String name;
-
-  PluginState(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
 }

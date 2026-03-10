@@ -49,13 +49,13 @@ import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWa
 import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
-import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginArtifactProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -63,12 +63,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
-import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixSettingsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.UserSynchronizer;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
+import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixSettingsSynchronizer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -91,7 +92,6 @@ public class SynchronizationService {
   private final SonarQubeClientManager sonarQubeClientManager;
   private final TaskManager taskManager;
   private final StorageService storageService;
-  private final Set<String> connectedModeEmbeddedPluginKeys;
   private final boolean branchSpecificSynchronizationEnabled;
   private final boolean fullSynchronizationEnabled;
   private final SynchronizationTimestampRepository<String> scopeSynchronizationTimestampRepository = new SynchronizationTimestampRepository<>();
@@ -109,19 +109,20 @@ public class SynchronizationService {
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
   private final boolean shouldSynchronizeHotspots;
   private final AiCodeFixRepository aiCodeFixRepository;
+  private final PluginArtifactProvider pluginArtifactProvider;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarQubeClientManager sonarQubeClientManager, TaskManager taskManager, StorageService storageService, InitializeParams params,
     TaintSynchronizationService taintSynchronizationService, ScaSynchronizationService scaSynchronizationService, IssueSynchronizationService issueSynchronizationService,
     HotspotSynchronizationService hotspotSynchronizationService, SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
-    SonarProjectBranchTrackingService sonarProjectBranchTrackingService, ApplicationEventPublisher applicationEventPublisher, AiCodeFixRepository aiCodeFixRepository) {
+    SonarProjectBranchTrackingService sonarProjectBranchTrackingService, ApplicationEventPublisher applicationEventPublisher, AiCodeFixRepository aiCodeFixRepository,
+    PluginArtifactProvider pluginArtifactProvider) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.taskManager = taskManager;
     this.storageService = storageService;
-    this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
     this.branchSpecificSynchronizationEnabled = params.getBackendCapabilities().contains(PROJECT_SYNCHRONIZATION);
     this.shouldSynchronizeHotspots = params.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
     this.fullSynchronizationEnabled = params.getBackendCapabilities().contains(FULL_SYNCHRONIZATION);
@@ -133,6 +134,7 @@ public class SynchronizationService {
     this.sonarProjectBranchTrackingService = sonarProjectBranchTrackingService;
     this.applicationEventPublisher = applicationEventPublisher;
     this.aiCodeFixRepository = aiCodeFixRepository;
+    this.pluginArtifactProvider = pluginArtifactProvider;
   }
 
   @PostConstruct
@@ -321,16 +323,14 @@ public class SynchronizationService {
       .filter(SonarLanguage::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
     var storage = storageService.connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
-    var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, connectedModeEmbeddedPluginKeys, serverInfoSynchronizer, storage);
+    var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, serverInfoSynchronizer, storage);
     var aiCodeFixSynchronizer = new AiCodeFixSettingsSynchronizer(storage, new OrganizationSynchronizer(storage), aiCodeFixRepository);
     var userSynchronizer = new UserSynchronizer(storage);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       userSynchronizer.synchronize(serverApi, cancelMonitor);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
-      if (summary.anyPluginSynchronized()) {
-        applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
-      }
+      pluginArtifactProvider.syncConnectionPlugins(connectionId);
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).toList();
       var scopesPerProjectKey = scopesToSync.stream()

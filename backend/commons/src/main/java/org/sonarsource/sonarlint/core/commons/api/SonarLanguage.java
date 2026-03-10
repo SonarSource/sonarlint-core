@@ -69,8 +69,8 @@ public enum SonarLanguage {
   KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   TERRAFORM("terraform", "iac", "Terraform", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
   AZURERESOURCEMANAGER("azureresourcemanager", "iac", "Azure Resource Manager", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  ANSIBLE("ansible", "iacenterprise", "Ansible", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  GITHUBACTIONS("githubactions", "iacenterprise", "GitHub Actions", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
+  ANSIBLE("ansible", "iac", "Ansible", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  GITHUBACTIONS("githubactions", "iac", "GitHub Actions", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
 
   private final String sonarLanguageKey;
 
@@ -83,6 +83,10 @@ public enum SonarLanguage {
   private final String fileSuffixesPropKey;
 
   private static final Map<String, SonarLanguage> mMap = Collections.unmodifiableMap(initializeMapping());
+
+  public static final Set<String> ALL_PLUGIN_KEYS = Stream.of(values())
+    .map(SonarLanguage::getPluginKey)
+    .collect(Collectors.toUnmodifiableSet());
 
   private static Map<String, SonarLanguage> initializeMapping() {
     Map<String, SonarLanguage> mMap = new HashMap<>();
