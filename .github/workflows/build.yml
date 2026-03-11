@@ -16,6 +16,7 @@ concurrency:
     ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# we are testing the build below
 jobs:
   build-number:
     outputs:
