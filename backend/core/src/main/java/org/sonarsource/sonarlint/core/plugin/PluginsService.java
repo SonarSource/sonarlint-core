@@ -149,22 +149,14 @@ public class PluginsService {
 
   public void unloadEmbeddedPlugins() {
     logger.debug("Evict loaded embedded plugins");
-    var wasLoaded = pluginsRepository.getLoadedEmbeddedPlugins() != null;
     pluginsRepository.unloadEmbedded();
     pluginArtifactProvider.evict(null);
-    if (wasLoaded) {
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null));
-    }
   }
 
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
-    var wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
     pluginsRepository.unload(connectionId);
     pluginArtifactProvider.evict(connectionId);
-    if (wasLoaded) {
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
-    }
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {

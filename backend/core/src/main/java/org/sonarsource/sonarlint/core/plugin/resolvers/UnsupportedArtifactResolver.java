@@ -20,29 +20,23 @@
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 public class UnsupportedArtifactResolver implements ArtifactResolver {
 
   private final LanguageSupportRepository languageSupportRepository;
-  private final Set<String> disabledPluginKeys;
 
-  public UnsupportedArtifactResolver(
-    LanguageSupportRepository languageSupportRepository,
-    InitializeParams initializeParams) {
+  public UnsupportedArtifactResolver(LanguageSupportRepository languageSupportRepository) {
     this.languageSupportRepository = languageSupportRepository;
-    this.disabledPluginKeys = Set.copyOf(initializeParams.getDisabledPluginKeysForAnalysis());
   }
 
   @Override
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
-    if (!isSupported(language, connectionId) || disabledPluginKeys.contains(language.getPluginKey())) {
+    if (!isSupported(language, connectionId)) {
       return Optional.of(new ResolvedArtifact(ArtifactState.UNSUPPORTED, null, null, null));
     }
     return Optional.empty();

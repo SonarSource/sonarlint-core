@@ -124,6 +124,7 @@ public class PluginsStorage {
     var pluginsByKey = serverPluginsExpectedInStorage.stream().collect(Collectors.toMap(ServerPlugin::getKey, PluginsStorage::adapt));
     var currentReferences = Sonarlint.PluginReferences.newBuilder();
     currentReferences.putAllPluginsByKey(pluginsByKey);
+    createPluginDirectory();
     rwLock.write(() -> {
       var unknownFiles = getUnknownFiles(expectedPluginPaths);
       deleteFiles(unknownFiles);

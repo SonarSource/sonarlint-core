@@ -72,6 +72,9 @@ public class SonarQubeClientManager {
    * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
    */
   public SonarQubeClient getValidClientOrThrow(String connectionId) {
+    if (connectionRepository.getConnectionById(connectionId) == null) {
+      throw new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is not valid", connectionId));
+    }
     return clientsByConnectionId.computeIfAbsent(connectionId, this::createSonarQubeClient)
       .orElseThrow(() -> new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is not valid", connectionId)));
   }
@@ -89,6 +92,10 @@ public class SonarQubeClientManager {
   }
 
   private Optional<SonarQubeClient> getValidClient(String connectionId) {
+    if (connectionRepository.getConnectionById(connectionId) == null) {
+      LOG.debug("Connection '{}' is gone", connectionId);
+      return Optional.empty();
+    }
     return clientsByConnectionId.computeIfAbsent(connectionId, this::createSonarQubeClient)
       .filter(connection -> isConnectionActive(connectionId, connection));
   }

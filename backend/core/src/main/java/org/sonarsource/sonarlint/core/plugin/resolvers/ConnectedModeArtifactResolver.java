@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -92,20 +93,39 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
 
   @Override
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
-    return findGatedServerPlugin(language, connectionId)
-      .map(serverPlugin -> resolveFromStorage(connectionId, serverPlugin)
-        .orElseGet(() -> downloadAndResolve(connectionId, serverPlugin)));
+    if (connectionId == null) {
+      return Optional.empty();
+    }
+    if (!passesLanguageGate(language, connectionId)) {
+      if (skipSyncPluginKeys.contains(language.getPluginKey())) {
+        LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", language.getPluginKey());
+      }
+      return Optional.empty();
+    }
+    var fromStorage = resolveFromStorage(connectionId, language.getPluginKey());
+    if (fromStorage.isPresent()) {
+      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", language.getPluginKey());
+      return fromStorage;
+    }
+    return findServerPlugin(connectionId, language.getPluginKey())
+      .map(serverPlugin -> downloadAndResolve(connectionId, serverPlugin));
   }
 
   @Override
   public Optional<ResolvedArtifact> resolveAsync(SonarLanguage language, @Nullable String connectionId) {
-    return findGatedServerPlugin(language, connectionId)
-      .map(serverPlugin -> resolveFromStorage(connectionId, serverPlugin)
-        .orElseGet(() -> scheduleDownload(connectionId, serverPlugin, language)));
+    if (connectionId == null || !passesLanguageGate(language, connectionId)) {
+      return Optional.empty();
+    }
+    var fromStorage = resolveFromStorage(connectionId, language.getPluginKey());
+    if (fromStorage.isPresent()) {
+      return fromStorage;
+    }
+    return findServerPlugin(connectionId, language.getPluginKey())
+      .map(serverPlugin -> scheduleDownload(connectionId, serverPlugin, language));
   }
 
-  private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, ServerPlugin serverPlugin) {
-    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(serverPlugin.getKey()))
+  private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, String pluginKey) {
+    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey))
       .map(stored -> toResolvedArtifact(stored, connectionId));
   }
 
@@ -126,16 +146,14 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
-  private Optional<ServerPlugin> findGatedServerPlugin(SonarLanguage language, @Nullable String connectionId) {
-    if (connectionId == null || !passesLanguageGate(language, connectionId)) {
+  private Optional<ServerPlugin> findServerPlugin(String connectionId, String pluginKey) {
+    try {
+      return serverPluginsCache.getPlugins(connectionId)
+        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst());
+    } catch (ServerRequestException e) {
+      LOG.debug("Could not fetch server plugin list for connection '{}', skipping server-side lookup for '{}'", connectionId, pluginKey);
       return Optional.empty();
     }
-    return findServerPlugin(connectionId, language.getPluginKey());
-  }
-
-  private Optional<ServerPlugin> findServerPlugin(String connectionId, String pluginKey) {
-    return serverPluginsCache.getPlugins(connectionId)
-      .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst());
   }
 
   private boolean passesLanguageGate(SonarLanguage language, String connectionId) {

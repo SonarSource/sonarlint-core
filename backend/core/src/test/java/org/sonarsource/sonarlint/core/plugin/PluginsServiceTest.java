@@ -305,18 +305,9 @@ class PluginsServiceTest {
   }
 
   @Test
-  void unloadPlugins_should_publish_event_when_plugins_were_loaded() {
+  void unloadPlugins_should_not_publish_event() {
     var connectionId = "connection1";
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
-
-    underTest.unloadPlugins(connectionId);
-
-    verify(eventPublisher).publishEvent(new PluginStatusesChangedEvent(connectionId));
-  }
-
-  @Test
-  void unloadPlugins_should_not_publish_event_when_no_plugins_were_loaded() {
-    var connectionId = "connection1";
 
     underTest.unloadPlugins(connectionId);
 

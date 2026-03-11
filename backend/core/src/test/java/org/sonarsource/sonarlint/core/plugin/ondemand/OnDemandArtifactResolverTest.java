@@ -125,6 +125,8 @@ class OnDemandArtifactResolverTest {
       assertThat(result).contains(downloading());
     } finally {
       proceedLatch.countDown();
+      // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
+      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
     }
   }
 
@@ -141,6 +143,8 @@ class OnDemandArtifactResolverTest {
       assertThat(result).contains(downloading());
     } finally {
       proceedLatch.countDown();
+      // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
+      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
     }
   }
 

@@ -1081,6 +1081,9 @@ class AnalysisMediumTests {
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis()))
       .join();
 
+    // clear logs accumulated during sync and warmup (sync now unconditionally fires PluginsSynchronizedEvent)
+    client.clearLogs();
+
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
 

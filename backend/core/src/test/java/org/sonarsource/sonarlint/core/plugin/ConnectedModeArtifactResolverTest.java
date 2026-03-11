@@ -98,15 +98,16 @@ class ConnectedModeArtifactResolverTest {
   }
 
   @Test
-  void should_return_empty_when_plugin_is_in_storage_but_not_on_server() {
+  void should_return_synced_from_storage_even_when_plugin_is_not_on_server() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.JAVA.getPluginKey(), JAVA_JAR));
     mockServerPlugins("conn", List.of());
     var resolver = createResolver(Set.of());
+    var expected = resolved(ArtifactState.SYNCED, JAVA_JAR, ArtifactSource.SONARQUBE_SERVER);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
-    assertThat(result).isEmpty();
+    assertThat(result).contains(expected);
   }
 
   @Test

@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -37,31 +35,21 @@ class UnsupportedArtifactResolverTest {
   // --- Disabled-keys behaviour ---
 
   @Test
-  void should_return_unsupported_when_plugin_key_is_disabled() {
+  void should_return_empty_when_plugin_key_is_disabled_for_analysis_in_standalone() {
     var languageSupport = mockLanguageSupport(true, true);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of(SonarLanguage.JAVA.getPluginKey())));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
-    assertThat(result).contains(UNSUPPORTED_ARTIFACT);
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void should_return_unsupported_in_connected_mode_when_plugin_key_is_disabled() {
+  void should_return_empty_when_plugin_key_is_disabled_for_analysis_in_connected_mode() {
     var languageSupport = mockLanguageSupport(true, true);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of(SonarLanguage.PYTHON.getPluginKey())));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.PYTHON, "conn");
-
-    assertThat(result).contains(UNSUPPORTED_ARTIFACT);
-  }
-
-  @Test
-  void should_not_return_unsupported_when_plugin_key_is_not_disabled() {
-    var languageSupport = mockLanguageSupport(true, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of(SonarLanguage.PYTHON.getPluginKey())));
-
-    var result = resolver.resolve(SonarLanguage.JAVA, null);
 
     assertThat(result).isEmpty();
   }
@@ -71,7 +59,7 @@ class UnsupportedArtifactResolverTest {
   @Test
   void should_return_unsupported_when_language_not_enabled_in_standalone() {
     var languageSupport = mockLanguageSupport(false, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of()));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
@@ -81,7 +69,7 @@ class UnsupportedArtifactResolverTest {
   @Test
   void should_return_unsupported_when_language_not_enabled_in_connected_mode() {
     var languageSupport = mockLanguageSupport(false, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of()));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
@@ -91,7 +79,7 @@ class UnsupportedArtifactResolverTest {
   @Test
   void should_return_empty_when_language_is_enabled_in_standalone() {
     var languageSupport = mockLanguageSupport(true, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of()));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
@@ -101,7 +89,7 @@ class UnsupportedArtifactResolverTest {
   @Test
   void should_return_empty_when_language_is_enabled_in_connected_mode() {
     var languageSupport = mockLanguageSupport(false, true);
-    var resolver = new UnsupportedArtifactResolver(languageSupport, mockParams(Set.of()));
+    var resolver = new UnsupportedArtifactResolver(languageSupport);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
@@ -115,11 +103,5 @@ class UnsupportedArtifactResolverTest {
     when(repo.isEnabledInStandaloneMode(SonarLanguage.PYTHON)).thenReturn(enabledInStandalone);
     when(repo.isEnabledInConnectedMode(SonarLanguage.PYTHON)).thenReturn(enabledInConnected);
     return repo;
-  }
-
-  private static InitializeParams mockParams(Set<String> disabledKeys) {
-    var params = mock(InitializeParams.class);
-    when(params.getDisabledPluginKeysForAnalysis()).thenReturn(disabledKeys);
-    return params;
   }
 }

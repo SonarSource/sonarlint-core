@@ -210,26 +210,6 @@ class PluginArtifactProviderTest {
   }
 
   @Test
-  void should_return_unsupported_in_standalone_when_plugin_key_is_disabled() {
-    when(languageSupportRepository.isEnabledInStandaloneMode(SonarLanguage.JAVA)).thenReturn(true);
-    var provider = buildProvider(Set.of(), Set.of(SonarLanguage.JAVA.getPluginKey()));
-
-    var result = provider.resolve(null);
-
-    assertThat(result.get(SonarLanguage.JAVA).status().state()).isEqualTo(ArtifactState.UNSUPPORTED);
-  }
-
-  @Test
-  void should_return_unsupported_in_connected_mode_when_plugin_key_is_disabled() {
-    when(languageSupportRepository.isEnabledInConnectedMode(SonarLanguage.JAVA)).thenReturn(true);
-    var provider = buildProvider(Set.of(), Set.of(SonarLanguage.JAVA.getPluginKey()));
-
-    var result = provider.resolve("conn");
-
-    assertThat(result.get(SonarLanguage.JAVA).status().state()).isEqualTo(ArtifactState.UNSUPPORTED);
-  }
-
-  @Test
   void should_read_version_from_embedded_jar_for_active_plugin() throws IOException {
     when(languageSupportRepository.isEnabledInStandaloneMode(SonarLanguage.JAVA)).thenReturn(true);
     var javaJar = createJar("sonar-java-plugin.jar", "java", PLUGIN_JAR_VERSION.toString());
@@ -253,13 +233,6 @@ class PluginArtifactProviderTest {
     assertThat(result.get(SonarLanguage.JAVA).status())
       .extracting(PluginStatus::state, PluginStatus::actualVersion)
       .containsExactly(ArtifactState.SYNCED, PLUGIN_JAR_VERSION);
-  }
-
-  @Test
-  void should_report_plugins_not_ready_when_cache_is_empty() {
-    var provider = buildProvider();
-
-    assertThat(provider.arePluginsReady(null)).isFalse();
   }
 
   @Test
@@ -318,7 +291,7 @@ class PluginArtifactProviderTest {
     return new PluginArtifactProvider(
       storageService,
       languageSupportRepository,
-      new UnsupportedArtifactResolver(languageSupportRepository, params),
+      new UnsupportedArtifactResolver(languageSupportRepository),
       new EmbeddedArtifactResolver(params),
       connectedMode,
       new OnDemandArtifactResolver(userPaths, mock(HttpClientProvider.class), Map.of(), eventPublisher, downloadExecutor),
