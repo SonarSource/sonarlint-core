@@ -69,6 +69,7 @@ public class RulesApi {
   public RulesApi(ServerApiHelper serverApiHelper) {
     this.serverApiHelper = serverApiHelper;
   }
+  @SuppressWarnings("deprecation")
 
   public Optional<ServerRule> getRule(String ruleKey, SonarLintCancelMonitor cancelMonitor) {
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);

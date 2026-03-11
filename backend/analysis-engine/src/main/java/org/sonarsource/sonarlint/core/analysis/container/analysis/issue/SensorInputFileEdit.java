@@ -28,7 +28,7 @@ import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
 import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
 import org.sonar.api.batch.sensor.issue.fix.TextEdit;
 
-public class SensorInputFileEdit implements InputFileEdit, NewInputFileEdit, org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit {
+public class SensorInputFileEdit implements InputFileEdit, NewInputFileEdit {
 
   private final List<TextEdit> textEdits = new ArrayList<>();
 
@@ -47,13 +47,6 @@ public class SensorInputFileEdit implements InputFileEdit, NewInputFileEdit, org
 
   @Override
   public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
-    textEdits.add((SensorTextEdit) newTextEdit);
-    return this;
-  }
-
-  @Override
-  public org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit addTextEdit(org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit newTextEdit) {
-    // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
     textEdits.add((SensorTextEdit) newTextEdit);
     return this;
   }
