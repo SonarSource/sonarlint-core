@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
 import org.springframework.context.event.EventListener;
 
@@ -30,18 +30,28 @@ public class PluginStatusNotifierService {
 
   private final PluginsService pluginsService;
   private final SonarLintRpcClient client;
-  private final AtomicReference<List<PluginStatusDto>> lastSentStatuses = new AtomicReference<>();
+  private final ConfigurationRepository configurationRepository;
 
-  public PluginStatusNotifierService(PluginsService pluginsService, SonarLintRpcClient client) {
+  public PluginStatusNotifierService(PluginsService pluginsService, SonarLintRpcClient client, ConfigurationRepository configurationRepository) {
     this.pluginsService = pluginsService;
     this.client = client;
+    this.configurationRepository = configurationRepository;
   }
 
   @EventListener
   public void onPluginStatusesChanged(PluginStatusesChangedEvent event) {
-    var newStatuses = PluginStatusMapper.toDto(pluginsService.getPluginStatuses(event.connectionId()));
-    if (!newStatuses.equals(lastSentStatuses.getAndSet(newStatuses))) {
-      client.didChangePluginStatuses(new DidChangePluginStatusesParams(newStatuses));
+    var connectionId = event.connectionId();
+    var affectedScopeIds = connectionId == null
+      ? configurationRepository.getConfigScopeIds()
+      : configurationRepository.getBoundScopesToConnection(connectionId).stream()
+        .map(BoundScope::getConfigScopeId).toList();
+
+    for (var configScopeId : affectedScopeIds) {
+      var effectiveConnectionId = connectionId != null ? connectionId
+        : configurationRepository.getEffectiveBinding(configScopeId)
+          .map(Binding::connectionId).orElse(null);
+      var newStatuses = pluginsService.getPluginStatuses(effectiveConnectionId);
+      client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(newStatuses)));
     }
   }
 

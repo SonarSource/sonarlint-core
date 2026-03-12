@@ -24,10 +24,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDt
 
 public class DidChangePluginStatusesParams {
 
+  private final String configScopeId;
   private final List<PluginStatusDto> pluginStatuses;
 
-  public DidChangePluginStatusesParams(List<PluginStatusDto> pluginStatuses) {
+  public DidChangePluginStatusesParams(String configScopeId, List<PluginStatusDto> pluginStatuses) {
+    this.configScopeId = configScopeId;
     this.pluginStatuses = pluginStatuses;
+  }
+
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 
   public List<PluginStatusDto> getPluginStatuses() {
