@@ -43,6 +43,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
     this.loadedPlugins = loadedPlugins;
   }
 
+  @SuppressWarnings("java:S1874")
   @Override
   protected void doBeforeStart() {
     var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
@@ -53,6 +54,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
       loadedPlugins,
       GlobalSettings.class,
       new GlobalConfigurationProvider(),
+      // SonarQubeVersion is deprecated but still needed for backward compatibility with older analyzers
       AnalysisExtensionInstaller.class,
       new SonarQubeVersion(sonarPluginApiVersion),
       new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, analysisGlobalConfig.getClientPid()),

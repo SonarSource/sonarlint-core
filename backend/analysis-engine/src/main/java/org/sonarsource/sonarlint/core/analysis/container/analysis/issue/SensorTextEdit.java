@@ -23,7 +23,7 @@ import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
 import org.sonar.api.batch.sensor.issue.fix.TextEdit;
 
-public class SensorTextEdit implements TextEdit, NewTextEdit, org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit {
+public class SensorTextEdit implements TextEdit, NewTextEdit {
   private TextRange range;
   private String newText;
 

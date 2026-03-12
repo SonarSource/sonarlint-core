@@ -26,7 +26,7 @@ import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
 import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
 import org.sonar.api.batch.sensor.issue.fix.QuickFix;
 
-public class SensorQuickFix implements QuickFix, NewQuickFix, org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix {
+public class SensorQuickFix implements QuickFix, NewQuickFix {
 
   private final List<InputFileEdit> inputFileEdits = new ArrayList<>();
 
@@ -45,13 +45,6 @@ public class SensorQuickFix implements QuickFix, NewQuickFix, org.sonarsource.so
 
   @Override
   public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
-    inputFileEdits.add((SensorInputFileEdit) newInputFileEdit);
-    return this;
-  }
-
-  @Override
-  public SensorQuickFix addInputFileEdit(org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit newInputFileEdit) {
-    // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
     inputFileEdits.add((SensorInputFileEdit) newInputFileEdit);
     return this;
   }
