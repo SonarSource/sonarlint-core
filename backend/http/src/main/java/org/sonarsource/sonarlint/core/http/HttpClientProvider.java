@@ -113,16 +113,16 @@ public class HttpClientProvider {
       try {
         sslFactoryBuilder.withIdentityMaterial(keyStore.getPath(), keyStore.getKeyStorePassword().toCharArray(), keyStore.getKeyStoreType());
       } catch (Exception e) {
-        LOG.error("Unable to load key store from '{}', it will be ignored: {}", keyStore.getPath(), e.getMessage());
+        LOG.warn("Unable to load key store from '{}', it will be ignored: {}", keyStore.getPath(), e.getMessage());
       }
     }
     var trustStore = sslConfig.getTrustStore();
-    if (trustStore != null && Files.exists(trustStore.getPath())) {
+    if (trustStore != null) {
       try {
         sslFactoryBuilder.withInflatableTrustMaterial(trustStore.getPath(), trustStore.getKeyStorePassword().toCharArray(),
           trustStore.getKeyStoreType(), trustManagerParametersPredicate);
       } catch (Exception e) {
-        LOG.error("Unable to load trust store from '{}', it will be ignored: {}", trustStore.getPath(), e.getMessage());
+        LOG.warn("Unable to load trust store from '{}', it will be ignored: {}", trustStore.getPath(), e.getMessage());
       }
     }
     return sslFactoryBuilder.build().getSslContext();
