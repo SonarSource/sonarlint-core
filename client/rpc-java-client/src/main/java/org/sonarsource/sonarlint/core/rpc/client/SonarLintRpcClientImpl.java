@@ -433,7 +433,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void didChangePluginStatuses(DidChangePluginStatusesParams params) {
-    notify(() -> delegate.didChangePluginStatuses(params.getPluginStatuses()));
+    notify(() -> delegate.didChangePluginStatuses(params.getConfigScopeId(), params.getPluginStatuses()));
   }
 
 }
