@@ -110,12 +110,20 @@ public class HttpClientProvider {
     }
     var keyStore = sslConfig.getKeyStore();
     if (keyStore != null && Files.exists(keyStore.getPath())) {
-      sslFactoryBuilder.withIdentityMaterial(keyStore.getPath(), keyStore.getKeyStorePassword().toCharArray(), keyStore.getKeyStoreType());
+      try {
+        sslFactoryBuilder.withIdentityMaterial(keyStore.getPath(), keyStore.getKeyStorePassword().toCharArray(), keyStore.getKeyStoreType());
+      } catch (Exception e) {
+        LOG.error("Unable to load key store from '{}', it will be ignored: {}", keyStore.getPath(), e.getMessage());
+      }
     }
     var trustStore = sslConfig.getTrustStore();
-    if (trustStore != null) {
-      sslFactoryBuilder.withInflatableTrustMaterial(trustStore.getPath(), trustStore.getKeyStorePassword().toCharArray(), trustStore.getKeyStoreType(),
-        trustManagerParametersPredicate);
+    if (trustStore != null && Files.exists(trustStore.getPath())) {
+      try {
+        sslFactoryBuilder.withInflatableTrustMaterial(trustStore.getPath(), trustStore.getKeyStorePassword().toCharArray(),
+          trustStore.getKeyStoreType(), trustManagerParametersPredicate);
+      } catch (Exception e) {
+        LOG.error("Unable to load trust store from '{}', it will be ignored: {}", trustStore.getPath(), e.getMessage());
+      }
     }
     return sslFactoryBuilder.build().getSslContext();
   }
