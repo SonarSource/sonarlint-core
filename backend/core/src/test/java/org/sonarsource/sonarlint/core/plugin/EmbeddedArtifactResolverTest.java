@@ -148,37 +148,34 @@ class EmbeddedArtifactResolverTest {
     assertThat(result).isEmpty();
   }
 
-  // --- Extra plugin paths ---
+  // --- Companion plugins ---
 
   @Test
-  void should_return_only_non_language_plugin_keys_as_additional_paths() throws IOException {
+  void should_return_only_non_language_plugin_keys_as_companion_plugins() throws IOException {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of(), null));
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
 
-    var additionalPaths = resolver.getAdditionalPluginPaths();
+    var result = resolver.resolveCompanionPlugins(null);
 
-    assertThat(additionalPaths).containsExactly(omnisharpJar);
+    assertThat(result).containsExactly(Map.entry("omnisharp", expected));
   }
 
   @Test
-  void should_return_empty_additional_paths_when_all_plugins_are_language_plugins() throws IOException {
+  void should_return_empty_companion_plugins_when_all_plugins_are_language_plugins() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
     var pythonJar = createJar("sonar-python-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(javaJar, pythonJar), Map.of(), null));
 
-    var additionalPaths = resolver.getAdditionalPluginPaths();
-
-    assertThat(additionalPaths).isEmpty();
+    assertThat(resolver.resolveCompanionPlugins(null)).isEmpty();
   }
 
   @Test
-  void should_return_empty_additional_paths_when_embedded_paths_are_empty() {
+  void should_return_empty_companion_plugins_when_embedded_paths_are_empty() {
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), null));
 
-    var additionalPaths = resolver.getAdditionalPluginPaths();
-
-    assertThat(additionalPaths).isEmpty();
+    assertThat(resolver.resolveCompanionPlugins(null)).isEmpty();
   }
 
   private static InitializeParams mockParams(Set<Path> embeddedPaths, Map<String, Path> connectedPaths, @Nullable Path csharpOssPath) {

@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
@@ -66,14 +66,14 @@ class OnDemandArtifactResolverTest {
 
   private HttpClientProvider httpClientProvider;
   private ApplicationEventPublisher eventPublisher;
-  private List<PluginStatusChangedEvent> capturedEvents;
+  private List<PluginStatusUpdateEvent> capturedEvents;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     capturedEvents = new CopyOnWriteArrayList<>();
-    doAnswer(this::captureEvent).when(eventPublisher).publishEvent(any(PluginStatusChangedEvent.class));
+    doAnswer(this::captureEvent).when(eventPublisher).publishEvent(any(PluginStatusUpdateEvent.class));
   }
 
   @Test
@@ -230,16 +230,16 @@ class OnDemandArtifactResolverTest {
   }
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
-    return new PluginStatus(lang, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND,
+    return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND,
       Version.create(DownloadableArtifact.CFAMILY_PLUGIN.version()), null, path);
   }
 
   private static PluginStatus failedStatus(SonarLanguage lang) {
-    return new PluginStatus(lang, ArtifactState.FAILED, null, null, null, null);
+    return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null);
   }
 
   private Object captureEvent(InvocationOnMock inv) {
-    capturedEvents.add(inv.getArgument(0, PluginStatusChangedEvent.class));
+    capturedEvents.add(inv.getArgument(0, PluginStatusUpdateEvent.class));
     return null;
   }
 }

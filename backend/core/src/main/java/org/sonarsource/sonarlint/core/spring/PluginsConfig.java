@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginArtifactProvider;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
@@ -67,10 +68,11 @@ class PluginsConfig {
     ServerPluginsCache serverPluginsCache,
     ApplicationEventPublisher eventPublisher,
     InitializeParams initializeParams,
+    LanguageSupportRepository languageSupportRepository,
     @Qualifier("pluginDownloadExecutor") ExecutorService pluginDownloadExecutor) {
     return new ConnectedModeArtifactResolver(
       storageService, connectionConfigurationRepository, sonarQubeClientManager, serverPluginsCache, eventPublisher, pluginDownloadExecutor,
-      initializeParams.getConnectedModeEmbeddedPluginPathsByKey().keySet());
+      initializeParams.getConnectedModeEmbeddedPluginPathsByKey().keySet(), languageSupportRepository);
   }
 
   @Bean

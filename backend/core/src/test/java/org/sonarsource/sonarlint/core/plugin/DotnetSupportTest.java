@@ -22,58 +22,41 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class DotnetSupportTest {
   private static final Path somePath = Paths.get("folder", "file.txt");
-  private InitializeParams initializeParams;
 
   static Stream<Arguments> provideTestArguments() {
     return Stream.of(
-      Arguments.of(Language.CS, null, true, true),
-      Arguments.of(Language.VBNET, null, true, true),
-      Arguments.of(Language.CS, somePath, true, false),
-      Arguments.of(Language.VBNET, somePath, true, false),
-      Arguments.of(Language.CS, somePath, false, true),
-      Arguments.of(Language.VBNET, somePath, false, true),
-      Arguments.of(Language.CS, somePath, false, false),
-      Arguments.of(Language.VBNET, somePath, false, false),
-      Arguments.of(Language.COBOL, somePath, false, false)
+      Arguments.of(null, true, true, true, false),
+      Arguments.of(null, true, true, false, true),
+      Arguments.of(somePath, true, false, true, false),
+      Arguments.of(somePath, true, false, false, true),
+      Arguments.of(somePath, false, true, true, false),
+      Arguments.of(somePath, false, true, false, true),
+      Arguments.of(somePath, false, false, true, false),
+      Arguments.of(somePath, false, false, false, true),
+      Arguments.of(somePath, false, false, false, false)
     );
-  }
-
-  @BeforeEach
-  void prepare() {
-    initializeParams = mock(InitializeParams.class);
   }
 
   @ParameterizedTest
   @MethodSource("provideTestArguments")
-  void should_initialize_properties_as_expected(Language language, @Nullable Path csharpAnalyzerPath, boolean shouldUseCsharpEnterprise, boolean shouldUseVbNetEnterprise) {
-    mockEnabledLanguages(language);
+  void should_initialize_properties_as_expected(@Nullable Path csharpAnalyzerPath, boolean shouldUseCsharpEnterprise, boolean shouldUseVbNetEnterprise,
+    boolean supportsCsharp, boolean supportsVbNet) {
+    var underTest = new DotnetSupport(csharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise, supportsCsharp, supportsVbNet, Map.of());
 
-    var underTest = new DotnetSupport(initializeParams, csharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise, Map.of());
-
-    assertThat(underTest.isSupportsCsharp()).isEqualTo(language == Language.CS);
-    assertThat(underTest.isSupportsVbNet()).isEqualTo(language == Language.VBNET);
+    assertThat(underTest.isSupportsCsharp()).isEqualTo(supportsCsharp);
+    assertThat(underTest.isSupportsVbNet()).isEqualTo(supportsVbNet);
     assertThat(underTest.getActualCsharpAnalyzerPath()).isEqualTo(csharpAnalyzerPath);
     assertThat(underTest.isShouldUseCsharpEnterprise()).isEqualTo(shouldUseCsharpEnterprise);
     assertThat(underTest.isShouldUseVbNetEnterprise()).isEqualTo(shouldUseVbNetEnterprise);
-  }
-
-  private void mockEnabledLanguages(Language... languages) {
-    when(initializeParams.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(languages));
   }
 }

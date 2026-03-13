@@ -25,7 +25,8 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 /**
- * @param language          the language this plugin covers
+ * @param pluginKey         the plugin key
+ * @param language          the language this plugin covers; {@code null} for companion plugins not indexed by any language
  * @param state             current state of the plugin at the backend
  * @param source            source where the plugin jar came from
  * @param actualVersion     used version of the plugin
@@ -33,18 +34,29 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
  * @param path              path to the plugin jar on disk; populated for SYNCED/ACTIVE, null for DOWNLOADING/FAILED
  */
 public record PluginStatus(
-  SonarLanguage language,
+  String pluginKey,
+  @Nullable SonarLanguage language,
   ArtifactState state,
   @Nullable ArtifactSource source,
   @Nullable Version actualVersion,
   @Nullable Version overriddenVersion,
   @Nullable Path path) {
 
-  public String pluginName() {
-    return language.getName();
+  public static PluginStatus forLanguage(SonarLanguage language, ArtifactState state,
+    @Nullable ArtifactSource source, @Nullable Version actual, @Nullable Version overridden, @Nullable Path path) {
+    return new PluginStatus(language.getPluginKey(), language, state, source, actual, overridden, path);
+  }
+
+  public static PluginStatus forCompanion(String pluginKey, ArtifactState state,
+    @Nullable ArtifactSource source, @Nullable Path path) {
+    return new PluginStatus(pluginKey, null, state, source, null, null, path);
   }
 
   public static PluginStatus unsupported(SonarLanguage language) {
-    return new PluginStatus(language, ArtifactState.UNSUPPORTED, null, null, null, null);
+    return forLanguage(language, ArtifactState.UNSUPPORTED, null, null, null, null);
+  }
+
+  public String pluginName() {
+    return language != null ? language.getName() : pluginKey;
   }
 }

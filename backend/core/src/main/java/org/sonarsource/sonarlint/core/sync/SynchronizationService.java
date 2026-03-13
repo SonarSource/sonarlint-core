@@ -330,7 +330,7 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       userSynchronizer.synchronize(serverApi, cancelMonitor);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
-      pluginArtifactProvider.syncConnectionPlugins(connectionId);
+      pluginArtifactProvider.resolveAllPluginJarPaths(connectionId);
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).toList();
       var scopesPerProjectKey = scopesToSync.stream()

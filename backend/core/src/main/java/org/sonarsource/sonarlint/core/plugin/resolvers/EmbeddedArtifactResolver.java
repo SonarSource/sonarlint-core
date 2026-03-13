@@ -30,13 +30,14 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
+import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 
-public class EmbeddedArtifactResolver implements ArtifactResolver {
+public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPluginResolver {
 
   private final Map<String, Path> standaloneEmbeddedPathsByKey;
   private final Map<String, Path> connectedModeEmbeddedPathsByKey;
@@ -56,6 +57,15 @@ public class EmbeddedArtifactResolver implements ArtifactResolver {
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
     return Optional.ofNullable(resolvePath(language, connectionId))
       .map(EmbeddedArtifactResolver::toResolvedArtifact);
+  }
+
+  @Override
+  public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
+    return standaloneEmbeddedPathsByKey.entrySet().stream()
+      .filter(e -> !SonarLanguage.ALL_PLUGIN_KEYS.contains(e.getKey()))
+      .collect(Collectors.toMap(
+        Map.Entry::getKey,
+        e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue())));
   }
 
   @Nullable
@@ -79,13 +89,6 @@ public class EmbeddedArtifactResolver implements ArtifactResolver {
       return csharpStandalonePluginPath;
     }
     return found;
-  }
-
-  public Set<Path> getAdditionalPluginPaths() {
-    return standaloneEmbeddedPathsByKey.entrySet().stream()
-      .filter(e -> !SonarLanguage.ALL_PLUGIN_KEYS.contains(e.getKey()))
-      .map(Map.Entry::getValue)
-      .collect(Collectors.toSet());
   }
 
   private static Map<String, Path> buildPluginKeyToPathMap(Set<Path> embeddedPaths) {

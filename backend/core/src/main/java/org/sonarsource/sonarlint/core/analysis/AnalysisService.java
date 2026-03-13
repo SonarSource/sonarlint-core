@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
@@ -75,7 +74,6 @@ import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -290,37 +288,15 @@ public class AnalysisService {
   @EventListener
   public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
     var connectionId = event.connectionId();
-    schedulerCache.reloadPlugins(event.connectionId());
-    checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
-      .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
-  }
-
-  @EventListener
-  public void onPluginStatusChanged(PluginStatusChangedEvent event) {
-    var connectionId = event.connectionId();
-    var hasNewActivePlugin = event.newStatuses().stream().anyMatch(s -> s.state() == ArtifactState.ACTIVE);
-
-    // Only reload if a plugin newly became available; FAILED status updates are handled by checkIfReadyForAnalysis
-    if (hasNewActivePlugin) {
-      if (connectionId != null) {
-        schedulerCache.reloadPlugins(connectionId);
-      } else {
-        // On-demand plugins are application-wide and used as fallback in connected mode
-        schedulerCache.reloadStandalonePlugins();
-        schedulerCache.reloadAllConnectedPlugins();
-      }
-    }
-
-    Set<String> configScopeIds;
-    if (connectionId == null) {
-      // On-demand affects all scopes: standalone + all connected
-      configScopeIds = new HashSet<>(analysisReadinessByConfigScopeId.keySet());
+    if (connectionId != null) {
+      schedulerCache.reloadPlugins(connectionId);
+      checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
+        .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
     } else {
-      configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
-        .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
-    }
-    if (!configScopeIds.isEmpty()) {
-      checkIfReadyForAnalysis(configScopeIds);
+      // On-demand plugins are application-wide and used as fallback in connected mode
+      schedulerCache.reloadStandalonePlugins();
+      schedulerCache.reloadAllConnectedPlugins();
+      checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
     }
   }
 

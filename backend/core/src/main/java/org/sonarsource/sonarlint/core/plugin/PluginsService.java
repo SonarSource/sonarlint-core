@@ -22,11 +22,8 @@ package org.sonarsource.sonarlint.core.plugin;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -39,11 +36,11 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -104,13 +101,7 @@ public class PluginsService {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
       var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
-      var artifacts = pluginArtifactProvider.resolve(null);
-      var allPluginPaths = artifacts.values().stream()
-        .map(AnalyzerArtifacts::pluginJar)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toCollection(HashSet::new));
-      allPluginPaths.addAll(pluginArtifactProvider.getAdditionalEmbeddedPluginPaths());
-
+      var allPluginPaths = pluginArtifactProvider.resolveAllPluginJarPaths(null);
       var result = loadPlugins(enabledLanguages, allPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
@@ -133,12 +124,7 @@ public class PluginsService {
   }
 
   private PluginsLoadResult loadPlugins(String connectionId) {
-    var artifacts = pluginArtifactProvider.resolve(connectionId);
-    var pluginPaths = artifacts.values().stream()
-      .map(AnalyzerArtifacts::pluginJar)
-      .filter(Objects::nonNull)
-      .collect(Collectors.toCollection(HashSet::new));
-    pluginPaths.addAll(pluginArtifactProvider.getAdditionalEmbeddedPluginPaths());
+    var pluginPaths = pluginArtifactProvider.resolveAllPluginJarPaths(connectionId);
     return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
   }
 
@@ -160,7 +146,7 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, ConnectedModeArtifactResolver.CSHARP_ENTERPRISE_PLUGIN_KEY);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY);
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
@@ -188,18 +174,36 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, ConnectedModeArtifactResolver.VBNET_ENTERPRISE_PLUGIN_KEY);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, LanguageSupportRepository.VBNET_ENTERPRISE_PLUGIN_KEY);
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
     var csArtifacts = pluginArtifactProvider.resolve(connectionId).get(SonarLanguage.CS);
     if (connectionId == null) {
-      return new DotnetSupport(initializeParams, csArtifacts.pluginJar(), false, false, csArtifacts.extra());
+      return new DotnetSupport(
+        csArtifacts.pluginJar(), false, false,
+        initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS),
+        initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.VBNET),
+        csArtifacts.extra());
     }
-    return new DotnetSupport(initializeParams, csArtifacts.pluginJar(),
-      shouldUseEnterpriseCSharpAnalyzer(connectionId),
-      shouldUseEnterpriseVbAnalyzer(connectionId),
+    var useEnterpriseCs = shouldUseEnterpriseCSharpAnalyzer(connectionId);
+    var useEnterpriseVb = shouldUseEnterpriseVbAnalyzer(connectionId);
+    var csAnalyzerPath = selectCsharpAnalyzerPath(connectionId, csArtifacts.pluginJar(), useEnterpriseCs);
+    var enabledConnected = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    return new DotnetSupport(
+      csAnalyzerPath, useEnterpriseCs, useEnterpriseVb,
+      enabledConnected.contains(SonarLanguage.CS),
+      enabledConnected.contains(SonarLanguage.VBNET),
       csArtifacts.extra());
+  }
+
+  @Nullable
+  private Path selectCsharpAnalyzerPath(String connectionId, @Nullable Path ossPath, boolean useEnterprise) {
+    if (useEnterprise) {
+      return pluginArtifactProvider.getConnectedCompanionPath(connectionId, LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY)
+        .orElse(ossPath);
+    }
+    return ossPath;
   }
 
   @PreDestroy

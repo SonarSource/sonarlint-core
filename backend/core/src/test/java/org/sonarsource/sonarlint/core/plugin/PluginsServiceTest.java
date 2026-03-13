@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -81,6 +80,7 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private PluginArtifactProvider pluginArtifactProvider;
+  private LanguageSupportRepository languageSupportRepository;
 
   @BeforeEach
   void prepare() {
@@ -92,7 +92,8 @@ class PluginsServiceTest {
     pluginStorage = mock(PluginsStorage.class);
     when(connectionStorage.plugins()).thenReturn(pluginStorage);
     initializeParams = mock(InitializeParams.class);
-    var languageSupportRepository = mock(LanguageSupportRepository.class);
+    languageSupportRepository = mock(LanguageSupportRepository.class);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of());
     pluginArtifactProvider = mock(PluginArtifactProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), languageSupportRepository, storageService,
@@ -156,7 +157,7 @@ class PluginsServiceTest {
   void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithRepackagedPluginAndPluginIsPresentOnTheServer_returnsTrue() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(ConnectedModeArtifactResolver.VBNET_ENTERPRISE_PLUGIN_KEY);
+    mockPlugin(LanguageSupportRepository.VBNET_ENTERPRISE_PLUGIN_KEY);
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
@@ -183,7 +184,9 @@ class PluginsServiceTest {
     var connectionId = "SQC";
     var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
     mockConnection(connection);
-    mockCsArtifact(connectionId, enterprisePath);
+    mockCsArtifact(connectionId, ossPath);
+    when(pluginArtifactProvider.getConnectedCompanionPath(connectionId, LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY))
+      .thenReturn(Optional.of(enterprisePath));
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -196,7 +199,9 @@ class PluginsServiceTest {
   void getDotnetSupport_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
-    mockCsArtifact(connectionId, enterprisePath);
+    mockCsArtifact(connectionId, ossPath);
+    when(pluginArtifactProvider.getConnectedCompanionPath(connectionId, LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY))
+      .thenReturn(Optional.of(enterprisePath));
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -209,8 +214,10 @@ class PluginsServiceTest {
   void getDotnetSupport_connectionIsToServerWithRepackagedCsharpPlugin_ReturnsEnterprisePropertiesForCsharp() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(ConnectedModeArtifactResolver.CSHARP_ENTERPRISE_PLUGIN_KEY);
-    mockCsArtifact(connectionId, enterprisePath);
+    mockPlugin(LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY);
+    mockCsArtifact(connectionId, ossPath);
+    when(pluginArtifactProvider.getConnectedCompanionPath(connectionId, LanguageSupportRepository.CSHARP_ENTERPRISE_PLUGIN_KEY))
+      .thenReturn(Optional.of(enterprisePath));
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -223,7 +230,7 @@ class PluginsServiceTest {
   void getDotnetSupport_connectionIsToServerWithRepackagedVbPlugin_ReturnsEnterprisePropertiesForVb() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(ConnectedModeArtifactResolver.VBNET_ENTERPRISE_PLUGIN_KEY);
+    mockPlugin(LanguageSupportRepository.VBNET_ENTERPRISE_PLUGIN_KEY);
     mockCsArtifact(connectionId, ossPath);
 
     var result = underTest.getDotnetSupport(connectionId);
@@ -247,33 +254,33 @@ class PluginsServiceTest {
   void should_return_active_embedded_when_plugin_not_disabled() {
     var connectionId = "connection1";
     mockArtifacts(connectionId, Map.of(SonarLanguage.JAVA,
-      new PluginStatus(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, A_VERSION, null, null)));
+      PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, A_VERSION, null, null)));
 
     var result = underTest.getPluginStatuses(connectionId);
 
-    assertThat(result).contains(new PluginStatus(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, A_VERSION, null, null));
+    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, A_VERSION, null, null));
   }
 
   @Test
   void should_return_synced_sonar_cloud_when_plugin_not_disabled() {
     var connectionId = "SQC";
     mockArtifacts(connectionId, Map.of(SonarLanguage.PYTHON,
-      new PluginStatus(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, A_VERSION, null, null)));
+      PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, A_VERSION, null, null)));
 
     var result = underTest.getPluginStatuses(connectionId);
 
-    assertThat(result).contains(new PluginStatus(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, A_VERSION, null, null));
+    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, A_VERSION, null, null));
   }
 
   @Test
   void should_return_synced_sonar_qube_server_when_plugin_not_disabled() {
     var connectionId = "SQS";
     mockArtifacts(connectionId, Map.of(SonarLanguage.PYTHON,
-      new PluginStatus(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, A_VERSION, null, null)));
+      PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, A_VERSION, null, null)));
 
     var result = underTest.getPluginStatuses(connectionId);
 
-    assertThat(result).contains(new PluginStatus(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, A_VERSION, null, null));
+    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, A_VERSION, null, null));
   }
 
   @Test
@@ -297,11 +304,11 @@ class PluginsServiceTest {
   void should_return_premium_for_connected_mode_only_languages() {
     var connectionId = "SQS";
     mockArtifacts(connectionId, Map.of(
-      SonarLanguage.PYTHON, new PluginStatus(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null)));
+      SonarLanguage.PYTHON, PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null)));
 
     var result = underTest.getPluginStatuses(connectionId);
 
-    assertThat(result).contains(new PluginStatus(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null));
+    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null));
   }
 
   @Test
@@ -356,7 +363,7 @@ class PluginsServiceTest {
   }
 
   private void mockCsArtifact(@Nullable String connectionId, Path csJarPath) {
-    var csStatus = new PluginStatus(SonarLanguage.CS, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
+    var csStatus = PluginStatus.forLanguage(SonarLanguage.CS, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
     when(pluginArtifactProvider.resolve(connectionId))
       .thenReturn(Map.of(SonarLanguage.CS, new AnalyzerArtifacts(csStatus, csJarPath, Map.of())));
   }

@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
@@ -67,7 +67,7 @@ import org.springframework.stereotype.Component;
  *       are resolved unless the IDE provides an embedded override for them.</li>
  *   <li>{@link EmbeddedArtifactResolver} — IDE-bundled plugins for languages the IDE wants to
  *       override in connected mode.</li>
- *   <li>{@link OnDemandArtifactResolver} — standalone-only on-demand download (e.g. CFamily).</li>
+ *   <li>{@link OnDemandArtifactResolver} — on-demand download (e.g. CFamily).</li>
  *   <li>{@link PremiumArtifactResolver} — sentinel for languages that require a connected-mode
  *       server but are not available locally.</li>
  * </ol>
@@ -77,8 +77,6 @@ public class PluginArtifactProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String STANDALONE = "STANDALONE";
-  private static final String GO_ENTERPRISE_PLUGIN_KEY = "goenterprise";
-  private static final String IAC_ENTERPRISE_PLUGIN_KEY = "iacenterprise";
   // Legacy standalone TypeScript plugin, superseded by the JavaScript plugin
   private static final String OLD_TYPESCRIPT_PLUGIN_KEY = "typescript";
 
@@ -95,8 +93,11 @@ public class PluginArtifactProvider {
   private final ServerPluginsCache serverPluginsCache;
   private final StorageService storageService;
   private final ApplicationEventPublisher eventPublisher;
-  private final Set<String> notSonarLintSupportedKeysToSynchronize;
   private final Map<String, Map<SonarLanguage, AnalyzerArtifacts>> cache = new ConcurrentHashMap<>();
+  /** Connection-agnostic; computed once on first access. */
+  private Map<String, PluginStatus> embeddedCompanionPlugins;
+  /** Companion plugins from the server, keyed by connectionId. */
+  private final Map<String, Map<String, PluginStatus>> connectedCompanionCache = new ConcurrentHashMap<>();
 
   public PluginArtifactProvider(
     StorageService storageService,
@@ -122,32 +123,6 @@ public class PluginArtifactProvider {
       onDemandArtifactResolver,
       premiumArtifactResolver);
     this.extraResolvers = List.of(embeddedExtraArtifactResolver, onDemandArtifactResolver);
-    this.notSonarLintSupportedKeysToSynchronize = computeNotSonarLintSupportedKeysToSynchronize(languageSupportRepository.getEnabledLanguagesInConnectedMode());
-  }
-
-  private static Set<String> computeNotSonarLintSupportedKeysToSynchronize(Set<SonarLanguage> enabledLanguages) {
-    var keys = new HashSet<String>();
-    if (enabledLanguages.contains(SonarLanguage.GO)) {
-      // SLCORE-1337 Force synchronize "Go Enterprise" before proper repackaging (SQS 2025.2)
-      keys.add(GO_ENTERPRISE_PLUGIN_KEY);
-    }
-    if (enabledLanguages.contains(SonarLanguage.ANSIBLE) || enabledLanguages.contains(SonarLanguage.GITHUBACTIONS)) {
-      // Force synchronize "IAC Enterprise" for servers before  proper repackaging (SQ 2025.6)
-      keys.add(IAC_ENTERPRISE_PLUGIN_KEY);
-    }
-    if (enabledLanguages.contains(SonarLanguage.CS)) {
-      // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
-      keys.add(ConnectedModeArtifactResolver.CSHARP_ENTERPRISE_PLUGIN_KEY);
-      // SLCORE-1898 Synchronize of OSS plugins for dotnet in connected mode, should be removed with SLVS-2778
-      keys.add(ConnectedModeArtifactResolver.CSHARP_OSS_PLUGIN_KEY);
-    }
-    if (enabledLanguages.contains(SonarLanguage.VBNET)) {
-      // SLCORE-1179 Force synchronize "VB.NET Enterprise" after repackaging (SQS 10.8+)
-      keys.add(ConnectedModeArtifactResolver.VBNET_ENTERPRISE_PLUGIN_KEY);
-      // SLCORE-1898 Synchronize of OSS plugins for dotnet in connected mode, should be removed with SLVS-2778
-      keys.add(ConnectedModeArtifactResolver.VBNET_OSS_PLUGIN_KEY);
-    }
-    return Collections.unmodifiableSet(keys);
   }
 
   public Map<SonarLanguage, AnalyzerArtifacts> resolve(@Nullable String connectionId) {
@@ -155,16 +130,56 @@ public class PluginArtifactProvider {
   }
 
   public boolean arePluginsReady(@Nullable String connectionId) {
-    return resolve(connectionId).values().stream()
-      .noneMatch(a -> a.status().state() == ArtifactState.DOWNLOADING);
+    if (resolve(connectionId).values().stream().anyMatch(a -> a.status().state() == ArtifactState.DOWNLOADING)) {
+      return false;
+    }
+    if (connectionId != null) {
+      return getConnectedCompanionPlugins(connectionId).values().stream()
+        .noneMatch(s -> s.state() == ArtifactState.DOWNLOADING);
+    }
+    return true;
   }
 
   public void evict(@Nullable String connectionId) {
     cache.remove(cacheKey(connectionId));
+    if (connectionId != null) {
+      connectedCompanionCache.remove(connectionId);
+    }
   }
 
-  public Set<Path> getAdditionalEmbeddedPluginPaths() {
-    return embeddedArtifactResolver.getAdditionalPluginPaths();
+  /**
+   * Returns all plugin JAR paths for the given connection (or standalone), including
+   * language-indexed plugins and companion plugins (those not indexed by any {@link SonarLanguage}).
+   */
+  public Set<Path> resolveAllPluginJarPaths(@Nullable String connectionId) {
+    var paths = new HashSet<Path>();
+    resolve(connectionId).values().stream()
+      .map(AnalyzerArtifacts::pluginJar).filter(Objects::nonNull).forEach(paths::add);
+    getEmbeddedCompanionPlugins().values().stream()
+      .map(PluginStatus::path).filter(Objects::nonNull).forEach(paths::add);
+    if (connectionId != null) {
+      getConnectedCompanionPlugins(connectionId).values().stream()
+        .map(PluginStatus::path).filter(Objects::nonNull).forEach(paths::add);
+    }
+    return paths;
+  }
+
+  private Map<String, PluginStatus> getEmbeddedCompanionPlugins() {
+    if (embeddedCompanionPlugins == null) {
+      embeddedCompanionPlugins = embeddedArtifactResolver.resolveCompanionPlugins(null);
+    }
+    return embeddedCompanionPlugins;
+  }
+
+  public Optional<Path> getConnectedCompanionPath(String connectionId, String pluginKey) {
+    return Optional.ofNullable(getConnectedCompanionPlugins(connectionId).get(pluginKey))
+      .filter(s -> s.state() == ArtifactState.ACTIVE || s.state() == ArtifactState.SYNCED)
+      .map(PluginStatus::path);
+  }
+
+  private Map<String, PluginStatus> getConnectedCompanionPlugins(String connectionId) {
+    return connectedCompanionCache.computeIfAbsent(connectionId,
+      k -> new ConcurrentHashMap<>(connectedModeArtifactResolver.resolveCompanionPlugins(connectionId)));
   }
 
   private static String cacheKey(@Nullable String connectionId) {
@@ -181,14 +196,14 @@ public class PluginArtifactProvider {
       var result = resolver.resolveAsync(language, connectionId);
       if (result.isPresent()) {
         var resolved = result.get();
-        var status = new PluginStatus(language, resolved.state(), resolved.source(), resolved.version(), null, resolved.path());
+        var status = PluginStatus.forLanguage(language, resolved.state(), resolved.source(), resolved.version(), null, resolved.path());
         if (resolved.state() == ArtifactState.UNSUPPORTED || resolved.state() == ArtifactState.DOWNLOADING) {
           return new AnalyzerArtifacts(status, null, Map.of());
         }
         return resolveWithExtras(language, status, resolved);
       }
     }
-    return new AnalyzerArtifacts(new PluginStatus(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
+    return new AnalyzerArtifacts(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
   }
 
   private AnalyzerArtifacts resolveWithExtras(SonarLanguage language, PluginStatus status, ResolvedArtifact resolved) {
@@ -197,7 +212,7 @@ public class PluginArtifactProvider {
       for (var key : CSHARP_OMNISHARP_ARTIFACT_KEYS) {
         var path = resolveExtra(key);
         if (path.isEmpty()) {
-          return new AnalyzerArtifacts(new PluginStatus(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
+          return new AnalyzerArtifacts(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
         }
         extra.put(key, path.get());
       }
@@ -230,13 +245,12 @@ public class PluginArtifactProvider {
     var serverPluginsExpectedInStorage = computeExpectedInStorage(serverPluginList, storedPluginsByKey);
 
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
-    var enabledPluginKeys = enabledLanguages.stream().map(SonarLanguage::getPluginKey).collect(Collectors.toSet());
     var disabledPluginKeys = computeDisabledPluginKeys(enabledLanguages);
 
     enabledLanguages.forEach(language -> resolveSync(language, connectionId));
 
     serverPluginList.stream()
-      .filter(plugin -> shouldSyncPlugin(plugin, storedPluginsByKey, enabledPluginKeys, disabledPluginKeys))
+      .filter(plugin -> shouldSyncPlugin(plugin, storedPluginsByKey))
       .forEach(plugin -> connectedModeArtifactResolver.downloadPluginSync(connectionId, plugin));
 
     logSkips(serverPluginList, disabledPluginKeys);
@@ -246,27 +260,24 @@ public class PluginArtifactProvider {
 
   private void logSkips(List<ServerPlugin> serverPluginList, Set<String> disabledPluginKeys) {
     serverPluginList.stream()
-      .filter(plugin -> !plugin.isSonarLintSupported() && !notSonarLintSupportedKeysToSynchronize.contains(plugin.getKey()))
+      .filter(plugin -> !plugin.isSonarLintSupported() && !languageSupportRepository.isForceSynchronized(plugin.getKey()))
       .forEach(plugin -> LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", plugin.getKey()));
 
     serverPluginList.stream()
       .filter(ServerPlugin::isSonarLintSupported)
-      .filter(plugin -> !notSonarLintSupportedKeysToSynchronize.contains(plugin.getKey()))
+      .filter(plugin -> !languageSupportRepository.isForceSynchronized(plugin.getKey()))
       .filter(plugin -> disabledPluginKeys.contains(plugin.getKey()))
       .forEach(plugin -> LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", plugin.getKey()));
   }
 
-  private boolean shouldSyncPlugin(ServerPlugin plugin, Map<String, StoredPlugin> storedPluginsByKey,
-    Set<String> enabledPluginKeys, Set<String> disabledPluginKeys) {
+  private boolean shouldSyncPlugin(ServerPlugin plugin, Map<String, StoredPlugin> storedPluginsByKey) {
     if (!isOutdatedOrAbsent(plugin, storedPluginsByKey)) {
       return false;
     }
-    if (notSonarLintSupportedKeysToSynchronize.contains(plugin.getKey())) {
+    if (languageSupportRepository.isForceSynchronized(plugin.getKey())) {
       return true;
     }
-    return plugin.isSonarLintSupported()
-      && !enabledPluginKeys.contains(plugin.getKey())
-      && !disabledPluginKeys.contains(plugin.getKey());
+    return plugin.isSonarLintSupported() && ConnectedModeArtifactResolver.isCompanionPlugin(plugin.getKey());
   }
 
   private static Set<String> computeDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
@@ -313,18 +324,32 @@ public class PluginArtifactProvider {
   }
 
   @EventListener
-  public void onPluginStatusChanged(PluginStatusChangedEvent event) {
+  public void onPluginStatusChanged(PluginStatusUpdateEvent event) {
     var connectionId = event.connectionId();
-    var cacheEntry = cache.get(cacheKey(connectionId));
-    if (cacheEntry == null) {
-      LOG.debug("Can't update plugin status for connection '{}' as no cached status found.", connectionId);
-      return;
+    event.newStatuses().forEach(status -> updateCachedStatus(connectionId, status));
+    if (arePluginsReady(connectionId)) {
+      eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
     }
-    for (var status : event.newStatuses()) {
+  }
+
+  private void updateCachedStatus(@Nullable String connectionId, PluginStatus status) {
+    if (status.language() != null) {
+      var cacheEntry = cache.get(cacheKey(connectionId));
+      if (cacheEntry == null) {
+        LOG.debug("Can't update plugin status for connection '{}' as no cached status found.", connectionId);
+        return;
+      }
       var extras = Optional.ofNullable(cacheEntry.get(status.language()))
         .map(AnalyzerArtifacts::extra)
         .orElse(Map.of());
       cacheEntry.put(status.language(), new AnalyzerArtifacts(status, status.path(), extras));
+    } else {
+      var companionEntry = connectionId != null ? connectedCompanionCache.get(connectionId) : null;
+      if (companionEntry == null) {
+        LOG.debug("Can't update companion plugin status for connection '{}' as no cached status found.", connectionId);
+        return;
+      }
+      companionEntry.put(status.pluginKey(), status);
     }
   }
 }

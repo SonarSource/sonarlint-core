@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.nio.file.Path;
 import java.util.Map;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class DotnetSupport {
   @Nullable
@@ -34,13 +32,14 @@ public class DotnetSupport {
   private final boolean shouldUseVbNetEnterprise;
   private final Map<String, Path> omnisharpArtifacts;
 
-  DotnetSupport(InitializeParams initializeParams, @Nullable Path actualCsharpAnalyzerPath, boolean shouldUseCsharpEnterprise, boolean shouldUseVbNetEnterprise,
+  DotnetSupport(@Nullable Path actualCsharpAnalyzerPath, boolean shouldUseCsharpEnterprise,
+    boolean shouldUseVbNetEnterprise, boolean supportsCsharp, boolean supportsVbNet,
     Map<String, Path> omnisharpArtifacts) {
-    supportsCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
-    supportsVbNet = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.VBNET);
     this.actualCsharpAnalyzerPath = actualCsharpAnalyzerPath;
     this.shouldUseCsharpEnterprise = shouldUseCsharpEnterprise;
     this.shouldUseVbNetEnterprise = shouldUseVbNetEnterprise;
+    this.supportsCsharp = supportsCsharp;
+    this.supportsVbNet = supportsVbNet;
     this.omnisharpArtifacts = omnisharpArtifacts;
   }
 

@@ -17,9 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.sync;
+package org.sonarsource.sonarlint.core.event;
 
+import java.util.Collection;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 
-public record PluginsSynchronizedEvent(@Nullable String connectionId) {
+public record PluginStatusUpdateEvent(
+  @Nullable String connectionId,
+  Collection<PluginStatus> newStatuses) {
 }

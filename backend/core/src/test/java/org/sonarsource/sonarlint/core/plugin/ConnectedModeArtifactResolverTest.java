@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -71,6 +72,7 @@ class ConnectedModeArtifactResolverTest {
   private ServerPluginsCache serverPluginsCache;
   private ApplicationEventPublisher eventPublisher;
   private ExecutorService downloadExecutor;
+  private LanguageSupportRepository languageSupportRepository;
 
   @BeforeEach
   void setUp() {
@@ -84,6 +86,8 @@ class ConnectedModeArtifactResolverTest {
     eventPublisher = mock(ApplicationEventPublisher.class);
     // Use a no-op executor so submitted tasks never run during tests
     downloadExecutor = mock(ExecutorService.class);
+    languageSupportRepository = mock(LanguageSupportRepository.class);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of());
     when(connectionStorage.serverInfo()).thenReturn(serverInfoStorage);
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
   }
@@ -316,7 +320,8 @@ class ConnectedModeArtifactResolverTest {
   }
 
   private ConnectedModeArtifactResolver createResolver(Set<String> skipSyncPluginKeys) {
-    return new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager, serverPluginsCache, eventPublisher, downloadExecutor, skipSyncPluginKeys);
+    return new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager, serverPluginsCache, eventPublisher, downloadExecutor, skipSyncPluginKeys,
+      languageSupportRepository);
   }
 
   private void mockConnection(String connectionId, ConnectionKind kind) {

@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
@@ -253,8 +253,8 @@ class PluginArtifactProviderTest {
     // Populate cache first so the entry exists
     provider.resolve(null);
     // Simulate a DOWNLOADING status update via event
-    var downloadingStatus = new PluginStatus(SonarLanguage.CS, ArtifactState.DOWNLOADING, null, null, null, null);
-    provider.onPluginStatusChanged(new PluginStatusChangedEvent(null, List.of(downloadingStatus)));
+    var downloadingStatus = PluginStatus.forLanguage(SonarLanguage.CS, ArtifactState.DOWNLOADING, null, null, null, null);
+    provider.onPluginStatusChanged(new PluginStatusUpdateEvent(null, List.of(downloadingStatus)));
 
     assertThat(provider.arePluginsReady(null)).isFalse();
   }
@@ -266,10 +266,10 @@ class PluginArtifactProviderTest {
     // Populate cache
     provider.resolve(null);
     // Simulate DOWNLOADING then ACTIVE
-    var downloadingStatus = new PluginStatus(SonarLanguage.CS, ArtifactState.DOWNLOADING, null, null, null, null);
-    provider.onPluginStatusChanged(new PluginStatusChangedEvent(null, List.of(downloadingStatus)));
-    var activeStatus = new PluginStatus(SonarLanguage.CS, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, null, null, null);
-    provider.onPluginStatusChanged(new PluginStatusChangedEvent(null, List.of(activeStatus)));
+    var downloadingStatus = PluginStatus.forLanguage(SonarLanguage.CS, ArtifactState.DOWNLOADING, null, null, null, null);
+    provider.onPluginStatusChanged(new PluginStatusUpdateEvent(null, List.of(downloadingStatus)));
+    var activeStatus = PluginStatus.forLanguage(SonarLanguage.CS, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, null, null, null);
+    provider.onPluginStatusChanged(new PluginStatusUpdateEvent(null, List.of(activeStatus)));
 
     assertThat(provider.arePluginsReady(null)).isTrue();
   }
@@ -287,7 +287,7 @@ class PluginArtifactProviderTest {
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
     var params = mockParams(embeddedPaths, disabledKeys);
     var connectedMode = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager, serverPluginsCache, eventPublisher, downloadExecutor,
-      params.getConnectedModeEmbeddedPluginPathsByKey().keySet());
+      params.getConnectedModeEmbeddedPluginPathsByKey().keySet(), languageSupportRepository);
     return new PluginArtifactProvider(
       storageService,
       languageSupportRepository,

@@ -17,13 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
-import java.util.Collection;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 
-public record PluginStatusChangedEvent(
-  @Nullable String connectionId,
-  Collection<PluginStatus> newStatuses) {
+/**
+ * Resolves companion plugins — those whose keys are not indexed by any {@link org.sonarsource.sonarlint.core.commons.api.SonarLanguage}.
+ * Implementations may return statuses in any {@link org.sonarsource.sonarlint.core.plugin.ArtifactState}.
+ */
+public interface CompanionPluginResolver {
+  Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId);
 }

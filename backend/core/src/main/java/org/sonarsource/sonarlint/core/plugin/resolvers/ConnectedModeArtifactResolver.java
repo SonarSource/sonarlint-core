@@ -33,7 +33,8 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
@@ -46,18 +47,13 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
-public class ConnectedModeArtifactResolver implements ArtifactResolver {
+public class ConnectedModeArtifactResolver implements ArtifactResolver, CompanionPluginResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
   public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
   public static final Version ENTERPRISE_GO_MIN_SQ_VERSION = Version.create("2025.2");
-
-  public static final String CSHARP_ENTERPRISE_PLUGIN_KEY = "csharpenterprise";
-  public static final String CSHARP_OSS_PLUGIN_KEY = "csharp";
-  public static final String VBNET_ENTERPRISE_PLUGIN_KEY = "vbnetenterprise";
-  public static final String VBNET_OSS_PLUGIN_KEY = "vbnet";
 
   /** Languages where a sufficiently new server version overrides the embedded plugin. */
   private static final Map<SonarLanguage, Version> FORCE_OVERRIDES_SINCE_VERSION = Map.of(
@@ -72,6 +68,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
   private final ApplicationEventPublisher eventPublisher;
   private final ExecutorService downloadExecutor;
   private final Set<String> skipSyncPluginKeys;
+  private final LanguageSupportRepository languageSupportRepository;
   /** Keyed by "{connectionId}:{pluginKey}" to dedup per-connection downloads. */
   private final Set<String> inProgressDownloadKeys = ConcurrentHashMap.newKeySet();
 
@@ -81,7 +78,8 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
     ServerPluginsCache serverPluginsCache,
     ApplicationEventPublisher eventPublisher,
     ExecutorService downloadExecutor,
-    Set<String> skipSyncPluginKeys) {
+    Set<String> skipSyncPluginKeys,
+    LanguageSupportRepository languageSupportRepository) {
     this.storageService = storageService;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -89,6 +87,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
     this.eventPublisher = eventPublisher;
     this.downloadExecutor = downloadExecutor;
     this.skipSyncPluginKeys = skipSyncPluginKeys;
+    this.languageSupportRepository = languageSupportRepository;
   }
 
   @Override
@@ -122,6 +121,56 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
     }
     return findServerPlugin(connectionId, language.getPluginKey())
       .map(serverPlugin -> scheduleDownload(connectionId, serverPlugin, language));
+  }
+
+  @Override
+  public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
+    if (connectionId == null) {
+      return Map.of();
+    }
+    var result = new ConcurrentHashMap<String, PluginStatus>();
+    // Include companion plugins already in storage
+    storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().entrySet().stream()
+      .filter(e -> isCompanionPlugin(e.getKey()))
+      .forEach(e -> {
+        var r = toResolvedArtifact(e.getValue(), connectionId);
+        result.put(e.getKey(), PluginStatus.forCompanion(e.getKey(), r.state(), r.source(), r.path()));
+      });
+    // Schedule downloads for server companions not yet in storage
+    serverPluginsCache.getPlugins(connectionId).ifPresent(plugins ->
+      plugins.stream()
+        .filter(p -> (p.isSonarLintSupported() || languageSupportRepository.isForceSynchronized(p.getKey()))
+          && isCompanionPlugin(p.getKey())
+          && !result.containsKey(p.getKey()))
+        .forEach(p -> {
+          scheduleCompanionDownload(connectionId, p);
+          result.put(p.getKey(), PluginStatus.forCompanion(p.getKey(), ArtifactState.DOWNLOADING, null, null));
+        })
+    );
+    return result;
+  }
+
+  private void scheduleCompanionDownload(String connectionId, ServerPlugin plugin) {
+    var progressKey = connectionId + ":" + plugin.getKey();
+    if (inProgressDownloadKeys.add(progressKey)) {
+      downloadExecutor.submit(() -> {
+        try {
+          var state = downloadPluginSync(connectionId, plugin);
+          var storedPath = state == ArtifactState.SYNCED
+            ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
+            : null;
+          var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+          eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
+            List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath))));
+        } finally {
+          inProgressDownloadKeys.remove(progressKey);
+        }
+      });
+    }
+  }
+
+  public static boolean isCompanionPlugin(String pluginKey) {
+    return !SonarLanguage.ALL_PLUGIN_KEYS.contains(pluginKey);
   }
 
   private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, String pluginKey) {
@@ -182,8 +231,8 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
       var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
       var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      eventPublisher.publishEvent(new PluginStatusChangedEvent(connectionId,
-        List.of(new PluginStatus(language, ArtifactState.SYNCED, source, version, null, storedPath))));
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
+        List.of(PluginStatus.forLanguage(language, ArtifactState.SYNCED, source, version, null, storedPath))));
     } else {
       fireFailedEvent(connectionId, language);
     }
@@ -210,8 +259,8 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
   }
 
   private void fireFailedEvent(String connectionId, SonarLanguage language) {
-    eventPublisher.publishEvent(new PluginStatusChangedEvent(connectionId,
-      List.of(new PluginStatus(language, ArtifactState.FAILED, null, null, null, null))));
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
+      List.of(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null))));
   }
 
   private ResolvedArtifact toResolvedArtifact(Path pluginPath, String connectionId) {
