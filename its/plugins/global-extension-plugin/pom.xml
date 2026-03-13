@@ -18,7 +18,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <sonar.apiVersion>9.15.0.435</sonar.apiVersion>
     <jdk.min.version>11</jdk.min.version>
   </properties>
 
@@ -38,7 +38,7 @@
       <!-- packaged with the plugin -->
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.18.0</version>
+      <version>3.19.0</version>
     </dependency>
   </dependencies>
 

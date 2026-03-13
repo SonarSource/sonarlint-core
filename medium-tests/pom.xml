@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>10.47-SNAPSHOT</version>
+    <version>10.47.0.84837</version>
   </parent>
   <artifactId>sonarlint-medium-tests</artifactId>
   <name>SonarLint Core - Medium Tests</name>
@@ -77,7 +77,7 @@
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-archiver</artifactId>
-      <version>4.10.0</version>
+      <version>4.10.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -105,43 +105,43 @@
                 <artifactItem>
                   <groupId>org.sonarsource.java</groupId>
                   <artifactId>sonar-java-plugin</artifactId>
-                  <version>8.22.0.41895</version>
+                  <version>8.23.0.42096</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.javascript</groupId>
                   <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>11.7.1.36988</version>
+                  <version>11.8.0.37897</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.php</groupId>
                   <artifactId>sonar-php-plugin</artifactId>
-                  <version>3.42.2.15271</version>
+                  <version>3.43.0.12862</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
-                  <version>5.14.2.29072</version>
+                  <version>5.15.0.29514</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.xml</groupId>
                   <artifactId>sonar-xml-plugin</artifactId>
-                  <version>2.14.2.7437</version>
+                  <version>2.15.0.7513</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.text</groupId>
                   <artifactId>sonar-text-plugin</artifactId>
-                  <version>2.34.0.9939</version>
+                  <version>2.35.0.10074</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.kotlin</groupId>
                   <artifactId>sonar-kotlin-plugin</artifactId>
-                  <version>3.3.1.7792</version>
+                  <version>3.3.2.8811</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
@@ -198,7 +198,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.cpp</groupId>
                       <artifactId>sonar-cfamily-plugin</artifactId>
-                      <version>6.75.1.93101</version>
+                      <version>6.76.0.93913</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
@@ -210,13 +210,13 @@
                     <artifactItem>
                       <groupId>com.sonarsource.dbd</groupId>
                       <artifactId>sonar-dbd-plugin</artifactId>
-                      <version>2.5.0.19957</version>
+                      <version>2.6.0.20066</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.dbd</groupId>
                       <artifactId>sonar-dbd-java-frontend-plugin</artifactId>
-                      <version>2.5.0.19957</version>
+                      <version>2.6.0.20066</version>
                       <type>jar</type>
                     </artifactItem>
                   </artifactItems>
