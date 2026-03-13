@@ -221,6 +221,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   public SensorQuickFix newQuickFix() {
     return new SensorQuickFix();
   }
+  @SuppressWarnings("deprecation")
 
   @Override
   public DefaultSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {

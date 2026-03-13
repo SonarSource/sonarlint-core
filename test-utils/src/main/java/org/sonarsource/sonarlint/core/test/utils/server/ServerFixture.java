@@ -956,6 +956,7 @@ public class ServerFixture {
             }).toList()).build()))));
       });
     }
+    @SuppressWarnings("deprecation")
 
     private void registerRulesApiResponses() {
       qualityProfilesByKey.forEach((qualityProfileKey, qualityProfile) -> {
