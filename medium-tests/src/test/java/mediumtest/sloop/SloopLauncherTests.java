@@ -131,7 +131,7 @@ class SloopLauncherTests {
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
-    assertThat(result.getRulesByKey()).hasSize(222);
+    assertThat(result.getRulesByKey()).hasSize(234);
 
     server.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));

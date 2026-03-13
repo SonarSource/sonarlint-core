@@ -21,7 +21,6 @@ package utils;
 
 import java.nio.file.Path;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 
@@ -50,23 +49,11 @@ public class TestPlugin {
   private final String version;
   private final String hash;
 
-  TestPlugin(Language language, Path path, String version, String hash) {
-    this(Set.of(language), path, version, hash);
-  }
-
   TestPlugin(Set<Language> languages, Path path, String version, String hash) {
     this.languages = languages;
     this.path = path;
     this.version = version;
     this.hash = hash;
-  }
-
-  public Set<Language> getLanguages() {
-    return languages;
-  }
-
-  public String getPluginKey() {
-    return SonarLanguage.valueOf(languages.iterator().next().name()).getPluginKey();
   }
 
   public Path getPath() {

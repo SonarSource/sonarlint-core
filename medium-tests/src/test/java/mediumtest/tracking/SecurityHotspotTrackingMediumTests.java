@@ -48,9 +48,10 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
@@ -64,20 +65,17 @@ class SecurityHotspotTrackingMediumTests {
     var filePath = createFile(baseDir, ideFilePath,
       """
         package sonar;
-        
+        import java.security.MessageDigest;
         public class Foo {
-          public void run() {
-            String username = "steve";
-            String password = "blue";
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
-              "user=" + username + "&password=" + password); // Sensitive
+          public void run() throws Exception {
+            MessageDigest md = MessageDigest.getInstance("MD5");
           }
         }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
-    var ruleKey = "java:S2068";
-    var message = "'password' detected in this expression, review this potentially hard-coded password.";
+    var ruleKey = "java:S4790";
+    var message = "Make sure this weak hash algorithm is not used in a sensitive context here.";
 
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -90,7 +88,7 @@ class SecurityHotspotTrackingMediumTests {
           .withFilePath(ideFilePath)
           .withMessage(message)
           .withRuleKey(ruleKey)
-          .withTextRange(new TextRange(6, 11, 6, 12))
+          .withTextRange(new TextRange(5, 37, 5, 48))
           .withStatus(HotspotReviewStatus.TO_REVIEW)
           .withVulnerabilityProbability(VulnerabilityProbability.HIGH))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -114,7 +112,7 @@ class SecurityHotspotTrackingMediumTests {
     assertThat(firstPublishedHotspot)
       .extracting("ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "status", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", HotspotStatus.TO_REVIEW, Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
+      .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", HotspotStatus.TO_REVIEW, Instant.ofEpochSecond(123456789L), 5, 37, 5, 48);
   }
 
   @SonarLintTest
@@ -123,20 +121,17 @@ class SecurityHotspotTrackingMediumTests {
     var filePath = createFile(baseDir, ideFilePath,
       """
         package sonar;
-        
+        import java.security.MessageDigest;
         public class Foo {
-          public void run() {
-            String username = "steve";
-            String password = "blue";
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
-              "user=" + username + "&password=" + password); // Sensitive
+          public void run() throws Exception {
+            MessageDigest md = MessageDigest.getInstance("MD5");
           }
         }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
-    var ruleKey = "java:S2068";
-    var message = "'password' detected in this expression, review this potentially hard-coded password.";
+    var ruleKey = "java:S4790";
+    var message = "Make sure this weak hash algorithm is not used in a sensitive context here.";
 
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -149,7 +144,7 @@ class SecurityHotspotTrackingMediumTests {
           .withFilePath(ideFilePath)
           .withMessage(message)
           .withRuleKey(ruleKey)
-          .withTextRange(new TextRange(6, 11, 6, 12))
+          .withTextRange(new TextRange(5, 37, 5, 48))
           .withStatus(HotspotReviewStatus.TO_REVIEW)
           .withVulnerabilityProbability(VulnerabilityProbability.HIGH))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -174,7 +169,7 @@ class SecurityHotspotTrackingMediumTests {
     assertThat(secondPublishedHotspot)
       .extracting("id", "ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
+      .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 5, 37, 5, 48);
   }
 
   @SonarLintTest
@@ -183,41 +178,34 @@ class SecurityHotspotTrackingMediumTests {
     var filePath = createFile(baseDir, ideFilePath,
       """
         package sonar;
-        
+        import java.security.MessageDigest;
         public class Foo {
-          public void run() {
-            String username = "steve";
-            String password = "blue";
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
-              "user=" + username + "&password=" + password); // Sensitive
+          public void run() throws Exception {
+            MessageDigest md = MessageDigest.getInstance("MD5");
           }
         }""");
-    var projectKey = "projectKey";
-    var connectionId = "connectionId";
-    var branchName = "main";
-    var ruleKey = "java:S2068";
-
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withSonarQubeConnection(connectionId,
-        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
-          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
-            .withMainBranch(branchName)))
       .withBackendCapability(SECURITY_HOTSPOTS)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
 
-    analyzeFileAndAssertNoHotspotsRaised(backend, fileUri, client);
+    var analysisId = UUID.randomUUID();
+    backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true))
+      .join();
+
+    verify(client, timeout(2000).times(0)).raiseHotspots(any(), any(), anyBoolean(), any());
   }
 
   private RaisedHotspotDto analyzeFileAndGetHotspot(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true))
       .join();
     var publishedHotspotsByFile = getPublishedHotspots(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
@@ -231,16 +219,6 @@ class SecurityHotspotTrackingMediumTests {
     ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, timeout(300)).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
     return trackedIssuesCaptor.getValue();
-  }
-
-  private void analyzeFileAndAssertNoHotspotsRaised(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client) {
-    var analysisId = UUID.randomUUID();
-    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
-      .join();
-    ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, times(0)).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
-    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
