@@ -5,6 +5,9 @@ on:
     - cron: '0 4 * * *'
   workflow_dispatch:
 
+env:
+  CACHE_BACKEND: s3
+
 jobs:
   scan:
     runs-on: github-ubuntu-latest-s
