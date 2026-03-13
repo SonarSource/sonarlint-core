@@ -67,6 +67,17 @@ public class PluginsRepository {
     throwFirstWithOtherSuppressed(exceptions);
   }
 
+  public void unloadEmbedded() {
+    var plugins = loadedEmbeddedPlugins.getAndSet(null);
+    if (plugins != null) {
+      try {
+        plugins.close();
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to unload embedded plugins", e);
+      }
+    }
+  }
+
   public void unload(String connectionId) {
     var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
     if (loadedPlugins != null) {

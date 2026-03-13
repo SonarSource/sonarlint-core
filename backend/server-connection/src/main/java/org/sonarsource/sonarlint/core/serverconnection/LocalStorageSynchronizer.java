@@ -39,20 +39,17 @@ public class LocalStorageSynchronizer {
   private final Set<String> enabledLanguageKeys;
   private final ConnectionStorage storage;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
-  private final PluginsSynchronizer pluginsSynchronizer;
 
-  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
+  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(toSet());
     this.storage = storage;
-    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, storage, embeddedPluginKeys);
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
   public Summary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().version();
-    var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, version, cancelMonitor);
-    return new Summary(version, pluginSynchronizationSummary.anyPluginSynchronized());
+    return new Summary(version);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
@@ -133,6 +130,6 @@ public class LocalStorageSynchronizer {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
   }
 
-  public record Summary(Version version, boolean anyPluginSynchronized) {
+  public record Summary(Version version) {
   }
 }

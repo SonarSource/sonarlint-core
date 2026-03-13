@@ -43,6 +43,21 @@ public class PluginLifecycleService {
     this.activeRulesService = activeRulesService;
   }
 
+  public LoadedPlugins reloadEmbeddedPluginsAndEvictCaches() {
+    LOG.debug("Reloading embedded plugins and evicting all related caches");
+
+    unloadEmbeddedPluginsAndEvictCaches();
+    return pluginsService.getEmbeddedPlugins();
+  }
+
+  public void unloadEmbeddedPluginsAndEvictCaches() {
+    LOG.debug("Unloading embedded plugins and evicting all related caches");
+
+    pluginsService.unloadEmbeddedPlugins();
+    rulesRepository.evictEmbedded();
+    activeRulesService.evictStandalone();
+  }
+
   public LoadedPlugins reloadPluginsAndEvictCaches(String connectionId) {
     LOG.debug("Reloading plugins and evicting all related caches for connection '{}'", connectionId);
 

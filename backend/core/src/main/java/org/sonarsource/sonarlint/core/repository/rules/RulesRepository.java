@@ -90,6 +90,11 @@ public class RulesRepository {
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 
+  public synchronized void evictEmbedded() {
+    logger.debug("Evict cached embedded rules definitions");
+    embeddedRulesByKey = null;
+  }
+
   public void evictFor(String connectionId) {
     logger.debug("Evict cached rules definitions for connection '{}'", connectionId);
     rulesByKeyByConnectionId.remove(connectionId);

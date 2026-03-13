@@ -22,12 +22,11 @@ package org.sonarsource.sonarlint.core.plugin;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -40,20 +39,16 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
-import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
-import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
-import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_GO_MIN_SQ_VERSION;
-import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION;
 
 public class PluginsService {
   private static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
@@ -63,10 +58,8 @@ public class PluginsService {
   private final SkippedPluginsRepository skippedPluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
-  private final Set<Path> embeddedPluginPaths;
-  private final CSharpSupport csharpSupport;
+  private final PluginArtifactProvider pluginArtifactProvider;
   private final Set<String> disabledPluginKeysForAnalysis;
-  private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final InitializeParams initializeParams;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
@@ -75,52 +68,28 @@ public class PluginsService {
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService,
-    ApplicationEventPublisher eventPublisher) {
+    ApplicationEventPublisher eventPublisher, PluginArtifactProvider pluginArtifactProvider) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
-    this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
-    this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getBackendCapabilities().contains(DATAFLOW_BUG_DETECTION);
     this.initializeParams = params;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
-    this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
     this.eventPublisher = eventPublisher;
+    this.pluginArtifactProvider = pluginArtifactProvider;
+  }
+
+  public boolean arePluginsReady(@Nullable String connectionId) {
+    return pluginArtifactProvider.arePluginsReady(connectionId);
   }
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
-    return Arrays.stream(SonarLanguage.values())
-      .map(language -> getPluginStatus(connectionId, language))
+    return pluginArtifactProvider.resolve(connectionId).values().stream()
+      .map(AnalyzerArtifacts::status)
       .toList();
-  }
-
-  private PluginStatus getPluginStatus(@Nullable String connectionId, SonarLanguage language) {
-    var pluginKey = language.getPluginKey();
-    if (isFromConnectedMode(connectionId, pluginKey)) {
-      var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
-      var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.SYNCED;
-      return new PluginStatus(language.getName(), state, source, null, null);
-    }
-    if (couldBeAvailableInConnectedMode(language)) {
-      return new PluginStatus(language.getName(), PluginState.PREMIUM, null, null, null);
-    }
-    if (getEmbeddedPlugins().hasPlugin(pluginKey)) {
-      var state = getEmbeddedPlugins().hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.ACTIVE;
-      return new PluginStatus(language.getName(), state, ArtifactSource.EMBEDDED, null, null);
-    }
-    return PluginStatus.unsupported(language);
-  }
-
-  private boolean isFromConnectedMode(@Nullable String connectionId, String pluginKey) {
-    return connectionId != null && getPlugins(connectionId).hasPlugin(pluginKey);
-  }
-
-  private boolean couldBeAvailableInConnectedMode(SonarLanguage language) {
-    return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(language)
-      && !languageSupportRepository.getEnabledLanguagesInStandaloneMode().contains(language);
   }
 
   @NotNull
@@ -134,11 +103,15 @@ public class PluginsService {
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var allEmbeddedPlugins = new HashSet<>(embeddedPluginPaths);
-      if (csharpSupport.csharpOssPluginPath != null) {
-        allEmbeddedPlugins.add(csharpSupport.csharpOssPluginPath);
-      }
-      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), allEmbeddedPlugins, enableDataflowBugDetection);
+      var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+      var artifacts = pluginArtifactProvider.resolve(null);
+      var allPluginPaths = artifacts.values().stream()
+        .map(AnalyzerArtifacts::pluginJar)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(HashSet::new));
+      allPluginPaths.addAll(pluginArtifactProvider.getAdditionalEmbeddedPluginPaths());
+
+      var result = loadPlugins(enabledLanguages, allPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
@@ -160,66 +133,13 @@ public class PluginsService {
   }
 
   private PluginsLoadResult loadPlugins(String connectionId) {
-    var pluginPaths = getPluginPathsForConnection(connectionId);
-
+    var artifacts = pluginArtifactProvider.resolve(connectionId);
+    var pluginPaths = artifacts.values().stream()
+      .map(AnalyzerArtifacts::pluginJar)
+      .filter(Objects::nonNull)
+      .collect(Collectors.toCollection(HashSet::new));
+    pluginPaths.addAll(pluginArtifactProvider.getAdditionalEmbeddedPluginPaths());
     return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
-  }
-
-  private Set<Path> getPluginPathsForConnection(String connectionId) {
-    // for now assume the sync already happened and the plugins are stored
-    var pluginsStorage = storageService.connection(connectionId).plugins();
-
-    Map<String, Path> pluginsToLoadByKey = new HashMap<>();
-    // order is important as e.g. embedded takes precedence over stored
-    pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
-    pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
-    if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.CS)) {
-      if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpSupport.csharpEnterprisePluginPath != null) {
-        pluginsToLoadByKey.put(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, csharpSupport.csharpEnterprisePluginPath);
-      } else if (csharpSupport.csharpOssPluginPath != null) {
-        pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpOssPluginPath);
-      }
-    }
-    return Set.copyOf(pluginsToLoadByKey.values());
-  }
-
-  private Map<String, Path> getEmbeddedPluginPathsByKey(String connectionId) {
-    var embeddedPlugins = new HashMap<>(connectedModeEmbeddedPluginPathsByKey);
-    if (supportsCustomSecrets(connectionId)) {
-      embeddedPlugins.remove(SonarLanguage.SECRETS.getPluginKey());
-    }
-    if (supportsIaCEnterprise(connectionId)) {
-      // if iacenterprise is there on the server, download both, iac and iacenterprise
-      embeddedPlugins.remove(SonarLanguage.AZURERESOURCEMANAGER.getPluginKey());
-    }
-    if (supportsGoEnterprise(connectionId)) {
-      embeddedPlugins.remove(SonarLanguage.GO.getPluginKey());
-    }
-    return embeddedPlugins;
-  }
-
-  public boolean supportsIaCEnterprise(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_IAC_MIN_SQ_VERSION, connectionId);
-  }
-
-  public boolean supportsCustomSecrets(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
-  }
-
-  public boolean supportsGoEnterprise(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_GO_MIN_SQ_VERSION, connectionId);
-  }
-
-  private boolean isSonarQubeCloudOrVersionHigherThan(Version version, String connectionId) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    if (connection == null) {
-      // Connection is gone
-      return false;
-    }
-    // when storage is not present, assume that server version is lower than requested
-    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> serverInfo.version().compareToIgnoreQualifier(version) >= 0)
-      .orElse(false);
   }
 
   private PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
@@ -227,17 +147,20 @@ public class PluginsService {
     return new PluginsLoader().load(config, disabledPluginKeysForAnalysis);
   }
 
+  public void unloadEmbeddedPlugins() {
+    logger.debug("Evict loaded embedded plugins");
+    pluginsRepository.unloadEmbedded();
+    pluginArtifactProvider.evict(null);
+  }
+
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
-    var wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
     pluginsRepository.unload(connectionId);
-    if (wasLoaded) {
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
-    }
+    pluginArtifactProvider.evict(connectionId);
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, ConnectedModeArtifactResolver.CSHARP_ENTERPRISE_PLUGIN_KEY);
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
@@ -265,18 +188,18 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, ConnectedModeArtifactResolver.VBNET_ENTERPRISE_PLUGIN_KEY);
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
+    var csArtifacts = pluginArtifactProvider.resolve(connectionId).get(SonarLanguage.CS);
     if (connectionId == null) {
-      return new DotnetSupport(initializeParams, csharpSupport.csharpOssPluginPath, false, false);
+      return new DotnetSupport(initializeParams, csArtifacts.pluginJar(), false, false, csArtifacts.extra());
     }
-    var actualCsharpAnalyzerPath = shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath :
-      csharpSupport.csharpOssPluginPath;
-    var shouldUseCsharpEnterprise = shouldUseEnterpriseCSharpAnalyzer(connectionId);
-    var shouldUseVbEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
-    return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbEnterprise);
+    return new DotnetSupport(initializeParams, csArtifacts.pluginJar(),
+      shouldUseEnterpriseCSharpAnalyzer(connectionId),
+      shouldUseEnterpriseVbAnalyzer(connectionId),
+      csArtifacts.extra());
   }
 
   @PreDestroy
@@ -288,24 +211,4 @@ public class PluginsService {
     }
   }
 
-  static class CSharpSupport {
-    final Path csharpOssPluginPath;
-    final Path csharpEnterprisePluginPath;
-
-    CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
-      if (languageSpecificRequirements == null) {
-        csharpOssPluginPath = null;
-        csharpEnterprisePluginPath = null;
-      } else {
-        var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
-        if (omnisharpRequirements == null) {
-          csharpOssPluginPath = null;
-          csharpEnterprisePluginPath = null;
-        } else {
-          csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
-          csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
-        }
-      }
-    }
-  }
 }

@@ -49,13 +49,13 @@ class PluginRpcServiceMediumTests {
       .satisfies(status -> {
         assertThat(status.getState()).isEqualTo(PluginStateDto.ACTIVE);
         assertThat(status.getSource()).isEqualTo(ArtifactSourceDto.EMBEDDED);
-        assertThat(status.getActualVersion()).isNull();
+        assertThat(status.getActualVersion()).isEqualTo("5.14.2.29072");
         assertThat(status.getOverriddenVersion()).isNull();
       });
   }
 
   @SonarLintTest
-  void should_return_unsupported_status_for_languages_with_no_plugin(SonarLintTestHarness harness) {
+  void should_return_failed_status_for_languages_with_no_plugin(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.PYTHON)
       .start();
@@ -68,7 +68,7 @@ class PluginRpcServiceMediumTests {
       .filteredOn(s -> "Python".equals(s.getPluginName()))
       .singleElement()
       .satisfies(status -> {
-        assertThat(status.getState()).isEqualTo(PluginStateDto.UNSUPPORTED);
+        assertThat(status.getState()).isEqualTo(PluginStateDto.FAILED);
         assertThat(status.getSource()).isNull();
         assertThat(status.getActualVersion()).isNull();
         assertThat(status.getOverriddenVersion()).isNull();

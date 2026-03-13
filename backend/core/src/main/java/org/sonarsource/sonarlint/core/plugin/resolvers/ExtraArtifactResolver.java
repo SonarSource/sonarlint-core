@@ -17,13 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
-import java.util.Collection;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import java.nio.file.Path;
+import java.util.Optional;
 
-public record PluginStatusChangedEvent(
-  @Nullable String connectionId,
-  Collection<PluginStatus> newStatuses) {
+public interface ExtraArtifactResolver {
+  Optional<Path> resolve(String artifactKey);
 }
