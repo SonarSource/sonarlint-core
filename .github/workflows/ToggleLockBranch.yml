@@ -22,7 +22,7 @@ jobs:
       id-token: write
     steps:
       - id: secrets
-        uses: SonarSource/vault-action-wrapper@3.3.0
+        uses: SonarSource/vault-action-wrapper@3d5c87cb535e4a2c7a09adcbcfdefa751854dee3 # 3.3.0
         with:
           secrets: |
             development/github/token/{REPO_OWNER_NAME_DASH}-lock token | lock_token;
