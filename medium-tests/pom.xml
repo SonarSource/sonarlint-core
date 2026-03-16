@@ -105,7 +105,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.java</groupId>
                   <artifactId>sonar-java-plugin</artifactId>
-                  <version>8.25.0.42802</version>
+                  <version>8.26.0.42915</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
@@ -123,7 +123,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
-                  <version>5.18.0.31561</version>
+                  <version>5.19.0.32098</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
@@ -198,7 +198,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.cpp</groupId>
                       <artifactId>sonar-cfamily-plugin</artifactId>
-                      <version>6.78.0.96395</version>
+                      <version>6.79.0.97291</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
