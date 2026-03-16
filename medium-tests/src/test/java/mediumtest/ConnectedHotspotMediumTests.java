@@ -46,8 +46,8 @@ class ConnectedHotspotMediumTests {
   void should_locally_detect_hotspots_when_connected_to_sonarqube(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java", """
       public class Foo {
-        void foo() {
-          String password = "blue";
+        void foo() throws Exception {
+          java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
         }
       }
       """);
@@ -59,8 +59,9 @@ class ConnectedHotspotMediumTests {
     var branchName = "main";
     var server = harness.newFakeSonarQubeServer("9.9")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
-        .withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
-          .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER)))
+        .withLanguage("java")
+        .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER))
+      )
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
@@ -77,13 +78,13 @@ class ConnectedHotspotMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var hotspot = client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
-    assertThat(hotspot.getRuleKey()).isEqualTo("java:S2068");
+    assertThat(hotspot.getRuleKey()).isEqualTo("java:S4790");
     assertThat(hotspot.getSeverityMode().isLeft()).isTrue();
     assertThat(hotspot.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
@@ -149,13 +148,11 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @SonarLintTest
-  @Disabled("Flaky tests")
   void should_run_forced_full_project_analysis_only_for_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", """
       public class Foo {
-      
-        void foo() {
-          String password = "blue";
+        void foo() throws Exception {
+          java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
         }
       }
       """);
@@ -168,7 +165,7 @@ class AnalysisForcedByClientMediumTests {
     var projectKey = "projectKey";
     var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
-        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+        .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
@@ -205,13 +202,11 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @SonarLintTest
-  @Disabled("Flaky test")
   void should_run_forced_full_project_analysis_for_all_findings(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", """
       public class Foo {
-      
-        void foo() {
-          String password = "blue";
+        void foo() throws Exception {
+          java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
         }
       }
       """);
@@ -224,7 +219,7 @@ class AnalysisForcedByClientMediumTests {
     var projectKey = "projectKey";
     var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
-        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+        .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
         .withActiveRule("java:S1220", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
         project -> project

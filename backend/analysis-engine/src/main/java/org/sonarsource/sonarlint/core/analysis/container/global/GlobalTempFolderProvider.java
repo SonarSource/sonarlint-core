@@ -38,7 +38,7 @@ public class GlobalTempFolderProvider {
 
   private GlobalTempFolder tempFolder;
 
-  @Bean("GlobalTempFolder")
+  @Bean("globalTempFolder")
   public GlobalTempFolder provide(AnalysisSchedulerConfiguration globalConfiguration) {
     if (tempFolder == null) {
       tempFolder = cleanAndCreateTempFolder(globalConfiguration.getWorkDir());

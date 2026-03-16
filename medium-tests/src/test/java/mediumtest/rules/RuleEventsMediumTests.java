@@ -27,7 +27,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -416,7 +415,7 @@ class RuleEventsMediumTests {
             void foo() {
               // TODO foo
               int i = 0;
-              String password = "blue";
+              System.out.println("Foo");
               String ip = "192.168.12.42";
             }
           }
@@ -435,7 +434,7 @@ class RuleEventsMediumTests {
           .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
           .withActiveRule("java:S1135", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
           .withActiveRule("java:S1313", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
-          .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+          .withActiveRule("java:S106", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
         .withProject(projectKey,
           project -> project
             .withQualityProfile("qpKey"))
@@ -465,13 +464,11 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
-      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).getOrDefault(fileUri, List.of());
       assertThat(raisedIssues)
         .extracting(RaisedIssueDto::getRuleKey)
-        .containsExactly("java:S1135");
-      assertThat(raisedHotspots)
-        .extracting(RaisedHotspotDto::getRuleKey)
-        .containsExactly("java:S2068");
+        .containsExactlyInAnyOrder("java:S1135", "java:S106");
+      assertThat(raisedHotspots).isEmpty();
     }
   }
 

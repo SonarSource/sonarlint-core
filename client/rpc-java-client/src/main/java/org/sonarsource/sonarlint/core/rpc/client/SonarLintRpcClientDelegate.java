@@ -32,6 +32,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -40,7 +41,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSugge
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
@@ -248,12 +248,12 @@ public interface SonarLintRpcClientDelegate {
   }
 
   /**
-   * Called whenever the status of one or more analyzer plugins changes.
+   * Called whenever the status of one or more analyzer plugins changes for a specific config scope.
    * This can happen when plugins are loaded, unloaded, synced from a connection, or when a connection is removed.
-   * The parameters contain the full updated list of plugin statuses (one entry per known language).
-   * Clients should use this to refresh the "Supported Languages" panel.
+   * The parameters contain the full updated list of plugin statuses (one entry per known language) for the given scope.
+   * Clients should use this to refresh the "Supported Languages" panel for the corresponding project.
    */
-  default void didChangePluginStatuses(List<PluginStatusDto> pluginStatuses) {
+  default void didChangePluginStatuses(String configScopeId, List<PluginStatusDto> pluginStatuses) {
   }
 
 }

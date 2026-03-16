@@ -557,19 +557,20 @@ class EffectiveRulesMediumTests {
     <p>In software development, logs serve as a record of events within an application, providing crucial insights for debugging. When logging, it is
     essential to ensure that the logs are:</p>
     <ul>
-      <li> easily accessible </li>
-      <li> uniformly formatted for readability </li>
-      <li> properly recorded </li>
-      <li> securely logged when dealing with sensitive data </li>
+      <li>easily accessible</li>
+      <li>uniformly formatted for readability</li>
+      <li>properly recorded</li>
+      <li>securely logged when dealing with sensitive data</li>
     </ul>
-    <p>Those requirements are not met if a program directly writes to the standard outputs (e.g., System.out, System.err). That is why defining and using
-    a dedicated logger is highly recommended.</p>
+    <p>Those requirements are not met if a program directly writes to the standard outputs (e.g., System.out, System.err, IO). That is why defining and
+    using a dedicated logger is highly recommended.</p>
     
     <p>The following noncompliant code:</p>
     <pre data-diff-id="1" data-diff-type="noncompliant">
     class MyClass {
       public void doSomething() {
         System.out.println("My Message");  // Noncompliant, output directly to System.out without a logger
+        IO.println("Second Message"); // Noncompliant, same problem, but using Java 25 API.
       }
     }
     </pre>
@@ -582,9 +583,8 @@ class EffectiveRulesMediumTests {
       Logger logger = Logger.getLogger(getClass().getName());
     
       public void doSomething() {
-        // ...
         logger.info("My Message");  // Compliant, output via logger
-        // ...
+        logger.info("Second Message");  // Compliant, output via logger
       }
     }
     </pre>""";

@@ -103,7 +103,7 @@ class ConnectedIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
@@ -237,7 +237,7 @@ class ConnectedIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
@@ -247,8 +247,8 @@ class ConnectedIssueMediumTests {
   void it_should_get_hotspot_details(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", """
       public class Foo {
-        void foo() {
-          String password = "blue";
+        void foo() throws Exception {
+          java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
         }
       }""");
     var fileFooUri = fileFoo.toUri();
@@ -258,7 +258,7 @@ class ConnectedIssueMediumTests {
     var projectKey = "projectKey";
     var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
-        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)))
+        .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
@@ -272,7 +272,7 @@ class ConnectedIssueMediumTests {
       .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots,
         storage -> storage.withServerVersion("10.4").withProject(projectKey,
-          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4790", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
@@ -280,7 +280,7 @@ class ConnectedIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
 
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileFooUri), Map.of(), true, System.currentTimeMillis()))
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileFooUri), Map.of(), true))
       .join();
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> AssertionsForInterfaceTypes.assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(1));
 
