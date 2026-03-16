@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,8 @@ import org.springframework.context.ApplicationEventPublisher;
 public class ConnectedModeArtifactResolver implements ArtifactResolver, CompanionPluginResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String LEGACY_TYPESCRIPT_PLUGIN_KEY = "typescript";
+  private static final String PLUGIN_FETCH_ERROR = "Could not fetch server plugin list for connection '{}'";
 
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
   public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
@@ -101,26 +104,39 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       }
       return Optional.empty();
     }
-    var fromStorage = resolveFromStorage(connectionId, language.getPluginKey());
-    if (fromStorage.isPresent()) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", language.getPluginKey());
-      return fromStorage;
+    var pluginKey = language.getPluginKey();
+    try {
+      return serverPluginsCache.getPlugins(connectionId)
+        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst())
+        .map(serverPlugin -> resolveFromStorageOrDownload(connectionId, serverPlugin))
+        .or(() -> resolveFromStorageByKey(connectionId, pluginKey));
+    } catch (ServerRequestException e) {
+      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
+      return resolveFromStorageByKey(connectionId, pluginKey);
     }
-    return findServerPlugin(connectionId, language.getPluginKey())
-      .map(serverPlugin -> downloadAndResolve(connectionId, serverPlugin));
   }
 
   @Override
   public Optional<ResolvedArtifact> resolveAsync(SonarLanguage language, @Nullable String connectionId) {
-    if (connectionId == null || !passesLanguageGate(language, connectionId)) {
+    if (connectionId == null) {
       return Optional.empty();
     }
-    var fromStorage = resolveFromStorage(connectionId, language.getPluginKey());
-    if (fromStorage.isPresent()) {
-      return fromStorage;
+    if (!passesLanguageGate(language, connectionId)) {
+      if (skipSyncPluginKeys.contains(language.getPluginKey())) {
+        LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", language.getPluginKey());
+      }
+      return Optional.empty();
     }
-    return findServerPlugin(connectionId, language.getPluginKey())
-      .map(serverPlugin -> scheduleDownload(connectionId, serverPlugin, language));
+    var pluginKey = language.getPluginKey();
+    try {
+      return serverPluginsCache.getPlugins(connectionId)
+        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst())
+        .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, language))
+        .or(() -> resolveFromStorageByKey(connectionId, pluginKey));
+    } catch (ServerRequestException e) {
+      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
+      return resolveFromStorageByKey(connectionId, pluginKey);
+    }
   }
 
   @Override
@@ -132,22 +148,32 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     // Include companion plugins already in storage
     storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().entrySet().stream()
       .filter(e -> isCompanionPlugin(e.getKey()))
+      .filter(e -> Files.exists(e.getValue()))
       .forEach(e -> {
         var r = toResolvedArtifact(e.getValue(), connectionId);
         result.put(e.getKey(), PluginStatus.forCompanion(e.getKey(), r.state(), r.source(), r.path()));
       });
     // Schedule downloads for server companions not yet in storage
-    serverPluginsCache.getPlugins(connectionId).ifPresent(plugins ->
+    fetchServerPluginsSafely(connectionId).ifPresent(plugins ->
       plugins.stream()
-        .filter(p -> (p.isSonarLintSupported() || languageSupportRepository.isForceSynchronized(p.getKey()))
-          && isCompanionPlugin(p.getKey())
-          && !result.containsKey(p.getKey()))
-        .forEach(p -> {
-          scheduleCompanionDownload(connectionId, p);
-          result.put(p.getKey(), PluginStatus.forCompanion(p.getKey(), ArtifactState.DOWNLOADING, null, null));
-        })
+        .filter(p -> isCompanionPlugin(p.getKey()) && !result.containsKey(p.getKey()))
+        .forEach(p -> processCompanionPlugin(connectionId, p, result))
     );
     return result;
+  }
+
+  private void processCompanionPlugin(String connectionId, ServerPlugin plugin, ConcurrentHashMap<String, PluginStatus> result) {
+    if (LEGACY_TYPESCRIPT_PLUGIN_KEY.equals(plugin.getKey())
+        && !languageSupportRepository.isEnabledInConnectedMode(SonarLanguage.TS)) {
+      LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", plugin.getKey());
+      return;
+    }
+    if (!plugin.isSonarLintSupported() && !languageSupportRepository.isForceSynchronized(plugin.getKey())) {
+      LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", plugin.getKey());
+      return;
+    }
+    scheduleCompanionDownload(connectionId, plugin);
+    result.put(plugin.getKey(), PluginStatus.forCompanion(plugin.getKey(), ArtifactState.DOWNLOADING, null, null));
   }
 
   private void scheduleCompanionDownload(String connectionId, ServerPlugin plugin) {
@@ -173,9 +199,30 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     return !SonarLanguage.ALL_PLUGIN_KEYS.contains(pluginKey);
   }
 
-  private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, String pluginKey) {
-    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey))
-      .map(stored -> toResolvedArtifact(stored, connectionId));
+  private ResolvedArtifact resolveFromStorageOrDownload(String connectionId, ServerPlugin serverPlugin) {
+    var fromStorage = resolveFromStorage(connectionId, serverPlugin);
+    if (fromStorage.isPresent()) {
+      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
+      return fromStorage.get();
+    }
+    return downloadAndResolve(connectionId, serverPlugin);
+  }
+
+  private ResolvedArtifact resolveFromStorageOrSchedule(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
+    var fromStorage = resolveFromStorage(connectionId, serverPlugin);
+    if (fromStorage.isPresent()) {
+      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
+      return fromStorage.get();
+    }
+    return scheduleDownload(connectionId, serverPlugin, language);
+  }
+
+  private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, ServerPlugin serverPlugin) {
+    var stored = storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(serverPlugin.getKey());
+    if (stored == null || !Files.exists(stored.getJarPath()) || !stored.hasSameHash(serverPlugin)) {
+      return Optional.empty();
+    }
+    return Optional.of(toResolvedArtifact(stored.getJarPath(), connectionId));
   }
 
   private ResolvedArtifact downloadAndResolve(String connectionId, ServerPlugin serverPlugin) {
@@ -195,12 +242,19 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
-  private Optional<ServerPlugin> findServerPlugin(String connectionId, String pluginKey) {
+  private Optional<ResolvedArtifact> resolveFromStorageByKey(String connectionId, String pluginKey) {
+    var stored = storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(pluginKey);
+    if (stored == null || !Files.exists(stored.getJarPath())) {
+      return Optional.empty();
+    }
+    return Optional.of(toResolvedArtifact(stored.getJarPath(), connectionId));
+  }
+
+  private Optional<List<ServerPlugin>> fetchServerPluginsSafely(String connectionId) {
     try {
-      return serverPluginsCache.getPlugins(connectionId)
-        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst());
+      return serverPluginsCache.getPlugins(connectionId);
     } catch (ServerRequestException e) {
-      LOG.debug("Could not fetch server plugin list for connection '{}', skipping server-side lookup for '{}'", connectionId, pluginKey);
+      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
       return Optional.empty();
     }
   }

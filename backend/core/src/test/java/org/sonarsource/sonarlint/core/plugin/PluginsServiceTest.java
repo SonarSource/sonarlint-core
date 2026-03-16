@@ -312,6 +312,13 @@ class PluginsServiceTest {
   }
 
   @Test
+  void should_not_evict_artifact_provider_when_unloading_embedded_plugins() {
+    underTest.unloadEmbeddedPlugins();
+
+    verify(pluginArtifactProvider, never()).evict(null);
+  }
+
+  @Test
   void unloadPlugins_should_not_publish_event() {
     var connectionId = "connection1";
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));

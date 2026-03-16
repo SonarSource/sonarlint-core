@@ -307,18 +307,39 @@ public class PluginArtifactProvider {
     return stored == null || !stored.hasSameHash(serverPlugin);
   }
 
+  public void onSyncComplete(@Nullable String connectionId) {
+    if (arePluginsReady(connectionId)) {
+      onAllSyncDownloadsComplete(connectionId, computeExpectedPlugins(connectionId));
+    }
+  }
+
+  private List<ServerPlugin> computeExpectedPlugins(@Nullable String connectionId) {
+    if (connectionId == null) {
+      return List.of();
+    }
+    var serverPlugins = serverPluginsCache.refreshAndGet(connectionId);
+    if (serverPlugins.isEmpty()) {
+      return List.of();
+    }
+    var serverPluginList = serverPlugins.get();
+    var storedPluginsByKey = storageService.connection(connectionId).plugins().getStoredPluginsByKey();
+    return computeExpectedInStorage(serverPluginList, storedPluginsByKey);
+  }
+
   private static List<ServerPlugin> computeExpectedInStorage(List<ServerPlugin> serverPlugins, Map<String, StoredPlugin> storedPluginsByKey) {
     return serverPlugins.stream()
       .filter(p -> p.isSonarLintSupported() || storedPluginsByKey.containsKey(p.getKey()))
       .toList();
   }
 
-  private void onAllSyncDownloadsComplete(String connectionId, List<ServerPlugin> serverPluginsExpectedInStorage) {
-    var pluginsStorage = storageService.connection(connectionId).plugins();
-    if (serverPluginsExpectedInStorage.isEmpty()) {
-      pluginsStorage.storeNoPlugins();
-    } else {
-      pluginsStorage.cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+  private void onAllSyncDownloadsComplete(@Nullable String connectionId, List<ServerPlugin> serverPluginsExpectedInStorage) {
+    if (connectionId != null) {
+      var pluginsStorage = storageService.connection(connectionId).plugins();
+      if (serverPluginsExpectedInStorage.isEmpty()) {
+        pluginsStorage.storeNoPlugins();
+      } else {
+        pluginsStorage.cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+      }
     }
     eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
   }
@@ -327,9 +348,7 @@ public class PluginArtifactProvider {
   public void onPluginStatusChanged(PluginStatusUpdateEvent event) {
     var connectionId = event.connectionId();
     event.newStatuses().forEach(status -> updateCachedStatus(connectionId, status));
-    if (arePluginsReady(connectionId)) {
-      eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
-    }
+    onSyncComplete(connectionId);
   }
 
   private void updateCachedStatus(@Nullable String connectionId, PluginStatus status) {

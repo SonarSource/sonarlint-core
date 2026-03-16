@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 
@@ -29,6 +31,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class UnsupportedArtifactResolverTest {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final ResolvedArtifact UNSUPPORTED_ARTIFACT = new ResolvedArtifact(ArtifactState.UNSUPPORTED, null, null, null);
 

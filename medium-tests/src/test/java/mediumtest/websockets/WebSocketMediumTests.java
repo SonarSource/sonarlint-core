@@ -1508,8 +1508,11 @@ class WebSocketMediumTests {
   }
 
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
+    var fakeSonarCloud = harness.newFakeSonarCloudServer().start();
     return harness.newBackend()
       .withBackendCapability(SERVER_SENT_EVENTS)
+      .withSonarQubeCloudEuRegionUri(fakeSonarCloud.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(fakeSonarCloud.baseUrl())
       .withSonarQubeCloudEuRegionWebSocketUri(webSocketServerEU.getUrl())
       .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUrl());
   }

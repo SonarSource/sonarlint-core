@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.plugin.resolvers;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
 public class UnsupportedArtifactResolver implements ArtifactResolver {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final LanguageSupportRepository languageSupportRepository;
 
@@ -37,6 +40,10 @@ public class UnsupportedArtifactResolver implements ArtifactResolver {
   @Override
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
     if (!isSupported(language, connectionId)) {
+      if (connectionId != null) {
+        LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.",
+          language.getPluginKey());
+      }
       return Optional.of(new ResolvedArtifact(ArtifactState.UNSUPPORTED, null, null, null));
     }
     return Optional.empty();

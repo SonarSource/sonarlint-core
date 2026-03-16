@@ -136,7 +136,6 @@ public class PluginsService {
   public void unloadEmbeddedPlugins() {
     logger.debug("Evict loaded embedded plugins");
     pluginsRepository.unloadEmbedded();
-    pluginArtifactProvider.evict(null);
   }
 
   public void unloadPlugins(String connectionId) {

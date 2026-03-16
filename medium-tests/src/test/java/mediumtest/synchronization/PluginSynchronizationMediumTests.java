@@ -291,7 +291,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.PHP)
       .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
-    client.waitForSynchronization();
+    waitAtMost(5, SECONDS).until(() -> client.isAnalysisReadyForScope("configScopeId"));
 
     assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
       .extracting(File::getName)

@@ -97,7 +97,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver, ExtraArtifact
     try {
       downloadAndCache(artifact);
       return toActiveArtifact(artifact, cachedArtifactPaths.get(artifact.artifactKey()));
-    } catch (Exception e) {
+    } catch (IOException e) {
       LOG.error("Failed to download artifact {}", artifact.artifactKey(), e);
       return new ResolvedArtifact(ArtifactState.FAILED, null, null, null);
     }

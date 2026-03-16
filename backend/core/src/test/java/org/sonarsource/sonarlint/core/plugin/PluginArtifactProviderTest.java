@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -342,12 +344,15 @@ class PluginArtifactProviderTest {
     when(connectionStorage.serverInfo()).thenReturn(serverInfoStorage);
     when(serverInfoStorage.read()).thenReturn(Optional.empty());
     when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(pluginPathsByKey);
+    var storedPluginsByKey = pluginPathsByKey.entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> new StoredPlugin(e.getKey(), "hash", e.getValue())));
+    when(pluginsStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
     when(storageService.connection(connectionId)).thenReturn(connectionStorage);
     var connection = mock(AbstractConnectionConfiguration.class);
     when(connection.getKind()).thenReturn(kind);
     when(connectionRepo.getConnectionById(connectionId)).thenReturn(connection);
     mockServerPlugins(connectionId, pluginPathsByKey.keySet().stream()
-      .map(PluginArtifactProviderTest::mockServerPlugin)
+      .map(key -> mockServerPlugin(key, "hash"))
       .toList());
   }
 
@@ -355,9 +360,10 @@ class PluginArtifactProviderTest {
     when(serverPluginsCache.getPlugins(connectionId)).thenReturn(Optional.of(plugins));
   }
 
-  private static ServerPlugin mockServerPlugin(String pluginKey) {
+  private static ServerPlugin mockServerPlugin(String pluginKey, String hash) {
     var plugin = mock(ServerPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
+    when(plugin.getHash()).thenReturn(hash);
     return plugin;
   }
 }
