@@ -44,7 +44,7 @@ jobs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: jdx/mise-action@665d82088236dd987b2af6165be29d21e2e11184 # v3.0.0
+      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.2
       - uses: SonarSource/ci-github-actions/build-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@665d82088236dd987b2af6165be29d21e2e11184 # v3.0.0
+      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.2
       - name: Vault
@@ -119,7 +119,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: linux-test-report
           path: |
@@ -137,7 +137,7 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: jdx/mise-action@665d82088236dd987b2af6165be29d21e2e11184 # v3.0.0
+      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.2
       - uses: SonarSource/ci-github-actions/config-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
@@ -162,7 +162,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: windows-test-report
           path: |
@@ -210,7 +210,7 @@ jobs:
             java: 17
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: jdx/mise-action@665d82088236dd987b2af6165be29d21e2e11184 # v3.0.0
+      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.2
       - name: Select Java ${{ matrix.java }}
@@ -273,7 +273,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: qa-test-report ${{ matrix.name }}
           path: |
