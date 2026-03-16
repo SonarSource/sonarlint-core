@@ -50,20 +50,20 @@
     <protobuf.version>4.28.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>5.0.0-alpha.16</okhttp.version>
-    <junit.jupiter.version>5.14.3</junit.jupiter.version>
+    <junit.jupiter.version>6.0.3</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.13.2</gson.version>
     <mockito.version>5.22.0</mockito.version>
-    <kotlin.version>1.9.25</kotlin.version>
-    <lsp4j.version>0.24.0</lsp4j.version>
+    <kotlin.version>2.3.20</kotlin.version>
+    <lsp4j.version>1.0.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
     <logback.version>1.5.32</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.8</system.stubs.version>
 
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
-    <jgit6.version>6.10.1.202505221210-r</jgit6.version>
+    <jgit6.version>7.6.0.202603022253-r</jgit6.version>
     <jgit7.version>7.5.0.202512021534-r</jgit7.version>
     <sentry.version>8.34.0</sentry.version>
 
@@ -80,7 +80,7 @@
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
-    <flyway.version>11.20.3</flyway.version>
+    <flyway.version>12.1.0</flyway.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.80.0.98490</cfamily.version>
@@ -100,7 +100,7 @@
       <dependency>
         <groupId>org.springframework</groupId>
          <artifactId>spring-framework-bom</artifactId>
-         <version>6.2.16</version>
+         <version>7.0.6</version>
          <type>pom</type>
          <scope>import</scope>
       </dependency>
@@ -287,7 +287,7 @@
         <plugin>
           <groupId>biz.aQute.bnd</groupId>
           <artifactId>bnd-maven-plugin</artifactId>
-          <version>6.4.0</version>
+          <version>7.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
