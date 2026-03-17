@@ -3,23 +3,15 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
-    <artifactId>sonarlint-core-parent</artifactId>
+    <artifactId>sonarlint-client-parent</artifactId>
     <version>10.48-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-java-client-dependencies</artifactId>
   <name>SonarLint Core - Java Client dependencies</name>
   <description>Dependencies used by the Java Clients, shaded and relocated together</description>
   
-  <properties>
-    <!--
-      As this is a dependency of the SonarLint Core OSGi bundle that is used on
-      SonarQube for Eclipse, we have to stick to Java 11 for the compiler!
-    -->
-    <maven.compiler.release>11</maven.compiler.release>
-  </properties>
-
-  <dependencies>
+<dependencies>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>

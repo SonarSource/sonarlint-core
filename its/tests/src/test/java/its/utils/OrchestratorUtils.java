@@ -19,6 +19,7 @@
  */
 package its.utils;
 
+import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.junit5.OrchestratorExtensionBuilder;
 
@@ -26,7 +27,12 @@ import static its.utils.ItUtils.SONAR_VERSION;
 
 public class OrchestratorUtils {
   public static OrchestratorExtensionBuilder defaultEnvBuilder() {
-    return OrchestratorExtension.builderEnv()
+    var config = Configuration.builder().addEnvVariables().addSystemProperties();
+    var orchestratorJavaHome = System.getenv().get("ORCHESTRATOR_JAVA_HOME");
+    if (orchestratorJavaHome != null) {
+      config.setProperty("java.home", orchestratorJavaHome);
+    }
+    return OrchestratorExtension.builder(config.build())
       .defaultForceAuthentication()
       .keepBundledPlugins()
       .useDefaultAdminCredentialsForBuilds(true)

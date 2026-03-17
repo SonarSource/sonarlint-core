@@ -19,7 +19,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
-    <jdk.min.version>11</jdk.min.version>
+    <!-- Always force Java 17 while SQ 9.9 is supported -->
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
   <dependencies>
@@ -56,18 +57,6 @@
           <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <sonarLintSupported>true</sonarLintSupported>
           <pluginApiMinVersion>${sonar.apiVersion}</pluginApiMinVersion>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>${jdk.min.version}</source>
-          <target>${jdk.min.version}</target>
-          <basedir/>
-          <buildDirectory/>
-          <outputDirectory/>
-          <projectArtifact/>
         </configuration>
       </plugin>
     </plugins>

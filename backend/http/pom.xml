@@ -2,13 +2,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
-    <artifactId>sonarlint-core-parent</artifactId>
+    <artifactId>sonarlint-backend-parent</artifactId>
     <version>10.48-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-http</artifactId>
   <name>SonarLint Core - HTTP</name>
   <description>HTTP related code used by SonarLint</description>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

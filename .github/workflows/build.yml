@@ -188,33 +188,32 @@ jobs:
             sc: true
             sc_token_path: sonarcloud-it
             region: EU
-            java: 17
           - name: SonarCloudUS
             sq_version: SonarCloudUS
             category: "-Dgroups=SonarCloud"
             sc: true
             sc_token_path: sonarcloud-it-US
             region: US
-            java: 17
           - name: SQDogfood
             sq_version: DEV
             category: "-DexcludedGroups=SonarCloud"
-            java: 21
           - name: SQLatest
             sq_version: LATEST_RELEASE
             category: "-DexcludedGroups=SonarCloud"
-            java: 21
           - name: SQLts99
             sq_version: "LATEST_RELEASE[9.9]"
             category: "-DexcludedGroups=SonarCloud"
-            java: 17
+            customOrchestratorJavaVersion: 17
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.13
-      - name: Select Java ${{ matrix.java }}
-        run: mise use java@${{ matrix.java }}
+      - name: Setup Java ${{ matrix.customOrchestratorJavaVersion }} for Orchestrator
+        if: matrix.customOrchestratorJavaVersion
+        run: |
+          mise install java@${{ matrix.customOrchestratorJavaVersion }}
+          echo "ORCHESTRATOR_JAVA_HOME=$(mise where java@${{ matrix.customOrchestratorJavaVersion }})" >> "$GITHUB_ENV"
       - name: Compute month key
         #Avoid caching for DEV since it is frequently changing
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}

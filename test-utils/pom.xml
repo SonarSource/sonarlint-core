@@ -9,6 +9,7 @@
   <artifactId>sonarlint-core-test-utils</artifactId>
   <name>SonarLint Core - Test Utils</name>
   <description>Test utils for SonarLint</description>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

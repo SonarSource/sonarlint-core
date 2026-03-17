@@ -21,6 +21,8 @@
     <sonarjava.version>7.16.0.30901</sonarjava.version>
     <analyzer.commons.version>2.1.0.1111</analyzer.commons.version>
     <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <!-- Always force Java 17 while SQ 9.9 is supported -->
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
   <dependencies>
@@ -81,19 +83,6 @@
           <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <requirePlugins>java:${sonarjava.version}</requirePlugins>
           <requiredForLanguages>java</requiredForLanguages>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-          <basedir/>
-          <buildDirectory/>
-          <outputDirectory/>
-          <projectArtifact/>
         </configuration>
       </plugin>
     </plugins>
