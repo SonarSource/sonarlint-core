@@ -12,9 +12,9 @@
   <description>SonarLint backend as a standalone CLI</description>
   <properties>
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
-    <jre.dirname.linux>jdk-17.0.9+9-jre</jre.dirname.linux>
-    <jre.dirname.windows>jdk-17.0.9+9-jre</jre.dirname.windows>
-    <jre.dirname.macosx>jdk-17.0.9+9-jre/Contents/Home</jre.dirname.macosx>
+    <jre.dirname.linux>jdk-21.0.10+7-jre</jre.dirname.linux>
+    <jre.dirname.windows>jdk-21.0.10+7-jre</jre.dirname.windows>
+    <jre.dirname.macosx>jdk-21.0.10+7-jre/Contents/Home</jre.dirname.macosx>
   </properties>
 
   <build>
@@ -81,10 +81,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9.1/OpenJDK17U-jre_x64_windows_hotspot_17.0.9_9.zip</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_windows_hotspot_21.0.10_7.zip</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/windows_x64</outputDirectory>
-                      <sha256>6c491d6f8c28c6f451f08110a30348696a04b009f8c58592191046e0fab1477b</sha256>
+                      <sha256>a6ac6789e51a2c245f41430c42e72b39ec706a449812fc5e4cbfc55ceed1e5ae</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -131,10 +131,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jre_x64_linux_hotspot_17.0.9_9.tar.gz</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_linux_hotspot_21.0.10_7.tar.gz</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/linux_x64</outputDirectory>
-                      <sha256>c37f729200b572884b8f8e157852c739be728d61d9a1da0f920104876d324733</sha256>
+                      <sha256>991be6ac6725e76109ecbd131d658f992dcbeacba3a8b4b6650302c8012b52fb</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -176,10 +176,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jre_aarch64_linux_hotspot_17.0.9_9.tar.gz</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.10_7.tar.gz</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/linux_aarch64</outputDirectory>
-                      <sha256>05b192f81ed478178ba953a2a779b67fc5a810acadb633ad69f8c4412399edb8</sha256>
+                      <sha256>3ca84da7c4f57eee8d7e7f0645dc904a3a06456d32b37a4dd57a5e7527245250</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -221,10 +221,10 @@
                   <goal>wget</goal>
                 </goals>
                 <configuration>
-                  <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jre_x64_mac_hotspot_17.0.9_9.tar.gz</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_mac_hotspot_21.0.10_7.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${unpack.dir}/macosx_x64</outputDirectory>
-                  <sha256>ba214f2217dc134e94432085cff4fc5a97e964ffc211d343725fd535f3cd98a0</sha256>
+                  <sha256>008d2bb904c0e07500b92bf4b0f8d434d694b13d5189f06358a52d46b1351f37</sha256>
                 </configuration>
               </execution>
             </executions>
@@ -266,10 +266,10 @@
                   <goal>wget</goal>
                 </goals>
                 <configuration>
-                  <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.9_9.tar.gz</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.10_7.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${unpack.dir}/macosx_aarch64</outputDirectory>
-                  <sha256>89831d03b7cd9922bd178f1a9c8544a36c54d52295366db4e6628454b01acaef</sha256>
+                  <sha256>c3be8c87f1a5cdc727903546eb810e112f94cd7222dac6a9d3f3146ee932008d</sha256>
                 </configuration>
               </execution>
             </executions>
