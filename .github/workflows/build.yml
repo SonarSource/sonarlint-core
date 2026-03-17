@@ -84,7 +84,7 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/gh-action_cache@2cffd56e21f9dafc74ff1df34d77ae5f5ae46e6f # BUILD-10699 test: fallback-to-default-branch
+        uses: SonarSource/gh-action_cache@3c1a97360f54d1b67430b36a5ccce12ea3f472f8 # BUILD-10699 test: fallback-to-default-branch
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
@@ -227,7 +227,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/gh-action_cache@2cffd56e21f9dafc74ff1df34d77ae5f5ae46e6f # BUILD-10699 test: fallback-to-default-branch
+      - uses: SonarSource/gh-action_cache@3c1a97360f54d1b67430b36a5ccce12ea3f472f8 # BUILD-10699 test: fallback-to-default-branch
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
