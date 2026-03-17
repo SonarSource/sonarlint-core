@@ -75,13 +75,16 @@ public class PathTranslationService {
 
   private FilePathTranslation matchPaths(String configScopeId, FileTreeMatcher fileMatcher, List<Path> serverFilePaths) {
     LOG.debug("Starting matching paths for config scope '{}'...", configScopeId);
+    LOG.debug("Server file paths (count={}): {}", serverFilePaths.size(), serverFilePaths);
     var localFilePaths = clientFs.getFiles(configScopeId);
     if (localFilePaths.isEmpty()) {
       LOG.debug("No client files for config scope '{}'. Skipping path matching.", configScopeId);
       // Maybe a config scope without files, or the filesystem has not been initialized yet
       return new FilePathTranslation(Paths.get(""), Paths.get(""));
     }
-    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).toList());
+    var clientRelativePaths = localFilePaths.stream().map(ClientFile::getClientRelativePath).toList();
+    LOG.debug("Client relative paths (count={}): {}", clientRelativePaths.size(), clientRelativePaths);
+    var match = fileMatcher.match(serverFilePaths, clientRelativePaths);
     LOG.debug("Matched paths for config scope '{}':\n  * idePrefix={}\n  * serverPrefix={}", configScopeId, match.idePrefix(), match.sqPrefix());
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }
