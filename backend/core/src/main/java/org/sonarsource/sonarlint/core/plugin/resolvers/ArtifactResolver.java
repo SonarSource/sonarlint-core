@@ -26,18 +26,10 @@ import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
 public interface ArtifactResolver {
   /**
-   * Resolves the artifact for the given language, blocking until a final result is available.
+   * Resolves the artifact for the given language. When the result cannot be determined immediately
+   * (e.g. a download is required), returns a temporary status and publishes a
+   * {@link org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent} with the final result once it is available.
    * Returns empty if this resolver does not handle the given language/connection combination.
    */
   Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId);
-
-  /**
-   * Resolves the artifact for the given language without blocking. When the result cannot be
-   * determined immediately (e.g. a download is required), returns a temporary status and
-   * publishes a {@link org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent} with the final result once it is available.
-   * Returns empty if this resolver does not handle the given language/connection combination.
-   */
-  default Optional<ResolvedArtifact> resolveAsync(SonarLanguage language, @Nullable String connectionId) {
-    return resolve(language, connectionId);
-  }
 }

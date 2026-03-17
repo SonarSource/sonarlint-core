@@ -86,41 +86,12 @@ class OnDemandArtifactResolverTest {
   }
 
   @Test
-  void should_return_active_on_successful_sync_download() throws Exception {
-    mockSuccessfulHttpClient();
-    var resolver = buildResolver(cFamilyMap());
-
-    var result = resolver.resolve(SonarLanguage.C, null);
-
-    var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();
-    var pluginPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
-      .resolve("sonar-cpp-plugin-" + artifactVersion + ".jar");
-    var expected = new ResolvedArtifact(ArtifactState.ACTIVE, pluginPath, ArtifactSource.ON_DEMAND,
-      Version.create(artifactVersion));
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_failed_on_sync_download_error() {
-    var httpClient = mock(HttpClient.class);
-    when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    var resolver = buildResolver(cFamilyMap());
-
-    var result = resolver.resolve(SonarLanguage.C, null);
-
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.FAILED, null, null, null));
-  }
-
-  // --- resolveAsync ---
-
-  @Test
   void should_return_downloading_on_first_async_call() {
     var proceedLatch = new CountDownLatch(1);
     mockBlockingHttpClient(proceedLatch);
     var resolver = buildResolver(cFamilyMap());
     try {
-      var result = resolver.resolveAsync(SonarLanguage.C, null);
+      var result = resolver.resolve(SonarLanguage.C, null);
 
       assertThat(result).contains(downloading());
     } finally {
@@ -136,9 +107,9 @@ class OnDemandArtifactResolverTest {
     mockBlockingHttpClient(proceedLatch);
     var resolver = buildResolver(cFamilyMap());
     try {
-      resolver.resolveAsync(SonarLanguage.C, null);  // starts download, key added to inProgress
+      resolver.resolve(SonarLanguage.C, null);  // starts download, key added to inProgress
 
-      var result = resolver.resolveAsync(SonarLanguage.C, null);  // while download is blocked
+      var result = resolver.resolve(SonarLanguage.C, null);  // while download is blocked
 
       assertThat(result).contains(downloading());
     } finally {
@@ -155,7 +126,7 @@ class OnDemandArtifactResolverTest {
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     var resolver = buildResolver(cFamilyMap());
 
-    resolver.resolveAsync(SonarLanguage.C, null);
+    resolver.resolve(SonarLanguage.C, null);
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
     assertThat(capturedEvents.get(0)).satisfies(event -> {
@@ -171,7 +142,7 @@ class OnDemandArtifactResolverTest {
     mockSuccessfulHttpClient();
     var resolver = buildResolver(cFamilyMap());
 
-    resolver.resolveAsync(SonarLanguage.C, null);
+    resolver.resolve(SonarLanguage.C, null);
 
     await().atMost(10, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
     var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();

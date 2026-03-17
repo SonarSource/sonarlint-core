@@ -108,29 +108,6 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     try {
       return serverPluginsCache.getPlugins(connectionId)
         .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst())
-        .map(serverPlugin -> resolveFromStorageOrDownload(connectionId, serverPlugin))
-        .or(() -> resolveFromStorageByKey(connectionId, pluginKey));
-    } catch (ServerRequestException e) {
-      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      return resolveFromStorageByKey(connectionId, pluginKey);
-    }
-  }
-
-  @Override
-  public Optional<ResolvedArtifact> resolveAsync(SonarLanguage language, @Nullable String connectionId) {
-    if (connectionId == null) {
-      return Optional.empty();
-    }
-    if (!passesLanguageGate(language, connectionId)) {
-      if (skipSyncPluginKeys.contains(language.getPluginKey())) {
-        LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", language.getPluginKey());
-      }
-      return Optional.empty();
-    }
-    var pluginKey = language.getPluginKey();
-    try {
-      return serverPluginsCache.getPlugins(connectionId)
-        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst())
         .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, language))
         .or(() -> resolveFromStorageByKey(connectionId, pluginKey));
     } catch (ServerRequestException e) {
@@ -199,15 +176,6 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     return !SonarLanguage.ALL_PLUGIN_KEYS.contains(pluginKey);
   }
 
-  private ResolvedArtifact resolveFromStorageOrDownload(String connectionId, ServerPlugin serverPlugin) {
-    var fromStorage = resolveFromStorage(connectionId, serverPlugin);
-    if (fromStorage.isPresent()) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
-      return fromStorage.get();
-    }
-    return downloadAndResolve(connectionId, serverPlugin);
-  }
-
   private ResolvedArtifact resolveFromStorageOrSchedule(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
     var fromStorage = resolveFromStorage(connectionId, serverPlugin);
     if (fromStorage.isPresent()) {
@@ -223,15 +191,6 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       return Optional.empty();
     }
     return Optional.of(toResolvedArtifact(stored.getJarPath(), connectionId));
-  }
-
-  private ResolvedArtifact downloadAndResolve(String connectionId, ServerPlugin serverPlugin) {
-    var state = downloadPluginSync(connectionId, serverPlugin);
-    if (state == ArtifactState.SYNCED) {
-      var path = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(serverPlugin.getKey());
-      return toResolvedArtifact(path, connectionId);
-    }
-    return new ResolvedArtifact(ArtifactState.FAILED, null, null, null);
   }
 
   private ResolvedArtifact scheduleDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {

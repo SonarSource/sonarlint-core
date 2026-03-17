@@ -82,25 +82,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver, ExtraArtifact
     return ofNullable(artifactsByLanguage.get(language))
       .filter(artifact -> artifact.version() != null)
       .map(artifact -> findCachedArtifact(artifact)
-        .orElseGet(() -> downloadAndResolve(artifact)));
-  }
-
-  @Override
-  public Optional<ResolvedArtifact> resolveAsync(SonarLanguage language, @Nullable String connectionId) {
-    return ofNullable(artifactsByLanguage.get(language))
-      .filter(artifact -> artifact.version() != null)
-      .map(artifact -> findCachedArtifact(artifact)
         .orElseGet(() -> scheduleDownload(artifact)));
-  }
-
-  private ResolvedArtifact downloadAndResolve(DownloadableArtifact artifact) {
-    try {
-      downloadAndCache(artifact);
-      return toActiveArtifact(artifact, cachedArtifactPaths.get(artifact.artifactKey()));
-    } catch (IOException e) {
-      LOG.error("Failed to download artifact {}", artifact.artifactKey(), e);
-      return new ResolvedArtifact(ArtifactState.FAILED, null, null, null);
-    }
   }
 
   private ResolvedArtifact scheduleDownload(DownloadableArtifact artifact) {

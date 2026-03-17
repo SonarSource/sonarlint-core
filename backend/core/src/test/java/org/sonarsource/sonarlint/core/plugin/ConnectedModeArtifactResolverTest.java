@@ -52,7 +52,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -114,15 +113,16 @@ class ConnectedModeArtifactResolverTest {
   }
 
   @Test
-  void should_return_empty_when_plugin_is_in_storage_but_not_on_server() {
+  void should_return_synced_from_storage_when_plugin_is_in_storage_but_not_on_server() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
     mockServerPlugins("conn", List.of());
     var resolver = createResolver(Set.of());
+    var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactSource.SONARQUBE_SERVER);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
-    assertThat(result).isEmpty();
+    assertThat(result).contains(expected);
   }
 
   @Test
@@ -138,33 +138,18 @@ class ConnectedModeArtifactResolverTest {
   }
 
   @Test
-  void should_return_failed_when_plugin_is_not_in_storage_but_on_server_and_download_fails() {
-    mockConnection("conn", ConnectionKind.SONARQUBE);
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of());
-    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey())));
-    doThrow(new RuntimeException("Connection refused")).when(sonarQubeClientManager).withActiveClient(any(), any());
-    var resolver = createResolver(Set.of());
-
-    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
-
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.FAILED, null, null, null));
-  }
-
-  @Test
   void should_trigger_download_when_stored_jar_does_not_exist_on_disk() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), tempDir.resolve("missing.jar"), "hash");
     var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey(), "hash");
     mockServerPlugins("conn", List.of(serverPlugin));
-    doThrow(new RuntimeException("Connection refused")).when(sonarQubeClientManager).withActiveClient(any(), any());
     var resolver = createResolver(Set.of());
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.FAILED, null, null, null));
+    assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
+    verify(downloadExecutor).submit(any(Runnable.class));
   }
-
-  // --- resolveAsync ---
 
   @Test
   void should_return_downloading_when_plugin_is_not_in_storage_but_on_server() {
@@ -173,7 +158,7 @@ class ConnectedModeArtifactResolverTest {
     mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey())));
     var resolver = createResolver(Set.of());
 
-    var result = resolver.resolveAsync(SonarLanguage.JAVA, "conn");
+    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
   }
@@ -184,25 +169,13 @@ class ConnectedModeArtifactResolverTest {
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
     var resolver = createResolver(Set.of());
 
-    var result = resolver.resolveAsync(SonarLanguage.JAVA, "conn");
+    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).isEmpty();
   }
 
   @Test
   void should_return_synced_from_storage_when_server_plugin_list_request_fails() {
-    mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
-    when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
-    var resolver = createResolver(Set.of());
-
-    var result = resolver.resolveAsync(SonarLanguage.JAVA, "conn");
-
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactSource.SONARQUBE_SERVER, null));
-  }
-
-  @Test
-  void should_return_synced_from_storage_when_server_plugin_list_request_fails_on_sync_resolve() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
@@ -223,8 +196,8 @@ class ConnectedModeArtifactResolverTest {
     mockServerPlugins("conn2", List.of(javaPlugin));
     var resolver = createResolver(Set.of());
 
-    resolver.resolveAsync(SonarLanguage.JAVA, "conn1");
-    resolver.resolveAsync(SonarLanguage.JAVA, "conn2");
+    resolver.resolve(SonarLanguage.JAVA, "conn1");
+    resolver.resolve(SonarLanguage.JAVA, "conn2");
 
     verify(downloadExecutor, times(2)).submit(any(Runnable.class));
   }

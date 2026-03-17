@@ -292,7 +292,6 @@ class PluginArtifactProviderTest {
       params.getConnectedModeEmbeddedPluginPathsByKey().keySet(), languageSupportRepository);
     return new PluginArtifactProvider(
       storageService,
-      languageSupportRepository,
       new UnsupportedArtifactResolver(languageSupportRepository),
       new EmbeddedArtifactResolver(params),
       connectedMode,

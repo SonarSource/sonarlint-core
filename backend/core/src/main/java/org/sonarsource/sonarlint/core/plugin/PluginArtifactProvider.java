@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +35,6 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
-import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
@@ -77,8 +75,6 @@ public class PluginArtifactProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String STANDALONE = "STANDALONE";
-  // Legacy standalone TypeScript plugin, superseded by the JavaScript plugin
-  private static final String OLD_TYPESCRIPT_PLUGIN_KEY = "typescript";
 
   private static final Set<String> CSHARP_OMNISHARP_ARTIFACT_KEYS = Set.of(
     DownloadableArtifact.OMNISHARP_MONO.artifactKey(),
@@ -87,7 +83,6 @@ public class PluginArtifactProvider {
 
   private final List<ArtifactResolver> resolvers;
   private final List<ExtraArtifactResolver> extraResolvers;
-  private final LanguageSupportRepository languageSupportRepository;
   private final ConnectedModeArtifactResolver connectedModeArtifactResolver;
   private final EmbeddedArtifactResolver embeddedArtifactResolver;
   private final ServerPluginsCache serverPluginsCache;
@@ -101,7 +96,6 @@ public class PluginArtifactProvider {
 
   public PluginArtifactProvider(
     StorageService storageService,
-    LanguageSupportRepository languageSupportRepository,
     UnsupportedArtifactResolver unsupportedArtifactResolver,
     EmbeddedArtifactResolver embeddedArtifactResolver,
     ConnectedModeArtifactResolver connectedModeArtifactResolver,
@@ -111,7 +105,6 @@ public class PluginArtifactProvider {
     ServerPluginsCache serverPluginsCache,
     ApplicationEventPublisher eventPublisher) {
     this.storageService = storageService;
-    this.languageSupportRepository = languageSupportRepository;
     this.connectedModeArtifactResolver = connectedModeArtifactResolver;
     this.embeddedArtifactResolver = embeddedArtifactResolver;
     this.serverPluginsCache = serverPluginsCache;
@@ -193,7 +186,7 @@ public class PluginArtifactProvider {
 
   private AnalyzerArtifacts resolveForLanguage(SonarLanguage language, @Nullable String connectionId) {
     for (var resolver : resolvers) {
-      var result = resolver.resolveAsync(language, connectionId);
+      var result = resolver.resolve(language, connectionId);
       if (result.isPresent()) {
         var resolved = result.get();
         var status = PluginStatus.forLanguage(language, resolved.state(), resolved.source(), resolved.version(), null, resolved.path());
@@ -228,83 +221,6 @@ public class PluginArtifactProvider {
       }
     }
     return Optional.empty();
-  }
-
-  /**
-   * Fetches the server plugin list, determines which plugins are absent or outdated, and
-   * synchronously downloads them. Fires {@link PluginsSynchronizedEvent} when all downloads
-   * for this connection complete.
-   */
-  public void syncConnectionPlugins(String connectionId) {
-    var serverPlugins = serverPluginsCache.refreshAndGet(connectionId);
-    if (serverPlugins.isEmpty()) {
-      return;
-    }
-    var serverPluginList = serverPlugins.get();
-    var storedPluginsByKey = storageService.connection(connectionId).plugins().getStoredPluginsByKey();
-    var serverPluginsExpectedInStorage = computeExpectedInStorage(serverPluginList, storedPluginsByKey);
-
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
-    var disabledPluginKeys = computeDisabledPluginKeys(enabledLanguages);
-
-    enabledLanguages.forEach(language -> resolveSync(language, connectionId));
-
-    serverPluginList.stream()
-      .filter(plugin -> shouldSyncPlugin(plugin, storedPluginsByKey))
-      .forEach(plugin -> connectedModeArtifactResolver.downloadPluginSync(connectionId, plugin));
-
-    logSkips(serverPluginList, disabledPluginKeys);
-
-    onAllSyncDownloadsComplete(connectionId, serverPluginsExpectedInStorage);
-  }
-
-  private void logSkips(List<ServerPlugin> serverPluginList, Set<String> disabledPluginKeys) {
-    serverPluginList.stream()
-      .filter(plugin -> !plugin.isSonarLintSupported() && !languageSupportRepository.isForceSynchronized(plugin.getKey()))
-      .forEach(plugin -> LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", plugin.getKey()));
-
-    serverPluginList.stream()
-      .filter(ServerPlugin::isSonarLintSupported)
-      .filter(plugin -> !languageSupportRepository.isForceSynchronized(plugin.getKey()))
-      .filter(plugin -> disabledPluginKeys.contains(plugin.getKey()))
-      .forEach(plugin -> LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", plugin.getKey()));
-  }
-
-  private boolean shouldSyncPlugin(ServerPlugin plugin, Map<String, StoredPlugin> storedPluginsByKey) {
-    if (!isOutdatedOrAbsent(plugin, storedPluginsByKey)) {
-      return false;
-    }
-    if (languageSupportRepository.isForceSynchronized(plugin.getKey())) {
-      return true;
-    }
-    return plugin.isSonarLintSupported() && ConnectedModeArtifactResolver.isCompanionPlugin(plugin.getKey());
-  }
-
-  private static Set<String> computeDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(SonarLanguage.values())
-      .collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
-    var disabled = languagesByPluginKey.entrySet().stream()
-      .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
-      .map(Map.Entry::getKey)
-      .collect(Collectors.toCollection(HashSet::new));
-    if (!enabledLanguages.contains(SonarLanguage.TS)) {
-      disabled.add(OLD_TYPESCRIPT_PLUGIN_KEY);
-    }
-    return disabled;
-  }
-
-  private void resolveSync(SonarLanguage language, String connectionId) {
-    for (var resolver : resolvers) {
-      var result = resolver.resolve(language, connectionId);
-      if (result.isPresent()) {
-        return;
-      }
-    }
-  }
-
-  private static boolean isOutdatedOrAbsent(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
-    var stored = storedPluginsByKey.get(serverPlugin.getKey());
-    return stored == null || !stored.hasSameHash(serverPlugin);
   }
 
   public void onSyncComplete(@Nullable String connectionId) {
