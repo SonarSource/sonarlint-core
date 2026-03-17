@@ -29,10 +29,16 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FileTreeMatcherTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+
   private final FileTreeMatcher fileMatcher = new FileTreeMatcher();
 
   @Test
