@@ -32,9 +32,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -329,7 +328,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_active_embedded_with_empty_versions_when_plugin_in_embedded_analysis() {
-    var expected = new PluginStatus("Java", PluginState.ACTIVE, ArtifactSource.EMBEDDED, null, null);
+    var expected = new PluginStatus("Java", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null);
     var connectionId = "connection1";
     mockEmbeddedPlugins(Set.of("java"), Set.of("java"));
     mockConnectionPlugins(connectionId);
@@ -341,7 +340,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_failed_embedded_with_empty_versions_when_plugin_in_embedded_all_but_not_in_analysis() {
-    var expected = new PluginStatus("Java", PluginState.FAILED, ArtifactSource.EMBEDDED, null, null);
+    var expected = new PluginStatus("Java", ArtifactState.FAILED, ArtifactSource.EMBEDDED, null, null);
     var connectionId = "connection1";
     mockEmbeddedPlugins(Set.of("java"), Set.of());
     mockConnectionPlugins(connectionId);
@@ -353,7 +352,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_synced_sonar_cloud_with_empty_versions_when_plugin_in_connection_analysis_and_is_sonar_cloud() {
-    var expected = new PluginStatus("Python", PluginState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, null, null);
+    var expected = new PluginStatus("Python", ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, null, null);
     var connectionId = "SQC";
     mockEmbeddedPlugins();
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
@@ -366,7 +365,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_failed_sonar_cloud_with_empty_versions_when_plugin_in_connection_all_but_not_in_analysis_and_is_sonar_cloud() {
-    var expected = new PluginStatus("Python", PluginState.FAILED, ArtifactSource.SONARQUBE_CLOUD, null, null);
+    var expected = new PluginStatus("Python", ArtifactState.FAILED, ArtifactSource.SONARQUBE_CLOUD, null, null);
     var connectionId = "SQC";
     mockEmbeddedPlugins();
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of());
@@ -379,7 +378,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_synced_sonar_qube_server_with_empty_versions_when_plugin_in_connection_analysis_and_not_sonar_cloud() {
-    var expected = new PluginStatus("Python", PluginState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null);
+    var expected = new PluginStatus("Python", ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null);
     var connectionId = "SQS";
     mockEmbeddedPlugins();
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
@@ -392,7 +391,7 @@ class PluginsServiceTest {
 
   @Test
   void should_return_failed_sonar_qube_server_with_empty_versions_when_plugin_in_connection_all_but_not_in_analysis_and_not_sonar_cloud() {
-    var expected = new PluginStatus("Python", PluginState.FAILED, ArtifactSource.SONARQUBE_SERVER, null, null);
+    var expected = new PluginStatus("Python", ArtifactState.FAILED, ArtifactSource.SONARQUBE_SERVER, null, null);
     var connectionId = "SQS";
     mockEmbeddedPlugins();
     mockConnectionPlugins(connectionId, Set.of("python"), Set.of());
@@ -414,7 +413,7 @@ class PluginsServiceTest {
     assertThat(result)
       .isNotEmpty()
       .allMatch(status ->
-        status.state() == PluginState.UNSUPPORTED &&
+        status.state() == ArtifactState.UNSUPPORTED &&
         status.source() == null &&
         status.actualVersion() == null &&
         status.overriddenVersion() == null
@@ -423,7 +422,7 @@ class PluginsServiceTest {
 
   @Test
   void should_use_connection_plugin_values_when_plugin_present_in_both_embedded_and_connection() {
-    var expected = new PluginStatus("Java", PluginState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null);
+    var expected = new PluginStatus("Java", ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null);
     var connectionId = "SQS";
     mockEmbeddedPlugins(Set.of("java"), Set.of("java"));
     mockConnectionPlugins(connectionId, Set.of("java"), Set.of("java"));
@@ -442,8 +441,8 @@ class PluginsServiceTest {
 
     var result = underTest.getPluginStatuses(null);
 
-    assertThat(result).contains(new PluginStatus("Python", PluginState.PREMIUM, null, null, null))
-      .doesNotContain(new PluginStatus("Java", PluginState.PREMIUM, null, null, null));
+    assertThat(result).contains(new PluginStatus("Python", ArtifactState.PREMIUM, null, null, null))
+      .doesNotContain(new PluginStatus("Java", ArtifactState.PREMIUM, null, null, null));
   }
 
   @Test
@@ -457,8 +456,8 @@ class PluginsServiceTest {
 
     var result = underTest.getPluginStatuses(connectionId);
 
-    assertThat(result).contains(new PluginStatus("Python", PluginState.PREMIUM, null, null, null))
-      .doesNotContain(new PluginStatus("Java", PluginState.PREMIUM, null, null, null));
+    assertThat(result).contains(new PluginStatus("Python", ArtifactState.PREMIUM, null, null, null))
+      .doesNotContain(new PluginStatus("Java", ArtifactState.PREMIUM, null, null, null));
   }
 
   @Test
