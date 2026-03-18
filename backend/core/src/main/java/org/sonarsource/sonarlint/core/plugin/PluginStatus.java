@@ -19,25 +19,44 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 /**
- * @param pluginName        human-readable plugin name
+ * @param pluginKey         the plugin key
+ * @param language          the language this plugin covers; {@code null} for companion plugins not indexed by any language
  * @param state             current state of the plugin at the backend
  * @param source            source where the plugin jar came from
  * @param actualVersion     used version of the plugin
  * @param overriddenVersion a version of the plugin that is overridden by the actualVersion, if any
+ * @param path              path to the plugin jar on disk; populated for SYNCED/ACTIVE, null for DOWNLOADING/FAILED
  */
 public record PluginStatus(
-  String pluginName,
+  String pluginKey,
+  @Nullable SonarLanguage language,
   ArtifactState state,
   @Nullable ArtifactSource source,
   @Nullable Version actualVersion,
-  @Nullable Version overriddenVersion) {
+  @Nullable Version overriddenVersion,
+  @Nullable Path path) {
 
-  public static PluginStatus unsupported(SonarLanguage sonarLanguage) {
-    return new PluginStatus(sonarLanguage.getName(), ArtifactState.UNSUPPORTED, null, null, null);
+  public static PluginStatus forLanguage(SonarLanguage language, ArtifactState state,
+    @Nullable ArtifactSource source, @Nullable Version actual, @Nullable Version overridden, @Nullable Path path) {
+    return new PluginStatus(language.getPluginKey(), language, state, source, actual, overridden, path);
+  }
+
+  public static PluginStatus forCompanion(String pluginKey, ArtifactState state,
+    @Nullable ArtifactSource source, @Nullable Path path) {
+    return new PluginStatus(pluginKey, null, state, source, null, null, path);
+  }
+
+  public static PluginStatus unsupported(SonarLanguage language) {
+    return forLanguage(language, ArtifactState.UNSUPPORTED, null, null, null, null);
+  }
+
+  public String pluginName() {
+    return language != null ? language.getName() : pluginKey;
   }
 }

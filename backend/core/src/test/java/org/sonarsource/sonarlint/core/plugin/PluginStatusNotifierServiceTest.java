@@ -49,8 +49,8 @@ class PluginStatusNotifierServiceTest {
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final PluginStatusNotifierService underTest = new PluginStatusNotifierService(pluginsService, client, configurationRepository);
 
-  private final PluginStatus standaloneStatus = new PluginStatus("Standalone Plugin", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null);
-  private final PluginStatus connectedStatus = new PluginStatus("Connected Plugin", ArtifactState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null);
+  private final PluginStatus standaloneStatus = PluginStatus.forCompanion("Standalone Plugin", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null);
+  private final PluginStatus connectedStatus = PluginStatus.forCompanion("Connected Plugin", ArtifactState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null);
 
   @BeforeEach
   void setUp() {
