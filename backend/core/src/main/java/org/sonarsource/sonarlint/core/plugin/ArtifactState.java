@@ -19,25 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+public enum ArtifactState {
 
-/**
- * @param pluginName        human-readable plugin name
- * @param state             current state of the plugin at the backend
- * @param source            source where the plugin jar came from
- * @param actualVersion     used version of the plugin
- * @param overriddenVersion a version of the plugin that is overridden by the actualVersion, if any
- */
-public record PluginStatus(
-  String pluginName,
-  ArtifactState state,
-  @Nullable ArtifactSource source,
-  @Nullable Version actualVersion,
-  @Nullable Version overriddenVersion) {
+  ACTIVE("Active"),
+  SYNCED("Synced"),
+  DOWNLOADING("Downloading…"),
+  FAILED("Failed"),
+  PREMIUM("Premium"),
+  UNSUPPORTED("Unsupported");
 
-  public static PluginStatus unsupported(SonarLanguage sonarLanguage) {
-    return new PluginStatus(sonarLanguage.getName(), ArtifactState.UNSUPPORTED, null, null, null);
+  private final String name;
+
+  ArtifactState(String name) {
+    this.name = name;
+  }
+
+  public String getName() {
+    return name;
   }
 }
