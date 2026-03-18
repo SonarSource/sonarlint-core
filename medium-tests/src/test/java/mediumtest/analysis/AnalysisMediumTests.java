@@ -238,7 +238,7 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false)).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
@@ -318,7 +318,7 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false)).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client, timeout(200)).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "17", "10");
@@ -339,7 +339,7 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false)).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client, timeout(1000)).didDetectSecret(CONFIG_SCOPE_ID);
@@ -360,7 +360,7 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false)).join();
 
     verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, true)));
     var reportProgressCaptor = ArgumentCaptor.forClass(ReportProgressParams.class);
@@ -389,7 +389,7 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     var future = backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(2))
