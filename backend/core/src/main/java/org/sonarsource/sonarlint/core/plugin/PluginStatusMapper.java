@@ -47,7 +47,7 @@ public class PluginStatusMapper {
       status.serverVersion());
   }
 
-  public static PluginStateDto toDto(PluginState state) {
+  public static PluginStateDto toDto(ArtifactState state) {
     return switch (state) {
       case ACTIVE -> PluginStateDto.ACTIVE;
       case SYNCED -> PluginStateDto.SYNCED;

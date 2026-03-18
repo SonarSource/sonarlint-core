@@ -32,9 +32,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -414,7 +413,7 @@ class PluginsServiceTest {
     assertThat(result)
       .isNotEmpty()
       .allMatch(status ->
-        status.state() == PluginState.UNSUPPORTED &&
+        status.state() == ArtifactState.UNSUPPORTED &&
         status.source() == null &&
         status.actualVersion() == null &&
         status.overriddenVersion() == null &&

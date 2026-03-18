@@ -23,6 +23,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -49,8 +50,8 @@ class PluginStatusNotifierServiceTest {
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final PluginStatusNotifierService underTest = new PluginStatusNotifierService(pluginsService, client, configurationRepository);
 
-  private final PluginStatus standaloneStatus = new PluginStatus(org.sonarsource.sonarlint.core.commons.api.SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
-  private final PluginStatus connectedStatus = new PluginStatus(org.sonarsource.sonarlint.core.commons.api.SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null, "10.0.0");
+  private final PluginStatus standaloneStatus = new PluginStatus(SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
+  private final PluginStatus connectedStatus = new PluginStatus(SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null, "10.0.0");
 
   @BeforeEach
   void setUp() {
