@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) SonarSource Sàrl
+ * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,24 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
-public enum PluginState {
+import java.util.Optional;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
-  ACTIVE("Active"),
-  SYNCED("Synced"),
-  DOWNLOADING("Downloading…"),
-  FAILED("Failed"),
-  PREMIUM("Premium"),
-  UNSUPPORTED("Unsupported");
-
-  private final String name;
-
-  PluginState(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
+public interface ArtifactResolver {
+  /**
+   * Resolves the artifact for the given language. When the result cannot be determined immediately
+   * (e.g. a download is required), returns a temporary status and publishes a
+   * {@link org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent} with the final result once it is available.
+   * Returns empty if this resolver does not handle the given language/connection combination.
+   */
+  Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId);
 }
