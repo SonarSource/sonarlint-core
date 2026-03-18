@@ -1172,6 +1172,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
       var framework = serverVersion.isGreaterThanOrEquals(2025, 3) ? "Java I/O API (java_i_o_api)" : "Java SE (java_se)";
       var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
+      var liPrefix = serverVersion.isGreaterThanOrEquals(2026, 4) ? "<li>" : "<li> ";
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .containsExactly(
@@ -1185,7 +1186,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Standards</h3>\n"
             + "<ul>\n"
-            + "  <li> " + link);
+            + "  " + liPrefix + link);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
@@ -1212,6 +1213,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var iterator = extendedDescription.getTabs().iterator();
       iterator.next();
       var documentation = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 3) ? "OWASP - <a h..." : "<a href=\"htt...";
+      var liPrefix = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2026, 4) ? "<li>" : "<li> ";
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .contains(
@@ -1231,7 +1233,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> " + documentation);
+            + "  " + liPrefix + documentation);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");

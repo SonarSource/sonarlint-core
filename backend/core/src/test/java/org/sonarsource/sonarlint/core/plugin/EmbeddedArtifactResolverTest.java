@@ -163,6 +163,27 @@ class EmbeddedArtifactResolverTest {
   }
 
   @Test
+  void should_return_empty_companion_plugins_in_connected_mode_when_companion_is_only_in_standalone() throws IOException {
+    var javaSymExecJar = createJar("sonarlint-java-symbolic-execution-plugin.jar", "javasymbolicexecution");
+    var javaJar = createJar("sonar-java-plugin.jar");
+    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(javaSymExecJar, javaJar), Map.of(), null));
+
+    assertThat(resolver.resolveCompanionPlugins("someConnection")).isEmpty();
+  }
+
+  @Test
+  void should_return_companion_plugins_in_connected_mode_when_present_in_connected_mode_embedded_paths() throws IOException {
+    var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
+    var javaJar = createJar("sonar-java-plugin.jar");
+    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of("omnisharp", omnisharpJar), null));
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
+
+    var result = resolver.resolveCompanionPlugins("someConnection");
+
+    assertThat(result).containsExactly(Map.entry("omnisharp", expected));
+  }
+
+  @Test
   void should_return_empty_companion_plugins_when_all_plugins_are_language_plugins() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
     var pythonJar = createJar("sonar-python-plugin.jar");

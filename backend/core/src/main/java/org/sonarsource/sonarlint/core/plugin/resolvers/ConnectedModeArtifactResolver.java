@@ -244,8 +244,10 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
       var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-        List.of(PluginStatus.forLanguage(language, ArtifactState.SYNCED, source, version, null, storedPath))));
+      var statuses = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
+        .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath))
+        .toList();
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
     } else {
       fireFailedEvent(connectionId, language);
     }
@@ -272,8 +274,10 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
   }
 
   private void fireFailedEvent(String connectionId, SonarLanguage language) {
-    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-      List.of(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null))));
+    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
+      .map(l -> PluginStatus.forLanguage(l, ArtifactState.FAILED, null, null, null, null))
+      .toList();
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
   }
 
   private ResolvedArtifact toResolvedArtifact(Path pluginPath, String connectionId) {

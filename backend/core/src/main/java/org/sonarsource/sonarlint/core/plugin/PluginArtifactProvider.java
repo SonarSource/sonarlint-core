@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,8 +88,6 @@ public class PluginArtifactProvider {
   private final StorageService storageService;
   private final ApplicationEventPublisher eventPublisher;
   private final Map<String, Map<SonarLanguage, AnalyzerArtifacts>> cache = new ConcurrentHashMap<>();
-  /** Connection-agnostic; computed once on first access. */
-  private Map<String, PluginStatus> embeddedCompanionPlugins;
   /** Companion plugins from the server, keyed by connectionId. */
   private final Map<String, Map<String, PluginStatus>> connectedCompanionCache = new ConcurrentHashMap<>();
 
@@ -145,23 +142,22 @@ public class PluginArtifactProvider {
    * language-indexed plugins and companion plugins (those not indexed by any {@link SonarLanguage}).
    */
   public Set<Path> resolveAllPluginJarPaths(@Nullable String connectionId) {
-    var paths = new HashSet<Path>();
+    var paths = new LinkedHashMap<String, Path>();
     resolve(connectionId).values().stream()
-      .map(AnalyzerArtifacts::pluginJar).filter(Objects::nonNull).forEach(paths::add);
-    getEmbeddedCompanionPlugins().values().stream()
-      .map(PluginStatus::path).filter(Objects::nonNull).forEach(paths::add);
+      .filter(a -> a.pluginJar() != null)
+      .forEach(a -> paths.put(a.status().pluginKey(), a.pluginJar()));
+    embeddedArtifactResolver.resolveCompanionPlugins(connectionId).entrySet().stream()
+      .filter(e -> e.getValue().path() != null)
+      .forEach(e -> paths.put(e.getKey(), e.getValue().path()));
     if (connectionId != null) {
-      getConnectedCompanionPlugins(connectionId).values().stream()
-        .map(PluginStatus::path).filter(Objects::nonNull).forEach(paths::add);
+      getConnectedCompanionPlugins(connectionId).entrySet().stream()
+        .filter(e -> e.getValue().path() != null)
+        .forEach(e -> paths.put(e.getKey(), e.getValue().path()));
     }
-    return paths;
-  }
-
-  private Map<String, PluginStatus> getEmbeddedCompanionPlugins() {
-    if (embeddedCompanionPlugins == null) {
-      embeddedCompanionPlugins = embeddedArtifactResolver.resolveCompanionPlugins(null);
+    if (paths.containsKey("text") && paths.containsKey("textenterprise")) {
+      paths.remove("text");
     }
-    return embeddedCompanionPlugins;
+    return Set.copyOf(paths.values());
   }
 
   public Optional<Path> getConnectedCompanionPath(String connectionId, String pluginKey) {

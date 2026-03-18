@@ -262,6 +262,18 @@ class PluginArtifactProviderTest {
   }
 
   @Test
+  void should_deduplicate_plugins_with_same_key_preferring_connected_companion_over_embedded() throws IOException {
+    var embeddedSymexJar = createJar("sonarlint-java-symbolic-execution-plugin.jar", "javasymbolicexecution", null);
+    var serverSymexJar = createJar("server-java-symbolic-execution-plugin.jar", "javasymbolicexecution", null);
+    mockConnectionStorage("conn", ConnectionKind.SONARQUBE, Map.of("javasymbolicexecution", serverSymexJar));
+    var provider = buildProvider(Set.of(), Set.of(), Map.of("javasymbolicexecution", embeddedSymexJar));
+
+    var paths = provider.resolveAllPluginJarPaths("conn");
+
+    assertThat(paths).containsOnly(serverSymexJar);
+  }
+
+  @Test
   void should_report_plugins_ready_after_downloading_completes() {
     var provider = buildProvider();
 
@@ -285,9 +297,13 @@ class PluginArtifactProviderTest {
   }
 
   private PluginArtifactProvider buildProvider(Set<Path> embeddedPaths, Set<String> disabledKeys) {
+    return buildProvider(embeddedPaths, disabledKeys, Map.of());
+  }
+
+  private PluginArtifactProvider buildProvider(Set<Path> embeddedPaths, Set<String> disabledKeys, Map<String, Path> connectedModeEmbeddedPaths) {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    var params = mockParams(embeddedPaths, disabledKeys);
+    var params = mockParams(embeddedPaths, disabledKeys, connectedModeEmbeddedPaths);
     var connectedMode = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager, serverPluginsCache, eventPublisher, downloadExecutor,
       params.getConnectedModeEmbeddedPluginPathsByKey().keySet(), languageSupportRepository);
     return new PluginArtifactProvider(
@@ -303,9 +319,13 @@ class PluginArtifactProviderTest {
   }
 
   private static InitializeParams mockParams(Set<Path> embeddedPaths, Set<String> disabledKeys) {
+    return mockParams(embeddedPaths, disabledKeys, Map.of());
+  }
+
+  private static InitializeParams mockParams(Set<Path> embeddedPaths, Set<String> disabledKeys, Map<String, Path> connectedModeEmbeddedPaths) {
     var params = mock(InitializeParams.class);
     when(params.getEmbeddedPluginPaths()).thenReturn(embeddedPaths);
-    when(params.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(Map.of());
+    when(params.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(connectedModeEmbeddedPaths);
     when(params.getDisabledPluginKeysForAnalysis()).thenReturn(disabledKeys);
     when(params.getLanguageSpecificRequirements()).thenReturn(null);
     return params;
