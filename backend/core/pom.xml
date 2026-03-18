@@ -157,6 +157,11 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>uk.org.webcompere</groupId>
+      <artifactId>system-stubs-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
     <!-- For Xodus -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
