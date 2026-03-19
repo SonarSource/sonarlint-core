@@ -19,10 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.gessie.event.payload;
 
-public record MessagePayload(String message, String trigger) implements GessieEventPayload {
+import javax.annotation.Nullable;
 
-  public static final String EVENT_TYPE = "Analytics.Editor.PluginActivated";
-  public static final String EVENT_VERSION = "0";
+/**
+ * Event payload for the IDESupportedLanguageViewed Gessie event,
+ * triggered when the user opens the "Supported Languages" view in the IDE.
+ */
+public record IDESupportedLanguageViewedPayload(
+  String localUserId,
+  String sqIdeVersion,
+  String os,
+  @Nullable ConnectionType connectionType,
+  @Nullable String userUuid,
+  @Nullable String organizationUuidV4,
+  @Nullable String sqsInstallationId
+) implements GessieEventPayload {
+
+  public static final String EVENT_TYPE = "Analytics.IDE.IDESupportedLanguageViewed";
+  public static final String EVENT_VERSION = "1";
 
   @Override
   public String getEventType() {
@@ -32,6 +46,11 @@ public record MessagePayload(String message, String trigger) implements GessieEv
   @Override
   public String getEventVersion() {
     return EVENT_VERSION;
+  }
+
+  public enum ConnectionType {
+    SQC,
+    SQS
   }
 
 }

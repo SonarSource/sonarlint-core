@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.gessie.event.payload;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public record MessagePayload(String message, String trigger) implements GessieEventPayload {
+public class SupportedLanguageViewedParams {
 
-  public static final String EVENT_TYPE = "Analytics.Editor.PluginActivated";
-  public static final String EVENT_VERSION = "0";
+  private final String configScopeId;
 
-  @Override
-  public String getEventType() {
-    return EVENT_TYPE;
+  public SupportedLanguageViewedParams(String configScopeId) {
+    this.configScopeId = configScopeId;
   }
 
-  @Override
-  public String getEventVersion() {
-    return EVENT_VERSION;
+  public String getConfigScopeId() {
+    return configScopeId;
   }
-
 }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.gessie.event.payload;
+package org.sonarsource.sonarlint.core.telemetry;
 
-public record MessagePayload(String message, String trigger) implements GessieEventPayload {
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload.ConnectionType;
 
-  public static final String EVENT_TYPE = "Analytics.Editor.PluginActivated";
-  public static final String EVENT_VERSION = "0";
-
-  @Override
-  public String getEventType() {
-    return EVENT_TYPE;
-  }
-
-  @Override
-  public String getEventVersion() {
-    return EVENT_VERSION;
-  }
-
+/**
+ * Connection-related information resolved from a config scope ID for Gessie telemetry events.
+ */
+public record GessieConnectionInfo(
+  ConnectionType connectionType,
+  @Nullable String userUuid,
+  @Nullable String organizationUuidV4,
+  @Nullable String sqsInstallationId
+) {
 }

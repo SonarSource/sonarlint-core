@@ -1,3 +1,10 @@
+# 10.48
+
+## New features
+
+* Introduce a new method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to record Gessie telemetry events for the Supported Languages view:
+  * `supportedLanguageViewed` - should be called when the user opens the Supported Languages view. Accepts a `configScopeId` to resolve connection context.
+
 # 10.46
 
 ## New features

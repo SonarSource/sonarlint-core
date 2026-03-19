@@ -19,19 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.gessie.event.payload;
 
-public record MessagePayload(String message, String trigger) implements GessieEventPayload {
+/**
+ * Marker interface for all Gessie event payloads.
+ * Each implementation declares its own event type and version as constants,
+ * exposed via these methods so GessieService can build the metadata generically.
+ */
+public interface GessieEventPayload {
+  String getEventType();
 
-  public static final String EVENT_TYPE = "Analytics.Editor.PluginActivated";
-  public static final String EVENT_VERSION = "0";
-
-  @Override
-  public String getEventType() {
-    return EVENT_TYPE;
-  }
-
-  @Override
-  public String getEventVersion() {
-    return EVENT_VERSION;
-  }
-
+  String getEventVersion();
 }

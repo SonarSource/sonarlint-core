@@ -27,10 +27,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryC
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata.SonarLintDomain;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.GessieEventPayload;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
-import static org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata.SonarLintDomain;
 
 public class GessieService {
 
@@ -46,17 +48,34 @@ public class GessieService {
     this.userSetting = userSetting;
   }
 
+  public boolean isEnabled() {
+    return isGessieFeatureEnabled && userSetting.isTelemetryEnabledByUser();
+  }
+
   @PostConstruct
   public void onStartup() {
-    if (isGessieFeatureEnabled && userSetting.isTelemetryEnabledByUser()) {
-      client.postEvent(new GessieEvent(
-        new GessieMetadata(UUID.randomUUID(),
-          new GessieMetadata.GessieSource(SonarLintDomain.fromProductKey(telemetryConstantAttributes.getProductKey())),
-          "Analytics.Editor.PluginActivated",
-          Long.toString(Instant.now().toEpochMilli()),
-          "0"),
-        new MessagePayload("Gessie integration test event", "slcore_start")
-      ));
-    }
+    postEvent(new MessagePayload("Gessie integration test event", "slcore_start"));
   }
+
+  public void supportedLanguageViewed(IDESupportedLanguageViewedPayload payload) {
+    postEvent(payload);
+  }
+
+  private void postEvent(GessieEventPayload payload) {
+    if (!isEnabled()) {
+      return;
+    }
+    client.postEvent(new GessieEvent(buildMetadata(payload), payload));
+  }
+
+  private GessieMetadata buildMetadata(GessieEventPayload payload) {
+    return new GessieMetadata(
+      UUID.randomUUID(),
+      new GessieMetadata.GessieSource(SonarLintDomain.fromProductKey(telemetryConstantAttributes.getProductKey())),
+      payload.getEventType(),
+      Long.toString(Instant.now().toEpochMilli()),
+      payload.getEventVersion()
+    );
+  }
+
 }

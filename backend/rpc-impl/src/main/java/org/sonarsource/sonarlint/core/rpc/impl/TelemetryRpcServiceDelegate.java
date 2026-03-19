@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilt
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.SupportedLanguageViewedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
@@ -186,5 +187,10 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params) {
     notify(() -> getBean(TelemetryService.class).ideLabsFeedbackLinkClicked(params.getFeatureId()));
+  }
+
+  @Override
+  public void supportedLanguageViewed(SupportedLanguageViewedParams params) {
+    notify(() -> getBean(TelemetryService.class).supportedLanguageViewed(params.getConfigScopeId()));
   }
 }

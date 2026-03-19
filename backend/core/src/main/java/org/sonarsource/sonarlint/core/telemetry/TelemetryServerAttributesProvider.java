@@ -22,8 +22,11 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload.ConnectionType;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -157,4 +160,34 @@ public class TelemetryServerAttributesProvider {
   private Predicate<BoundScope> isSonarCloudConnectionConfiguration() {
     return binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarCloudConnectionConfiguration;
   }
+
+  /**
+   * Returns connection-related user information for Gessie events, resolved from the effective binding
+   * of the given config scope ID. Returns empty if the scope is not bound.
+   */
+  public Optional<GessieConnectionInfo> getGessieConnectionInfo(String configScopeId) {
+    return configurationRepository.getEffectiveBinding(configScopeId).flatMap(binding -> {
+      var connectionId = binding.connectionId();
+      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+      if (connection == null) {
+        return Optional.empty();
+      }
+      var storage = storageService.connection(connectionId);
+      var userUuid = nullIfEmpty(storage.user().read().orElse(null));
+      if (connection instanceof SonarCloudConnectionConfiguration) {
+        var organizationUuidV4 = storage.organization().read().map(Organization::uuidV4).map(Object::toString).orElse(null);
+        return Optional.of(new GessieConnectionInfo(ConnectionType.SQC, userUuid, organizationUuidV4, null));
+      } else if (connection instanceof SonarQubeConnectionConfiguration) {
+        var sqsInstallationId = nullIfEmpty(storage.serverInfo().read().map(StoredServerInfo::serverId).orElse(null));
+        return Optional.of(new GessieConnectionInfo(ConnectionType.SQS, userUuid, null, sqsInstallationId));
+      }
+      return Optional.empty();
+    });
+  }
+
+  @CheckForNull
+  private static String nullIfEmpty(@Nullable String value) {
+    return (value == null || value.isEmpty()) ? null : value;
+  }
+
 }

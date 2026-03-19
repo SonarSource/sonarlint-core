@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AutomaticAnalysisSettingChangedEvent;
 import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
@@ -46,6 +47,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
@@ -55,6 +57,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.monitoring.MonitoringUserIdStore;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieService;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -73,14 +78,21 @@ public class TelemetryService {
   private final SonarLintRpcClient client;
   private final boolean isTelemetryFeatureEnabled;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final GessieService gessieService;
+  private final TelemetryClientConstantAttributesDto telemetryConstantAttributes;
+  private final MonitoringUserIdStore monitoringUserIdStore;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
-    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager, ApplicationEventPublisher applicationEventPublisher) {
+    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager,
+    ApplicationEventPublisher applicationEventPublisher, GessieService gessieService, MonitoringUserIdStore monitoringUserIdStore) {
     this.isTelemetryFeatureEnabled = initializeParams.getBackendCapabilities().contains(TELEMETRY);
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     this.telemetryManager = telemetryManager;
     this.applicationEventPublisher = applicationEventPublisher;
+    this.gessieService = gessieService;
+    this.telemetryConstantAttributes = initializeParams.getTelemetryConstantAttributes();
+    this.monitoringUserIdStore = monitoringUserIdStore;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
 
     initTelemetryAndScheduleUpload(initializeParams);
@@ -412,6 +424,29 @@ public class TelemetryService {
     if ((!MoreExecutors.shutdownAndAwaitTermination(scheduledExecutor, 1, TimeUnit.SECONDS)) && (InternalDebug.isEnabled())) {
       LOG.error("Failed to stop telemetry executor");
     }
+  }
+
+  public void supportedLanguageViewed(String configScopeId) {
+    if (!gessieService.isEnabled()) {
+      return;
+    }
+    var localUserId = monitoringUserIdStore.getOrCreate().map(Object::toString).orElse(null);
+    if (localUserId == null) {
+      if (InternalDebug.isEnabled()) {
+        LOG.warn("Could not retrieve local user ID — skipping Gessie event");
+      }
+      return;
+    }
+    var connectionInfo = telemetryServerAttributesProvider.getGessieConnectionInfo(configScopeId).orElse(null);
+    gessieService.supportedLanguageViewed(new IDESupportedLanguageViewedPayload(
+      localUserId,
+      telemetryConstantAttributes.getProductVersion(),
+      SystemUtils.OS_NAME,
+      connectionInfo != null ? connectionInfo.connectionType() : null,
+      connectionInfo != null ? connectionInfo.userUuid() : null,
+      connectionInfo != null ? connectionInfo.organizationUuidV4() : null,
+      connectionInfo != null ? connectionInfo.sqsInstallationId() : null
+    ));
   }
 
   public void updateListFilesPerformance(int size, long timeMs) {

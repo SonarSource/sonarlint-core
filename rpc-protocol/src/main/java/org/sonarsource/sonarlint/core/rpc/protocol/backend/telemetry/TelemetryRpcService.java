@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilt
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsExternalLinkClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.SupportedLanguageViewedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedbackLinkClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
@@ -178,4 +179,11 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params);
+
+  /**
+   * Should be called when the user opens the "Supported Languages" view in the IDE.
+   */
+  @JsonNotification
+  void supportedLanguageViewed(SupportedLanguageViewedParams params);
+
 }
