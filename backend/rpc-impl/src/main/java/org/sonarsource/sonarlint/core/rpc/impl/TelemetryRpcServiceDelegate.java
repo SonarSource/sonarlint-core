@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieEventPublisher;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
@@ -191,6 +192,6 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public void supportedLanguageViewed(SupportedLanguageViewedParams params) {
-    notify(() -> getBean(TelemetryService.class).supportedLanguageViewed(params.getConfigScopeId()));
+    notify(() -> getBean(GessieEventPublisher.class).supportedLanguageViewed(params.getConfigScopeId()));
   }
 }

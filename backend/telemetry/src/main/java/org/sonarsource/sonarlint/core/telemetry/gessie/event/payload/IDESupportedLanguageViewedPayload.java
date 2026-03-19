@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry.gessie.event.payload;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieConnectionInfo.ConnectionType;
 
 /**
  * Event payload for the IDESupportedLanguageViewed Gessie event,
@@ -46,11 +47,6 @@ public record IDESupportedLanguageViewedPayload(
   @Override
   public String getEventVersion() {
     return EVENT_VERSION;
-  }
-
-  public enum ConnectionType {
-    SQC,
-    SQS
   }
 
 }

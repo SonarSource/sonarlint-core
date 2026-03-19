@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -32,7 +33,8 @@ import org.springframework.context.annotation.Import;
   TelemetryManager.class,
   TelemetryLocalStorageManager.class,
   TelemetryHttpClient.class,
-  TelemetryServerAttributesProvider.class
+  TelemetryServerAttributesProvider.class,
+  GessieEventPublisher.class
 })
 public class TelemetrySpringConfig {
 

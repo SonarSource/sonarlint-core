@@ -127,7 +127,7 @@ class GessieServiceTests {
       "local-user-id",
       "1.2.3",
       "Linux",
-      IDESupportedLanguageViewedPayload.ConnectionType.SQC,
+      GessieConnectionInfo.ConnectionType.SQC,
       "user-uuid",
       "org-uuid-v4",
       null

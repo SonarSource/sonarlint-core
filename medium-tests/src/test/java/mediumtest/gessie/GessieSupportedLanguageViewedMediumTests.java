@@ -21,13 +21,16 @@ package mediumtest.gessie;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.matching.EqualToPattern;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.SupportedLanguageViewedParams;
 import org.sonarsource.sonarlint.core.telemetry.gessie.GessieSpringConfig;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
@@ -36,10 +39,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+
 import java.time.Duration;
 
 import static org.awaitility.Awaitility.await;
 
+@ExtendWith(SystemStubsExtension.class)
 class GessieSupportedLanguageViewedMediumTests {
 
   private static final String IDE_ENDPOINT = "/ide";
@@ -49,17 +54,14 @@ class GessieSupportedLanguageViewedMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
+  @SystemStub
+  SystemProperties propertiesStubs;
+
   @BeforeEach
   void setUp() {
-    System.setProperty("sonarlint.http.retry.interval.seconds", "0");
-    System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY, "value");
+    propertiesStubs.set("sonarlint.http.retry.interval.seconds", "0");
+    propertiesStubs.set(GessieSpringConfig.PROPERTY_GESSIE_API_KEY, "value");
     gessieEndpointMock.stubFor(post(IDE_ENDPOINT).willReturn(aResponse().withStatus(202)));
-  }
-
-  @AfterEach
-  void tearDown() {
-    System.clearProperty("sonarlint.http.retry.interval.seconds");
-    System.clearProperty(GessieSpringConfig.PROPERTY_GESSIE_API_KEY);
   }
 
   @SonarLintTest

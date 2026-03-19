@@ -30,4 +30,5 @@ public class SupportedLanguageViewedParams {
   public String getConfigScopeId() {
     return configScopeId;
   }
+
 }

@@ -24,7 +24,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
-import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload.ConnectionType;
+import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieConnectionInfo;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
@@ -166,23 +167,27 @@ public class TelemetryServerAttributesProvider {
    * of the given config scope ID. Returns empty if the scope is not bound.
    */
   public Optional<GessieConnectionInfo> getGessieConnectionInfo(String configScopeId) {
-    return configurationRepository.getEffectiveBinding(configScopeId).flatMap(binding -> {
-      var connectionId = binding.connectionId();
-      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-      if (connection == null) {
-        return Optional.empty();
-      }
-      var storage = storageService.connection(connectionId);
-      var userUuid = nullIfEmpty(storage.user().read().orElse(null));
-      if (connection instanceof SonarCloudConnectionConfiguration) {
-        var organizationUuidV4 = storage.organization().read().map(Organization::uuidV4).map(Object::toString).orElse(null);
-        return Optional.of(new GessieConnectionInfo(ConnectionType.SQC, userUuid, organizationUuidV4, null));
-      } else if (connection instanceof SonarQubeConnectionConfiguration) {
-        var sqsInstallationId = nullIfEmpty(storage.serverInfo().read().map(StoredServerInfo::serverId).orElse(null));
-        return Optional.of(new GessieConnectionInfo(ConnectionType.SQS, userUuid, null, sqsInstallationId));
-      }
-      return Optional.empty();
-    });
+    return configurationRepository.getEffectiveBinding(configScopeId)
+      .map(Binding::connectionId)
+      .map(this::buildGessieConnectionInfo);
+  }
+
+  @CheckForNull
+  private GessieConnectionInfo buildGessieConnectionInfo(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      return null;
+    }
+    var storage = storageService.connection(connectionId);
+    var userUuid = nullIfEmpty(storage.user().read().orElse(null));
+    if (connection instanceof SonarCloudConnectionConfiguration) {
+      var organizationUuidV4 = storage.organization().read().map(Organization::uuidV4).map(Object::toString).orElse(null);
+      return new GessieConnectionInfo(GessieConnectionInfo.ConnectionType.SQC, userUuid, organizationUuidV4, null);
+    } else if (connection instanceof SonarQubeConnectionConfiguration) {
+      var sqsInstallationId = nullIfEmpty(storage.serverInfo().read().map(StoredServerInfo::serverId).orElse(null));
+      return new GessieConnectionInfo(GessieConnectionInfo.ConnectionType.SQS, userUuid, null, sqsInstallationId);
+    }
+    return null;
   }
 
   @CheckForNull

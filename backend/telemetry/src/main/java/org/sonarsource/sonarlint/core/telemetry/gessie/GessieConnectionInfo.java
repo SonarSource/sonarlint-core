@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2025 SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,10 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.telemetry.gessie;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.IDESupportedLanguageViewedPayload.ConnectionType;
 
 /**
  * Connection-related information resolved from a config scope ID for Gessie telemetry events.
@@ -31,4 +30,8 @@ public record GessieConnectionInfo(
   @Nullable String organizationUuidV4,
   @Nullable String sqsInstallationId
 ) {
+  public enum ConnectionType {
+    SQC,
+    SQS
+  }
 }
