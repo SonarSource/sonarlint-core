@@ -28,7 +28,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/get-build-number@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         id: build-number
 
   build:
@@ -43,11 +43,11 @@ jobs:
     outputs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.9
-      - uses: SonarSource/ci-github-actions/build-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/build-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         id: build
         with:
           sonar-platform: none
@@ -69,7 +69,7 @@ jobs:
     env:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
@@ -84,11 +84,11 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+        uses: SonarSource/ci-github-actions/cache@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/config-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -136,11 +136,11 @@ jobs:
     env:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.9
-      - uses: SonarSource/ci-github-actions/config-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/config-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -209,7 +209,7 @@ jobs:
             category: "-DexcludedGroups=SonarCloud"
             java: 17
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
         with:
           version: 2026.3.9
@@ -227,7 +227,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/cache@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -246,7 +246,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: SonarSource/ci-github-actions/config-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         with:
           artifactory-reader-role: private-reader
       - name: Run QA
@@ -263,7 +263,7 @@ jobs:
           mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
         if: failure()
-        uses: dorny/test-reporter@3b635e8e7b844df7a28b859c64db3e064e2dfcdb
+        uses: dorny/test-reporter@574d6b100c0959c809ab18f599fee9873c114af0
         with:
           name: QA ${{ matrix.name }} Test Report
           reporter: java-junit
@@ -313,7 +313,7 @@ jobs:
     env:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: SonarSource/ci-github-actions/promote@94416c84682255b8f6e189d54d323d5d41195278 # 1.3.26
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: SonarSource/ci-github-actions/promote@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         with:
           promote-pull-request: true
