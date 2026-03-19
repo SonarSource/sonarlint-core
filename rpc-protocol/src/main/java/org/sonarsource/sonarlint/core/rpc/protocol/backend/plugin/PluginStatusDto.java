@@ -31,6 +31,8 @@ public class PluginStatusDto {
   private final String actualVersion;
   @Nullable
   private final String overriddenVersion;
+  @Nullable
+  private final String serverVersion;
 
   /**
    * @param pluginName        human-readable name of the language/analyzer (e.g. "Java", "C/C++/Objective-C")
@@ -39,14 +41,17 @@ public class PluginStatusDto {
    * @param actualVersion     version of the plugin that is currently in use; {@code null} when the plugin is not loaded
    * @param overriddenVersion a local plugin version that was superseded by the one obtained via SQS/SQC sync, if any;
    *                          {@code null} when no override is in effect
+   * @param serverVersion     version of the SonarQube Server that provided this plugin (e.g. "10.8.1");
+   *                          {@code null} for non-server sources (embedded, cloud, unavailable)
    */
   public PluginStatusDto(String pluginName, PluginStateDto state, @Nullable ArtifactSourceDto source,
-    @Nullable String actualVersion, @Nullable String overriddenVersion) {
+    @Nullable String actualVersion, @Nullable String overriddenVersion, @Nullable String serverVersion) {
     this.pluginName = pluginName;
     this.state = state;
     this.source = source;
     this.actualVersion = actualVersion;
     this.overriddenVersion = overriddenVersion;
+    this.serverVersion = serverVersion;
   }
 
   public String getPluginName() {
@@ -70,6 +75,11 @@ public class PluginStatusDto {
   @Nullable
   public String getOverriddenVersion() {
     return overriddenVersion;
+  }
+
+  @Nullable
+  public String getServerVersion() {
+    return serverVersion;
   }
 
 }

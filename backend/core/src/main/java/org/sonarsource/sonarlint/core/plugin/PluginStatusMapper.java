@@ -40,7 +40,8 @@ public class PluginStatusMapper {
       toDto(status.state()),
       toDto(status.source()),
       status.actualVersion() == null ? null : status.actualVersion().toString(),
-      status.overriddenVersion() == null ? null : status.overriddenVersion().toString());
+      status.overriddenVersion() == null ? null : status.overriddenVersion().toString(),
+      status.serverVersion());
   }
 
   public static PluginStateDto toDto(PluginState state) {

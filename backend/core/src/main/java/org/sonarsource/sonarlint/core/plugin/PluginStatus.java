@@ -29,15 +29,17 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
  * @param source            source where the plugin jar came from
  * @param actualVersion     used version of the plugin
  * @param overriddenVersion a version of the plugin that is overridden by the actualVersion, if any
+ * @param serverVersion     version of the SonarQube Server that provided this plugin; {@code null} for non-server sources
  */
 public record PluginStatus(
   String pluginName,
   PluginState state,
   @Nullable ArtifactSource source,
   @Nullable Version actualVersion,
-  @Nullable Version overriddenVersion) {
+  @Nullable Version overriddenVersion,
+  @Nullable String serverVersion) {
 
   public static PluginStatus unsupported(SonarLanguage sonarLanguage) {
-    return new PluginStatus(sonarLanguage.getName(), PluginState.UNSUPPORTED, null, null, null);
+    return new PluginStatus(sonarLanguage.getName(), PluginState.UNSUPPORTED, null, null, null, null);
   }
 }

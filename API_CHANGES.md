@@ -1,3 +1,11 @@
+# 10.48
+
+## New features
+
+* Add `serverVersion` field to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
+  * Contains the version of the SonarQube Server that provided the plugin (e.g. `"10.8.1"`).
+  * Non-null only when `source` is `SONARQUBE_SERVER`; `null` for all other sources (embedded, SonarQube Cloud, unavailable).
+
 # 10.46
 
 ## New features
