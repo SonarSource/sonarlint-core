@@ -95,6 +95,14 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpg-jdk18on</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
       <exclusions>
@@ -157,7 +165,59 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>ondemand/plugins.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>ondemand/plugins.properties</exclude>
+        </excludes>
+      </resource>
+    </resources>
 
+    <plugins>
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>download-cfamily-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-${cfamily.version}.jar.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>sonar-cpp-plugin.jar.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+          <execution>
+            <id>download-csharp-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-${csharp.version}.jar.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>sonar-cs-plugin.jar.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
