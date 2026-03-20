@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.plugin;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -36,10 +38,12 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
+import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -183,7 +187,7 @@ public class PluginsService {
         csArtifacts.pluginJar(), false, false,
         initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS),
         initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.VBNET),
-        csArtifacts.extra());
+        buildOmnisharpPaths(initializeParams.getLanguageSpecificRequirements()));
     }
     var useEnterpriseCs = shouldUseEnterpriseCSharpAnalyzer(connectionId);
     var useEnterpriseVb = shouldUseEnterpriseVbAnalyzer(connectionId);
@@ -193,7 +197,28 @@ public class PluginsService {
       csAnalyzerPath, useEnterpriseCs, useEnterpriseVb,
       enabledConnected.contains(SonarLanguage.CS),
       enabledConnected.contains(SonarLanguage.VBNET),
-      csArtifacts.extra());
+      buildOmnisharpPaths(initializeParams.getLanguageSpecificRequirements()));
+  }
+
+  private static Map<String, Path> buildOmnisharpPaths(@Nullable LanguageSpecificRequirements requirements) {
+    if (requirements == null) {
+      return Map.of();
+    }
+    var dto = requirements.getOmnisharpRequirements();
+    if (dto == null) {
+      return Map.of();
+    }
+    var result = new LinkedHashMap<String, Path>();
+    if (dto.getMonoDistributionPath() != null) {
+      result.put(DownloadableArtifact.OMNISHARP_MONO.artifactKey(), dto.getMonoDistributionPath());
+    }
+    if (dto.getDotNet6DistributionPath() != null) {
+      result.put(DownloadableArtifact.OMNISHARP_NET6.artifactKey(), dto.getDotNet6DistributionPath());
+    }
+    if (dto.getDotNet472DistributionPath() != null) {
+      result.put(DownloadableArtifact.OMNISHARP_WIN.artifactKey(), dto.getDotNet472DistributionPath());
+    }
+    return Map.copyOf(result);
   }
 
   @Nullable

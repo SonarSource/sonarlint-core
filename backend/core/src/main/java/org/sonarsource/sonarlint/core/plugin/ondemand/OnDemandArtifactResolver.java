@@ -42,13 +42,12 @@ import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ExtraArtifactResolver;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.Optional.ofNullable;
 
-public class OnDemandArtifactResolver implements ArtifactResolver, ExtraArtifactResolver {
+public class OnDemandArtifactResolver implements ArtifactResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String CACHE_SUBDIR = "ondemand-plugins";
@@ -148,38 +147,6 @@ public class OnDemandArtifactResolver implements ArtifactResolver, ExtraArtifact
       .filter(e -> e.getValue().artifactKey().equals(artifact.artifactKey()))
       .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.FAILED, null, null, null, null))
       .toList();
-  }
-
-  @Override
-  public Optional<Path> resolve(String artifactKey) {
-    return DownloadableArtifact.byArtifactKey(artifactKey)
-      .filter(a -> a.version() != null)
-      .filter(a -> a.urlPattern() != null)
-      .flatMap(this::getArtifactPathIfAvailable);
-  }
-
-  private Optional<Path> getArtifactPathIfAvailable(DownloadableArtifact artifact) {
-    var artifactKey = artifact.artifactKey();
-    var cached = cachedArtifactPaths.get(artifactKey);
-    if (cached != null && Files.exists(cached)) {
-      return Optional.of(cached);
-    }
-    var pluginPath = buildPluginPath(artifact);
-    if (Files.exists(pluginPath)) {
-      if (signatureVerifier.verify(pluginPath, artifactKey)) {
-        cachedArtifactPaths.put(artifactKey, pluginPath);
-        return Optional.of(pluginPath);
-      }
-      LOG.warn("Signature verification failed for cached extra artifact {}, will re-download", artifactKey);
-      deleteQuietly(pluginPath);
-    }
-    try {
-      downloadAndCache(artifact);
-      return Optional.ofNullable(cachedArtifactPaths.get(artifactKey));
-    } catch (Exception e) {
-      LOG.error("Failed to download extra artifact with key {}", artifactKey, e);
-      return Optional.empty();
-    }
   }
 
   private void downloadAndVerify(DownloadableArtifact artifact, Path targetPath) throws IOException {

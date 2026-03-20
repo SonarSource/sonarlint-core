@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedExtraArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -46,7 +45,6 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @Import({
   UnsupportedArtifactResolver.class,
-  EmbeddedExtraArtifactResolver.class,
   EmbeddedArtifactResolver.class,
   OnDemandArtifactResolver.class,
   PremiumArtifactResolver.class,

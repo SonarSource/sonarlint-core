@@ -49,7 +49,6 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedExtraArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -80,7 +79,6 @@ class PluginArtifactProviderTest {
   private LanguageSupportRepository languageSupportRepository;
   private StorageService storageService;
   private ConnectionConfigurationRepository connectionRepo;
-  private EmbeddedExtraArtifactResolver embeddedExtraResolver;
   private SonarQubeClientManager sonarQubeClientManager;
   private ServerPluginsCache serverPluginsCache;
   private ApplicationEventPublisher eventPublisher;
@@ -91,7 +89,6 @@ class PluginArtifactProviderTest {
     languageSupportRepository = mock(LanguageSupportRepository.class);
     storageService = mock(StorageService.class);
     connectionRepo = mock(ConnectionConfigurationRepository.class);
-    embeddedExtraResolver = mock(EmbeddedExtraArtifactResolver.class);
     sonarQubeClientManager = mock(SonarQubeClientManager.class);
     serverPluginsCache = mock(ServerPluginsCache.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
@@ -313,7 +310,6 @@ class PluginArtifactProviderTest {
       connectedMode,
       new OnDemandArtifactResolver(userPaths, mock(HttpClientProvider.class), Map.of(), eventPublisher, downloadExecutor),
       new PremiumArtifactResolver(languageSupportRepository),
-      embeddedExtraResolver,
       serverPluginsCache,
       eventPublisher);
   }

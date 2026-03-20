@@ -34,13 +34,10 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
-import org.sonarsource.sonarlint.core.plugin.ondemand.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.ondemand.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedExtraArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ExtraArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
@@ -75,13 +72,7 @@ public class PluginArtifactProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String STANDALONE = "STANDALONE";
 
-  private static final Set<String> CSHARP_OMNISHARP_ARTIFACT_KEYS = Set.of(
-    DownloadableArtifact.OMNISHARP_MONO.artifactKey(),
-    DownloadableArtifact.OMNISHARP_NET6.artifactKey(),
-    DownloadableArtifact.OMNISHARP_WIN.artifactKey());
-
   private final List<ArtifactResolver> resolvers;
-  private final List<ExtraArtifactResolver> extraResolvers;
   private final ConnectedModeArtifactResolver connectedModeArtifactResolver;
   private final EmbeddedArtifactResolver embeddedArtifactResolver;
   private final ServerPluginsCache serverPluginsCache;
@@ -98,7 +89,6 @@ public class PluginArtifactProvider {
     ConnectedModeArtifactResolver connectedModeArtifactResolver,
     OnDemandArtifactResolver onDemandArtifactResolver,
     PremiumArtifactResolver premiumArtifactResolver,
-    EmbeddedExtraArtifactResolver embeddedExtraArtifactResolver,
     ServerPluginsCache serverPluginsCache,
     ApplicationEventPublisher eventPublisher) {
     this.storageService = storageService;
@@ -112,7 +102,6 @@ public class PluginArtifactProvider {
       embeddedArtifactResolver,
       onDemandArtifactResolver,
       premiumArtifactResolver);
-    this.extraResolvers = List.of(embeddedExtraArtifactResolver, onDemandArtifactResolver);
   }
 
   public Map<SonarLanguage, AnalyzerArtifacts> resolve(@Nullable String connectionId) {
@@ -189,34 +178,10 @@ public class PluginArtifactProvider {
         if (resolved.state() == ArtifactState.UNSUPPORTED || resolved.state() == ArtifactState.DOWNLOADING) {
           return new AnalyzerArtifacts(status, null, Map.of());
         }
-        return resolveWithExtras(language, status, resolved);
+        return new AnalyzerArtifacts(status, resolved.path(), Map.of());
       }
     }
     return new AnalyzerArtifacts(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
-  }
-
-  private AnalyzerArtifacts resolveWithExtras(SonarLanguage language, PluginStatus status, ResolvedArtifact resolved) {
-    var extra = new LinkedHashMap<String, Path>();
-    if (language == SonarLanguage.CS || language == SonarLanguage.VBNET) {
-      for (var key : CSHARP_OMNISHARP_ARTIFACT_KEYS) {
-        var path = resolveExtra(key);
-        if (path.isEmpty()) {
-          return new AnalyzerArtifacts(PluginStatus.forLanguage(language, ArtifactState.FAILED, null, null, null, null), null, Map.of());
-        }
-        extra.put(key, path.get());
-      }
-    }
-    return new AnalyzerArtifacts(status, resolved.path(), Map.copyOf(extra));
-  }
-
-  private Optional<Path> resolveExtra(String key) {
-    for (var resolver : extraResolvers) {
-      var result = resolver.resolve(key);
-      if (result.isPresent()) {
-        return result;
-      }
-    }
-    return Optional.empty();
   }
 
   public void onSyncComplete(@Nullable String connectionId) {
