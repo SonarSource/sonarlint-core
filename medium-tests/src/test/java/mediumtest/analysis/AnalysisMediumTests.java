@@ -1075,10 +1075,10 @@ class AnalysisMediumTests {
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), true))
       .join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis()))
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true))
       .join();
 
     // unload one of the projects
@@ -1106,14 +1106,14 @@ class AnalysisMediumTests {
       .start(client);
 
     backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri1), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri1), Map.of(), false)).join();
 
     var raisedIssues = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(1);
     client.cleanRaisedIssues();
 
     backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri2), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri2), Map.of(), false)).join();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(1));
 
     raisedIssues = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
@@ -1138,7 +1138,7 @@ class AnalysisMediumTests {
       .start(client);
 
     backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false)).join();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
   }
 
