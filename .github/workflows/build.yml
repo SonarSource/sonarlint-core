@@ -77,7 +77,7 @@ jobs:
           version: 2026.3.9
       - name: Vault
         id: secrets
-        uses: SonarSource/vault-action-wrapper@3d5c87cb535e4a2c7a09adcbcfdefa751854dee3 # 3.3.0
+        uses: SonarSource/vault-action-wrapper@c154b4a417b51cb98dd71137f49bf20e77c56820 # 3.4.0
         with:
           secrets: |
             development/kv/data/next url | NEXT_URL;
@@ -235,13 +235,13 @@ jobs:
       - name: Vault (SonarCloud IT token)
         if: ${{ matrix.sc == true }}
         id: secrets-sc
-        uses: SonarSource/vault-action-wrapper@3d5c87cb535e4a2c7a09adcbcfdefa751854dee3 # 3.3.0
+        uses: SonarSource/vault-action-wrapper@c154b4a417b51cb98dd71137f49bf20e77c56820 # 3.4.0
         with:
           secrets: |
             development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
       - name: Vault (GITHUB Token)
         id: secrets-gh
-        uses: SonarSource/vault-action-wrapper@3d5c87cb535e4a2c7a09adcbcfdefa751854dee3 # 3.3.0
+        uses: SonarSource/vault-action-wrapper@c154b4a417b51cb98dd71137f49bf20e77c56820 # 3.4.0
         with:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
