@@ -1171,7 +1171,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var extendedDescription = description.getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
       var framework = serverVersion.isGreaterThanOrEquals(2025, 3) ? "Java I/O API (java_i_o_api)" : "Java SE (java_se)";
-      var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
+
+      var link = serverVersion.isGreaterThanOrEquals(2026, 2) ? "OWASP - <a href=\"..."
+        : serverVersion.isGreaterThanOrEquals(10, 4) ? " OWASP - <a href=..." : " <a href=\"https:/...";
+
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .containsExactly(
@@ -1185,7 +1188,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Standards</h3>\n"
             + "<ul>\n"
-            + "  <li> " + link);
+            + "  <li>" + link);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
@@ -1203,6 +1206,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "javasecurity:S5131", "spring")).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
+      var serverVersion = ORCHESTRATOR.getServer().version();
 
       var extendedDescription = description.getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent())
@@ -1211,7 +1215,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           + "to the user.</p>");
       var iterator = extendedDescription.getTabs().iterator();
       iterator.next();
-      var documentation = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 3) ? "OWASP - <a h..." : "<a href=\"htt...";
+
+      var documentation = serverVersion.isGreaterThanOrEquals(2026, 2) ? "OWASP - <a hr..."
+        : serverVersion.isGreaterThanOrEquals(2025, 3) ? " OWASP - <a h..." : " <a href=\"htt...";
+
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .contains(
@@ -1231,7 +1238,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           "More Info",
           "<h3>Documentation</h3>\n"
             + "<ul>\n"
-            + "  <li> " + documentation);
+            + "  <li>" + documentation);
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
