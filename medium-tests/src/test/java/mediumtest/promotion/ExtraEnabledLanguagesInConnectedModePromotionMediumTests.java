@@ -64,7 +64,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
-        List.of(abapFile.toUri()), Map.of(), false,0)).join();
+        List.of(abapFile.toUri()), Map.of(), false)).join();
 
     verify(fakeClient).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
@@ -89,7 +89,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
-        List.of(abapFile.toUri()), Map.of(), false, 0)).join();
+        List.of(abapFile.toUri()), Map.of(), false)).join();
 
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
@@ -110,7 +110,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
-        List.of(abapFile.toUri()), Map.of(), false, 0)).join();
+        List.of(abapFile.toUri()), Map.of(), false)).join();
 
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
@@ -131,7 +131,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
-        List.of(randomFile.toUri()), Map.of(), false, 0)).join();
+        List.of(randomFile.toUri()), Map.of(), false)).join();
 
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode(eq("configScopeId"), anySet());
     verify(fakeClient, never()).log(argThat(logParams -> logParams.getLevel().equals(LogLevel.ERROR)));
