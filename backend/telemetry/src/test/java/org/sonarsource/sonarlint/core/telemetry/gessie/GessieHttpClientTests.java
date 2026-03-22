@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -50,6 +51,9 @@ class GessieHttpClientTests {
   private static final String IDE_ENDPOINT = "/ide";
 
   private GessieHttpClient tested;
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @RegisterExtension
   static WireMockExtension mockGessie = WireMockExtension.newInstance()
