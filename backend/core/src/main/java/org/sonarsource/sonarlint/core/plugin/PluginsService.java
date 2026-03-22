@@ -102,14 +102,14 @@ public class PluginsService {
     if (isFromConnectedMode(connectionId, pluginKey)) {
       var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
       var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? ArtifactState.FAILED : ArtifactState.SYNCED;
-      return new PluginStatus(language.getName(), state, source, null, null);
+      return PluginStatus.forLanguage(language, state, source, null, null, null);
     }
     if (couldBeAvailableInConnectedMode(language)) {
-      return new PluginStatus(language.getName(), ArtifactState.PREMIUM, null, null, null);
+      return PluginStatus.forLanguage(language, ArtifactState.PREMIUM, null, null, null, null);
     }
     if (getEmbeddedPlugins().hasPlugin(pluginKey)) {
       var state = getEmbeddedPlugins().hasDisabledPlugin(pluginKey) ? ArtifactState.FAILED : ArtifactState.ACTIVE;
-      return new PluginStatus(language.getName(), state, ArtifactSource.EMBEDDED, null, null);
+      return PluginStatus.forLanguage(language, state, ArtifactSource.EMBEDDED, null, null, null);
     }
     return PluginStatus.unsupported(language);
   }
