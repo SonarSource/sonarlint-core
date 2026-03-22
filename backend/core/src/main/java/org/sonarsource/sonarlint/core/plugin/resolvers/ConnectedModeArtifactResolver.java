@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
@@ -105,14 +105,26 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       return Optional.empty();
     }
     var pluginKey = language.getPluginKey();
+    var fallbackPluginKey = "iacenterprise".equals(pluginKey) ? "iac" : null;
     try {
       return serverPluginsCache.getPlugins(connectionId)
-        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst())
+        .flatMap(plugins -> {
+          var match = plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst();
+          if (match.isEmpty() && fallbackPluginKey != null) {
+            match = plugins.stream().filter(p -> p.getKey().equals(fallbackPluginKey)).findFirst();
+          }
+          return match;
+        })
         .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, language))
-        .or(() -> resolveFromStorageByKey(connectionId, pluginKey));
+        .or(() -> resolveFromStorageByKey(connectionId, pluginKey))
+        .or(() -> fallbackPluginKey != null ? resolveFromStorageByKey(connectionId, fallbackPluginKey) : Optional.empty());
     } catch (ServerRequestException e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      return resolveFromStorageByKey(connectionId, pluginKey);
+      var fromStorage = resolveFromStorageByKey(connectionId, pluginKey);
+      if (fromStorage.isEmpty() && fallbackPluginKey != null) {
+        fromStorage = resolveFromStorageByKey(connectionId, fallbackPluginKey);
+      }
+      return fromStorage;
     }
   }
 
@@ -141,16 +153,26 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
 
   private void processCompanionPlugin(String connectionId, ServerPlugin plugin, ConcurrentHashMap<String, PluginStatus> result) {
     if (LEGACY_TYPESCRIPT_PLUGIN_KEY.equals(plugin.getKey())
-        && !languageSupportRepository.isEnabledInConnectedMode(SonarLanguage.TS)) {
+        && !languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.TS)) {
       LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", plugin.getKey());
       return;
     }
-    if (!plugin.isSonarLintSupported() && !languageSupportRepository.isForceSynchronized(plugin.getKey())) {
+    if (!plugin.isSonarLintSupported() && !isForceSynchronized(plugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", plugin.getKey());
       return;
     }
     scheduleCompanionDownload(connectionId, plugin);
     result.put(plugin.getKey(), PluginStatus.forCompanion(plugin.getKey(), ArtifactState.DOWNLOADING, null, null));
+  }
+
+  private boolean isForceSynchronized(String pluginKey) {
+    if ("csharpenterprise".equals(pluginKey)) {
+      return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.CS);
+    }
+    if ("goenterprise".equals(pluginKey)) {
+      return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.GO);
+    }
+    return false;
   }
 
   private void scheduleCompanionDownload(String connectionId, ServerPlugin plugin) {
@@ -163,8 +185,8 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
             ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
             : null;
           var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
-          eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-            List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath))));
+          eventPublisher.publishEvent(new PluginStatusChangedEvent(
+            PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath)));
         } finally {
           inProgressDownloadKeys.remove(progressKey);
         }
@@ -173,7 +195,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
   }
 
   public static boolean isCompanionPlugin(String pluginKey) {
-    return !SonarLanguage.ALL_PLUGIN_KEYS.contains(pluginKey);
+    return !SonarLanguage.containsPlugin(pluginKey);
   }
 
   private ResolvedArtifact resolveFromStorageOrSchedule(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
@@ -231,7 +253,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       downloadPluginAndFireEvent(connectionId, serverPlugin, language);
     } catch (Exception e) {
       LOG.error("Failed to download plugin '{}' for connection '{}'", serverPlugin.getKey(), connectionId, e);
-      fireFailedEvent(connectionId, language);
+      fireFailedEvent(language);
     } finally {
       inProgressDownloadKeys.remove(progressKey);
     }
@@ -244,12 +266,11 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
       var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      var statuses = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
+      SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
         .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath))
-        .toList();
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
+        .forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
     } else {
-      fireFailedEvent(connectionId, language);
+      fireFailedEvent(language);
     }
   }
 
@@ -273,11 +294,10 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     }
   }
 
-  private void fireFailedEvent(String connectionId, SonarLanguage language) {
-    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
+  private void fireFailedEvent(SonarLanguage language) {
+    SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
       .map(l -> PluginStatus.forLanguage(l, ArtifactState.FAILED, null, null, null, null))
-      .toList();
-    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
+      .forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
   }
 
   private ResolvedArtifact toResolvedArtifact(Path pluginPath, String connectionId) {

@@ -34,12 +34,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.invocation.InvocationOnMock;
+
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
@@ -66,14 +66,17 @@ class OnDemandArtifactResolverTest {
 
   private HttpClientProvider httpClientProvider;
   private ApplicationEventPublisher eventPublisher;
-  private List<PluginStatusUpdateEvent> capturedEvents;
+  private List<PluginStatus> capturedStatuses;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
-    capturedEvents = new CopyOnWriteArrayList<>();
-    doAnswer(this::captureEvent).when(eventPublisher).publishEvent(any(PluginStatusUpdateEvent.class));
+    capturedStatuses = new CopyOnWriteArrayList<>();
+    doAnswer(inv -> {
+      capturedStatuses.add(inv.getArgument(0, PluginStatusChangedEvent.class).newStatus());
+      return null;
+    }).when(eventPublisher).publishEvent(any(PluginStatusChangedEvent.class));
   }
 
   @Test
@@ -97,7 +100,7 @@ class OnDemandArtifactResolverTest {
     } finally {
       proceedLatch.countDown();
       // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
-      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
+      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
     }
   }
 
@@ -115,7 +118,7 @@ class OnDemandArtifactResolverTest {
     } finally {
       proceedLatch.countDown();
       // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
-      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
+      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
     }
   }
 
@@ -128,13 +131,10 @@ class OnDemandArtifactResolverTest {
 
     resolver.resolve(SonarLanguage.C, null);
 
-    await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
-    assertThat(capturedEvents.get(0)).satisfies(event -> {
-      assertThat(event.connectionId()).isNull();
-      assertThat(event.newStatuses()).containsExactlyInAnyOrder(
-        failedStatus(SonarLanguage.C),
-        failedStatus(SonarLanguage.CPP));
-    });
+    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 2);
+    assertThat(capturedStatuses).containsExactlyInAnyOrder(
+      failedStatus(SonarLanguage.C),
+      failedStatus(SonarLanguage.CPP));
   }
 
   @Test
@@ -144,16 +144,13 @@ class OnDemandArtifactResolverTest {
 
     resolver.resolve(SonarLanguage.C, null);
 
-    await().atMost(10, TimeUnit.SECONDS).until(() -> !capturedEvents.isEmpty());
+    await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 2);
     var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();
     var pluginPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
       .resolve("sonar-cpp-plugin-" + artifactVersion + ".jar");
-    assertThat(capturedEvents.get(0)).satisfies(event -> {
-      assertThat(event.connectionId()).isNull();
-      assertThat(event.newStatuses()).containsExactlyInAnyOrder(
-        activeStatus(SonarLanguage.C, pluginPath),
-        activeStatus(SonarLanguage.CPP, pluginPath));
-    });
+    assertThat(capturedStatuses).containsExactlyInAnyOrder(
+      activeStatus(SonarLanguage.C, pluginPath),
+      activeStatus(SonarLanguage.CPP, pluginPath));
   }
 
   private OnDemandArtifactResolver buildResolver(Map<SonarLanguage, DownloadableArtifact> artifactsByLanguage) {
@@ -192,7 +189,7 @@ class OnDemandArtifactResolverTest {
   }
 
   private static Path testJarPath() throws URISyntaxException {
-    var resource = OnDemandArtifactResolverTest.class.getClassLoader().getResource("sonar-cpp-plugin-test.jar");
+    var resource = OnDemandArtifactResolverTest.class.getClassLoader().getResource("ondemand/sonar-cpp-plugin-test.jar");
     return Path.of(resource.toURI());
   }
 
@@ -207,10 +204,5 @@ class OnDemandArtifactResolverTest {
 
   private static PluginStatus failedStatus(SonarLanguage lang) {
     return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null);
-  }
-
-  private Object captureEvent(InvocationOnMock inv) {
-    capturedEvents.add(inv.getArgument(0, PluginStatusUpdateEvent.class));
-    return null;
   }
 }

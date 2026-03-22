@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
@@ -124,11 +124,11 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     try {
       downloadAndCache(artifact);
       var affectedStatuses = findAffectedLanguageStatuses(artifact, cachedArtifactPaths.get(artifact.artifactKey()));
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, affectedStatuses));
+      affectedStatuses.forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
     } catch (Exception e) {
       LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
       var failedStatuses = findAffectedFailedStatuses(artifact);
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, failedStatuses));
+      failedStatuses.forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
     } finally {
       inProgressArtifactKeys.remove(artifact.artifactKey());
     }
