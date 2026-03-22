@@ -84,4 +84,10 @@ class DownloadableArtifactTest {
 
     assertThat(actual).isEqualTo("http://mock-server/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-%s.jar");
   }
+
+  @Test
+  void should_return_artifact_key() {
+    assertThat(DownloadableArtifact.CFAMILY_PLUGIN.artifactKey()).isEqualTo("cpp");
+  }
+
 }
