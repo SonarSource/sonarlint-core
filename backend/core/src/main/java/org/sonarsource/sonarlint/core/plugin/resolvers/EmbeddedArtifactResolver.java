@@ -51,6 +51,8 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
       .map(LanguageSpecificRequirements::getOmnisharpRequirements)
       .map(OmnisharpRequirementsDto::getOssAnalyzerPath)
       .orElse(null);
+    this.standaloneCompanionPlugins = computeCompanionPlugins(this.standaloneEmbeddedPathsByKey);
+    this.connectedModeCompanionPlugins = computeCompanionPlugins(this.connectedModeEmbeddedPathsByKey);
   }
 
   @Override
@@ -59,26 +61,20 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
       .map(EmbeddedArtifactResolver::toResolvedArtifact);
   }
 
-  private Map<String, PluginStatus> standaloneCompanionPlugins;
-  private Map<String, PluginStatus> connectedModeCompanionPlugins;
+  private final Map<String, PluginStatus> standaloneCompanionPlugins;
+  private final Map<String, PluginStatus> connectedModeCompanionPlugins;
 
   @Override
   public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
     if (connectionId != null) {
-      if (connectedModeCompanionPlugins == null) {
-        connectedModeCompanionPlugins = computeCompanionPlugins(connectedModeEmbeddedPathsByKey);
-      }
       return connectedModeCompanionPlugins;
-    }
-    if (standaloneCompanionPlugins == null) {
-      standaloneCompanionPlugins = computeCompanionPlugins(standaloneEmbeddedPathsByKey);
     }
     return standaloneCompanionPlugins;
   }
 
   private static Map<String, PluginStatus> computeCompanionPlugins(Map<String, Path> pathsByKey) {
     return pathsByKey.entrySet().stream()
-      .filter(e -> !SonarLanguage.ALL_PLUGIN_KEYS.contains(e.getKey()))
+      .filter(e -> !SonarLanguage.containsPlugin(e.getKey()))
       .collect(Collectors.toUnmodifiableMap(
         Map.Entry::getKey,
         e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue())));
