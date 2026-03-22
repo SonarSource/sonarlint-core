@@ -19,9 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import java.util.EnumSet;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
@@ -37,76 +41,53 @@ class UnsupportedArtifactResolverTest {
 
   private static final ResolvedArtifact UNSUPPORTED_ARTIFACT = new ResolvedArtifact(ArtifactState.UNSUPPORTED, null, null, null);
 
-  // --- Disabled-keys behaviour ---
-
-  @Test
-  void should_return_empty_when_plugin_key_is_disabled_for_analysis_in_standalone() {
-    var languageSupport = mockLanguageSupport(true, true);
+  @ParameterizedTest
+  @MethodSource("supportedConfigurations")
+  void should_return_empty_when_supported(boolean enabledInStandalone, boolean enabledInConnected, SonarLanguage language, String connectionId) {
+    var languageSupport = mockLanguageSupport(enabledInStandalone, enabledInConnected);
     var resolver = new UnsupportedArtifactResolver(languageSupport);
 
-    var result = resolver.resolve(SonarLanguage.JAVA, null);
+    var result = resolver.resolve(language, connectionId);
 
     assertThat(result).isEmpty();
   }
 
-  @Test
-  void should_return_empty_when_plugin_key_is_disabled_for_analysis_in_connected_mode() {
-    var languageSupport = mockLanguageSupport(true, true);
-    var resolver = new UnsupportedArtifactResolver(languageSupport);
-
-    var result = resolver.resolve(SonarLanguage.PYTHON, "conn");
-
-    assertThat(result).isEmpty();
+  static Stream<Arguments> supportedConfigurations() {
+    return Stream.of(
+      Arguments.of(true, true, SonarLanguage.JAVA, null), // plugin key disabled standalone (legacy name context)
+      Arguments.of(true, true, SonarLanguage.PYTHON, "conn"), // plugin key disabled connected
+      Arguments.of(true, false, SonarLanguage.JAVA, null), // language enabled standalone
+      Arguments.of(false, true, SonarLanguage.JAVA, "conn") // language enabled connected
+    );
   }
 
-  // --- Language-support mode behaviour ---
-
-  @Test
-  void should_return_unsupported_when_language_not_enabled_in_standalone() {
-    var languageSupport = mockLanguageSupport(false, false);
+  @ParameterizedTest
+  @MethodSource("unsupportedConfigurations")
+  void should_return_unsupported_when_not_supported(boolean enabledInStandalone, boolean enabledInConnected, SonarLanguage language, String connectionId) {
+    var languageSupport = mockLanguageSupport(enabledInStandalone, enabledInConnected);
     var resolver = new UnsupportedArtifactResolver(languageSupport);
 
-    var result = resolver.resolve(SonarLanguage.JAVA, null);
+    var result = resolver.resolve(language, connectionId);
 
     assertThat(result).contains(UNSUPPORTED_ARTIFACT);
   }
 
-  @Test
-  void should_return_unsupported_when_language_not_enabled_in_connected_mode() {
-    var languageSupport = mockLanguageSupport(false, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport);
-
-    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
-
-    assertThat(result).contains(UNSUPPORTED_ARTIFACT);
-  }
-
-  @Test
-  void should_return_empty_when_language_is_enabled_in_standalone() {
-    var languageSupport = mockLanguageSupport(true, false);
-    var resolver = new UnsupportedArtifactResolver(languageSupport);
-
-    var result = resolver.resolve(SonarLanguage.JAVA, null);
-
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void should_return_empty_when_language_is_enabled_in_connected_mode() {
-    var languageSupport = mockLanguageSupport(false, true);
-    var resolver = new UnsupportedArtifactResolver(languageSupport);
-
-    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
-
-    assertThat(result).isEmpty();
+  static Stream<Arguments> unsupportedConfigurations() {
+    return Stream.of(
+      // not enabled standalone
+      Arguments.of(false, false, SonarLanguage.JAVA, null),
+      // not enabled connected
+      Arguments.of(false, false, SonarLanguage.JAVA, "conn")
+    );
   }
 
   private static LanguageSupportRepository mockLanguageSupport(boolean enabledInStandalone, boolean enabledInConnected) {
     var repo = mock(LanguageSupportRepository.class);
-    when(repo.isEnabledInStandaloneMode(SonarLanguage.JAVA)).thenReturn(enabledInStandalone);
-    when(repo.isEnabledInConnectedMode(SonarLanguage.JAVA)).thenReturn(enabledInConnected);
-    when(repo.isEnabledInStandaloneMode(SonarLanguage.PYTHON)).thenReturn(enabledInStandalone);
-    when(repo.isEnabledInConnectedMode(SonarLanguage.PYTHON)).thenReturn(enabledInConnected);
+    var standalone = enabledInStandalone ? EnumSet.of(SonarLanguage.JAVA, SonarLanguage.PYTHON) : EnumSet.noneOf(SonarLanguage.class);
+    var connected = enabledInConnected ? EnumSet.of(SonarLanguage.JAVA, SonarLanguage.PYTHON) : EnumSet.noneOf(SonarLanguage.class);
+    when(repo.getEnabledLanguagesInStandaloneMode()).thenReturn(standalone);
+    when(repo.getEnabledLanguagesInConnectedMode()).thenReturn(connected);
     return repo;
   }
+
 }
