@@ -36,8 +36,8 @@ public class PremiumArtifactResolver implements ArtifactResolver {
 
   @Override
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
-    if (languageSupportRepository.isEnabledInConnectedMode(language)
-      && !languageSupportRepository.isEnabledInStandaloneMode(language)) {
+    if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(language)
+      && !languageSupportRepository.getEnabledLanguagesInStandaloneMode().contains(language)) {
       return Optional.of(new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null));
     }
     return Optional.empty();
