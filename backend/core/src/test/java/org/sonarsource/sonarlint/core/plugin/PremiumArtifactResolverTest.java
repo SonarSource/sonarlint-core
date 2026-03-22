@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.util.Set;
+import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -87,8 +88,8 @@ class PremiumArtifactResolverTest {
 
   private static LanguageSupportRepository mockRepo(Set<SonarLanguage> connected, Set<SonarLanguage> standalone) {
     var repo = mock(LanguageSupportRepository.class);
-    connected.forEach(lang -> when(repo.isEnabledInConnectedMode(lang)).thenReturn(true));
-    standalone.forEach(lang -> when(repo.isEnabledInStandaloneMode(lang)).thenReturn(true));
+    when(repo.getEnabledLanguagesInConnectedMode()).thenReturn(connected.isEmpty() ? EnumSet.noneOf(SonarLanguage.class) : EnumSet.copyOf(connected));
+    when(repo.getEnabledLanguagesInStandaloneMode()).thenReturn(standalone.isEmpty() ? EnumSet.noneOf(SonarLanguage.class) : EnumSet.copyOf(standalone));
     return repo;
   }
 }
