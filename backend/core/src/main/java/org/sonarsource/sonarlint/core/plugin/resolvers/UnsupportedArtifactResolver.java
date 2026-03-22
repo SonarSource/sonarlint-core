@@ -50,7 +50,7 @@ public class UnsupportedArtifactResolver implements ArtifactResolver {
   }
 
   private boolean isSupported(SonarLanguage language, @Nullable String connectionId) {
-    return (languageSupportRepository.isEnabledInStandaloneMode(language) && connectionId == null)
-      || languageSupportRepository.isEnabledInConnectedMode(language);
+    return (languageSupportRepository.getEnabledLanguagesInStandaloneMode().contains(language) && connectionId == null)
+      || languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(language);
   }
 }
