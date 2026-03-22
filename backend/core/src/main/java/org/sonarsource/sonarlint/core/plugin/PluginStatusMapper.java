@@ -33,7 +33,7 @@ public class PluginStatusMapper {
   }
 
   public static List<PluginStatusDto> toDto(List<PluginStatus> statuses) {
-    return statuses.stream().map(PluginStatusMapper::toDto).toList();
+    return statuses.stream().map(status -> toDto(status)).toList();
   }
 
   public static PluginStatusDto toDto(PluginStatus status) {
