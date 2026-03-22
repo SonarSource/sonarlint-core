@@ -137,7 +137,7 @@ class ConnectionSetupMediumTests {
     var server = harness.newFakeSonarQubeServer("9.9").start();
     var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
-    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -161,7 +161,7 @@ class ConnectionSetupMediumTests {
     var server = harness.newFakeSonarQubeServer("9.9").start();
     var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
-    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -179,7 +179,7 @@ class ConnectionSetupMediumTests {
     var server = harness.newFakeSonarQubeServer("9.9").start();
     var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
-    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -198,7 +198,7 @@ class ConnectionSetupMediumTests {
     var backend = harness.newBackend().withClientName("ClientName").start(fakeClient);
     var server = harness.newFakeSonarQubeServer("9.9").start();
 
-    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))

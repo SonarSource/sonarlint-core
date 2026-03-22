@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.AbstractServerBuilder.ServerProjectBuilder.HotspotBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,7 +92,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey",
-          hotspot -> hotspot.withoutStatusChangePermission())))
+          HotspotBuilder::withoutStatusChangePermission)))
       .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
