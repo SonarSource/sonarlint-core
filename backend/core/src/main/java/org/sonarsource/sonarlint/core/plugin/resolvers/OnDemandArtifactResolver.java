@@ -27,7 +27,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
@@ -72,9 +71,8 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   private final OnDemandPluginCacheManager cacheManager;
   private final Map<SonarLanguage, DownloadableArtifact> artifactsByLanguage;
   private final ApplicationEventPublisher eventPublisher;
-  private final ExecutorService downloadExecutor;
+  private final UniqueTaskExecutor uniqueTaskExecutor;
 
-  private final Set<String> inProgressArtifactKeys = ConcurrentHashMap.newKeySet();
   private final Map<String, Path> cachedArtifactPaths = new ConcurrentHashMap<>();
 
   public OnDemandArtifactResolver(UserPaths userPaths, HttpClientProvider httpClientProvider,
@@ -87,7 +85,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     this.cacheManager = new OnDemandPluginCacheManager();
     this.artifactsByLanguage = artifactsByLanguage;
     this.eventPublisher = eventPublisher;
-    this.downloadExecutor = downloadExecutor;
+    this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
   @Override
@@ -98,9 +96,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   }
 
   private ResolvedArtifact scheduleDownload(DownloadableArtifact artifact) {
-    if (inProgressArtifactKeys.add(artifact.artifactKey())) {
-      downloadExecutor.submit(() -> downloadAndFireEvent(artifact));
-    }
+    uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
@@ -142,8 +138,6 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
       LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
       var failedStatuses = findAffectedFailedStatuses(artifact);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, failedStatuses));
-    } finally {
-      inProgressArtifactKeys.remove(artifact.artifactKey());
     }
   }
 

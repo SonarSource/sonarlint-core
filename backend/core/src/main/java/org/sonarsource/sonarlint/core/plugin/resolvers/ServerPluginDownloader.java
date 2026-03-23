@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -48,9 +46,7 @@ public class ServerPluginDownloader {
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ApplicationEventPublisher eventPublisher;
-  private final ExecutorService downloadExecutor;
-  /** Keyed by "{connectionId}:{pluginKey}" to dedup per-connection downloads. */
-  private final Set<String> inProgressDownloadKeys = ConcurrentHashMap.newKeySet();
+  private final UniqueTaskExecutor uniqueTaskExecutor;
 
   public ServerPluginDownloader(StorageService storageService, SonarQubeClientManager sonarQubeClientManager,
     ConnectionConfigurationRepository connectionConfigurationRepository, ApplicationEventPublisher eventPublisher,
@@ -59,45 +55,35 @@ public class ServerPluginDownloader {
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.eventPublisher = eventPublisher;
-    this.downloadExecutor = downloadExecutor;
+    this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
   public void scheduleLanguagePluginDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
     var progressKey = connectionId + ":" + serverPlugin.getKey();
-    scheduleIfNotInProgress(progressKey, () -> asyncDownload(connectionId, serverPlugin, language, progressKey));
+    uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncDownload(connectionId, serverPlugin, language));
   }
 
   public void scheduleCompanionPluginDownload(String connectionId, ServerPlugin plugin) {
     var progressKey = connectionId + ":" + plugin.getKey();
-    scheduleIfNotInProgress(progressKey, () -> asyncCompanionDownload(connectionId, plugin, progressKey));
+    uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncCompanionDownload(connectionId, plugin));
   }
 
-  private void scheduleIfNotInProgress(String progressKey, Runnable asyncTask) {
-    if (inProgressDownloadKeys.add(progressKey)) {
-      downloadExecutor.submit(asyncTask);
-    }
-  }
-
-  private void asyncDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language, String progressKey) {
+  private void asyncDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
     try {
       downloadPluginAndFireEvent(connectionId, serverPlugin, language);
     } catch (Exception e) {
       LOG.error("Failed to download plugin '{}' for connection '{}'", serverPlugin.getKey(), connectionId, e);
       fireFailedEvent(connectionId, language);
-    } finally {
-      inProgressDownloadKeys.remove(progressKey);
     }
   }
 
-  private void asyncCompanionDownload(String connectionId, ServerPlugin plugin, String progressKey) {
+  private void asyncCompanionDownload(String connectionId, ServerPlugin plugin) {
     try {
       downloadCompanionAndFireEvent(connectionId, plugin);
     } catch (Exception e) {
       LOG.error("Failed to download companion plugin '{}' for connection '{}'", plugin.getKey(), connectionId, e);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
         List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.FAILED, null, null))));
-    } finally {
-      inProgressDownloadKeys.remove(progressKey);
     }
   }
 
