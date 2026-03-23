@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.ondemand;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -205,4 +205,5 @@ class OnDemandArtifactResolverTest {
   private static PluginStatus failedStatus(SonarLanguage lang) {
     return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null);
   }
+
 }

@@ -100,7 +100,7 @@ public class PluginsService {
   private PluginStatus getPluginStatus(@Nullable String connectionId, SonarLanguage language) {
     var pluginKey = language.getPluginKey();
     if (isFromConnectedMode(connectionId, pluginKey)) {
-      var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+      var source = isSonarQubeCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
       var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? ArtifactState.FAILED : ArtifactState.SYNCED;
       return PluginStatus.forLanguage(language, state, source, null, null, null);
     }
@@ -199,26 +199,25 @@ public class PluginsService {
   }
 
   public boolean supportsIaCEnterprise(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_IAC_MIN_SQ_VERSION, connectionId);
+    return isSonarQubeCloudOrVersionAtLeast(connectionConfigurationRepository, storageService, ENTERPRISE_IAC_MIN_SQ_VERSION, connectionId);
   }
 
   public boolean supportsCustomSecrets(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
+    return isSonarQubeCloudOrVersionAtLeast(connectionConfigurationRepository, storageService, CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
   }
 
   public boolean supportsGoEnterprise(String connectionId) {
-    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_GO_MIN_SQ_VERSION, connectionId);
+    return isSonarQubeCloudOrVersionAtLeast(connectionConfigurationRepository, storageService, ENTERPRISE_GO_MIN_SQ_VERSION, connectionId);
   }
 
-  private boolean isSonarQubeCloudOrVersionHigherThan(Version version, String connectionId) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+  public static boolean isSonarQubeCloudOrVersionAtLeast(ConnectionConfigurationRepository connectionRepository,
+    StorageService storageService, Version minVersion, String connectionId) {
+    var connection = connectionRepository.getConnectionById(connectionId);
     if (connection == null) {
-      // Connection is gone
       return false;
     }
-    // when storage is not present, assume that server version is lower than requested
     return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> serverInfo.version().compareToIgnoreQualifier(version) >= 0)
+      .map(serverInfo -> serverInfo.version().compareToIgnoreQualifier(minVersion) >= 0)
       .orElse(false);
   }
 
@@ -241,7 +240,7 @@ public class PluginsService {
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
-    if (isSonarCloud(connectionId)) {
+    if (isSonarQubeCloud(connectionId)) {
       return true;
     } else {
       var connectionStorage = storageService.connection(connectionId);
@@ -259,7 +258,7 @@ public class PluginsService {
     }
   }
 
-  private boolean isSonarCloud(String connectionId) {
+  private boolean isSonarQubeCloud(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     return connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
   }
@@ -308,4 +307,5 @@ public class PluginsService {
       }
     }
   }
+
 }

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.ondemand;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -219,4 +218,5 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
       .resolve(version)
       .resolve(String.format("sonar-%s-plugin-%s.jar", artifactKey, version));
   }
+
 }
