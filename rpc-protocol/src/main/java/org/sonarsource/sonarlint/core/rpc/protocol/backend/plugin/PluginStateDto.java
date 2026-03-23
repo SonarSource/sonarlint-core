@@ -25,21 +25,31 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin;
 public enum PluginStateDto {
 
   /** The plugin is loaded and ready for analysis. */
-  ACTIVE,
+  ACTIVE("Active"),
 
   /** The plugin was downloaded from a SonarQube Server or SonarQube Cloud connection. */
-  SYNCED,
+  SYNCED("Synced"),
 
   /** The plugin is currently being downloaded. */
-  DOWNLOADING,
+  DOWNLOADING("Downloading…"),
 
   /** The plugin failed to load or is otherwise unavailable. */
-  FAILED,
+  FAILED("Failed"),
 
   /** The plugin is available only in connected mode (premium feature). */
-  PREMIUM,
+  PREMIUM("Premium"),
 
   /** The plugin is not supported in the current IDE or platform. */
-  UNSUPPORTED
+  UNSUPPORTED("Unsupported");
+
+  private final String label;
+
+  PluginStateDto(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
 
 }

@@ -49,8 +49,8 @@ class PluginStatusNotifierServiceTest {
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final PluginStatusNotifierService underTest = new PluginStatusNotifierService(pluginsService, client, configurationRepository);
 
-  private final PluginStatus standaloneStatus = new PluginStatus("Standalone Plugin", PluginState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
-  private final PluginStatus connectedStatus = new PluginStatus("Connected Plugin", PluginState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null, "10.0.0");
+  private final PluginStatus standaloneStatus = new PluginStatus(org.sonarsource.sonarlint.core.commons.api.SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null);
+  private final PluginStatus connectedStatus = new PluginStatus(org.sonarsource.sonarlint.core.commons.api.SonarLanguage.JAVA, PluginState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null, "10.0.0");
 
   @BeforeEach
   void setUp() {
@@ -96,11 +96,11 @@ class PluginStatusNotifierServiceTest {
   }
 
   private static PluginStatusDto standaloneStatusDto() {
-    return new PluginStatusDto("Standalone Plugin", PluginStateDto.ACTIVE, ArtifactSourceDto.EMBEDDED, null, null, null);
+    return new PluginStatusDto(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.EMBEDDED, null, null, null);
   }
 
   private static PluginStatusDto connectedStatusDto() {
-    return new PluginStatusDto("Connected Plugin", PluginStateDto.ACTIVE, ArtifactSourceDto.SONARQUBE_SERVER, null, null, "10.0.0");
+    return new PluginStatusDto(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.SONARQUBE_SERVER, null, null, "10.0.0");
   }
 
 }

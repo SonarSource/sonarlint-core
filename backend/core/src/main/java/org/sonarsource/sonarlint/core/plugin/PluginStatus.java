@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 /**
- * @param pluginName        human-readable plugin name
+ * @param language          language that this plugin provides analysis for
  * @param state             current state of the plugin at the backend
  * @param source            source where the plugin jar came from
  * @param actualVersion     used version of the plugin
@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
  * @param serverVersion     version of the SonarQube Server that provided this plugin; {@code null} for non-server sources
  */
 public record PluginStatus(
-  String pluginName,
+  SonarLanguage language,
   PluginState state,
   @Nullable ArtifactSource source,
   @Nullable Version actualVersion,
@@ -40,6 +40,6 @@ public record PluginStatus(
   @Nullable String serverVersion) {
 
   public static PluginStatus unsupported(SonarLanguage sonarLanguage) {
-    return new PluginStatus(sonarLanguage.getName(), PluginState.UNSUPPORTED, null, null, null, null);
+    return new PluginStatus(sonarLanguage, PluginState.UNSUPPORTED, null, null, null, null);
   }
 }

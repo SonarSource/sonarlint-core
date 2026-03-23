@@ -100,23 +100,22 @@ public class PluginsService {
   private PluginStatus getPluginStatus(@Nullable String connectionId, SonarLanguage language) {
     var pluginKey = language.getPluginKey();
     if (isFromConnectedMode(connectionId, pluginKey)) {
+      var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.SYNCED;
       if (isSonarCloud(connectionId)) {
-        var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.SYNCED;
-        return new PluginStatus(language.getName(), state, ArtifactSource.SONARQUBE_CLOUD, null, null, null);
+        return new PluginStatus(language, state, ArtifactSource.SONARQUBE_CLOUD, null, null, null);
       } else {
-        var state = getPlugins(connectionId).hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.SYNCED;
         var serverVersion = storageService.connection(connectionId).serverInfo().read()
           .map(info -> info.version().toString())
           .orElse(null);
-        return new PluginStatus(language.getName(), state, ArtifactSource.SONARQUBE_SERVER, null, null, serverVersion);
+        return new PluginStatus(language, state, ArtifactSource.SONARQUBE_SERVER, null, null, serverVersion);
       }
     }
     if (couldBeAvailableInConnectedMode(language)) {
-      return new PluginStatus(language.getName(), PluginState.PREMIUM, null, null, null, null);
+      return new PluginStatus(language, PluginState.PREMIUM, null, null, null, null);
     }
     if (getEmbeddedPlugins().hasPlugin(pluginKey)) {
       var state = getEmbeddedPlugins().hasDisabledPlugin(pluginKey) ? PluginState.FAILED : PluginState.ACTIVE;
-      return new PluginStatus(language.getName(), state, ArtifactSource.EMBEDDED, null, null, null);
+      return new PluginStatus(language, state, ArtifactSource.EMBEDDED, null, null, null);
     }
     return PluginStatus.unsupported(language);
   }

@@ -25,15 +25,25 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin;
 public enum ArtifactSourceDto {
 
   /** The plugin is bundled with the IDE extension. */
-  EMBEDDED,
+  EMBEDDED("SonarQube for IDE"),
 
   /** The plugin was downloaded on demand from an external source (e.g. binaries.sonarsource.com). */
-  ON_DEMAND,
+  ON_DEMAND("SonarQube for IDE"),
 
   /** The plugin was synchronized from a SonarQube Server connection. */
-  SONARQUBE_SERVER,
+  SONARQUBE_SERVER("SonarQube Server"),
 
   /** The plugin was synchronized from a SonarQube Cloud connection. */
-  SONARQUBE_CLOUD
+  SONARQUBE_CLOUD("SonarQube Cloud");
+
+  private final String label;
+
+  ArtifactSourceDto(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
 
 }
