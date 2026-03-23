@@ -44,7 +44,7 @@ jobs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.12
       - uses: SonarSource/ci-github-actions/build-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.12
       - name: Vault
@@ -137,7 +137,7 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.12
       - uses: SonarSource/ci-github-actions/config-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
@@ -210,7 +210,7 @@ jobs:
             java: 17
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: jdx/mise-action@c1ecc8f748cd28cdeabf76dab3cccde4ce692fe4 # v4.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.12
       - name: Select Java ${{ matrix.java }}
@@ -263,7 +263,7 @@ jobs:
           mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
         if: failure()
-        uses: dorny/test-reporter@574d6b100c0959c809ab18f599fee9873c114af0
+        uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
         with:
           name: QA ${{ matrix.name }} Test Report
           reporter: java-junit
