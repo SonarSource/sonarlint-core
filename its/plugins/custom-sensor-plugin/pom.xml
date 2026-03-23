@@ -76,7 +76,7 @@
         <executions>
           <execution>
             <goals>
-              <goal>native2ascii</goal>
+              <goal>resources</goal>
             </goals>
           </execution>
         </executions>
