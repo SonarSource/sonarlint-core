@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -51,7 +54,9 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -248,7 +253,7 @@ class ConnectedModeArtifactResolverTest {
   void should_return_empty_for_enterprise_language_when_sq_version_is_below_minimum() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     // SECRETS minimum is 10.4, use 10.3
-    mockServerVersion("conn", Version.create("10.3"));
+    mockServerVersion(Version.create("10.3"));
     when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.SECRETS.getPluginKey(), secretsJar));
     var resolver = createResolver(Set.of());
 
@@ -260,7 +265,7 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_for_enterprise_language_when_sq_version_meets_minimum() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockServerVersion("conn", Version.create("10.4"));
+    mockServerVersion(Version.create("10.4"));
     mockStoredPlugin(SonarLanguage.SECRETS.getPluginKey(), secretsJar, "hash");
     mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.SECRETS.getPluginKey(), "hash")));
     var resolver = createResolver(Set.of());
@@ -287,7 +292,7 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_resolve_enterprise_language_even_when_its_key_is_in_skip_set() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockServerVersion("conn", Version.create("10.4"));
+    mockServerVersion(Version.create("10.4"));
     mockStoredPlugin(SonarLanguage.SECRETS.getPluginKey(), secretsJar, "hash");
     mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.SECRETS.getPluginKey(), "hash")));
     // Even though the plugin key is in the skip set, enterprise check takes priority
@@ -358,7 +363,7 @@ class ConnectedModeArtifactResolverTest {
   void should_return_only_stored_companions_when_server_plugin_list_request_fails() {
     var companionKey = "javasymbolicexecution";
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(companionKey, javaJar));
+    mockStoredPlugin(companionKey, javaJar, "hash");
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
     var resolver = createResolver(Set.of());
 
@@ -371,8 +376,8 @@ class ConnectedModeArtifactResolverTest {
   void should_schedule_download_when_companion_jar_does_not_exist_on_disk() {
     var companionKey = "javasymbolicexecution";
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(companionKey, tempDir.resolve("missing-companion.jar")));
-    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey);
+    mockStoredPlugin(companionKey, tempDir.resolve("missing-companion.jar"), "hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "hash");
     mockServerPlugins("conn", List.of(companionPlugin));
     var resolver = createResolver(Set.of());
     var expectedStatus = PluginStatus.forCompanion(companionKey, ArtifactState.DOWNLOADING, null, null);
@@ -381,6 +386,183 @@ class ConnectedModeArtifactResolverTest {
 
     assertThat(result).containsEntry(companionKey, expectedStatus);
     verify(downloadExecutor).submit(any(Runnable.class));
+  }
+
+  @Test
+  void should_schedule_download_when_companion_hash_is_stale() {
+    var companionKey = "javasymbolicexecution";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockStoredPlugin(companionKey, javaJar, "old-hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "new-hash");
+    mockServerPlugins("conn", List.of(companionPlugin));
+    var resolver = createResolver(Set.of());
+    var expectedStatus = PluginStatus.forCompanion(companionKey, ArtifactState.DOWNLOADING, null, null);
+
+    var result = resolver.resolveCompanionPlugins("conn");
+
+    assertThat(result).containsEntry(companionKey, expectedStatus);
+    verify(downloadExecutor).submit(any(Runnable.class));
+  }
+
+  @Test
+  void should_return_synced_companion_when_hash_matches() {
+    var companionKey = "javasymbolicexecution";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockStoredPlugin(companionKey, javaJar, "hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "hash");
+    mockServerPlugins("conn", List.of(companionPlugin));
+    var resolver = createResolver(Set.of());
+    var expectedStatus = PluginStatus.forCompanion(companionKey, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, javaJar);
+
+    var result = resolver.resolveCompanionPlugins("conn");
+
+    assertThat(result).containsEntry(companionKey, expectedStatus);
+  }
+
+  @Test
+  void should_return_synced_companion_with_sonarcloud_source() {
+    var companionKey = "javasymbolicexecution";
+    mockConnection("cloud", ConnectionKind.SONARCLOUD);
+    mockStoredPlugin(companionKey, javaJar, "hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "hash");
+    mockServerPlugins("cloud", List.of(companionPlugin));
+    var resolver = createResolver(Set.of());
+    var expectedStatus = PluginStatus.forCompanion(companionKey, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, javaJar);
+
+    var result = resolver.resolveCompanionPlugins("cloud");
+
+    assertThat(result).containsEntry(companionKey, expectedStatus);
+  }
+
+  @Test
+  void should_skip_companion_that_is_not_sonar_lint_supported() {
+    var companionKey = "my-plugin";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockServerPlugins("conn", List.of(mockServerPlugin(companionKey, "hash")));
+    var resolver = createResolver(Set.of());
+
+    var result = resolver.resolveCompanionPlugins("conn");
+
+    assertThat(result).doesNotContainKey(companionKey);
+    verify(downloadExecutor, times(0)).submit(any(Runnable.class));
+  }
+
+  @Test
+  void should_skip_typescript_companion_when_ts_language_not_enabled() {
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    var typescriptPlugin = mockSonarLintSupportedServerPlugin("typescript", "hash");
+    mockServerPlugins("conn", List.of(typescriptPlugin));
+    var resolver = createResolver(Set.of());
+
+    var result = resolver.resolveCompanionPlugins("conn");
+
+    assertThat(result).doesNotContainKey("typescript");
+    verify(downloadExecutor, times(0)).submit(any(Runnable.class));
+  }
+
+  @Test
+  void should_include_stored_companion_absent_from_server_list() {
+    var onServerKey = "javasymbolicexecution";
+    var removedKey = "dbd";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of(
+      onServerKey, new StoredPlugin(onServerKey, "hash", javaJar),
+      removedKey, new StoredPlugin(removedKey, "hash", iacJar)
+    ));
+    mockServerPlugins("conn", List.of(mockSonarLintSupportedServerPlugin(onServerKey, "hash")));
+    var resolver = createResolver(Set.of());
+    var expectedRemovedStatus = PluginStatus.forCompanion(removedKey, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, iacJar);
+
+    var result = resolver.resolveCompanionPlugins("conn");
+
+    assertThat(result)
+      .containsKey(onServerKey)
+      .containsEntry(removedKey, expectedRemovedStatus);
+  }
+
+  @Test
+  void should_publish_synced_event_after_companion_download_succeeds() {
+    var companionKey = "javasymbolicexecution";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockStoredPlugin(companionKey, tempDir.resolve("missing.jar"), "old-hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "new-hash");
+    mockServerPlugins("conn", List.of(companionPlugin));
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(companionKey, javaJar));
+    var expectedEvent = new PluginStatusUpdateEvent("conn",
+      List.of(PluginStatus.forCompanion(companionKey, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, javaJar)));
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var resolver = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager,
+        serverPluginsCache, eventPublisher, executor, Set.of(), languageSupportRepository);
+
+      resolver.resolveCompanionPlugins("conn");
+
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void should_publish_failed_event_when_companion_download_fails() {
+    var companionKey = "javasymbolicexecution";
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockStoredPlugin(companionKey, tempDir.resolve("missing.jar"), "old-hash");
+    var companionPlugin = mockSonarLintSupportedServerPlugin(companionKey, "new-hash");
+    mockServerPlugins("conn", List.of(companionPlugin));
+    doThrow(new RuntimeException("Download failed")).when(sonarQubeClientManager).withActiveClient(any(), any());
+    var expectedEvent = new PluginStatusUpdateEvent("conn",
+      List.of(PluginStatus.forCompanion(companionKey, ArtifactState.FAILED, ArtifactSource.SONARQUBE_SERVER, null)));
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var resolver = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager,
+        serverPluginsCache, eventPublisher, executor, Set.of(), languageSupportRepository);
+
+      resolver.resolveCompanionPlugins("conn");
+
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void should_publish_synced_event_after_language_plugin_download_succeeds() {
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of());
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey())));
+    var expectedEvent = new PluginStatusUpdateEvent("conn",
+      List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, null)));
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var resolver = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager,
+        serverPluginsCache, eventPublisher, executor, Set.of(), languageSupportRepository);
+
+      resolver.resolve(SonarLanguage.JAVA, "conn");
+
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void should_publish_failed_event_when_language_plugin_download_fails() {
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey())));
+    doThrow(new RuntimeException("Download failed")).when(sonarQubeClientManager).withActiveClient(any(), any());
+    var expectedEvent = new PluginStatusUpdateEvent("conn", List.of(PluginStatus.failed(SonarLanguage.JAVA)));
+    var executor = Executors.newSingleThreadExecutor();
+    try {
+      var resolver = new ConnectedModeArtifactResolver(storageService, connectionRepo, sonarQubeClientManager,
+        serverPluginsCache, eventPublisher, executor, Set.of(), languageSupportRepository);
+
+      resolver.resolve(SonarLanguage.JAVA, "conn");
+
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
+    } finally {
+      executor.shutdownNow();
+    }
   }
 
   private ConnectedModeArtifactResolver createResolver(Set<String> skipSyncPluginKeys) {
@@ -396,7 +578,7 @@ class ConnectedModeArtifactResolverTest {
     when(storageService.connection(connectionId)).thenReturn(connectionStorage);
   }
 
-  private void mockServerVersion(String connectionId, Version version) {
+  private void mockServerVersion(Version version) {
     var serverInfo = mock(StoredServerInfo.class);
     when(serverInfo.version()).thenReturn(version);
     when(serverInfoStorage.read()).thenReturn(Optional.of(serverInfo));
@@ -427,6 +609,12 @@ class ConnectedModeArtifactResolverTest {
     var plugin = mock(ServerPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
     when(plugin.isSonarLintSupported()).thenReturn(true);
+    return plugin;
+  }
+
+  private static ServerPlugin mockSonarLintSupportedServerPlugin(String pluginKey, String hash) {
+    var plugin = mockSonarLintSupportedServerPlugin(pluginKey);
+    when(plugin.getHash()).thenReturn(hash);
     return plugin;
   }
 

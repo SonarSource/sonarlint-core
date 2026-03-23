@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.ondemand;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -29,13 +30,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
@@ -47,6 +49,19 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * Resolves on-demand analyzer plugins by downloading them from public artifact URLs,
+ * without requiring a server connection.
+ *
+ * <p>Plugins are cached locally under {@code <storageRoot>/ondemand-plugins/<key>/<version>/}.
+ * Each download is verified against a known signature before being promoted to the cache.</p>
+ *
+ * <p><b>Download lifecycle:</b> {@link #resolve} returns {@link ArtifactState#DOWNLOADING}
+ * immediately while a background download runs. When it completes, a
+ * {@link PluginStatusUpdateEvent} is published with {@link ArtifactState#ACTIVE} on success
+ * or {@link ArtifactState#FAILED} on error. Concurrent calls for the same artifact key are
+ * de-duplicated — at most one download runs at a time.</p>
+ */
 public class OnDemandArtifactResolver implements ArtifactResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -79,7 +94,6 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   @Override
   public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
     return ofNullable(artifactsByLanguage.get(language))
-      .filter(artifact -> artifact.version() != null)
       .map(artifact -> findCachedArtifact(artifact)
         .orElseGet(() -> scheduleDownload(artifact)));
   }
@@ -124,11 +138,11 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     try {
       downloadAndCache(artifact);
       var affectedStatuses = findAffectedLanguageStatuses(artifact, cachedArtifactPaths.get(artifact.artifactKey()));
-      affectedStatuses.forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, affectedStatuses));
     } catch (Exception e) {
       LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
       var failedStatuses = findAffectedFailedStatuses(artifact);
-      failedStatuses.forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, failedStatuses));
     } finally {
       inProgressArtifactKeys.remove(artifact.artifactKey());
     }
@@ -136,17 +150,20 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
 
   private List<PluginStatus> findAffectedLanguageStatuses(DownloadableArtifact artifact, Path pluginPath) {
     var version = Version.create(artifact.version());
-    return artifactsByLanguage.entrySet().stream()
-      .filter(e -> e.getValue().artifactKey().equals(artifact.artifactKey()))
+    return findAffected(artifact)
       .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, version, null, pluginPath))
       .toList();
   }
 
   private List<PluginStatus> findAffectedFailedStatuses(DownloadableArtifact artifact) {
-    return artifactsByLanguage.entrySet().stream()
-      .filter(e -> e.getValue().artifactKey().equals(artifact.artifactKey()))
-      .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.FAILED, null, null, null, null))
+    return findAffected(artifact)
+      .map(e -> PluginStatus.failed(e.getKey()))
       .toList();
+  }
+
+  private Stream<Map.Entry<SonarLanguage, DownloadableArtifact>> findAffected(DownloadableArtifact artifact) {
+    return artifactsByLanguage.entrySet().stream()
+      .filter(e -> e.getValue().artifactKey().equals(artifact.artifactKey()));
   }
 
   private void downloadAndVerify(DownloadableArtifact artifact, Path targetPath) throws IOException {
@@ -157,10 +174,18 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
       if (!signatureVerifier.verify(tempFile, artifact.artifactKey())) {
         throw new IOException("Signature verification failed for " + artifact.artifactKey());
       }
-      Files.move(tempFile, targetPath, StandardCopyOption.ATOMIC_MOVE);
+      moveAtomically(tempFile, targetPath);
       LOG.info("Successfully downloaded {} plugin version {}", artifact.artifactKey(), artifact.version());
     } finally {
       Files.deleteIfExists(tempFile);
+    }
+  }
+
+  private static void moveAtomically(Path source, Path target) throws IOException {
+    try {
+      Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    } catch (AtomicMoveNotSupportedException e) {
+      Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
     }
   }
 

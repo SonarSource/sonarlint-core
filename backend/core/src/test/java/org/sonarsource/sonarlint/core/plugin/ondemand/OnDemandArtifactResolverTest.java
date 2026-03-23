@@ -34,12 +34,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
@@ -74,9 +73,9 @@ class OnDemandArtifactResolverTest {
     eventPublisher = mock(ApplicationEventPublisher.class);
     capturedStatuses = new CopyOnWriteArrayList<>();
     doAnswer(inv -> {
-      capturedStatuses.add(inv.getArgument(0, PluginStatusChangedEvent.class).newStatus());
+      capturedStatuses.addAll(inv.getArgument(0, PluginStatusUpdateEvent.class).newStatuses());
       return null;
-    }).when(eventPublisher).publishEvent(any(PluginStatusChangedEvent.class));
+    }).when(eventPublisher).publishEvent(any(PluginStatusUpdateEvent.class));
   }
 
   @Test
@@ -177,6 +176,7 @@ class OnDemandArtifactResolverTest {
   private void mockBlockingHttpClient(CountDownLatch proceedLatch) {
     var httpClient = mock(HttpClient.class);
     var response = mock(HttpClient.Response.class);
+    when(response.isSuccessful()).thenReturn(true);
     when(response.code()).thenReturn(200);
     when(response.bodyAsStream()).thenAnswer(inv -> awaitAndReturnEmpty(proceedLatch));
     when(httpClient.get(anyString())).thenReturn(response);

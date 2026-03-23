@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.event.PluginStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
@@ -45,9 +45,29 @@ import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
+/**
+ * Resolves analyzer plugins (language-bound and companion) from the local storage of a SonarQube or
+ * SonarCloud server connection.
+ *
+ * <p>{@link #resolve} handles language plugins; {@link #resolveCompanionPlugins} handles
+ * non-language - "companion" - plugins (e.g. {@code javasymbolicexecution}, {@code dbd}). Both methods return
+ * immediately: if the locally stored copy is up-to-date its path is returned as
+ * {@link ArtifactState#SYNCED}; otherwise a background download is scheduled and
+ * {@link ArtifactState#DOWNLOADING} is returned. Concurrent downloads for the same
+ * connection + plugin key are de-duplicated.</p>
+ *
+ * <p><b>Events:</b> when a background download completes, a {@link PluginStatusUpdateEvent}
+ * is published — {@link ArtifactState#SYNCED} on success, {@link ArtifactState#FAILED} on
+ * error.</p>
+ *
+ * <p>{@code resolveCompanionPlugins} also includes companions that are present in local
+ * storage but absent from the server list, so that already-downloaded plugins remain usable
+ * when the server is unreachable.</p>
+ */
 public class ConnectedModeArtifactResolver implements ArtifactResolver, CompanionPluginResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -116,15 +136,10 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
           return match;
         })
         .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, language))
-        .or(() -> resolveFromStorageByKey(connectionId, pluginKey))
-        .or(() -> fallbackPluginKey != null ? resolveFromStorageByKey(connectionId, fallbackPluginKey) : Optional.empty());
+        .or(() -> resolveFromStorageWithFallback(connectionId, pluginKey, fallbackPluginKey));
     } catch (ServerRequestException e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      var fromStorage = resolveFromStorageByKey(connectionId, pluginKey);
-      if (fromStorage.isEmpty() && fallbackPluginKey != null) {
-        fromStorage = resolveFromStorageByKey(connectionId, fallbackPluginKey);
-      }
-      return fromStorage;
+      return resolveFromStorageWithFallback(connectionId, pluginKey, fallbackPluginKey);
     }
   }
 
@@ -134,21 +149,34 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       return Map.of();
     }
     var result = new ConcurrentHashMap<String, PluginStatus>();
-    // Include companion plugins already in storage
-    storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().entrySet().stream()
-      .filter(e -> isCompanionPlugin(e.getKey()))
-      .filter(e -> Files.exists(e.getValue()))
-      .forEach(e -> {
-        var r = toResolvedArtifact(e.getValue(), connectionId);
-        result.put(e.getKey(), PluginStatus.forCompanion(e.getKey(), r.state(), r.source(), r.path()));
-      });
-    // Schedule downloads for server companions not yet in storage
+    var storedPluginsByKey = storageService.connection(connectionId).plugins().getStoredPluginsByKey();
     fetchServerPluginsSafely(connectionId).ifPresent(plugins ->
       plugins.stream()
-        .filter(p -> isCompanionPlugin(p.getKey()) && !result.containsKey(p.getKey()))
-        .forEach(p -> processCompanionPlugin(connectionId, p, result))
+        .filter(p -> isCompanionPlugin(p.getKey()))
+        .forEach(p -> resolveOrScheduleCompanion(connectionId, p, storedPluginsByKey, result))
     );
+    // Include stored companions not already resolved: covers server-unreachable and companions removed from server
+    storedPluginsByKey.entrySet().stream()
+      .filter(e -> isCompanionPlugin(e.getKey()))
+      .filter(e -> !result.containsKey(e.getKey()))
+      .filter(e -> Files.exists(e.getValue().getJarPath()))
+      .forEach(e -> addStoredCompanion(connectionId, e.getKey(), e.getValue(), result));
     return result;
+  }
+
+  private void resolveOrScheduleCompanion(String connectionId, ServerPlugin plugin,
+      Map<String, StoredPlugin> storedPluginsByKey, ConcurrentHashMap<String, PluginStatus> result) {
+    var stored = storedPluginsByKey.get(plugin.getKey());
+    if (stored != null && Files.exists(stored.getJarPath()) && stored.hasSameHash(plugin)) {
+      addStoredCompanion(connectionId, plugin.getKey(), stored, result);
+    } else {
+      processCompanionPlugin(connectionId, plugin, result);
+    }
+  }
+
+  private void addStoredCompanion(String connectionId, String key, StoredPlugin stored, ConcurrentHashMap<String, PluginStatus> result) {
+    var source = sourceFor(connectionId);
+    result.put(key, PluginStatus.forCompanion(key, ArtifactState.SYNCED, source, stored.getJarPath()));
   }
 
   private void processCompanionPlugin(String connectionId, ServerPlugin plugin, ConcurrentHashMap<String, PluginStatus> result) {
@@ -177,21 +205,39 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
 
   private void scheduleCompanionDownload(String connectionId, ServerPlugin plugin) {
     var progressKey = connectionId + ":" + plugin.getKey();
+    scheduleIfNotInProgress(progressKey, () -> asyncCompanionDownload(connectionId, plugin, progressKey));
+  }
+
+  private void scheduleIfNotInProgress(String progressKey, Runnable asyncTask) {
     if (inProgressDownloadKeys.add(progressKey)) {
-      downloadExecutor.submit(() -> {
-        try {
-          var state = downloadPluginSync(connectionId, plugin);
-          var storedPath = state == ArtifactState.SYNCED
-            ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
-            : null;
-          var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
-          eventPublisher.publishEvent(new PluginStatusChangedEvent(
-            PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath)));
-        } finally {
-          inProgressDownloadKeys.remove(progressKey);
-        }
-      });
+      downloadExecutor.submit(asyncTask);
     }
+  }
+
+  private void asyncCompanionDownload(String connectionId, ServerPlugin plugin, String progressKey) {
+    try {
+      downloadCompanionAndFireEvent(connectionId, plugin);
+    } catch (Exception e) {
+      LOG.error("Failed to download companion plugin '{}' for connection '{}'", plugin.getKey(), connectionId, e);
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
+        List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.FAILED, null, null))));
+    } finally {
+      inProgressDownloadKeys.remove(progressKey);
+    }
+  }
+
+  private void downloadCompanionAndFireEvent(String connectionId, ServerPlugin plugin) {
+    var state = downloadPluginSync(connectionId, plugin);
+    var storedPath = state == ArtifactState.SYNCED
+      ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
+      : null;
+    var source = sourceFor(connectionId);
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
+      List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath))));
+  }
+
+  private ArtifactSource sourceFor(String connectionId) {
+    return isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
   }
 
   public static boolean isCompanionPlugin(String pluginKey) {
@@ -208,27 +254,33 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
   }
 
   private Optional<ResolvedArtifact> resolveFromStorage(String connectionId, ServerPlugin serverPlugin) {
-    var stored = storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(serverPlugin.getKey());
-    if (stored == null || !Files.exists(stored.getJarPath()) || !stored.hasSameHash(serverPlugin)) {
-      return Optional.empty();
-    }
-    return Optional.of(toResolvedArtifact(stored.getJarPath(), connectionId));
+    return findStoredPlugin(connectionId, serverPlugin.getKey())
+      .filter(s -> s.hasSameHash(serverPlugin))
+      .map(s -> toResolvedArtifact(s.getJarPath(), connectionId));
   }
 
   private ResolvedArtifact scheduleDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
     var progressKey = connectionId + ":" + serverPlugin.getKey();
-    if (inProgressDownloadKeys.add(progressKey)) {
-      downloadExecutor.submit(() -> asyncDownload(connectionId, serverPlugin, language, progressKey));
-    }
+    scheduleIfNotInProgress(progressKey, () -> asyncDownload(connectionId, serverPlugin, language, progressKey));
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
   private Optional<ResolvedArtifact> resolveFromStorageByKey(String connectionId, String pluginKey) {
+    return findStoredPlugin(connectionId, pluginKey)
+      .map(s -> toResolvedArtifact(s.getJarPath(), connectionId));
+  }
+
+  private Optional<ResolvedArtifact> resolveFromStorageWithFallback(String connectionId, String pluginKey, @Nullable String fallbackPluginKey) {
+    return resolveFromStorageByKey(connectionId, pluginKey)
+      .or(() -> fallbackPluginKey != null ? resolveFromStorageByKey(connectionId, fallbackPluginKey) : Optional.empty());
+  }
+
+  private Optional<StoredPlugin> findStoredPlugin(String connectionId, String pluginKey) {
     var stored = storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(pluginKey);
     if (stored == null || !Files.exists(stored.getJarPath())) {
       return Optional.empty();
     }
-    return Optional.of(toResolvedArtifact(stored.getJarPath(), connectionId));
+    return Optional.of(stored);
   }
 
   private Optional<List<ServerPlugin>> fetchServerPluginsSafely(String connectionId) {
@@ -253,7 +305,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
       downloadPluginAndFireEvent(connectionId, serverPlugin, language);
     } catch (Exception e) {
       LOG.error("Failed to download plugin '{}' for connection '{}'", serverPlugin.getKey(), connectionId, e);
-      fireFailedEvent(language);
+      fireFailedEvent(connectionId, language);
     } finally {
       inProgressDownloadKeys.remove(progressKey);
     }
@@ -264,13 +316,14 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     if (state == ArtifactState.SYNCED) {
       var pluginKey = serverPlugin.getKey();
       var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
-      var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+      var source = sourceFor(connectionId);
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
+      var statuses = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
         .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath))
-        .forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
+        .toList();
+      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
     } else {
-      fireFailedEvent(language);
+      fireFailedEvent(connectionId, language);
     }
   }
 
@@ -294,14 +347,15 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver, Companio
     }
   }
 
-  private void fireFailedEvent(SonarLanguage language) {
-    SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
-      .map(l -> PluginStatus.forLanguage(l, ArtifactState.FAILED, null, null, null, null))
-      .forEach(s -> eventPublisher.publishEvent(new PluginStatusChangedEvent(s)));
+  private void fireFailedEvent(String connectionId, SonarLanguage language) {
+    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
+      .map(PluginStatus::failed)
+      .toList();
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
   }
 
   private ResolvedArtifact toResolvedArtifact(Path pluginPath, String connectionId) {
-    var source = isSonarCloud(connectionId) ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+    var source = sourceFor(connectionId);
     return new ResolvedArtifact(ArtifactState.SYNCED, pluginPath, source, PluginJarUtils.readVersion(pluginPath));
   }
 
