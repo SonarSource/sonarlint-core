@@ -27,6 +27,11 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
+/**
+ * Intercepts languages that are explicitly disabled by the user or the IDE client's capabilities.
+ * If a language is not active in the local configuration, this resolver halts
+ * the chain by immediately returning an UNSUPPORTED state, avoiding unnecessary downloads.
+ */
 public class UnsupportedArtifactResolver implements ArtifactResolver {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
