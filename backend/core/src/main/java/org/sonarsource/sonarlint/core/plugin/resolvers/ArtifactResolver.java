@@ -24,6 +24,11 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
+/**
+ * Defines the contract to resolve (and optionally download) an analyzer artifact for a specific {@link SonarLanguage}.
+ * This abstraction allows decoupling the artifact retrieval logic (e.g. embedded plugins, on-demand downloads,
+ * or connected mode syncing) from the main plugin loading orchestration.
+ */
 public interface ArtifactResolver {
   /**
    * Resolves the artifact for the given language. When the result cannot be determined immediately

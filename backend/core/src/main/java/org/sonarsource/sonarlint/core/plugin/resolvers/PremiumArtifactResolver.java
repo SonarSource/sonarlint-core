@@ -26,6 +26,11 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 
+/**
+ * Special resolver handling specific languages that require a Commercial (Premium) license or
+ * connected mode synchronization. It interrupts the resolution chain returning a PREMIUM state
+ * when a user attempts to analyze premium languages in an unsupported capacity.
+ */
 public class PremiumArtifactResolver implements ArtifactResolver {
 
   private final LanguageSupportRepository languageSupportRepository;
