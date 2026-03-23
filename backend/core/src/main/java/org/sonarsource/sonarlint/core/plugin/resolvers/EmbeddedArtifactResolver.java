@@ -105,7 +105,13 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
 
   private static Map<String, Path> buildPluginKeyToPathMap(Set<Path> embeddedPaths) {
     return embeddedPaths.stream()
-      .collect(Collectors.toMap(p -> SonarPluginManifest.fromJar(p).getKey(), Function.identity()));
+      .collect(Collectors.toMap(
+        p -> SonarPluginManifest.fromJar(p).getKey(),
+        Function.identity(),
+        (existing, duplicate) -> {
+          throw new IllegalArgumentException("Multiple embedded plugins found with the same key for paths: " + existing + " and " + duplicate);
+        }
+      ));
   }
 
 }

@@ -148,6 +148,17 @@ class EmbeddedArtifactResolverTest {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  void should_throw_iae_when_duplicate_plugin_keys_are_found() throws IOException {
+    var javaJar1 = createJar("sonar-java-plugin.jar", "java");
+    var javaJar2 = createJar("sonar-java-plugin-2.jar", "java");
+    var params = mockParams(Set.of(javaJar1, javaJar2), Map.of(), null);
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> new EmbeddedArtifactResolver(params))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Multiple embedded plugins found with the same key for paths");
+  }
+
   // --- Companion plugins ---
 
   @Test
