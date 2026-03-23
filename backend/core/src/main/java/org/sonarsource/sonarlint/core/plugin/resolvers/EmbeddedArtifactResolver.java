@@ -37,12 +37,19 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 
+/**
+ * Resolves analyzers that are physically bundled (embedded) inside the SQ:IDE distribution.
+ * It serves predefined JARs (like sonar-java-plugin.jar) from the plugin payload.
+ * This acts as the ultimate fallback when no server connection or on-demand downloads are applicable.
+ */
 public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPluginResolver {
 
   private final Map<String, Path> standaloneEmbeddedPathsByKey;
   private final Map<String, Path> connectedModeEmbeddedPathsByKey;
   @Nullable
   private final Path csharpStandalonePluginPath;
+  private final Map<String, PluginStatus> standaloneCompanionPlugins;
+  private final Map<String, PluginStatus> connectedModeCompanionPlugins;
 
   public EmbeddedArtifactResolver(InitializeParams params) {
     this.standaloneEmbeddedPathsByKey = buildPluginKeyToPathMap(params.getEmbeddedPluginPaths());
@@ -60,9 +67,6 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
     return Optional.ofNullable(resolvePath(language, connectionId))
       .map(EmbeddedArtifactResolver::toResolvedArtifact);
   }
-
-  private final Map<String, PluginStatus> standaloneCompanionPlugins;
-  private final Map<String, PluginStatus> connectedModeCompanionPlugins;
 
   @Override
   public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
