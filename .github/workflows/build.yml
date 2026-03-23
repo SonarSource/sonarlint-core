@@ -88,6 +88,7 @@ jobs:
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
+          fallback-to-default-branch: 'true'
       - uses: SonarSource/ci-github-actions/config-maven@c15f3733837c5ebd0f04a676feb1e18fae147cd5 # 1.3.27
         id: config
         with:
@@ -232,6 +233,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
           key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}-${{ matrix.name }} # Use matrix name to differentiate caches
+          fallback-to-default-branch: 'true'
       - name: Vault (SonarCloud IT token)
         if: ${{ matrix.sc == true }}
         id: secrets-sc
