@@ -19,7 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
+import java.util.Collection;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 
-public record PluginStatusChangedEvent(PluginStatus newStatus) {
+public record PluginStatusUpdateEvent(
+  @Nullable String connectionId,
+  Collection<PluginStatus> newStatuses) {
 }
