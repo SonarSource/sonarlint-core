@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.ondemand;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,6 +26,7 @@ import java.util.Properties;
 import javax.annotation.Nullable;
 
 public enum DownloadableArtifact {
+
   CFAMILY_PLUGIN("cpp", "cfamily.version", "/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-%s.jar"),
   CSHARP_OSS("cs", "cs.version", "/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-%s.jar");
 
@@ -78,4 +79,5 @@ public enum DownloadableArtifact {
       throw new IllegalStateException("Error loading plugin versions from " + PROPERTIES_FILE, e);
     }
   }
+
 }

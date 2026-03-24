@@ -17,9 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
-public record PluginStatusChangedEvent(PluginStatus newStatus) {
+public class UniqueTaskExecutor {
+  
+  private final Set<String> inProgress = ConcurrentHashMap.newKeySet();
+  private final ExecutorService executor;
+
+  public UniqueTaskExecutor(ExecutorService executor) {
+    this.executor = executor;
+  }
+
+  public void scheduleIfAbsent(String key, Runnable task) {
+    if (inProgress.add(key)) {
+      executor.submit(() -> {
+        try {
+          task.run();
+        } finally {
+          inProgress.remove(key);
+        }
+      });
+    }
+  }
+
 }
