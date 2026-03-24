@@ -108,6 +108,8 @@ public class TelemetryLocalStorage implements LocalStorage {
   private final Map<AiAgent, Integer> aiHooksInstalledCount;
   private final Map<String, Integer> campaignsShown;
   private final Map<String, String> campaignsResolutions;
+  private int supportedLanguagesPanelOpenedCount;
+  private int supportedLanguagesPanelCtaClickedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -285,6 +287,8 @@ public class TelemetryLocalStorage implements LocalStorage {
     aiHooksInstalledCount.clear();
     campaignsShown.clear();
     campaignsResolutions.clear();
+    supportedLanguagesPanelOpenedCount = 0;
+    supportedLanguagesPanelCtaClickedCount = 0;
   }
 
   public long numUseDays() {
@@ -784,5 +788,23 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   public Map<String, String> getCampaignsResolutions() {
     return campaignsResolutions;
+  }
+
+  public void incrementSupportedLanguagesPanelOpenedCount() {
+    markSonarLintAsUsedToday();
+    supportedLanguagesPanelOpenedCount++;
+  }
+
+  public int getSupportedLanguagesPanelOpenedCount() {
+    return supportedLanguagesPanelOpenedCount;
+  }
+
+  public void incrementSupportedLanguagesPanelCtaClickedCount() {
+    markSonarLintAsUsedToday();
+    supportedLanguagesPanelCtaClickedCount++;
+  }
+
+  public int getSupportedLanguagesPanelCtaClickedCount() {
+    return supportedLanguagesPanelCtaClickedCount;
   }
 }

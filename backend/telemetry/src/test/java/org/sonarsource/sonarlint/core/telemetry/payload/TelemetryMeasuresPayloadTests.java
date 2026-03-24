@@ -99,7 +99,9 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"campaigns.feedback_2026_01_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"campaigns.feedback_2026_01_resolution\",\"value\":\"MAYBE_LATER\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"campaigns.feedback_2077_03_shown\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"campaigns.feedback_2077_03_resolution\",\"value\":\"CLOSED\",\"type\":\"string\",\"granularity\":\"daily\"}" +
+      "{\"key\":\"campaigns.feedback_2077_03_resolution\",\"value\":\"CLOSED\",\"type\":\"string\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"supported_languages_panel.opened_count\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"supported_languages_panel.cta_clicked_count\",\"value\":\"7\",\"type\":\"integer\",\"granularity\":\"daily\"}" +
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
@@ -162,6 +164,9 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("campaigns.feedback_2077_03_resolution", "CLOSED", STRING, DAILY));
 
+    values.add(new TelemetryMeasuresValue("supported_languages_panel.opened_count", "3", INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("supported_languages_panel.cta_clicked_count", "7", INTEGER, DAILY));
+
     return values;
   }
 
@@ -197,7 +202,9 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("campaigns.feedback_2026_01_shown", "1", INTEGER, DAILY))
       .contains(tuple("campaigns.feedback_2026_01_resolution", "MAYBE_LATER", STRING, DAILY))
       .contains(tuple("campaigns.feedback_2077_03_shown", "1", INTEGER, DAILY))
-      .contains(tuple("campaigns.feedback_2077_03_resolution", "CLOSED", STRING, DAILY));
+      .contains(tuple("campaigns.feedback_2077_03_resolution", "CLOSED", STRING, DAILY))
+      .contains(tuple("supported_languages_panel.opened_count", "3", INTEGER, DAILY))
+      .contains(tuple("supported_languages_panel.cta_clicked_count", "7", INTEGER, DAILY));
   }
 
 }

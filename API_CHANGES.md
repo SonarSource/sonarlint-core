@@ -2,12 +2,15 @@
 
 ## New features
 
-* Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`.]()
+* Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`.
 * Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto`.
 * Add `language` field to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
 * Add `serverVersion` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
     * Contains the version of the SonarQube Server that provided the plugin (e.g. `"10.8.1"`).
     * Non-null only when `source` is `SONARQUBE_SERVER`; `null` for all other sources (embedded, SonarQube Cloud, unavailable).
+* Introduce two new telemetry notification methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to track usage of the "Supported Languages" panel:
+    * `supportedLanguagesPanelOpened` - call this each time the user opens the "Supported Languages" panel.
+    * `supportedLanguagesPanelCtaClicked` - call this each time the user clicks the "set up connection/binding" CTA button in the "Supported Languages" panel.
 
 # 10.46
 

@@ -136,6 +136,9 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.campaignResolved("feedback_2026_01", "MAYBE_LATER");
     telemetryLocalStorage.campaignShown("feedback_2077_03");
     telemetryLocalStorage.campaignResolved("feedback_2077_03", "IGNORE");
+    telemetryLocalStorage.incrementSupportedLanguagesPanelOpenedCount();
+    telemetryLocalStorage.incrementSupportedLanguagesPanelOpenedCount();
+    telemetryLocalStorage.incrementSupportedLanguagesPanelCtaClickedCount();
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -173,7 +176,9 @@ class TelemetryHttpClientTests {
             {"key":"campaigns.feedback_2026_01_resolution", "value":"MAYBE_LATER", "type": "string", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_shown", "value":"1", "type": "integer", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_resolution", "value":"IGNORE", "type": "string", "granularity":"daily"},
-            {"key":"ai_hooks.windsurf_installed","value":"2","type":"integer","granularity":"daily"}
+            {"key":"ai_hooks.windsurf_installed","value":"2","type":"integer","granularity":"daily"},
+            {"key":"supported_languages_panel.opened_count","value":"2","type":"integer","granularity":"daily"},
+            {"key":"supported_languages_panel.cta_clicked_count","value":"1","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

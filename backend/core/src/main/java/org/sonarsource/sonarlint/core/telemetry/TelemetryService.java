@@ -421,4 +421,13 @@ public class TelemetryService {
     }
     updateTelemetry(localStorage -> localStorage.updateListFilesPerformance(size, timeMs));
   }
+
+  public void supportedLanguagesPanelOpened() {
+    updateTelemetry(TelemetryLocalStorage::incrementSupportedLanguagesPanelOpenedCount);
+  }
+
+  public void supportedLanguagesPanelCtaClicked() {
+    updateTelemetry(TelemetryLocalStorage::incrementSupportedLanguagesPanelCtaClickedCount);
+  }
+
 }

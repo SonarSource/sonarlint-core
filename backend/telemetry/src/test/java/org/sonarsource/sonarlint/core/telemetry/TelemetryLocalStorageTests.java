@@ -400,4 +400,40 @@ class TelemetryLocalStorageTests {
     assertThat(data.getLabsLinkClickedCount()).isEmpty();
     assertThat(data.getLabsFeedbackLinkClickedCount()).isEmpty();
   }
+
+  @Test
+  void should_track_supported_languages_panel_opened() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getSupportedLanguagesPanelOpenedCount()).isZero();
+
+    data.incrementSupportedLanguagesPanelOpenedCount();
+    data.incrementSupportedLanguagesPanelOpenedCount();
+    assertThat(data.getSupportedLanguagesPanelOpenedCount()).isEqualTo(2);
+  }
+
+  @Test
+  void should_track_supported_languages_panel_cta_clicked() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isZero();
+
+    data.incrementSupportedLanguagesPanelCtaClickedCount();
+    data.incrementSupportedLanguagesPanelCtaClickedCount();
+    data.incrementSupportedLanguagesPanelCtaClickedCount();
+    assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isEqualTo(3);
+  }
+
+  @Test
+  void should_clear_supported_languages_panel_counts_after_ping() {
+    var data = new TelemetryLocalStorage();
+
+    data.incrementSupportedLanguagesPanelOpenedCount();
+    data.incrementSupportedLanguagesPanelCtaClickedCount();
+    assertThat(data.getSupportedLanguagesPanelOpenedCount()).isEqualTo(1);
+    assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isEqualTo(1);
+
+    data.clearAfterPing();
+    assertThat(data.getSupportedLanguagesPanelOpenedCount()).isZero();
+    assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isZero();
+  }
+
 }

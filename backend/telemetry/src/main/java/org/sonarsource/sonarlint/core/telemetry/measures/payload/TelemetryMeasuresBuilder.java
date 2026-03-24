@@ -85,6 +85,8 @@ public class TelemetryMeasuresBuilder {
 
     addCampaignsMeasures(values);
 
+    addSupportedLanguagesPanelMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -250,6 +252,13 @@ public class TelemetryMeasuresBuilder {
         INTEGER,
         DAILY))
       .forEach(values::add);
+  }
+
+  private void addSupportedLanguagesPanelMeasures(List<TelemetryMeasuresValue> values) {
+    values.add(new TelemetryMeasuresValue("supported_languages_panel.opened_count",
+      String.valueOf(storage.getSupportedLanguagesPanelOpenedCount()), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("supported_languages_panel.cta_clicked_count",
+      String.valueOf(storage.getSupportedLanguagesPanelCtaClickedCount()), INTEGER, DAILY));
   }
 
   private void addCampaignsMeasures(ArrayList<TelemetryMeasuresValue> values) {

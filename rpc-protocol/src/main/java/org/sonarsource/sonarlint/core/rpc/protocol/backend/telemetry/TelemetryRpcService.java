@@ -178,4 +178,16 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params);
+
+  /**
+   * Should be called when the user opens the "Supported Languages" panel.
+   */
+  @JsonNotification
+  void supportedLanguagesPanelOpened();
+
+  /**
+   * Should be called when the user clicks the "set up connection/binding" CTA in the "Supported Languages" panel.
+   */
+  @JsonNotification
+  void supportedLanguagesPanelCtaClicked();
 }

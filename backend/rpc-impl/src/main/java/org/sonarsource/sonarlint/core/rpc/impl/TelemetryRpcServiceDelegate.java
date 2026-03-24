@@ -187,4 +187,15 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   public void ideLabsFeedbackLinkClicked(IdeLabsFeedbackLinkClickedParams params) {
     notify(() -> getBean(TelemetryService.class).ideLabsFeedbackLinkClicked(params.getFeatureId()));
   }
+
+  @Override
+  public void supportedLanguagesPanelOpened() {
+    notify(() -> getBean(TelemetryService.class).supportedLanguagesPanelOpened());
+  }
+
+  @Override
+  public void supportedLanguagesPanelCtaClicked() {
+    notify(() -> getBean(TelemetryService.class).supportedLanguagesPanelCtaClicked());
+  }
+
 }
