@@ -24,7 +24,7 @@ jobs:
 
   release:
     name: Release
-    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@cf5526fe47ef861450953ebbe4a7f5c8181309fa # 1.4.2
+    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@2d944d5ff92467db2dee4e1629a6c1b88cc6e953 # 1.4.3
     if: always() && !failure() && !cancelled()
     permissions:
       statuses: read
