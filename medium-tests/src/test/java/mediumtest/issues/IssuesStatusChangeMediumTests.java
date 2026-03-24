@@ -136,7 +136,7 @@ class IssuesStatusChangeMediumTests {
     var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
 
     var changeStatusFuture = issueService.changeStatus(params);
-    assertDoesNotThrow(() -> changeStatusFuture.get());
+    assertDoesNotThrow(changeStatusFuture::get);
   }
 
   @SonarLintTest
@@ -180,7 +180,7 @@ class IssuesStatusChangeMediumTests {
     var params = new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "comment");
 
     var addCommentFuture = issueService.addComment(params);
-    assertDoesNotThrow(() -> addCommentFuture.get());
+    assertDoesNotThrow(addCommentFuture::get);
   }
 
   @SonarLintTest
@@ -261,7 +261,7 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
@@ -306,7 +306,7 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), true, 0)).join();
+      List.of(fileUri), Map.of(), true)).join();
 
     waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
@@ -356,7 +356,7 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
