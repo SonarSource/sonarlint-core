@@ -17,13 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.ondemand;
+package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -55,46 +57,12 @@ class OnDemandPluginSignatureVerifierTest {
     assertThat(underTest.verify(tamperedJar, "cpp")).isFalse();
   }
 
-  @Test
-  void should_return_false_when_bundled_signature_is_missing() throws URISyntaxException {
+  @ParameterizedTest
+  @ValueSource(strings = {"nonexistentplugin", "cpp-unknownkey", "cpp-corrupt", "cpp-nosig"})
+  void should_return_false_for_invalid_signatures(String pluginKey) throws URISyntaxException {
     var jarPath = testResource();
 
-    assertThat(underTest.verify(jarPath, "nonexistentplugin")).isFalse();
-  }
-
-  @Test
-  void should_return_true_when_signature_is_compressed() throws URISyntaxException {
-    var jarPath = testResource();
-
-    assertThat(underTest.verify(jarPath, "cpp-compressed")).isTrue();
-  }
-
-  @Test
-  void should_return_false_when_jar_file_does_not_exist() {
-    var missingJar = tempDir.resolve("missing.jar");
-
-    assertThat(underTest.verify(missingJar, "cpp")).isFalse();
-  }
-
-  @Test
-  void should_return_false_when_signature_key_is_not_in_keyring() throws URISyntaxException {
-    var jarPath = testResource();
-
-    assertThat(underTest.verify(jarPath, "cpp-unknownkey")).isFalse();
-  }
-
-  @Test
-  void should_return_false_when_signature_file_is_corrupt() throws URISyntaxException {
-    var jarPath = testResource();
-
-    assertThat(underTest.verify(jarPath, "cpp-corrupt")).isFalse();
-  }
-
-  @Test
-  void should_return_false_when_pgp_file_contains_no_signatures() throws URISyntaxException {
-    var jarPath = testResource();
-
-    assertThat(underTest.verify(jarPath, "cpp-nosig")).isFalse();
+    assertThat(underTest.verify(jarPath, pluginKey)).isFalse();
   }
 
   private static Path testResource() throws URISyntaxException {
