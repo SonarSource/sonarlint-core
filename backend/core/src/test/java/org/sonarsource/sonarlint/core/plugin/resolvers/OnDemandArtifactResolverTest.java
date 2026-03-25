@@ -80,7 +80,7 @@ class OnDemandArtifactResolverTest {
 
   @Test
   void should_return_empty_when_language_not_registered() {
-    var resolver = buildResolver(Map.of());
+    var resolver = buildResolver();
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
@@ -91,7 +91,7 @@ class OnDemandArtifactResolverTest {
   void should_return_downloading_on_first_async_call() {
     var proceedLatch = new CountDownLatch(1);
     mockBlockingHttpClient(proceedLatch);
-    var resolver = buildResolver(cFamilyMap());
+    var resolver = buildResolver();
     try {
       var result = resolver.resolve(SonarLanguage.C, null);
 
@@ -107,7 +107,7 @@ class OnDemandArtifactResolverTest {
   void should_return_downloading_while_same_artifact_is_in_progress() {
     var proceedLatch = new CountDownLatch(1);
     mockBlockingHttpClient(proceedLatch);
-    var resolver = buildResolver(cFamilyMap());
+    var resolver = buildResolver();
     try {
       resolver.resolve(SonarLanguage.C, null);  // starts download, key added to inProgress
 
@@ -126,40 +126,38 @@ class OnDemandArtifactResolverTest {
     var httpClient = mock(HttpClient.class);
     when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    var resolver = buildResolver(cFamilyMap());
+    var resolver = buildResolver();
 
     resolver.resolve(SonarLanguage.C, null);
 
-    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 2);
+    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
       failedStatus(SonarLanguage.C),
-      failedStatus(SonarLanguage.CPP));
+      failedStatus(SonarLanguage.CPP),
+      failedStatus(SonarLanguage.OBJC));
   }
 
   @Test
   void should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
     mockSuccessfulHttpClient();
-    var resolver = buildResolver(cFamilyMap());
+    var resolver = buildResolver();
 
     resolver.resolve(SonarLanguage.C, null);
 
-    await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 2);
+    await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();
     var pluginPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
       .resolve("sonar-cpp-plugin-" + artifactVersion + ".jar");
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
       activeStatus(SonarLanguage.C, pluginPath),
-      activeStatus(SonarLanguage.CPP, pluginPath));
+      activeStatus(SonarLanguage.CPP, pluginPath),
+      activeStatus(SonarLanguage.OBJC, pluginPath));
   }
 
-  private OnDemandArtifactResolver buildResolver(Map<SonarLanguage, DownloadableArtifact> artifactsByLanguage) {
+  private OnDemandArtifactResolver buildResolver() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new OnDemandArtifactResolver(userPaths, httpClientProvider, artifactsByLanguage, eventPublisher, Executors.newCachedThreadPool());
-  }
-
-  private static Map<SonarLanguage, DownloadableArtifact> cFamilyMap() {
-    return Map.of(SonarLanguage.C, DownloadableArtifact.CFAMILY_PLUGIN, SonarLanguage.CPP, DownloadableArtifact.CFAMILY_PLUGIN);
+    return new OnDemandArtifactResolver(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool());
   }
 
   private void mockSuccessfulHttpClient() throws Exception {

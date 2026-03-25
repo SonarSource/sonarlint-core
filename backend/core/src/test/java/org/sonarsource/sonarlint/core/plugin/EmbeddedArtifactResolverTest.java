@@ -55,7 +55,7 @@ class EmbeddedArtifactResolverTest {
   @Test
   void should_resolve_to_active_embedded_in_connected_mode_when_plugin_key_is_in_map() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(SonarLanguage.JAVA.getPluginKey(), javaJar), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(SonarLanguage.JAVA.getPluginKey(), javaJar), null));
     var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "someConnection");
@@ -65,7 +65,7 @@ class EmbeddedArtifactResolverTest {
 
   @Test
   void should_return_empty_in_connected_mode_when_plugin_key_is_absent() {
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(), null));
 
     var result = resolver.resolve(SonarLanguage.JAVA, "someConnection");
 
@@ -77,7 +77,7 @@ class EmbeddedArtifactResolverTest {
   @Test
   void should_resolve_to_active_embedded_in_standalone_when_filename_contains_plugin_key() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(javaJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(javaJar), Map.of(), null));
     var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
@@ -88,7 +88,7 @@ class EmbeddedArtifactResolverTest {
   @Test
   void should_return_empty_in_standalone_when_no_file_matches_plugin_key() throws IOException {
     var otherJar = createJar("sonar-python-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(otherJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(otherJar), Map.of(), null));
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
@@ -98,7 +98,7 @@ class EmbeddedArtifactResolverTest {
   @Test
   void should_use_dedicated_csharp_path_in_standalone_when_no_file_match() throws IOException {
     var csharpPath = createJar("sonar-csharp-oss.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), csharpPath));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(), csharpPath));
     var expected = resolved(ArtifactState.ACTIVE, csharpPath, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.CS, null);
@@ -110,7 +110,7 @@ class EmbeddedArtifactResolverTest {
   void should_prefer_file_match_over_dedicated_csharp_path_in_standalone() throws IOException {
     var matchingJar = createJar("sonar-csharp-plugin.jar");
     var dedicatedPath = createJar("sonar-csharp-standalone.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(matchingJar), Map.of(), dedicatedPath));
+    var resolver = createResolver(mockParams(Set.of(matchingJar), Map.of(), dedicatedPath));
     var expected = resolved(ArtifactState.ACTIVE, matchingJar, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.CS, null);
@@ -120,7 +120,7 @@ class EmbeddedArtifactResolverTest {
 
   @Test
   void should_return_empty_for_csharp_in_standalone_when_no_file_match_and_no_dedicated_path() {
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(), null));
 
     var result = resolver.resolve(SonarLanguage.CS, null);
 
@@ -131,7 +131,7 @@ class EmbeddedArtifactResolverTest {
   void should_resolve_html_plugin_in_standalone_when_jar_name_differs_from_plugin_key() throws IOException {
     // HTML language has plugin key "web", but the JAR is named "sonar-html-plugin.jar"
     var htmlJar = createJar("sonar-html-plugin.jar", "web");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(htmlJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(htmlJar), Map.of(), null));
     var expected = resolved(ArtifactState.ACTIVE, htmlJar, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.HTML, null);
@@ -141,7 +141,7 @@ class EmbeddedArtifactResolverTest {
 
   @Test
   void should_return_empty_in_standalone_when_embedded_paths_are_empty() {
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(), null));
 
     var result = resolver.resolve(SonarLanguage.PYTHON, null);
 
@@ -154,7 +154,7 @@ class EmbeddedArtifactResolverTest {
     var javaJar2 = createJar("sonar-java-plugin-2.jar", "java");
     var params = mockParams(Set.of(javaJar1, javaJar2), Map.of(), null);
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(() -> new EmbeddedArtifactResolver(params))
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> createResolver(params))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessageContaining("Multiple embedded plugins found with the same key for paths");
   }
@@ -165,7 +165,7 @@ class EmbeddedArtifactResolverTest {
   void should_return_only_non_language_plugin_keys_as_companion_plugins() throws IOException {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of(), null));
     var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
 
     var result = resolver.resolveCompanionPlugins(null);
@@ -177,7 +177,7 @@ class EmbeddedArtifactResolverTest {
   void should_return_empty_companion_plugins_in_connected_mode_when_companion_is_only_in_standalone() throws IOException {
     var javaSymExecJar = createJar("sonarlint-java-symbolic-execution-plugin.jar", "javasymbolicexecution");
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(javaSymExecJar, javaJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(javaSymExecJar, javaJar), Map.of(), null));
 
     assertThat(resolver.resolveCompanionPlugins("someConnection")).isEmpty();
   }
@@ -186,7 +186,7 @@ class EmbeddedArtifactResolverTest {
   void should_return_companion_plugins_in_connected_mode_when_present_in_connected_mode_embedded_paths() throws IOException {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of("omnisharp", omnisharpJar), null));
+    var resolver = createResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of("omnisharp", omnisharpJar), null));
     var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
 
     var result = resolver.resolveCompanionPlugins("someConnection");
@@ -198,16 +198,20 @@ class EmbeddedArtifactResolverTest {
   void should_return_empty_companion_plugins_when_all_plugins_are_language_plugins() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
     var pythonJar = createJar("sonar-python-plugin.jar");
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(javaJar, pythonJar), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(javaJar, pythonJar), Map.of(), null));
 
     assertThat(resolver.resolveCompanionPlugins(null)).isEmpty();
   }
 
   @Test
   void should_return_empty_companion_plugins_when_embedded_paths_are_empty() {
-    var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(), Map.of(), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(), null));
 
     assertThat(resolver.resolveCompanionPlugins(null)).isEmpty();
+  }
+
+  private EmbeddedArtifactResolver createResolver(InitializeParams params) {
+    return new EmbeddedArtifactResolver(params, null, null);
   }
 
   private static InitializeParams mockParams(Set<Path> embeddedPaths, Map<String, Path> connectedPaths, @Nullable Path csharpOssPath) {
