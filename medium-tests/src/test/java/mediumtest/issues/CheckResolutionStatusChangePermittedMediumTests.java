@@ -265,7 +265,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
@@ -318,7 +318,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
@@ -379,7 +379,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
@@ -433,7 +433,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
+      List.of(fileUri), Map.of(), false)).join();
 
     waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);

@@ -112,7 +112,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
@@ -136,7 +136,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
@@ -165,7 +165,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
@@ -193,7 +193,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
@@ -221,7 +221,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
@@ -254,7 +254,7 @@ class ProxyMediumTests {
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL).setImpacts(Rules.Rule.Impacts.newBuilder().build()).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
