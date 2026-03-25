@@ -33,18 +33,19 @@ public class PluginStatusMapper {
   }
 
   public static List<PluginStatusDto> toDto(List<PluginStatus> statuses) {
-    return statuses.stream().map(status -> toDto(status)).toList();
+    return statuses.stream().map(PluginStatusMapper::toDto).toList();
   }
 
   public static PluginStatusDto toDto(PluginStatus status) {
     return new PluginStatusDto(
-      Language.valueOf(status.language().name()),
-      status.language().getName(),
+      status.language() != null ? Language.valueOf(status.language().name()) : null,
+      status.language() != null ? status.language().getName() : null,
       toDto(status.state()),
       toDto(status.source()),
       status.actualVersion() == null ? null : status.actualVersion().toString(),
       status.overriddenVersion() == null ? null : status.overriddenVersion().toString(),
-      status.serverVersion());
+      status.serverVersion()
+    );
   }
 
   public static PluginStateDto toDto(ArtifactState state) {

@@ -81,7 +81,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
       .filter(e -> !SonarLanguage.containsPlugin(e.getKey()))
       .collect(Collectors.toUnmodifiableMap(
         Map.Entry::getKey,
-        e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue())));
+        e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue(), null)));
   }
 
   @Nullable

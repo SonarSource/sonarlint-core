@@ -60,7 +60,7 @@ public record PluginStatus(
   }
 
   public static PluginStatus failed(SonarLanguage language) {
-    return forLanguage(language, ArtifactState.FAILED, null, null, null, null);
+    return forLanguage(language, ArtifactState.FAILED, null, null, null, null, null);
   }
 
   public String pluginName() {
