@@ -199,11 +199,11 @@ class OnDemandArtifactResolverTest {
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
     return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND,
-      Version.create(DownloadableArtifact.CFAMILY_PLUGIN.version()), null, path);
+      Version.create(DownloadableArtifact.CFAMILY_PLUGIN.version()), null, path, null);
   }
 
   private static PluginStatus failedStatus(SonarLanguage lang) {
-    return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null);
+    return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null, null);
   }
 
 }

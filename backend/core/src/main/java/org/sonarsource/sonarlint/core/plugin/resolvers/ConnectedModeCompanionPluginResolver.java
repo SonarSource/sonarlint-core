@@ -99,7 +99,7 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
 
   private void addStoredCompanion(String connectionId, String key, StoredPlugin stored, ConcurrentHashMap<String, PluginStatus> result) {
     var source = downloader.sourceFor(connectionId);
-    result.put(key, PluginStatus.forCompanion(key, ArtifactState.SYNCED, source, stored.getJarPath()));
+    result.put(key, PluginStatus.forCompanion(key, ArtifactState.SYNCED, source, stored.getJarPath(), null));
   }
 
   private void processCompanionPlugin(String connectionId, ServerPlugin plugin, ConcurrentHashMap<String, PluginStatus> result) {
@@ -113,7 +113,7 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
       return;
     }
     downloader.scheduleCompanionPluginDownload(connectionId, plugin);
-    result.put(plugin.getKey(), PluginStatus.forCompanion(plugin.getKey(), ArtifactState.DOWNLOADING, null, null));
+    result.put(plugin.getKey(), PluginStatus.forCompanion(plugin.getKey(), ArtifactState.DOWNLOADING, null, null, null));
   }
 
   private boolean isForceSynchronized(String pluginKey) {
