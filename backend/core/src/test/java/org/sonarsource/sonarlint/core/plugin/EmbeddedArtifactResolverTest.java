@@ -166,7 +166,7 @@ class EmbeddedArtifactResolverTest {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of(), null));
-    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar, null);
 
     var result = resolver.resolveCompanionPlugins(null);
 
@@ -187,7 +187,7 @@ class EmbeddedArtifactResolverTest {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of("omnisharp", omnisharpJar), null));
-    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar);
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar, null);
 
     var result = resolver.resolveCompanionPlugins("someConnection");
 

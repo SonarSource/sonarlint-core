@@ -83,7 +83,7 @@ public class ServerPluginDownloader {
     } catch (Exception e) {
       LOG.error("Failed to download companion plugin '{}' for connection '{}'", plugin.getKey(), connectionId, e);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-        List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.FAILED, null, null))));
+        List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.FAILED, null, null, null))));
     }
   }
 
@@ -95,7 +95,7 @@ public class ServerPluginDownloader {
       var source = sourceFor(connectionId);
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
       var statuses = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
-        .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath))
+        .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath, null))
         .toList();
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
     } else {
@@ -110,7 +110,7 @@ public class ServerPluginDownloader {
       : null;
     var source = sourceFor(connectionId);
     eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-      List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath))));
+      List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath, null))));
   }
 
   ArtifactState downloadPluginSync(String connectionId, ServerPlugin serverPlugin) {

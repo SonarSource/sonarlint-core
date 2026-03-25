@@ -144,7 +144,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   private List<PluginStatus> findAffectedLanguageStatuses(DownloadableArtifact artifact, Path pluginPath) {
     var version = Version.create(artifact.version());
     return findAffected(artifact)
-      .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, version, null, pluginPath))
+      .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, version, null, pluginPath, null))
       .toList();
   }
 
