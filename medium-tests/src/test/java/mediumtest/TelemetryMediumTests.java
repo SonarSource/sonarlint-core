@@ -741,6 +741,27 @@ class TelemetryMediumTests {
       )));
   }
 
+  @SonarLintTest
+  void it_should_record_supported_languages_panel_opened(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().supportedLanguagesPanelOpened();
+    backend.getTelemetryService().supportedLanguagesPanelOpened();
+    backend.getTelemetryService().supportedLanguagesPanelOpened();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getSupportedLanguagesPanelOpenedCount()).isEqualTo(3));
+  }
+
+  @SonarLintTest
+  void it_should_record_supported_languages_panel_cta_clicked(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().supportedLanguagesPanelCtaClicked();
+    backend.getTelemetryService().supportedLanguagesPanelCtaClicked();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getSupportedLanguagesPanelCtaClickedCount()).isEqualTo(2));
+  }
+
   private SonarLintTestRpcServer setupClientAndBackend(SonarLintTestHarness harness) {
     return harness.newBackend()
       .withSonarQubeConnection("connectionId")
