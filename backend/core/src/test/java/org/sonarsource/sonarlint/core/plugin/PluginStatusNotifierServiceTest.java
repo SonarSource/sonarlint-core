@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSource
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -50,8 +51,8 @@ class PluginStatusNotifierServiceTest {
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final PluginStatusNotifierService underTest = new PluginStatusNotifierService(pluginsService, client, configurationRepository);
 
-  private final PluginStatus standaloneStatus = PluginStatus.forCompanion("Standalone Plugin", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null);
-  private final PluginStatus connectedStatus = PluginStatus.forCompanion("Connected Plugin", ArtifactState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, "10.1.0");
+  private final PluginStatus standaloneStatus = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null, null);
+  private final PluginStatus connectedStatus = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.SONARQUBE_SERVER, null, null, null, "10.1");
 
   @BeforeEach
   void setUp() {
@@ -97,11 +98,11 @@ class PluginStatusNotifierServiceTest {
   }
 
   private static PluginStatusDto standaloneStatusDto() {
-    return new PluginStatusDto(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.EMBEDDED, null, null, null);
+    return new PluginStatusDto(Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.EMBEDDED, null, null, null);
   }
 
   private static PluginStatusDto connectedStatusDto() {
-    return new PluginStatusDto(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.SONARQUBE_SERVER, null, null, "10.0.0");
+    return new PluginStatusDto(Language.JAVA, "Java", PluginStateDto.ACTIVE, ArtifactSourceDto.SONARQUBE_SERVER, null, null, "10.1");
   }
 
 }

@@ -24,7 +24,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class PluginStatusDto {
 
+  @Nullable
   private final Language language;
+  @Nullable
   private final String pluginName;
   private final PluginStateDto state;
   @Nullable
@@ -47,7 +49,7 @@ public class PluginStatusDto {
    * @param serverVersion     version of the SonarQube Server that provided this plugin (e.g. "10.8.1");
    *                          {@code null} for non-server sources (embedded, cloud, unavailable)
    */
-  public PluginStatusDto(Language language, String pluginName, PluginStateDto state, @Nullable ArtifactSourceDto source,
+  public PluginStatusDto(@Nullable Language language, @Nullable String pluginName, PluginStateDto state, @Nullable ArtifactSourceDto source,
     @Nullable String actualVersion, @Nullable String overriddenVersion, @Nullable String serverVersion) {
     this.language = language;
     this.pluginName = pluginName;
@@ -58,10 +60,12 @@ public class PluginStatusDto {
     this.serverVersion = serverVersion;
   }
 
+  @Nullable
   public Language getLanguage() {
     return language;
   }
 
+  @Nullable
   public String getPluginName() {
     return pluginName;
   }

@@ -96,7 +96,7 @@ class ServerPluginDownloaderTest {
       downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
 
       var expectedEvent = new PluginStatusUpdateEvent("conn",
-        List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, javaJar)));
+        List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, javaJar, null)));
 
       await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
     } finally {
