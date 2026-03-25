@@ -28,7 +28,10 @@ import javax.annotation.Nullable;
 public enum DownloadableArtifact {
 
   CFAMILY_PLUGIN("cpp", "cfamily.version", "/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-%s.jar"),
-  CSHARP_OSS("cs", "cs.version", "/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-%s.jar");
+  CSHARP_OSS("cs", "cs.version", "/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-%s.jar"),
+  OMNISHARP_MONO("omnisharp-mono", Constants.OMNISHARP_VERSION, "/OmniSharp-Roslyn/%s/omnisharp-mono.tar.gz"),
+  OMNISHARP_NET472("omnisharp-net472", Constants.OMNISHARP_VERSION, "/OmniSharp-Roslyn/%s/omnisharp-net472.tar.gz"),
+  OMNISHARP_NET6("omnisharp-net6.0", Constants.OMNISHARP_VERSION, "/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz");
 
   /** System property to override the download URL pattern for all artifacts, e.g. for testing with a mock server. */
   public static final String PROPERTY_URL_PATTERN = "sonarlint.ondemand.url";
@@ -80,4 +83,7 @@ public enum DownloadableArtifact {
     }
   }
 
+  private static class Constants {
+    private static final String OMNISHARP_VERSION = "omnisharp.version";
+  }
 }

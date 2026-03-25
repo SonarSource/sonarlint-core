@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
+import org.sonarsource.sonarlint.core.analysis.OmnisharpRuntimeProvider;
 import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
@@ -200,6 +201,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
   MCPServerConfigurationProvider.class,
+  OmnisharpRuntimeProvider.class,
   AnalysisSchedulerCache.class,
   XodusKnownFindingsStorageService.class,
   TrackingService.class,
