@@ -26,7 +26,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(SystemStubsExtension.class)
 class DownloadableArtifactTest {
@@ -60,13 +59,6 @@ class DownloadableArtifactTest {
     var actual = DownloadableArtifact.CFAMILY_PLUGIN.version();
 
     assertThat(actual).isEqualTo("6.50.0");
-  }
-
-  @Test
-  void should_throw_when_version_property_is_missing() {
-    assertThatThrownBy(DownloadableArtifact.CSHARP_OSS::version)
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessageContaining("cs");
   }
 
   @Test

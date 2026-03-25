@@ -65,6 +65,8 @@ import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
@@ -320,6 +322,23 @@ public class AnalysisService {
   @EventListener
   public void onConfigurationScopesSynchronized(ConfigurationScopesSynchronizedEvent event) {
     checkIfReadyForAnalysis(event.getConfigScopeIds());
+  }
+
+  @EventListener
+  public void onPluginStatusUpdateEvent(PluginStatusUpdateEvent event) {
+    if (event.newStatuses().stream().anyMatch(s -> s.state() == ArtifactState.ACTIVE || s.state() == ArtifactState.SYNCED || s.state() == ArtifactState.FAILED)) {
+      var connectionId = event.connectionId();
+      Set<String> configScopeIds;
+      if (connectionId == null) {
+        configScopeIds = analysisReadinessByConfigScopeId.keySet().stream()
+          .filter(scopeId -> configurationRepository.getEffectiveBinding(scopeId).isEmpty())
+          .collect(Collectors.toSet());
+      } else {
+        configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
+          .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
+      }
+      checkIfReadyForAnalysis(configScopeIds);
+    }
   }
 
   @EventListener
@@ -583,7 +602,11 @@ public class AnalysisService {
       () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
       issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
-      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
+      () -> {
+        var isScopeReady = analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false);
+        var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::connectionId).orElse(null);
+        return isScopeReady && !pluginsService.areAnyPluginsDownloading(connectionId);
+      }, files, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {
