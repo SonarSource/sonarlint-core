@@ -23,7 +23,8 @@ import java.net.ProxySelector;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.http.ThreadFactories;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
@@ -331,9 +332,9 @@ public class SonarLintSpringAppConfig {
     return duration == null ? null : Timeout.of(duration);
   }
 
-  @Bean(name = "pluginDownloadExecutor")
+  @Bean(name = "pluginDownloadExecutor", destroyMethod = "shutdown")
   public ExecutorService pluginDownloadExecutor() {
-    return Executors.newCachedThreadPool();
+    return FailSafeExecutors.newCachedThreadPool(ThreadFactories.threadWithNamePrefix("sonarlint-plugin-download-"));
   }
 
 }

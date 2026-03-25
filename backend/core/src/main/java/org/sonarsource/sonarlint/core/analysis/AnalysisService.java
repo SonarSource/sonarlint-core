@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
@@ -289,9 +290,16 @@ public class AnalysisService {
   @EventListener
   public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
     var connectionId = event.connectionId();
-    schedulerCache.reloadPlugins(event.connectionId());
-    checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
-      .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
+    if (connectionId != null) {
+      schedulerCache.reloadPlugins(connectionId);
+      checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
+        .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
+    } else {
+      // On-demand plugins are application-wide and used as fallback in connected mode
+      schedulerCache.reloadStandalonePlugins();
+      schedulerCache.reloadAllConnectedPlugins();
+      checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
+    }
   }
 
   @EventListener
@@ -330,9 +338,8 @@ public class AnalysisService {
       var connectionId = event.connectionId();
       Set<String> configScopeIds;
       if (connectionId == null) {
-        configScopeIds = analysisReadinessByConfigScopeId.keySet().stream()
-          .filter(scopeId -> configurationRepository.getEffectiveBinding(scopeId).isEmpty())
-          .collect(Collectors.toSet());
+        // On-demand plugins are application-wide and used as fallback in connected mode, so re-check all scopes
+        configScopeIds = new HashSet<>(analysisReadinessByConfigScopeId.keySet());
       } else {
         configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
           .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
@@ -571,6 +578,10 @@ public class AnalysisService {
   private CompletableFuture<AnalysisResult> schedule(String configScopeId, AnalyzeCommand command, UUID analysisId, ArrayList<RawIssue> rawIssues,
     boolean shouldFetchServerIssues, @Nullable Trace trace) {
     var scheduler = startChild(trace, "getOrCreateAnalysisScheduler", "schedule", () -> schedulerCache.getOrCreateAnalysisScheduler(configScopeId, command.getTrace()));
+    // Plugins may have become ready during scheduler creation (e.g. on-demand cache hit); re-check readiness so the scheduler is woken if needed
+    if (BooleanUtils.isNotTrue(analysisReadinessByConfigScopeId.get(configScopeId))) {
+      checkIfReadyForAnalysis(Set.of(configScopeId));
+    }
     startChild(trace, "post", "schedule", () -> scheduler.post(command));
     var result = command.getFutureResult();
     result.exceptionally(exception -> {

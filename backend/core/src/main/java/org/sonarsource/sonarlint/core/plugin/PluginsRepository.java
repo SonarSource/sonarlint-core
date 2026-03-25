@@ -77,6 +77,7 @@ public class PluginsRepository {
       }
     }
   }
+
   public void unloadEmbedded() {
     var embeddedPlugins = loadedEmbeddedPlugins.getAndSet(null);
     if (embeddedPlugins != null) {
@@ -87,4 +88,5 @@ public class PluginsRepository {
       }
     }
   }
+
 }

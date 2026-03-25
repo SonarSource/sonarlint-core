@@ -104,12 +104,18 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
 
   @Nullable
   private Path resolveConnected(SonarLanguage language, String connectionId) {
+    // First, check if we have an embedded plugin for this language in connected mode
+    var pluginKey = language.getPluginKey();
+    var embeddedPath = connectedModeEmbeddedPathsByKey.get(pluginKey);
+    if (embeddedPath == null) {
+      return null;
+    }
     // We omit returning the embedded plugin if the server explicitly overrides it (e.g., enterprise plugins)
     var storedPlugins = loadStoredPlugins(connectionId);
     if (ConnectedModeArtifactResolver.isOverriddenByServer(language, connectionId, connectionConfigurationRepository, storageService, storedPlugins)) {
       return null;
     }
-    return connectedModeEmbeddedPathsByKey.get(language.getPluginKey());
+    return embeddedPath;
   }
 
   private Map<String, StoredPlugin> loadStoredPlugins(String connectionId) {

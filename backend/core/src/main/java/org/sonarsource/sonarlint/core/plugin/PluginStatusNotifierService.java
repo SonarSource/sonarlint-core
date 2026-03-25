@@ -41,17 +41,20 @@ public class PluginStatusNotifierService {
   @EventListener
   public void onPluginStatusesChanged(PluginStatusesChangedEvent event) {
     var connectionId = event.connectionId();
-    var affectedScopeIds = connectionId == null
-      ? configurationRepository.getConfigScopeIds()
-      : configurationRepository.getBoundScopesToConnection(connectionId).stream()
-        .map(BoundScope::getConfigScopeId).toList();
-
-    for (var configScopeId : affectedScopeIds) {
-      var effectiveConnectionId = connectionId != null ? connectionId
-        : configurationRepository.getEffectiveBinding(configScopeId)
+    if (connectionId != null) {
+      // All affected scopes share the same connection: reuse the pre-computed statuses from the event
+      var statusDtos = PluginStatusMapper.toDto(event.pluginStatuses());
+      configurationRepository.getBoundScopesToConnection(connectionId).stream()
+        .map(BoundScope::getConfigScopeId)
+        .forEach(scopeId -> client.didChangePluginStatuses(new DidChangePluginStatusesParams(scopeId, statusDtos)));
+    } else {
+      // Embedded plugins changed: each scope may have a different effective connection, resolve per scope
+      for (var configScopeId : configurationRepository.getConfigScopeIds()) {
+        var effectiveConnectionId = configurationRepository.getEffectiveBinding(configScopeId)
           .map(Binding::connectionId).orElse(null);
-      var newStatuses = pluginsService.getPluginStatuses(effectiveConnectionId);
-      client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(newStatuses)));
+        var newStatuses = pluginsService.getPluginStatuses(effectiveConnectionId);
+        client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(newStatuses)));
+      }
     }
   }
 

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -98,33 +99,42 @@ public class PluginsSynchronizer {
       .filter(entry -> entry.getValue().isEmpty())
       .map(Map.Entry::getKey)
       .toList();
-    var serverPluginsExpectedInStorage = downloadSkipReasonByServerPlugin.entrySet().stream()
-      .filter(entry -> entry.getValue().isEmpty() || entry.getValue().get().equals(DownloadSkipReason.UP_TO_DATE))
+    var upToDatePlugins = downloadSkipReasonByServerPlugin.entrySet().stream()
+      .filter(entry -> entry.getValue().isPresent() && entry.getValue().get().equals(DownloadSkipReason.UP_TO_DATE))
       .map(Map.Entry::getKey)
-      .toList();
+      .collect(Collectors.toCollection(ArrayList::new));
 
     if (pluginsToDownload.isEmpty()) {
       storage.plugins().storeNoPlugins();
-      storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+      storage.plugins().cleanUpUnknownPlugins(upToDatePlugins);
       return new PluginSynchronizationSummary(false);
     }
-    downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
-    return new PluginSynchronizationSummary(true);
+    var successfulDownloads = downloadAll(serverApi, pluginsToDownload, cancelMonitor);
+    // Only include successfully downloaded plugins in the expected set; failed downloads are excluded
+    // so that cleanUpUnknownPlugins does not write stale references to missing JARs
+    upToDatePlugins.addAll(successfulDownloads);
+    storage.plugins().cleanUpUnknownPlugins(upToDatePlugins);
+    return new PluginSynchronizationSummary(!successfulDownloads.isEmpty());
   }
 
-  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
-    for (ServerPlugin plugin : pluginsToDownload) {
-      downloadPlugin(serverApi, plugin, cancelMonitor);
+  private List<ServerPlugin> downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
+    List<ServerPlugin> succeeded = new ArrayList<>();
+    for (var plugin : pluginsToDownload) {
+      if (downloadPlugin(serverApi, plugin, cancelMonitor)) {
+        succeeded.add(plugin);
+      }
     }
+    return succeeded;
   }
 
-  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
+  private boolean downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
     try {
       serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
+      return true;
     } catch (Exception e) {
       LOG.error("[SYNC] Failed to download plugin '{}': {}", plugin.getFilename(), e.getMessage(), e);
+      return false;
     }
   }
 

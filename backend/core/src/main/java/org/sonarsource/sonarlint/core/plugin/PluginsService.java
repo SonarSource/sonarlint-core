@@ -42,9 +42,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
-import org.springframework.context.event.EventListener;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -123,7 +121,7 @@ public class PluginsService {
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null));
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null, getPluginStatuses(null)));
     }
     return loadedEmbeddedPlugins;
   }
@@ -135,7 +133,7 @@ public class PluginsService {
       loadedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
       skippedPluginsRepository.setSkippedPlugins(connectionId, getSkippedPlugins(result));
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId)));
     }
     return loadedPlugins;
   }
@@ -210,22 +208,13 @@ public class PluginsService {
     boolean wasLoaded;
     if (connectionId == null) {
       wasLoaded = pluginsRepository.getLoadedEmbeddedPlugins() != null;
-      pluginsRepository.unloadEmbedded();
+      unloadEmbeddedPlugins();
     } else {
       wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
       pluginsRepository.unload(connectionId);
     }
     if (wasLoaded) {
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId));
-    }
-  }
-
-  @EventListener
-  public void onPluginStatusUpdateEvent(PluginStatusUpdateEvent event) {
-    if (event.newStatuses().stream().anyMatch(s -> s.state() == ArtifactState.ACTIVE || s.state() == ArtifactState.SYNCED)) {
-      // Evict the current engine cache so that the next analysis correctly incorporates
-      // the newly downloaded or activated analyzers (e.g. C/C++ or synced connected mode plugins).
-      unloadPlugins(event.connectionId());
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId)));
     }
   }
 
@@ -268,6 +257,11 @@ public class PluginsService {
     var shouldUseCsharpEnterprise = shouldUseEnterpriseCSharpAnalyzer(connectionId);
     var shouldUseVbEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
     return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbEnterprise);
+  }
+
+  public void unloadEmbeddedPlugins() {
+    logger.debug("Evict loaded embedded plugins");
+    pluginsRepository.unloadEmbedded();
   }
 
   @PreDestroy

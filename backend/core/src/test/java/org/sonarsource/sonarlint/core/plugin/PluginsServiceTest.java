@@ -62,6 +62,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 class PluginsServiceTest {
 
@@ -370,7 +371,10 @@ class PluginsServiceTest {
 
     underTest.unloadPlugins(connectionId);
 
-    verify(eventPublisher).publishEvent(new PluginStatusesChangedEvent(connectionId));
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher).publishEvent(captor.capture());
+    assertThat(captor.getValue().connectionId()).isEqualTo(connectionId);
+    assertThat(captor.getValue().pluginStatuses()).isNotNull();
   }
 
   @Test
@@ -379,6 +383,45 @@ class PluginsServiceTest {
     when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(null);
 
     underTest.unloadPlugins(connectionId);
+
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  void areAnyPluginsDownloading_returnsTrueWhenALanguagePluginIsDownloading() {
+    var connectionId = "connection1";
+    when(artifactResolver.resolve(SonarLanguage.JAVA, connectionId))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, ArtifactSource.SONARQUBE_SERVER, null)));
+
+    assertThat(underTest.areAnyPluginsDownloading(connectionId)).isTrue();
+  }
+
+  @Test
+  void areAnyPluginsDownloading_returnsFalseWhenNoPluginIsDownloading() {
+    var connectionId = "connection1";
+    when(artifactResolver.resolve(any(), anyString()))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactSource.SONARQUBE_SERVER, null)));
+
+    assertThat(underTest.areAnyPluginsDownloading(connectionId)).isFalse();
+  }
+
+  @Test
+  void unloadEmbeddedPlugins_should_publish_event_when_embedded_plugins_were_loaded() {
+    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(mock(LoadedPlugins.class));
+
+    underTest.unloadPlugins(null);
+
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher).publishEvent(captor.capture());
+    assertThat(captor.getValue().connectionId()).isNull();
+    assertThat(captor.getValue().pluginStatuses()).isNotNull();
+  }
+
+  @Test
+  void unloadEmbeddedPlugins_should_not_publish_event_when_no_embedded_plugins_were_loaded() {
+    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(null);
+
+    underTest.unloadPlugins(null);
 
     verify(eventPublisher, never()).publishEvent(any());
   }

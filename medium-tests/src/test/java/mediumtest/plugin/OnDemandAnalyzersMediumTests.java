@@ -19,7 +19,6 @@
  */
 package mediumtest.plugin;
 
-import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +60,11 @@ class OnDemandAnalyzersMediumTests {
 
   @SonarLintTest
   void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) throws Exception {
-    byte[] dummyJarBody = Files.readAllBytes(java.nio.file.Path.of("../backend/core/src/test/resources/ondemand/sonar-cpp-plugin-test.jar"));
+    byte[] dummyJarBody;
+    try (var is = OnDemandAnalyzersMediumTests.class.getResourceAsStream("/ondemand/sonar-cpp-plugin-test.jar")) {
+      assertThat(is).as("Test resource /ondemand/sonar-cpp-plugin-test.jar must be on the classpath").isNotNull();
+      dummyJarBody = is.readAllBytes();
+    }
     for (int i = 0; i < 5; i++) {
       var b = new okio.Buffer();
       b.write(dummyJarBody);
