@@ -34,8 +34,8 @@ public enum DownloadableArtifact {
     "ondemand/sonar-cs-plugin.jar.asc"),
   OMNISHARP_MONO("omnisharp-mono", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-mono.tar.gz",
     "ondemand/omnisharp-mono.tar.gz.asc"),
-  OMNISHARP_NET472("omnisharp-net472", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net472.zip",
-    "ondemand/omnisharp-net472.zip.asc"),
+  OMNISHARP_NET472("omnisharp-net472", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net472.tar.gz",
+    "ondemand/omnisharp-net472.tar.gz.asc"),
   OMNISHARP_NET6("omnisharp-net6", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz",
     "ondemand/omnisharp-net6.0.tar.gz.asc");
 

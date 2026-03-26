@@ -34,6 +34,9 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID;
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.GO_ENTERPRISE_PLUGIN_ID;
+
 /**
  * Resolves companion plugins (plugins that are not strictly language analyzers but
  * provide additional features required by other analyzers, like sonarlint-omnisharp).
@@ -119,10 +122,10 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
   }
 
   private boolean isForceSynchronized(String pluginKey) {
-    if ("csharpenterprise".equals(pluginKey)) {
+    if (CSHARP_ENTERPRISE_PLUGIN_ID.equals(pluginKey)) {
       return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.CS);
     }
-    if ("goenterprise".equals(pluginKey)) {
+    if (GO_ENTERPRISE_PLUGIN_ID.equals(pluginKey)) {
       return languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.GO);
     }
     return false;
