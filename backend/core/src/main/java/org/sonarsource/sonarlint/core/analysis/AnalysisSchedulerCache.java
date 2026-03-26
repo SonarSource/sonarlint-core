@@ -36,14 +36,13 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
@@ -55,28 +54,20 @@ public class AnalysisSchedulerCache {
   private final PluginsService pluginsService;
   private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
-  private final Map<String, String> extraProperties = new HashMap<>();
+  private final OmnisharpRuntimeProvider omnisharpRuntimeProvider;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final Map<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
-  public AnalysisSchedulerCache(InitializeParams initializeParams, UserPaths userPaths, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
-    PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
+  @SuppressWarnings("java:S107")
+  public AnalysisSchedulerCache(OmnisharpRuntimeProvider omnisharpRuntimeProvider, UserPaths userPaths, ConfigurationRepository configurationRepository,
+    NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
+    this.omnisharpRuntimeProvider = omnisharpRuntimeProvider;
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.pluginLifecycleService = pluginLifecycleService;
     this.nodeJsService = nodeJsService;
     this.workDir = userPaths.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
-    var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
-    var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
-    if (shouldSupportCsharp && languageSpecificRequirements != null) {
-      var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
-      if (omnisharpRequirements != null) {
-        extraProperties.put("sonar.cs.internal.omnisharpMonoLocation", omnisharpRequirements.getMonoDistributionPath().toString());
-        extraProperties.put("sonar.cs.internal.omnisharpWinLocation", omnisharpRequirements.getDotNet472DistributionPath().toString());
-        extraProperties.put("sonar.cs.internal.omnisharpNet6Location", omnisharpRequirements.getDotNet6DistributionPath().toString());
-      }
-    }
   }
 
   @CheckForNull
@@ -131,7 +122,8 @@ public class AnalysisSchedulerCache {
   private AnalysisSchedulerConfiguration createSchedulerConfiguration(DotnetSupport dotnetSupport, @Nullable Trace trace) {
     var activeNodeJs = startChild(trace, "getActiveNodeJs", "createSchedulerConfiguration", nodeJsService::getActiveNodeJs);
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var fullExtraProperties = new HashMap<>(extraProperties);
+    var fullExtraProperties = new HashMap<String, String>();
+    enhanceOmnisharpExtraProperties(fullExtraProperties);
     enhanceDotnetExtraProperties(fullExtraProperties, dotnetSupport);
 
     return AnalysisSchedulerConfiguration.builder()
@@ -141,6 +133,10 @@ public class AnalysisSchedulerCache {
       .setNodeJs(nodeJsPath)
       .setFileSystemProvider(this::getFileSystem)
       .build();
+  }
+
+  private void enhanceOmnisharpExtraProperties(HashMap<String, String> properties) {
+    properties.putAll(omnisharpRuntimeProvider.getExtraProperties());
   }
 
   private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
@@ -162,6 +158,11 @@ public class AnalysisSchedulerCache {
   @EventListener
   public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
     stop(event.removedConnectionId());
+  }
+
+  @EventListener
+  public void onOmnisharpDistributionChanged(OmnisharpDistributionChangedEvent event) {
+    resetStartedSchedulers();
   }
 
   public synchronized void reloadPlugins(String connectionId) {

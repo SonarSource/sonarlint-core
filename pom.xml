@@ -85,6 +85,7 @@
     <!-- On-demand plugin versions -->
     <cfamily.version>6.77.0.95488</cfamily.version>
     <csharp.version>10.19.0.132793</csharp.version>
+    <omnisharp.version>1.39.15</omnisharp.version>
   </properties>
 
   <dependencyManagement>

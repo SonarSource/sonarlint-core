@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
+import org.sonarsource.sonarlint.core.analysis.OmnisharpRuntimeProvider;
 import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
@@ -100,6 +101,7 @@ import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandPluginCacheManager;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandPluginSignatureVerifier;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UniqueTaskExecutor;
@@ -215,6 +217,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
   MCPServerConfigurationProvider.class,
+  OmnisharpRuntimeProvider.class,
   AnalysisSchedulerCache.class,
   XodusKnownFindingsStorageService.class,
   TrackingService.class,
@@ -250,6 +253,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   OnDemandArtifactResolver.class,
   OnDemandPluginCacheManager.class,
   OnDemandPluginSignatureVerifier.class,
+  OmnisharpDistributionDownloader.class,
   ServerPluginDownloader.class,
   UniqueTaskExecutor.class
 })
