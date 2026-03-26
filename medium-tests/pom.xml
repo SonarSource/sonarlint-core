@@ -172,6 +172,24 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>download-cfamily-plugin-jar</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-${cfamily.version}.jar</url>
+              <outputDirectory>${project.build.testOutputDirectory}/ondemand</outputDirectory>
+              <outputFileName>sonar-cpp-plugin-test.jar</outputFileName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <profiles>

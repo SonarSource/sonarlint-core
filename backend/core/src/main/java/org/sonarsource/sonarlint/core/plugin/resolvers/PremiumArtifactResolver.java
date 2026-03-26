@@ -47,4 +47,5 @@ public class PremiumArtifactResolver implements ArtifactResolver {
     }
     return Optional.empty();
   }
+
 }

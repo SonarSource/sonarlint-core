@@ -293,9 +293,10 @@ class PluginSynchronizationMediumTests {
       .start(client);
     client.waitForSynchronization();
 
-    assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
-      .extracting(File::getName)
-      .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString());
+    waitAtMost(5, SECONDS).untilAsserted(() ->
+      assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
+        .extracting(File::getName)
+        .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString()));
     assertThat(client.getLogMessages()).contains("Cleaning up the plugins storage " + getPluginsStorageFolder(backend) + ", removing 1 unknown files:");
     assertThat(getPluginReferencesFilePath(backend))
       .exists()

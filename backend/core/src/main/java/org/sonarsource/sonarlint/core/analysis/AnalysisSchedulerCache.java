@@ -176,6 +176,22 @@ public class AnalysisSchedulerCache {
     }
   }
 
+  public synchronized void reloadStandalonePlugins() {
+    var scheduler = standaloneScheduler.get();
+    if (scheduler != null) {
+      scheduler.reset(
+        createSchedulerConfiguration(pluginsService.getDotnetSupport(null)),
+        pluginLifecycleService::reloadEmbeddedPluginsAndEvictCaches
+      );
+    } else {
+      pluginLifecycleService.unloadEmbeddedPluginsAndEvictCaches();
+    }
+  }
+
+  public synchronized void reloadAllConnectedPlugins() {
+    connectedSchedulerByConnectionId.keySet().forEach(this::reloadPlugins);
+  }
+
   @EventListener
   public void onClientNodeJsPathChanged(ClientNodeJsPathChanged event) {
     resetStartedSchedulers();

@@ -68,7 +68,7 @@ class PluginStatusNotifierServiceTest {
     var expectedScope1Params = new DidChangePluginStatusesParams(SCOPE_1, List.of(standaloneStatusDto()));
     var expectedScope2Params = new DidChangePluginStatusesParams(SCOPE_2, List.of(connectedStatusDto()));
 
-    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(null));
+    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(null, List.of()));
 
     var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
     verify(client, times(2)).didChangePluginStatuses(captor.capture());
@@ -87,7 +87,7 @@ class PluginStatusNotifierServiceTest {
     var expectedScope1Params = new DidChangePluginStatusesParams(SCOPE_1, List.of(connectedStatusDto()));
     var expectedScope2Params = new DidChangePluginStatusesParams(SCOPE_2, List.of(connectedStatusDto()));
 
-    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(CONNECTION_1));
+    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(CONNECTION_1, List.of(connectedStatus)));
 
     var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
     verify(client, times(2)).didChangePluginStatuses(captor.capture());
