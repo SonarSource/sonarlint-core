@@ -77,4 +77,16 @@ public class PluginsRepository {
       }
     }
   }
+
+  public void unloadEmbedded() {
+    var embeddedPlugins = loadedEmbeddedPlugins.getAndSet(null);
+    if (embeddedPlugins != null) {
+      try {
+        embeddedPlugins.close();
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to unload embedded plugins", e);
+      }
+    }
+  }
+
 }

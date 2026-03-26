@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactReso
 import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
@@ -335,7 +337,9 @@ class ConnectedModeArtifactResolverTest {
   }
 
   private ConnectedModeArtifactResolver createResolver(Set<String> skipSyncPluginKeys) {
-    return new ConnectedModeArtifactResolver(storageService, connectionRepo, serverPluginsCache, downloader, skipSyncPluginKeys);
+    var initializeParams = mock(InitializeParams.class);
+    when(initializeParams.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(skipSyncPluginKeys.stream().collect(Collectors.toMap(k -> k, k -> Path.of("dummy"))));
+    return new ConnectedModeArtifactResolver(storageService, connectionRepo, serverPluginsCache, downloader, initializeParams);
   }
 
   private void mockConnection(String connectionId, ConnectionKind kind) {

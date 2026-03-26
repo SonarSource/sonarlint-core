@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin.resolvers;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class UniqueTaskExecutor {
   
@@ -34,10 +35,16 @@ public class UniqueTaskExecutor {
 
   public void scheduleIfAbsent(String key, Runnable task) {
     if (inProgress.add(key)) {
+      var logOutput = SonarLintLogger.get().getTargetForCopy();
       executor.submit(() -> {
+        var previousLogOutput = SonarLintLogger.get().getTargetForCopy();
+        if (logOutput != null) {
+          SonarLintLogger.get().setTarget(logOutput);
+        }
         try {
           task.run();
         } finally {
+          SonarLintLogger.get().setTarget(previousLogOutput);
           inProgress.remove(key);
         }
       });

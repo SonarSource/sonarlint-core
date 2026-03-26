@@ -35,11 +35,11 @@ class PremiumArtifactResolverTest {
   private static final ResolvedArtifact PREMIUM = new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
 
   @Test
-  void should_return_premium_when_language_is_connected_mode_only() {
+  void should_return_premium_when_language_is_connected_mode_only_and_no_connection() {
     var repo = mockRepo(Set.of(SonarLanguage.COBOL), Set.of());
     var resolver = new PremiumArtifactResolver(repo);
 
-    var result = resolver.resolve(SonarLanguage.COBOL, "conn");
+    var result = resolver.resolve(SonarLanguage.COBOL, null);
 
     assertThat(result).contains(PREMIUM);
   }
@@ -49,7 +49,7 @@ class PremiumArtifactResolverTest {
     var repo = mockRepo(Set.of(SonarLanguage.JAVA), Set.of(SonarLanguage.JAVA));
     var resolver = new PremiumArtifactResolver(repo);
 
-    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
+    var result = resolver.resolve(SonarLanguage.JAVA, null);
 
     assertThat(result).isEmpty();
   }
@@ -69,21 +69,9 @@ class PremiumArtifactResolverTest {
     var repo = mockRepo(Set.of(), Set.of());
     var resolver = new PremiumArtifactResolver(repo);
 
-    var result = resolver.resolve(SonarLanguage.JAVA, "conn");
+    var result = resolver.resolve(SonarLanguage.JAVA, null);
 
     assertThat(result).isEmpty();
-  }
-
-  @Test
-  void should_return_premium_regardless_of_connection_id_for_connected_mode_only_language() {
-    var repo = mockRepo(Set.of(SonarLanguage.COBOL), Set.of());
-    var resolver = new PremiumArtifactResolver(repo);
-
-    var resultWithNullConnection = resolver.resolve(SonarLanguage.COBOL, null);
-    var resultWithConnection = resolver.resolve(SonarLanguage.COBOL, "anyConnection");
-
-    assertThat(resultWithNullConnection).contains(PREMIUM);
-    assertThat(resultWithConnection).contains(PREMIUM);
   }
 
   private static LanguageSupportRepository mockRepo(Set<SonarLanguage> connected, Set<SonarLanguage> standalone) {

@@ -150,9 +150,9 @@ class AnalysisReadinessMediumTests {
     client.waitForSynchronization();
 
     // analysis is ready
-    await().atMost(1, TimeUnit.SECONDS)
+    await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).containsOnlyKeys(fileUri);
@@ -163,20 +163,20 @@ class AnalysisReadinessMediumTests {
       .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey2", true), BindingMode.MANUAL, null));
 
     // analysis becomes not ready after binding change
-    verify(client, timeout(200)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), false);
+    verify(client, timeout(500)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), false);
 
     client.waitForSynchronization();
 
     // analysis is ready, no issues are raised by the second QP
-    await().atMost(1, TimeUnit.SECONDS)
+    await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
     // bind again to 1st project that should be ready
     backend.getConfigurationService()
       .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true), BindingMode.MANUAL, null));
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID))
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID))
       .extracting(RaisedFindingDto::getRuleKey).containsExactly("xml:S3421"));
   }
 

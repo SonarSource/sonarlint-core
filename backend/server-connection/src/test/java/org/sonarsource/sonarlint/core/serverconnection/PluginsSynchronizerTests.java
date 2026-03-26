@@ -57,10 +57,10 @@ class PluginsSynchronizerTests {
 
     var databaseService = mock(SonarLintDatabase.class);
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.3"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.3"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-1.2.3.4.jar")).doesNotExist();
+    assertThat(summary.anyPluginSynchronized()).isFalse();
   }
 
   /**
@@ -73,16 +73,17 @@ class PluginsSynchronizerTests {
       "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-2.3.4.5.jar\", \"sonarLintSupported\": true}," +
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
-    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
+    mockServer.addStringResponse("/api/plugins/download?plugin=text", "");
+    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.4"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.4"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
+    assertThat(summary.anyPluginSynchronized()).isTrue();
   }
 
   /**
@@ -95,18 +96,19 @@ class PluginsSynchronizerTests {
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}," +
       "{\"key\": \"goenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-enterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
-    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
-    mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
+    mockServer.addStringResponse("/api/plugins/download?plugin=text", "");
+    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "");
+    mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-enterprise-plugin-1.2.3.4.jar")).exists();
+    assertThat(summary.anyPluginSynchronized()).isTrue();
   }
 
   @Test
@@ -114,14 +116,13 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"goenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-enterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-enterprise-plugin-1.2.3.4.jar")).doesNotExist();
+    assertThat(summary.anyPluginSynchronized()).isFalse();
   }
 
   /**
@@ -134,18 +135,19 @@ class PluginsSynchronizerTests {
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}," +
       "{\"key\": \"go\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
-    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
-    mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
+    mockServer.addStringResponse("/api/plugins/download?plugin=text", "");
+    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "");
+    mockServer.addStringResponse("/api/plugins/download?plugin=go", "");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-plugin-1.2.3.4.jar")).exists();
+    assertThat(summary.anyPluginSynchronized()).isTrue();
   }
 
   @Test
@@ -153,14 +155,13 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"go\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of("text", "go"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-plugin-1.2.3.4.jar")).doesNotExist();
+    assertThat(summary.anyPluginSynchronized()).isFalse();
   }
 
   @Test
@@ -169,14 +170,15 @@ class PluginsSynchronizerTests {
       "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}"
       +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-go");
+    mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.CS), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-csharpenterprise-plugin-1.2.3.4.jar")).exists();
+    assertThat(summary.anyPluginSynchronized()).isTrue();
   }
 
   @Test
@@ -185,14 +187,13 @@ class PluginsSynchronizerTests {
       "{\"key\": \"csharpenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-csharpenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}"
       +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=csharpenterprise", "content-csharp");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-csharpenterprise-plugin-1.2.3.4.jar")).doesNotExist();
+    assertThat(summary.anyPluginSynchronized()).isFalse();
   }
 
   @Test
@@ -200,13 +201,14 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-vb");
+    mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "");
     var databaseService = mock(SonarLintDatabase.class);
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.VBNET), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-vbnetenterprise-plugin-1.2.3.4.jar")).exists();
+    assertThat(summary.anyPluginSynchronized()).isTrue();
   }
 
   @Test
@@ -214,13 +216,12 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"vbnetenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-vbnetenterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
       "]}");
-    mockServer.addStringResponse("/api/plugins/download?plugin=vbnetenterprise", "content-go");
     var databaseService = mock(SonarLintDatabase.class);
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.GO), new ConnectionStorage(dest, "connectionId", databaseService), Set.of());
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+    var summary = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-vbnetenterprise-plugin-1.2.3.4.jar")).doesNotExist();
+    assertThat(summary.anyPluginSynchronized()).isFalse();
   }
 }
