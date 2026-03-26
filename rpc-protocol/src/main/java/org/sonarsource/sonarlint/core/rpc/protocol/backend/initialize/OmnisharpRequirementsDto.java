@@ -20,15 +20,29 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import java.nio.file.Path;
+import javax.annotation.Nullable;
 
 public class OmnisharpRequirementsDto {
+  /**
+   * Path to the Mono OmniSharp runtime distribution. May be null when SLCORE downloads OmniSharp automatically.
+   */
+  @Nullable
   private final Path monoDistributionPath;
+  /**
+   * Path to the .NET 6 OmniSharp runtime distribution. May be null when SLCORE downloads OmniSharp automatically.
+   */
+  @Nullable
   private final Path dotNet6DistributionPath;
+  /**
+   * Path to the .NET Framework 4.7.2 OmniSharp runtime distribution. May be null when SLCORE downloads OmniSharp automatically.
+   */
+  @Nullable
   private final Path dotNet472DistributionPath;
   private final Path ossAnalyzerPath;
   private final Path enterpriseAnalyzerPath;
 
-  public OmnisharpRequirementsDto(Path monoDistributionPath, Path dotNet6DistributionPath, Path dotNet472DistributionPath, Path ossAnalyzerPath, Path enterpriseAnalyzerPath) {
+  public OmnisharpRequirementsDto(@Nullable Path monoDistributionPath, @Nullable Path dotNet6DistributionPath, @Nullable Path dotNet472DistributionPath,
+    Path ossAnalyzerPath, Path enterpriseAnalyzerPath) {
     this.monoDistributionPath = monoDistributionPath;
     this.dotNet6DistributionPath = dotNet6DistributionPath;
     this.dotNet472DistributionPath = dotNet472DistributionPath;
@@ -36,14 +50,17 @@ public class OmnisharpRequirementsDto {
     this.enterpriseAnalyzerPath = enterpriseAnalyzerPath;
   }
 
+  @Nullable
   public Path getMonoDistributionPath() {
     return monoDistributionPath;
   }
 
+  @Nullable
   public Path getDotNet6DistributionPath() {
     return dotNet6DistributionPath;
   }
 
+  @Nullable
   public Path getDotNet472DistributionPath() {
     return dotNet472DistributionPath;
   }

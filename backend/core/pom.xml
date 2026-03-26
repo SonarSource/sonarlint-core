@@ -83,6 +83,10 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+    </dependency>
+    <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
     </dependency>
@@ -216,6 +220,45 @@
               <url>https://binaries.sonarsource.com/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-${csharp.version}.jar.asc</url>
               <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
               <outputFileName>sonar-cs-plugin.jar.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+          <execution>
+            <id>download-omnisharp-mono-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/OmniSharp-Roslyn/${omnisharp.version}/omnisharp-mono.tar.gz.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>omnisharp-mono.tar.gz.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+          <execution>
+            <id>download-omnisharp-net472-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/OmniSharp-Roslyn/${omnisharp.version}/omnisharp-net472.zip.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>omnisharp-net472.zip.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+          <execution>
+            <id>download-omnisharp-net6-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/OmniSharp-Roslyn/${omnisharp.version}/omnisharp-net6.0.tar.gz.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>omnisharp-net6.0.tar.gz.asc</outputFileName>
               <skipCache>false</skipCache>
             </configuration>
           </execution>

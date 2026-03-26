@@ -37,7 +37,7 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProv
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
- * Verifies the PGP signature of downloaded plugins using the SonarSource public key.
+ * Verifies the PGP signature of downloaded artifacts using the SonarSource public key.
  */
 public class OnDemandPluginSignatureVerifier {
 
@@ -45,14 +45,18 @@ public class OnDemandPluginSignatureVerifier {
   private static final String SONAR_PUBLIC_KEY = "ondemand/sonarsource-public.key";
   private static final BouncyCastleProvider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
-  boolean verify(Path jarFile, String pluginKey) {
+  boolean verify(Path artifactFile, DownloadableArtifact artifact) {
+    return verify(artifactFile, artifact.signatureResourcePath());
+  }
+
+  boolean verify(Path artifactFile, String signatureResourcePath) {
     var keyRing = loadPublicKeyRing();
     if (keyRing == null) {
       return false;
     }
-    var isValid = verifyPgpSignature(jarFile, pluginKey, keyRing);
+    var isValid = verifyPgpSignature(artifactFile, signatureResourcePath, keyRing);
     if (isValid) {
-      LOG.debug("Plugin file signature verified successfully");
+      LOG.debug("Artifact file signature verified successfully");
     }
     return isValid;
   }
@@ -71,15 +75,14 @@ public class OnDemandPluginSignatureVerifier {
     }
   }
 
-  private InputStream loadBundledSignature(String pluginKey) {
-    var signatureFileName = String.format("ondemand/sonar-%s-plugin.jar.asc", pluginKey);
-    return getClass().getClassLoader().getResourceAsStream(signatureFileName);
+  private InputStream loadBundledSignature(String signatureResourcePath) {
+    return getClass().getClassLoader().getResourceAsStream(signatureResourcePath);
   }
 
-  private boolean verifyPgpSignature(Path dataFile, String pluginKey, PGPPublicKeyRingCollection keyRing) {
-    try (var signatureStream = loadBundledSignature(pluginKey)) {
+  private boolean verifyPgpSignature(Path dataFile, String signatureResourcePath, PGPPublicKeyRingCollection keyRing) {
+    try (var signatureStream = loadBundledSignature(signatureResourcePath)) {
       if (signatureStream == null) {
-        LOG.error("Could not find bundled signature for plugin: {}", pluginKey);
+        LOG.error("Could not find bundled signature at resource path: {}", signatureResourcePath);
         return false;
       }
 

@@ -25,10 +25,19 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.annotation.Nullable;
 
+@SuppressWarnings("java:S1192")
 public enum DownloadableArtifact {
 
-  CFAMILY_PLUGIN("cpp", "cfamily.version", "/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-%s.jar"),
-  CSHARP_OSS("cs", "cs.version", "/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-%s.jar");
+  CFAMILY_PLUGIN("cpp", "cfamily.version", "/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-%s.jar",
+    "ondemand/sonar-cpp-plugin.jar.asc"),
+  CSHARP_OSS("cs", "cs.version", "/Distribution/sonar-csharp-plugin/sonar-csharp-plugin-%s.jar",
+    "ondemand/sonar-cs-plugin.jar.asc"),
+  OMNISHARP_MONO("omnisharp-mono", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-mono.tar.gz",
+    "ondemand/omnisharp-mono.tar.gz.asc"),
+  OMNISHARP_NET472("omnisharp-net472", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net472.zip",
+    "ondemand/omnisharp-net472.zip.asc"),
+  OMNISHARP_NET6("omnisharp-net6", "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz",
+    "ondemand/omnisharp-net6.0.tar.gz.asc");
 
   /** System property to override the download URL pattern for all artifacts, e.g. for testing with a mock server. */
   public static final String PROPERTY_URL_PATTERN = "sonarlint.ondemand.url";
@@ -40,11 +49,13 @@ public enum DownloadableArtifact {
   private final String artifactKey;
   private final String versionKey;
   private final String urlPattern;
+  private final String signatureResourcePath;
 
-  DownloadableArtifact(String artifactKey, String versionKey, String urlPattern) {
+  DownloadableArtifact(String artifactKey, String versionKey, String urlPattern, String signatureResourcePath) {
     this.artifactKey = artifactKey;
     this.versionKey = versionKey;
     this.urlPattern = urlPattern;
+    this.signatureResourcePath = signatureResourcePath;
   }
 
   public static Optional<DownloadableArtifact> byArtifactKey(@Nullable String key) {
@@ -65,6 +76,10 @@ public enum DownloadableArtifact {
 
   public String artifactKey() {
     return artifactKey;
+  }
+
+  public String signatureResourcePath() {
+    return signatureResourcePath;
   }
 
   private static Properties loadVersions() {
