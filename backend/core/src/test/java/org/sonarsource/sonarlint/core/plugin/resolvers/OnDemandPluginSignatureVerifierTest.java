@@ -28,6 +28,8 @@ import java.util.jar.Manifest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +62,7 @@ class OnDemandPluginSignatureVerifierTest {
   @ParameterizedTest
   @ValueSource(strings = {"cpp-unknownkey", "cpp-corrupt", "cpp-nosig"})
   void should_return_false_for_invalid_signatures(String pluginKey) throws IOException {
-    var jarPath = createMinimalPluginJar("test", "1.0.0");
+    var jarPath = createMinimalPluginJar(pluginKey, "1.0.0");
 
     // Verify it fails with a nonexistent signature path
     assertThat(underTest.verify(jarPath, "ondemand/sonar-cpp-plugin-nonexistent.jar.asc")).isFalse();
