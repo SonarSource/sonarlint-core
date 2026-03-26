@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -29,6 +29,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -65,11 +68,13 @@ class OnDemandArtifactResolverTest {
   private HttpClientProvider httpClientProvider;
   private ApplicationEventPublisher eventPublisher;
   private List<PluginStatus> capturedStatuses;
+  private OnDemandPluginSignatureVerifier signatureVerifier;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
+    signatureVerifier = mock(OnDemandPluginSignatureVerifier.class);
     capturedStatuses = new CopyOnWriteArrayList<>();
     doAnswer(inv -> {
       capturedStatuses.addAll(inv.getArgument(0, PluginStatusUpdateEvent.class).newStatuses());
@@ -139,6 +144,7 @@ class OnDemandArtifactResolverTest {
   @Test
   void should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
     mockSuccessfulHttpClient();
+    when(signatureVerifier.verify(any(Path.class), anyString())).thenReturn(true);
     var resolver = buildResolver();
 
     resolver.resolve(SonarLanguage.C, null);
@@ -156,11 +162,11 @@ class OnDemandArtifactResolverTest {
   private OnDemandArtifactResolver buildResolver() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new OnDemandArtifactResolver(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool());
+    return new OnDemandArtifactResolver(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier);
   }
 
   private void mockSuccessfulHttpClient() throws Exception {
-    var jarBytes = Files.readAllBytes(testJarPath());
+    var jarBytes = createMinimalPluginJarBytes("cpp", "1.0.0");
     var httpClient = mock(HttpClient.class);
     var response = mock(HttpClient.Response.class);
     when(response.code()).thenReturn(200);
@@ -185,9 +191,20 @@ class OnDemandArtifactResolverTest {
     return InputStream.nullInputStream();
   }
 
-  private static Path testJarPath() throws URISyntaxException {
-    var resource = OnDemandArtifactResolverTest.class.getClassLoader().getResource("ondemand/sonar-cpp-plugin-test.jar");
-    return Path.of(resource.toURI());
+  private static byte[] createMinimalPluginJarBytes(String pluginKey, String pluginVersion) throws IOException {
+    var tempJar = Files.createTempFile("test-plugin", ".jar");
+    try {
+      var manifest = new Manifest();
+      manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+      manifest.getMainAttributes().putValue("Plugin-Key", pluginKey);
+      manifest.getMainAttributes().putValue("Plugin-Version", pluginVersion);
+      try (var jos = new JarOutputStream(Files.newOutputStream(tempJar), manifest)) {
+        // minimal JAR with only the manifest
+      }
+      return Files.readAllBytes(tempJar);
+    } finally {
+      Files.deleteIfExists(tempJar);
+    }
   }
 
   private static ResolvedArtifact downloading() {

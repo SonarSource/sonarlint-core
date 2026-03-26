@@ -81,11 +81,11 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
 
   private final Map<String, Path> cachedArtifactPaths = new ConcurrentHashMap<>();
 
-  public OnDemandArtifactResolver(UserPaths userPaths, HttpClientProvider httpClientProvider,
-    ApplicationEventPublisher eventPublisher, @Qualifier("pluginDownloadExecutor") ExecutorService downloadExecutor) {
+  OnDemandArtifactResolver(UserPaths userPaths, HttpClientProvider httpClientProvider,
+    ApplicationEventPublisher eventPublisher, @Qualifier("pluginDownloadExecutor") ExecutorService downloadExecutor, OnDemandPluginSignatureVerifier signatureVerifier) {
     this.cacheBaseDirectory = userPaths.getStorageRoot().resolve(CACHE_SUBDIR);
     this.httpClientProvider = httpClientProvider;
-    this.signatureVerifier = new OnDemandPluginSignatureVerifier();
+    this.signatureVerifier = signatureVerifier;
     this.cacheManager = new OnDemandPluginCacheManager();
     this.eventPublisher = eventPublisher;
     this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
