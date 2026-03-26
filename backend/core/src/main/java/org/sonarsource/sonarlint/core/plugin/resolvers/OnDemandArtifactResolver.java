@@ -73,7 +73,8 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     SonarLanguage.C, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.CPP, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.OBJC, DownloadableArtifact.CFAMILY_PLUGIN,
-    SonarLanguage.CS, DownloadableArtifact.CSHARP_OSS
+    SonarLanguage.CS, DownloadableArtifact.CSHARP_OSS,
+    SonarLanguage.VBNET, DownloadableArtifact.CSHARP_OSS
   );
   private final ApplicationEventPublisher eventPublisher;
   private final UniqueTaskExecutor uniqueTaskExecutor;

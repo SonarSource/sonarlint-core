@@ -50,7 +50,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSp
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 
@@ -190,6 +193,13 @@ public class PluginsService {
       }
     }
     return false;
+  }
+
+  @EventListener
+  public void onPluginStatusUpdateEvent(PluginStatusUpdateEvent event) {
+    if (!areAnyPluginsDownloading(event.connectionId())) {
+      eventPublisher.publishEvent(new PluginsSynchronizedEvent(event.connectionId()));
+    }
   }
 
   public static boolean isSonarQubeCloudOrVersionAtLeast(ConnectionConfigurationRepository connectionRepository,

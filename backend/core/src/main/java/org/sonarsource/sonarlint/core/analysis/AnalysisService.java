@@ -297,7 +297,6 @@ public class AnalysisService {
     } else {
       // On-demand plugins are application-wide and used as fallback in connected mode
       schedulerCache.reloadStandalonePlugins();
-      schedulerCache.reloadAllConnectedPlugins();
       checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
     }
   }

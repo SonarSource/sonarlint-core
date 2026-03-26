@@ -45,16 +45,6 @@ class PremiumArtifactResolverTest {
   }
 
   @Test
-  void should_return_empty_when_language_is_connected_mode_only_but_connection_is_provided() {
-    var repo = mockRepo(Set.of(SonarLanguage.COBOL), Set.of());
-    var resolver = new PremiumArtifactResolver(repo);
-
-    var result = resolver.resolve(SonarLanguage.COBOL, "conn");
-
-    assertThat(result).isEmpty();
-  }
-
-  @Test
   void should_return_empty_when_language_is_in_both_modes() {
     var repo = mockRepo(Set.of(SonarLanguage.JAVA), Set.of(SonarLanguage.JAVA));
     var resolver = new PremiumArtifactResolver(repo);

@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
  * <p>{@link #resolve} handles language plugins. It returns immediately: if the locally stored copy is up-to-date its path is returned as
  * {@link ArtifactState#SYNCED}; otherwise a background download is scheduled and
  * {@link ArtifactState#DOWNLOADING} is returned. Concurrent downloads for the same
- * connection + plugin key are de-duplicated by the underlying downloader.</p>
+ * connection + plugin key are deduplicated by the underlying downloader.</p>
  *
  * <p><b>Events:</b> when a background download completes, a {@link org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent}
  * is published — {@link ArtifactState#SYNCED} on success, {@link ArtifactState#FAILED} on
@@ -85,19 +85,15 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
    * Returns true if the server has a version of this analyzer that should take precedence over the embedded one.
    * The caller is responsible for providing an already-loaded {@code storedPlugins} map to avoid repeated disk reads.
    */
-  public static boolean isOverriddenByServer(SonarLanguage language, String connectionId, ConnectionConfigurationRepository repo,
+  private static boolean isOverriddenByServer(SonarLanguage language, String connectionId, ConnectionConfigurationRepository repo,
     StorageService storage, Map<String, StoredPlugin> storedPlugins) {
     if (FORCE_OVERRIDES_SINCE_VERSION.containsKey(language.getPluginKey())) {
       var minVersion = FORCE_OVERRIDES_SINCE_VERSION.get(language.getPluginKey());
-      if (PluginsService.isSonarQubeCloudOrVersionAtLeast(repo, storage, minVersion, connectionId)) {
-        return true;
-      }
+      return PluginsService.isSonarQubeCloudOrVersionAtLeast(repo, storage, minVersion, connectionId);
     }
 
-    // Dynamically check if an extended version of this analyzer (e.g. 'textenterprise' or 'textdeveloper')
-    // is already available in the connection storage.
-    return storedPlugins.containsKey(language.getPluginKey() + "enterprise")
-      || storedPlugins.containsKey(language.getPluginKey() + "developer");
+    return !"iac".equals(language.getPluginKey()) && (storedPlugins.containsKey(language.getPluginKey() + "enterprise")
+      || storedPlugins.containsKey(language.getPluginKey() + "developer"));
   }
 
   private boolean passesLanguageGate(SonarLanguage language, String connectionId, Map<String, StoredPlugin> storedPlugins) {

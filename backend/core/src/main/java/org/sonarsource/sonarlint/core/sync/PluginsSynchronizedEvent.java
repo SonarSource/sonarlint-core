@@ -19,5 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-public record PluginsSynchronizedEvent(String connectionId) {
+import org.jetbrains.annotations.Nullable;
+
+public record PluginsSynchronizedEvent(@Nullable String connectionId) {
 }

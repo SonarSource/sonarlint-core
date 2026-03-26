@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,10 +37,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
-import org.sonarsource.sonarlint.core.storage.StorageService;
-
 /**
  * Resolves analyzers that are physically bundled (embedded) inside the SQ:IDE distribution.
  * It serves predefined JARs (like sonar-java-plugin.jar) from the plugin payload.
@@ -53,22 +48,16 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   private final Map<String, Path> connectedModeEmbeddedPathsByKey;
   @Nullable
   private final Path csharpStandalonePluginPath;
-  private final Map<String, PluginStatus> standaloneCompanionPlugins;
-  private final Map<String, PluginStatus> connectedModeCompanionPlugins;
-  private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final StorageService storageService;
+  private Map<String, PluginStatus> standaloneCompanionPlugins;
+  private Map<String, PluginStatus> connectedModeCompanionPlugins;
 
-  public EmbeddedArtifactResolver(InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, StorageService storageService) {
+  public EmbeddedArtifactResolver(InitializeParams params) {
     this.standaloneEmbeddedPathsByKey = buildPluginKeyToPathMap(params.getEmbeddedPluginPaths());
     this.connectedModeEmbeddedPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.csharpStandalonePluginPath = Optional.ofNullable(params.getLanguageSpecificRequirements())
       .map(LanguageSpecificRequirements::getOmnisharpRequirements)
       .map(OmnisharpRequirementsDto::getOssAnalyzerPath)
       .orElse(null);
-    this.standaloneCompanionPlugins = computeCompanionPlugins(this.standaloneEmbeddedPathsByKey);
-    this.connectedModeCompanionPlugins = computeCompanionPlugins(this.connectedModeEmbeddedPathsByKey);
-    this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.storageService = storageService;
   }
 
   @Override
@@ -80,7 +69,13 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   @Override
   public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
     if (connectionId != null) {
+      if (connectedModeCompanionPlugins == null) {
+        connectedModeCompanionPlugins = computeCompanionPlugins(connectedModeEmbeddedPathsByKey);
+      }
       return connectedModeCompanionPlugins;
+    }
+    if (standaloneCompanionPlugins == null) {
+      standaloneCompanionPlugins = computeCompanionPlugins(standaloneEmbeddedPathsByKey);
     }
     return standaloneCompanionPlugins;
   }
@@ -95,7 +90,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
 
   @Nullable
   private Path resolvePath(SonarLanguage language, @Nullable String connectionId) {
-    return connectionId != null ? resolveConnected(language, connectionId) : resolveStandalone(language);
+    return connectionId != null ? resolveConnected(language) : resolveStandalone(language);
   }
 
   private static ResolvedArtifact toResolvedArtifact(Path path) {
@@ -103,30 +98,8 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   }
 
   @Nullable
-  private Path resolveConnected(SonarLanguage language, String connectionId) {
-    // First, check if we have an embedded plugin for this language in connected mode
-    var pluginKey = language.getPluginKey();
-    var embeddedPath = connectedModeEmbeddedPathsByKey.get(pluginKey);
-    if (embeddedPath == null) {
-      return null;
-    }
-    // We omit returning the embedded plugin if the server explicitly overrides it (e.g., enterprise plugins)
-    var storedPlugins = loadStoredPlugins(connectionId);
-    if (ConnectedModeArtifactResolver.isOverriddenByServer(language, connectionId, connectionConfigurationRepository, storageService, storedPlugins)) {
-      return null;
-    }
-    return embeddedPath;
-  }
-
-  private Map<String, StoredPlugin> loadStoredPlugins(String connectionId) {
-    if (storageService == null) {
-      return Collections.emptyMap();
-    }
-    try {
-      return storageService.connection(connectionId).plugins().getStoredPluginsByKey();
-    } catch (Exception e) {
-      return Collections.emptyMap();
-    }
+  private Path resolveConnected(SonarLanguage language) {
+    return connectedModeEmbeddedPathsByKey.get(language.getPluginKey());
   }
 
   @Nullable
