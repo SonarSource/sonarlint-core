@@ -127,6 +127,7 @@ public class PluginsStorage {
     rwLock.write(() -> {
       var unknownFiles = getUnknownFiles(expectedPluginPaths);
       deleteFiles(unknownFiles);
+      createPluginDirectory();
       ProtobufFileUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
     });
   }

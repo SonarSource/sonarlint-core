@@ -49,7 +49,7 @@ class PluginRpcServiceMediumTests {
       .satisfies(status -> {
         assertThat(status.getState()).isEqualTo(PluginStateDto.ACTIVE);
         assertThat(status.getSource()).isEqualTo(ArtifactSourceDto.EMBEDDED);
-        assertThat(status.getActualVersion()).isNull();
+        assertThat(status.getActualVersion()).isNotNull();
         assertThat(status.getOverriddenVersion()).isNull();
       });
   }

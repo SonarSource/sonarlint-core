@@ -48,8 +48,8 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   private final Map<String, Path> connectedModeEmbeddedPathsByKey;
   @Nullable
   private final Path csharpStandalonePluginPath;
-  private final Map<String, PluginStatus> standaloneCompanionPlugins;
-  private final Map<String, PluginStatus> connectedModeCompanionPlugins;
+  private Map<String, PluginStatus> standaloneCompanionPlugins;
+  private Map<String, PluginStatus> connectedModeCompanionPlugins;
 
   public EmbeddedArtifactResolver(InitializeParams params) {
     this.standaloneEmbeddedPathsByKey = buildPluginKeyToPathMap(params.getEmbeddedPluginPaths());
@@ -58,8 +58,6 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
       .map(LanguageSpecificRequirements::getOmnisharpRequirements)
       .map(OmnisharpRequirementsDto::getOssAnalyzerPath)
       .orElse(null);
-    this.standaloneCompanionPlugins = computeCompanionPlugins(this.standaloneEmbeddedPathsByKey);
-    this.connectedModeCompanionPlugins = computeCompanionPlugins(this.connectedModeEmbeddedPathsByKey);
   }
 
   @Override
@@ -71,7 +69,13 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   @Override
   public Map<String, PluginStatus> resolveCompanionPlugins(@Nullable String connectionId) {
     if (connectionId != null) {
+      if (connectedModeCompanionPlugins == null) {
+        connectedModeCompanionPlugins = computeCompanionPlugins(connectedModeEmbeddedPathsByKey);
+      }
       return connectedModeCompanionPlugins;
+    }
+    if (standaloneCompanionPlugins == null) {
+      standaloneCompanionPlugins = computeCompanionPlugins(standaloneEmbeddedPathsByKey);
     }
     return standaloneCompanionPlugins;
   }

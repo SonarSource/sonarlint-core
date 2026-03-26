@@ -406,6 +406,11 @@ public class ActiveRulesService {
     return ruleDetails;
   }
 
+  public synchronized void evictStandalone() {
+    LOG.debug("Evict cached standalone active rules");
+    standaloneActiveRules = null;
+  }
+
   private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.connectionId();
     sonarQubeClientManager.getValidClientOrThrow(connectionId);

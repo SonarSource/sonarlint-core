@@ -137,7 +137,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   @AfterAll
   static void stopBackend() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
+    if (backend != null) {
+      backend.shutdown().get();
+    }
   }
 
   private static String singlePointOfExitRuleKey;
@@ -483,6 +485,13 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   }
 
   static void startBackend(Map<String, Path> connectedModeEmbeddedPluginPathsByKey) throws IOException {
+    if (backend != null) {
+      try {
+        backend.shutdown().get();
+      } catch (Exception e) {
+        // ignore
+      }
+    }
     var clientToServerOutputStream = new PipedOutputStream();
     var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 

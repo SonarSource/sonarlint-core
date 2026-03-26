@@ -46,12 +46,12 @@ public class RulesRepository {
     this.storageService = storageService;
   }
 
-  public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
+  public synchronized Collection<SonarLintRuleDefinition> getEmbeddedRules() {
     lazyInit();
     return embeddedRulesByKey.values();
   }
 
-  public Optional<SonarLintRuleDefinition> getEmbeddedRule(String ruleKey) {
+  public synchronized Optional<SonarLintRuleDefinition> getEmbeddedRule(String ruleKey) {
     lazyInit();
     return Optional.ofNullable(embeddedRulesByKey.get(ruleKey));
   }
@@ -62,7 +62,7 @@ public class RulesRepository {
     }
   }
 
-  public Optional<SonarLintRuleDefinition> getRule(String connectionId, String ruleKey) {
+  public synchronized Optional<SonarLintRuleDefinition> getRule(String connectionId, String ruleKey) {
     lazyInit(connectionId);
     var connectionRules = rulesByKeyByConnectionId.get(connectionId);
     return Optional.ofNullable(connectionRules.get(ruleKey))
@@ -90,9 +90,15 @@ public class RulesRepository {
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 
-  public void evictFor(String connectionId) {
+  public synchronized void evictFor(String connectionId) {
     logger.debug("Evict cached rules definitions for connection '{}'", connectionId);
     rulesByKeyByConnectionId.remove(connectionId);
     ruleKeyReplacementsByConnectionId.remove(connectionId);
   }
+
+  public synchronized void evictEmbedded() {
+    logger.debug("Evict cached embedded rules definitions");
+    embeddedRulesByKey = null;
+  }
+
 }

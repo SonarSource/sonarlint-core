@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
  * Published when the loaded state of plugins changes for a given connection (or for embedded plugins when connectionId is null).
+ * Carries the pre-computed plugin statuses to avoid redundant resolver traversal in listeners.
  */
-public record PluginStatusesChangedEvent(@Nullable String connectionId) {
+public record PluginStatusesChangedEvent(@Nullable String connectionId, List<PluginStatus> pluginStatuses) {
 }

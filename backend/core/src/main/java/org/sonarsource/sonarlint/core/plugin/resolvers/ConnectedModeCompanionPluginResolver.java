@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
-import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -133,7 +132,7 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
   private Optional<java.util.List<ServerPlugin>> fetchServerPluginsSafely(String connectionId) {
     try {
       return serverPluginsCache.getPlugins(connectionId);
-    } catch (ServerRequestException e) {
+    } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
       return Optional.empty();
     }

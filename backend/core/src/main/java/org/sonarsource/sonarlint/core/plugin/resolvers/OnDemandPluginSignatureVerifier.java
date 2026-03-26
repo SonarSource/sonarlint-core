@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 /**
  * Verifies the PGP signature of downloaded plugins using the SonarSource public key.
  */
-class OnDemandPluginSignatureVerifier {
+public class OnDemandPluginSignatureVerifier {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_PUBLIC_KEY = "ondemand/sonarsource-public.key";
