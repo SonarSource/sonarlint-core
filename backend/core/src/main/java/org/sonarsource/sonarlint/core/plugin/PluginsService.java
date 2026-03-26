@@ -263,13 +263,31 @@ public class PluginsService {
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
     if (connectionId == null) {
-      return new DotnetSupport(initializeParams, csharpSupport.csharpOssPluginPath, false, false);
+      var ossPath = resolveActualCsharpAnalyzerPath(null, csharpSupport.csharpOssPluginPath);
+      return new DotnetSupport(initializeParams, ossPath, false, false);
     }
-    var actualCsharpAnalyzerPath = shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath :
+    var clientPath = shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath :
       csharpSupport.csharpOssPluginPath;
+    var actualCsharpAnalyzerPath = resolveActualCsharpAnalyzerPath(connectionId, clientPath);
     var shouldUseCsharpEnterprise = shouldUseEnterpriseCSharpAnalyzer(connectionId);
-    var shouldUseVbEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
-    return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbEnterprise);
+    var shouldUseVbNetEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
+    return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise);
+  }
+
+  /**
+   * Resolves the actual C# analyzer JAR path. Prefers the client-provided path when available.
+   * Falls back to the path resolved by the artifact resolver chain (e.g. from an on-demand download).
+   */
+  @Nullable
+  private Path resolveActualCsharpAnalyzerPath(@Nullable String connectionId, @Nullable Path clientProvidedPath) {
+    if (clientProvidedPath != null) {
+      return clientProvidedPath;
+    }
+    var status = getPluginStatus(connectionId, SonarLanguage.CS);
+    if ((status.state() == ArtifactState.ACTIVE || status.state() == ArtifactState.SYNCED) && status.path() != null) {
+      return status.path();
+    }
+    return null;
   }
 
   public void unloadEmbeddedPlugins() {

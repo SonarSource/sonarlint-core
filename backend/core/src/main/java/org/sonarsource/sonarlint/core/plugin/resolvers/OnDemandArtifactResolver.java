@@ -111,7 +111,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     }
     var pluginPath = buildPluginPath(artifact);
     if (Files.exists(pluginPath)) {
-      if (signatureVerifier.verify(pluginPath, artifactKey)) {
+      if (signatureVerifier.verify(pluginPath, artifact)) {
         cachedArtifactPaths.put(artifactKey, pluginPath);
         return Optional.of(toActiveArtifact(artifact, pluginPath));
       }
@@ -167,7 +167,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     var tempFile = targetPath.getParent().resolve(targetPath.getFileName() + ".tmp");
     try {
       downloadPlugin(artifact, tempFile);
-      if (!signatureVerifier.verify(tempFile, artifact.artifactKey())) {
+      if (!signatureVerifier.verify(tempFile, artifact)) {
         throw new IOException("Signature verification failed for " + artifact.artifactKey());
       }
       moveAtomically(tempFile, targetPath);

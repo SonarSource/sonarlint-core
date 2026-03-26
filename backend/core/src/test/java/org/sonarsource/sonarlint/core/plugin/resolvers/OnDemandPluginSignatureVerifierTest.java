@@ -26,8 +26,6 @@ import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -56,7 +54,7 @@ class OnDemandPluginSignatureVerifierTest {
     var tamperedJar = tempDir.resolve("sonar-cpp-plugin-tampered.jar");
     Files.write(tamperedJar, "tampered content".getBytes());
 
-    assertThat(underTest.verify(tamperedJar, "cpp")).isFalse();
+    assertThat(underTest.verify(tamperedJar, DownloadableArtifact.CFAMILY_PLUGIN)).isFalse();
   }
 
   @ParameterizedTest
@@ -64,7 +62,8 @@ class OnDemandPluginSignatureVerifierTest {
   void should_return_false_for_invalid_signatures(String pluginKey) throws IOException {
     var jarPath = createMinimalPluginJar("test", "1.0.0");
 
-    assertThat(underTest.verify(jarPath, pluginKey)).isFalse();
+    // Verify it fails with a nonexistent signature path
+    assertThat(underTest.verify(jarPath, "ondemand/sonar-cpp-plugin-nonexistent.jar.asc")).isFalse();
   }
 
   private Path createMinimalPluginJar(String pluginKey, String pluginVersion) throws IOException {

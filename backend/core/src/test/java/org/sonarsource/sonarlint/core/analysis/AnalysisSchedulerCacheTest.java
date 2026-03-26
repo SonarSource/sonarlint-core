@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.UserPaths;
@@ -28,7 +27,6 @@ import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -39,11 +37,10 @@ class AnalysisSchedulerCacheTest {
 
   @Test
   void reloadStandalonePlugins_evicts_caches_when_no_scheduler_started(@TempDir Path tempDir) {
-    var initializeParams = stubInitializeParams();
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(initializeParams, userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
@@ -55,11 +52,10 @@ class AnalysisSchedulerCacheTest {
 
   @Test
   void reloadPlugins_evicts_caches_when_no_connected_scheduler_exists(@TempDir Path tempDir) {
-    var initializeParams = stubInitializeParams();
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(initializeParams, userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
@@ -71,11 +67,10 @@ class AnalysisSchedulerCacheTest {
 
   @Test
   void reloadAllConnectedPlugins_is_no_op_when_no_connected_schedulers_exist(@TempDir Path tempDir) {
-    var initializeParams = stubInitializeParams();
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(initializeParams, userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
@@ -83,13 +78,6 @@ class AnalysisSchedulerCacheTest {
     cache.reloadAllConnectedPlugins();
 
     verifyNoInteractions(pluginLifecycleService);
-  }
-
-  private static InitializeParams stubInitializeParams() {
-    var params = mock(InitializeParams.class);
-    when(params.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of());
-    when(params.getLanguageSpecificRequirements()).thenReturn(null);
-    return params;
   }
 
   private static UserPaths mockUserPaths(Path tempDir) {
