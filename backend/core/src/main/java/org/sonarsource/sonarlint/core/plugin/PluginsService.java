@@ -42,6 +42,11 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -76,7 +81,10 @@ public class PluginsService {
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository,
     StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService,
-    ApplicationEventPublisher eventPublisher, List<ArtifactResolver> artifactResolvers, List<CompanionPluginResolver> companionPluginResolvers) {
+    ApplicationEventPublisher eventPublisher, List<CompanionPluginResolver> companionPluginResolvers,
+    UnsupportedArtifactResolver unsupportedArtifactResolver, ConnectedModeArtifactResolver connectedModeArtifactResolver,
+    EmbeddedArtifactResolver embeddedArtifactResolver, OnDemandArtifactResolver onDemandArtifactResolver,
+    PremiumArtifactResolver premiumArtifactResolver) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.storageService = storageService;
@@ -87,7 +95,13 @@ public class PluginsService {
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
     this.eventPublisher = eventPublisher;
-    this.artifactResolvers = artifactResolvers;
+    this.artifactResolvers = List.of(
+      unsupportedArtifactResolver,
+      connectedModeArtifactResolver,
+      embeddedArtifactResolver,
+      onDemandArtifactResolver,
+      premiumArtifactResolver
+    );
     this.companionPluginResolvers = companionPluginResolvers;
   }
 

@@ -37,6 +37,11 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
@@ -80,7 +85,6 @@ class PluginsServiceTest {
   private PluginsStorage pluginStorage;
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
-  private ArtifactResolver artifactResolver;
 
   @BeforeEach
   void prepare() {
@@ -94,13 +98,13 @@ class PluginsServiceTest {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
-    artifactResolver = mock(ArtifactResolver.class);
     var companionPluginResolver = mock(CompanionPluginResolver.class);
     mockOmnisharpLanguageRequirements();
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      List.of(artifactResolver), List.of(companionPluginResolver));
+      List.of(companionPluginResolver), mock(UnsupportedArtifactResolver.class), mock(ConnectedModeArtifactResolver.class),
+      mock(EmbeddedArtifactResolver.class), mock(OnDemandArtifactResolver.class), mock(PremiumArtifactResolver.class));
   }
 
   @Test
@@ -332,39 +336,6 @@ class PluginsServiceTest {
   }
 
   @Test
-  void should_return_active_embedded_with_empty_versions_when_plugin_in_embedded_analysis() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null, null);
-    var connectionId = "connection1";
-    when(artifactResolver.resolve(SonarLanguage.JAVA, connectionId)).thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactSource.EMBEDDED, null)));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_failed_embedded_with_empty_versions_when_plugin_in_embedded_all_but_not_in_analysis() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.FAILED, ArtifactSource.EMBEDDED, null, null, null, null);
-    var connectionId = "connection1";
-    when(artifactResolver.resolve(SonarLanguage.JAVA, connectionId)).thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.FAILED, null, ArtifactSource.EMBEDDED, null)));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_synced_sonar_cloud_with_empty_versions_when_plugin_in_connection_analysis_and_is_sonar_cloud() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, null, null, null, null);
-    var connectionId = "SQC";
-    when(artifactResolver.resolve(SonarLanguage.PYTHON, connectionId)).thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.SYNCED, null, ArtifactSource.SONARQUBE_CLOUD, null)));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
   void unloadPlugins_should_publish_event_when_plugins_were_loaded() {
     var connectionId = "connection1";
     when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(mock(LoadedPlugins.class));
@@ -385,24 +356,6 @@ class PluginsServiceTest {
     underTest.unloadPlugins(connectionId);
 
     verify(eventPublisher, never()).publishEvent(any());
-  }
-
-  @Test
-  void areAnyPluginsDownloading_returnsTrueWhenALanguagePluginIsDownloading() {
-    var connectionId = "connection1";
-    when(artifactResolver.resolve(SonarLanguage.JAVA, connectionId))
-      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, ArtifactSource.SONARQUBE_SERVER, null)));
-
-    assertThat(underTest.areAnyPluginsDownloading(connectionId)).isTrue();
-  }
-
-  @Test
-  void areAnyPluginsDownloading_returnsFalseWhenNoPluginIsDownloading() {
-    var connectionId = "connection1";
-    when(artifactResolver.resolve(any(), anyString()))
-      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactSource.SONARQUBE_SERVER, null)));
-
-    assertThat(underTest.areAnyPluginsDownloading(connectionId)).isFalse();
   }
 
   @Test
