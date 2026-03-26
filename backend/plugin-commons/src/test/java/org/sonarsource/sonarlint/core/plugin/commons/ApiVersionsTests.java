@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons;
 
-import java.net.URL;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.utils.Version;
 
@@ -52,7 +52,7 @@ class ApiVersionsTests {
 
   @Test
   void should_throw_an_exception_if_resource_can_not_be_loaded() {
-    var throwable = catchThrowable(() -> ApiVersions.loadVersion(new URL("file://wrong"), "wrongPath"));
+    var throwable = catchThrowable(() -> ApiVersions.loadVersion(URI.create("file://wrong").toURL(), "wrongPath"));
 
     assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
   }

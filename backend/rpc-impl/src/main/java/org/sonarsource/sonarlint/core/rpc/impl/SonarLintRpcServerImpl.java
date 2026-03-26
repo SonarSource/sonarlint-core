@@ -337,11 +337,14 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
     // shutdown writer and disconnect from client asynchronously to make sure the client gets the response
     var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-    scheduledExecutorService.schedule(() -> {
-      messageWriterExecutor.shutdownNow();
-      disconnectFromClient();
-    }, 1, TimeUnit.SECONDS);
-    scheduledExecutorService.shutdown();
+    try {
+      scheduledExecutorService.schedule(() -> {
+        messageWriterExecutor.shutdownNow();
+        disconnectFromClient();
+      }, 1, TimeUnit.SECONDS);
+    } finally {
+      scheduledExecutorService.shutdown();
+    }
   }
 
   private void disconnectFromClient() {

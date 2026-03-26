@@ -23,7 +23,6 @@ import com.google.gson.JsonArray;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -60,7 +59,7 @@ class ConnectionSetupMediumTests {
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(scServer.baseUrl(), null));
 
-    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(URI.create(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())).toURL());
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -89,8 +88,8 @@ class ConnectionSetupMediumTests {
         new HelpGenerateUserTokenParams.Utm("referral", "sq-ide-product-name", "create-new-sqc-connection", "generate-token-2")));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(
-      new URL(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort() +
-        "&utm_medium=referral&utm_source=sq-ide-product-name&utm_content=create-new-sqc-connection&utm_term=generate-token-2")));
+      URI.create(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort() +
+        "&utm_medium=referral&utm_source=sq-ide-product-name&utm_content=create-new-sqc-connection&utm_term=generate-token-2")).toURL());
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -139,7 +138,7 @@ class ConnectionSetupMediumTests {
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
-    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(URI.create(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())).toURL());
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -163,7 +162,7 @@ class ConnectionSetupMediumTests {
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
-    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(URI.create(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())).toURL());
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -181,7 +180,7 @@ class ConnectionSetupMediumTests {
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), null));
 
-    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(URI.create(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())).toURL());
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -204,7 +203,7 @@ class ConnectionSetupMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isNull();
-    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName")));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(URI.create(server.url("/sonarlint/auth?ideName=ClientName")).toURL());
   }
 
   @SonarLintTest

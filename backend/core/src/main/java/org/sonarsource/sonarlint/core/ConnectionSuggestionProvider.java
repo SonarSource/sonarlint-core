@@ -145,22 +145,24 @@ public class ConnectionSuggestionProvider {
   }
 
   private Optional<Either<String, String>> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
-    if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue sonarCloudBindingClue) {
-      LOG.debug("Found a SonarCloud binding clue");
-      var organization = sonarCloudBindingClue.getOrganization();
-      var connection = connectionRepository.findByOrganization(organization);
-      if (connection.isEmpty()) {
-        return Optional.of(Either.forRight(organization));
+    switch (bindingClue) {
+      case BindingClueProvider.SonarCloudBindingClue sonarCloudBindingClue -> {
+        LOG.debug("Found a SonarCloud binding clue");
+        var organization = sonarCloudBindingClue.getOrganization();
+        var connection = connectionRepository.findByOrganization(organization);
+        if (connection.isEmpty()) {
+          return Optional.of(Either.forRight(organization));
+        }
       }
-    } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue sonarQubeBindingClue) {
-      LOG.debug("Found a SonarQube binding clue");
-      var serverUrl = sonarQubeBindingClue.getServerUrl();
-      var connection = connectionRepository.findByUrl(serverUrl);
-      if (connection.isEmpty()) {
-        return Optional.of(Either.forLeft(Strings.CS.removeEnd(serverUrl, "/")));
+      case BindingClueProvider.SonarQubeBindingClue sonarQubeBindingClue -> {
+        LOG.debug("Found a SonarQube binding clue");
+        var serverUrl = sonarQubeBindingClue.getServerUrl();
+        var connection = connectionRepository.findByUrl(serverUrl);
+        if (connection.isEmpty()) {
+          return Optional.of(Either.forLeft(Strings.CS.removeEnd(serverUrl, "/")));
+        }
       }
-    } else {
-      LOG.debug("Found an invalid binding clue for connection suggestion");
+      default -> LOG.debug("Found an invalid binding clue for connection suggestion");
     }
     return Optional.empty();
   }

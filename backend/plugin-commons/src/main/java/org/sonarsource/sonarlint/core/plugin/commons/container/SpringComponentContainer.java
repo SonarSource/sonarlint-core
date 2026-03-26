@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -206,8 +205,7 @@ public class SpringComponentContainer implements StartableContainer {
   private void stopChildren() {
     // loop over a copy of list of children in reverse order
     var childrenCopy = new ArrayList<>(this.children);
-    Collections.reverse(childrenCopy);
-    childrenCopy.forEach(SpringComponentContainer::stopComponents);
+    childrenCopy.reversed().forEach(SpringComponentContainer::stopComponents);
   }
 
   public SpringComponentContainer createChild() {

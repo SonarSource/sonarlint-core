@@ -11,7 +11,7 @@
   <name>SonarLint Core - Java Client dependencies</name>
   <description>Dependencies used by the Java Clients, shaded and relocated together</description>
   
-<dependencies>
+  <dependencies>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>

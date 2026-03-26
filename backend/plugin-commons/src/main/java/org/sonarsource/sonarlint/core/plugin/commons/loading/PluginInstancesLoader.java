@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -128,7 +129,7 @@ public class PluginInstancesLoader implements Closeable {
    */
   private static Optional<JarFile> getJarFile(Path tmpDepFile) {
     try {
-      return Optional.of(((JarURLConnection) new URL("jar:" + tmpDepFile.toUri().toURL() + "!/").openConnection()).getJarFile());
+      return Optional.of(((JarURLConnection) URI.create("jar:" + tmpDepFile.toUri().toURL() + "!/").toURL().openConnection()).getJarFile());
     } catch (ZipException ignore) {
       // For tests, we are using fake JARs, so ignore ZipException: zip file is empty
       return Optional.empty();

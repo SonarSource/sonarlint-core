@@ -45,7 +45,7 @@ public class LineRange {
   }
 
   public Set<Integer> toLines() {
-    Set<Integer> lines = new LinkedHashSet<>(to - from + 1);
+    Set<Integer> lines = LinkedHashSet.newLinkedHashSet(to - from + 1);
     for (var index = from; index <= to; index++) {
       lines.add(index);
     }

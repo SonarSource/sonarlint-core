@@ -20,6 +20,7 @@
 package mediumtest.promotion;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -445,7 +446,7 @@ class CampaignMediumTests {
         .contains(Map.entry(
           CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
           new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), response))));
-    verify(client, timeout(500)).openUrlInBrowser(new URL(expectedUrl));
+    verify(client, timeout(500)).openUrlInBrowser(URI.create(expectedUrl).toURL());
   }
 
   private void saveFeedbackCampaign(LocalDate lastShown, String lastResponse) {

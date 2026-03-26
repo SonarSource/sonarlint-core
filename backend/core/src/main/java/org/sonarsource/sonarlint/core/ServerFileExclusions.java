@@ -64,14 +64,16 @@ public class ServerFileExclusions {
   public boolean accept(String relativePath, InputFile.Type type) {
     SonarLintPathPattern[] inclusionPatterns;
     SonarLintPathPattern[] exclusionPatterns;
-    if (InputFile.Type.MAIN == type) {
-      inclusionPatterns = mainInclusions;
-      exclusionPatterns = mainExclusions;
-    } else if (InputFile.Type.TEST == type) {
-      inclusionPatterns = testInclusions;
-      exclusionPatterns = testExclusions;
-    } else {
-      throw new IllegalArgumentException("Unknown file type: " + type);
+    switch (type) {
+      case MAIN -> {
+        inclusionPatterns = mainInclusions;
+        exclusionPatterns = mainExclusions;
+      }
+      case TEST -> {
+        inclusionPatterns = testInclusions;
+        exclusionPatterns = testExclusions;
+      }
+      default -> throw new IllegalArgumentException("Unknown file type: " + type);
     }
 
     if (inclusionPatterns.length > 0) {

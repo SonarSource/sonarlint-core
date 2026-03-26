@@ -82,7 +82,7 @@ public class AnalysisScheduler {
   }
 
   public void post(Command command) {
-    LOG.debug("Post: " + Thread.currentThread().getName() + " " + Thread.currentThread().getId());
+    LOG.debug("Post: " + Thread.currentThread().getName() + " " + Thread.currentThread().threadId());
     LOG.debug("Posting command from Scheduler: " + command);
     if (termination.get() != null) {
       LOG.error("Analysis engine stopping, ignoring command");

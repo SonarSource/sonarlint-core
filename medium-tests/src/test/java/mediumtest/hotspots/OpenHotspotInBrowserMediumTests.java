@@ -20,7 +20,7 @@
 package mediumtest.hotspots;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -45,7 +45,7 @@ class OpenHotspotInBrowserMediumTests {
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
-    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(URI.create("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45").toURL());
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().openHotspotInBrowserCount()).isEqualTo(1));
   }

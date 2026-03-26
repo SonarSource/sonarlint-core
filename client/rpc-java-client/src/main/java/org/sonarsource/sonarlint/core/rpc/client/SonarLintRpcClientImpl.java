@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.client;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -187,8 +188,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void openUrlInBrowser(OpenUrlInBrowserParams params) {
     notify(() -> {
       try {
-        delegate.openUrlInBrowser(new URL(params.getUrl()));
-      } catch (MalformedURLException e) {
+        delegate.openUrlInBrowser(URI.create(params.getUrl()).toURL());
+      } catch (MalformedURLException | IllegalArgumentException e) {
         throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Not a valid URL: " + params.getUrl(), params.getUrl()));
       }
     });

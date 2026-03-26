@@ -115,7 +115,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
   }
 
   private Set<LineRange> convertLineExclusionsToLineRanges() {
-    Set<LineRange> lineRanges = new HashSet<>(lineExclusions.size());
+    Set<LineRange> lineRanges = HashSet.newHashSet(lineExclusions.size());
     for (LineExclusion lineExclusion : lineExclusions) {
       lineRanges.add(lineExclusion.toLineRange(fileLength));
     }

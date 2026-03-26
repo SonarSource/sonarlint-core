@@ -20,6 +20,7 @@
 package mediumtest.sca;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.UUID;
@@ -57,7 +58,7 @@ class OpenDependencyRiskInBrowserMediumTests {
     var expectedUrl = String.format("http://localhost:12345/dependency-risks/%s/what?id=%s&branch=%s",
       urlEncode(DEPENDENCY_KEY.toString()), urlEncode(PROJECT_KEY), urlEncode(BRANCH_NAME));
 
-    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL(expectedUrl));
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(URI.create(expectedUrl).toURL());
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getDependencyRiskInvestigatedRemotelyCount()).isEqualTo(1));
   }
 
