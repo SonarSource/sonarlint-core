@@ -44,7 +44,7 @@ public class PluginsSynchronizer {
   public static final String CSHARP_OSS_PLUGIN_ID = "csharp";
   public static final String VBNET_ENTERPRISE_PLUGIN_ID = "vbnetenterprise";
   public static final String VBNET_OSS_PLUGIN_ID = "vbnet";
-  private static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
+  public static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;

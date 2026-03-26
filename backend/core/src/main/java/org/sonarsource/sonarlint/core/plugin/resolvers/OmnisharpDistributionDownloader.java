@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,11 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
@@ -44,8 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils.extractTarGz;
 
 /**
  * Downloads, verifies, and extracts the three OmniSharp runtime distributions
@@ -191,62 +185,9 @@ public class OmnisharpDistributionDownloader {
     var url = artifact.urlPattern();
     if (url.endsWith(TAR_GZ_EXTENSION)) {
       extractTarGz(archive, targetDir);
-    } else if (url.endsWith(ZIP_EXTENSION)) {
-      extractZip(archive, targetDir);
     } else {
       throw new IOException("Unsupported archive format for " + artifact.artifactKey());
     }
-  }
-
-  private static void extractTarGz(Path archive, Path targetDir) throws IOException {
-    try (var fileIn = Files.newInputStream(archive);
-      var buffered = new BufferedInputStream(fileIn);
-      var gzipIn = new GzipCompressorInputStream(buffered);
-      var tarIn = new TarArchiveInputStream(gzipIn)) {
-      TarArchiveEntry entry;
-      while ((entry = tarIn.getNextEntry()) != null) {
-        var entryPath = resolveEntryPath(targetDir, entry.getName());
-        if (entry.isDirectory()) {
-          Files.createDirectories(entryPath);
-        } else {
-          Files.createDirectories(entryPath.getParent());
-          try (var out = Files.newOutputStream(entryPath)) {
-            IOUtils.copy(tarIn, out);
-          }
-          var mode = entry.getMode();
-          // Check any of user/group/other execute flags
-          if ((mode & 73) != 0 && !entryPath.toFile().setExecutable(true, false)) {
-            LOG.warn("Could not set executable flag on '{}'", entryPath);
-          }
-        }
-      }
-    }
-  }
-
-  private static void extractZip(Path archive, Path targetDir) throws IOException {
-    try (var zipIn = new ZipInputStream(new BufferedInputStream(Files.newInputStream(archive)))) {
-      ZipEntry entry;
-      while ((entry = zipIn.getNextEntry()) != null) {
-        var entryPath = resolveEntryPath(targetDir, entry.getName());
-        if (entry.isDirectory()) {
-          Files.createDirectories(entryPath);
-        } else {
-          Files.createDirectories(entryPath.getParent());
-          try (var out = Files.newOutputStream(entryPath)) {
-            IOUtils.copy(zipIn, out);
-          }
-        }
-        zipIn.closeEntry();
-      }
-    }
-  }
-
-  private static Path resolveEntryPath(Path targetDir, String entryName) throws IOException {
-    var resolved = targetDir.resolve(entryName).normalize();
-    if (!resolved.startsWith(targetDir)) {
-      throw new IOException("Zip/tar entry is outside of target directory: " + entryName);
-    }
-    return resolved;
   }
 
   private void cleanupOldVersions(DownloadableArtifact artifact) {
