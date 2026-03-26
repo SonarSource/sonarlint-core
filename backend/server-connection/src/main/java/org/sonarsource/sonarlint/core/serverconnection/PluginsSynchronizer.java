@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -98,48 +99,61 @@ public class PluginsSynchronizer {
       .filter(entry -> entry.getValue().isEmpty())
       .map(Map.Entry::getKey)
       .toList();
-    var serverPluginsExpectedInStorage = downloadSkipReasonByServerPlugin.entrySet().stream()
-      .filter(entry -> entry.getValue().isEmpty() || entry.getValue().get().equals(DownloadSkipReason.UP_TO_DATE))
+    var upToDatePlugins = downloadSkipReasonByServerPlugin.entrySet().stream()
+      .filter(entry -> entry.getValue().isPresent() && entry.getValue().get().equals(DownloadSkipReason.UP_TO_DATE))
       .map(Map.Entry::getKey)
-      .toList();
+      .collect(Collectors.toCollection(ArrayList::new));
 
     if (pluginsToDownload.isEmpty()) {
       storage.plugins().storeNoPlugins();
-      storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
+      storage.plugins().cleanUpUnknownPlugins(upToDatePlugins);
       return new PluginSynchronizationSummary(false);
     }
-    downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
-    return new PluginSynchronizationSummary(true);
+    var successfulDownloads = downloadAll(serverApi, pluginsToDownload, cancelMonitor);
+    // Only include successfully downloaded plugins in the expected set; failed downloads are excluded
+    // so that cleanUpUnknownPlugins does not write stale references to missing JARs
+    upToDatePlugins.addAll(successfulDownloads);
+    storage.plugins().cleanUpUnknownPlugins(upToDatePlugins);
+    return new PluginSynchronizationSummary(!successfulDownloads.isEmpty());
   }
 
-  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
-    for (ServerPlugin p : pluginsToDownload) {
-      downloadPlugin(serverApi, p, cancelMonitor);
+  private List<ServerPlugin> downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
+    List<ServerPlugin> succeeded = new ArrayList<>();
+    for (var plugin : pluginsToDownload) {
+      if (downloadPlugin(serverApi, plugin, cancelMonitor)) {
+        succeeded.add(plugin);
+      }
     }
+    return succeeded;
   }
 
-  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
+  private boolean downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
+    try {
+      serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
+      return true;
+    } catch (Exception e) {
+      LOG.error("[SYNC] Failed to download plugin '{}': {}", plugin.getFilename(), e.getMessage(), e);
+      return false;
+    }
   }
 
   private Optional<DownloadSkipReason> determineIfShouldSkipDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
     if (embeddedPluginKeys.contains(serverPlugin.getKey())) {
-      LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", serverPlugin.getKey());
+      LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip synchronizing.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.EMBEDDED);
     }
     if (upToDate(serverPlugin, storedPluginsByKey)) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
+      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip synchronizing.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.UP_TO_DATE);
     }
     if (!serverPlugin.isSonarLintSupported() &&
       !notSonarLintSupportedPluginsToSynchronize.contains(serverPlugin.getKey())) {
-      LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", serverPlugin.getKey());
+      LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip synchronizing.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.NOT_SONARLINT_SUPPORTED);
     }
     if (sonarSourceDisabledPluginKeys.contains(serverPlugin.getKey())) {
-      LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", serverPlugin.getKey());
+      LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip synchronizing.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.LANGUAGE_NOT_ENABLED);
     }
     return Optional.empty();

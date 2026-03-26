@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin.resolvers;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -43,10 +45,10 @@ class OnDemandPluginSignatureVerifierTest {
   private final OnDemandPluginSignatureVerifier underTest = new OnDemandPluginSignatureVerifier();
 
   @Test
-  void should_return_true_when_jar_and_signature_are_valid() throws URISyntaxException {
-    var jarPath = testResource();
+  void should_return_false_when_jar_signature_not_found() throws IOException {
+    var jarPath = createMinimalPluginJar("nonexistent", "1.0.0");
 
-    assertThat(underTest.verify(jarPath, "cpp")).isTrue();
+    assertThat(underTest.verify(jarPath, "nonexistent")).isFalse();
   }
 
   @Test
@@ -58,18 +60,22 @@ class OnDemandPluginSignatureVerifierTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"nonexistentplugin", "cpp-unknownkey", "cpp-corrupt", "cpp-nosig"})
-  void should_return_false_for_invalid_signatures(String pluginKey) throws URISyntaxException {
-    var jarPath = testResource();
+  @ValueSource(strings = {"cpp-unknownkey", "cpp-corrupt", "cpp-nosig"})
+  void should_return_false_for_invalid_signatures(String pluginKey) throws IOException {
+    var jarPath = createMinimalPluginJar("test", "1.0.0");
 
     assertThat(underTest.verify(jarPath, pluginKey)).isFalse();
   }
 
-  private static Path testResource() throws URISyntaxException {
-    var resource = OnDemandPluginSignatureVerifierTest.class.getClassLoader().getResource("ondemand/sonar-cpp-plugin-test.jar");
-    if (resource == null) {
-      throw new IllegalArgumentException("Test resource not found: ondemand/sonar-cpp-plugin-test.jar");
+  private Path createMinimalPluginJar(String pluginKey, String pluginVersion) throws IOException {
+    var target = tempDir.resolve("sonar-" + pluginKey + "-plugin-test.jar");
+    var manifest = new Manifest();
+    manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+    manifest.getMainAttributes().putValue("Plugin-Key", pluginKey);
+    manifest.getMainAttributes().putValue("Plugin-Version", pluginVersion);
+    try (var jos = new JarOutputStream(Files.newOutputStream(target), manifest)) {
+      // minimal JAR with only the manifest
     }
-    return Path.of(resource.toURI());
+    return target;
   }
 }

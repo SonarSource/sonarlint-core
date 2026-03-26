@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,9 +36,15 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -60,6 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 class PluginsServiceTest {
 
@@ -70,7 +78,6 @@ class PluginsServiceTest {
   private static final Path enterprisePath = Paths.get("folder", "enterprise");
   private PluginsService underTest;
   private PluginsRepository pluginsRepository;
-  private LanguageSupportRepository languageSupportRepository;
   private ConnectionConfigurationRepository connectionConfigurationStorage;
   private StorageService storageService;
   private ConnectionStorage connectionStorage;
@@ -89,25 +96,29 @@ class PluginsServiceTest {
     pluginStorage = mock(PluginsStorage.class);
     when(connectionStorage.plugins()).thenReturn(pluginStorage);
     initializeParams = mock(InitializeParams.class);
-    languageSupportRepository = mock(LanguageSupportRepository.class);
+    when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
+    var companionPluginResolver = mock(CompanionPluginResolver.class);
     mockOmnisharpLanguageRequirements();
-    underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), languageSupportRepository, storageService,
-      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher);
+
+    underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
+      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
+      List.of(companionPluginResolver), mock(UnsupportedArtifactResolver.class), mock(ConnectedModeArtifactResolver.class),
+      mock(EmbeddedArtifactResolver.class), mock(OnDemandArtifactResolver.class), mock(PremiumArtifactResolver.class));
   }
 
   @Test
   void should_initialize_csharp_analyzers_to_null_when_no_language_requirements_passed() {
-    var underTest = new PluginsService.CSharpSupport(null);
-    assertThat(underTest.csharpOssPluginPath).isNull();
-    assertThat(underTest.csharpEnterprisePluginPath).isNull();
+    var csharpSupport = new PluginsService.CSharpSupport(null);
+    assertThat(csharpSupport.csharpOssPluginPath).isNull();
+    assertThat(csharpSupport.csharpEnterprisePluginPath).isNull();
   }
 
   @Test
   void should_initialize_csharp_analyzers_to_null_when_no_omnisharp_requirements_passed() {
-    var underTest = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, null));
-    assertThat(underTest.csharpOssPluginPath).isNull();
-    assertThat(underTest.csharpEnterprisePluginPath).isNull();
+    var csharpSupport = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, null));
+    assertThat(csharpSupport.csharpOssPluginPath).isNull();
+    assertThat(csharpSupport.csharpEnterprisePluginPath).isNull();
   }
 
   @Test
@@ -117,9 +128,9 @@ class PluginsServiceTest {
     var net472Path = tempDir.resolve("net472Path");
     var ossPath = tempDir.resolve("ossPath");
     var enterprisePath = tempDir.resolve("enterprisePath");
-    var underTest = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, new OmnisharpRequirementsDto(monoPath, net6Path, net472Path, ossPath, enterprisePath)));
-    assertThat(underTest.csharpOssPluginPath).isEqualTo(ossPath);
-    assertThat(underTest.csharpEnterprisePluginPath).isEqualTo(enterprisePath);
+    var csharpSupport = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, new OmnisharpRequirementsDto(monoPath, net6Path, net472Path, ossPath, enterprisePath)));
+    assertThat(csharpSupport.csharpOssPluginPath).isEqualTo(ossPath);
+    assertThat(csharpSupport.csharpEnterprisePluginPath).isEqualTo(enterprisePath);
   }
 
   @Test
@@ -318,8 +329,6 @@ class PluginsServiceTest {
   @Test
   void should_return_list_size_equal_to_sonar_language_values() {
     var connectionId = "connection1";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId);
 
     var result = underTest.getPluginStatuses(connectionId);
 
@@ -327,155 +336,45 @@ class PluginsServiceTest {
   }
 
   @Test
-  void should_return_active_embedded_with_empty_versions_when_plugin_in_embedded_analysis() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, null, null, null, null);
-    var connectionId = "connection1";
-    mockEmbeddedPlugins(Set.of("java"), Set.of("java"));
-    mockConnectionPlugins(connectionId);
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_failed_embedded_with_empty_versions_when_plugin_in_embedded_all_but_not_in_analysis() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.FAILED, ArtifactSource.EMBEDDED, null, null, null, null);
-    var connectionId = "connection1";
-    mockEmbeddedPlugins(Set.of("java"), Set.of());
-    mockConnectionPlugins(connectionId);
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_synced_sonar_cloud_with_empty_versions_when_plugin_in_connection_analysis_and_is_sonar_cloud() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_CLOUD, null, null, null, null);
-    var connectionId = "SQC";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
-    mockConnection(connectionId, ConnectionKind.SONARCLOUD, Version.create("1.0"));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_failed_sonar_cloud_with_empty_versions_when_plugin_in_connection_all_but_not_in_analysis_and_is_sonar_cloud() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.FAILED, ArtifactSource.SONARQUBE_CLOUD, null, null, null, null);
-    var connectionId = "SQC";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId, Set.of("python"), Set.of());
-    mockConnection(connectionId, ConnectionKind.SONARCLOUD, Version.create("1.0"));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_synced_sonar_qube_server_with_empty_versions_when_plugin_in_connection_analysis_and_not_sonar_cloud() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, null, "10.0");
-    var connectionId = "SQS";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.0"));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_failed_sonar_qube_server_with_empty_versions_when_plugin_in_connection_all_but_not_in_analysis_and_not_sonar_cloud() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.FAILED, ArtifactSource.SONARQUBE_SERVER, null, null, null, "10.0");
-    var connectionId = "SQS";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId, Set.of("python"), Set.of());
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.0"));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_unsupported_with_null_fields_when_plugin_in_sonar_language_but_not_in_any_collection() {
-    var connectionId = "connection1";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId);
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result)
-      .isNotEmpty()
-      .allMatch(status ->
-        status.state() == ArtifactState.UNSUPPORTED &&
-        status.source() == null &&
-        status.actualVersion() == null &&
-        status.overriddenVersion() == null &&
-        status.serverVersion() == null
-      );
-  }
-
-  @Test
-  void should_use_connection_plugin_values_when_plugin_present_in_both_embedded_and_connection() {
-    var expected = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, null, "10.0");
-    var connectionId = "SQS";
-    mockEmbeddedPlugins(Set.of("java"), Set.of("java"));
-    mockConnectionPlugins(connectionId, Set.of("java"), Set.of("java"));
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.0"));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(expected);
-  }
-
-  @Test
-  void should_return_premium_only_for_languages_exclusively_in_connected_mode_when_connection_id_is_null() {
-    mockEmbeddedPlugins();
-    when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(SonarLanguage.JAVA));
-    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.JAVA, SonarLanguage.PYTHON));
-
-    var result = underTest.getPluginStatuses(null);
-
-    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null, null))
-      .doesNotContain(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.PREMIUM, null, null, null, null, null));
-  }
-
-  @Test
-  void should_return_premium_for_languages_not_in_connection_plugins_when_connection_id_is_not_null() {
-    var connectionId = "SQS";
-    mockEmbeddedPlugins();
-    mockConnectionPlugins(connectionId);
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.0"));
-    when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(SonarLanguage.JAVA));
-    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.JAVA, SonarLanguage.PYTHON));
-
-    var result = underTest.getPluginStatuses(connectionId);
-
-    assertThat(result).contains(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.PREMIUM, null, null, null, null, null))
-      .doesNotContain(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.PREMIUM, null, null, null, null, null));
-  }
-
-  @Test
   void unloadPlugins_should_publish_event_when_plugins_were_loaded() {
     var connectionId = "connection1";
-    mockConnectionPlugins(connectionId, Set.of("python"), Set.of("python"));
+    when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(mock(LoadedPlugins.class));
 
     underTest.unloadPlugins(connectionId);
 
-    verify(eventPublisher).publishEvent(new PluginStatusesChangedEvent(connectionId));
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher).publishEvent(captor.capture());
+    assertThat(captor.getValue().connectionId()).isEqualTo(connectionId);
+    assertThat(captor.getValue().pluginStatuses()).isNotNull();
   }
 
   @Test
   void unloadPlugins_should_not_publish_event_when_no_plugins_were_loaded() {
     var connectionId = "connection1";
+    when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(null);
 
     underTest.unloadPlugins(connectionId);
+
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  void unloadEmbeddedPlugins_should_publish_event_when_embedded_plugins_were_loaded() {
+    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(mock(LoadedPlugins.class));
+
+    underTest.unloadPlugins(null);
+
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher).publishEvent(captor.capture());
+    assertThat(captor.getValue().connectionId()).isNull();
+    assertThat(captor.getValue().pluginStatuses()).isNotNull();
+  }
+
+  @Test
+  void unloadEmbeddedPlugins_should_not_publish_event_when_no_embedded_plugins_were_loaded() {
+    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(null);
+
+    underTest.unloadPlugins(null);
 
     verify(eventPublisher, never()).publishEvent(any());
   }
@@ -517,10 +416,6 @@ class PluginsServiceTest {
     when(serverInfoStorage.read()).thenReturn(Optional.of(serverInfo));
   }
 
-  private void mockEnabledLanguages(Language... languages) {
-    when(initializeParams.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(languages));
-  }
-
   private void mockOmnisharpLanguageRequirements() {
     var languageSpecificRequirements = mock(LanguageSpecificRequirements.class);
     var omnisharpRequirements = mock(OmnisharpRequirementsDto.class);
@@ -530,31 +425,9 @@ class PluginsServiceTest {
     when(initializeParams.getLanguageSpecificRequirements()).thenReturn(languageSpecificRequirements);
   }
 
-  private void mockEmbeddedPlugins() {
-    mockEmbeddedPlugins(Set.of(), Set.of());
+  private void mockEnabledLanguages(Language... languages) {
+    when(initializeParams.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(languages));
+    when(initializeParams.getBackendCapabilities()).thenReturn(Set.of());
   }
 
-  private void mockEmbeddedPlugins(Set<String> allPluginKeys, Set<String> analysisPluginKeys) {
-    var loadedPlugins = mock(LoadedPlugins.class);
-    when(loadedPlugins.hasPlugin(anyString())).thenAnswer(inv -> allPluginKeys.contains(inv.getArgument(0, String.class)));
-    when(loadedPlugins.hasDisabledPlugin(anyString())).thenAnswer(inv -> {
-      var key = inv.getArgument(0, String.class);
-      return allPluginKeys.contains(key) && !analysisPluginKeys.contains(key);
-    });
-    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(loadedPlugins);
-  }
-
-  private void mockConnectionPlugins(String connectionId) {
-    mockConnectionPlugins(connectionId, Set.of(), Set.of());
-  }
-
-  private void mockConnectionPlugins(String connectionId, Set<String> allPluginKeys, Set<String> analysisPluginKeys) {
-    var loadedPlugins = mock(LoadedPlugins.class);
-    when(loadedPlugins.hasPlugin(anyString())).thenAnswer(inv -> allPluginKeys.contains(inv.getArgument(0, String.class)));
-    when(loadedPlugins.hasDisabledPlugin(anyString())).thenAnswer(inv -> {
-      var key = inv.getArgument(0, String.class);
-      return allPluginKeys.contains(key) && !analysisPluginKeys.contains(key);
-    });
-    when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(loadedPlugins);
-  }
 }
