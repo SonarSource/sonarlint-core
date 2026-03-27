@@ -243,9 +243,9 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>https://binaries.sonarsource.com/OmniSharp-Roslyn/${omnisharp.version}/omnisharp-net472.zip.asc</url>
+              <url>https://binaries.sonarsource.com/OmniSharp-Roslyn/${omnisharp.version}/omnisharp-net472.tar.gz.asc</url>
               <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
-              <outputFileName>omnisharp-net472.zip.asc</outputFileName>
+              <outputFileName>omnisharp-net472.tar.gz.asc</outputFileName>
               <skipCache>false</skipCache>
             </configuration>
           </execution>
