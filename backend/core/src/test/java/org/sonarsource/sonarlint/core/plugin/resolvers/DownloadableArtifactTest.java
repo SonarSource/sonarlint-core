@@ -87,7 +87,7 @@ class DownloadableArtifactTest {
     assertThat(DownloadableArtifact.CFAMILY_PLUGIN.signatureResourcePath()).isEqualTo("ondemand/sonar-cpp-plugin.jar.asc");
     assertThat(DownloadableArtifact.CSHARP_OSS.signatureResourcePath()).isEqualTo("ondemand/sonar-cs-plugin.jar.asc");
     assertThat(DownloadableArtifact.OMNISHARP_MONO.signatureResourcePath()).isEqualTo("ondemand/omnisharp-mono.tar.gz.asc");
-    assertThat(DownloadableArtifact.OMNISHARP_NET472.signatureResourcePath()).isEqualTo("ondemand/omnisharp-net472.zip.asc");
+    assertThat(DownloadableArtifact.OMNISHARP_NET472.signatureResourcePath()).isEqualTo("ondemand/omnisharp-net472.tar.gz.asc");
     assertThat(DownloadableArtifact.OMNISHARP_NET6.signatureResourcePath()).isEqualTo("ondemand/omnisharp-net6.0.tar.gz.asc");
   }
 
@@ -103,7 +103,7 @@ class DownloadableArtifactTest {
     assertThat(DownloadableArtifact.OMNISHARP_MONO.urlPattern())
       .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-mono.tar.gz");
     assertThat(DownloadableArtifact.OMNISHARP_NET472.urlPattern())
-      .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-net472.zip");
+      .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-net472.tar.gz");
     assertThat(DownloadableArtifact.OMNISHARP_NET6.urlPattern())
       .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz");
   }
