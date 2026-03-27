@@ -53,7 +53,6 @@ import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -70,7 +69,6 @@ public class PluginsService {
   private final PluginsRepository pluginsRepository;
   private final SkippedPluginsRepository skippedPluginsRepository;
   private final StorageService storageService;
-  private final CSharpSupport csharpSupport;
   private final Set<String> disabledPluginKeysForAnalysis;
   private final InitializeParams initializeParams;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
@@ -94,7 +92,6 @@ public class PluginsService {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
-    this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
     this.eventPublisher = eventPublisher;
     this.artifactResolvers = List.of(
       unsupportedArtifactResolver,
@@ -215,7 +212,7 @@ public class PluginsService {
     if (!areAnyPluginsDownloading(event.connectionId())) {
       eventPublisher.publishEvent(new PluginsSynchronizedEvent(event.connectionId()));
     }
-  }
+}
 
   public void unloadPlugins(@Nullable String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
@@ -263,32 +260,37 @@ public class PluginsService {
   }
 
   public DotnetSupport getDotnetSupport(@Nullable String connectionId) {
+    var ossPath = resolveOssCsharpAnalyzerPath(connectionId);
     if (connectionId == null) {
-      var ossPath = resolveActualCsharpAnalyzerPath(null, csharpSupport.csharpOssPluginPath);
       return new DotnetSupport(initializeParams, ossPath, false, false);
     }
-    var clientPath = shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath :
-      csharpSupport.csharpOssPluginPath;
-    var actualCsharpAnalyzerPath = resolveActualCsharpAnalyzerPath(connectionId, clientPath);
-    var shouldUseCsharpEnterprise = shouldUseEnterpriseCSharpAnalyzer(connectionId);
-    var shouldUseVbNetEnterprise = shouldUseEnterpriseVbAnalyzer(connectionId);
-    return new DotnetSupport(initializeParams, actualCsharpAnalyzerPath, shouldUseCsharpEnterprise, shouldUseVbNetEnterprise);
+    var useEnterpriseCs = shouldUseEnterpriseCSharpAnalyzer(connectionId);
+    var useEnterpriseVb = shouldUseEnterpriseVbAnalyzer(connectionId);
+    var actualPath = selectCsharpAnalyzerPath(connectionId, ossPath, useEnterpriseCs);
+    return new DotnetSupport(initializeParams, actualPath, useEnterpriseCs, useEnterpriseVb);
   }
 
-  /**
-   * Resolves the actual C# analyzer JAR path. Prefers the client-provided path when available.
-   * Falls back to the path resolved by the artifact resolver chain (e.g. from an on-demand download).
-   */
   @Nullable
-  private Path resolveActualCsharpAnalyzerPath(@Nullable String connectionId, @Nullable Path clientProvidedPath) {
-    if (clientProvidedPath != null) {
-      return clientProvidedPath;
-    }
+  private Path resolveOssCsharpAnalyzerPath(@Nullable String connectionId) {
     var status = getPluginStatus(connectionId, SonarLanguage.CS);
     if ((status.state() == ArtifactState.ACTIVE || status.state() == ArtifactState.SYNCED) && status.path() != null) {
       return status.path();
     }
     return null;
+  }
+
+  @Nullable
+  private Path selectCsharpAnalyzerPath(String connectionId, @Nullable Path ossPath, boolean useEnterprise) {
+    if (useEnterprise) {
+      return getStoredEnterprisePath(connectionId)
+        .orElse(ossPath);
+    }
+    return ossPath;
+  }
+
+  private Optional<Path> getStoredEnterprisePath(String connectionId) {
+    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID))
+      .map(StoredPlugin::getJarPath);
   }
 
   public void unloadEmbeddedPlugins() {
@@ -305,25 +307,5 @@ public class PluginsService {
     }
   }
 
-  static class CSharpSupport {
-    final Path csharpOssPluginPath;
-    final Path csharpEnterprisePluginPath;
-
-    CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
-      if (languageSpecificRequirements == null) {
-        csharpOssPluginPath = null;
-        csharpEnterprisePluginPath = null;
-      } else {
-        var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
-        if (omnisharpRequirements == null) {
-          csharpOssPluginPath = null;
-          csharpEnterprisePluginPath = null;
-        } else {
-          csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
-          csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
-        }
-      }
-    }
-  }
 
 }
