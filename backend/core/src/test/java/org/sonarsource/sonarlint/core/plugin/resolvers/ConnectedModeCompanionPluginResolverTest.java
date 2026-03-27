@@ -28,11 +28,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -42,8 +42,8 @@ import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
+import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +66,7 @@ class ConnectedModeCompanionPluginResolverTest {
   private ServerPluginDownloader downloader;
   private LanguageSupportRepository languageSupportRepository;
   private PluginsStorage pluginsStorage;
+  private PluginOverrideRegistry overrideRegistry;
 
   private ConnectedModeCompanionPluginResolver resolver;
 
@@ -75,6 +76,7 @@ class ConnectedModeCompanionPluginResolverTest {
     serverPluginsCache = mock(ServerPluginsCache.class);
     downloader = mock(ServerPluginDownloader.class);
     languageSupportRepository = mock(LanguageSupportRepository.class);
+    overrideRegistry = mock(PluginOverrideRegistry.class);
     var connectionStorage = mock(ConnectionStorage.class);
     pluginsStorage = mock(PluginsStorage.class);
 
@@ -82,7 +84,7 @@ class ConnectedModeCompanionPluginResolverTest {
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
     when(downloader.sourceFor("conn1")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
 
-    resolver = new ConnectedModeCompanionPluginResolver(storageService, serverPluginsCache, downloader, languageSupportRepository);
+    resolver = new ConnectedModeCompanionPluginResolver(storageService, serverPluginsCache, downloader, languageSupportRepository, overrideRegistry);
   }
 
   @Test
@@ -197,6 +199,32 @@ class ConnectedModeCompanionPluginResolverTest {
     assertThat(result.get("companion1").state()).isEqualTo(ArtifactState.SYNCED);
     assertThat(result.get("companion1").path()).isEqualTo(jarFile);
     verify(downloader, never()).scheduleCompanionPluginDownload(anyString(), any());
+  }
+
+  @Test
+  void should_not_treat_textenterprise_as_companion_when_override_active() {
+    when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+    when(overrideRegistry.isLanguageOverride("textenterprise", "conn1")).thenReturn(true);
+    var serverPlugin = new ServerPlugin("textenterprise", "hash1", "sonar-text-enterprise-plugin.jar", true);
+    when(serverPluginsCache.getPlugins("conn1")).thenReturn(Optional.of(List.of(serverPlugin)));
+
+    var result = resolver.resolveCompanionPlugins("conn1");
+
+    assertThat(result).isEmpty();
+    verify(downloader, never()).scheduleCompanionPluginDownload(anyString(), any());
+  }
+
+  @Test
+  void should_treat_textenterprise_as_companion_when_override_not_active() {
+    when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+    when(overrideRegistry.isLanguageOverride("textenterprise", "conn1")).thenReturn(false);
+    var serverPlugin = new ServerPlugin("textenterprise", "hash1", "sonar-text-enterprise-plugin.jar", true);
+    when(serverPluginsCache.getPlugins("conn1")).thenReturn(Optional.of(List.of(serverPlugin)));
+
+    var result = resolver.resolveCompanionPlugins("conn1");
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get("textenterprise").state()).isEqualTo(ArtifactState.DOWNLOADING);
   }
 
   @Test

@@ -23,13 +23,8 @@ import java.net.ProxySelector;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
-import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
-import org.sonarsource.sonarlint.core.http.ThreadFactories;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeCompanionPluginResolver;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.core5.util.Timeout;
 import org.jooq.DSLContext;
@@ -59,6 +54,7 @@ import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -80,6 +76,7 @@ import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpConfig;
+import org.sonarsource.sonarlint.core.http.ThreadFactories;
 import org.sonarsource.sonarlint.core.http.ssl.CertificateStore;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 import org.sonarsource.sonarlint.core.issue.IssueService;
@@ -95,10 +92,14 @@ import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginStatusNotifierService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeCompanionPluginResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandPluginCacheManager;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandPluginSignatureVerifier;
+import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UniqueTaskExecutor;
@@ -244,6 +245,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   PremiumArtifactResolver.class,
   ConnectedModeArtifactResolver.class,
   ConnectedModeCompanionPluginResolver.class,
+  PluginOverrideRegistry.class,
   EmbeddedArtifactResolver.class,
   OnDemandArtifactResolver.class,
   OnDemandPluginCacheManager.class,

@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -56,7 +57,6 @@ import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -214,17 +214,6 @@ public class PluginsService {
     if (!areAnyPluginsDownloading(event.connectionId())) {
       eventPublisher.publishEvent(new PluginsSynchronizedEvent(event.connectionId()));
     }
-  }
-
-  public static boolean isSonarQubeCloudOrVersionAtLeast(ConnectionConfigurationRepository connectionRepository,
-    StorageService storageService, Version minVersion, String connectionId) {
-    var connection = connectionRepository.getConnectionById(connectionId);
-    if (connection == null) {
-      return false;
-    }
-    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> serverInfo.version().compareToIgnoreQualifier(minVersion) >= 0)
-      .orElse(false);
   }
 
   public void unloadPlugins(@Nullable String connectionId) {

@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -73,6 +74,7 @@ class ConnectedModeArtifactResolverTest {
   private PluginsStorage pluginsStorage;
   private ServerPluginsCache serverPluginsCache;
   private ServerPluginDownloader downloader;
+  private PluginOverrideRegistry overrideRegistry;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -87,6 +89,7 @@ class ConnectedModeArtifactResolverTest {
     pluginsStorage = mock(PluginsStorage.class);
     serverPluginsCache = mock(ServerPluginsCache.class);
     downloader = mock(ServerPluginDownloader.class);
+    overrideRegistry = new PluginOverrideRegistry(connectionRepo, storageService);
     when(connectionStorage.serverInfo()).thenReturn(serverInfoStorage);
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
     when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of());
@@ -306,6 +309,37 @@ class ConnectedModeArtifactResolverTest {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  void should_resolve_textenterprise_when_connected_to_sonarcloud() throws IOException {
+    var textEnterpriseJar = Files.createFile(tempDir.resolve("sonar-text-enterprise-plugin.jar"));
+    mockConnection("cloud", ConnectionKind.SONARCLOUD);
+    mockStoredPlugin("textenterprise", textEnterpriseJar, "hash");
+    mockServerPlugins("cloud", List.of(mockServerPlugin("textenterprise", "hash")));
+    when(downloader.sourceFor("cloud")).thenReturn(ArtifactSource.SONARQUBE_CLOUD);
+    var resolver = createResolver(Set.of(SonarLanguage.SECRETS.getPluginKey()));
+    var expected = resolved(ArtifactState.SYNCED, textEnterpriseJar, ArtifactSource.SONARQUBE_CLOUD);
+
+    var result = resolver.resolve(SonarLanguage.SECRETS, "cloud");
+
+    assertThat(result).contains(expected);
+  }
+
+  @Test
+  void should_resolve_goenterprise_when_sq_version_meets_minimum() throws IOException {
+    var goEnterpriseJar = Files.createFile(tempDir.resolve("sonar-go-enterprise-plugin.jar"));
+    mockConnection("conn", ConnectionKind.SONARQUBE);
+    mockServerVersion(Version.create("2025.2"));
+    mockStoredPlugin("goenterprise", goEnterpriseJar, "hash");
+    mockServerPlugins("conn", List.of(mockServerPlugin("goenterprise", "hash")));
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
+    var resolver = createResolver(Set.of(SonarLanguage.GO.getPluginKey()));
+    var expected = resolved(ArtifactState.SYNCED, goEnterpriseJar, ArtifactSource.SONARQUBE_SERVER);
+
+    var result = resolver.resolve(SonarLanguage.GO, "conn");
+
+    assertThat(result).contains(expected);
+  }
+
   // --- ANSIBLE/GITHUBACTIONS use "iac" plugin key ---
 
   @Test
@@ -339,7 +373,7 @@ class ConnectedModeArtifactResolverTest {
   private ConnectedModeArtifactResolver createResolver(Set<String> skipSyncPluginKeys) {
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(skipSyncPluginKeys.stream().collect(Collectors.toMap(k -> k, k -> Path.of("dummy"))));
-    return new ConnectedModeArtifactResolver(storageService, connectionRepo, serverPluginsCache, downloader, initializeParams);
+    return new ConnectedModeArtifactResolver(storageService, serverPluginsCache, downloader, overrideRegistry, initializeParams);
   }
 
   private void mockConnection(String connectionId, ConnectionKind kind) {
