@@ -142,9 +142,24 @@ class OnDemandArtifactResolverTest {
   }
 
   @Test
+  void should_fire_failed_event_when_signature_verification_fails() throws Exception {
+    mockSuccessfulHttpClient();
+    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(false);
+    var resolver = buildResolver();
+
+    resolver.resolve(SonarLanguage.C, null);
+
+    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
+    assertThat(capturedStatuses).containsExactlyInAnyOrder(
+      failedStatus(SonarLanguage.C),
+      failedStatus(SonarLanguage.CPP),
+      failedStatus(SonarLanguage.OBJC));
+  }
+
+  @Test
   void should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
     mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), anyString())).thenReturn(true);
+    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(true);
     var resolver = buildResolver();
 
     resolver.resolve(SonarLanguage.C, null);
