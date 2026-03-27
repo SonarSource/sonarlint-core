@@ -54,15 +54,18 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
   private final ServerPluginsCache serverPluginsCache;
   private final ServerPluginDownloader downloader;
   private final LanguageSupportRepository languageSupportRepository;
+  private final PluginOverrideRegistry overrideRegistry;
 
   public ConnectedModeCompanionPluginResolver(StorageService storageService,
       ServerPluginsCache serverPluginsCache,
       ServerPluginDownloader downloader,
-      LanguageSupportRepository languageSupportRepository) {
+      LanguageSupportRepository languageSupportRepository,
+      PluginOverrideRegistry overrideRegistry) {
     this.storageService = storageService;
     this.serverPluginsCache = serverPluginsCache;
     this.downloader = downloader;
     this.languageSupportRepository = languageSupportRepository;
+    this.overrideRegistry = overrideRegistry;
   }
 
   @Override
@@ -74,12 +77,12 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
     var storedPluginsByKey = storageService.connection(connectionId).plugins().getStoredPluginsByKey();
     fetchServerPluginsSafely(connectionId).ifPresent(plugins ->
       plugins.stream()
-        .filter(p -> isCompanionPlugin(p.getKey()))
+        .filter(p -> isCompanionPlugin(p.getKey(), connectionId))
         .forEach(p -> resolveOrScheduleCompanion(connectionId, p, storedPluginsByKey, result))
     );
     // Include stored companions not already resolved: covers server-unreachable and companions removed from server
     storedPluginsByKey.entrySet().stream()
-      .filter(e -> isCompanionPlugin(e.getKey()))
+      .filter(e -> isCompanionPlugin(e.getKey(), connectionId))
       .filter(e -> !result.containsKey(e.getKey()))
       .filter(e -> Files.exists(e.getValue().getJarPath()))
       .forEach(e -> addStoredCompanion(connectionId, e.getKey(), e.getValue(), result));
@@ -125,8 +128,9 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
     return false;
   }
 
-  private static boolean isCompanionPlugin(String pluginKey) {
-    return !SonarLanguage.containsPlugin(pluginKey);
+  private boolean isCompanionPlugin(String pluginKey, String connectionId) {
+    return !SonarLanguage.containsPlugin(pluginKey)
+      && !overrideRegistry.isLanguageOverride(pluginKey, connectionId);
   }
 
   private Optional<java.util.List<ServerPlugin>> fetchServerPluginsSafely(String connectionId) {
