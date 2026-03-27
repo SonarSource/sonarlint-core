@@ -25,26 +25,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -62,12 +62,11 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.ArgumentCaptor;
 
 class PluginsServiceTest {
 
@@ -99,38 +98,12 @@ class PluginsServiceTest {
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
     var companionPluginResolver = mock(CompanionPluginResolver.class);
-    mockOmnisharpLanguageRequirements();
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of());
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
       List.of(companionPluginResolver), mock(UnsupportedArtifactResolver.class), mock(ConnectedModeArtifactResolver.class),
-      mock(EmbeddedArtifactResolver.class), mock(OnDemandArtifactResolver.class), mock(PremiumArtifactResolver.class));
-  }
-
-  @Test
-  void should_initialize_csharp_analyzers_to_null_when_no_language_requirements_passed() {
-    var csharpSupport = new PluginsService.CSharpSupport(null);
-    assertThat(csharpSupport.csharpOssPluginPath).isNull();
-    assertThat(csharpSupport.csharpEnterprisePluginPath).isNull();
-  }
-
-  @Test
-  void should_initialize_csharp_analyzers_to_null_when_no_omnisharp_requirements_passed() {
-    var csharpSupport = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, null));
-    assertThat(csharpSupport.csharpOssPluginPath).isNull();
-    assertThat(csharpSupport.csharpEnterprisePluginPath).isNull();
-  }
-
-  @Test
-  void should_initialize_csharp_analyzers_paths_when_omnisharp_requirements_passed(@TempDir Path tempDir) {
-    var monoPath = tempDir.resolve("mono");
-    var net6Path = tempDir.resolve("net6Path");
-    var net472Path = tempDir.resolve("net472Path");
-    var ossPath = tempDir.resolve("ossPath");
-    var enterprisePath = tempDir.resolve("enterprisePath");
-    var csharpSupport = new PluginsService.CSharpSupport(new LanguageSpecificRequirements(null, new OmnisharpRequirementsDto(monoPath, net6Path, net472Path, ossPath, enterprisePath)));
-    assertThat(csharpSupport.csharpOssPluginPath).isEqualTo(ossPath);
-    assertThat(csharpSupport.csharpEnterprisePluginPath).isEqualTo(enterprisePath);
+      mockEmbeddedCsharpOss(), mock(OnDemandArtifactResolver.class), mock(PremiumArtifactResolver.class));
   }
 
   @Test
@@ -276,10 +249,23 @@ class PluginsServiceTest {
   }
 
   @Test
+  void getDotnetSupport_connectionForCloud_fallsBackToOss_whenEnterpriseNotInStorage() {
+    var connectionId = "SQC";
+    var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
+    mockConnection(connection);
+
+    var result = underTest.getDotnetSupport(connectionId);
+
+    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(ossPath);
+    assertThat(result.isShouldUseCsharpEnterprise()).isTrue();
+  }
+
+  @Test
   void getDotnetSupport_connectionForCloud_ReturnsEnterpriseProperties() {
     var connectionId = "SQC";
     var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
     mockConnection(connection);
+    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -292,6 +278,7 @@ class PluginsServiceTest {
   void getDotnetSupport_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -304,7 +291,7 @@ class PluginsServiceTest {
   void getDotnetSupport_connectionIsToServerWithRepackagedCsharpPlugin_ReturnsEnterprisePropertiesForCsharp() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
 
     var result = underTest.getDotnetSupport(connectionId);
 
@@ -405,9 +392,15 @@ class PluginsServiceTest {
   }
 
   private void mockPlugin(String pluginKey) {
+    mockPlugin(pluginKey, null);
+  }
+
+  private void mockPlugin(String pluginKey, @Nullable Path jarPath) {
     var plugin = mock(StoredPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
+    when(plugin.getJarPath()).thenReturn(jarPath);
     when(pluginStorage.getStoredPlugins()).thenReturn(List.of(plugin));
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of(pluginKey, plugin));
   }
 
   private void mockConnectionVersion(Version version) {
@@ -423,6 +416,13 @@ class PluginsServiceTest {
     when(omnisharpRequirements.getEnterpriseAnalyzerPath()).thenReturn(enterprisePath);
     when(languageSpecificRequirements.getOmnisharpRequirements()).thenReturn(omnisharpRequirements);
     when(initializeParams.getLanguageSpecificRequirements()).thenReturn(languageSpecificRequirements);
+  }
+
+  private EmbeddedArtifactResolver mockEmbeddedCsharpOss() {
+    var resolver = mock(EmbeddedArtifactResolver.class);
+    when(resolver.resolve(eq(SonarLanguage.CS), any()))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, null, null)));
+    return resolver;
   }
 
   private void mockEnabledLanguages(Language... languages) {
