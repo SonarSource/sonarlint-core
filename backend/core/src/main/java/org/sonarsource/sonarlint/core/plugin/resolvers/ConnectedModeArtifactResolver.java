@@ -22,19 +22,17 @@ package org.sonarsource.sonarlint.core.plugin.resolvers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
-import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -57,47 +55,31 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String PLUGIN_FETCH_ERROR = "Could not fetch server plugin list for connection '{}'";
 
-  public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
-  public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
-  public static final Version ENTERPRISE_GO_MIN_SQ_VERSION = Version.create("2025.2");
-
-  private static final Map<String, Version> FORCE_OVERRIDES_SINCE_VERSION = Map.of(
-    SonarLanguage.SECRETS.getPluginKey(), CUSTOM_SECRETS_MIN_SQ_VERSION,
-    SonarLanguage.CLOUDFORMATION.getPluginKey(), ENTERPRISE_IAC_MIN_SQ_VERSION,
-    SonarLanguage.GO.getPluginKey(), ENTERPRISE_GO_MIN_SQ_VERSION);
-
   private final StorageService storageService;
-  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ServerPluginsCache serverPluginsCache;
   private final ServerPluginDownloader downloader;
+  private final PluginOverrideRegistry overrideRegistry;
   private final Set<String> skipSyncPluginKeys;
 
-  public ConnectedModeArtifactResolver(StorageService storageService, ConnectionConfigurationRepository connectionConfigurationRepository,
-    ServerPluginsCache serverPluginsCache, ServerPluginDownloader downloader, InitializeParams initializeParams) {
+  public ConnectedModeArtifactResolver(StorageService storageService, ServerPluginsCache serverPluginsCache,
+    ServerPluginDownloader downloader, PluginOverrideRegistry overrideRegistry, InitializeParams initializeParams) {
     this.storageService = storageService;
-    this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.serverPluginsCache = serverPluginsCache;
     this.downloader = downloader;
+    this.overrideRegistry = overrideRegistry;
     this.skipSyncPluginKeys = initializeParams.getConnectedModeEmbeddedPluginPathsByKey().keySet();
   }
 
-  /**
-   * Returns true if the server has a version of this analyzer that should take precedence over the embedded one.
-   * The caller is responsible for providing an already-loaded {@code storedPlugins} map to avoid repeated disk reads.
-   */
-  private static boolean isOverriddenByServer(SonarLanguage language, String connectionId, ConnectionConfigurationRepository repo,
-    StorageService storage, Map<String, StoredPlugin> storedPlugins) {
-    if (FORCE_OVERRIDES_SINCE_VERSION.containsKey(language.getPluginKey())) {
-      var minVersion = FORCE_OVERRIDES_SINCE_VERSION.get(language.getPluginKey());
-      return PluginsService.isSonarQubeCloudOrVersionAtLeast(repo, storage, minVersion, connectionId);
+  private boolean isOverriddenByServer(SonarLanguage language, String connectionId, Map<String, StoredPlugin> storedPlugins) {
+    if (overrideRegistry.getEnterpriseOverrideKey(language.getPluginKey(), connectionId).isPresent()) {
+      return true;
     }
-
     return !"iac".equals(language.getPluginKey()) && (storedPlugins.containsKey(language.getPluginKey() + "enterprise")
       || storedPlugins.containsKey(language.getPluginKey() + "developer"));
   }
 
   private boolean passesLanguageGate(SonarLanguage language, String connectionId, Map<String, StoredPlugin> storedPlugins) {
-    if (isOverriddenByServer(language, connectionId, connectionConfigurationRepository, storageService, storedPlugins)) {
+    if (isOverriddenByServer(language, connectionId, storedPlugins)) {
       return true;
     }
     if (skipSyncPluginKeys.contains(language.getPluginKey())) {
@@ -126,23 +108,42 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
       }
       return Optional.empty();
     }
-    var pluginKey = language.getPluginKey();
-    var fallbackPluginKey = "iacenterprise".equals(pluginKey) ? "iac" : null;
+
+    var enterpriseOverrideKey = overrideRegistry.getEnterpriseOverrideKey(language.getPluginKey(), connectionId).orElse(null);
+    var primaryKey = enterpriseOverrideKey != null ? enterpriseOverrideKey : language.getPluginKey();
+    var fallbackKey = deriveFallbackKey(language.getPluginKey(), enterpriseOverrideKey);
     try {
       return serverPluginsCache.getPlugins(connectionId)
-        .flatMap(plugins -> {
-          var match = plugins.stream().filter(p -> p.getKey().equals(pluginKey)).findFirst();
-          if (match.isEmpty() && fallbackPluginKey != null) {
-            match = plugins.stream().filter(p -> p.getKey().equals(fallbackPluginKey)).findFirst();
-          }
-          return match;
-        })
+        .flatMap(plugins -> findServerPlugin(plugins, primaryKey, fallbackKey))
         .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, storedPlugins, language))
-        .or(() -> resolveFromStorageWithFallback(connectionId, pluginKey, fallbackPluginKey, storedPlugins));
+        .or(() -> resolveFromStorageWithFallback(connectionId, primaryKey, fallbackKey, storedPlugins));
     } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      return resolveFromStorageWithFallback(connectionId, pluginKey, fallbackPluginKey, storedPlugins);
+      return resolveFromStorageWithFallback(connectionId, primaryKey, fallbackKey, storedPlugins);
     }
+  }
+
+  @Nullable
+  private static String deriveFallbackKey(String basePluginKey, @Nullable String enterpriseOverrideKey) {
+    if (enterpriseOverrideKey != null) {
+      // When override is active, fall back to the base key (e.g., textenterprise -> text)
+      return basePluginKey;
+    }
+    // For languages whose pluginKey is already an enterprise key (e.g., ANSIBLE with "iacenterprise"),
+    // fall back to the base key
+    if ("iacenterprise".equals(basePluginKey)) {
+      return "iac";
+    }
+    return null;
+  }
+
+  private static Optional<ServerPlugin> findServerPlugin(List<ServerPlugin> plugins, String primaryKey,
+    @Nullable String fallbackKey) {
+    var match = plugins.stream().filter(p -> p.getKey().equals(primaryKey)).findFirst();
+    if (match.isEmpty() && fallbackKey != null) {
+      match = plugins.stream().filter(p -> p.getKey().equals(fallbackKey)).findFirst();
+    }
+    return match;
   }
 
   private ResolvedArtifact resolveFromStorageOrSchedule(String connectionId, ServerPlugin serverPlugin,
