@@ -22,13 +22,14 @@ package org.sonarsource.sonarlint.core.plugin.resolvers;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -82,7 +84,7 @@ public class OmnisharpDistributionDownloader {
   private final OnDemandPluginSignatureVerifier signatureVerifier;
   private final ApplicationEventPublisher eventPublisher;
   private final UniqueTaskExecutor uniqueTaskExecutor;
-  private final boolean csharpEnabled;
+  private final boolean shouldDownloadOmnisharp;
 
   private final Map<String, Path> resolvedPathsByVariant = new ConcurrentHashMap<>();
   private final AtomicBoolean eventFired = new AtomicBoolean(false);
@@ -94,13 +96,17 @@ public class OmnisharpDistributionDownloader {
     this.signatureVerifier = signatureVerifier;
     this.eventPublisher = eventPublisher;
     this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
-    this.csharpEnabled = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS)
+    var csharpEnabled = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS)
       || initializeParams.getExtraEnabledLanguagesInConnectedMode().contains(Language.CS);
+    this.shouldDownloadOmnisharp = csharpEnabled
+      && Optional.ofNullable(initializeParams.getLanguageSpecificRequirements())
+        .map(LanguageSpecificRequirements::isOmnisharpDownloadEnabled)
+        .orElse(false);
   }
 
   @PostConstruct
   void triggerDownloads() {
-    if (!csharpEnabled) {
+    if (!shouldDownloadOmnisharp) {
       return;
     }
     var allCached = true;
@@ -243,13 +249,21 @@ public class OmnisharpDistributionDownloader {
     return resolvedPathsByVariant.get(VARIANT_NET6);
   }
 
-  /**
-   * Returns the client-provided path when available; otherwise falls back to the downloaded path.
-   * The client-provided path takes priority because it reflects an explicit IDE-side installation.
-   */
-  @CheckForNull
-  public static Path resolveWithFallback(@Nullable Path downloadedPath, @Nullable Path clientProvidedPath) {
-    return clientProvidedPath != null ? clientProvidedPath : downloadedPath;
+  public Map<String, String> getExtraProperties() {
+    var properties = new HashMap<String, String>();
+    var monoPath = getMonoPath();
+    var net472Path = getDotNet472Path();
+    var net6Path = getDotNet6Path();
+    if (monoPath != null) {
+      properties.put("sonar.cs.internal.omnisharpMonoLocation", monoPath.toString());
+    }
+    if (net472Path != null) {
+      properties.put("sonar.cs.internal.omnisharpWinLocation", net472Path.toString());
+    }
+    if (net6Path != null) {
+      properties.put("sonar.cs.internal.omnisharpNet6Location", net6Path.toString());
+    }
+    return properties;
   }
 
 }

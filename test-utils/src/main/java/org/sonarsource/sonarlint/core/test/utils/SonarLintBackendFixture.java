@@ -440,12 +440,12 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withClientNodeJsPath(Path clientNodeJsPath) {
-      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(clientNodeJsPath, null), null);
+      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(clientNodeJsPath, null), false);
       return this;
     }
 
     public SonarLintBackendBuilder withEslintBridgeServerBundlePath(Path eslintBridgeServerBundlePath) {
-      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(null, eslintBridgeServerBundlePath), null);
+      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(null, eslintBridgeServerBundlePath), false);
       return this;
     }
 
