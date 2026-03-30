@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -87,6 +88,17 @@ class OmnisharpDistributionDownloaderTest {
   @Test
   void should_not_trigger_downloads_when_csharp_not_enabled() {
     var downloader = buildDownloader(Set.of());
+    downloader.triggerDownloads();
+
+    verify(httpClientProvider, never()).getHttpClientWithoutAuth();
+    assertThat(downloader.getMonoPath()).isNull();
+    assertThat(downloader.getDotNet472Path()).isNull();
+    assertThat(downloader.getDotNet6Path()).isNull();
+  }
+
+  @Test
+  void should_not_trigger_downloads_when_csharp_enabled_but_flag_is_false() {
+    var downloader = buildDownloader(Set.of(Language.CS), false);
     downloader.triggerDownloads();
 
     verify(httpClientProvider, never()).getHttpClientWithoutAuth();
@@ -162,39 +174,18 @@ class OmnisharpDistributionDownloaderTest {
     assertThat(downloader.getDotNet6Path()).isNull();
   }
 
-  @Test
-  void resolve_with_fallback_should_prefer_client_path_over_downloaded_path() {
-    var downloaded = Path.of("/downloaded");
-    var clientProvided = Path.of("/client");
-
-    assertThat(OmnisharpDistributionDownloader.resolveWithFallback(downloaded, clientProvided)).isEqualTo(clientProvided);
-  }
-
-  @Test
-  void resolve_with_fallback_should_use_downloaded_path_when_client_path_is_null() {
-    var downloaded = Path.of("/downloaded");
-
-    assertThat(OmnisharpDistributionDownloader.resolveWithFallback(downloaded, null)).isEqualTo(downloaded);
-  }
-
-  @Test
-  void resolve_with_fallback_should_use_client_path_when_download_not_ready() {
-    var clientProvided = Path.of("/client");
-
-    assertThat(OmnisharpDistributionDownloader.resolveWithFallback(null, clientProvided)).isEqualTo(clientProvided);
-  }
-
-  @Test
-  void resolve_with_fallback_should_return_null_when_both_paths_are_null() {
-    assertThat(OmnisharpDistributionDownloader.resolveWithFallback(null, null)).isNull();
-  }
-
   private OmnisharpDistributionDownloader buildDownloader(Set<Language> enabledLanguages) {
+    return buildDownloader(enabledLanguages, enabledLanguages.contains(Language.CS));
+  }
+
+  private OmnisharpDistributionDownloader buildDownloader(Set<Language> enabledLanguages, boolean omnisharpDownloadEnabled) {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getEnabledLanguagesInStandaloneMode()).thenReturn(enabledLanguages);
     when(initializeParams.getExtraEnabledLanguagesInConnectedMode()).thenReturn(Set.of());
+    var languageSpecificRequirements = new LanguageSpecificRequirements(null, omnisharpDownloadEnabled);
+    when(initializeParams.getLanguageSpecificRequirements()).thenReturn(languageSpecificRequirements);
     return new OmnisharpDistributionDownloader(initializeParams, userPaths, httpClientProvider, eventPublisher,
       Executors.newCachedThreadPool(), signatureVerifier);
   }

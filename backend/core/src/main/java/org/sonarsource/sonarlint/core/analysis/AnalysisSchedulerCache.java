@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.event.EventListener;
 
@@ -54,14 +55,14 @@ public class AnalysisSchedulerCache {
   private final PluginsService pluginsService;
   private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
-  private final OmnisharpRuntimeProvider omnisharpRuntimeProvider;
+  private final OmnisharpDistributionDownloader omnisharpDistributionDownloader;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final Map<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
   @SuppressWarnings("java:S107")
-  public AnalysisSchedulerCache(OmnisharpRuntimeProvider omnisharpRuntimeProvider, UserPaths userPaths, ConfigurationRepository configurationRepository,
+  public AnalysisSchedulerCache(OmnisharpDistributionDownloader omnisharpDistributionDownloader, UserPaths userPaths, ConfigurationRepository configurationRepository,
     NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
-    this.omnisharpRuntimeProvider = omnisharpRuntimeProvider;
+    this.omnisharpDistributionDownloader = omnisharpDistributionDownloader;
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.pluginLifecycleService = pluginLifecycleService;
@@ -136,7 +137,7 @@ public class AnalysisSchedulerCache {
   }
 
   private void enhanceOmnisharpExtraProperties(HashMap<String, String> properties) {
-    properties.putAll(omnisharpRuntimeProvider.getExtraProperties());
+    properties.putAll(omnisharpDistributionDownloader.getExtraProperties());
   }
 
   private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {

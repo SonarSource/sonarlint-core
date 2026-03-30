@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 
+@Deprecated(since = "11.1", forRemoval = true)
 public class OmnisharpRequirementsDto {
   /**
    * Path to the Mono OmniSharp runtime distribution. May be null when SLCORE downloads OmniSharp automatically.
