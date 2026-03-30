@@ -26,12 +26,13 @@ import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.resolvers.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class AnalysisSchedulerCacheTest {
 
@@ -40,7 +41,7 @@ class AnalysisSchedulerCacheTest {
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpDistributionDownloader.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
@@ -55,7 +56,7 @@ class AnalysisSchedulerCacheTest {
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpDistributionDownloader.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
@@ -70,7 +71,7 @@ class AnalysisSchedulerCacheTest {
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
 
-    var cache = new AnalysisSchedulerCache(mock(OmnisharpRuntimeProvider.class), userPaths,
+    var cache = new AnalysisSchedulerCache(mock(OmnisharpDistributionDownloader.class), userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
       mock(ClientFileSystemService.class));
