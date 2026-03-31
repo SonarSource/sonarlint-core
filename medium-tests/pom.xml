@@ -145,6 +145,18 @@
                   <version>3.4.0.8957</version>
                   <type>jar</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.architecture</groupId>
+                  <artifactId>sonar-architecture-plugin</artifactId>
+                  <version>2.26.0-SNAPSHOT</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.architecture</groupId>
+                  <artifactId>sonar-architecture-java-frontend-plugin</artifactId>
+                  <version>2.26.0-SNAPSHOT</version>
+                  <type>jar</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>

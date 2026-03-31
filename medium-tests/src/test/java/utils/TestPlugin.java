@@ -43,6 +43,10 @@ public class TestPlugin {
     PluginLocator.SONAR_CFAMILY_PLUGIN_JAR_HASH);
   public static final Plugin KOTLIN = new Plugin(Set.of(Language.KOTLIN), PluginLocator.getKotlinPluginPath(), PluginLocator.SONAR_KOTLIN_PLUGIN_JAR,
     PluginLocator.SONAR_KOTLIN_PLUGIN_JAR_HASH);
+  public static final Plugin ARCHITECTURE = new Plugin("architecture", Language.JAVA, PluginLocator.getArchitecturePluginPath(),
+    PluginLocator.SONAR_ARCHITECTURE_VERSION, PluginLocator.SONAR_ARCHITECTURE_PLUGIN_JAR_HASH);
+  public static final Plugin ARCHITECTURE_JAVA_FRONTEND = new Plugin("architecturejavafrontend", Language.JAVA, PluginLocator.getArchitectureJavaFrontendPluginPath(),
+    PluginLocator.SONAR_ARCHITECTURE_VERSION, PluginLocator.SONAR_ARCHITECTURE_JAVA_FRONTEND_JAR_HASH);
 
   private final Set<Language> languages;
   private final Path path;

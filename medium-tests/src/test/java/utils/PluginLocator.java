@@ -54,6 +54,12 @@ public class PluginLocator {
   public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-" + SONAR_KOTLIN_PLUGIN_VERSION + ".jar";
   public static final String SONAR_KOTLIN_PLUGIN_JAR_HASH = "XXX";
 
+  public static final String SONAR_ARCHITECTURE_VERSION = "2.26.0-SNAPSHOT";
+  public static final String SONAR_ARCHITECTURE_PLUGIN_JAR = "sonar-architecture-plugin-" + SONAR_ARCHITECTURE_VERSION + ".jar";
+  public static final String SONAR_ARCHITECTURE_PLUGIN_JAR_HASH = "local";
+  public static final String SONAR_ARCHITECTURE_JAVA_FRONTEND_JAR = "sonar-architecture-java-frontend-plugin-" + SONAR_ARCHITECTURE_VERSION + ".jar";
+  public static final String SONAR_ARCHITECTURE_JAVA_FRONTEND_JAR_HASH = "local";
+
   public static final String SONAR_XML_PLUGIN_VERSION = "2.16.0.7616";
   public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-" + SONAR_XML_PLUGIN_VERSION + ".jar";
   public static final String SONAR_XML_PLUGIN_JAR_HASH = "XXX";
@@ -108,6 +114,14 @@ public class PluginLocator {
 
   public static Path getKotlinPluginPath() {
     return getPluginPath(SONAR_KOTLIN_PLUGIN_JAR);
+  }
+
+  public static Path getArchitecturePluginPath() {
+    return getValidPluginPath(SONAR_ARCHITECTURE_PLUGIN_JAR);
+  }
+
+  public static Path getArchitectureJavaFrontendPluginPath() {
+    return getValidPluginPath(SONAR_ARCHITECTURE_JAVA_FRONTEND_JAR);
   }
 
   private static Path getPluginPath(String file) {

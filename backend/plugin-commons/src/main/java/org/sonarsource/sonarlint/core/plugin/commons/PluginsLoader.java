@@ -82,6 +82,8 @@ public class PluginsLoader {
     allowedPluginsIds.add("sqvsroslyn");
     allowedPluginsIds.add("iacenterprise");
     allowedPluginsIds.add("goenterprise");
+    allowedPluginsIds.add("architecture");
+    allowedPluginsIds.add("architecturejavafrontend");
     allowedPluginsIds.addAll(maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection));
     return Collections.unmodifiableSet(allowedPluginsIds);
   }
