@@ -61,7 +61,7 @@ class StandaloneNoPluginMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());

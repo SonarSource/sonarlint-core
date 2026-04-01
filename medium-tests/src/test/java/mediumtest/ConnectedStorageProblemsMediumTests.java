@@ -22,7 +22,6 @@ package mediumtest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -70,7 +69,7 @@ class ConnectedStorageProblemsMediumTests {
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).start(client);
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(inputFile.toUri()), Map.of(), false, Instant.now().toEpochMilli())).get();
+      List.of(inputFile.toUri()), Map.of(), false)).get();
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Execute Sensor: JavaSensor"));
   }
