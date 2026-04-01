@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -152,12 +153,17 @@ public class FileExclusionService {
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
-        clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+        forEachFileInScopeAndInheritedDescendants(event.configScopeId(), f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
       }
     } else {
       LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.configScopeId());
-      clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
+      forEachFileInScopeAndInheritedDescendants(event.configScopeId(), f -> serverExclusionByUriCache.clear(f.getUri()));
     }
+  }
+
+  private void forEachFileInScopeAndInheritedDescendants(String rootScopeId, Consumer<ClientFile> action) {
+    Stream.concat(Stream.of(rootScopeId), configRepo.getChildrenWithInheritedBinding(rootScopeId).stream())
+      .forEach(scopeId -> clientFileSystemService.getFiles(scopeId).forEach(action));
   }
 
   @EventListener

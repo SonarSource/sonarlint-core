@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +36,9 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
@@ -46,10 +49,11 @@ import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class FileExclusionServiceTests {
 
@@ -194,6 +198,66 @@ class FileExclusionServiceTests {
     var result = spy.refineAnalysisScope(configScopeId, Set.of(largeUri), TriggerType.FORCED, baseDir);
 
     assertThat(result).extracting(ClientFile::getUri).containsExactly(largeUri);
+  }
+
+  @Test
+  void should_refresh_exclusions_for_inherited_descendant_scopes_when_binding_changes() {
+    var rootScope = "rootScope";
+    var childScope = "childScope";
+    var parentUri = URI.create("file:///p/Foo.java");
+    var childUri = URI.create("file:///p/module/Bar.java");
+
+    when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
+    when(configRepo.getChildrenWithInheritedBinding(childScope)).thenReturn(List.of());
+
+    var parentFile = mock(ClientFile.class);
+    when(parentFile.getUri()).thenReturn(parentUri);
+    var childFile = mock(ClientFile.class);
+    when(childFile.getUri()).thenReturn(childUri);
+    when(clientFileSystemService.getFiles(rootScope)).thenReturn(List.of(parentFile));
+    when(clientFileSystemService.getFiles(childScope)).thenReturn(List.of(childFile));
+
+    var connectionStorage = mock(ConnectionStorage.class);
+    var projectStorage = mock(SonarProjectStorage.class);
+    var analyzerStorage = mock(AnalyzerConfigurationStorage.class);
+    when(storageService.connection("conn")).thenReturn(connectionStorage);
+    when(connectionStorage.project("pk")).thenReturn(projectStorage);
+    when(projectStorage.analyzerConfiguration()).thenReturn(analyzerStorage);
+    when(analyzerStorage.isValid()).thenReturn(true);
+
+    var event = new BindingConfigChangedEvent(rootScope, BindingConfiguration.noBinding(false),
+      new BindingConfiguration("conn", "pk", false));
+
+    underTest.onBindingChanged(event);
+
+    verify(clientFileSystemService).getFiles(rootScope);
+    verify(clientFileSystemService).getFiles(childScope);
+  }
+
+  @Test
+  void should_clear_exclusions_for_inherited_descendant_scopes_when_binding_removed() {
+    var rootScope = "rootScope";
+    var childScope = "childScope";
+    var parentUri = URI.create("file:///p/Foo.java");
+    var childUri = URI.create("file:///p/module/Bar.java");
+
+    when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
+    when(configRepo.getChildrenWithInheritedBinding(childScope)).thenReturn(List.of());
+    var parentFile = mock(ClientFile.class);
+    when(parentFile.getUri()).thenReturn(parentUri);
+    var childFile = mock(ClientFile.class);
+    when(childFile.getUri()).thenReturn(childUri);
+    when(clientFileSystemService.getFiles(rootScope)).thenReturn(List.of(parentFile));
+    when(clientFileSystemService.getFiles(childScope)).thenReturn(List.of(childFile));
+
+    var event = new BindingConfigChangedEvent(rootScope,
+      new BindingConfiguration("conn", "pk", false),
+      BindingConfiguration.noBinding(false));
+
+    underTest.onBindingChanged(event);
+
+    verify(clientFileSystemService).getFiles(rootScope);
+    verify(clientFileSystemService).getFiles(childScope);
   }
 
 }
