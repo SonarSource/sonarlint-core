@@ -212,18 +212,12 @@ public class PluginsService {
     if (!areAnyPluginsDownloading(event.connectionId())) {
       eventPublisher.publishEvent(new PluginsSynchronizedEvent(event.connectionId()));
     }
-}
+  }
 
-  public void unloadPlugins(@Nullable String connectionId) {
+  public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
-    boolean wasLoaded;
-    if (connectionId == null) {
-      wasLoaded = pluginsRepository.getLoadedEmbeddedPlugins() != null;
-      unloadEmbeddedPlugins();
-    } else {
-      wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
-      pluginsRepository.unload(connectionId);
-    }
+    boolean wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
+    pluginsRepository.unload(connectionId);
     if (wasLoaded) {
       eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId)));
     }

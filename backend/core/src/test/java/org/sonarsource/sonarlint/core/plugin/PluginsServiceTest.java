@@ -48,8 +48,6 @@ import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
@@ -346,18 +344,6 @@ class PluginsServiceTest {
   }
 
   @Test
-  void unloadEmbeddedPlugins_should_publish_event_when_embedded_plugins_were_loaded() {
-    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(mock(LoadedPlugins.class));
-
-    underTest.unloadPlugins(null);
-
-    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    assertThat(captor.getValue().connectionId()).isNull();
-    assertThat(captor.getValue().pluginStatuses()).isNotNull();
-  }
-
-  @Test
   void unloadEmbeddedPlugins_should_not_publish_event_when_no_embedded_plugins_were_loaded() {
     when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(null);
 
@@ -407,15 +393,6 @@ class PluginsServiceTest {
     var serverInfo = mock(StoredServerInfo.class);
     when(serverInfo.version()).thenReturn(version);
     when(serverInfoStorage.read()).thenReturn(Optional.of(serverInfo));
-  }
-
-  private void mockOmnisharpLanguageRequirements() {
-    var languageSpecificRequirements = mock(LanguageSpecificRequirements.class);
-    var omnisharpRequirements = mock(OmnisharpRequirementsDto.class);
-    when(omnisharpRequirements.getOssAnalyzerPath()).thenReturn(ossPath);
-    when(omnisharpRequirements.getEnterpriseAnalyzerPath()).thenReturn(enterprisePath);
-    when(languageSpecificRequirements.getOmnisharpRequirements()).thenReturn(omnisharpRequirements);
-    when(initializeParams.getLanguageSpecificRequirements()).thenReturn(languageSpecificRequirements);
   }
 
   private EmbeddedArtifactResolver mockEmbeddedCsharpOss() {
