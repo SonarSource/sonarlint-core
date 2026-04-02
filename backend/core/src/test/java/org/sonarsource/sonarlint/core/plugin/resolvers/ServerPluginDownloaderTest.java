@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
@@ -90,9 +91,9 @@ class ServerPluginDownloaderTest {
     downloadExecutor = Executors.newSingleThreadExecutor();
     try {
       var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
-      when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.JAVA.getPluginKey(), javaJar));
+      when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.JAVA.getKey(), javaJar));
 
-      var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey());
+      var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
       downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
 
       var expectedEvent = new PluginStatusUpdateEvent("conn",
@@ -109,7 +110,7 @@ class ServerPluginDownloaderTest {
     downloadExecutor = Executors.newSingleThreadExecutor();
     try {
       var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
-      var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey());
+      var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
       
       doThrow(new RuntimeException("Download failed")).when(sonarQubeClientManager).withActiveClient(any(), any());
       
@@ -126,7 +127,7 @@ class ServerPluginDownloaderTest {
   void should_deduplicate_concurrent_plugin_downloads() {
     var mockedExecutor = mock(ExecutorService.class);
     var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, mockedExecutor);
-    var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey());
+    var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
     
     // First schedule should submit to executor
     downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);

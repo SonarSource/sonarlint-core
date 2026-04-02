@@ -58,7 +58,7 @@ public class SkippedPluginsNotifierService {
 
   private void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> detectedLanguages, List<SkippedPlugin> skippedPlugins) {
     detectedLanguages.stream().filter(Objects::nonNull)
-      .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> p.getKey().equals(sonarLanguage.getPluginKey()))
+      .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> p.getKey().equals(sonarLanguage.getPlugin().getKey()))
         .findFirst()
         .ifPresent(skippedPlugin -> {
           var skipReason = skippedPlugin.getReason();

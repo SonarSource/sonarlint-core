@@ -47,7 +47,7 @@ public record PluginStatus(
   public static PluginStatus forLanguage(SonarLanguage language, ArtifactState state,
     @Nullable ArtifactSource source, @Nullable Version actual, @Nullable Version overridden, @Nullable Path path,
     @Nullable String serverVersion) {
-    return new PluginStatus(language.getPluginKey(), language, state, source, actual, overridden, path, serverVersion);
+    return new PluginStatus(language.getPlugin().getKey(), language, state, source, actual, overridden, path, serverVersion);
   }
 
   public static PluginStatus forCompanion(String pluginKey, ArtifactState state,

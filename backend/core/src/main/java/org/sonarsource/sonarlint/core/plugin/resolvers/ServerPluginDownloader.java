@@ -130,7 +130,7 @@ public class ServerPluginDownloader {
   }
 
   private void fireFailedEvent(String connectionId, SonarLanguage language) {
-    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPluginKey()).stream()
+    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPlugin().getKey()).stream()
       .map(PluginStatus::failed)
       .toList();
     eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));

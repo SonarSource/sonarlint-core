@@ -46,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
@@ -151,7 +152,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withDisabledPluginsForAnalysis(SonarLanguage.JAVA.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarPlugin.JAVA.getKey())
       .start(client);
     var analysisId = UUID.randomUUID();
 
@@ -817,7 +818,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarPlugin.XML.getKey())
       .start(client);
     var analysisId = UUID.randomUUID();
 
@@ -861,7 +862,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarPlugin.XML.getKey())
       .start(client);
     var analysisId = UUID.randomUUID();
 

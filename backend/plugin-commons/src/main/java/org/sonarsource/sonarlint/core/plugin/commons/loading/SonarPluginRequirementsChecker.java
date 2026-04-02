@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.DataflowBugDetection;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
@@ -166,9 +167,9 @@ public class SonarPluginRequirementsChecker {
         LOG.debug("DBD feature disabled. Skip loading plugin '{}'.", plugin.getName());
         return new PluginRequirementsCheckResult(plugin, SkipReason.UnsupportedFeature.INSTANCE);
       }
-      var pythonPluginResult = currentResultsByKey.get(SonarLanguage.PYTHON.getPluginKey());
+      var pythonPluginResult = currentResultsByKey.get(SonarPlugin.PYTHON.getKey());
       if (checkForPluginSkipped(pythonPluginResult)) {
-        return processUnsatisfiedDependency(currentResult.getPlugin(), SonarLanguage.PYTHON.getPluginKey());
+        return processUnsatisfiedDependency(currentResult.getPlugin(), SonarPlugin.PYTHON.getKey());
       }
     }
     return currentResult;
