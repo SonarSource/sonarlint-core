@@ -208,8 +208,6 @@ class FileExclusionServiceTests {
     var childUri = URI.create("file:///p/module/Bar.java");
 
     when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
-    when(configRepo.getChildrenWithInheritedBinding(childScope)).thenReturn(List.of());
-
     var parentFile = mock(ClientFile.class);
     when(parentFile.getUri()).thenReturn(parentUri);
     var childFile = mock(ClientFile.class);
@@ -242,7 +240,6 @@ class FileExclusionServiceTests {
     var childUri = URI.create("file:///p/module/Bar.java");
 
     when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
-    when(configRepo.getChildrenWithInheritedBinding(childScope)).thenReturn(List.of());
     var parentFile = mock(ClientFile.class);
     when(parentFile.getUri()).thenReturn(parentUri);
     var childFile = mock(ClientFile.class);
