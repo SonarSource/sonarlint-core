@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest
 public class SonarPluginRequirementsChecker {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private final Version implementedPluginApiVersion;
 
@@ -143,11 +142,7 @@ public class SonarPluginRequirementsChecker {
     Map<String, PluginRequirementsCheckResult> currentResultsByKey, boolean enableDataflowBugDetection) {
     var plugin = currentResult.getPlugin();
     for (RequiredPlugin required : plugin.getRequiredPlugins()) {
-      if ("license".equals(required.getKey()) || (SonarLanguage.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey()))) {
-        // Workaround for SLCORE-259
-        // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
-        // Note: The dependency was removed in SonarJS 6.3 but we should still keep the workaround as long as we want to support older
-        // versions
+      if ("license".equals(required.getKey())) {
         continue;
       }
       var depInfo = currentResultsByKey.get(required.getKey());
