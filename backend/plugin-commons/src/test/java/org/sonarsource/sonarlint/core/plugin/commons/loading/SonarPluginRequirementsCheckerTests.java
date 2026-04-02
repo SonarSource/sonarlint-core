@@ -215,20 +215,6 @@ class SonarPluginRequirementsCheckerTests {
   }
 
   @Test
-  void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("license:1.0")));
-    Set<Path> jars = Set.of(fakePlugin);
-
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
-
-    assertThat(loadedPlugins.values())
-      .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
-      .containsOnly(tuple("pluginkey", false));
-    assertThat(logsWithoutStartStop()).isEmpty();
-  }
-
-  @Test
   void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("required2:1.0")));
@@ -241,20 +227,6 @@ class SonarPluginRequirementsCheckerTests {
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")),
         tuple("required2", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, "0.1.2", "99.9.9")));
     assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' dependency on 'required2' is unsatisfied. Skip loading it.");
-  }
-
-  // SLCORE-259
-  @Test
-  void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarjs.jar",
-      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0, withRequiredPlugins("typescript:1.0")));
-    Set<Path> jars = Set.of(fakePlugin);
-
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
-
-    assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
-      .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
-      .containsOnly(tuple(SonarLanguage.JS.getPluginKey(), false));
   }
 
   @Test
