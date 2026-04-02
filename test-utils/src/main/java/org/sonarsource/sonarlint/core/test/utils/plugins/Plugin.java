@@ -32,7 +32,7 @@ public class Plugin {
   private final String hash;
 
   private static String getPluginKeyFromLanguage(Language language) {
-    return SonarLanguage.valueOf(language.name()).getPluginKey();
+    return SonarLanguage.valueOf(language.name()).getPlugin().getKey();
   }
 
   public Plugin(Language language, Path path, String version, String hash) {

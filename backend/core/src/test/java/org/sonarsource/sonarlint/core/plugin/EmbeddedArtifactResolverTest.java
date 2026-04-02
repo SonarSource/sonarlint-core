@@ -33,12 +33,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -57,7 +56,7 @@ class EmbeddedArtifactResolverTest {
   @Test
   void should_resolve_to_active_embedded_in_connected_mode_when_plugin_key_is_in_map() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
-    var resolver = createResolver(mockParams(Set.of(), Map.of(SonarLanguage.JAVA.getPluginKey(), javaJar), null));
+    var resolver = createResolver(mockParams(Set.of(), Map.of(SonarPlugin.JAVA.getKey(), javaJar), null));
     var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactSource.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "someConnection");

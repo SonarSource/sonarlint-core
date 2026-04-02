@@ -71,18 +71,19 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
   }
 
   private boolean isOverriddenByServer(SonarLanguage language, String connectionId, Map<String, StoredPlugin> storedPlugins) {
-    if (overrideRegistry.getEnterpriseOverrideKey(language.getPluginKey(), connectionId).isPresent()) {
+    var pluginKey = language.getPlugin().getKey();
+    if (overrideRegistry.getEnterpriseOverrideKey(pluginKey, connectionId).isPresent()) {
       return true;
     }
-    return !"iac".equals(language.getPluginKey()) && (storedPlugins.containsKey(language.getPluginKey() + "enterprise")
-      || storedPlugins.containsKey(language.getPluginKey() + "developer"));
+    return !"iac".equals(pluginKey) && (storedPlugins.containsKey(pluginKey + "enterprise")
+      || storedPlugins.containsKey(pluginKey + "developer"));
   }
 
   private boolean passesLanguageGate(SonarLanguage language, String connectionId, Map<String, StoredPlugin> storedPlugins) {
     if (isOverriddenByServer(language, connectionId, storedPlugins)) {
       return true;
     }
-    if (skipSyncPluginKeys.contains(language.getPluginKey())) {
+    if (skipSyncPluginKeys.contains(language.getPlugin().getKey())) {
       return false;
     }
     return language.shouldSyncInConnectedMode();
@@ -102,16 +103,17 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
       return Optional.empty();
     }
     var storedPlugins = loadStoredPlugins(connectionId);
+    var pluginKey = language.getPlugin().getKey();
     if (!passesLanguageGate(language, connectionId, storedPlugins)) {
-      if (skipSyncPluginKeys.contains(language.getPluginKey())) {
-        LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", language.getPluginKey());
+      if (skipSyncPluginKeys.contains(pluginKey)) {
+        LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", pluginKey);
       }
       return Optional.empty();
     }
 
-    var enterpriseOverrideKey = overrideRegistry.getEnterpriseOverrideKey(language.getPluginKey(), connectionId).orElse(null);
-    var primaryKey = enterpriseOverrideKey != null ? enterpriseOverrideKey : language.getPluginKey();
-    var fallbackKey = deriveFallbackKey(language.getPluginKey(), enterpriseOverrideKey);
+    var enterpriseOverrideKey = overrideRegistry.getEnterpriseOverrideKey(pluginKey, connectionId).orElse(null);
+    var primaryKey = enterpriseOverrideKey != null ? enterpriseOverrideKey : pluginKey;
+    var fallbackKey = deriveFallbackKey(pluginKey, enterpriseOverrideKey);
     try {
       return serverPluginsCache.getPlugins(connectionId)
         .flatMap(plugins -> findServerPlugin(plugins, primaryKey, fallbackKey))

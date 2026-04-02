@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
@@ -132,7 +133,7 @@ public class ConnectedModeCompanionPluginResolver implements CompanionPluginReso
   }
 
   private boolean isCompanionPlugin(String pluginKey, String connectionId) {
-    return !SonarLanguage.containsPlugin(pluginKey)
+    return SonarPlugin.findByKey(pluginKey).isEmpty()
       && !overrideRegistry.isLanguageOverride(pluginKey, connectionId);
   }
 

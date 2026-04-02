@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
@@ -107,7 +108,7 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_from_storage_when_plugin_is_in_storage_but_not_on_server() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
     mockServerPlugins("conn", List.of());
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
     var resolver = createResolver(Set.of());
@@ -133,8 +134,8 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_trigger_download_when_stored_jar_does_not_exist_on_disk() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), tempDir.resolve("missing.jar"), "hash");
-    var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey(), "hash");
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), tempDir.resolve("missing.jar"), "hash");
+    var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash");
     mockServerPlugins("conn", List.of(serverPlugin));
     var resolver = createResolver(Set.of());
 
@@ -148,7 +149,7 @@ class ConnectedModeArtifactResolverTest {
   void should_return_downloading_when_plugin_is_not_in_storage_but_on_server() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of());
-    var serverPlugin = mockServerPlugin(SonarLanguage.JAVA.getPluginKey());
+    var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
     mockServerPlugins("conn", List.of(serverPlugin));
     var resolver = createResolver(Set.of());
 
@@ -172,7 +173,7 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_from_storage_when_server_plugin_list_request_fails() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
     var resolver = createResolver(Set.of());
@@ -185,8 +186,8 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_with_sonarqube_server_source() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
-    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey(), "hash")));
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash")));
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
     var resolver = createResolver(Set.of());
     var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactSource.SONARQUBE_SERVER);
@@ -199,8 +200,8 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_with_sonarqube_cloud_source() {
     mockConnection("cloud", ConnectionKind.SONARCLOUD);
-    mockStoredPlugin(SonarLanguage.JAVA.getPluginKey(), javaJar, "hash");
-    mockServerPlugins("cloud", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey(), "hash")));
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
+    mockServerPlugins("cloud", List.of(mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash")));
     when(downloader.sourceFor("cloud")).thenReturn(ArtifactSource.SONARQUBE_CLOUD);
     var resolver = createResolver(Set.of());
     var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactSource.SONARQUBE_CLOUD);
@@ -215,9 +216,9 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_empty_when_language_plugin_key_is_in_skip_set() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.JAVA.getPluginKey(), javaJar));
-    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.JAVA.getPluginKey())));
-    var resolver = createResolver(Set.of(SonarLanguage.JAVA.getPluginKey()));
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.JAVA.getKey(), javaJar));
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarPlugin.JAVA.getKey())));
+    var resolver = createResolver(Set.of(SonarPlugin.JAVA.getKey()));
 
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
@@ -231,7 +232,7 @@ class ConnectedModeArtifactResolverTest {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     // SECRETS minimum is 10.4, use 10.3
     mockServerVersion(Version.create("10.3"));
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.SECRETS.getPluginKey(), secretsJar));
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.TEXT.getKey(), secretsJar));
     var resolver = createResolver(Set.of());
 
     var result = resolver.resolve(SonarLanguage.SECRETS, "conn");
@@ -243,8 +244,8 @@ class ConnectedModeArtifactResolverTest {
   void should_return_synced_for_enterprise_language_when_sq_version_meets_minimum() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     mockServerVersion(Version.create("10.4"));
-    mockStoredPlugin(SonarLanguage.SECRETS.getPluginKey(), secretsJar, "hash");
-    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.SECRETS.getPluginKey(), "hash")));
+    mockStoredPlugin(SonarPlugin.TEXT.getKey(), secretsJar, "hash");
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarPlugin.TEXT.getKey(), "hash")));
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
     var resolver = createResolver(Set.of());
     var expected = resolved(ArtifactState.SYNCED, secretsJar, ArtifactSource.SONARQUBE_SERVER);
@@ -257,8 +258,8 @@ class ConnectedModeArtifactResolverTest {
   @Test
   void should_return_synced_for_enterprise_language_on_sonarqube_cloud() {
     mockConnection("cloud", ConnectionKind.SONARCLOUD);
-    mockStoredPlugin(SonarLanguage.SECRETS.getPluginKey(), secretsJar, "hash");
-    mockServerPlugins("cloud", List.of(mockServerPlugin(SonarLanguage.SECRETS.getPluginKey(), "hash")));
+    mockStoredPlugin(SonarPlugin.TEXT.getKey(), secretsJar, "hash");
+    mockServerPlugins("cloud", List.of(mockServerPlugin(SonarPlugin.TEXT.getKey(), "hash")));
     when(downloader.sourceFor("cloud")).thenReturn(ArtifactSource.SONARQUBE_CLOUD);
     var resolver = createResolver(Set.of());
     var expected = resolved(ArtifactState.SYNCED, secretsJar, ArtifactSource.SONARQUBE_CLOUD);
@@ -272,11 +273,11 @@ class ConnectedModeArtifactResolverTest {
   void should_resolve_enterprise_language_even_when_its_key_is_in_skip_set() {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     mockServerVersion(Version.create("10.4"));
-    mockStoredPlugin(SonarLanguage.SECRETS.getPluginKey(), secretsJar, "hash");
-    mockServerPlugins("conn", List.of(mockServerPlugin(SonarLanguage.SECRETS.getPluginKey(), "hash")));
+    mockStoredPlugin(SonarPlugin.TEXT.getKey(), secretsJar, "hash");
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarPlugin.TEXT.getKey(), "hash")));
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
     // Even though the plugin key is in the skip set, enterprise check takes priority
-    var resolver = createResolver(Set.of(SonarLanguage.SECRETS.getPluginKey()));
+    var resolver = createResolver(Set.of(SonarPlugin.TEXT.getKey()));
     var expected = resolved(ArtifactState.SYNCED, secretsJar, ArtifactSource.SONARQUBE_SERVER);
 
     var result = resolver.resolve(SonarLanguage.SECRETS, "conn");
@@ -288,7 +289,7 @@ class ConnectedModeArtifactResolverTest {
   void should_return_empty_for_enterprise_language_when_connection_is_not_found() {
     when(connectionRepo.getConnectionById("unknown")).thenReturn(null);
     when(storageService.connection("unknown")).thenReturn(connectionStorage);
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.SECRETS.getPluginKey(), secretsJar));
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.TEXT.getKey(), secretsJar));
     var resolver = createResolver(Set.of());
 
     var result = resolver.resolve(SonarLanguage.SECRETS, "unknown");
@@ -301,7 +302,7 @@ class ConnectedModeArtifactResolverTest {
     mockConnection("conn", ConnectionKind.SONARQUBE);
     when(storageService.connection("conn")).thenReturn(connectionStorage);
     when(serverInfoStorage.read()).thenReturn(Optional.empty());
-    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarLanguage.SECRETS.getPluginKey(), secretsJar));
+    when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.TEXT.getKey(), secretsJar));
     var resolver = createResolver(Set.of());
 
     var result = resolver.resolve(SonarLanguage.SECRETS, "conn");
@@ -316,7 +317,7 @@ class ConnectedModeArtifactResolverTest {
     mockStoredPlugin("textenterprise", textEnterpriseJar, "hash");
     mockServerPlugins("cloud", List.of(mockServerPlugin("textenterprise", "hash")));
     when(downloader.sourceFor("cloud")).thenReturn(ArtifactSource.SONARQUBE_CLOUD);
-    var resolver = createResolver(Set.of(SonarLanguage.SECRETS.getPluginKey()));
+    var resolver = createResolver(Set.of(SonarPlugin.TEXT.getKey()));
     var expected = resolved(ArtifactState.SYNCED, textEnterpriseJar, ArtifactSource.SONARQUBE_CLOUD);
 
     var result = resolver.resolve(SonarLanguage.SECRETS, "cloud");
@@ -332,7 +333,7 @@ class ConnectedModeArtifactResolverTest {
     mockStoredPlugin("goenterprise", goEnterpriseJar, "hash");
     mockServerPlugins("conn", List.of(mockServerPlugin("goenterprise", "hash")));
     when(downloader.sourceFor("conn")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
-    var resolver = createResolver(Set.of(SonarLanguage.GO.getPluginKey()));
+    var resolver = createResolver(Set.of(SonarPlugin.GO.getKey()));
     var expected = resolved(ArtifactState.SYNCED, goEnterpriseJar, ArtifactSource.SONARQUBE_SERVER);
 
     var result = resolver.resolve(SonarLanguage.GO, "conn");
