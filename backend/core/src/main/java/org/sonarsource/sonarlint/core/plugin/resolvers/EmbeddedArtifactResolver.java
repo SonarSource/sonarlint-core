@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
@@ -82,7 +83,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
 
   private static Map<String, PluginStatus> computeCompanionPlugins(Map<String, Path> pathsByKey) {
     return pathsByKey.entrySet().stream()
-      .filter(e -> !SonarLanguage.containsPlugin(e.getKey()))
+      .filter(e -> SonarPlugin.findByKey(e.getKey()).isEmpty())
       .collect(Collectors.toUnmodifiableMap(
         Map.Entry::getKey,
         e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue(), null)));
@@ -99,12 +100,12 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
 
   @Nullable
   private Path resolveConnected(SonarLanguage language) {
-    return connectedModeEmbeddedPathsByKey.get(language.getPluginKey());
+    return connectedModeEmbeddedPathsByKey.get(language.getPlugin().getKey());
   }
 
   @Nullable
   private Path resolveStandalone(SonarLanguage language) {
-    var found = standaloneEmbeddedPathsByKey.get(language.getPluginKey());
+    var found = standaloneEmbeddedPathsByKey.get(language.getPlugin().getKey());
     if (found == null && language == SonarLanguage.CS) {
       return csharpStandalonePluginPath;
     }
@@ -118,8 +119,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
         Function.identity(),
         (existing, duplicate) -> {
           throw new IllegalArgumentException("Multiple embedded plugins found with the same key for paths: " + existing + " and " + duplicate);
-        }
-      ));
+        }));
   }
 
 }

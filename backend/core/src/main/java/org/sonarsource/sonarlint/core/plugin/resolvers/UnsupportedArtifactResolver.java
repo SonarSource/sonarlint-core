@@ -47,7 +47,7 @@ public class UnsupportedArtifactResolver implements ArtifactResolver {
     if (!isSupported(language, connectionId)) {
       if (connectionId != null) {
         LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.",
-          language.getPluginKey());
+          language.getPlugin().getKey());
       }
       return Optional.of(new ResolvedArtifact(ArtifactState.UNSUPPORTED, null, null, null));
     }

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -60,7 +61,7 @@ class ConnectedStorageProblemsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
-        .withPlugin(SonarLanguage.JS.getPluginKey(), createFakePlugin(), "hash")
+        .withPlugin(SonarPlugin.JS.getKey(), createFakePlugin(), "hash")
         .withProject(CONFIG_SCOPE_ID,
           project -> project.withMainBranch("main").withRuleSet(SonarLanguage.JS.getSonarLanguageKey(),
             ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER"))))
