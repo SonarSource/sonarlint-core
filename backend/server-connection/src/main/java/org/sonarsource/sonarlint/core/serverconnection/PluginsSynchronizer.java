@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
@@ -78,15 +79,15 @@ public class PluginsSynchronizer {
     var qwirks = VersionSynchronizationQwirks.forServerAndVersion(serverApi, serverVersion);
     var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
     if (qwirks.usesIaCEnterprise) {
-      embeddedPluginKeysCopy.remove(SonarLanguage.TERRAFORM.getPluginKey());
+      embeddedPluginKeysCopy.remove(SonarPlugin.IAC.getKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
     if (qwirks.useSecretsFromServer) {
-      embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
+      embeddedPluginKeysCopy.remove(SonarPlugin.TEXT.getKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
     if (qwirks.forceSyncGoEnterprise) {
-      embeddedPluginKeysCopy.remove(SonarLanguage.GO.getPluginKey());
+      embeddedPluginKeysCopy.remove(SonarPlugin.GO.getKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
 
@@ -165,7 +166,7 @@ public class PluginsSynchronizer {
   }
 
   private static Set<String> getSonarSourceDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(SonarLanguage.values()).collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
+    var languagesByPluginKey = Arrays.stream(SonarLanguage.values()).collect(Collectors.groupingBy(l -> l.getPlugin().getKey()));
     var disabledPluginKeys = languagesByPluginKey.entrySet().stream()
       .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
       .map(Map.Entry::getKey)

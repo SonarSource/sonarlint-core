@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 
@@ -117,7 +118,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, SonarLanguage.PHP.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, SonarPlugin.PHP.getKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.TS), null, null, false);
@@ -129,7 +130,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages_multiple(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarLanguage.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarPlugin.C_FAMILY.getKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
@@ -141,7 +142,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_load_even_if_only_one_language_enabled(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarLanguage.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarPlugin.C_FAMILY.getKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.CPP), null, null, false);
@@ -153,7 +154,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarPlugin.JS.getKey())));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
@@ -166,9 +167,9 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarPlugin.JS.getKey())));
     var fakeBasePlugin = fakePlugin(storage, "base.jar",
-      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0));
+      path -> createPluginManifest(path, SonarPlugin.JS.getKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     // Ensure base plugin is skipped because JS language is not enabled
@@ -186,9 +187,9 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarPlugin.JS.getKey())));
     var fakeBasePlugin = fakePlugin(storage, "base.jar",
-      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0));
+      path -> createPluginManifest(path, SonarPlugin.JS.getKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
@@ -341,7 +342,7 @@ class SonarPluginRequirementsCheckerTests {
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), true);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("dbd", true, new SkipReason.UnsatisfiedDependency(SonarLanguage.PYTHON.getPluginKey())));
+      .containsOnly(tuple("dbd", true, new SkipReason.UnsatisfiedDependency(SonarPlugin.PYTHON.getKey())));
     assertThat(logsWithoutStartStop()).contains("Plugin 'dbd' dependency on 'python' is unsatisfied. Skip loading it.");
   }
 
@@ -350,7 +351,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, "dbdpythonfrontend", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
+      path -> createPluginManifest(path, SonarPlugin.PYTHON.getKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
@@ -367,7 +368,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, "dbd", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
+      path -> createPluginManifest(path, SonarPlugin.PYTHON.getKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
@@ -384,7 +385,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, "dbd", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
+      path -> createPluginManifest(path, SonarPlugin.PYTHON.getKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), false);
