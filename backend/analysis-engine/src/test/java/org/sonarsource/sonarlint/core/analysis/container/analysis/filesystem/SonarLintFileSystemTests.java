@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,12 +43,12 @@ class SonarLintFileSystemTests {
   private final InputFileIndex inputFileCache = new InputFileIndex();
 
   @BeforeEach
-  void prepare() throws Exception {
+  void prepare() {
     fs = new SonarLintFileSystem(AnalysisConfiguration.builder().setBaseDir(basedir).build(), inputFileCache);
   }
 
   @Test
-  void return_fake_workdir() throws IOException {
+  void return_fake_workdir() {
     assertThat(fs.workDir()).isEqualTo(basedir.toFile());
   }
 

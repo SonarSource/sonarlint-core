@@ -63,7 +63,7 @@ class PluginInfoTests {
   }
 
   @Test
-  void test_compatibility_with_sq_version() throws IOException {
+  void test_compatibility_with_sq_version() {
     assertThat(withMinSqVersion("1.1").isCompatibleWith("1.1")).isTrue();
     assertThat(withMinSqVersion("1.1").isCompatibleWith("1.1.0")).isTrue();
     assertThat(withMinSqVersion("1.0").isCompatibleWith("1.0.0")).isTrue();
