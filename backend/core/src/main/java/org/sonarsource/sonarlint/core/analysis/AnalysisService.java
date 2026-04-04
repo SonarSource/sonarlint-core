@@ -76,7 +76,7 @@ import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -618,11 +618,7 @@ public class AnalysisService {
       () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
       issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
-      () -> {
-        var isScopeReady = analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false);
-        var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::connectionId).orElse(null);
-        return isScopeReady && !pluginsService.areAnyPluginsDownloading(connectionId);
-      }, files, Map.of());
+      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {

@@ -29,16 +29,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class LanguageSupportRepository {
-  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES =
-    EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
+  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS,
+    SonarLanguage.PHP, SonarLanguage.PYTHON);
   private final EnumSet<SonarLanguage> enabledLanguagesInStandaloneMode;
+  private final EnumSet<SonarLanguage> extraEnabledLanguagesInConnectedMode;
   private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
 
   public LanguageSupportRepository(InitializeParams params) {
-    this.enabledLanguagesInStandaloneMode = toEnumSet(
-      adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
+    this.enabledLanguagesInStandaloneMode = toEnumSet(adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
-    this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
+    this.extraEnabledLanguagesInConnectedMode = toEnumSet(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()), SonarLanguage.class);
+    this.enabledLanguagesInConnectedMode.addAll(extraEnabledLanguagesInConnectedMode);
   }
 
   @NotNull
@@ -62,5 +63,9 @@ public class LanguageSupportRepository {
     var intersection = EnumSet.copyOf(LANGUAGES_RAISING_TAINT_VULNERABILITIES);
     intersection.retainAll(enabledLanguagesInConnectedMode);
     return !intersection.isEmpty();
+  }
+
+  public boolean isEnabledOnlyInConnectedMode(SonarLanguage language) {
+    return extraEnabledLanguagesInConnectedMode.contains(language);
   }
 }

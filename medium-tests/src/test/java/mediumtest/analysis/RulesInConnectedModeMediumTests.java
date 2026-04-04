@@ -56,13 +56,13 @@ class RulesInConnectedModeMediumTests {
       .withSensor(ActiveRulesDumpingSensor.class)
       .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).withPlugin(TestPlugin.PHP).start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
       .withStorage(CONNECTION_ID, s -> s
         .withPlugin(TestPlugin.JAVA)
-        .withPlugin("php", activeRulesDumpingPlugin, "hash")
+        .withPlugin("php", activeRulesDumpingPlugin, TestPlugin.PHP.getHash())
         .withProject(JAVA_MODULE_KEY, project -> project
           .withMainBranch("main")
           .withRuleSet("java", ruleSet -> ruleSet
@@ -96,7 +96,7 @@ class RulesInConnectedModeMediumTests {
       .generate(baseDir);
     var backend = harness.newBackend()
       .withBackendCapability(SECURITY_HOTSPOTS)
-      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).withPlugin(TestPlugin.PHP).start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
@@ -104,7 +104,7 @@ class RulesInConnectedModeMediumTests {
         s -> s
           .withServerVersion("9.7")
           .withPlugin(TestPlugin.JAVA)
-          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withPlugin("php", activeRulesDumpingPlugin, TestPlugin.PHP.getHash())
           .withProject(JAVA_MODULE_KEY, project -> project
             .withMainBranch("main")
             .withRuleSet("java", ruleSet -> ruleSet
@@ -131,14 +131,14 @@ class RulesInConnectedModeMediumTests {
       .withSensor(ActiveRulesDumpingSensor.class)
       .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().withPlugin(TestPlugin.PHP).start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
       .withStorage(CONNECTION_ID,
         s -> s
           .withServerVersion("9.7")
-          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withPlugin("php", activeRulesDumpingPlugin, TestPlugin.PHP.getHash())
           .withProject(JAVA_MODULE_KEY, project -> project
             .withMainBranch("main")
             .withRuleSet("java", ruleSet -> ruleSet
@@ -168,12 +168,12 @@ class RulesInConnectedModeMediumTests {
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withExtraEnabledLanguagesInConnectedMode(Language.PHP)
-      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start())
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().withPlugin(TestPlugin.PHP).start())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withStorage(CONNECTION_ID,
         s -> s
           .withServerVersion("9.7")
-          .withPlugin("php", activeRulesDumpingPlugin, "hash")
+          .withPlugin("php", activeRulesDumpingPlugin, TestPlugin.PHP.getHash())
           .withProject(JAVA_MODULE_KEY, project -> project
             .withMainBranch("main")
             .withRuleSet("java", ruleSet -> ruleSet

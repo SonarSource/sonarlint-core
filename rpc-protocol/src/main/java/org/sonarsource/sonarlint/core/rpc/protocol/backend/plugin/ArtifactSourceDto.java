@@ -20,20 +20,20 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin;
 
 /**
- * Describes where an analyzer plugin artifact was obtained from.
+ * Describes where an analyzer artifact was obtained from.
  */
 public enum ArtifactSourceDto {
 
-  /** The plugin is bundled with the IDE extension. */
+  /** The artifact is bundled with the IDE extension. */
   EMBEDDED("SonarQube for IDE"),
 
-  /** The plugin was downloaded on demand from an external source (e.g. binaries.sonarsource.com). */
+  /** The artifact was downloaded on demand from an external source (e.g. binaries.sonarsource.com). */
   ON_DEMAND("SonarQube for IDE"),
 
-  /** The plugin was synchronized from a SonarQube Server connection. */
+  /** The artifact was synchronized from a SonarQube Server connection. */
   SONARQUBE_SERVER("SonarQube Server"),
 
-  /** The plugin was synchronized from a SonarQube Cloud connection. */
+  /** The artifact was synchronized from a SonarQube Cloud connection. */
   SONARQUBE_CLOUD("SonarQube Cloud");
 
   private final String label;

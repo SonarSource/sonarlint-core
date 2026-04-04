@@ -152,8 +152,8 @@ class AnalysisSchedulingMediumTests {
       .withSensor(WaitingSensor.class)
       .generate(baseDir);
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().start(), storage -> storage
-        .withPlugin("xml", plugin, "hash")
+      .withSonarQubeConnection(CONNECTION_ID, harness.newFakeSonarQubeServer().withPlugin(TestPlugin.XML).start(), storage -> storage
+        .withPlugin("xml", plugin, TestPlugin.XML.getHash())
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)

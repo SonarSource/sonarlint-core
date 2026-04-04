@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,17 +80,6 @@ class ServerPluginsCacheTest {
     cache.getPlugins("conn");
     cache.connectionUpdated(new ConnectionConfigurationUpdatedEvent("conn"));
     cache.getPlugins("conn");
-
-    verifyApiCalledTimes("conn", 2);
-  }
-
-  @Test
-  void should_refresh_bypasses_cache() {
-    var plugins = List.of(mockPlugin("java"));
-    mockApiResponse("conn", plugins);
-
-    cache.getPlugins("conn");
-    cache.refreshAndGet("conn");
 
     verifyApiCalledTimes("conn", 2);
   }
