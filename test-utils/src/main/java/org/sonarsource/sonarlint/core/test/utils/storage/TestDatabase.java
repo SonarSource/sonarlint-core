@@ -24,7 +24,9 @@ import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 
@@ -55,7 +57,11 @@ public class TestDatabase {
 
     System.setProperty("org.jooq.no-tips", "true");
     System.setProperty("org.jooq.no-logo", "true");
-    this.dsl = DSL.using(this.dataSource, SQLDialect.H2);
+    var jooqConfig = new DefaultConfiguration()
+      .set(this.dataSource)
+      .set(SQLDialect.H2)
+      .set(new Settings().withExecuteLogging(false));
+    this.dsl = DSL.using(jooqConfig);
   }
 
   public DSLContext dsl() {
