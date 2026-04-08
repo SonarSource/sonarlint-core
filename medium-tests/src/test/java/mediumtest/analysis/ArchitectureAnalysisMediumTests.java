@@ -19,6 +19,7 @@
  */
 package mediumtest.analysis;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +33,14 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static utils.AnalysisUtils.createFile;
 
 class ArchitectureAnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "ARCHITECTURE_IT";
+  private static final boolean ARCHITECTURE_PLUGINS_AVAILABLE =
+    Files.isRegularFile(TestPlugin.ARCHITECTURE.getPath()) && Files.isRegularFile(TestPlugin.ARCHITECTURE_JAVA_FRONTEND.getPath());
 
   private static Map<String, String> architectureAnalysisProperties() {
     return Map.of(
@@ -46,6 +50,7 @@ class ArchitectureAnalysisMediumTests {
 
   @SonarLintTest
   void it_should_run_java_analysis_with_architecture_plugins(SonarLintTestHarness harness, @TempDir Path tempDir) throws Exception {
+    assumeTrue(ARCHITECTURE_PLUGINS_AVAILABLE, "Architecture plugin JARs not found in target/plugins/");
     var filePath = createFile(tempDir, "Hello.java", """
       class Hello {
         void m() {}
@@ -75,6 +80,7 @@ class ArchitectureAnalysisMediumTests {
 
   @SonarLintTest
   void it_should_run_two_sequential_analyses_without_failure(SonarLintTestHarness harness, @TempDir Path tempDir) throws Exception {
+    assumeTrue(ARCHITECTURE_PLUGINS_AVAILABLE, "Architecture plugin JARs not found in target/plugins/");
     var a = createFile(tempDir, "A.java", "class A { void m() {} }\n");
     var b = createFile(tempDir, "B.java", "class B { void m() {} }\n");
     var client = harness.newFakeClient()
