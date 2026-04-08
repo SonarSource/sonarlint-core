@@ -23,7 +23,7 @@ jobs:
   build-number:
     outputs:
       BUILD_NUMBER: ${{ steps.build-number.outputs.BUILD_NUMBER }}
-    runs-on: github-ubuntu-latest-m
+    runs-on: sonar-xs-public
     name: Get build number
     permissions:
       id-token: write
@@ -32,7 +32,7 @@ jobs:
         id: build-number
 
   build:
-    runs-on: github-ubuntu-latest-m
+    runs-on: sonar-xs-public
     needs: build-number
     name: Build
     permissions:
@@ -61,7 +61,7 @@ jobs:
 
   test-linux:
     needs: [ build-number, build ]
-    runs-on: github-ubuntu-latest-m
+    runs-on: sonar-m-public
     name: Test (Linux, Sonar Next)
     permissions:
       id-token: write
@@ -171,7 +171,7 @@ jobs:
 
   qa:
     needs: [ build-number, build ]
-    runs-on: github-ubuntu-latest-m
+    runs-on: sonar-m-public
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
@@ -304,7 +304,7 @@ jobs:
 
   promote:
     needs: [ build-number, build, qa, test-linux, test-windows ]
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-xs-public
     name: Promote
     permissions:
       id-token: write

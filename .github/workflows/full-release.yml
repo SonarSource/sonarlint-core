@@ -51,7 +51,7 @@ jobs:
 
   bump-version:
     name: Create a PR to bump version
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-xs-public
     needs:
       - release
     permissions:
