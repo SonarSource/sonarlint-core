@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
