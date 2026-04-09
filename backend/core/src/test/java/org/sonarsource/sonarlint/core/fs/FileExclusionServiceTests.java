@@ -35,7 +35,6 @@ import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
@@ -135,7 +134,7 @@ class FileExclusionServiceTests {
   }
 
   @Test
-  void should_filter_out_files_exceeding_5mb_in_auto_trigger() throws IOException {
+  void should_filter_out_files_exceeding_5mb() throws IOException {
     var configScopeId = "scope";
     var baseDir = Files.createTempDirectory("sl-auto-size-base");
 
@@ -168,36 +167,10 @@ class FileExclusionServiceTests {
     var spy = Mockito.spy(underTest);
     Mockito.doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
 
-    var result = spy.refineAnalysisScope(configScopeId, Set.of(smallUri, largeUri), TriggerType.AUTO, baseDir);
+    var result = spy.filterOutExcludedFiles(configScopeId, baseDir, Set.of(smallUri, largeUri));
 
     assertThat(result).extracting(ClientFile::getUri).containsExactlyInAnyOrder(smallUri);
     assertThat(logTester.logs()).anySatisfy(s -> assertThat(s).contains("Filtered out URIs exceeding max allowed size"));
-  }
-
-  @Test
-  void should_not_filter_out_large_files_in_forced_trigger() throws IOException {
-    var configScopeId = "scope";
-    var baseDir = Files.createTempDirectory("sl-forced-size-base");
-
-    var largeFile = baseDir.resolve("large2.js");
-    Files.write(largeFile, new byte[6 * 1024 * 1024]);
-
-    var largeUri = largeFile.toUri();
-
-    var largeClientFile = mock(ClientFile.class);
-    when(largeClientFile.getUri()).thenReturn(largeUri);
-    when(largeClientFile.getClientRelativePath()).thenReturn(Paths.get("large2.js"));
-    when(largeClientFile.isUserDefined()).thenReturn(true);
-
-    when(clientFileSystemService.getClientFiles(configScopeId, largeUri)).thenReturn(largeClientFile);
-    when(client.getFileExclusions(any(GetFileExclusionsParams.class))).thenReturn(CompletableFuture.completedFuture(new GetFileExclusionsResponse(Collections.emptySet())));
-
-    var spy = Mockito.spy(underTest);
-    Mockito.doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
-
-    var result = spy.refineAnalysisScope(configScopeId, Set.of(largeUri), TriggerType.FORCED, baseDir);
-
-    assertThat(result).extracting(ClientFile::getUri).containsExactly(largeUri);
   }
 
   @Test

@@ -40,10 +40,6 @@ import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
@@ -256,7 +252,7 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @SonarLintTest
-  void should_not_check_file_exclusions_for_forced_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void should_apply_client_file_exclusions_for_forced_open_files_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -274,18 +270,66 @@ class AnalysisForcedByClientMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withAutomaticAnalysisEnabled(false)
       .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
-
     backend.getAnalysisService().analyzeOpenFiles(new AnalyzeOpenFilesParams(CONFIG_SCOPE_ID));
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+    await().pollDelay(500, TimeUnit.MILLISECONDS).atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
+  }
 
-    var issues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
-    assertThat(issues).hasSize(1);
+  @SonarLintTest
+  void should_apply_client_file_exclusions_for_forced_full_project_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var fooPath = createFile(baseDir, "Foo.java", "public interface Foo {}");
+    var barPath = createFile(baseDir, "Bar.java", "public interface Bar {}");
+    var fooUri = fooPath.toUri();
+    var barUri = barPath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fooUri, baseDir.relativize(fooPath), CONFIG_SCOPE_ID, false, null, fooPath, null, null, true),
+        new ClientFileDto(barUri, baseDir.relativize(barPath), CONFIG_SCOPE_ID, false, null, barPath, null, null, true)))
+      .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/Bar.java"))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .start(client);
+
+    backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, false));
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).doesNotContainKey(barUri);
+  }
+
+  @SonarLintTest
+  void should_apply_client_file_exclusions_for_forced_vcs_changed_files_analysis(SonarLintTestHarness harness, @TempDir Path baseDir)
+    throws IOException, GitAPIException {
+    var git = createRepository(baseDir);
+
+    var fooPath = createFile(baseDir, "Foo.java", "public interface Foo {}");
+    var barPath = createFile(baseDir, "Bar.java", "public interface Bar {}");
+    commit(git, "Foo.java", "Bar.java");
+    modifyFile(fooPath, "public class Foo { }");
+    modifyFile(barPath, "public class Bar { }");
+
+    var fooUri = fooPath.toUri();
+    var barUri = barPath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fooUri, baseDir.relativize(fooPath), CONFIG_SCOPE_ID, false, null, fooPath, null, null, true),
+        new ClientFileDto(barUri, baseDir.relativize(barPath), CONFIG_SCOPE_ID, false, null, barPath, null, null, true)))
+      .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/Bar.java"))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .start(client);
+
+    backend.getAnalysisService().analyzeVCSChangedFiles(new AnalyzeVCSChangedFilesParams(CONFIG_SCOPE_ID));
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).doesNotContainKey(barUri);
   }
 
 }

@@ -194,7 +194,7 @@ public class AnalysisService {
     trace.setData("trigger", triggerType);
     var baseDir = startChild(trace, "getBaseDir", ANALYSIS_CFG_FOR_ENGINE, () -> fileSystemService.getBaseDir(configScopeId));
     var filesToAnalyze = startChild(trace, "refineAnalysisScope", ANALYSIS_CFG_FOR_ENGINE,
-      () -> fileExclusionService.refineAnalysisScope(configScopeId, filesUrisToAnalyze, triggerType, baseDir));
+      () -> fileExclusionService.filterOutExcludedFiles(configScopeId, baseDir, filesUrisToAnalyze));
     var actualBaseDir = baseDir == null ? findCommonPrefix(filesUrisToAnalyze) : baseDir;
     var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly, trace);
     var analysisProperties = analysisConfig.analysisProperties();
@@ -496,10 +496,11 @@ public class AnalysisService {
       .forEach((configurationScopeId, files) -> scheduleForcedAnalysis(configurationScopeId, files, false));
   }
 
-  public UUID scheduleForcedAnalysis(String configurationScopeId, Set<URI> files, boolean hotspotsOnly) {
+  private UUID scheduleForcedAnalysis(String configurationScopeId, Set<URI> files, boolean hotspotsOnly) {
     var analysisId = UUID.randomUUID();
     var rawIssues = new ArrayList<RawIssue>();
-    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, true, null)
+    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId),
+      analysisId, rawIssues, true, null)
       .exceptionally(e -> {
         if (!(e instanceof CancellationException)) {
           LOG.error("Error during analysis", e);
