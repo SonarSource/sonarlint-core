@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AnalysisSchedulerCacheTest {
@@ -64,21 +63,6 @@ class AnalysisSchedulerCacheTest {
     cache.reloadPlugins("conn1");
 
     verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn1");
-  }
-
-  @Test
-  void reloadAllConnectedPlugins_is_no_op_when_no_connected_schedulers_exist(@TempDir Path tempDir) {
-    var userPaths = mockUserPaths(tempDir);
-    var pluginLifecycleService = mock(PluginLifecycleService.class);
-
-    var cache = new AnalysisSchedulerCache(mock(OmnisharpDistributionDownloader.class), userPaths,
-      mock(ConfigurationRepository.class), mock(NodeJsService.class),
-      mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class));
-
-    cache.reloadAllConnectedPlugins();
-
-    verifyNoInteractions(pluginLifecycleService);
   }
 
   private static UserPaths mockUserPaths(Path tempDir) {

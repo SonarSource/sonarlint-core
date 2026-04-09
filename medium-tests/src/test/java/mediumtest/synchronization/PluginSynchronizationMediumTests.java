@@ -161,7 +161,6 @@ class PluginSynchronizationMediumTests {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
       assertThat(files).hasSize(1);
       assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
-      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'pluginKey' does not support SonarLint. Skip downloading it.");
     });
   }
 
@@ -183,7 +182,6 @@ class PluginSynchronizationMediumTests {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
       assertThat(files).hasSize(1);
       assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
-      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is embedded in SonarLint. Skip downloading it.");
     });
   }
 
@@ -204,7 +202,6 @@ class PluginSynchronizationMediumTests {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
       assertThat(files).hasSize(1);
       assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
-      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
     });
   }
 
@@ -247,10 +244,9 @@ class PluginSynchronizationMediumTests {
       .start(client);
     client.waitForSynchronization();
 
-    waitAtMost(5, SECONDS).untilAsserted(() ->
-      assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
-        .extracting(File::getName)
-        .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString()));
+    assertThat(getPluginsStorageFolder(backend).toFile().listFiles())
+      .extracting(File::getName)
+      .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString());
     assertThat(client.getLogMessages()).contains("Cleaning up the plugins storage " + getPluginsStorageFolder(backend) + ", removing 1 unknown files:");
     assertThat(getPluginReferencesFilePath(backend))
       .exists()

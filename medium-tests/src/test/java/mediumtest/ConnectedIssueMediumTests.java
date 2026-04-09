@@ -136,6 +136,8 @@ class ConnectedIssueMediumTests {
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .withPlugin(TestPlugin.JAVA_SE)
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java"))
       .withProject("projectKey")
       .start();
@@ -178,6 +180,11 @@ class ConnectedIssueMediumTests {
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .withPlugin(TestPlugin.JAVA_SE)
+      .withPlugin(TestPlugin.PYTHON)
+      .withPlugin(TestPlugin.DBD)
+      .withPlugin(TestPlugin.DBD_JAVA)
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java"))
       .withProject("projectKey")
       .start();

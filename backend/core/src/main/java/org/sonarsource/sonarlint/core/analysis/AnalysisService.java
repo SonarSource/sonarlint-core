@@ -619,11 +619,7 @@ public class AnalysisService {
       () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
       issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
-      () -> {
-        var isScopeReady = analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false);
-        var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::connectionId).orElse(null);
-        return isScopeReady && !pluginsService.areAnyPluginsDownloading(connectionId);
-      }, files, Map.of());
+      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {

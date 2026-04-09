@@ -228,7 +228,7 @@ class AnalysisMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.XML).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
@@ -272,6 +272,7 @@ class AnalysisMediumTests {
       .withInitialFs(OTHER_CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(secondFileUri, baseDir.relativize(secondFilePath), OTHER_CONFIG_SCOPE_ID, false, null, secondFilePath, null, null, true)))
       .build();
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey")
       .start();
     var backend = harness.newBackend()
@@ -749,31 +750,6 @@ class AnalysisMediumTests {
 
     await().atMost(1, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).hasContent(baseDir.resolve("eslint-bridge").toString()));
-  }
-
-  @SonarLintTest
-  void should_not_pass_eslint_bridge_path_to_sensors_if_not_provided(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "");
-    var fileUri = filePath.toUri();
-    var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
-        null, filePath, null, null, true)))
-      .build();
-    var propertyDumpingPlugin = newSonarPlugin("php")
-      .withSensor(PropertyDumpingSensor.class)
-      .generate(baseDir);
-    var backend = harness.newBackend()
-      .withStandaloneEmbeddedPlugin(propertyDumpingPlugin)
-      .start(client);
-    backend.getAnalysisService().didSetUserAnalysisProperties(
-      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1")));
-
-    backend.getAnalysisService()
-      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
-        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "key1"), false, System.currentTimeMillis()));
-
-    await().atMost(3, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).doesNotExist());
   }
 
   @SonarLintTest

@@ -106,9 +106,12 @@ class PluginRpcServiceMediumTests {
 
   @SonarLintTest
   void should_return_synced_status_for_plugin_from_sonarqube_server_connection(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.PYTHON)
+      .start();
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.PYTHON)
-      .withSonarQubeConnection("connectionId", storage -> storage
+      .withSonarQubeConnection("connectionId", server, storage -> storage
         .withPlugin(TestPlugin.PYTHON))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start();

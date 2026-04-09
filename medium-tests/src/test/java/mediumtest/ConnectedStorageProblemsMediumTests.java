@@ -57,7 +57,9 @@ class ConnectedStorageProblemsMediumTests {
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
       ))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)

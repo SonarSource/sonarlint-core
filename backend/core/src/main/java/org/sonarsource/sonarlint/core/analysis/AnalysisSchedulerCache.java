@@ -190,10 +190,6 @@ public class AnalysisSchedulerCache {
     }
   }
 
-  public synchronized void reloadAllConnectedPlugins() {
-    connectedSchedulerByConnectionId.keySet().forEach(this::reloadPlugins);
-  }
-
   @EventListener
   public void onClientNodeJsPathChanged(ClientNodeJsPathChanged event) {
     resetStartedSchedulers();

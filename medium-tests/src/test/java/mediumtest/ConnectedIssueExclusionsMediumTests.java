@@ -73,7 +73,9 @@ class ConnectedIssueExclusionsMediumTests {
         new ClientFileDto(inputFile2.toUri(), baseDir.relativize(inputFile2), JAVA_MODULE_KEY, false, null, inputFile2, null, null, true)
       ))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .start();
     backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
