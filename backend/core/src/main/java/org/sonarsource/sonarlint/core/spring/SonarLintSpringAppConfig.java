@@ -94,8 +94,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
-import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
-import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
@@ -103,6 +101,8 @@ import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSou
 import org.sonarsource.sonarlint.core.plugin.source.binaries.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginCacheManager;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginSignatureVerifier;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.progress.ClientAwareTaskManager;
 import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;

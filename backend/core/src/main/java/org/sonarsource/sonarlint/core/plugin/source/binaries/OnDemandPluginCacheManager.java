@@ -42,7 +42,7 @@ public class OnDemandPluginCacheManager {
    * @param cacheDirectory the base cache directory (e.g., {storageRoot}/cache/ondemand-plugins/cpp)
    * @param currentVersion the current version to keep (not deleted)
    */
-  public void cleanupOldVersions(Path cacheDirectory, String currentVersion) {
+  void cleanupOldVersions(Path cacheDirectory, String currentVersion) {
     if (!Files.isDirectory(cacheDirectory)) {
       return;
     }
