@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
@@ -60,7 +62,7 @@ public class PluginStatusMapper {
   }
 
   @Nullable
-  public static ArtifactSourceDto toDto(@Nullable ArtifactSource source) {
+  public static ArtifactSourceDto toDto(@Nullable ArtifactOrigin source) {
     if (source == null) {
       return null;
     }

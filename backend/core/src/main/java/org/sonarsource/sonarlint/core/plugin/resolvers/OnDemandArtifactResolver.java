@@ -32,14 +32,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginCacheManager;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginSignatureVerifier;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -122,7 +126,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   }
 
   private static ResolvedArtifact toActiveArtifact(DownloadableArtifact artifact, Path pluginPath) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, pluginPath, ArtifactSource.ON_DEMAND, Version.create(artifact.version()));
+    return new ResolvedArtifact(ArtifactState.ACTIVE, pluginPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()));
   }
 
   private void downloadAndCache(DownloadableArtifact artifact) throws IOException {
@@ -147,7 +151,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   private List<PluginStatus> findAffectedLanguageStatuses(DownloadableArtifact artifact, Path pluginPath) {
     var version = Version.create(artifact.version());
     return findAffected(artifact)
-      .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND, version, null, pluginPath, null))
+      .map(e -> PluginStatus.forLanguage(e.getKey(), ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, version, null, pluginPath, null))
       .toList();
   }
 

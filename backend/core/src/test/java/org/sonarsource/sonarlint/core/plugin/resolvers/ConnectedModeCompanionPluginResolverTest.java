@@ -36,8 +36,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
@@ -82,7 +82,7 @@ class ConnectedModeCompanionPluginResolverTest {
 
     when(storageService.connection("conn1")).thenReturn(connectionStorage);
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
-    when(downloader.sourceFor("conn1")).thenReturn(ArtifactSource.SONARQUBE_SERVER);
+    when(downloader.sourceFor("conn1")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
 
     resolver = new ConnectedModeCompanionPluginResolver(storageService, serverPluginsCache, downloader, languageSupportRepository, overrideRegistry);
   }

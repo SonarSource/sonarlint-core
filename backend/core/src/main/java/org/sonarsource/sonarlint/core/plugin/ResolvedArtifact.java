@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactSource source, @Nullable Version version) {
+public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
 
 }

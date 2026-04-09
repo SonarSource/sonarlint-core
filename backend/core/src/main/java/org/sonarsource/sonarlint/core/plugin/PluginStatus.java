@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
 /**
  * @param pluginKey         the plugin key
@@ -38,20 +40,20 @@ public record PluginStatus(
   String pluginKey,
   @Nullable SonarLanguage language,
   ArtifactState state,
-  @Nullable ArtifactSource source,
+  @Nullable ArtifactOrigin source,
   @Nullable Version actualVersion,
   @Nullable Version overriddenVersion,
   @Nullable Path path,
   @Nullable String serverVersion) {
 
   public static PluginStatus forLanguage(SonarLanguage language, ArtifactState state,
-    @Nullable ArtifactSource source, @Nullable Version actual, @Nullable Version overridden, @Nullable Path path,
+    @Nullable ArtifactOrigin source, @Nullable Version actual, @Nullable Version overridden, @Nullable Path path,
     @Nullable String serverVersion) {
     return new PluginStatus(language.getPlugin().getKey(), language, state, source, actual, overridden, path, serverVersion);
   }
 
   public static PluginStatus forCompanion(String pluginKey, ArtifactState state,
-    @Nullable ArtifactSource source, @Nullable Path path, @Nullable String serverVersion) {
+    @Nullable ArtifactOrigin source, @Nullable Path path, @Nullable String serverVersion) {
     return new PluginStatus(pluginKey, null, state, source, null, null, path, serverVersion);
   }
 
@@ -62,9 +64,4 @@ public record PluginStatus(
   public static PluginStatus failed(SonarLanguage language) {
     return forLanguage(language, ArtifactState.FAILED, null, null, null, null, null);
   }
-
-  public String pluginName() {
-    return language != null ? language.getName() : pluginKey;
-  }
-
 }

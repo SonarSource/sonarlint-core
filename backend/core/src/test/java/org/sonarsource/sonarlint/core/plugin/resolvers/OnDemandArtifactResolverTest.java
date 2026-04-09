@@ -43,8 +43,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
 import org.springframework.context.ApplicationEventPublisher;
@@ -227,7 +227,7 @@ class OnDemandArtifactResolverTest {
   }
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
-    return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactSource.ON_DEMAND,
+    return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND,
       Version.create(DownloadableArtifact.CFAMILY_PLUGIN.version()), null, path, null);
   }
 
