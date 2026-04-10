@@ -29,9 +29,9 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -118,7 +118,7 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
     try {
       return serverPluginsCache.getPlugins(connectionId)
         .flatMap(plugins -> findServerPlugin(plugins, primaryKey, fallbackKey))
-        .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, storedPlugins, language))
+        .map(serverPlugin -> resolveFromStorageOrSchedule(connectionId, serverPlugin, storedPlugins))
         .or(() -> resolveFromStorageWithFallback(connectionId, primaryKey, fallbackKey, storedPlugins));
     } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
@@ -150,13 +150,13 @@ public class ConnectedModeArtifactResolver implements ArtifactResolver {
   }
 
   private ResolvedArtifact resolveFromStorageOrSchedule(String connectionId, ServerPlugin serverPlugin,
-    Map<String, StoredPlugin> storedPlugins, SonarLanguage language) {
+    Map<String, StoredPlugin> storedPlugins) {
     var fromStorage = resolveFromStorage(connectionId, serverPlugin, storedPlugins);
     if (fromStorage.isPresent()) {
       LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
       return fromStorage.get();
     }
-    downloader.scheduleLanguagePluginDownload(connectionId, serverPlugin, language);
+    downloader.schedulePluginDownload(connectionId, serverPlugin);
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 

@@ -145,7 +145,7 @@ class ConnectedModeArtifactResolverTest {
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test
@@ -159,7 +159,7 @@ class ConnectedModeArtifactResolverTest {
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test

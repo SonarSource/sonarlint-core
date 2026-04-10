@@ -94,7 +94,7 @@ class ServerPluginDownloaderTest {
       when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.JAVA.getKey(), javaJar));
 
       var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
-      downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+      downloader.schedulePluginDownload("conn", serverPlugin);
 
       var expectedEvent = new PluginStatusUpdateEvent("conn",
         List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, javaJar, null)));
@@ -114,7 +114,7 @@ class ServerPluginDownloaderTest {
 
       doThrow(new RuntimeException("Download failed")).when(sonarQubeClientManager).withActiveClient(any(), any());
 
-      downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+      downloader.schedulePluginDownload("conn", serverPlugin);
 
       var expectedEvent = new PluginStatusUpdateEvent("conn", List.of(PluginStatus.failed(SonarLanguage.JAVA)));
       await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
@@ -129,8 +129,8 @@ class ServerPluginDownloaderTest {
     var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, mockedExecutor);
     var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
 
-    downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
-    downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    downloader.schedulePluginDownload("conn", serverPlugin);
+    downloader.schedulePluginDownload("conn", serverPlugin);
 
     verify(mockedExecutor, times(1)).submit(any(Runnable.class));
   }

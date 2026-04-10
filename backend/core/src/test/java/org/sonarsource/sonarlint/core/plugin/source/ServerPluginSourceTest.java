@@ -79,8 +79,7 @@ class ServerPluginSourceTest {
     pluginsStorage = mock(PluginsStorage.class);
     serverPluginsCache = mock(ServerPluginsCache.class);
     downloader = mock(ServerPluginDownloader.class);
-    when(downloader.scheduleCompanionPluginDownload(any(), any())).thenReturn(null);
-    when(downloader.scheduleLanguagePluginDownload(any(), any(), any())).thenReturn(null);
+    when(downloader.schedulePluginDownload(any(), any())).thenReturn(null);
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
     when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of());
   }
@@ -124,7 +123,7 @@ class ServerPluginSourceTest {
     var result = source.load(SonarPlugin.JAVA.getKey());
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test
@@ -138,7 +137,7 @@ class ServerPluginSourceTest {
     var result = source.load(SonarPlugin.JAVA.getKey());
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test

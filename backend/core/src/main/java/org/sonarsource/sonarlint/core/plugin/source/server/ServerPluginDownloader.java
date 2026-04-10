@@ -24,8 +24,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
@@ -60,28 +60,34 @@ public class ServerPluginDownloader {
     this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
-  public Future<?> scheduleLanguagePluginDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
+  public Future<?> schedulePluginDownload(String connectionId, ServerPlugin serverPlugin) {
+    var sonarPlugin = SonarPlugin.findByKey(serverPlugin.getKey());
+    return sonarPlugin.isPresent() ? scheduleSonarPluginDownload(connectionId, serverPlugin, sonarPlugin.get())
+      : scheduleUnknownPluginDownload(connectionId, serverPlugin);
+  }
+
+  private Future<?> scheduleSonarPluginDownload(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
     var progressKey = connectionId + ":" + serverPlugin.getKey();
-    return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncDownload(connectionId, serverPlugin, language));
+    return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncDownload(connectionId, serverPlugin, sonarPlugin));
   }
 
-  public Future<?> scheduleCompanionPluginDownload(String connectionId, ServerPlugin plugin) {
+  private Future<?> scheduleUnknownPluginDownload(String connectionId, ServerPlugin plugin) {
     var progressKey = connectionId + ":" + plugin.getKey();
-    return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncCompanionDownload(connectionId, plugin));
+    return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncUnknownPluginDownload(connectionId, plugin));
   }
 
-  private void asyncDownload(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
+  private void asyncDownload(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
     try {
-      downloadPluginAndFireEvent(connectionId, serverPlugin, language);
+      downloadPluginAndFireEvent(connectionId, serverPlugin, sonarPlugin);
     } catch (Exception e) {
       LOG.error("Failed to download plugin '{}' for connection '{}'", serverPlugin.getKey(), connectionId, e);
-      fireFailedEvent(connectionId, language);
+      fireFailedEvent(connectionId, sonarPlugin);
     }
   }
 
-  private void asyncCompanionDownload(String connectionId, ServerPlugin plugin) {
+  private void asyncUnknownPluginDownload(String connectionId, ServerPlugin plugin) {
     try {
-      downloadCompanionAndFireEvent(connectionId, plugin);
+      downloadUnknownPluginAndFireEvent(connectionId, plugin);
     } catch (Exception e) {
       LOG.error("Failed to download companion plugin '{}' for connection '{}'", plugin.getKey(), connectionId, e);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
@@ -89,23 +95,23 @@ public class ServerPluginDownloader {
     }
   }
 
-  private void downloadPluginAndFireEvent(String connectionId, ServerPlugin serverPlugin, SonarLanguage language) {
+  private void downloadPluginAndFireEvent(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
     var state = downloadPluginSync(connectionId, serverPlugin);
     if (state == ArtifactState.SYNCED) {
       var pluginKey = serverPlugin.getKey();
       var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
       var source = sourceFor(connectionId);
       var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      var statuses = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream()
+      var statuses = sonarPlugin.getLanguages().stream()
         .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath, null))
         .toList();
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
     } else {
-      fireFailedEvent(connectionId, language);
+      fireFailedEvent(connectionId, sonarPlugin);
     }
   }
 
-  private void downloadCompanionAndFireEvent(String connectionId, ServerPlugin plugin) {
+  private void downloadUnknownPluginAndFireEvent(String connectionId, ServerPlugin plugin) {
     var state = downloadPluginSync(connectionId, plugin);
     var storedPath = state == ArtifactState.SYNCED
       ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
@@ -131,8 +137,8 @@ public class ServerPluginDownloader {
     }
   }
 
-  private void fireFailedEvent(String connectionId, SonarLanguage language) {
-    var statuses = SonarLanguage.getLanguagesByPluginKey(language.getPlugin().getKey()).stream()
+  private void fireFailedEvent(String connectionId, SonarPlugin sonarPlugin) {
+    var statuses = sonarPlugin.getLanguages().stream()
       .map(PluginStatus::failed)
       .toList();
     eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));

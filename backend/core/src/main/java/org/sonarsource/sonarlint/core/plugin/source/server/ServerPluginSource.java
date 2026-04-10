@@ -108,9 +108,8 @@ public class ServerPluginSource implements ArtifactSource {
 
   private static boolean isEligible(ServerPlugin plugin, Set<SonarLanguage> enabledLanguages) {
     return SonarPlugin.findByKey(plugin.getKey())
-      .map(sonarPlugin -> SonarPlugin.basePluginFor(sonarPlugin.getKey()).orElse(sonarPlugin))
       .map(sonarPlugin -> {
-        var languages = SonarLanguage.getLanguagesByPluginKey(sonarPlugin.getKey());
+        var languages = sonarPlugin.getLanguages();
         return !languages.isEmpty() && languages.stream().anyMatch(lang -> lang.shouldSyncInConnectedMode() && enabledLanguages.contains(lang));
       })
       .orElseGet(plugin::isSonarLintSupported);
@@ -166,11 +165,7 @@ public class ServerPluginSource implements ArtifactSource {
       LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", pluginKey);
       return toResolvedArtifact(stored.get().getJarPath());
     }
-    var language = SonarLanguage.getLanguagesByPluginKey(pluginKey).stream().findFirst()
-      .or(() -> SonarPlugin.baseKeyFor(pluginKey).flatMap(bk -> SonarLanguage.getLanguagesByPluginKey(bk).stream().findFirst()))
-      .orElse(null);
-    var downloadFuture = language != null ? downloader.scheduleLanguagePluginDownload(connectionId, serverPlugin, language)
-      : downloader.scheduleCompanionPluginDownload(connectionId, serverPlugin);
+    var downloadFuture = downloader.schedulePluginDownload(connectionId, serverPlugin);
     return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
   }
 
