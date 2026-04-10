@@ -22,10 +22,8 @@ package org.sonarsource.sonarlint.core.commons.api;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
@@ -123,10 +121,6 @@ public enum SonarLanguage {
 
   public boolean shouldSyncInConnectedMode() {
     return !equals(SonarLanguage.IPYTHON);
-  }
-
-  public static Set<SonarLanguage> getLanguagesByPluginKey(String pluginKey) {
-    return Stream.of(values()).filter(l -> l.getPlugin().getKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   public static Optional<SonarLanguage> getLanguageByLanguageKey(String languageKey) {

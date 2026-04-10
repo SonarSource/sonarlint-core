@@ -18,6 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 package org.sonarsource.sonarlint.core.plugin;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
@@ -40,7 +41,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
 import org.sonarsource.sonarlint.core.plugin.resolvers.PluginOverrideRegistry;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ServerPluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -144,7 +145,7 @@ class ConnectedModeArtifactResolverTest {
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test
@@ -158,7 +159,7 @@ class ConnectedModeArtifactResolverTest {
     var result = resolver.resolve(SonarLanguage.JAVA, "conn");
 
     assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
-    verify(downloader).scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
+    verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
   @Test
