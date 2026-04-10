@@ -223,13 +223,13 @@
                     <artifactItem>
                       <groupId>com.sonarsource.architecture</groupId>
                       <artifactId>sonar-architecture-plugin</artifactId>
-                      <version>2.27.0.9448</version>
+                      <version>2.27.0.9455</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.architecture</groupId>
                       <artifactId>sonar-architecture-java-frontend-plugin</artifactId>
-                      <version>2.27.0.9448</version>
+                      <version>2.27.0.9455</version>
                       <type>jar</type>
                     </artifactItem>
                   </artifactItems>

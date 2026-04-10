@@ -133,6 +133,7 @@ public class AnalysisSchedulerCache {
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
     var fullExtraProperties = new HashMap<>(extraProperties);
     enhanceDotnetExtraProperties(fullExtraProperties, dotnetSupport);
+    enhanceArchitectureExtraProperties(fullExtraProperties);
 
     return AnalysisSchedulerConfiguration.builder()
       .setWorkDir(workDir)
@@ -141,6 +142,33 @@ public class AnalysisSchedulerCache {
       .setNodeJs(nodeJsPath)
       .setFileSystemProvider(this::getFileSystem)
       .build();
+  }
+
+  private void enhanceArchitectureExtraProperties(HashMap<String, String> props) {
+    var udgDir = workDir.resolve("architecture-udg");
+    try {
+      cleanAndCreateUdgDir(udgDir);
+    } catch (java.io.IOException e) {
+      SonarLintLogger.get().error("Failed to create UDG exchange directory: " + udgDir, e);
+      return;
+    }
+    props.put("sonar.architecture.udg.dir", udgDir.toString());
+  }
+
+  private static void cleanAndCreateUdgDir(Path udgDir) throws java.io.IOException {
+    if (java.nio.file.Files.exists(udgDir)) {
+      try (var walk = java.nio.file.Files.walk(udgDir)) {
+        walk.sorted(java.util.Comparator.reverseOrder())
+          .forEach(p -> {
+            try {
+              java.nio.file.Files.deleteIfExists(p);
+            } catch (java.io.IOException e) {
+              SonarLintLogger.get().debug("Could not delete " + p, e);
+            }
+          });
+      }
+    }
+    java.nio.file.Files.createDirectories(udgDir);
   }
 
   private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
@@ -197,8 +225,21 @@ public class AnalysisSchedulerCache {
   public void shutdown() {
     try {
       stopAll();
+      cleanupUdgDir();
     } catch (Exception e) {
       SonarLintLogger.get().error("Error shutting down analysis scheduler cache", e);
+    }
+  }
+
+  private void cleanupUdgDir() {
+    var udgDir = workDir.resolve("architecture-udg");
+    if (java.nio.file.Files.exists(udgDir)) {
+      try {
+        cleanAndCreateUdgDir(udgDir);
+        java.nio.file.Files.deleteIfExists(udgDir);
+      } catch (java.io.IOException e) {
+        SonarLintLogger.get().debug("Could not clean up UDG directory: " + udgDir, e);
+      }
     }
   }
 
