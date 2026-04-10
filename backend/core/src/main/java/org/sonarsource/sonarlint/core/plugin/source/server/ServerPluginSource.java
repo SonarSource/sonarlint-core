@@ -85,17 +85,10 @@ public class ServerPluginSource implements ArtifactSource {
   }
 
   /**
-   * Returns all server plugins that pass the language gate and SonarLint-support filter.
-   * Falls back to stored plugins already on disk if the server is unreachable.
-   *
+   * Returns all server plugins that are eligible:
    * <ul>
-   *   <li><b>Language plugins</b> (non-empty {@code SonarLanguage.getLanguagesByPluginKey}):
-   *       included if any of their languages is in {@code enabledLanguages} and syncs in
-   *       connected mode.</li>
-   *   <li><b>Enterprise variants with a different key</b>
-   *       ({@code SonarPlugin.isEnterpriseVariant}):
-   *       included using the base key's languages for the gate.</li>
-   *   <li><b>Companion / unknown plugins</b>: included if {@code isSonarLintSupported}.</li>
+   *   <li>if a plugin is known (see {@link SonarPlugin}), at least one of its languages should be currently enabled
+   *   <li>if it is unknown, it needs to be SonarLint-Supported
    * </ul>
    */
   @Override
