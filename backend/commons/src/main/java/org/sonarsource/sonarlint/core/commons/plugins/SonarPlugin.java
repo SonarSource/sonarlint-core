@@ -51,7 +51,8 @@ public enum SonarPlugin {
   RUBY("ruby"),
   SCALA("sonarscala"),
   SWIFT("swift"),
-  TEXT("text", new EnterpriseReplacement(true, Version.create("10.4"))),
+  TEXT_ENTERPRISE("textenterprise"),
+  TEXT("text", TEXT_ENTERPRISE),
   TSQL("tsql"),
   // VBNET_ENTERPRISE must be declared before VBNET_OSS
   VBNET_ENTERPRISE("vbnetenterprise"),

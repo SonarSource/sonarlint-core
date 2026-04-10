@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  *   <li><b>Enterprise priority override</b>: when the server reports a plugin as enterprise
  *       ({@link AvailableArtifact#isEnterprise()}), that plugin is forced to use the server
  *       source even if the embedded source would normally win. This applies to same-key
- *       enterprise plugins (GO, IAC, TEXT) whose enterprise edition is served when the
+ *       enterprise plugins (GO, IAC) whose enterprise edition is served when the
  *       connection qualifies (SonarQube Server &ge; minimum version, or SonarQube Cloud).</li>
  * </ol>
  */
