@@ -103,14 +103,11 @@ Represents **how sources are combined** to produce the full set of resolved arti
 context (standalone or connected). The interface exposes:
 
 ```
-resolveArtifacts() → Map<String, ResolvedArtifact>
+resolveArtifacts() → ArtifactsLoadingResult
     Resolves all artifacts from all managed sources, applying priority and
-    policy rules. The map is keyed by artifact key.
+    policy rules. The result holds the resolved artifact map (keyed by
+    artifact key) and the set of enabled languages.
     May schedule background downloads.
-
-isAnyDownloadInProgress() → boolean
-    Returns true if any background download is currently in progress across
-    all managed sources.
 ```
 
 There are two implementations:
@@ -127,11 +124,8 @@ Used when the user has no server connection. Sources (in ascending priority):
 Languages available only in connected mode are reported as `PREMIUM` (no artifact path, just a
 status indicating the language requires a server connection).
 
-Resolution passes (later entries win):
-1. Already-downloaded on-demand artifacts.
-2. Client-embedded artifacts (override on-demand).
-3. For each unresolved language plugin key: trigger on-demand download, or mark `PREMIUM` if
-   the language is connected-only.
+Resolution uses a winner-map (ascending priority, last writer wins per key), then one post-processing pass:
+- For each `SonarLanguage` whose plugin key is still unresolved and is connected-only: mark as `PREMIUM`.
 
 #### `ConnectedArtifactsLoadingStrategy`
 
@@ -140,22 +134,13 @@ Used when the user has a server connection. One instance per connection, cached 
 
 | Priority | Source | Why |
 |----------|--------|-----|
-| Lowest | `EmbeddedPluginSource` (connected paths) | JARs the client always carries |
-| Middle | `ServerPluginSource` | Server-specific analyzers override embedded |
-| Auto | `BinariesArtifactSource` | Fallback for languages the server doesn't provide |
+| Lowest | `BinariesArtifactSource` | Fallback for on-demand artifacts |
+| Middle | `ServerPluginSource` | Server-specific analyzers override binaries |
+| Highest | `EmbeddedPluginSource` (connected paths) | JARs the client always carries (normally win) |
 
-Resolution passes (later entries win):
-1. **Client-embedded** plugins (connected mode paths).
-2. **Server language plugins** — with these filters applied:
-   - *Skip-list*: plugins whose key is in `connectedModeEmbeddedPluginPathsByKey` are skipped
-     unless the server provides an enterprise variant.
-   - *Language gate*: only plugins for languages that should sync in connected mode are
-     downloaded.
-3. **Server companion plugins** — plugins not mapped to a `SonarLanguage` and not enterprise
-   variants. Includes TypeScript skip logic and force-sync for enterprise variants (e.g. C#
-   enterprise, Go enterprise). Orphaned stored companions (no longer on the server) are also
-   included.
-4. **Binary fallback** — for language plugin keys still unresolved, trigger on-demand download.
+Resolution uses a winner-map (ascending priority, last writer wins per key), then two post-processing passes:
+1. **Enterprise-variant deduplication**: when a different-key enterprise variant (e.g. `csharpenterprise`) is present, the base key is removed so both are not loaded simultaneously.
+2. **Enterprise priority override**: when the server reports a plugin as enterprise (same-key enterprise editions such as Go or IaC), the server source is forced for that key even if the embedded source would normally win.
 
 ---
 
@@ -202,11 +187,12 @@ what the server exposes. This updates the local storage with expected plugin pat
 ### 3. Artifact Resolution
 
 When analysis is requested (or when the IDE requests plugin statuses), `PluginsService` calls
-`policy.resolveArtifacts()` on the appropriate `ArtifactsLoadingStrategy`. The policy runs its
-resolution passes and returns a `Map<String, ResolvedArtifact>`.
+`resolveArtifacts()` on the appropriate `ArtifactsLoadingStrategy`. The strategy runs its
+resolution passes and returns an `ArtifactsLoadingResult`.
 
-Artifacts in `DOWNLOADING` state cause the caller to defer engine initialisation. The caller
-subscribes to `PluginStatusUpdateEvent` to retry when the download completes.
+Artifacts in `DOWNLOADING` state have a non-null `downloadFuture`. The caller uses
+`ArtifactsLoadingResult.whenAllArtifactsDownloaded()` to run a callback (publishing a
+`PluginsSynchronizedEvent`) once all pending downloads complete.
 
 ### 4. Background Download
 
