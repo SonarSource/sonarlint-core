@@ -84,7 +84,7 @@ public class SonarPluginRequirementsChecker {
   private PluginRequirementsCheckResult checkIfSkippedAndPopulateReason(PluginInfo plugin, Set<SonarLanguage> enabledLanguages, Version jreCurrentVersion,
     Optional<Version> nodeCurrentVersion) {
     var pluginKey = plugin.getKey();
-    var languages = SonarLanguage.getLanguagesByPluginKey(pluginKey);
+    var languages = SonarPlugin.findByKey(pluginKey).map(SonarPlugin::getLanguages).orElseGet(Set::of);
     if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
       if (languages.size() > 1) {
         LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", plugin.getName(),

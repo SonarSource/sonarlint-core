@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
@@ -86,7 +86,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
       .filter(e -> SonarPlugin.findByKey(e.getKey()).isEmpty())
       .collect(Collectors.toUnmodifiableMap(
         Map.Entry::getKey,
-        e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, e.getValue(), null)));
+        e -> PluginStatus.forCompanion(e.getKey(), ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, e.getValue(), null)));
   }
 
   @Nullable
@@ -95,7 +95,7 @@ public class EmbeddedArtifactResolver implements ArtifactResolver, CompanionPlug
   }
 
   private static ResolvedArtifact toResolvedArtifact(Path path) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactSource.EMBEDDED, PluginJarUtils.readVersion(path));
+    return new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path));
   }
 
   @Nullable

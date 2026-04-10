@@ -34,8 +34,8 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -97,7 +97,7 @@ class ServerPluginDownloaderTest {
       downloader.scheduleLanguagePluginDownload("conn", serverPlugin, SonarLanguage.JAVA);
 
       var expectedEvent = new PluginStatusUpdateEvent("conn",
-        List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactSource.SONARQUBE_SERVER, null, null, javaJar, null)));
+        List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, javaJar, null)));
 
       await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
     } finally {

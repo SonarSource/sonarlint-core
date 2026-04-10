@@ -1,0 +1,104 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.plugin.loading.strategy;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+
+/**
+ * Artifacts loading strategy for standalone (no-connection) mode.
+ *
+ * <p>Sources, in ascending priority order:
+ * <ol>
+ *   <li>{@link BinariesArtifactSource} — on-demand downloadable artifacts.</li>
+ *   <li>{@link EmbeddedPluginSource} (standalone) — JARs embedded in the IDE client.</li>
+ * </ol>
+ *
+ * <p>Languages available only in connected mode are reported as
+ * {@link ArtifactState#PREMIUM} when no other source can provide them.</p>
+ */
+public class StandaloneArtifactsLoadingStrategy implements ArtifactsLoadingStrategy {
+
+  private final InitializeParams params;
+  private final BinariesArtifactSource binariesSource;
+  private final LanguageSupportRepository languageSupportRepository;
+  @Nullable
+  private List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
+
+  public StandaloneArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource, LanguageSupportRepository languageSupportRepository) {
+    this.params = params;
+    this.binariesSource = binariesSource;
+    this.languageSupportRepository = languageSupportRepository;
+  }
+
+  private List<ArtifactSource> getArtifactSourcesByAscendingPriority() {
+    if (artifactSourcesSortedByAscendingPriority == null) {
+      // Ascending priority: binaries < embedded. Later source overwrites for the same key.
+      // EmbeddedPluginSource.forStandalone reads JAR manifests and may throw — defer until first use.
+      artifactSourcesSortedByAscendingPriority = List.of(binariesSource, EmbeddedPluginSource.forStandalone(params));
+    }
+    return artifactSourcesSortedByAscendingPriority;
+  }
+
+  /**
+   * Resolves all artifacts from standalone sources.
+   *
+   * <p>Priority (highest wins): embedded over binaries. Connected-only languages that
+   * cannot be provided by either source are reported as {@link ArtifactState#PREMIUM}.</p>
+   */
+  @Override
+  public ArtifactsLoadingResult resolveArtifacts() {
+    // Step 1: list available artifacts from all sources; highest-priority source wins
+    var bestSourceByArtifactKey = new LinkedHashMap<String, ArtifactSource>();
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+    for (var source : getArtifactSourcesByAscendingPriority()) {
+      for (var artifact : source.listAvailableArtifacts(enabledLanguages)) {
+        bestSourceByArtifactKey.put(artifact.key(), source);
+      }
+    }
+
+    // Step 2: load once from the best source
+    var result = new LinkedHashMap<String, ResolvedArtifact>();
+    bestSourceByArtifactKey.forEach((artifactKey, source) -> source.load(artifactKey).ifPresent(artifact -> result.put(artifactKey, artifact)));
+
+    // Step 3: for each language not yet resolved and available only in connected mode, mark PREMIUM
+    for (var language : SonarLanguage.values()) {
+      var key = language.getPlugin().getKey();
+      if (!result.containsKey(key) && isPremiumLanguage(language)) {
+        result.put(key, ResolvedArtifact.premium());
+      }
+    }
+
+    return new ArtifactsLoadingResult(enabledLanguages, result);
+  }
+
+  private boolean isPremiumLanguage(SonarLanguage language) {
+    return languageSupportRepository.isEnabledOnlyInConnectedMode(language);
+  }
+}

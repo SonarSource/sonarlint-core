@@ -70,8 +70,8 @@ public enum SonarLanguage {
   KUBERNETES("kubernetes", SonarPlugin.IAC, "Kubernetes", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   TERRAFORM("terraform", SonarPlugin.IAC, "Terraform", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
   AZURERESOURCEMANAGER("azureresourcemanager", SonarPlugin.IAC, "Azure Resource Manager", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  ANSIBLE("ansible", SonarPlugin.IAC_ENTERPRISE, "Ansible", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  GITHUBACTIONS("githubactions", SonarPlugin.IAC_ENTERPRISE, "GitHub Actions", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
+  ANSIBLE("ansible", SonarPlugin.IAC, "Ansible", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  GITHUBACTIONS("githubactions", SonarPlugin.IAC, "GitHub Actions", new String[0], Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
 
   private final String sonarLanguageKey;
 

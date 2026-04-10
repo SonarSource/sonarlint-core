@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -27,44 +27,40 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginCacheManager;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginSignatureVerifier;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
-import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
-import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 
-import static java.util.Optional.ofNullable;
-
 /**
- * Resolves on-demand analyzer plugins by downloading them from public artifact URLs,
- * without requiring a server connection.
+ * Artifact source backed by publicly downloadable artifacts from binaries.sonarsource.com.
+ * Handles both plugins (CFamily, C# OSS) and plugin dependencies (OmniSharp distributions).
  *
- * <p>Plugins are cached locally under {@code <storageRoot>/ondemand-plugins/<key>/<version>/}.
- * Each download is verified against a known signature before being promoted to the cache.</p>
- *
- * <p><b>Download lifecycle:</b> {@link #resolve} returns {@link ArtifactState#DOWNLOADING}
- * immediately while a background download runs. When it completes, a
- * {@link PluginStatusUpdateEvent} is published with {@link ArtifactState#ACTIVE} on success
- * or {@link ArtifactState#FAILED} on error. Concurrent calls for the same artifact key are
- * de-duplicated — at most one download runs at a time.</p>
+ * <p>{@link #listAvailableArtifacts(Set)} is a pure query: it returns all known artifacts, with a
+ * non-null {@code jarPath} only for those already cached and verified on disk. {@link #load(String)}
+ * schedules a background download when the artifact is not yet cached, returning
+ * {@link ArtifactState#DOWNLOADING} immediately. A {@link PluginStatusUpdateEvent} is published
+ * when the download completes.</p>
  */
-public class OnDemandArtifactResolver implements ArtifactResolver {
+public class BinariesArtifactSource implements ArtifactSource {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String CACHE_SUBDIR = "ondemand-plugins";
@@ -73,20 +69,26 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   private final HttpClientProvider httpClientProvider;
   private final OnDemandPluginSignatureVerifier signatureVerifier;
   private final OnDemandPluginCacheManager cacheManager;
+  // Maps SonarPlugin key → DownloadableArtifact (used for list() and load())
+  private static final Map<SonarPlugin, DownloadableArtifact> ARTIFACTS_BY_PLUGIN_KEY = Map.of(
+    SonarPlugin.C_FAMILY, DownloadableArtifact.CFAMILY_PLUGIN,
+    SonarPlugin.CS_OSS, DownloadableArtifact.CSHARP_OSS,
+    SonarPlugin.VBNET_OSS, DownloadableArtifact.CSHARP_OSS);
+  // Used only for event publishing (language-level status events)
   private final Map<SonarLanguage, DownloadableArtifact> artifactsByLanguage = Map.of(
     SonarLanguage.C, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.CPP, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.OBJC, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.CS, DownloadableArtifact.CSHARP_OSS,
-    SonarLanguage.VBNET, DownloadableArtifact.CSHARP_OSS
-  );
+    SonarLanguage.VBNET, DownloadableArtifact.CSHARP_OSS);
   private final ApplicationEventPublisher eventPublisher;
   private final UniqueTaskExecutor uniqueTaskExecutor;
 
   private final Map<String, Path> cachedArtifactPaths = new ConcurrentHashMap<>();
 
-  OnDemandArtifactResolver(UserPaths userPaths, HttpClientProvider httpClientProvider,
-    ApplicationEventPublisher eventPublisher, @Qualifier("pluginDownloadExecutor") ExecutorService downloadExecutor, OnDemandPluginSignatureVerifier signatureVerifier) {
+  BinariesArtifactSource(UserPaths userPaths, HttpClientProvider httpClientProvider,
+    ApplicationEventPublisher eventPublisher, @Qualifier("pluginDownloadExecutor") ExecutorService downloadExecutor,
+    OnDemandPluginSignatureVerifier signatureVerifier) {
     this.cacheBaseDirectory = userPaths.getStorageRoot().resolve(CACHE_SUBDIR);
     this.httpClientProvider = httpClientProvider;
     this.signatureVerifier = signatureVerifier;
@@ -95,16 +97,30 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
     this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
+  /**
+   * Returns all artifacts known to this source whose languages intersect {@code enabledLanguages}.
+   * No downloads triggered.
+   */
   @Override
-  public Optional<ResolvedArtifact> resolve(SonarLanguage language, @Nullable String connectionId) {
-    return ofNullable(artifactsByLanguage.get(language))
+  public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
+    return ARTIFACTS_BY_PLUGIN_KEY.entrySet().stream()
+      .filter(entry -> entry.getKey().getLanguages().stream().anyMatch(enabledLanguages::contains))
+      .map(entry -> new AvailableArtifact(entry.getKey().getKey(), Version.create(entry.getValue().version())))
+      .toList();
+  }
+
+  @Override
+  public Optional<ResolvedArtifact> load(String artifactKey) {
+    return SonarPlugin.findByKey(artifactKey)
+      .map(ARTIFACTS_BY_PLUGIN_KEY::get)
       .map(artifact -> findCachedArtifact(artifact)
+        .map(r -> toActiveArtifact(artifact, r.path()))
         .orElseGet(() -> scheduleDownload(artifact)));
   }
 
   private ResolvedArtifact scheduleDownload(DownloadableArtifact artifact) {
-    uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
+    var downloadFuture = uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
+    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
   }
 
   private Optional<ResolvedArtifact> findCachedArtifact(DownloadableArtifact artifact) {
@@ -126,7 +142,7 @@ public class OnDemandArtifactResolver implements ArtifactResolver {
   }
 
   private static ResolvedArtifact toActiveArtifact(DownloadableArtifact artifact, Path pluginPath) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, pluginPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()));
+    return new ResolvedArtifact(ArtifactState.ACTIVE, pluginPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()), null);
   }
 
   private void downloadAndCache(DownloadableArtifact artifact) throws IOException {

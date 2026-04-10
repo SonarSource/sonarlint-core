@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-import org.sonarsource.sonarlint.core.plugin.resolvers.OmnisharpDistributionDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.event.EventListener;
 

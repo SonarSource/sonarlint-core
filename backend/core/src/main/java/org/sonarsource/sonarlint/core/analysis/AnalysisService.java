@@ -76,7 +76,7 @@ import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
