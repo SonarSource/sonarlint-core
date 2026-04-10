@@ -17,38 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class UniqueTaskExecutor {
-  
-  private final Set<String> inProgress = ConcurrentHashMap.newKeySet();
+
+  private final Map<String, Future<?>> inProgress = new ConcurrentHashMap<>();
   private final ExecutorService executor;
 
   public UniqueTaskExecutor(ExecutorService executor) {
     this.executor = executor;
   }
 
-  public void scheduleIfAbsent(String key, Runnable task) {
-    if (inProgress.add(key)) {
+  public Future<?> scheduleIfAbsent(String key, Runnable task) {
+    return inProgress.computeIfAbsent(key, k -> {
       var logOutput = SonarLintLogger.get().getTargetForCopy();
-      executor.submit(() -> {
-        var previousLogOutput = SonarLintLogger.get().getTargetForCopy();
-        if (logOutput != null) {
-          SonarLintLogger.get().setTarget(logOutput);
-        }
+      return executor.submit(() -> {
+        SonarLintLogger.get().setTarget(logOutput);
         try {
           task.run();
         } finally {
-          SonarLintLogger.get().setTarget(previousLogOutput);
           inProgress.remove(key);
+          SonarLintLogger.get().setTarget(null);
         }
       });
-    }
+    });
   }
 
 }

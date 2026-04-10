@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,7 +42,7 @@ public class OnDemandPluginCacheManager {
    * @param cacheDirectory the base cache directory (e.g., {storageRoot}/cache/ondemand-plugins/cpp)
    * @param currentVersion the current version to keep (not deleted)
    */
-  void cleanupOldVersions(Path cacheDirectory, String currentVersion) {
+  public void cleanupOldVersions(Path cacheDirectory, String currentVersion) {
     if (!Files.isDirectory(cacheDirectory)) {
       return;
     }

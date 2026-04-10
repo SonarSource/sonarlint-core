@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,12 +25,14 @@ import java.nio.file.Path;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,7 +58,7 @@ class OnDemandPluginSignatureVerifierTest {
     var tamperedJar = tempDir.resolve("sonar-cpp-plugin-tampered.jar");
     Files.write(tamperedJar, "tampered content".getBytes());
 
-    assertThat(underTest.verify(tamperedJar, DownloadableArtifact.CFAMILY_PLUGIN)).isFalse();
+    Assertions.assertThat(underTest.verify(tamperedJar, DownloadableArtifact.CFAMILY_PLUGIN)).isFalse();
   }
 
   @ParameterizedTest

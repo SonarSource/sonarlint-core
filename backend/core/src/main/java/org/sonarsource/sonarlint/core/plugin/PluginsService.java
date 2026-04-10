@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +58,7 @@ class DownloadableArtifactTest {
   void should_return_version_from_properties() {
     var actual = DownloadableArtifact.CFAMILY_PLUGIN.version();
 
-    assertThat(actual).isEqualTo("6.50.0");
+    assertThat(actual).isEqualTo("6.77.0.95488");
   }
 
   @Test

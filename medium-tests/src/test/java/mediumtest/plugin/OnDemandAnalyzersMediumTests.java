@@ -72,7 +72,7 @@ class OnDemandAnalyzersMediumTests {
     }
 
     var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
-    systemProperties.set(org.sonarsource.sonarlint.core.plugin.resolvers.DownloadableArtifact.PROPERTY_URL_PATTERN, serverUrl);
+    systemProperties.set(org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact.PROPERTY_URL_PATTERN, serverUrl);
 
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()

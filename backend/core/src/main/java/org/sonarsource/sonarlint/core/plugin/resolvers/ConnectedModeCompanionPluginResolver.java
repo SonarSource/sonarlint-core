@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;

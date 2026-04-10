@@ -17,13 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.resolvers;
+package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -43,12 +44,12 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginSignatureVerifier;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
-import org.sonarsource.sonarlint.core.plugin.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +60,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class OnDemandArtifactResolverTest {
+class BinariesArtifactSourceTest {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
@@ -85,56 +86,64 @@ class OnDemandArtifactResolverTest {
   }
 
   @Test
-  void should_return_empty_when_language_not_registered() {
-    var resolver = buildResolver();
+  void load_should_return_empty_when_plugin_key_not_handled() {
+    var source = buildSource();
 
-    var result = resolver.resolve(SonarLanguage.JAVA, null);
+    var result = source.load("java");
 
     assertThat(result).isEmpty();
   }
 
   @Test
-  void should_return_downloading_on_first_async_call() {
+  void load_should_return_downloading_on_first_async_call_for_cfamily() {
     var proceedLatch = new CountDownLatch(1);
     mockBlockingHttpClient(proceedLatch);
-    var resolver = buildResolver();
+    var source = buildSource();
     try {
-      var result = resolver.resolve(SonarLanguage.C, null);
+      var result = source.load("cpp");
 
-      assertThat(result).contains(downloading());
+      assertThat(result)
+        .isPresent()
+        .get()
+        .usingRecursiveComparison()
+        .ignoringFields("downloadFuture")
+        .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
-      // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
       await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
     }
   }
 
   @Test
-  void should_return_downloading_while_same_artifact_is_in_progress() {
+  void load_should_return_downloading_while_same_artifact_is_in_progress() {
     var proceedLatch = new CountDownLatch(1);
     mockBlockingHttpClient(proceedLatch);
-    var resolver = buildResolver();
+    var source = buildSource();
     try {
-      resolver.resolve(SonarLanguage.C, null);  // starts download, key added to inProgress
+      source.load("cpp");
 
-      var result = resolver.resolve(SonarLanguage.C, null);  // while download is blocked
+      var result = source.load("cpp");
 
-      assertThat(result).contains(downloading());
+      assertThat(result)
+        .isPresent()
+        .get()
+        .usingRecursiveComparison()
+        .ignoringFields("downloadFuture")
+        .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
-      // wait for the async task to finish all file I/O before JUnit cleans up @TempDir
       await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
     }
   }
 
   @Test
-  void should_fire_failed_event_on_async_download_error() {
+  void load_should_fire_failed_event_on_async_download_error() {
     var httpClient = mock(HttpClient.class);
     when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    var resolver = buildResolver();
+    var source = buildSource();
 
-    resolver.resolve(SonarLanguage.C, null);
+    source.load("cpp");
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -144,12 +153,12 @@ class OnDemandArtifactResolverTest {
   }
 
   @Test
-  void should_fire_failed_event_when_signature_verification_fails() throws Exception {
+  void load_should_fire_failed_event_when_signature_verification_fails() throws Exception {
     mockSuccessfulHttpClient();
     when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(false);
-    var resolver = buildResolver();
+    var source = buildSource();
 
-    resolver.resolve(SonarLanguage.C, null);
+    source.load("cpp");
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -159,12 +168,12 @@ class OnDemandArtifactResolverTest {
   }
 
   @Test
-  void should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
+  void load_should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
     mockSuccessfulHttpClient();
     when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(true);
-    var resolver = buildResolver();
+    var source = buildSource();
 
-    resolver.resolve(SonarLanguage.C, null);
+    source.load("cpp");
 
     await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();
@@ -176,10 +185,24 @@ class OnDemandArtifactResolverTest {
       activeStatus(SonarLanguage.OBJC, pluginPath));
   }
 
-  private OnDemandArtifactResolver buildResolver() {
+  @Test
+  void list_AvailablePlugins_should_return_entries_for_all_plugins() throws Exception {
+    mockSuccessfulHttpClient();
+    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(true);
+    var source = buildSource();
+
+    var listed = source.listAvailableArtifacts(EnumSet.allOf(SonarLanguage.class));
+    // Only one unique plugin key for C-family: "cpp"
+    assertThat(listed).hasSize(3);
+    assertThat(listed)
+      .extracting(AvailableArtifact::key)
+      .containsOnly("cpp", "csharp", "vbnet");
+  }
+
+  private BinariesArtifactSource buildSource() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new OnDemandArtifactResolver(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier);
+    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier);
   }
 
   private void mockSuccessfulHttpClient() throws Exception {
@@ -225,7 +248,7 @@ class OnDemandArtifactResolverTest {
   }
 
   private static ResolvedArtifact downloading() {
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
+    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null);
   }
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
@@ -236,5 +259,4 @@ class OnDemandArtifactResolverTest {
   private static PluginStatus failedStatus(SonarLanguage lang) {
     return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null, null);
   }
-
 }

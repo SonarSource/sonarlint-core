@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.commons.plugins;
 
-import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
-
+/**
+ * Describes when a plugin is served as its enterprise edition.
+ */
+public record EnterpriseReplacement(boolean onSonarQubeCloud, @Nullable Version startingSonarQubeServerVersion) {
 }

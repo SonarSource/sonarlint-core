@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.plugins;
+package org.sonarsource.sonarlint.core.plugin.source;
 
-public interface Plugin {
-  String getKey();
+public enum ArtifactState {
+
+  ACTIVE("Active"),
+  SYNCED("Synced"),
+  DOWNLOADING("Downloading…"),
+  FAILED("Failed"),
+  PREMIUM("Premium"),
+  UNSUPPORTED("Unsupported");
+
+  private final String name;
+
+  ArtifactState(String name) {
+    this.name = name;
+  }
+
+  public String getName() {
+    return name;
+  }
 }
