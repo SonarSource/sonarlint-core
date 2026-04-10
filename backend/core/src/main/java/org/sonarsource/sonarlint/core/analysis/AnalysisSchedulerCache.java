@@ -146,29 +146,14 @@ public class AnalysisSchedulerCache {
 
   private void enhanceArchitectureExtraProperties(HashMap<String, String> props) {
     var udgDir = workDir.resolve("architecture-udg");
+    org.apache.commons.io.FileUtils.deleteQuietly(udgDir.toFile());
     try {
-      cleanAndCreateUdgDir(udgDir);
+      java.nio.file.Files.createDirectories(udgDir);
     } catch (java.io.IOException e) {
       SonarLintLogger.get().error("Failed to create UDG exchange directory: " + udgDir, e);
       return;
     }
     props.put("sonar.architecture.udg.dir", udgDir.toString());
-  }
-
-  private static void cleanAndCreateUdgDir(Path udgDir) throws java.io.IOException {
-    if (java.nio.file.Files.exists(udgDir)) {
-      try (var walk = java.nio.file.Files.walk(udgDir)) {
-        walk.sorted(java.util.Comparator.reverseOrder())
-          .forEach(p -> {
-            try {
-              java.nio.file.Files.deleteIfExists(p);
-            } catch (java.io.IOException e) {
-              SonarLintLogger.get().debug("Could not delete " + p, e);
-            }
-          });
-      }
-    }
-    java.nio.file.Files.createDirectories(udgDir);
   }
 
   private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
@@ -232,15 +217,7 @@ public class AnalysisSchedulerCache {
   }
 
   private void cleanupUdgDir() {
-    var udgDir = workDir.resolve("architecture-udg");
-    if (java.nio.file.Files.exists(udgDir)) {
-      try {
-        cleanAndCreateUdgDir(udgDir);
-        java.nio.file.Files.deleteIfExists(udgDir);
-      } catch (java.io.IOException e) {
-        SonarLintLogger.get().debug("Could not clean up UDG directory: " + udgDir, e);
-      }
-    }
+    org.apache.commons.io.FileUtils.deleteQuietly(workDir.resolve("architecture-udg").toFile());
   }
 
   private synchronized void resetStartedSchedulers() {

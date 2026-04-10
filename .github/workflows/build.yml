@@ -182,18 +182,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: SonarCloudEU
-            sq_version: SonarCloudEU
-            category: "-Dgroups=SonarCloud"
-            sc: true
-            sc_token_path: sonarcloud-it
-            region: EU
-          - name: SonarCloudUS
-            sq_version: SonarCloudUS
-            category: "-Dgroups=SonarCloud"
-            sc: true
-            sc_token_path: sonarcloud-it-US
-            region: US
           - name: SQDogfood
             sq_version: DEV
             category: "-DexcludedGroups=SonarCloud"
