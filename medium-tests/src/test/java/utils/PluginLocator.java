@@ -54,7 +54,7 @@ public class PluginLocator {
   public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-" + SONAR_KOTLIN_PLUGIN_VERSION + ".jar";
   public static final String SONAR_KOTLIN_PLUGIN_JAR_HASH = "XXX";
 
-  public static final String SONAR_ARCHITECTURE_VERSION = "2.27.0.9455";
+  public static final String SONAR_ARCHITECTURE_VERSION = "2.27.0.9456";
   public static final String SONAR_ARCHITECTURE_PLUGIN_JAR = "sonar-architecture-plugin-" + SONAR_ARCHITECTURE_VERSION + ".jar";
   public static final String SONAR_ARCHITECTURE_PLUGIN_JAR_HASH = "local";
   public static final String SONAR_ARCHITECTURE_JAVA_FRONTEND_JAR = "sonar-architecture-java-frontend-plugin-" + SONAR_ARCHITECTURE_VERSION + ".jar";

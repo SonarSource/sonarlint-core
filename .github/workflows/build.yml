@@ -290,8 +290,10 @@ jobs:
             echo "Directory does not exist: ${CACHE_DIR}"
           fi
 
+  # Promote runs right after Build so PR artifacts are available without waiting for QA / OS tests.
+  # test-linux, test-windows, and qa still run in parallel for signal; they do not gate Promote.
   promote:
-    needs: [ build-number, build, qa, test-linux, test-windows ]
+    needs: [ build-number, build ]
     runs-on: sonar-xs-public
     name: Promote
     permissions:

@@ -60,11 +60,11 @@ public class DefaultFilePredicates implements FilePredicates {
   }
 
   /**
-   * non-normalized path and Windows-style path are supported
+   * Path is normalized with {@link org.sonar.api.utils.PathUtils#sanitize(String)} like {@link SonarLintInputFile} relative paths.
    */
   @Override
   public FilePredicate hasRelativePath(String s) {
-    throw new UnsupportedOperationException("hasRelativePath");
+    return new RelativePathPredicate(s);
   }
 
   @Override
