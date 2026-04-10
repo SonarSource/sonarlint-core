@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2025 SonarSource Sàrl
+ * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -34,8 +35,9 @@ import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
@@ -46,10 +48,11 @@ import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class FileExclusionServiceTests {
 
@@ -131,7 +134,7 @@ class FileExclusionServiceTests {
   }
 
   @Test
-  void should_filter_out_files_exceeding_5mb_in_auto_trigger() throws IOException {
+  void should_filter_out_files_exceeding_5mb() throws IOException {
     var configScopeId = "scope";
     var baseDir = Files.createTempDirectory("sl-auto-size-base");
 
@@ -164,36 +167,67 @@ class FileExclusionServiceTests {
     var spy = Mockito.spy(underTest);
     Mockito.doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
 
-    var result = spy.refineAnalysisScope(configScopeId, Set.of(smallUri, largeUri), TriggerType.AUTO, baseDir);
+    var result = spy.filterOutExcludedFiles(configScopeId, baseDir, Set.of(smallUri, largeUri));
 
     assertThat(result).extracting(ClientFile::getUri).containsExactlyInAnyOrder(smallUri);
     assertThat(logTester.logs()).anySatisfy(s -> assertThat(s).contains("Filtered out URIs exceeding max allowed size"));
   }
 
   @Test
-  void should_not_filter_out_large_files_in_forced_trigger() throws IOException {
-    var configScopeId = "scope";
-    var baseDir = Files.createTempDirectory("sl-forced-size-base");
+  void should_refresh_exclusions_for_inherited_descendant_scopes_when_binding_changes() {
+    var rootScope = "rootScope";
+    var childScope = "childScope";
+    var parentUri = URI.create("file:///p/Foo.java");
+    var childUri = URI.create("file:///p/module/Bar.java");
 
-    var largeFile = baseDir.resolve("large2.js");
-    Files.write(largeFile, new byte[6 * 1024 * 1024]);
+    when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
+    var parentFile = mock(ClientFile.class);
+    when(parentFile.getUri()).thenReturn(parentUri);
+    var childFile = mock(ClientFile.class);
+    when(childFile.getUri()).thenReturn(childUri);
+    when(clientFileSystemService.getFiles(rootScope)).thenReturn(List.of(parentFile));
+    when(clientFileSystemService.getFiles(childScope)).thenReturn(List.of(childFile));
 
-    var largeUri = largeFile.toUri();
+    var connectionStorage = mock(ConnectionStorage.class);
+    var projectStorage = mock(SonarProjectStorage.class);
+    var analyzerStorage = mock(AnalyzerConfigurationStorage.class);
+    when(storageService.connection("conn")).thenReturn(connectionStorage);
+    when(connectionStorage.project("pk")).thenReturn(projectStorage);
+    when(projectStorage.analyzerConfiguration()).thenReturn(analyzerStorage);
+    when(analyzerStorage.isValid()).thenReturn(true);
 
-    var largeClientFile = mock(ClientFile.class);
-    when(largeClientFile.getUri()).thenReturn(largeUri);
-    when(largeClientFile.getClientRelativePath()).thenReturn(Paths.get("large2.js"));
-    when(largeClientFile.isUserDefined()).thenReturn(true);
+    var event = new BindingConfigChangedEvent(rootScope, BindingConfiguration.noBinding(false),
+      new BindingConfiguration("conn", "pk", false));
 
-    when(clientFileSystemService.getClientFiles(configScopeId, largeUri)).thenReturn(largeClientFile);
-    when(client.getFileExclusions(any(GetFileExclusionsParams.class))).thenReturn(CompletableFuture.completedFuture(new GetFileExclusionsResponse(Collections.emptySet())));
+    underTest.onBindingChanged(event);
 
-    var spy = Mockito.spy(underTest);
-    Mockito.doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
+    verify(clientFileSystemService).getFiles(rootScope);
+    verify(clientFileSystemService).getFiles(childScope);
+  }
 
-    var result = spy.refineAnalysisScope(configScopeId, Set.of(largeUri), TriggerType.FORCED, baseDir);
+  @Test
+  void should_clear_exclusions_for_inherited_descendant_scopes_when_binding_removed() {
+    var rootScope = "rootScope";
+    var childScope = "childScope";
+    var parentUri = URI.create("file:///p/Foo.java");
+    var childUri = URI.create("file:///p/module/Bar.java");
 
-    assertThat(result).extracting(ClientFile::getUri).containsExactly(largeUri);
+    when(configRepo.getChildrenWithInheritedBinding(rootScope)).thenReturn(List.of(childScope));
+    var parentFile = mock(ClientFile.class);
+    when(parentFile.getUri()).thenReturn(parentUri);
+    var childFile = mock(ClientFile.class);
+    when(childFile.getUri()).thenReturn(childUri);
+    when(clientFileSystemService.getFiles(rootScope)).thenReturn(List.of(parentFile));
+    when(clientFileSystemService.getFiles(childScope)).thenReturn(List.of(childFile));
+
+    var event = new BindingConfigChangedEvent(rootScope,
+      new BindingConfiguration("conn", "pk", false),
+      BindingConfiguration.noBinding(false));
+
+    underTest.onBindingChanged(event);
+
+    verify(clientFileSystemService).getFiles(rootScope);
+    verify(clientFileSystemService).getFiles(childScope);
   }
 
 }

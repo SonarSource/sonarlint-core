@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Analysis Engine
- * Copyright (C) 2016-2025 SonarSource Sàrl
+ * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -49,7 +49,7 @@ class IssueInclusionPatternInitializerTests {
 
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();
     assertThat(patternsInitializer.hasMulticriteriaPatterns()).isTrue();
-    assertThat(patternsInitializer.getMulticriteriaPatterns().size()).isEqualTo(2);
+    assertThat(patternsInitializer.getMulticriteriaPatterns()).hasSize(2);
   }
 
 }

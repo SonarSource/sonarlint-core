@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2025 SonarSource Sàrl
+ * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,14 +34,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
-import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -152,12 +153,17 @@ public class FileExclusionService {
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
-        clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+        forEachFileInScopeAndInheritedDescendants(event.configScopeId(), f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
       }
     } else {
       LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.configScopeId());
-      clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
+      forEachFileInScopeAndInheritedDescendants(event.configScopeId(), f -> serverExclusionByUriCache.clear(f.getUri()));
     }
+  }
+
+  private void forEachFileInScopeAndInheritedDescendants(String rootScopeId, Consumer<ClientFile> action) {
+    Stream.concat(Stream.of(rootScopeId), configRepo.getChildrenWithInheritedBinding(rootScopeId).stream())
+      .forEach(scopeId -> clientFileSystemService.getFiles(scopeId).forEach(action));
   }
 
   @EventListener
@@ -199,25 +205,7 @@ public class FileExclusionService {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 
-  public List<ClientFile> refineAnalysisScope(String configScopeId, Set<URI> requestedFileUris, TriggerType triggerType, Path baseDir) {
-    if (!triggerType.shouldHonorExclusions()) {
-      var filteredURIsNoFile = new ArrayList<URI>();
-      var filesToAnalyze = requestedFileUris.stream().map(uri -> {
-        var file = findFile(configScopeId, uri);
-        if (file == null) {
-          filteredURIsNoFile.add(uri);
-        }
-        return file;
-      })
-        .filter(Objects::nonNull)
-        .toList();
-      logFilteredURIs("Filtered out URIs having no file", filteredURIsNoFile);
-      return filesToAnalyze;
-    }
-    return filterOutExcludedFiles(configScopeId, baseDir, requestedFileUris);
-  }
-
-  private List<ClientFile> filterOutExcludedFiles(String configurationScopeId, Path baseDir, Set<URI> files) {
+  public List<ClientFile> filterOutExcludedFiles(String configurationScopeId, @Nullable Path baseDir, Set<URI> files) {
     var sonarLintGitIgnore = createSonarLintGitIgnore(baseDir);
     // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
     var filteredURIsFromServerExclusionService = new ArrayList<URI>();

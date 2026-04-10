@@ -10,7 +10,7 @@ env:
 
 jobs:
   scan:
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-xs-public
     name: Scan on shadow platforms
     permissions:
       id-token: write

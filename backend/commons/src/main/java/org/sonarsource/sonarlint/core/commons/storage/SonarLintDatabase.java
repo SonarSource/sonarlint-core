@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Commons
- * Copyright (C) 2016-2025 SonarSource Sàrl
+ * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.DefaultExecuteListenerProvider;
@@ -84,6 +85,7 @@ public final class SonarLintDatabase {
     var jooqConfig = new DefaultConfiguration()
       .set(this.dataSource)
       .set(SQLDialect.H2)
+      .set(new Settings().withExecuteLogging(false))
       .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
     this.dsl = DSL.using(jooqConfig);
   }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Analysis Engine
- * Copyright (C) 2016-2025 SonarSource Sàrl
+ * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ class IssueExclusionsLoaderTests {
   private IssueExclusionsLoader scanner;
 
   @BeforeEach
-  void before() throws Exception {
+  void before() {
     exclusionPatternInitializer = mock(IssueExclusionPatternInitializer.class);
     ignoreIssuesFilter = mock(IgnoreIssuesFilter.class);
     scanner = new IssueExclusionsLoader(exclusionPatternInitializer, ignoreIssuesFilter);
