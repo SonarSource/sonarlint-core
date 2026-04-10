@@ -27,8 +27,9 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
-import org.sonarsource.sonarlint.core.plugin.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -136,10 +137,10 @@ public class ServerPluginDownloader {
     eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
   }
 
-  public ArtifactSource sourceFor(String connectionId) {
+  public ArtifactOrigin sourceFor(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarQubeCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
-    return isSonarQubeCloud ? ArtifactSource.SONARQUBE_CLOUD : ArtifactSource.SONARQUBE_SERVER;
+    return isSonarQubeCloud ? ArtifactOrigin.SONARQUBE_CLOUD : ArtifactOrigin.SONARQUBE_SERVER;
   }
 
 }

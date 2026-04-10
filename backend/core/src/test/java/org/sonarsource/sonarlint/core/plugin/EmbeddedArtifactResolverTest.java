@@ -18,6 +18,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 package org.sonarsource.sonarlint.core.plugin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,7 +59,7 @@ class EmbeddedArtifactResolverTest {
   void should_resolve_to_active_embedded_in_connected_mode_when_plugin_key_is_in_map() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = createResolver(mockParams(Set.of(), Map.of(SonarPlugin.JAVA.getKey(), javaJar), null));
-    var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactSource.EMBEDDED);
+    var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactOrigin.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.JAVA, "someConnection");
 
@@ -79,7 +81,7 @@ class EmbeddedArtifactResolverTest {
   void should_resolve_to_active_embedded_in_standalone_when_filename_contains_plugin_key() throws IOException {
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = createResolver(mockParams(Set.of(javaJar), Map.of(), null));
-    var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactSource.EMBEDDED);
+    var expected = resolved(ArtifactState.ACTIVE, javaJar, ArtifactOrigin.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.JAVA, null);
 
@@ -100,7 +102,7 @@ class EmbeddedArtifactResolverTest {
   void should_use_dedicated_csharp_path_in_standalone_when_no_file_match() throws IOException {
     var csharpPath = createJar("sonar-csharp-oss.jar");
     var resolver = createResolver(mockParams(Set.of(), Map.of(), csharpPath));
-    var expected = resolved(ArtifactState.ACTIVE, csharpPath, ArtifactSource.EMBEDDED);
+    var expected = resolved(ArtifactState.ACTIVE, csharpPath, ArtifactOrigin.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.CS, null);
 
@@ -112,7 +114,7 @@ class EmbeddedArtifactResolverTest {
     var matchingJar = createJar("sonar-csharp-plugin.jar");
     var dedicatedPath = createJar("sonar-csharp-standalone.jar");
     var resolver = createResolver(mockParams(Set.of(matchingJar), Map.of(), dedicatedPath));
-    var expected = resolved(ArtifactState.ACTIVE, matchingJar, ArtifactSource.EMBEDDED);
+    var expected = resolved(ArtifactState.ACTIVE, matchingJar, ArtifactOrigin.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.CS, null);
 
@@ -133,7 +135,7 @@ class EmbeddedArtifactResolverTest {
     // HTML language has plugin key "web", but the JAR is named "sonar-html-plugin.jar"
     var htmlJar = createJar("sonar-html-plugin.jar", "web");
     var resolver = createResolver(mockParams(Set.of(htmlJar), Map.of(), null));
-    var expected = resolved(ArtifactState.ACTIVE, htmlJar, ArtifactSource.EMBEDDED);
+    var expected = resolved(ArtifactState.ACTIVE, htmlJar, ArtifactOrigin.EMBEDDED);
 
     var result = resolver.resolve(SonarLanguage.HTML, null);
 
@@ -167,7 +169,7 @@ class EmbeddedArtifactResolverTest {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of(), null));
-    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar, null);
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, omnisharpJar, null);
 
     var result = resolver.resolveCompanionPlugins(null);
 
@@ -188,7 +190,7 @@ class EmbeddedArtifactResolverTest {
     var omnisharpJar = createJar("sonarlint-omnisharp-plugin.jar", "omnisharp");
     var javaJar = createJar("sonar-java-plugin.jar");
     var resolver = new EmbeddedArtifactResolver(mockParams(Set.of(omnisharpJar, javaJar), Map.of("omnisharp", omnisharpJar), null));
-    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactSource.EMBEDDED, omnisharpJar, null);
+    var expected = PluginStatus.forCompanion("omnisharp", ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, omnisharpJar, null);
 
     var result = resolver.resolveCompanionPlugins("someConnection");
 
@@ -246,7 +248,7 @@ class EmbeddedArtifactResolverTest {
     return path;
   }
 
-  private static ResolvedArtifact resolved(ArtifactState state, Path path, ArtifactSource source) {
+  private static ResolvedArtifact resolved(ArtifactState state, Path path, ArtifactOrigin source) {
     return new ResolvedArtifact(state, path, source, null);
   }
 }

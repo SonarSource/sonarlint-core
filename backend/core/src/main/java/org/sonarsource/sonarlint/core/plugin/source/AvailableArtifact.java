@@ -17,14 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.nio.file.Path;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
+/**
+ * An artifact (plugin or plugin dependency) known to a given {@link ArtifactSource}.
+ * Returned by {@link ArtifactSource#listAvailableArtifacts(Set)} as a pure query with no side
+ * effects.
+ *
+ * <p>{@code isEnterprise} is {@code true} when the artifact is the enterprise edition of a
+ * plugin on the current connection. Enterprise artifacts take priority over embedded sources
+ * in {@code ConnectedArtifactsLoadingStrategy}.</p>
+ */
+public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise) {
 
+  /** Backward-compatible constructor — {@code isEnterprise} defaults to {@code false}. */
+  public AvailableArtifact(String key, @Nullable Version version) {
+    this(key, version, false);
+  }
 }

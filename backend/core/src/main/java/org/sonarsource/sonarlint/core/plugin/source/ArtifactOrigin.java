@@ -17,24 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin;
+package org.sonarsource.sonarlint.core.plugin.source;
 
-public enum ArtifactState {
+import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 
-  ACTIVE("Active"),
-  SYNCED("Synced"),
-  DOWNLOADING("Downloading…"),
-  FAILED("Failed"),
-  PREMIUM("Premium"),
-  UNSUPPORTED("Unsupported");
+/**
+ * Identifies where an artifact physically came from.
+ * Used in {@link ResolvedArtifact} and {@link PluginStatus} to convey provenance.
+ *
+ * @see ArtifactSource the interface representing the provider of artifacts
+ */
+public enum ArtifactOrigin {
 
-  private final String name;
+  /** Bundled inside the IDE extension distribution. */
+  EMBEDDED,
 
-  ArtifactState(String name) {
-    this.name = name;
-  }
+  /** Downloaded on demand from binaries.sonarsource.com. */
+  ON_DEMAND,
 
-  public String getName() {
-    return name;
-  }
+  /** Synchronized from a SonarQube Server connection. */
+  SONARQUBE_SERVER,
+
+  /** Synchronized from a SonarQube Cloud connection. */
+  SONARQUBE_CLOUD
 }
