@@ -159,7 +159,7 @@ public class PluginsService {
   }
 
   private PluginsLoadResult loadPlugins(@Nullable String connectionId) {
-    var strategy = connectionId == null ? standaloneArtifactsLoadingStrategy : connectedArtifactsLoadingStrategyFactory.getOrCreate(connectionId);
+    var strategy = getPluginLoadingStrategy(connectionId);
     var result = strategy.resolveArtifacts();
     result.whenAllArtifactsDownloaded(() -> eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId)));
 
