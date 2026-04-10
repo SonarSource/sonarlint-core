@@ -28,9 +28,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -65,7 +64,7 @@ public class NodeJsService {
   private static boolean isNodeJsNeeded(InitializeParams initializeParams) {
     // in theory all clients bundle SonarJS, so this should always return true
     // in practice and to speed up tests, we will avoid looking up Node.js if SonarJS is not present
-    var languagesNeedingNodeJsInSonarJs = SonarLanguage.getLanguagesByPluginKey(SonarPlugin.JS.getKey()).stream().map(l -> Language.valueOf(l.name())).collect(Collectors.toSet());
+    var languagesNeedingNodeJsInSonarJs = SonarPlugin.JS.getLanguages().stream().map(l -> Language.valueOf(l.name())).collect(Collectors.toSet());
     return !Collections.disjoint(initializeParams.getEnabledLanguagesInStandaloneMode(), languagesNeedingNodeJsInSonarJs)
       || !Collections.disjoint(initializeParams.getExtraEnabledLanguagesInConnectedMode(), languagesNeedingNodeJsInSonarJs);
   }

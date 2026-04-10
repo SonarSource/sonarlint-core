@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
@@ -44,13 +45,25 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  */
 public class StandaloneArtifactsLoadingStrategy implements ArtifactsLoadingStrategy {
 
+  private final InitializeParams params;
+  private final BinariesArtifactSource binariesSource;
   private final LanguageSupportRepository languageSupportRepository;
-  private final List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
+  @Nullable
+  private List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
 
   public StandaloneArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource, LanguageSupportRepository languageSupportRepository) {
-    // Ascending priority: binaries < embedded. Later source overwrites for the same key
-    this.artifactSourcesSortedByAscendingPriority = List.of(binariesSource, EmbeddedPluginSource.forStandalone(params));
+    this.params = params;
+    this.binariesSource = binariesSource;
     this.languageSupportRepository = languageSupportRepository;
+  }
+
+  private List<ArtifactSource> getArtifactSourcesByAscendingPriority() {
+    if (artifactSourcesSortedByAscendingPriority == null) {
+      // Ascending priority: binaries < embedded. Later source overwrites for the same key.
+      // EmbeddedPluginSource.forStandalone reads JAR manifests and may throw — defer until first use.
+      artifactSourcesSortedByAscendingPriority = List.of(binariesSource, EmbeddedPluginSource.forStandalone(params));
+    }
+    return artifactSourcesSortedByAscendingPriority;
   }
 
   /**
@@ -64,7 +77,7 @@ public class StandaloneArtifactsLoadingStrategy implements ArtifactsLoadingStrat
     // Step 1: list available artifacts from all sources; highest-priority source wins
     var bestSourceByArtifactKey = new LinkedHashMap<String, ArtifactSource>();
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
-    for (var source : artifactSourcesSortedByAscendingPriority) {
+    for (var source : getArtifactSourcesByAscendingPriority()) {
       for (var artifact : source.listAvailableArtifacts(enabledLanguages)) {
         bestSourceByArtifactKey.put(artifact.key(), source);
       }

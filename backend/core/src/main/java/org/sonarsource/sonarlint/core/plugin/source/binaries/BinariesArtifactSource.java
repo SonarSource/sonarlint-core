@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
@@ -69,19 +70,17 @@ public class BinariesArtifactSource implements ArtifactSource {
   private final OnDemandPluginSignatureVerifier signatureVerifier;
   private final OnDemandPluginCacheManager cacheManager;
   // Maps SonarPlugin key → DownloadableArtifact (used for list() and load())
-  private static final Map<String, DownloadableArtifact> ARTIFACTS_BY_PLUGIN_KEY = Map.of(
-    "cpp", DownloadableArtifact.CFAMILY_PLUGIN,
-    "csharp", DownloadableArtifact.CSHARP_OSS,
-    "vbnet", DownloadableArtifact.CSHARP_OSS
-  );
+  private static final Map<SonarPlugin, DownloadableArtifact> ARTIFACTS_BY_PLUGIN_KEY = Map.of(
+    SonarPlugin.C_FAMILY, DownloadableArtifact.CFAMILY_PLUGIN,
+    SonarPlugin.CS_OSS, DownloadableArtifact.CSHARP_OSS,
+    SonarPlugin.VBNET_OSS, DownloadableArtifact.CSHARP_OSS);
   // Used only for event publishing (language-level status events)
   private final Map<SonarLanguage, DownloadableArtifact> artifactsByLanguage = Map.of(
     SonarLanguage.C, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.CPP, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.OBJC, DownloadableArtifact.CFAMILY_PLUGIN,
     SonarLanguage.CS, DownloadableArtifact.CSHARP_OSS,
-    SonarLanguage.VBNET, DownloadableArtifact.CSHARP_OSS
-  );
+    SonarLanguage.VBNET, DownloadableArtifact.CSHARP_OSS);
   private final ApplicationEventPublisher eventPublisher;
   private final UniqueTaskExecutor uniqueTaskExecutor;
 
@@ -105,14 +104,15 @@ public class BinariesArtifactSource implements ArtifactSource {
   @Override
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
     return ARTIFACTS_BY_PLUGIN_KEY.entrySet().stream()
-      .filter(entry -> SonarLanguage.getLanguagesByPluginKey(entry.getKey()).stream().anyMatch(enabledLanguages::contains))
-      .map(entry -> new AvailableArtifact(entry.getKey(), Version.create(entry.getValue().version())))
+      .filter(entry -> entry.getKey().getLanguages().stream().anyMatch(enabledLanguages::contains))
+      .map(entry -> new AvailableArtifact(entry.getKey().getKey(), Version.create(entry.getValue().version())))
       .toList();
   }
 
   @Override
   public Optional<ResolvedArtifact> load(String artifactKey) {
-    return Optional.ofNullable(ARTIFACTS_BY_PLUGIN_KEY.get(artifactKey))
+    return SonarPlugin.findByKey(artifactKey)
+      .map(ARTIFACTS_BY_PLUGIN_KEY::get)
       .map(artifact -> findCachedArtifact(artifact)
         .map(r -> toActiveArtifact(artifact, r.path()))
         .orElseGet(() -> scheduleDownload(artifact)));

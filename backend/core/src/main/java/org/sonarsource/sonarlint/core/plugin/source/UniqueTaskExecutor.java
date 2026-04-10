@@ -43,6 +43,7 @@ public class UniqueTaskExecutor {
           task.run();
         } finally {
           inProgress.remove(key);
+          SonarLintLogger.get().setTarget(null);
         }
       });
     });

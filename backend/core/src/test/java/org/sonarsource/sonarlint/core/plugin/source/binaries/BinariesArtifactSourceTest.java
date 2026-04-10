@@ -104,9 +104,9 @@ class BinariesArtifactSourceTest {
 
       assertThat(result)
         .isPresent()
-        .get() // Extracts the value from the Optional
+        .get()
         .usingRecursiveComparison()
-        .ignoringFields("downloadFuture") // Replace with the field name you want to skip
+        .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
@@ -126,9 +126,9 @@ class BinariesArtifactSourceTest {
 
       assertThat(result)
         .isPresent()
-        .get() // Extracts the value from the Optional
+        .get()
         .usingRecursiveComparison()
-        .ignoringFields("downloadFuture") // Replace with the field name you want to skip
+        .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();

@@ -20,10 +20,14 @@
 package org.sonarsource.sonarlint.core.commons.plugins;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public enum SonarPlugin {
   ABAP("abap"),
@@ -147,5 +151,12 @@ public enum SonarPlugin {
    */
   public Optional<EnterpriseReplacement> getEnterpriseReplacement() {
     return Optional.ofNullable(enterpriseReplacement);
+  }
+
+  public Set<SonarLanguage> getLanguages() {
+    var sonarLanguages = EnumSet.noneOf(SonarLanguage.class);
+    sonarLanguages.addAll(Arrays.stream(SonarLanguage.values()).filter(l -> l.getPlugin().getKey().equals(key)).collect(Collectors.toSet()));
+    basePluginFor(key).ifPresent(sonarPlugin -> sonarLanguages.addAll(sonarPlugin.getLanguages()));
+    return sonarLanguages;
   }
 }
