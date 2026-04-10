@@ -21,12 +21,12 @@ package its;
 
 import java.net.URI;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
@@ -63,29 +63,25 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
 
-  private final Map<String, Map<URI, List<RaisedIssueDto>>> raisedIssues = new HashMap<>();
-  private final Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspots = new HashMap<>();
+  private final Map<String, Map<URI, List<RaisedIssueDto>>> raisedIssues = new ConcurrentHashMap<>();
+  private final Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspots = new ConcurrentHashMap<>();
 
-  public Map<URI, List<RaisedIssueDto>> getRaisedIssues(String configurationScopeId) {
-    var issues = raisedIssues.get(configurationScopeId);
-    return issues != null ? issues : Map.of();
+  /**
+   * @return null when raiseIssues was never called for the provided configurationScopeId.
+   * Returns empty map if raiseIssues was called with no issues
+   */
+  @Nullable
+  public Map<URI, List<RaisedIssueDto>> takeRaisedIssues(String configurationScopeId) {
+    return raisedIssues.remove(configurationScopeId);
   }
 
-  public Map<URI, List<RaisedHotspotDto>> getRaisedHotspots(String configurationScopeId) {
-    var hotspots = raisedHotspots.get(configurationScopeId);
-    return hotspots != null ? hotspots : Map.of();
-  }
-
-  public Map<String, Map<URI, List<RaisedIssueDto>>> getRaisedIssues() {
-    return raisedIssues;
-  }
-
-  public List<RaisedIssueDto> getRaisedIssuesAsList(String configurationScopeId) {
-    return raisedIssues.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).toList();
-  }
-
-  public List<RaisedHotspotDto> getRaisedHotspotsAsList(String configurationScopeId) {
-    return raisedHotspots.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).toList();
+  /**
+   * @return null when raiseHotspots was never called for the provided configurationScopeId.
+   * Returns empty map if raiseHotspots was called with no hotspots
+   */
+  @Nullable
+  public Map<URI, List<RaisedHotspotDto>> takeRaisedHotspots(String configurationScopeId) {
+    return raisedHotspots.remove(configurationScopeId);
   }
 
   @Override
@@ -232,12 +228,16 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
 
   @Override
   public void raiseIssues(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
-    raisedIssues.computeIfAbsent(configurationScopeId, k -> new HashMap<>()).putAll(issuesByFileUri);
+    if (!isIntermediatePublication) {
+      raisedIssues.put(configurationScopeId, issuesByFileUri);
+    }
   }
 
   @Override
   public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
-    raisedHotspots.computeIfAbsent(configurationScopeId, k -> new HashMap<>()).putAll(hotspotsByFileUri);
+    if (!isIntermediatePublication) {
+      raisedHotspots.put(configurationScopeId, hotspotsByFileUri);
+    }
   }
 
   public void clear() {

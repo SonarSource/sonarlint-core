@@ -28,14 +28,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -44,13 +42,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -60,14 +55,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefini
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-import static its.AbstractConnectedTests.toMap;
+import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 
 class StandaloneTests {
@@ -81,7 +73,7 @@ class StandaloneTests {
   private static Path sonarUserHome;
 
   private static SonarLintRpcServer backend;
-  private static SonarLintRpcClientDelegate client;
+  private static MockSonarLintRpcClientDelegate client;
 
   @BeforeAll
   static void prepare() throws Exception {
@@ -117,7 +109,7 @@ class StandaloneTests {
 
   @AfterEach
   void cleanup() {
-    ((MockSonarLintRpcClientDelegate) client).clear();
+    client.clear();
   }
 
   @Test
@@ -148,14 +140,14 @@ class StandaloneTests {
   void globalExtension() throws Exception {
     prepareInputFile("foo.glob", "foo", false);
 
-    var raisedIssues = analyzeFile(CONFIG_SCOPE_ID, baseDir.getAbsolutePath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
+    var raisedIssues = analyzeAndAwaitIssues(backend, client, CONFIG_SCOPE_ID, baseDir.toPath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
     assertThat(raisedIssues).extracting("ruleKey", "primaryMessage").containsOnly(
       tuple("global:inc", "Issue number 0"));
 
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(
       Map.of("global:inc", new StandaloneRuleConfigDto(true, Map.of("stringParam", "polop", "textParam", "", "multipleIntegersParam", "80,160", "unknown", "parameter")))));
 
-    raisedIssues = analyzeFile(CONFIG_SCOPE_ID, baseDir.getAbsolutePath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
+    raisedIssues = analyzeAndAwaitIssues(backend, client, CONFIG_SCOPE_ID, baseDir.toPath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
     assertThat(raisedIssues).extracting("ruleKey", "primaryMessage").containsOnly(
       tuple("global:inc", "Issue number 1"));
   }
@@ -170,7 +162,7 @@ class StandaloneTests {
     return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
   }
 
-  private static SonarLintRpcClientDelegate newDummySonarLintClient() {
+  private static MockSonarLintRpcClientDelegate newDummySonarLintClient() {
     return new MockSonarLintRpcClientDelegate() {
       @Override
       public void log(LogParams params) {
@@ -179,24 +171,4 @@ class StandaloneTests {
     };
   }
 
-  private List<RaisedIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
-    var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
-    var fileUri = filePath.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
-      List.of(),
-      List.of()
-    ));
-
-    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())
-    ).join();
-
-    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
-    // it could happen that the notification is not yet received while the analysis request is finished.
-    await().atMost(Duration.ofMillis(200)).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId)).isNotEmpty());
-    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
-    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
-  }
 }

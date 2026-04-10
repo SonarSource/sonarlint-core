@@ -76,10 +76,8 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
-import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -91,7 +89,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
@@ -107,7 +104,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -116,6 +112,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+import static its.utils.AnalysisUtils.analyzeAndAwaitHotspots;
+import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -166,7 +164,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     .build();
 
   private static WsClient adminWsClient;
-  private static SonarLintRpcClientDelegate client;
+  private static MockSonarLintRpcClientDelegate client;
 
   @BeforeAll
   static void createSonarLintUser() {
@@ -250,7 +248,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      ((MockSonarLintRpcClientDelegate) client).clear();
+      client.clear();
     }
 
     // TODO should be moved to a separate class, not related to analysis
@@ -265,7 +263,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-javascript", "src/Person.js");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-javascript"), "src/Person.js");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -281,7 +279,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-java-custom", "src/main/java/foo/Foo.java");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java-custom"), "src/main/java/foo/Foo.java");
 
       assertThat(rawIssues).extracting("ruleKey", "textRange")
         .usingRecursiveFieldByFieldElementComparator()
@@ -299,7 +297,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-php", "src/Math.php");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-php"), "src/Math.php");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -316,7 +314,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-python", "src/hello.py");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-python"), "src/hello.py");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -332,7 +330,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-web", "src/file.html");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-web"), "src/file.html");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -348,7 +346,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-go", "src/sample.go");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-go"), "src/sample.go");
 
       // S5542 was introduced with Go Enterprise in 2025.2
       var expectedIssues = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 2) ? 2 : 1;
@@ -367,7 +365,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-cloudformation", "src/sample.yaml");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-cloudformation"), "src/sample.yaml");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -384,7 +382,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-docker", "src/Dockerfile");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-docker"), "src/Dockerfile");
 
       assertThat(rawIssues).hasSize(2);
     }
@@ -401,7 +399,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFileForHotspots(configScopeId, "sample-kubernetes", "src/sample.yaml");
+      var rawIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", "sample-kubernetes"), "src/sample.yaml");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -418,7 +416,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-terraform", "src/sample.tf");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-terraform"), "src/sample.tf");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -435,7 +433,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForSync(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-dbd", "src/hello.py");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-dbd"), "src/hello.py");
 
       assertThat(rawIssues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getPrimaryMessage)
@@ -453,7 +451,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      analyzeFileAndVerifyNoIssues(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      assertThat(analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java")).isEmpty();
     }
 
     // TODO should be moved to a medium test
@@ -468,11 +466,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-global-extension"), "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
       assertThat(rawIssues).extracting("ruleKey", "primaryMessage").containsOnly(
         tuple("global:inc", "Issue number 0"));
 
-      rawIssues = analyzeFile(configScopeId, "sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
+      rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-global-extension"), "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
       assertThat(rawIssues).extracting("ruleKey", "primaryMessage").containsOnly(
         tuple("global:inc", "Issue number 1"));
     }
@@ -517,7 +515,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         openBoundConfigurationScope(configScopeId, projectKey, true);
         waitForAnalysisToBeReady(configScopeId);
 
-        var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+        var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
         assertThat(rawIssues).hasSize(3);
 
         var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, javaRuleKey("myrule"), null)).get();
@@ -551,7 +549,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
       assertThat(rawIssues).hasSize(2);
 
       rpcClientLogs.clear();
@@ -561,7 +559,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, false)));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
-      analyzeFileAndVerifyNoIssues(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      assertThat(analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java")).isEmpty();
 
       rpcClientLogs.clear();
       // Override default file suffixes in project props so that input file is considered as a Java file again
@@ -569,7 +567,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
-      rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
       assertThat(rawIssues).hasSize(2);
     }
 
@@ -584,7 +582,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-ruby", "src/hello.rb");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-ruby"), "src/hello.rb");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -600,7 +598,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-kotlin", "src/hello.kt");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-kotlin"), "src/hello.kt");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -616,7 +614,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-scala", "src/Hello.scala");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-scala"), "src/Hello.scala");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -632,7 +630,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeFile(configScopeId, "sample-xml", "src/foo.xml");
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-xml"), "src/foo.xml");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -656,7 +654,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).pollDelay(Duration.ofSeconds(10)).untilAsserted(() -> {
-        var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+        var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
 
         assertThat(rawIssues)
           .extracting(RaisedIssueDto::getRuleKey)
@@ -681,7 +679,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        var fooIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+        var fooIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
 
         assertThat(fooIssues)
           .extracting(RaisedFindingDto::getRuleKey, RaisedFindingDto::isResolved)
@@ -746,7 +744,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var raisedIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      var raisedIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
 
       assertThat(raisedIssues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::isResolved)
@@ -761,7 +759,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .isEqualTo(featureBranch));
       waitForSync(configScopeId);
 
-      raisedIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
+      raisedIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-java"), "src/main/java/foo/Foo.java");
 
       assertThat(raisedIssues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::isResolved)
@@ -1028,8 +1026,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       waitForAnalysisToBeReady(configScopeId);
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
 
-      var rawIssues = analyzeFileForHotspots(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, "src/main/java/foo/Foo.java", "sonar.java.binaries",
-        new File("projects/sample-java-hotspot/target/classes").getAbsolutePath());
+      var rawIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_JAVA_HOTSPOT), "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath());
 
       assertThat(rawIssues)
         .extracting(RaisedHotspotDto::getRuleKey, h -> h.getSeverityMode().getLeft().getType())
@@ -1060,7 +1058,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         // wait server event
-        var fooIssues = analyzeFileForHotspots(configScopeId, "sample-java-hotspot", "src/main/java/foo/Foo.java");
+        var fooIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", "sample-java-hotspot"), "src/main/java/foo/Foo.java");
 
         assertThat(fooIssues)
           .extracting(RaisedFindingDto::getRuleKey, RaisedHotspotDto::getStatus)
@@ -1371,54 +1369,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     ORCHESTRATOR.executeBuild(scanner);
   }
 
-  private List<RaisedIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
-    var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
-    var fileUri = filePath.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
-      List.of(),
-      List.of()));
-
-    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())).join();
-
-    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssuesAsList(configScopeId)).isNotEmpty());
-    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
-    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
-  }
-
-  private void analyzeFileAndVerifyNoIssues(String configScopeId, String baseDir, String filePathStr, String... properties) {
-    var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
-    var fileUri = filePath.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)), List.of()));
-
-    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())).join();
-
-    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
-    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssuesAsList(configScopeId)).isEmpty());
-  }
-
-  private List<RaisedHotspotDto> analyzeFileForHotspots(String configScopeId, String baseDir, String filePathStr, String... properties) {
-    var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
-    var fileUri = filePath.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)), List.of()));
-
-    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())).join();
-
-    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedHotspotsAsList(configScopeId)).isNotEmpty());
-    var raisedHotspots = ((MockSonarLintRpcClientDelegate) client).getRaisedHotspots(configScopeId);
-    ((MockSonarLintRpcClientDelegate) client).clear();
-    return raisedHotspots != null ? raisedHotspots.values().stream().flatMap(List::stream).toList() : List.of();
-  }
-
-  private static SonarLintRpcClientDelegate newDummySonarLintClient() {
+  private static MockSonarLintRpcClientDelegate newDummySonarLintClient() {
     return new MockSonarLintRpcClientDelegate() {
 
       @Override
