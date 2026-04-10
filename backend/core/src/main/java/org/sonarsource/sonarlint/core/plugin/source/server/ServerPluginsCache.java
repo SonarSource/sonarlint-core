@@ -52,11 +52,6 @@ public class ServerPluginsCache {
     }
   }
 
-  public Optional<List<ServerPlugin>> refreshAndGet(String connectionId) {
-    cache.invalidate(connectionId);
-    return getPlugins(connectionId);
-  }
-
   private Optional<List<ServerPlugin>> fetch(String connectionId) {
     return sonarQubeClientManager.withActiveClientAndReturn(connectionId,
       api -> api.plugins().getInstalled(new SonarLintCancelMonitor()));

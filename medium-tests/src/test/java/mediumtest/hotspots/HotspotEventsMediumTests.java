@@ -333,6 +333,7 @@ class HotspotEventsMediumTests {
         .build();
 
       var server = harness.newFakeSonarQubeServer("10.4")
+        .withPlugin(TestPlugin.JAVA)
         .withProject(projectKey,
           project -> project
             .withBranch(branchName))

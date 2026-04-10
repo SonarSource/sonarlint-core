@@ -1,78 +1,211 @@
-# Analyzer Management in SonarLint Core
+# Artifact Management in SonarLint Core
 
-This document outlines how SQ:IDE manages the various language analyzers (plugins) required to detect code issues and provide the respective language support.
-
-## Overview
-
-Analyzers are loaded into the analyzer engine to execute rules against source code. Their resolution (where they come from, how they are stored, and when they are updated) is governed by multiple **Artifact Resolvers**, each tailored for a specific mode or source location.
-
-The central interface is `ArtifactResolver` (or `CompanionPluginResolver` for non-language tools). 
-
-### Standalone vs. Connected Environments
-Depending on whether a user has bound their project to SQS / SQC, SQ:IDE will query the corresponding artifact resolver.
+This document explains how SQ:IDE manages the artifacts (plugins and plugin dependencies) required
+to analyze code. It covers where artifacts come from, how they are loaded, and how the loading
+strategy adapts to standalone vs. connected mode.
 
 ---
 
-## The Resolvers
+## Glossary
 
-### 1. Embedded Artifact Resolvers
-Used primarily in Standalone mode, or as fallbacks.
-* **`EmbeddedArtifactResolver`**: Responsible for locating and resolving the bundled jar plugins that come directly shipped with SQ:IDE (or the IDE extension).
-* **`EmbeddedExtraArtifactResolver`**: Deals with extra necessary files/binaries required by some plugins (for example, the Omnisharp distribution required by the C# analyzer). These do not follow the usual plugin jars packaging but are bundled extra payload.
-
-### 2. Connected Mode Artifact Resolvers
-When bound to a Server, SQ:IDE relies on the analyzers configured on this specific server to rule out discrepancies between the IDE and the CI.
-* **`ConnectedModeArtifactResolver`**: Handles the resolution of language plugins. It checks if a required plugin is available locally. If not (or if it's outdated compared to the server version), it delegates the downloading out. During the download, it returns a `DOWNLOADING` state, which defers the analysis engine initialization.
-* **`ConnectedModeCompanionPluginResolver`**: Handles companion plugins. Non-language tools aren't standard analyzers but provide additional features (e.g. `javasymbolicexecution`, custom data). They behave similarly towards synchronization but target the `CompanionPluginResolver` interface to distinct themselves.
-* **`ServerPluginDownloader`**: An orchestrator called by both Connected Mode resolvers. It provides the mechanism to deduplicate concurrent downloads, pull jars from the server via HTTPS safely, and fires asynchronous `PluginStatusUpdateEvent` letting the rest of the application know when a download finishes.
-
-### 3. On-Demand Artifact Resolvers
-Some analyzers (e.g., C/C++ or older weighty models) are not bundled by default to save storage or bandwidth, but instead fetched dynamically.
-* **`OnDemandArtifactResolver`**: Responsible for downloading these on-demand plugins from a central public artifact repository via HTTP. It uses signature verification (`OnDemandPluginSignatureVerifier`) and deduplicated caching (`OnDemandPluginCacheManager`) to store them efficiently in the local `ondemand-plugins` cache directory.
-
-### 4. Guard & Safety Resolvers
-There are specific resolvers to gracefully handle impossible resolutions for a user.
-* **`UnsupportedArtifactResolver`**: Blocks and explains why an analyzer shouldn't be loaded (e.g., version mismatch, architecture not supported).
-* **`PremiumArtifactResolver`**: Blocks analyzer resolution if a premium feature is requested but the user's current context does not entitle them to it.
+| Term | Meaning |
+|------|---------|
+| **Plugin** | A standard SonarSource analyzer packaged as a JAR. Loaded by the analysis engine via the plugin API. |
+| **Plugin dependency / sidecar** | An artifact required for a plugin to work but not itself a plugin (e.g. an OmniSharp distribution for the C# analyzer). Deployed on binaries.sonarsource.com alongside plugins. |
+| **Artifact** | Umbrella term for both plugins and plugin dependencies. |
+| **Artifact origin** | Where an artifact physically came from: `EMBEDDED`, `ON_DEMAND`, `SONARQUBE_SERVER`, `SONARQUBE_CLOUD`. Represented by the `ArtifactOrigin` enum. |
 
 ---
 
-## Plugin State Transition & Events
-Since plugins often need to be downloaded over the network, SQ:IDE employs a state-machine-like approach via `ArtifactState`:
-1. **`DOWNLOADING`**: A resolver triggered the download, it's currently running in background.
-2. **`ACTIVE` / `SYNCED`**: The artifact is present locally, its checksum matches, and it is ready to be loaded by the engine.
-3. **`FAILED`**: The download failed, or the signature couldn't be verified.
-An event `PluginStatusUpdateEvent` is published when the state changes to notify UI layers (like the IDE status bar plugin loading panel) or the analysis engine to re-try loading.
+## Motivation
+
+Historically SQ:IDE shipped every language analyzer bundled inside the IDE extension. This made
+the extension large and required a release each time a new analyzer version was needed.
+
+Two changes were made to address this:
+
+1. **On-demand source.** A curated set of artifacts (e.g. CFamily, C# OSS, OmniSharp) can be
+   downloaded at runtime from `binaries.sonarsource.com`, reducing the size of the shipped
+   extension. This also enables plugin _dependencies_ to be distributed alongside plugins on the
+   same infrastructure.
+
+2. **Policy-based loading.** Rather than having a single monolithic resolver, artifact loading is
+   now split between *where artifacts come from* (`ArtifactSource`) and *how sources are
+   combined* (`ArtifactsLoadingStrategy`).
 
 ---
 
-## Step-by-Step Flow (When `slcore` starts)
+## Core Abstractions
 
-To fully understand the plugin and analyzer lifecycle when SQ:IDE starts, let's step through the flow chronologically.
+### `ArtifactSource`
 
-### 1. Spring Context Initialization
-When the `SonarLintBackendImpl.initialize()` is called by the IDE extension over RPC, SLCORE boots up its Spring App context. Singletons like `PluginsService` and various storage/configuration services are instantiated. 
-*At this point plugins are NOT yet loaded or synced into memory.*
+Represents **one place where artifacts can be obtained**. Every source exposes two methods:
 
-### 2. Connection Sync Trigger
-If the user's workspace contains tied/bound projects, the backend orchestrator asks the `PluginsSynchronizer` to hit `api/plugins/installed` and verify which plugins the remote SQS/SQC server operates. This updates the local storage cache with the expected plugin paths/keys.
+```
+listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) → List<AvailableArtifact>
+   Returns all artifacts known to this source for the given set of enabled languages, without triggering any downloads. This is a pure query.
+   Implementations should return artifacts corresponding to enabled languages, and artifacts that are not tied to a specific language.
 
-### 3. Engine Invocation & Lazy Plugin Discovery
-Either immediately requested for UI status reports (by the IDE), or when an Analysis actually needs to run, `PluginsService.getPlugins(connectionId)` or `PluginsService.getEmbeddedPlugins()` is triggered.
-This is the **critical moment** where resolution begins:
-* `PluginsService` aggregates what analyzers are strictly required based on the user's enabled languages configured by the LanguageServer/IDE properties.
-* The collection of `ArtifactResolver` implementations evaluates whether they can provide the analyzers for those languages.
+load(String artifactKey) → Optional<ResolvedArtifact>
+    Action. Ensures the artifact is available, scheduling a background
+    download if needed. Returns empty if this source does not handle
+    the given key.
+    May return a ResolvedArtifact in DOWNLOADING state.
+```
 
-### 4. Background Downloading (If Missed)
-If the resolvers determine an artifact is required but not yet installed (e.g., `ConnectedModeArtifactResolver` notices a missing required server plugin, or `OnDemandArtifactResolver` discovers a missed heavily C/C++ parser payload):
-* A background download executor fires up, pulling the Plugin JAR bytes from the server (or SonarSource CDN).
-* The resolver immediately yields an `ArtifactState.DOWNLOADING` status back to the caller. The IDE handles this gracefully by showing a loading spinner on the relevant plugins.
+`ResolvedArtifact` captures the outcome: `(ArtifactState state, Path path, ArtifactOrigin origin,
+Version version)`. The state is one of: `ACTIVE`, `SYNCED`, `DOWNLOADING`, `FAILED`, `PREMIUM`,
+`UNSUPPORTED`.
 
-### 5. Resolution & Event Dispatching
-Once the download is fully complete:
-* Signature verification happens if necessary (like in `OnDemandPluginSignatureVerifier`).
-* The resolver posts a `PluginStatusUpdateEvent(ACTIVE / SYNCED / FAILED)`.
-* This event circles back to the `PluginStatusNotifierService`, shooting an asynchronous notification to the IDE front-end. The spinner becomes a checkmark.
+There are three concrete implementations:
 
-### 6. Actual ClassLoading
-With everything securely cached and checked in the local storage, `PluginsService` feeds the actual `Set<Path>` of `.jar` files to the core `PluginsLoader` inside SLCORE, creating isolated ClassLoaders. Now `slcore` is fully armed and the languages' Sensor analysis is technically capable of running on the codebase.
+#### `EmbeddedPluginSource`
+
+Backed by JARs physically bundled in the IDE extension. Never triggers downloads. Covers both
+language plugins (e.g. `sonar-java-plugin.jar`) and companion plugins embedded by the client
+(e.g. `sonarlint-omnisharp-plugin.jar`).
+
+Two factory methods select the right set of paths:
+- `EmbeddedPluginSource.forStandalone(params)` — standalone embedded paths + optional C# OSS standalone JAR
+- `EmbeddedPluginSource.forConnected(params)` — connected-mode embedded paths only
+
+#### `BinariesArtifactSource`
+
+Backed by `binaries.sonarsource.com`. Handles both **plugins** (CFamily, C# OSS) and **plugin
+dependencies** (OmniSharp distributions). Artifacts are cached under
+`<storage-root>/ondemand-plugins/`.
+
+- `listAvailableArtifacts(Set<SonarLanguage> enabledLanguages)` lists artifacts available on Binaries.
+- `load(key)` checks the cache first; if absent, schedules an async download and returns
+  `DOWNLOADING` immediately. A `PluginStatusUpdateEvent` is published when the download finishes
+  (with `ACTIVE` or `FAILED`).
+- Signature verification (`OnDemandPluginSignatureVerifier`) runs after every download.
+- Concurrent duplicate downloads for the same artifact are deduplicated (`UniqueTaskExecutor`).
+
+#### `ServerPluginSource`
+
+Backed by a specific SonarQube Server or SonarQube Cloud connection. One instance per connection,
+cached by `ConnectedArtifactsLoadingStrategyFactory`.
+
+- `listAvailableArtifacts(Set<SonarLanguage> enabledLanguages)` returns what the server currently exposes (converted from the server
+  plugin list). Falls back to an empty list if the server is unreachable.
+- `listServerPlugins()` returns the raw `ServerPlugin` list (richer metadata, used by the loading
+  policy for skip-list and companion decisions).
+- `load(key)` returns `SYNCED` if the artifact is on disk with a matching hash, or schedules an
+  async download (returns `DOWNLOADING`). Enterprise-variant resolution happens here.
+- `isAnyDownloadInProgress()` delegates to `ServerPluginDownloader`.
+
+---
+
+### `ArtifactsLoadingStrategy`
+
+Represents **how sources are combined** to produce the full set of resolved artifacts for a given
+context (standalone or connected). The interface exposes:
+
+```
+resolveArtifacts() → ArtifactsLoadingResult
+    Resolves all artifacts from all managed sources, applying priority and
+    policy rules. The result holds the resolved artifact map (keyed by
+    artifact key) and the set of enabled languages.
+    May schedule background downloads.
+```
+
+There are two implementations:
+
+#### `StandaloneArtifactsLoadingStrategy`
+
+Used when the user has no server connection. Sources (in ascending priority):
+
+| Priority | Source                                    | Why                                          |
+|----------|-------------------------------------------|----------------------------------------------|
+| Lowest   | `BinariesArtifactSource`       | Fallback for on-demand artifacts             |
+| Highest  | `EmbeddedPluginSource` (standalone paths) | Overrides on-demand when embedded is present |
+
+Languages available only in connected mode are reported as `PREMIUM` (no artifact path, just a
+status indicating the language requires a server connection).
+
+Resolution uses a winner-map (ascending priority, last writer wins per key), then one post-processing pass:
+- For each `SonarLanguage` whose plugin key is still unresolved and is connected-only: mark as `PREMIUM`.
+
+#### `ConnectedArtifactsLoadingStrategy`
+
+Used when the user has a server connection. One instance per connection, cached by
+`ConnectedArtifactsLoadingStrategyFactory`. Sources (in ascending priority):
+
+| Priority | Source | Why |
+|----------|--------|-----|
+| Lowest | `BinariesArtifactSource` | Fallback for on-demand artifacts |
+| Middle | `ServerPluginSource` | Server-specific analyzers override binaries |
+| Highest | `EmbeddedPluginSource` (connected paths) | JARs the client always carries (normally win) |
+
+Resolution uses a winner-map (ascending priority, last writer wins per key), then two post-processing passes:
+1. **Enterprise-variant deduplication**: when a different-key enterprise variant (e.g. `csharpenterprise`) is present, the base key is removed so both are not loaded simultaneously.
+2. **Enterprise priority override**: when the server reports a plugin as enterprise (same-key enterprise editions such as Go or IaC), the server source is forced for that key even if the embedded source would normally win.
+
+---
+
+## Artifact State Machine
+
+```
+           load() called
+               │
+               ▼
+       ┌───────────────┐
+       │  On disk?     │──── Yes ──► ACTIVE / SYNCED
+       └───────────────┘
+               │ No
+               ▼
+       ┌───────────────┐
+       │  Schedule     │
+       │  download     │──────────► DOWNLOADING
+       └───────────────┘
+               │ (async)
+        ┌──────┴──────┐
+        ▼             ▼
+      ACTIVE        FAILED
+  (event fired)  (event fired)
+```
+
+`PluginStatusUpdateEvent` is published on every transition out of `DOWNLOADING`. The IDE listens
+to these events to update the status bar.
+
+---
+
+## Step-by-Step Flow
+
+### 1. Initialization
+
+When `SonarLintBackendImpl.initialize()` is called by the IDE extension, the Spring context boots.
+`PluginsService`, `BinariesArtifactSource`, and the connected-mode factory are
+instantiated as singletons. No artifacts are loaded yet.
+
+### 2. Connection Sync (connected mode only)
+
+If the workspace has bound projects, `PluginsSynchronizer` hits `api/plugins/installed` to learn
+what the server exposes. This updates the local storage with expected plugin paths and hashes.
+
+### 3. Artifact Resolution
+
+When analysis is requested (or when the IDE requests plugin statuses), `PluginsService` calls
+`resolveArtifacts()` on the appropriate `ArtifactsLoadingStrategy`. The strategy runs its
+resolution passes and returns an `ArtifactsLoadingResult`.
+
+Artifacts in `DOWNLOADING` state have a non-null `downloadFuture`. The caller uses
+`ArtifactsLoadingResult.whenAllArtifactsDownloaded()` to run a callback (publishing a
+`PluginsSynchronizedEvent`) once all pending downloads complete.
+
+### 4. Background Download
+
+When `load()` on a source cannot find the artifact locally, it enqueues a background download:
+- `BinariesArtifactSource` uses `UniqueTaskExecutor` + HTTP fetch from
+  `binaries.sonarsource.com`, followed by signature verification.
+- `ServerPluginSource` delegates to `ServerPluginDownloader`, which deduplicates concurrent
+  downloads for the same connection.
+
+### 5. Class Loading
+
+Once all required artifacts are in `ACTIVE` or `SYNCED` state, `PluginsService` passes the
+resolved JAR paths to the core `PluginsLoader`, creating isolated `ClassLoader` instances per
+plugin. Analysis can then run.
+
+---

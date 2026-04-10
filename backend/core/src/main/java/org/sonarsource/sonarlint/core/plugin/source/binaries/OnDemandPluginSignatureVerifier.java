@@ -46,7 +46,7 @@ public class OnDemandPluginSignatureVerifier {
   private static final String SONAR_PUBLIC_KEY = "ondemand/sonarsource-public.key";
   private static final BouncyCastleProvider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
-  public boolean verify(Path artifactFile, DownloadableArtifact artifact) {
+  boolean verify(Path artifactFile, DownloadableArtifact artifact) {
     return verify(artifactFile, artifact.signatureResourcePath());
   }
 

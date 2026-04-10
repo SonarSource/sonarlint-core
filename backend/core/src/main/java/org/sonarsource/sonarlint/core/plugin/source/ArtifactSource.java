@@ -25,6 +25,7 @@ import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
 
 /**
  * Represents one of the origins from which artifacts (plugins and plugin dependencies) can be
@@ -36,7 +37,7 @@ import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSourc
  *   <li>{@link EmbeddedPluginSource} — JARs bundled in the IDE extension.</li>
  *   <li>{@link BinariesArtifactSource} — artifacts downloadable from
  *       binaries.sonarsource.com.</li>
- *   <li>ServerPluginSource — artifacts synchronized from a connected server.</li>
+ *   <li>{@link ServerPluginSource} — artifacts synchronized from a connected server.</li>
  * </ul>
  *
  * <p>The two methods follow a list-then-act pattern:

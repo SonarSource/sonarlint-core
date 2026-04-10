@@ -18,8 +18,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 package org.sonarsource.sonarlint.core.plugin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,13 +40,12 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -62,7 +61,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -84,6 +82,7 @@ class PluginsServiceTest {
   private PluginsStorage pluginStorage;
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
+  private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
 
   @BeforeEach
   void prepare() {
@@ -97,13 +96,20 @@ class PluginsServiceTest {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
-    var companionPluginResolver = mock(CompanionPluginResolver.class);
     when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+
+    var standaloneArtifactsLoadingStrategy = mock(StandaloneArtifactsLoadingStrategy.class);
+    connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
+    var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
+
+    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
+    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
+    when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      List.of(companionPluginResolver), mock(UnsupportedArtifactResolver.class), mock(ConnectedModeArtifactResolver.class),
-      mockEmbeddedCsharpOss(), mock(OnDemandArtifactResolver.class), mock(PremiumArtifactResolver.class));
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory);
   }
 
   @Test
@@ -346,6 +352,15 @@ class PluginsServiceTest {
   }
 
   @Test
+  void unloadPlugins_should_evict_connected_strategy_from_cache() {
+    var connectionId = "connection1";
+
+    underTest.unloadPlugins(connectionId);
+
+    verify(connectedArtifactsLoadingStrategyFactory).evict(connectionId);
+  }
+
+  @Test
   void unloadEmbeddedPlugins_should_not_publish_event_when_no_embedded_plugins_were_loaded() {
     when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(null);
 
@@ -397,16 +412,8 @@ class PluginsServiceTest {
     when(serverInfoStorage.read()).thenReturn(Optional.of(serverInfo));
   }
 
-  private EmbeddedArtifactResolver mockEmbeddedCsharpOss() {
-    var resolver = mock(EmbeddedArtifactResolver.class);
-    when(resolver.resolve(eq(SonarLanguage.CS), any()))
-      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, null, null)));
-    return resolver;
-  }
-
   private void mockEnabledLanguages(Language... languages) {
     when(initializeParams.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(languages));
     when(initializeParams.getBackendCapabilities()).thenReturn(Set.of());
   }
-
 }

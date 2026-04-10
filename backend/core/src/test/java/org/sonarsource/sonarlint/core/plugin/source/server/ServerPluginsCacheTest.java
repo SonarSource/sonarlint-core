@@ -83,16 +83,6 @@ class ServerPluginsCacheTest {
     verifyApiCalledTimes("conn", 2);
   }
 
-  @Test
-  void should_refresh_bypasses_cache() {
-    var plugins = List.of(mockPlugin("java"));
-    mockApiResponse("conn", plugins);
-
-    cache.getPlugins("conn");
-    cache.refreshAndGet("conn");
-
-    verifyApiCalledTimes("conn", 2);
-  }
 
   @Test
   void should_cache_per_connection_id() {

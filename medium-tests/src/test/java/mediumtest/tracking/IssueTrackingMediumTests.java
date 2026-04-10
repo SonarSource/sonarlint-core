@@ -624,7 +624,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.XML).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withMainBranch("main")
@@ -648,7 +648,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.XML).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
@@ -675,6 +675,7 @@ class IssueTrackingMediumTests {
       .build();
     var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey").start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
@@ -711,6 +712,7 @@ class IssueTrackingMediumTests {
       .build();
     var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey").start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
@@ -752,6 +754,7 @@ class IssueTrackingMediumTests {
       .build();
     var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey")
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
         .withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))

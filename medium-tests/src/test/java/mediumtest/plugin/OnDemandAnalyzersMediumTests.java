@@ -23,21 +23,21 @@ import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-
-import uk.org.webcompere.systemstubs.jupiter.SystemStub;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
-import uk.org.webcompere.systemstubs.properties.SystemProperties;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(SystemStubsExtension.class)
 class OnDemandAnalyzersMediumTests {
@@ -72,7 +72,7 @@ class OnDemandAnalyzersMediumTests {
     }
 
     var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
-    systemProperties.set(org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact.PROPERTY_URL_PATTERN, serverUrl);
+    systemProperties.set(DownloadableArtifact.PROPERTY_URL_PATTERN, serverUrl);
 
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()

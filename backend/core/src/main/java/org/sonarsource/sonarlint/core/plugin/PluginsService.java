@@ -23,13 +23,11 @@ import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -37,20 +35,18 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.CompanionPluginResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.ConnectedModeArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.EmbeddedArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.OnDemandArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.PremiumArtifactResolver;
-import org.sonarsource.sonarlint.core.plugin.resolvers.UnsupportedArtifactResolver;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingStrategy;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
@@ -59,7 +55,6 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 
@@ -70,21 +65,19 @@ public class PluginsService {
   private final PluginsRepository pluginsRepository;
   private final SkippedPluginsRepository skippedPluginsRepository;
   private final StorageService storageService;
-  private final Set<String> disabledPluginKeysForAnalysis;
   private final InitializeParams initializeParams;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
   private final boolean enableDataflowBugDetection;
   private final ApplicationEventPublisher eventPublisher;
-  private final List<ArtifactResolver> artifactResolvers;
-  private final List<CompanionPluginResolver> companionPluginResolvers;
+  private final StandaloneArtifactsLoadingStrategy standaloneArtifactsLoadingStrategy;
+  private final ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository,
-    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService,
-    ApplicationEventPublisher eventPublisher, List<CompanionPluginResolver> companionPluginResolvers,
-    UnsupportedArtifactResolver unsupportedArtifactResolver, ConnectedModeArtifactResolver connectedModeArtifactResolver,
-    EmbeddedArtifactResolver embeddedArtifactResolver, OnDemandArtifactResolver onDemandArtifactResolver,
-    PremiumArtifactResolver premiumArtifactResolver) {
+    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository,
+    NodeJsService nodeJsService, ApplicationEventPublisher eventPublisher,
+    StandaloneArtifactsLoadingStrategy standaloneArtifactsLoadingStrategy,
+    ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.storageService = storageService;
@@ -92,34 +85,45 @@ public class PluginsService {
     this.initializeParams = params;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
-    this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.eventPublisher = eventPublisher;
-    this.artifactResolvers = List.of(
-      unsupportedArtifactResolver,
-      connectedModeArtifactResolver,
-      embeddedArtifactResolver,
-      onDemandArtifactResolver,
-      premiumArtifactResolver
-    );
-    this.companionPluginResolvers = companionPluginResolvers;
+    this.standaloneArtifactsLoadingStrategy = standaloneArtifactsLoadingStrategy;
+    this.connectedArtifactsLoadingStrategyFactory = connectedArtifactsLoadingStrategyFactory;
   }
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
+    var result = getPluginLoadingStrategy(connectionId).resolveArtifacts();
     return Arrays.stream(SonarLanguage.values())
-      .map(language -> getPluginStatus(connectionId, language))
+      .map(language -> buildPluginStatus(language, result))
       .toList();
   }
 
-  private PluginStatus getPluginStatus(@Nullable String connectionId, SonarLanguage language) {
-    for (var resolver : artifactResolvers) {
-      if (resolver == null) continue;
-      var resolved = resolver.resolve(language, connectionId);
-      if (resolved.isPresent()) {
-        var artifact = resolved.get();
-        return PluginStatus.forLanguage(language, artifact.state(), artifact.source(), artifact.version(), null, artifact.path(), null);
-      }
+  private static PluginStatus buildPluginStatus(SonarLanguage language, ArtifactsLoadingResult result) {
+    var pluginKey = resolvePluginKey(language, result.resolvedArtifactsByKey());
+    var artifact = result.resolvedArtifactsByKey().get(pluginKey);
+    if (artifact != null) {
+      return PluginStatus.forLanguage(language, artifact.state(), artifact.source(), artifact.version(), null, artifact.path(), null);
     }
     return PluginStatus.unsupported(language);
+  }
+
+  private ArtifactsLoadingStrategy getPluginLoadingStrategy(@Nullable String connectionId) {
+    return connectionId != null ? connectedArtifactsLoadingStrategyFactory.getOrCreate(connectionId) : standaloneArtifactsLoadingStrategy;
+  }
+
+  /**
+   * Returns the effective plugin key for a language, preferring the enterprise variant if it is
+   * already present in the resolved map.
+   */
+  private static String resolvePluginKey(SonarLanguage language, Map<String, ResolvedArtifact> resolved) {
+    var baseKey = language.getPlugin().getKey();
+    var enterpriseKey = SonarPlugin.findByKey(baseKey)
+      .flatMap(SonarPlugin::getEnterpriseVariant)
+      .map(SonarPlugin::getKey)
+      .orElse(null);
+    if (enterpriseKey != null && resolved.containsKey(enterpriseKey)) {
+      return enterpriseKey;
+    }
+    return baseKey;
   }
 
   @NotNull
@@ -155,70 +159,30 @@ public class PluginsService {
   }
 
   private PluginsLoadResult loadPlugins(@Nullable String connectionId) {
+    var strategy = getPluginLoadingStrategy(connectionId);
+    var result = strategy.resolveArtifacts();
+    result.whenAllArtifactsDownloaded(() -> eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId)));
+
     var pluginsToLoadByKey = new HashMap<String, Path>();
-    var enabledLanguages = EnumSet.noneOf(SonarLanguage.class);
-
-    resolveLanguagePlugins(connectionId, pluginsToLoadByKey, enabledLanguages);
-    resolveCompanionPlugins(connectionId, pluginsToLoadByKey);
-
-    var config = new PluginsLoader.Configuration(new HashSet<>(pluginsToLoadByKey.values()), enabledLanguages, enableDataflowBugDetection
-      , nodeJsService.getActiveNodeJsVersion());
-    return new PluginsLoader().load(config, disabledPluginKeysForAnalysis);
-  }
-
-  private void resolveLanguagePlugins(@Nullable String connectionId, Map<String, Path> pluginsToLoadByKey, Set<SonarLanguage> enabledLanguages) {
-    for (var language : SonarLanguage.values()) {
-      var status = getPluginStatus(connectionId, language);
-      if (status.state() == ArtifactState.ACTIVE || status.state() == ArtifactState.SYNCED) {
-        enabledLanguages.add(language);
-        if (status.path() != null) {
-          pluginsToLoadByKey.put(status.pluginKey(), status.path());
-        }
+    for (var entry : result.resolvedArtifactsByKey().entrySet()) {
+      var key = entry.getKey();
+      var artifact = entry.getValue();
+      // only load artifacts that are ready on disk
+      if (artifact != null && artifact.path() != null) {
+        pluginsToLoadByKey.put(key, artifact.path());
       }
     }
-  }
 
-  private void resolveCompanionPlugins(@Nullable String connectionId, Map<String, Path> pluginsToLoadByKey) {
-    for (var companionResolver : companionPluginResolvers) {
-      if (companionResolver == null) continue;
-      for (var entry : companionResolver.resolveCompanionPlugins(connectionId).entrySet()) {
-        var status = entry.getValue();
-        if ((status.state() == ArtifactState.ACTIVE || status.state() == ArtifactState.SYNCED) && status.path() != null) {
-          pluginsToLoadByKey.put(status.pluginKey(), status.path());
-        }
-      }
-    }
-  }
-
-  public boolean areAnyPluginsDownloading(@Nullable String connectionId) {
-    for (var language : SonarLanguage.values()) {
-      var status = getPluginStatus(connectionId, language);
-      if (status.state() == ArtifactState.DOWNLOADING) {
-        return true;
-      }
-    }
-    for (var companionResolver : companionPluginResolvers) {
-      if (companionResolver == null) continue;
-      for (var status : companionResolver.resolveCompanionPlugins(connectionId).values()) {
-        if (status.state() == ArtifactState.DOWNLOADING) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  @EventListener
-  public void onPluginStatusUpdateEvent(PluginStatusUpdateEvent event) {
-    if (!areAnyPluginsDownloading(event.connectionId())) {
-      eventPublisher.publishEvent(new PluginsSynchronizedEvent(event.connectionId()));
-    }
+    var config = new PluginsLoader.Configuration(new HashSet<>(pluginsToLoadByKey.values()), result.enabledLanguages(),
+      enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
+    return new PluginsLoader().load(config, initializeParams.getDisabledPluginKeysForAnalysis());
   }
 
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
     boolean wasLoaded = pluginsRepository.getLoadedPlugins(connectionId) != null;
     pluginsRepository.unload(connectionId);
+    connectedArtifactsLoadingStrategyFactory.evict(connectionId);
     if (wasLoaded) {
       eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId)));
     }
@@ -267,7 +231,8 @@ public class PluginsService {
 
   @Nullable
   private Path resolveOssCsharpAnalyzerPath(@Nullable String connectionId) {
-    var status = getPluginStatus(connectionId, SonarLanguage.CS);
+    var resolved = getPluginLoadingStrategy(connectionId).resolveArtifacts();
+    var status = buildPluginStatus(SonarLanguage.CS, resolved);
     if ((status.state() == ArtifactState.ACTIVE || status.state() == ArtifactState.SYNCED) && status.path() != null) {
       return status.path();
     }
@@ -277,8 +242,7 @@ public class PluginsService {
   @Nullable
   private Path selectCsharpAnalyzerPath(String connectionId, @Nullable Path ossPath, boolean useEnterprise) {
     if (useEnterprise) {
-      return getStoredEnterprisePath(connectionId)
-        .orElse(ossPath);
+      return getStoredEnterprisePath(connectionId).orElse(ossPath);
     }
     return ossPath;
   }
@@ -301,6 +265,4 @@ public class PluginsService {
       SonarLintLogger.get().error("Error shutting down plugins service", e);
     }
   }
-
-
 }
