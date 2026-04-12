@@ -19,20 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.util.Optional;
-import java.util.Set;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
+import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 
 /**
- * An artifact (plugin or plugin dependency) known to a given {@link ArtifactSource}.
- * Returned by {@link ArtifactSource#listAvailableArtifacts(Set)} as a pure query with no side
- * effects.
+ * Identifies where an artifact physically came from.
+ * Used in {@link ResolvedArtifact} and {@link PluginStatus} to convey provenance.
  *
- * <p>{@code isEnterprise} is {@code true} when the artifact is the enterprise edition of a
- * plugin on the current connection. Enterprise artifacts take priority over embedded sources
- * in {@code ConnectedArtifactsLoadingStrategy}.</p>
+ * @see ArtifactSource the interface representing the provider of artifacts
  */
-public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact) {
+public enum ArtifactKind {
+
+  PLUGIN,
+
+  DEPENDENCY
 }

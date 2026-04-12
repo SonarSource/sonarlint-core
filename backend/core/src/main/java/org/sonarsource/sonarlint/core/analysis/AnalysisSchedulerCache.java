@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,13 +35,10 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
-import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
-import org.sonarsource.sonarlint.core.plugin.DotnetSupport;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
+import org.sonarsource.sonarlint.core.plugin.PluginsConfiguration;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OmnisharpDistributionDownloader;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.event.EventListener;
 
@@ -55,14 +51,11 @@ public class AnalysisSchedulerCache {
   private final PluginsService pluginsService;
   private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
-  private final OmnisharpDistributionDownloader omnisharpDistributionDownloader;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
-  private final Map<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
-  @SuppressWarnings("java:S107")
-  public AnalysisSchedulerCache(OmnisharpDistributionDownloader omnisharpDistributionDownloader, UserPaths userPaths, ConfigurationRepository configurationRepository,
+  public AnalysisSchedulerCache(UserPaths userPaths, ConfigurationRepository configurationRepository,
     NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
-    this.omnisharpDistributionDownloader = omnisharpDistributionDownloader;
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.pluginLifecycleService = pluginLifecycleService;
@@ -90,7 +83,7 @@ public class AnalysisSchedulerCache {
 
   private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId, @Nullable Trace trace) {
     return connectedSchedulerByConnectionId.computeIfAbsent(connectionId,
-      k -> createScheduler(pluginsService.getPlugins(connectionId), pluginsService.getDotnetSupport(connectionId), trace));
+      k -> createScheduler(pluginsService.getPlugins(connectionId), trace));
   }
 
   @CheckForNull
@@ -101,7 +94,7 @@ public class AnalysisSchedulerCache {
   private synchronized AnalysisScheduler getOrCreateStandaloneScheduler(@Nullable Trace trace) {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), pluginsService.getDotnetSupport(null), trace);
+      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), trace);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -112,44 +105,25 @@ public class AnalysisSchedulerCache {
     return standaloneScheduler.get();
   }
 
-  private AnalysisScheduler createScheduler(LoadedPlugins plugins, DotnetSupport dotnetSupport, @Nullable Trace trace) {
-    return new AnalysisScheduler(createSchedulerConfiguration(dotnetSupport, trace), plugins, SonarLintLogger.get().getTargetForCopy());
+  private AnalysisScheduler createScheduler(PluginsConfiguration pluginsConfiguration, @Nullable Trace trace) {
+    var config = buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), trace);
+    return new AnalysisScheduler(config, pluginsConfiguration.plugins(), SonarLintLogger.get().getTargetForCopy());
   }
 
-  private AnalysisSchedulerConfiguration createSchedulerConfiguration(DotnetSupport dotnetSupport) {
-    return createSchedulerConfiguration(dotnetSupport, null);
-  }
-
-  private AnalysisSchedulerConfiguration createSchedulerConfiguration(DotnetSupport dotnetSupport, @Nullable Trace trace) {
+  private AnalysisSchedulerConfiguration buildSchedulerConfiguration(Map<String, String> extraProperties, @Nullable Trace trace) {
     var activeNodeJs = startChild(trace, "getActiveNodeJs", "createSchedulerConfiguration", nodeJsService::getActiveNodeJs);
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var fullExtraProperties = new HashMap<String, String>();
-    enhanceOmnisharpExtraProperties(fullExtraProperties);
-    enhanceDotnetExtraProperties(fullExtraProperties, dotnetSupport);
-
     return AnalysisSchedulerConfiguration.builder()
       .setWorkDir(workDir)
       .setClientPid(ProcessHandle.current().pid())
-      .setExtraProperties(fullExtraProperties)
+      .setExtraProperties(extraProperties)
       .setNodeJs(nodeJsPath)
       .setFileSystemProvider(this::getFileSystem)
       .build();
   }
 
-  private void enhanceOmnisharpExtraProperties(HashMap<String, String> properties) {
-    properties.putAll(omnisharpDistributionDownloader.getExtraProperties());
-  }
-
-  private static void enhanceDotnetExtraProperties(HashMap<String, String> fullExtraProperties, DotnetSupport dotnetSupport) {
-    if (dotnetSupport.getActualCsharpAnalyzerPath() != null) {
-      fullExtraProperties.put("sonar.cs.internal.analyzerPath", dotnetSupport.getActualCsharpAnalyzerPath().toString());
-    }
-    if (dotnetSupport.isSupportsCsharp()) {
-      fullExtraProperties.put("sonar.cs.internal.shouldUseCsharpEnterprise", String.valueOf(dotnetSupport.isShouldUseCsharpEnterprise()));
-    }
-    if (dotnetSupport.isSupportsVbNet()) {
-      fullExtraProperties.put("sonar.cs.internal.shouldUseVbEnterprise", String.valueOf(dotnetSupport.isShouldUseVbNetEnterprise()));
-    }
+  private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration) {
+    return new SchedulerResetConfiguration(buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), null), pluginsConfiguration.plugins());
   }
 
   private ClientModuleFileSystem getFileSystem(String configurationScopeId) {
@@ -161,16 +135,10 @@ public class AnalysisSchedulerCache {
     stop(event.removedConnectionId());
   }
 
-  @EventListener
-  public void onOmnisharpDistributionChanged(OmnisharpDistributionChangedEvent event) {
-    resetStartedSchedulers();
-  }
-
   public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)),
-        () -> pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId));
+      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId)));
     } else {
       // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
       // This ensures that when the scheduler is eventually created, it won't use stale cached data
@@ -181,10 +149,7 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadStandalonePlugins() {
     var scheduler = standaloneScheduler.get();
     if (scheduler != null) {
-      scheduler.reset(
-        createSchedulerConfiguration(pluginsService.getDotnetSupport(null)),
-        pluginLifecycleService::reloadEmbeddedPluginsAndEvictCaches
-      );
+      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches()));
     } else {
       pluginLifecycleService.unloadEmbeddedPluginsAndEvictCaches();
     }
@@ -219,10 +184,10 @@ public class AnalysisSchedulerCache {
   private synchronized void resetStartedSchedulers() {
     var standaloneAnalysisScheduler = this.standaloneScheduler.get();
     if (standaloneAnalysisScheduler != null) {
-      standaloneAnalysisScheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(null)), pluginsService::getEmbeddedPlugins);
+      standaloneAnalysisScheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getEmbeddedPlugins()));
     }
     connectedSchedulerByConnectionId.forEach(
-      (connectionId, scheduler) -> scheduler.reset(createSchedulerConfiguration(pluginsService.getDotnetSupport(connectionId)), () -> pluginsService.getPlugins(connectionId)));
+      (connectionId, scheduler) -> scheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getPlugins(connectionId))));
   }
 
   private synchronized void stopAll() {

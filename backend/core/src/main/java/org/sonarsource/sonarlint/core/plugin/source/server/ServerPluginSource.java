@@ -95,7 +95,7 @@ public class ServerPluginSource implements ArtifactSource {
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
     return fetchServerPluginsSafely().stream()
       .filter(plugin -> isEligible(plugin, enabledLanguages))
-      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey())))
+      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey())))
       .toList();
   }
 

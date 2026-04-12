@@ -19,16 +19,42 @@
  */
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
 public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
+
+  public Optional<ResolvedArtifact> getResolvedArtifactByKey(String key) {
+    return Optional.ofNullable(resolvedArtifactsByKey().get(key));
+  }
+
+  /**
+   * All artifacts must not be loaded, only real Sonar plugins.
+   */
+  public List<Path> getPluginPaths() {
+    var pluginPaths = new ArrayList<Path>();
+    for (var entry : resolvedArtifactsByKey.entrySet()) {
+      var key = entry.getKey();
+      var artifact = entry.getValue();
+      // only load artifacts that are ready on disk and not dependencies
+      if (artifact != null && artifact.path() != null && SonarPluginDependency.findByKey(key).isEmpty()) {
+        pluginPaths.add(artifact.path());
+      }
+    }
+    return pluginPaths;
+  }
+
   public void whenAllArtifactsDownloaded(Runnable runnable) {
     var pendingDownloads = resolvedArtifactsByKey.values().stream().map(ResolvedArtifact::downloadFuture)
       .filter(Objects::nonNull)

@@ -27,7 +27,7 @@ public class LanguageSpecificRequirements {
   private final OmnisharpRequirementsDto omnisharpRequirements;
   private final boolean omnisharpDownloadEnabled;
 
-  @Deprecated(since = "11.1", forRemoval = true)
+  @Deprecated(since = "11.2", forRemoval = true)
   public LanguageSpecificRequirements(@Nullable JsTsRequirementsDto jsTsRequirements, @Nullable OmnisharpRequirementsDto omnisharpRequirements) {
     this.jsTsRequirements = jsTsRequirements;
     this.omnisharpRequirements = omnisharpRequirements;
@@ -46,6 +46,7 @@ public class LanguageSpecificRequirements {
   }
 
   @CheckForNull
+  @Deprecated(since = "11.2")
   public OmnisharpRequirementsDto getOmnisharpRequirements() {
     return omnisharpRequirements;
   }

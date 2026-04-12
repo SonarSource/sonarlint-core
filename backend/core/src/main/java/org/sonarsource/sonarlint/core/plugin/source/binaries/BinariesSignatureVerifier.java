@@ -35,18 +35,17 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
 
 /**
  * Verifies the PGP signature of downloaded artifacts using the SonarSource public key.
  */
-public class OnDemandPluginSignatureVerifier {
+public class BinariesSignatureVerifier {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_PUBLIC_KEY = "ondemand/sonarsource-public.key";
   private static final BouncyCastleProvider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
-  boolean verify(Path artifactFile, DownloadableArtifact artifact) {
+  boolean verify(Path artifactFile, BinariesArtifact artifact) {
     return verify(artifactFile, artifact.signatureResourcePath());
   }
 

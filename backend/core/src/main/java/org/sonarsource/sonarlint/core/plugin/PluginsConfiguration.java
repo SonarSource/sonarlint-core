@@ -17,22 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.source;
+package org.sonarsource.sonarlint.core.plugin;
 
-import java.util.Optional;
-import java.util.Set;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 
-/**
- * An artifact (plugin or plugin dependency) known to a given {@link ArtifactSource}.
- * Returned by {@link ArtifactSource#listAvailableArtifacts(Set)} as a pure query with no side
- * effects.
- *
- * <p>{@code isEnterprise} is {@code true} when the artifact is the enterprise edition of a
- * plugin on the current connection. Enterprise artifacts take priority over embedded sources
- * in {@code ConnectedArtifactsLoadingStrategy}.</p>
- */
-public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact) {
+public record PluginsConfiguration(ArtifactsLoadingResult artifactsResult, LoadedPlugins plugins, Map<String, String> extraProperties) {
 }

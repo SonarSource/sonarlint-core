@@ -17,12 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin.loading.strategy;
+
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 
 /**
- * Published when all required OmniSharp distribution directories become available after download and extraction.
- * Listeners (e.g. {@link org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache}) should reset
- * their C# analysis schedulers so they pick up the newly resolved runtime paths.
+ * Pairs an {@link AvailableArtifact} with the {@link ArtifactSource} that won the priority
+ * contest for its key. Used as the value type of the winner-map in both loading strategies.
  */
-public record OmnisharpDistributionChangedEvent() {
+record ArtifactCandidate(AvailableArtifact available, ArtifactSource source) {
 }

@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  * <p>Languages available only in connected mode are reported as
  * {@link ArtifactState#PREMIUM} when no other source can provide them.</p>
  */
-public class StandaloneArtifactsLoadingStrategy implements ArtifactsLoadingStrategy {
+public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStrategy {
 
   private final InitializeParams params;
   private final BinariesArtifactSource binariesSource;
@@ -74,31 +74,31 @@ public class StandaloneArtifactsLoadingStrategy implements ArtifactsLoadingStrat
    */
   @Override
   public ArtifactsLoadingResult resolveArtifacts() {
-    // Step 1: list available artifacts from all sources; highest-priority source wins
-    var bestSourceByArtifactKey = new LinkedHashMap<String, ArtifactSource>();
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+
+    // Winner-map: ascending priority, last writer wins per key
+    var candidates = new LinkedHashMap<String, ArtifactCandidate>();
     for (var source : getArtifactSourcesByAscendingPriority()) {
       for (var artifact : source.listAvailableArtifacts(enabledLanguages)) {
-        bestSourceByArtifactKey.put(artifact.key(), source);
+        candidates.put(artifact.key(), new ArtifactCandidate(artifact, source));
       }
     }
 
-    // Step 2: load once from the best source
-    var result = new LinkedHashMap<String, ResolvedArtifact>();
-    bestSourceByArtifactKey.forEach((artifactKey, source) -> source.load(artifactKey).ifPresent(artifact -> result.put(artifactKey, artifact)));
+    removeOrphanDependencies(candidates);
+    removeMissingRequiredDeps(candidates);
 
-    // Step 3: for each language not yet resolved and available only in connected mode, mark PREMIUM
+    // Load once from the winning source per key
+    var result = new LinkedHashMap<String, ResolvedArtifact>();
+    candidates.forEach((key, candidate) -> candidate.source().load(key).ifPresent(resolved -> result.put(key, resolved)));
+
+    // For each language not yet resolved and available only in connected mode, mark PREMIUM
     for (var language : SonarLanguage.values()) {
       var key = language.getPlugin().getKey();
-      if (!result.containsKey(key) && isPremiumLanguage(language)) {
+      if (!result.containsKey(key) && languageSupportRepository.isEnabledOnlyInConnectedMode(language)) {
         result.put(key, ResolvedArtifact.premium());
       }
     }
 
     return new ArtifactsLoadingResult(enabledLanguages, result);
-  }
-
-  private boolean isPremiumLanguage(SonarLanguage language) {
-    return languageSupportRepository.isEnabledOnlyInConnectedMode(language);
   }
 }

@@ -26,52 +26,51 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 public class PluginsRepository {
-  private final AtomicReference<LoadedPlugins> loadedEmbeddedPlugins = new AtomicReference<>();
-  private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
+  private final AtomicReference<PluginsConfiguration> embeddedPlugins = new AtomicReference<>();
+  private final Map<String, PluginsConfiguration> pluginsByConnectionId = new HashMap<>();
 
-  public void setLoadedEmbeddedPlugins(LoadedPlugins loadedEmbeddedPlugins) {
-    this.loadedEmbeddedPlugins.set(loadedEmbeddedPlugins);
+  public void setEmbeddedPlugins(PluginsConfiguration config) {
+    this.embeddedPlugins.set(config);
   }
 
   @CheckForNull
-  public LoadedPlugins getLoadedEmbeddedPlugins() {
-    return loadedEmbeddedPlugins.get();
+  public PluginsConfiguration getEmbeddedPlugins() {
+    return embeddedPlugins.get();
   }
 
   @CheckForNull
-  public LoadedPlugins getLoadedPlugins(String connectionId) {
-    return loadedPluginsByConnectionId.get(connectionId);
+  public PluginsConfiguration getPlugins(String connectionId) {
+    return pluginsByConnectionId.get(connectionId);
   }
 
-  public void setLoadedPlugins(String connectionId, LoadedPlugins loadedPlugins) {
-    loadedPluginsByConnectionId.put(connectionId, loadedPlugins);
+  public void setPlugins(String connectionId, PluginsConfiguration config) {
+    pluginsByConnectionId.put(connectionId, config);
   }
 
   void unloadAllPlugins() throws IOException {
     Queue<IOException> exceptions = new LinkedList<>();
-    var embeddedPlugins = loadedEmbeddedPlugins.get();
-    if (embeddedPlugins != null) {
-      tryAndCollectIOException(embeddedPlugins::close, exceptions);
-      loadedEmbeddedPlugins.set(null);
+    var embedded = embeddedPlugins.get();
+    if (embedded != null) {
+      tryAndCollectIOException(embedded.plugins()::close, exceptions);
+      embeddedPlugins.set(null);
     }
-    synchronized (loadedPluginsByConnectionId) {
-      loadedPluginsByConnectionId.values().forEach(l -> tryAndCollectIOException(l::close, exceptions));
-      loadedPluginsByConnectionId.clear();
+    synchronized (pluginsByConnectionId) {
+      pluginsByConnectionId.values().forEach(config -> tryAndCollectIOException(config.plugins()::close, exceptions));
+      pluginsByConnectionId.clear();
     }
     throwFirstWithOtherSuppressed(exceptions);
   }
 
   public void unload(String connectionId) {
-    var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
-    if (loadedPlugins != null) {
+    var config = pluginsByConnectionId.remove(connectionId);
+    if (config != null) {
       try {
-        loadedPlugins.close();
+        config.plugins().close();
       } catch (IOException e) {
         throw new IllegalStateException("Unable to unload plugins", e);
       }
@@ -79,10 +78,10 @@ public class PluginsRepository {
   }
 
   public void unloadEmbedded() {
-    var embeddedPlugins = loadedEmbeddedPlugins.getAndSet(null);
-    if (embeddedPlugins != null) {
+    var config = embeddedPlugins.getAndSet(null);
+    if (config != null) {
       try {
-        embeddedPlugins.close();
+        config.plugins().close();
       } catch (IOException e) {
         throw new IllegalStateException("Unable to unload embedded plugins", e);
       }

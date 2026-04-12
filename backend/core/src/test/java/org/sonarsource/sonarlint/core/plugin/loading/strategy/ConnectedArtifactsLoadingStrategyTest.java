@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -74,7 +75,7 @@ class ConnectedArtifactsLoadingStrategyTest {
 
   @Test
   void resolvePlugins_should_include_java_from_server_when_listed_as_available() {
-    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.JAVA.getKey(), null)));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.JAVA.getKey(), null, false, Optional.empty())));
     when(serverSource.load(SonarPlugin.JAVA.getKey()))
       .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null)));
     var strategy = createStrategy();
@@ -89,7 +90,7 @@ class ConnectedArtifactsLoadingStrategyTest {
 
   @Test
   void resolvePlugins_should_fall_back_to_binaries_when_server_does_not_list_language_plugin() {
-    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.JAVA.getKey(), null)));
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.JAVA.getKey(), null, false, Optional.empty())));
     when(binariesSource.load(SonarPlugin.JAVA.getKey()))
       .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null)));
     var strategy = createStrategy();
@@ -113,10 +114,10 @@ class ConnectedArtifactsLoadingStrategyTest {
 
   @Test
   void resolvePlugins_should_remove_base_key_when_enterprise_variant_is_present() {
-    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.CS_OSS.getKey(), null)));
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.CS_OSS.getKey(), null, false, Optional.empty())));
     when(binariesSource.load(SonarPlugin.CS_OSS.getKey()))
       .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null)));
-    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.CSHARP_ENTERPRISE.getKey(), null, true)));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.CSHARP_ENTERPRISE.getKey(), null, true, Optional.empty())));
     when(serverSource.load(SonarPlugin.CSHARP_ENTERPRISE.getKey()))
       .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null)));
     var strategy = createStrategy();
@@ -136,7 +137,7 @@ class ConnectedArtifactsLoadingStrategyTest {
     // Embedded has "go" (higher normal priority than server)
     when(params.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.GO.getKey(), Path.of("go-embedded.jar")));
     // Server also has "go", flagged as enterprise
-    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.GO.getKey(), null, true)));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact(SonarPlugin.GO.getKey(), null, true, Optional.empty())));
     when(serverSource.load(SonarPlugin.GO.getKey()))
       .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null)));
     var strategy = createStrategy();
@@ -147,6 +148,67 @@ class ConnectedArtifactsLoadingStrategyTest {
     assertThat(result.resolvedArtifactsByKey())
       .containsEntry(SonarPlugin.GO.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
     verify(serverSource).load(SonarPlugin.GO.getKey());
+  }
+
+  // --- Dependency removal (no dependent available) ---
+
+  @Test
+  void resolvePlugins_should_remove_dependency_when_dependent_plugin_is_not_available() {
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPluginDependency.OMNISHARP_MONO.getKey());
+  }
+
+  // --- Plugin removal when required dependency is missing ---
+
+  @Test
+  void resolvePlugins_should_remove_plugin_when_a_required_dependency_is_not_available() {
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.SONARLINT_OMNISHARP.getKey(), null, false, Optional.of(SonarPlugin.SONARLINT_OMNISHARP))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPlugin.SONARLINT_OMNISHARP.getKey());
+  }
+
+  @Test
+  void resolvePlugins_should_keep_plugin_when_all_required_dependencies_are_available() {
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.SONARLINT_OMNISHARP.getKey(), null, false, Optional.of(SonarPlugin.SONARLINT_OMNISHARP)),
+      new AvailableArtifact(SonarPlugin.CS_OSS.getKey(), null, false, Optional.of(SonarPlugin.CS_OSS))));
+    when(serverSource.load(SonarPlugin.SONARLINT_OMNISHARP.getKey()))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null)));
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO)),
+      new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET472.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET472)),
+      new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET6.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET6))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey()).containsKey(SonarPlugin.SONARLINT_OMNISHARP.getKey());
+  }
+
+  @Test
+  void resolvePlugins_should_keep_dependency_when_dependent_plugin_is_available() {
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO))));
+    when(binariesSource.load(SonarPluginDependency.OMNISHARP_MONO.getKey()))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null)));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.SONARLINT_OMNISHARP.getKey(), null, false, Optional.of(SonarPlugin.SONARLINT_OMNISHARP))));
+    when(serverSource.load(SonarPlugin.SONARLINT_OMNISHARP.getKey()))
+      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null)));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey()).containsKey(SonarPluginDependency.OMNISHARP_MONO.getKey());
   }
 
   private ConnectedArtifactsLoadingStrategy createStrategy() {

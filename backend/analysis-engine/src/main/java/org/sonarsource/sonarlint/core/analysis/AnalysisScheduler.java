@@ -51,8 +51,8 @@ public class AnalysisScheduler {
     analysisThread.start();
   }
 
-  public void reset(AnalysisSchedulerConfiguration analysisGlobalConfig, Supplier<LoadedPlugins> pluginsSupplier) {
-    post(new ResetPluginsCommand(analysisGlobalConfig, globalAnalysisContainer, analysisQueue, pluginsSupplier));
+  public void reset(Supplier<SchedulerResetConfiguration> pluginsWithConfigSupplier) {
+    post(new ResetPluginsCommand(globalAnalysisContainer, analysisQueue, pluginsWithConfigSupplier));
   }
 
   public void wakeUp() {

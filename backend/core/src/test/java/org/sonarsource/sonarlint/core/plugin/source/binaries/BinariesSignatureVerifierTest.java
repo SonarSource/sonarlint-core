@@ -32,11 +32,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OnDemandPluginSignatureVerifierTest {
+class BinariesSignatureVerifierTest {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
@@ -44,7 +43,7 @@ class OnDemandPluginSignatureVerifierTest {
   @TempDir
   Path tempDir;
 
-  private final OnDemandPluginSignatureVerifier underTest = new OnDemandPluginSignatureVerifier();
+  private final BinariesSignatureVerifier underTest = new BinariesSignatureVerifier();
 
   @Test
   void should_return_false_when_jar_signature_not_found() throws IOException {
@@ -58,7 +57,7 @@ class OnDemandPluginSignatureVerifierTest {
     var tamperedJar = tempDir.resolve("sonar-cpp-plugin-tampered.jar");
     Files.write(tamperedJar, "tampered content".getBytes());
 
-    Assertions.assertThat(underTest.verify(tamperedJar, DownloadableArtifact.CFAMILY_PLUGIN)).isFalse();
+    Assertions.assertThat(underTest.verify(tamperedJar, BinariesArtifact.CFAMILY_PLUGIN)).isFalse();
   }
 
   @ParameterizedTest

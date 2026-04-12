@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -71,13 +70,13 @@ class BinariesArtifactSourceTest {
   private HttpClientProvider httpClientProvider;
   private ApplicationEventPublisher eventPublisher;
   private List<PluginStatus> capturedStatuses;
-  private OnDemandPluginSignatureVerifier signatureVerifier;
+  private BinariesSignatureVerifier signatureVerifier;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
-    signatureVerifier = mock(OnDemandPluginSignatureVerifier.class);
+    signatureVerifier = mock(BinariesSignatureVerifier.class);
     capturedStatuses = new CopyOnWriteArrayList<>();
     doAnswer(inv -> {
       capturedStatuses.addAll(inv.getArgument(0, PluginStatusUpdateEvent.class).newStatuses());
@@ -155,7 +154,7 @@ class BinariesArtifactSourceTest {
   @Test
   void load_should_fire_failed_event_when_signature_verification_fails() throws Exception {
     mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(false);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
     var source = buildSource();
 
     source.load("cpp");
@@ -170,13 +169,13 @@ class BinariesArtifactSourceTest {
   @Test
   void load_should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
     mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(true);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
     var source = buildSource();
 
     source.load("cpp");
 
     await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
-    var artifactVersion = DownloadableArtifact.CFAMILY_PLUGIN.version();
+    var artifactVersion = BinariesArtifact.CFAMILY_PLUGIN.version();
     var pluginPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
       .resolve("sonar-cpp-plugin-" + artifactVersion + ".jar");
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -188,21 +187,21 @@ class BinariesArtifactSourceTest {
   @Test
   void list_AvailablePlugins_should_return_entries_for_all_plugins() throws Exception {
     mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), any(DownloadableArtifact.class))).thenReturn(true);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
     var source = buildSource();
 
     var listed = source.listAvailableArtifacts(EnumSet.allOf(SonarLanguage.class));
     // Only one unique plugin key for C-family: "cpp"
-    assertThat(listed).hasSize(3);
+    assertThat(listed).hasSize(5);
     assertThat(listed)
       .extracting(AvailableArtifact::key)
-      .containsOnly("cpp", "csharp", "vbnet");
+      .containsOnly("cpp", "csharp", "omnisharp-mono", "omnisharp-net472", "omnisharp-net6");
   }
 
   private BinariesArtifactSource buildSource() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier);
+    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier, mock(BinariesLocalCacheManager.class));
   }
 
   private void mockSuccessfulHttpClient() throws Exception {
@@ -253,7 +252,7 @@ class BinariesArtifactSourceTest {
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
     return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND,
-      Version.create(DownloadableArtifact.CFAMILY_PLUGIN.version()), null, path, null);
+      Version.create(BinariesArtifact.CFAMILY_PLUGIN.version()), null, path, null);
   }
 
   private static PluginStatus failedStatus(SonarLanguage lang) {

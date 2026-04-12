@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
-import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -300,11 +299,6 @@ public class AnalysisService {
       schedulerCache.reloadStandalonePlugins();
       checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
     }
-  }
-
-  @EventListener
-  public void onOmnisharpDistributionChanged(OmnisharpDistributionChangedEvent event) {
-    checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
   }
 
   @EventListener

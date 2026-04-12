@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
  * Manages cleanup of old plugin versions from the cache.
  * Deletes version directories not modified within the last 60 days, skipping the current version.
  */
-public class OnDemandPluginCacheManager {
+public class BinariesLocalCacheManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final long RETENTION_DAYS = 60;
@@ -53,7 +53,7 @@ public class OnDemandPluginCacheManager {
       stream.filter(Files::isDirectory)
         .filter(versionDir -> !versionDir.getFileName().toString().equals(currentVersion))
         .filter(versionDir -> isOlderThan(versionDir, cutoffTime))
-        .forEach(OnDemandPluginCacheManager::deleteVersionDirectory);
+        .forEach(BinariesLocalCacheManager::deleteVersionDirectory);
     } catch (IOException e) {
       LOG.debug("Error cleaning up old plugin versions", e);
     }
