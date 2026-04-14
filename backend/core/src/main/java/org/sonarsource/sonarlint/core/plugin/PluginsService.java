@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -119,14 +121,14 @@ public class PluginsService {
    */
   private static String resolvePluginKey(SonarLanguage language, Map<String, ResolvedArtifact> resolved) {
     var baseKey = language.getPlugin().getKey();
-    var enterpriseKey = SonarPlugin.findByKey(baseKey)
-      .flatMap(SonarPlugin::getEnterpriseVariant)
-      .map(SonarPlugin::getKey)
-      .orElse(null);
-    if (enterpriseKey != null && resolved.containsKey(enterpriseKey)) {
-      return enterpriseKey;
-    }
-    return baseKey;
+    var enterpriseKeys = SonarPlugin.findByKey(baseKey)
+      .map(SonarPlugin::getEnterpriseVariants)
+      .map(variants -> variants.stream().map(SonarPlugin::getKey).collect(Collectors.toSet()))
+      .orElseGet(Set::of);
+    return enterpriseKeys.stream()
+      .filter(resolved::containsKey)
+      .findFirst()
+      .orElse(baseKey);
   }
 
   public PluginsConfiguration getEmbeddedPlugins() {
