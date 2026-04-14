@@ -258,22 +258,21 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var server = harness.newFakeSonarQubeServer()
         .withServerSentEventsEnabled()
-        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
-          .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
-        .withProject(projectKey,
-          project -> project
-            .withQualityProfile("qpKey"))
-        .withPlugin(TestPlugin.JAVA)
+        .withProject(projectKey)
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
-        .withSonarQubeConnection(connectionId, server)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+        .withBackendCapability(SERVER_SENT_EVENTS)
+        .withSonarQubeConnection(connectionId, server, storage -> storage
+          .withServerVersion("99.9")
+          .withProject(projectKey, project -> project
+            .withMainBranch("main")
+            .withRuleSet("java", ruleSet -> ruleSet
+              .withActiveRule("java:S1481", "MAJOR"))))
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
 
       backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       var raisedIssues = analyzeFileAndGetIssues(fileUri, client, backend, CONFIG_SCOPE_ID);
       assertThat(raisedIssues).hasSize(1);
       client.cleanRaisedIssues();

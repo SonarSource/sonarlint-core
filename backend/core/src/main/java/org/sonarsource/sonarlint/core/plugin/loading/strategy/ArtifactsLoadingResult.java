@@ -68,12 +68,12 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
     return pluginPaths;
   }
 
-  public void whenAllArtifactsDownloaded(Runnable runnable) {
+  public Optional<CompletableFuture<Void>> getAllDownloadsFuture() {
     var pendingDownloads = resolvedArtifactsByKey.values().stream().map(ResolvedArtifact::downloadFuture)
       .filter(Objects::nonNull)
       .toList();
     if (pendingDownloads.isEmpty()) {
-      return;
+      return Optional.empty();
     }
     var completableFutures = pendingDownloads.stream()
       .map(f -> CompletableFuture.runAsync(() -> {
@@ -86,10 +86,17 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
         }
       }))
       .toArray(CompletableFuture[]::new);
-    var logOutput = SonarLintLogger.get().getTargetForCopy();
-    CompletableFuture.allOf(completableFutures).thenRun(() -> {
-      SonarLintLogger.get().setTarget(logOutput);
-      runnable.run();
-    });
+    return Optional.of(CompletableFuture.allOf(completableFutures));
+  }
+
+  public void whenAllArtifactsDownloaded(Runnable runnable) {
+    getAllDownloadsFuture()
+      .ifPresent(future -> {
+        var logOutput = SonarLintLogger.get().getTargetForCopy();
+        future.thenRun(() -> {
+          SonarLintLogger.get().setTarget(logOutput);
+          runnable.run();
+        });
+      });
   }
 }

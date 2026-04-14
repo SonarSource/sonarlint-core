@@ -473,16 +473,14 @@ public class AnalysisService {
   }
 
   private boolean isReadyForAnalysis(Binding binding) {
-    var pluginsValid = storageService.connection(binding.connectionId()).plugins().isValid();
     var bindingStorage = storageService.binding(binding);
     var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
     var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
-    var isReady = pluginsValid
-      && analyzerConfigValid
+    var isReady = analyzerConfigValid
       // this is not strictly for analysis but for tracking
       && findingsStorageValid;
     LOG.debug("isReadyForAnalysis(connectionId: {}, sonarProjectKey: {}, plugins: {}, analyzer config: {}, findings: {}) => {}",
-      binding.connectionId(), binding.sonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
+      binding.connectionId(), binding.sonarProjectKey(), true, analyzerConfigValid, findingsStorageValid, isReady);
     return isReady;
   }
 
