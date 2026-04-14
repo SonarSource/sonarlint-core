@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -95,9 +97,9 @@ class ServerPluginSourceTest {
     var source = createSource("conn");
     var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER);
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(expected);
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), expected);
   }
 
   @Test
@@ -107,9 +109,9 @@ class ServerPluginSourceTest {
     mockServerPlugins("conn", List.of());
     var source = createSource("conn");
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).isEmpty();
+    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPlugin.JAVA.getKey());
   }
 
   @Test
@@ -120,9 +122,9 @@ class ServerPluginSourceTest {
     mockServerPlugins("conn", List.of(serverPlugin));
     var source = createSource("conn");
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
     verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
@@ -134,10 +136,44 @@ class ServerPluginSourceTest {
     mockServerPlugins("conn", List.of(serverPlugin));
     var source = createSource("conn");
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
     verify(downloader).schedulePluginDownload("conn", serverPlugin);
+  }
+
+  @Test
+  void load_should_call_cleanUpUnknownPlugins_with_empty_list_when_no_server_plugins_win() {
+    mockStorage("conn");
+    mockServerPlugins("conn", List.of());
+    var source = createSource("conn");
+
+    source.load(Set.of());
+
+    verify(pluginsStorage).cleanUpUnknownPlugins(List.of());
+  }
+
+  @Test
+  void load_should_call_cleanUpUnknownPlugins_with_server_plugins_that_won() {
+    mockStorage("conn");
+    var javaPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash");
+    mockServerPlugins("conn", List.of(javaPlugin));
+    var source = createSource("conn");
+
+    source.load(Set.of(SonarPlugin.JAVA.getKey()));
+
+    verify(pluginsStorage).cleanUpUnknownPlugins(List.of(javaPlugin));
+  }
+
+  @Test
+  void load_should_not_call_cleanUpUnknownPlugins_when_server_is_not_accessible() {
+    mockStorage("conn");
+    when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
+    var source = createSource("conn");
+
+    source.load(Set.of(SonarPlugin.JAVA.getKey()));
+
+    verify(pluginsStorage, never()).cleanUpUnknownPlugins(any());
   }
 
   @Test
@@ -146,9 +182,9 @@ class ServerPluginSourceTest {
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
     var source = createSource("conn");
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).isEmpty();
+    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPlugin.JAVA.getKey());
   }
 
   @Test
@@ -159,9 +195,9 @@ class ServerPluginSourceTest {
     when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
     var source = createSource("conn");
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null, null));
   }
 
   @Test
@@ -173,9 +209,9 @@ class ServerPluginSourceTest {
     var source = createSource("conn");
     var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER);
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(expected);
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), expected);
   }
 
   @Test
@@ -187,9 +223,9 @@ class ServerPluginSourceTest {
     var source = createSource("cloud");
     var expected = resolved(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_CLOUD);
 
-    var result = source.load(SonarPlugin.JAVA.getKey());
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result).contains(expected);
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), expected);
   }
 
   // --- ANSIBLE/GITHUBACTIONS use "iac" plugin key ---
@@ -203,9 +239,9 @@ class ServerPluginSourceTest {
     var source = createSource("conn");
     var expected = resolved(ArtifactState.SYNCED, iacJar, ArtifactOrigin.SONARQUBE_SERVER);
 
-    var result = source.load(SonarPlugin.IAC.getKey());
+    var result = source.load(Set.of(SonarPlugin.IAC.getKey()));
 
-    assertThat(result).contains(expected);
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.IAC.getKey(), expected);
   }
 
   // --- listAvailableArtifacts() ---

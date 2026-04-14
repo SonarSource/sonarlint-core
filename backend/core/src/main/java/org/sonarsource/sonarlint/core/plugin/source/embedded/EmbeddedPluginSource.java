@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.plugin.source.embedded;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
@@ -81,9 +82,15 @@ public class EmbeddedPluginSource implements ArtifactSource {
   }
 
   @Override
-  public Optional<ResolvedArtifact> load(String artifactKey) {
-    return Optional.ofNullable(embeddedPathsByKey.get(artifactKey))
-      .map(path -> new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
+  public LoadResult load(Set<String> artifactKeys) {
+    var resolved = new HashMap<String, ResolvedArtifact>();
+    for (var key : artifactKeys) {
+      var path = embeddedPathsByKey.get(key);
+      if (path != null) {
+        resolved.put(key, new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
+      }
+    }
+    return new LoadResult(resolved);
   }
 
   private static AvailableArtifact toAvailableArtifact(String key, Path path) {

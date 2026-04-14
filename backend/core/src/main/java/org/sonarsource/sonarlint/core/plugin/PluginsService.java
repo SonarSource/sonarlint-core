@@ -47,7 +47,6 @@ import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
@@ -57,6 +56,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 
 public class PluginsService {
   private static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
+  public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
+  public static final String VBNET_ENTERPRISE_PLUGIN_ID = "vbnetenterprise";
 
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final PluginsRepository pluginsRepository;
@@ -193,7 +194,7 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, CSHARP_ENTERPRISE_PLUGIN_ID);
   }
 
   private boolean shouldUseEnterpriseDotNetAnalyzer(String connectionId, String analyzerName) {
@@ -219,7 +220,7 @@ public class PluginsService {
   }
 
   public boolean shouldUseEnterpriseVbAnalyzer(String connectionId) {
-    return shouldUseEnterpriseDotNetAnalyzer(connectionId, PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    return shouldUseEnterpriseDotNetAnalyzer(connectionId, VBNET_ENTERPRISE_PLUGIN_ID);
   }
 
   private DotnetSupport getDotnetSupport(@Nullable String connectionId, ArtifactsLoadingResult result) {
@@ -249,7 +250,7 @@ public class PluginsService {
   }
 
   private Optional<Path> getStoredEnterprisePath(String connectionId) {
-    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID))
+    return Optional.ofNullable(storageService.connection(connectionId).plugins().getStoredPluginsByKey().get(CSHARP_ENTERPRISE_PLUGIN_ID))
       .map(StoredPlugin::getJarPath);
   }
 

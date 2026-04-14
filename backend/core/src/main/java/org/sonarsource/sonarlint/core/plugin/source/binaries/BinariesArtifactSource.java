@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -103,11 +104,17 @@ public class BinariesArtifactSource implements ArtifactSource {
   }
 
   @Override
-  public Optional<ResolvedArtifact> load(String artifactKey) {
-    return BinariesArtifact.findByKey(artifactKey)
-      .map(artifact -> findCachedArtifact(artifact)
-        .map(r -> toActiveArtifact(artifact, r.path()))
-        .orElseGet(() -> scheduleDownload(artifact)));
+  public LoadResult load(Set<String> artifactKeys) {
+    var resolved = new HashMap<String, ResolvedArtifact>();
+    for (var key : artifactKeys) {
+      BinariesArtifact.findByKey(key).ifPresent(artifact -> {
+        ResolvedArtifact resolvedArtifact = findCachedArtifact(artifact)
+          .map(cached -> toActiveArtifact(artifact, cached.path()))
+          .orElseGet(() -> scheduleDownload(artifact));
+        resolved.put(key, resolvedArtifact);
+      });
+    }
+    return new LoadResult(resolved);
   }
 
   private ResolvedArtifact scheduleDownload(BinariesArtifact artifact) {

@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
@@ -114,8 +116,16 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
 
+    // Group winning keys by source, then load once per source.
+    // Pre-populate all sources with empty sets so every source is always called (e.g. ServerPluginSource
+    // needs to be called even with an empty set to initialize its storage when nothing is downloaded).
+    var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
+    for (var source : artifactSourcesSortedByAscendingPriority) {
+      keysBySource.put(source, new HashSet<>());
+    }
+    candidates.forEach((key, candidate) -> keysBySource.get(candidate.source()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
-    candidates.forEach((key, candidate) -> candidate.source().load(key).ifPresent(resolved -> result.put(key, resolved)));
+    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
     return new ArtifactsLoadingResult(enabledLanguages, result);
   }
 }

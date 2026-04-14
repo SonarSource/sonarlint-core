@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
@@ -171,7 +170,7 @@ class PluginsServiceTest {
   void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServerWithRepackagedPluginAndPluginIsPresentOnTheServer_returnsTrue() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID);
 
     var result = underTest.shouldUseEnterpriseCSharpAnalyzer(connectionId);
 
@@ -235,7 +234,7 @@ class PluginsServiceTest {
   void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithRepackagedPluginAndPluginIsPresentOnTheServer_returnsTrue() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID);
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
@@ -278,7 +277,7 @@ class PluginsServiceTest {
     var connectionId = "SQC";
     var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
     mockConnection(connection);
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -293,7 +292,7 @@ class PluginsServiceTest {
   void getPlugins_extraProperties_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -308,7 +307,7 @@ class PluginsServiceTest {
   void getPlugins_extraProperties_connectionIsToServerWithRepackagedCsharpPlugin_ReturnsEnterprisePropertiesForCsharp() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -323,7 +322,7 @@ class PluginsServiceTest {
   void getPlugins_extraProperties_connectionIsToServerWithRepackagedVbPlugin_ReturnsEnterprisePropertiesForVb() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();

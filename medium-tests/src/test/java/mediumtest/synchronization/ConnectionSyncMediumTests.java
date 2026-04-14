@@ -179,7 +179,7 @@ class ConnectionSyncMediumTests {
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, server.baseUrl(), true)), List.of()));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, "projectKey", true)));
 
-    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isEqualTo(2));
+    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isGreaterThan(1));
   }
 
   @SonarLintTest

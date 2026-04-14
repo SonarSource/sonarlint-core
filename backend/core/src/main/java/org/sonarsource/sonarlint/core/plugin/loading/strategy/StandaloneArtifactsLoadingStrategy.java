@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -87,9 +89,11 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
 
-    // Load once from the winning source per key
+    // Group winning keys by source, then load once per source
+    var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
+    candidates.forEach((key, candidate) -> keysBySource.computeIfAbsent(candidate.source(), s -> new HashSet<>()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
-    candidates.forEach((key, candidate) -> candidate.source().load(key).ifPresent(resolved -> result.put(key, resolved)));
+    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
 
     // For each language not yet resolved and available only in connected mode, mark PREMIUM
     for (var language : SonarLanguage.values()) {

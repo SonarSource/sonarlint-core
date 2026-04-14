@@ -23,6 +23,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,6 +36,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -60,7 +63,11 @@ class StandaloneArtifactsLoadingStrategyTest {
     when(params.getEmbeddedPluginPaths()).thenReturn(java.util.Set.of());
     when(params.getConnectedModeEmbeddedPluginPathsByKey()).thenReturn(Map.of());
     when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of());
-    when(binariesSource.load(any())).thenReturn(Optional.empty());
+    when(binariesSource.load(any())).thenAnswer(inv -> {
+      @SuppressWarnings("unchecked") var keys = (Set<String>) inv.getArgument(0);
+      return new LoadResult(keys.stream().collect(Collectors.toMap(k -> k,
+        k -> new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null))));
+    });
     when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(EnumSet.noneOf(SonarLanguage.class));
     when(languageSupportRepository.isEnabledOnlyInConnectedMode(any())).thenReturn(false);
   }
@@ -86,8 +93,6 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO)),
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET472.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET472)),
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET6.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET6))));
-    when(binariesSource.load(SonarPluginDependency.OMNISHARP_MONO.getKey()))
-      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null)));
     var strategy = createStrategy();
 
     var result = strategy.resolveArtifacts();
@@ -116,8 +121,6 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO)),
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET472.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET472)),
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET6.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET6))));
-    when(binariesSource.load(SonarPlugin.SONARLINT_OMNISHARP.getKey()))
-      .thenReturn(Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null)));
     var strategy = createStrategy();
 
     var result = strategy.resolveArtifacts();

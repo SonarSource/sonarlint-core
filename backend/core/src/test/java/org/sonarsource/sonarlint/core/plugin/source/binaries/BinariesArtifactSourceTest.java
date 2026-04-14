@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -88,9 +89,9 @@ class BinariesArtifactSourceTest {
   void load_should_return_empty_when_plugin_key_not_handled() {
     var source = buildSource();
 
-    var result = source.load("java");
+    var result = source.load(Set.of("java"));
 
-    assertThat(result).isEmpty();
+    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey("java");
   }
 
   @Test
@@ -99,11 +100,9 @@ class BinariesArtifactSourceTest {
     mockBlockingHttpClient(proceedLatch);
     var source = buildSource();
     try {
-      var result = source.load("cpp");
+      var result = source.load(Set.of("cpp"));
 
-      assertThat(result)
-        .isPresent()
-        .get()
+      assertThat(result.resolvedArtifactsByKey().get("cpp"))
         .usingRecursiveComparison()
         .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
@@ -119,13 +118,11 @@ class BinariesArtifactSourceTest {
     mockBlockingHttpClient(proceedLatch);
     var source = buildSource();
     try {
-      source.load("cpp");
+      source.load(Set.of("cpp"));
 
-      var result = source.load("cpp");
+      var result = source.load(Set.of("cpp"));
 
-      assertThat(result)
-        .isPresent()
-        .get()
+      assertThat(result.resolvedArtifactsByKey().get("cpp"))
         .usingRecursiveComparison()
         .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
@@ -142,7 +139,7 @@ class BinariesArtifactSourceTest {
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     var source = buildSource();
 
-    source.load("cpp");
+    source.load(Set.of("cpp"));
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -157,7 +154,7 @@ class BinariesArtifactSourceTest {
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
     var source = buildSource();
 
-    source.load("cpp");
+    source.load(Set.of("cpp"));
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -172,7 +169,7 @@ class BinariesArtifactSourceTest {
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
     var source = buildSource();
 
-    source.load("cpp");
+    source.load(Set.of("cpp"));
 
     await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     var artifactVersion = BinariesArtifact.CFAMILY_PLUGIN.version();
