@@ -45,6 +45,6 @@ public class ResetPluginsCommand extends Command {
     var pluginsWithConfig = schedulerResetConfigurationSupplier.get();
     globalAnalysisContainer.set(new GlobalAnalysisContainer(pluginsWithConfig.config(), pluginsWithConfig.plugins()));
     globalAnalysisContainer.get().startComponents();
-    analysisQueue.clearAllButAnalyses();
+    analysisQueue.clearAllButAnalysesAndResets();
   }
 }
