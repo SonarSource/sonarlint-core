@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
@@ -48,7 +49,19 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
       var key = entry.getKey();
       var artifact = entry.getValue();
       // only load artifacts that are ready on disk and not dependencies
-      if (artifact != null && artifact.path() != null && SonarPluginDependency.findByKey(key).isEmpty()) {
+      if (artifact == null || artifact.path() == null || SonarPluginDependency.findByKey(key).isPresent()) {
+        continue;
+      }
+      // only load plugins whose required dependencies are also present on disk
+      var requiredDepsPresent = SonarPlugin.findByKey(key)
+        .map(plugin -> plugin.getDependencies().stream()
+          .filter(dep -> !dep.optional())
+          .allMatch(dep -> {
+            var depArtifact = resolvedArtifactsByKey.get(dep.artifact().getKey());
+            return depArtifact != null && depArtifact.path() != null;
+          }))
+        .orElse(true);
+      if (requiredDepsPresent) {
         pluginPaths.add(artifact.path());
       }
     }
