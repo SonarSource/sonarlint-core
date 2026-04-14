@@ -108,7 +108,7 @@ public class BinariesArtifactSource implements ArtifactSource {
     var resolved = new HashMap<String, ResolvedArtifact>();
     for (var key : artifactKeys) {
       BinariesArtifact.findByKey(key).ifPresent(artifact -> {
-        ResolvedArtifact resolvedArtifact = findCachedArtifact(artifact)
+        var resolvedArtifact = findCachedArtifact(artifact)
           .map(cached -> toActiveArtifact(artifact, cached.path()))
           .orElseGet(() -> scheduleDownload(artifact));
         resolved.put(key, resolvedArtifact);
@@ -130,14 +130,37 @@ public class BinariesArtifactSource implements ArtifactSource {
     }
     var pluginPath = buildArtifactLocalPath(artifact);
     if (Files.exists(pluginPath)) {
-      if (signatureVerifier.verify(pluginPath, artifact)) {
+      if (isValidCache(pluginPath, artifact)) {
         cachedArtifactPaths.put(artifactKey, pluginPath);
         return Optional.of(toActiveArtifact(artifact, pluginPath));
       }
-      LOG.warn("Signature verification failed for cached plugin {}, will re-download", artifactKey);
-      deleteQuietly(pluginPath);
+      LOG.warn("Invalid cached artifact {}, will re-download", artifactKey);
+      FileUtils.deleteQuietly(pluginPath.toFile());
     }
     return Optional.empty();
+  }
+
+  /**
+   * Returns {@code true} when the cached artifact at {@code pluginPath} is considered valid and
+   * does not need to be re-downloaded.
+   *
+   * <p>For <b>JAR artifacts</b> the PGP signature is re-verified against the file on disk.
+   *
+   * <p>For <b>archive artifacts</b> (OmniSharp tar.gz distributions), {@code pluginPath} is the
+   * extracted directory. The PGP signature was already verified against the original archive at
+   * download time; the archive is deleted after extraction, so the signature cannot be re-checked.
+   * A non-empty directory is used as the completion marker instead.
+   */
+  private boolean isValidCache(Path pluginPath, BinariesArtifact artifact) {
+    if (artifact.isArchive()) {
+      try (var entries = Files.list(pluginPath)) {
+        return entries.findFirst().isPresent();
+      } catch (IOException e) {
+        LOG.warn("Could not read cached archive directory for {}", artifact.artifactKey(), e);
+        return false;
+      }
+    }
+    return signatureVerifier.verify(pluginPath, artifact);
   }
 
   private static ResolvedArtifact toActiveArtifact(BinariesArtifact artifact, Path artifactPath) {
@@ -147,7 +170,7 @@ public class BinariesArtifactSource implements ArtifactSource {
   private Path downloadAndCache(BinariesArtifact artifact) throws IOException {
     var pluginPath = buildArtifactLocalPath(artifact);
     downloadAndVerify(artifact, pluginPath);
-    cacheManager.cleanupOldVersions(pluginPath.getParent().getParent(), artifact.version());
+    cacheManager.cleanupOldVersions(cacheBaseDirectory.resolve(artifact.artifactKey()), artifact.version());
     cachedArtifactPaths.put(artifact.artifactKey(), pluginPath);
     return pluginPath;
   }
@@ -227,14 +250,6 @@ public class BinariesArtifactSource implements ArtifactSource {
       Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     } catch (AtomicMoveNotSupportedException e) {
       Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
-    }
-  }
-
-  private static void deleteQuietly(Path path) {
-    try {
-      Files.deleteIfExists(path);
-    } catch (IOException e) {
-      LOG.debug("Failed to delete invalid cached plugin", e);
     }
   }
 

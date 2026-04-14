@@ -370,16 +370,15 @@ public class SynchronizationService {
     // synchronization is synchronous, wait for downloads to happen
     plugins.artifactsResult().getAllDownloadsFuture()
       .ifPresent(future -> {
-      try {
-        future.get(5, TimeUnit.MINUTES);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-      } catch (TimeoutException e) {
-        throw new RuntimeException(e);
-      }
-    });
+        try {
+          future.get(5, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException(e);
+        } catch (ExecutionException | TimeoutException e) {
+          throw new RuntimeException(e);
+        }
+      });
   }
 
   private boolean shouldSynchronizeBinding(Binding binding) {

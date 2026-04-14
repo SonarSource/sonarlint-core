@@ -58,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class BinariesArtifactSourceTest {
@@ -72,12 +73,14 @@ class BinariesArtifactSourceTest {
   private ApplicationEventPublisher eventPublisher;
   private List<PluginStatus> capturedStatuses;
   private BinariesSignatureVerifier signatureVerifier;
+  private BinariesLocalCacheManager cacheManager;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     signatureVerifier = mock(BinariesSignatureVerifier.class);
+    cacheManager = mock(BinariesLocalCacheManager.class);
     capturedStatuses = new CopyOnWriteArrayList<>();
     doAnswer(inv -> {
       capturedStatuses.addAll(inv.getArgument(0, PluginStatusUpdateEvent.class).newStatuses());
@@ -179,6 +182,49 @@ class BinariesArtifactSourceTest {
       activeStatus(SonarLanguage.C, pluginPath),
       activeStatus(SonarLanguage.CPP, pluginPath),
       activeStatus(SonarLanguage.OBJC, pluginPath));
+    // cleanupOldVersions must receive the artifact-key directory (.../ondemand-plugins/cpp/),
+    // not the version directory or the JAR's parent
+    verify(cacheManager).cleanupOldVersions(
+      tempDir.resolve("ondemand-plugins").resolve("cpp"),
+      artifactVersion);
+  }
+
+  @Test
+  void load_should_return_active_on_warm_startup_when_omnisharp_directory_exists_and_is_non_empty() throws Exception {
+    var source = buildSource();
+    var artifactVersion = BinariesArtifact.OMNISHARP_MONO.version();
+    var omnisharpDir = tempDir.resolve("ondemand-plugins").resolve("omnisharp-mono").resolve(artifactVersion);
+    Files.createDirectories(omnisharpDir);
+    Files.createFile(omnisharpDir.resolve("OmniSharp.exe"));
+
+    var result = source.load(Set.of("omnisharp-mono"));
+
+    assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
+      .usingRecursiveComparison()
+      .ignoringFields("downloadFuture")
+      .isEqualTo(new ResolvedArtifact(ArtifactState.ACTIVE, omnisharpDir, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion), null));
+  }
+
+  @Test
+  void load_should_re_download_when_omnisharp_directory_is_empty() throws Exception {
+    var proceedLatch = new CountDownLatch(1);
+    mockBlockingHttpClient(proceedLatch);
+    var source = buildSource();
+    var artifactVersion = BinariesArtifact.OMNISHARP_MONO.version();
+    var omnisharpDir = tempDir.resolve("ondemand-plugins").resolve("omnisharp-mono").resolve(artifactVersion);
+    Files.createDirectories(omnisharpDir);
+
+    try {
+      var result = source.load(Set.of("omnisharp-mono"));
+
+      assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
+        .usingRecursiveComparison()
+        .ignoringFields("downloadFuture")
+        .isEqualTo(downloading());
+    } finally {
+      proceedLatch.countDown();
+      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
+    }
   }
 
   @Test
@@ -198,7 +244,7 @@ class BinariesArtifactSourceTest {
   private BinariesArtifactSource buildSource() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier, mock(BinariesLocalCacheManager.class));
+    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier, cacheManager);
   }
 
   private void mockSuccessfulHttpClient() throws Exception {

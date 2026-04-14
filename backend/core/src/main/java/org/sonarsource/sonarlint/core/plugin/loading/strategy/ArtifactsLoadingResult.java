@@ -52,19 +52,22 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
         continue;
       }
       // only load plugins whose required dependencies are also present on disk
-      var requiredDepsPresent = SonarPlugin.findByKey(key)
-        .map(plugin -> plugin.getDependencies().stream()
-          .filter(dep -> !dep.optional())
-          .allMatch(dep -> {
-            var depArtifact = resolvedArtifactsByKey.get(dep.artifact().getKey());
-            return depArtifact != null && depArtifact.path() != null;
-          }))
-        .orElse(true);
-      if (requiredDepsPresent) {
+      if (areRequiredDependenciesPresent(key)) {
         pluginPaths.add(artifact.path());
       }
     }
     return pluginPaths;
+  }
+
+  private boolean areRequiredDependenciesPresent(String key) {
+    return SonarPlugin.findByKey(key)
+      .map(plugin -> plugin.getDependencies().stream()
+        .filter(dep -> !dep.optional())
+        .allMatch(dep -> {
+          var depArtifact = resolvedArtifactsByKey.get(dep.artifact().getKey());
+          return depArtifact != null && depArtifact.path() != null;
+        }))
+      .orElse(true);
   }
 
   public Optional<CompletableFuture<Void>> getAllDownloadsFuture() {
