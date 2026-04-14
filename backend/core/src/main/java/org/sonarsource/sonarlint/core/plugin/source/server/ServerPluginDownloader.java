@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin.source.server;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -60,18 +60,18 @@ public class ServerPluginDownloader {
     this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
-  public Future<?> schedulePluginDownload(String connectionId, ServerPlugin serverPlugin) {
+  public CompletableFuture<Void> schedulePluginDownload(String connectionId, ServerPlugin serverPlugin) {
     var sonarPlugin = SonarPlugin.findByKey(serverPlugin.getKey());
     return sonarPlugin.isPresent() ? scheduleSonarPluginDownload(connectionId, serverPlugin, sonarPlugin.get())
       : scheduleUnknownPluginDownload(connectionId, serverPlugin);
   }
 
-  private Future<?> scheduleSonarPluginDownload(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
+  private CompletableFuture<Void> scheduleSonarPluginDownload(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
     var progressKey = connectionId + ":" + serverPlugin.getKey();
     return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncDownload(connectionId, serverPlugin, sonarPlugin));
   }
 
-  private Future<?> scheduleUnknownPluginDownload(String connectionId, ServerPlugin plugin) {
+  private CompletableFuture<Void> scheduleUnknownPluginDownload(String connectionId, ServerPlugin plugin) {
     var progressKey = connectionId + ":" + plugin.getKey();
     return uniqueTaskExecutor.scheduleIfAbsent(progressKey, () -> asyncUnknownPluginDownload(connectionId, plugin));
   }

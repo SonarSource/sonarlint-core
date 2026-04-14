@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
@@ -75,18 +74,7 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
     if (pendingDownloads.isEmpty()) {
       return Optional.empty();
     }
-    var completableFutures = pendingDownloads.stream()
-      .map(f -> CompletableFuture.runAsync(() -> {
-        try {
-          f.get();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-          // ignored: download errors are handled elsewhere
-        }
-      }))
-      .toArray(CompletableFuture[]::new);
-    return Optional.of(CompletableFuture.allOf(completableFutures));
+    return Optional.of(CompletableFuture.allOf(pendingDownloads.toArray(new CompletableFuture[0])));
   }
 
   public void whenAllArtifactsDownloaded(Runnable runnable) {
