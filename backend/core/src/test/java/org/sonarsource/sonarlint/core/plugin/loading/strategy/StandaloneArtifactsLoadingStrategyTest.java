@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class StandaloneArtifactsLoadingStrategyTest {
@@ -70,6 +71,26 @@ class StandaloneArtifactsLoadingStrategyTest {
     });
     when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(EnumSet.noneOf(SonarLanguage.class));
     when(languageSupportRepository.isEnabledOnlyInConnectedMode(any())).thenReturn(false);
+  }
+
+  // --- Enterprise deduplication (different-key variants: CS, VBNET) ---
+
+  @Test
+  void resolvePlugins_should_remove_base_key_when_enterprise_variant_is_present() {
+    // Both the OSS base and the enterprise variant are available (e.g. base from binaries,
+    // enterprise from embedded). Only the enterprise variant should survive.
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.CS_OSS.getKey(), null, false, Optional.of(SonarPlugin.CS_OSS)),
+      new AvailableArtifact(SonarPlugin.CSHARP_ENTERPRISE.getKey(), null, true, Optional.of(SonarPlugin.CSHARP_ENTERPRISE))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey())
+      .containsKey(SonarPlugin.CSHARP_ENTERPRISE.getKey())
+      .doesNotContainKey(SonarPlugin.CS_OSS.getKey());
+    // binaries must not be asked to load the non-enterprise key
+    verify(binariesSource).load(Set.of(SonarPlugin.CSHARP_ENTERPRISE.getKey()));
   }
 
   // --- Dependency removal (no dependent available) ---

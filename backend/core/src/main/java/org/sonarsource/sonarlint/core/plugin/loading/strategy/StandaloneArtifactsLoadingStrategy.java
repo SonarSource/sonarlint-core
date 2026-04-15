@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -85,6 +87,11 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
         candidates.put(artifact.key(), new ArtifactCandidate(artifact, source));
       }
     }
+
+    // remove base keys superseded by a different-key enterprise variant
+    new ArrayList<>(candidates.keySet()).stream()
+      .filter(SonarPlugin::isEnterpriseVariant)
+      .forEach(entKey -> SonarPlugin.baseKeyFor(entKey).ifPresent(candidates::remove));
 
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
