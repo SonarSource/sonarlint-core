@@ -111,9 +111,9 @@ class IssueApiTests {
 
   @Test
   void should_download_all_vulnerabilities() {
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&rules=ruleKey&ps=500&p=1",
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=1",
       Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().setKey("issueKey").build()).build());
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&rules=ruleKey&ps=500&p=2",
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=2",
       Issues.SearchWsResponse.newBuilder().addComponents(Issues.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
 
     var result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new SonarLintCancelMonitor());
@@ -130,7 +130,7 @@ class IssueApiTests {
     var issueKey = "issueKey";
     var path = "/home/file.java";
     var projectKey = "projectKey";
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=").concat(projectKey).concat("&ps=1&p=1"),
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=").concat(projectKey).concat("&components=").concat(projectKey).concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder()
         .addIssues(Issues.Issue.newBuilder().setKey(issueKey).build())
         .addComponents(Issues.Component.newBuilder().setPath(path).build())
@@ -144,7 +144,7 @@ class IssueApiTests {
 
   @Test
   void should_not_fail_when_no_issue_found_by_key() {
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&componentKeys=myProject").concat("&ps=1&p=1"),
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&componentKeys=myProject").concat("&components=myProject").concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().build()).build());
     var serverIssueDetails = underTest.fetchServerIssue("non-existent", "myProject", "", "", new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isEmpty();
@@ -155,7 +155,7 @@ class IssueApiTests {
   void should_not_fetch_server_issue_by_key_with_no_matching_component() {
     var issueKey = "issueKey";
     var path = "/home/file.java";
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=differentIssueComponent").concat("&ps=1&p=1"),
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=differentIssueComponent").concat("&components=differentIssueComponent").concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder()
         .addIssues(Issues.Issue.newBuilder().setKey(issueKey).setComponent("issueComponent").build())
         .addComponents(Issues.Component.newBuilder().setPath(path).setKey("differentIssueComponent").build())
@@ -174,6 +174,7 @@ class IssueApiTests {
     var branch = "branch";
     mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey))
         .concat("&componentKeys=").concat(projectKey)
+        .concat("&components=").concat(projectKey)
         .concat("&ps=1&p=1")
         .concat("&branch=").concat(branch),
       Issues.SearchWsResponse.newBuilder()
@@ -195,6 +196,7 @@ class IssueApiTests {
     var pullRequest = "1234";
     mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey))
         .concat("&componentKeys=").concat(projectKey)
+        .concat("&components=").concat(projectKey)
         .concat("&ps=1&p=1")
         .concat("&pullRequest=").concat(pullRequest),
       Issues.SearchWsResponse.newBuilder()

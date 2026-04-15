@@ -1087,6 +1087,10 @@ public class ServerFixture {
       }));
     }
 
+    private static String componentKeyParams(String projectKey) {
+      return "&componentKeys=" + projectKey + "&components=" + projectKey;
+    }
+
     private void registerSearchIssueApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> {
@@ -1096,7 +1100,7 @@ public class ServerFixture {
 
           allIssues.forEach(issue -> {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
-              .concat("&componentKeys=").concat(projectKey)
+              .concat(componentKeyParams(projectKey))
               .concat("&ps=1&p=1")
               .concat("&pullRequest=").concat(pullRequestName);
             mockServer.stubFor(get(searchUrl)
@@ -1124,7 +1128,7 @@ public class ServerFixture {
 
           allIssues.forEach(issue -> {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
-              .concat("&componentKeys=").concat(projectKey)
+              .concat(componentKeyParams(projectKey))
               .concat("&ps=1&p=1")
               .concat("&branch=").concat(branchName);
             mockServer.stubFor(get(searchUrl)
@@ -1141,7 +1145,8 @@ public class ServerFixture {
           });
 
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
-          var searchUrl = "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + projectKey + "&rules=&branch=" + branchName
+          var searchUrl = "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY"
+            + componentKeyParams(projectKey) + "&rules=&branch=" + branchName
             + "&ps=500&p=1";
           mockServer.stubFor(get(searchUrl)
             .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()

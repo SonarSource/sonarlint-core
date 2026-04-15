@@ -123,8 +123,9 @@ public class IssueApi {
   }
 
   private static String getVulnerabilitiesUrl(String key, Set<String> ruleKeys) {
+    var encodedKey = urlEncode(key);
     return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys="
-      + urlEncode(key) + "&rules=" + urlEncode(String.join(",", ruleKeys));
+      + encodedKey + "&components=" + encodedKey + "&rules=" + urlEncode(String.join(",", ruleKeys));
   }
 
   private static String getUrlBranchParameter(@Nullable String branchName) {
@@ -254,7 +255,7 @@ public class IssueApi {
   }
 
   public Optional<ServerIssueDetails> fetchServerIssue(String issueKey, String projectKey, String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
-    String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&componentKeys=" + projectKey + "&ps=1&p=1";
+    String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&componentKeys=" + projectKey + "&components=" + projectKey + "&ps=1&p=1";
     if (pullRequest != null && !pullRequest.isEmpty()) {
       searchUrl = searchUrl.concat("&pullRequest=").concat(urlEncode(pullRequest));
     } else if (!branch.isEmpty()) {
