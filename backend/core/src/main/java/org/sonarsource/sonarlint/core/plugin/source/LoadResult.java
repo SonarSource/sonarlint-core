@@ -19,14 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.Map;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version,
-  CompletableFuture<?> downloadFuture) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null, null);
-  }
+/**
+ * The result of a batch {@link ArtifactSource#load(java.util.Set)} call.
+ *
+ * <p>Wraps the resolved artifacts by key. Using a dedicated type instead of a raw map leaves
+ * room for future fields (e.g. the set of artifacts that were available from this source but
+ * not selected as winners, needed by {@code ServerPluginSource} to write empty reference files).</p>
+ */
+public record LoadResult(Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
 }

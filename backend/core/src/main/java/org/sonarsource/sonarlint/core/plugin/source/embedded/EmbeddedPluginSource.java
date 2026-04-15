@@ -21,64 +21,51 @@ package org.sonarsource.sonarlint.core.plugin.source.embedded;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 
 /**
  * Artifact source backed by JARs physically bundled (embedded) in the IDE client's distribution.
- * Returns both language plugins and companion plugins. No downloads are ever triggered.
+ * Does not do any filtering, trusts what the client provides. No downloads are ever triggered.
  *
  * <p>Use {@link #forStandalone(InitializeParams)} or {@link #forConnected(InitializeParams)} to
  * obtain an instance scoped to the appropriate mode.</p>
  */
 public class EmbeddedPluginSource implements ArtifactSource {
 
-  public static final String CSHARP_PLUGIN_KEY = SonarPlugin.CS_OSS.getKey();
   private final Map<String, Path> embeddedPathsByKey;
-  @Nullable
-  private final Path csharpStandalonePluginPath;
 
-  private EmbeddedPluginSource(Map<String, Path> embeddedPathsByKey, @Nullable Path csharpStandalonePluginPath) {
+  private EmbeddedPluginSource(Map<String, Path> embeddedPathsByKey) {
     this.embeddedPathsByKey = embeddedPathsByKey;
-    this.csharpStandalonePluginPath = csharpStandalonePluginPath;
   }
 
   /**
-   * Returns a source backed by the standalone embedded plugin paths from {@code params}, including
-   * the optional standalone C# OSS analyzer.
+   * Returns a source backed by the standalone embedded plugin paths from {@code params}.
    */
   public static EmbeddedPluginSource forStandalone(InitializeParams params) {
-    var pathsByKey = buildPluginKeyToPathMap(params.getEmbeddedPluginPaths());
-    var csharpStandalonePluginPath = Optional.ofNullable(params.getLanguageSpecificRequirements())
-      .map(LanguageSpecificRequirements::getOmnisharpRequirements)
-      .map(OmnisharpRequirementsDto::getOssAnalyzerPath)
-      .orElse(null);
-    return new EmbeddedPluginSource(pathsByKey, csharpStandalonePluginPath);
+    return new EmbeddedPluginSource(buildPluginKeyToPathMap(params.getEmbeddedPluginPaths()));
   }
 
   /**
    * Returns a source backed by the connected-mode embedded plugin paths from {@code params}.
-   * The standalone C# OSS analyzer is not included.
    */
   public static EmbeddedPluginSource forConnected(InitializeParams params) {
-    return new EmbeddedPluginSource(params.getConnectedModeEmbeddedPluginPathsByKey(), null);
+    return new EmbeddedPluginSource(params.getConnectedModeEmbeddedPluginPathsByKey());
   }
 
   /**
@@ -91,27 +78,24 @@ public class EmbeddedPluginSource implements ArtifactSource {
     for (var entry : embeddedPathsByKey.entrySet()) {
       result.add(toAvailableArtifact(entry.getKey(), entry.getValue()));
     }
-    if (csharpStandalonePluginPath != null && !embeddedPathsByKey.containsKey(CSHARP_PLUGIN_KEY)) {
-      result.add(toAvailableArtifact(CSHARP_PLUGIN_KEY, csharpStandalonePluginPath));
-    }
     return result;
   }
 
   @Override
-  public Optional<ResolvedArtifact> load(String artifactKey) {
-    var path = embeddedPathsByKey.get(artifactKey);
-    if (path == null && CSHARP_PLUGIN_KEY.equals(artifactKey) && csharpStandalonePluginPath != null
-        && !embeddedPathsByKey.containsKey(CSHARP_PLUGIN_KEY)) {
-      path = csharpStandalonePluginPath;
+  public LoadResult load(Set<String> artifactKeys) {
+    var resolved = new HashMap<String, ResolvedArtifact>();
+    for (var key : artifactKeys) {
+      var path = embeddedPathsByKey.get(key);
+      if (path != null) {
+        resolved.put(key, new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
+      }
     }
-    if (path == null) {
-      return Optional.empty();
-    }
-    return Optional.of(new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
+    return new LoadResult(resolved);
   }
 
   private static AvailableArtifact toAvailableArtifact(String key, Path path) {
-    return new AvailableArtifact(key, PluginJarUtils.readVersion(path));
+    var sonarPlugin = SonarPlugin.findByKey(key);
+    return new AvailableArtifact(key, PluginJarUtils.readVersion(path), SonarPlugin.isEnterpriseVariant(key), sonarPlugin);
   }
 
   private static Map<String, Path> buildPluginKeyToPathMap(Set<Path> embeddedPaths) {

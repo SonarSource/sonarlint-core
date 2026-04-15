@@ -22,10 +22,13 @@ package org.sonarsource.sonarlint.core.plugin.source.server;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.EnterpriseReplacement;
@@ -35,6 +38,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -95,7 +99,7 @@ public class ServerPluginSource implements ArtifactSource {
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
     return fetchServerPluginsSafely().stream()
       .filter(plugin -> isEligible(plugin, enabledLanguages))
-      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey())))
+      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey())))
       .toList();
   }
 
@@ -138,17 +142,47 @@ public class ServerPluginSource implements ArtifactSource {
   }
 
   @Override
-  public Optional<ResolvedArtifact> load(String artifactKey) {
+  public LoadResult load(Set<String> artifactKeys) {
     var storedPlugins = loadStoredPlugins();
+    var resolved = new HashMap<String, ResolvedArtifact>();
+    var serverAccessible = false;
+    List<ServerPlugin> expectedServerPlugins = List.of();
     try {
-      return serverPluginsCache.getPlugins(connectionId)
-        .flatMap(plugins -> plugins.stream().filter(p -> p.getKey().equals(artifactKey)).findFirst())
-        .map(serverPlugin -> resolveFromStorageOrSchedule(serverPlugin, storedPlugins, artifactKey))
-        .or(() -> findStoredPlugin(artifactKey, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath())));
+      var serverPluginsByKey = serverPluginsCache.getPlugins(connectionId).orElse(List.of())
+        .stream().collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
+      serverAccessible = true;
+      for (var key : artifactKeys) {
+        var serverPlugin = serverPluginsByKey.get(key);
+        if (serverPlugin != null) {
+          resolved.put(key, resolveFromStorageOrSchedule(serverPlugin, storedPlugins, key));
+        } else {
+          findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
+            .ifPresent(r -> resolved.put(key, r));
+        }
+      }
+      expectedServerPlugins = artifactKeys.stream()
+        .filter(serverPluginsByKey::containsKey)
+        .map(key -> {
+          var serverPlugin = serverPluginsByKey.get(key);
+          // If the stored file already has the correct hash but a different filename (e.g. in tests),
+          // use the stored filename so cleanUpUnknownPlugins does not delete it.
+          return findStoredPlugin(key, storedPlugins)
+            .filter(stored -> stored.hasSameHash(serverPlugin))
+            .map(stored -> new ServerPlugin(key, serverPlugin.getHash(), stored.getJarPath().getFileName().toString(), serverPlugin.isSonarLintSupported()))
+            .orElse(serverPlugin);
+        })
+        .toList();
     } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      return findStoredPlugin(artifactKey, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()));
+      for (var key : artifactKeys) {
+        findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
+          .ifPresent(r -> resolved.put(key, r));
+      }
     }
+    if (serverAccessible) {
+      storageService.connection(connectionId).plugins().cleanUpUnknownPlugins(expectedServerPlugins);
+    }
+    return new LoadResult(resolved);
   }
 
   private ResolvedArtifact resolveFromStorageOrSchedule(ServerPlugin serverPlugin,

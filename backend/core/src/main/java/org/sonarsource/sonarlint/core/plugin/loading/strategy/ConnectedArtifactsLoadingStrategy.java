@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
@@ -47,10 +49,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  * </ol>
  *
  * <p>{@link #resolveArtifacts()} uses a winner-map pattern: iterate sources in ascending
- * priority, last writer wins per key, then call {@code load()} exactly once per key from the
- * winning source.
+ * priority, last writer wins per key, then apply passes to correct the map before loading.
  *
- * <p>Two post-processing passes correct the winner map before loading:
+ * <p>Connected-mode-specific passes (applied before the shared passes):
  * <ol>
  *   <li><b>Enterprise-variant deduplication</b>: when a different-key enterprise variant
  *       ({@code csharpenterprise}, {@code vbnetenterprise}) is present, the base key is removed
@@ -62,7 +63,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  *       connection qualifies (SonarQube Server &ge; minimum version, or SonarQube Cloud).</li>
  * </ol>
  */
-public class ConnectedArtifactsLoadingStrategy implements ArtifactsLoadingStrategy {
+public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrategy {
   private final ServerPluginSource serverSource;
   private final LanguageSupportRepository languageSupportRepository;
   private final List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
@@ -92,27 +93,39 @@ public class ConnectedArtifactsLoadingStrategy implements ArtifactsLoadingStrate
     // Query server artifacts once; reused in normal pass and enterprise-override pass
     var serverArtifacts = serverSource.listAvailableArtifacts(enabledLanguages);
 
-    // Normal winner-map: ascending priority, last writer wins
-    var bestSourceByArtifactKey = new LinkedHashMap<String, ArtifactSource>();
+    // Winner-map: ascending priority, last writer wins per key
+    var candidates = new LinkedHashMap<String, ArtifactCandidate>();
     for (var source : artifactSourcesSortedByAscendingPriority) {
       var artifacts = (source == serverSource) ? serverArtifacts : source.listAvailableArtifacts(enabledLanguages);
       for (var artifact : artifacts) {
-        bestSourceByArtifactKey.put(artifact.key(), source);
+        candidates.put(artifact.key(), new ArtifactCandidate(artifact, source));
       }
     }
 
-    // Pass 1: remove base keys superseded by a different-key enterprise variant
-    new ArrayList<>(bestSourceByArtifactKey.keySet()).stream()
+    // Pass 1 (connected-specific): remove base keys superseded by a different-key enterprise variant
+    new ArrayList<>(candidates.keySet()).stream()
       .filter(SonarPlugin::isEnterpriseVariant)
-      .forEach(entKey -> SonarPlugin.baseKeyFor(entKey).ifPresent(bestSourceByArtifactKey::remove));
+      .forEach(entKey -> SonarPlugin.baseKeyFor(entKey).ifPresent(candidates::remove));
 
-    // Pass 2: enterprise server plugins override even embedded
+    // Pass 2 (connected-specific): enterprise server plugins override even embedded
     serverArtifacts.stream()
       .filter(AvailableArtifact::isEnterprise)
-      .forEach(a -> bestSourceByArtifactKey.put(a.key(), serverSource));
+      .forEach(a -> candidates.computeIfPresent(a.key(), (k, existing) -> new ArtifactCandidate(existing.available(), serverSource)));
 
+    // Shared passes
+    removeOrphanDependencies(candidates);
+    removeMissingRequiredDeps(candidates);
+
+    // Group winning keys by source, then load once per source.
+    // Pre-populate all sources with empty sets so every source is always called (e.g. ServerPluginSource
+    // needs to be called even with an empty set to initialize its storage when nothing is downloaded).
+    var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
+    for (var source : artifactSourcesSortedByAscendingPriority) {
+      keysBySource.put(source, new HashSet<>());
+    }
+    candidates.forEach((key, candidate) -> keysBySource.get(candidate.source()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
-    bestSourceByArtifactKey.forEach((artifactKey, source) -> source.load(artifactKey).ifPresent(artifact -> result.put(artifactKey, artifact)));
+    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
     return new ArtifactsLoadingResult(enabledLanguages, result);
   }
 }

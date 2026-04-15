@@ -17,12 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin;
 
-/**
- * Published when all required OmniSharp distribution directories become available after download and extraction.
- * Listeners (e.g. {@link org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache}) should reset
- * their C# analysis schedulers so they pick up the newly resolved runtime paths.
- */
-public record OmnisharpDistributionChangedEvent() {
+import java.util.Map;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
+
+public record PluginsConfiguration(ArtifactsLoadingResult artifactsResult, LoadedPlugins plugins, Map<String, String> extraProperties) {
 }

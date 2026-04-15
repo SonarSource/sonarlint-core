@@ -132,7 +132,7 @@ class ServerPluginDownloaderTest {
     downloader.schedulePluginDownload("conn", serverPlugin);
     downloader.schedulePluginDownload("conn", serverPlugin);
 
-    verify(mockedExecutor, times(1)).submit(any(Runnable.class));
+    verify(mockedExecutor, times(1)).execute(any(Runnable.class));
   }
 
   @Test

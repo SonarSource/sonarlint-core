@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Implementation
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
-public class PluginSynchronizationSummary {
-  private final boolean anyPluginSynchronized;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 
-  public PluginSynchronizationSummary(boolean anyPluginSynchronized) {
-    this.anyPluginSynchronized = anyPluginSynchronized;
-  }
-
-  public boolean anyPluginSynchronized() {
-    return anyPluginSynchronized;
-  }
+/**
+ * Pairs an {@link AvailableArtifact} with the {@link ArtifactSource} that won the priority
+ * contest for its key. Used as the value type of the winner-map in both loading strategies.
+ */
+record ArtifactCandidate(AvailableArtifact available, ArtifactSource source) {
 }

@@ -53,7 +53,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssue;
@@ -77,7 +76,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
@@ -111,7 +110,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey,
@@ -148,7 +147,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1")))))
@@ -183,7 +182,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey,
@@ -219,7 +218,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
@@ -253,7 +252,7 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       var backend = harness.newBackend()
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
@@ -305,11 +304,10 @@ class IssueEventsMediumTests {
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
                 "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
-        .withPlugin(TestPlugin.JAVA)
         .start();
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
@@ -369,11 +367,10 @@ class IssueEventsMediumTests {
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
                 "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
-        .withPlugin(TestPlugin.JAVA)
         .start();
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
@@ -429,11 +426,10 @@ class IssueEventsMediumTests {
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
                 "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW))))
-        .withPlugin(TestPlugin.JAVA)
         .start();
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
@@ -495,11 +491,10 @@ class IssueEventsMediumTests {
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
                 "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
-        .withPlugin(TestPlugin.JAVA)
         .start();
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
-        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)

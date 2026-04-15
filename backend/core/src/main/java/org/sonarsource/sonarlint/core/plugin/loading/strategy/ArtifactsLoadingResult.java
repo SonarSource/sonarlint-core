@@ -19,38 +19,75 @@
  */
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
 public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
-  public void whenAllArtifactsDownloaded(Runnable runnable) {
+
+  public Optional<ResolvedArtifact> getResolvedArtifactByKey(String key) {
+    return Optional.ofNullable(resolvedArtifactsByKey().get(key));
+  }
+
+  /**
+   * All artifacts must not be loaded, only real Sonar plugins.
+   */
+  public List<Path> getPluginPaths() {
+    var pluginPaths = new ArrayList<Path>();
+    for (var entry : resolvedArtifactsByKey.entrySet()) {
+      var key = entry.getKey();
+      var artifact = entry.getValue();
+      // only load artifacts that are ready on disk and not dependencies
+      if (artifact == null || artifact.path() == null || SonarPluginDependency.findByKey(key).isPresent()) {
+        continue;
+      }
+      // only load plugins whose required dependencies are also present on disk
+      if (areRequiredDependenciesPresent(key)) {
+        pluginPaths.add(artifact.path());
+      }
+    }
+    return pluginPaths;
+  }
+
+  private boolean areRequiredDependenciesPresent(String key) {
+    return SonarPlugin.findByKey(key)
+      .map(plugin -> plugin.getDependencies().stream()
+        .filter(dep -> !dep.optional())
+        .allMatch(dep -> {
+          var depArtifact = resolvedArtifactsByKey.get(dep.artifact().getKey());
+          return depArtifact != null && depArtifact.path() != null;
+        }))
+      .orElse(true);
+  }
+
+  public Optional<CompletableFuture<Void>> getAllDownloadsFuture() {
     var pendingDownloads = resolvedArtifactsByKey.values().stream().map(ResolvedArtifact::downloadFuture)
       .filter(Objects::nonNull)
       .toList();
     if (pendingDownloads.isEmpty()) {
-      return;
+      return Optional.empty();
     }
-    var completableFutures = pendingDownloads.stream()
-      .map(f -> CompletableFuture.runAsync(() -> {
-        try {
-          f.get();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-          // ignored: download errors are handled elsewhere
-        }
-      }))
-      .toArray(CompletableFuture[]::new);
-    var logOutput = SonarLintLogger.get().getTargetForCopy();
-    CompletableFuture.allOf(completableFutures).thenRun(() -> {
-      SonarLintLogger.get().setTarget(logOutput);
-      runnable.run();
-    });
+    return Optional.of(CompletableFuture.allOf(pendingDownloads.toArray(new CompletableFuture[0])));
+  }
+
+  public void whenAllArtifactsDownloaded(Runnable runnable) {
+    getAllDownloadsFuture()
+      .ifPresent(future -> {
+        var logOutput = SonarLintLogger.get().getTargetForCopy();
+        future.thenRun(() -> {
+          SonarLintLogger.get().setTarget(logOutput);
+          runnable.run();
+        });
+      });
   }
 }

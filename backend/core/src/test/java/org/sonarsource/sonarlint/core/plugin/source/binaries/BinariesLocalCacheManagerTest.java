@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OnDemandPluginCacheManagerTest {
+class BinariesLocalCacheManagerTest {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
@@ -41,7 +41,7 @@ class OnDemandPluginCacheManagerTest {
   @TempDir
   Path tempDir;
 
-  private final OnDemandPluginCacheManager underTest = new OnDemandPluginCacheManager();
+  private final BinariesLocalCacheManager underTest = new BinariesLocalCacheManager();
 
   @Test
   void should_do_nothing_when_cache_directory_does_not_exist() {

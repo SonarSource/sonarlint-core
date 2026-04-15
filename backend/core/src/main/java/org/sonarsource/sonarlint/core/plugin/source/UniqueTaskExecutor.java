@@ -20,24 +20,24 @@
 package org.sonarsource.sonarlint.core.plugin.source;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class UniqueTaskExecutor {
 
-  private final Map<String, Future<?>> inProgress = new ConcurrentHashMap<>();
+  private final Map<String, CompletableFuture<Void>> inProgress = new ConcurrentHashMap<>();
   private final ExecutorService executor;
 
   public UniqueTaskExecutor(ExecutorService executor) {
     this.executor = executor;
   }
 
-  public Future<?> scheduleIfAbsent(String key, Runnable task) {
+  public CompletableFuture<Void> scheduleIfAbsent(String key, Runnable task) {
     return inProgress.computeIfAbsent(key, k -> {
       var logOutput = SonarLintLogger.get().getTargetForCopy();
-      return executor.submit(() -> {
+      return CompletableFuture.runAsync(() -> {
         SonarLintLogger.get().setTarget(logOutput);
         try {
           task.run();
@@ -45,7 +45,7 @@ public class UniqueTaskExecutor {
           inProgress.remove(key);
           SonarLintLogger.get().setTarget(null);
         }
-      });
+      }, executor);
     });
   }
 

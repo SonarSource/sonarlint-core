@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
-import org.sonarsource.sonarlint.core.event.OmnisharpDistributionChangedEvent;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -303,11 +302,6 @@ public class AnalysisService {
   }
 
   @EventListener
-  public void onOmnisharpDistributionChanged(OmnisharpDistributionChangedEvent event) {
-    checkIfReadyForAnalysis(new HashSet<>(analysisReadinessByConfigScopeId.keySet()));
-  }
-
-  @EventListener
   public void onConfigurationScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
     var configScopeIds = event.getConfigScopeIds();
     checkIfReadyForAnalysis(configScopeIds);
@@ -479,16 +473,14 @@ public class AnalysisService {
   }
 
   private boolean isReadyForAnalysis(Binding binding) {
-    var pluginsValid = storageService.connection(binding.connectionId()).plugins().isValid();
     var bindingStorage = storageService.binding(binding);
     var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
     var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
-    var isReady = pluginsValid
-      && analyzerConfigValid
+    var isReady = analyzerConfigValid
       // this is not strictly for analysis but for tracking
       && findingsStorageValid;
     LOG.debug("isReadyForAnalysis(connectionId: {}, sonarProjectKey: {}, plugins: {}, analyzer config: {}, findings: {}) => {}",
-      binding.connectionId(), binding.sonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
+      binding.connectionId(), binding.sonarProjectKey(), true, analyzerConfigValid, findingsStorageValid, isReady);
     return isReady;
   }
 

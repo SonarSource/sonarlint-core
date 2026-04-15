@@ -24,7 +24,7 @@ import mockwebserver3.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.sonarsource.sonarlint.core.plugin.source.DownloadableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
@@ -72,7 +72,7 @@ class OnDemandAnalyzersMediumTests {
     }
 
     var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
-    systemProperties.set(DownloadableArtifact.PROPERTY_URL_PATTERN, serverUrl);
+    systemProperties.set(BinariesArtifact.PROPERTY_URL_PATTERN, serverUrl);
 
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()

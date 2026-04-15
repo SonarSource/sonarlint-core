@@ -96,11 +96,9 @@ import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifacts
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
-import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OmnisharpDistributionDownloader;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginCacheManager;
-import org.sonarsource.sonarlint.core.plugin.source.binaries.OnDemandPluginSignatureVerifier;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesLocalCacheManager;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesSignatureVerifier;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.progress.ClientAwareTaskManager;
@@ -241,11 +239,9 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   StandaloneArtifactsLoadingStrategy.class,
   ConnectedArtifactsLoadingStrategyFactory.class,
   BinariesArtifactSource.class,
-  OnDemandPluginCacheManager.class,
-  OnDemandPluginSignatureVerifier.class,
-  OmnisharpDistributionDownloader.class,
-  ServerPluginDownloader.class,
-  UniqueTaskExecutor.class
+  BinariesLocalCacheManager.class,
+  BinariesSignatureVerifier.class,
+  ServerPluginDownloader.class
 })
 public class SonarLintSpringAppConfig {
 

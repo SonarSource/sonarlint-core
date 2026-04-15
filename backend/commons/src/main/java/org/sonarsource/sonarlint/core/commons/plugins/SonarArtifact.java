@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.source;
+package org.sonarsource.sonarlint.core.commons.plugins;
 
-import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version,
-  CompletableFuture<?> downloadFuture) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null, null);
-  }
+public interface SonarArtifact {
+  /* A key that uniquely identifies the artifact */
+  String getKey();
+
+  /* The list of languages that the artifact supports */
+  Set<SonarLanguage> getLanguages();
 }

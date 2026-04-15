@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.commons.plugins;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,11 +28,10 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
-public enum SonarPlugin {
+public enum SonarPlugin implements SonarArtifact {
   ABAP("abap"),
   APEX("sonarapex"),
   C_FAMILY("cpp"),
-  // CSHARP_ENTERPRISE must be declared before CS_OSS so it can be referenced in the constructor
   CSHARP_ENTERPRISE("csharpenterprise"),
   CS_OSS("csharp", CSHARP_ENTERPRISE),
   COBOL("cobol"),
@@ -50,11 +48,17 @@ public enum SonarPlugin {
   RPG("rpg"),
   RUBY("ruby"),
   SCALA("sonarscala"),
+  SONARLINT_OMNISHARP("omnisharp", Set.of(
+    Dependency.required(CS_OSS),
+    Dependency.optional(CSHARP_ENTERPRISE),
+    Dependency.required(SonarPluginDependency.OMNISHARP_MONO),
+    Dependency.required(SonarPluginDependency.OMNISHARP_NET472),
+    Dependency.required(SonarPluginDependency.OMNISHARP_NET6))),
   SWIFT("swift"),
+  TEXT_DEVELOPER("textdeveloper"),
   TEXT_ENTERPRISE("textenterprise"),
-  TEXT("text", TEXT_ENTERPRISE),
+  TEXT("text", TEXT_DEVELOPER, TEXT_ENTERPRISE),
   TSQL("tsql"),
-  // VBNET_ENTERPRISE must be declared before VBNET_OSS
   VBNET_ENTERPRISE("vbnetenterprise"),
   VBNET_OSS("vbnet", VBNET_ENTERPRISE),
   WEB("web"),
@@ -75,8 +79,7 @@ public enum SonarPlugin {
    */
   public static boolean isEnterpriseVariant(String key) {
     return Arrays.stream(values())
-      .map(p -> p.enterpriseVariant)
-      .filter(Objects::nonNull)
+      .flatMap(p -> p.enterpriseVariants.stream())
       .anyMatch(ev -> ev.getKey().equals(key));
   }
 
@@ -87,7 +90,7 @@ public enum SonarPlugin {
    */
   public static Optional<SonarPlugin> basePluginFor(String enterpriseKey) {
     return Arrays.stream(values())
-      .filter(p -> p.enterpriseVariant != null && p.enterpriseVariant.getKey().equals(enterpriseKey))
+      .filter(p -> p.enterpriseVariants.stream().map(SonarPlugin::getKey).anyMatch(key -> key.equals(enterpriseKey)))
       .findFirst();
   }
 
@@ -103,47 +106,59 @@ public enum SonarPlugin {
 
   private final String key;
   /**
-   * Non-null for plugins that have an enterprise variant plugin that uses a
-   * different server key (e.g. {@code CSHARP_ENTERPRISE}).
+   * Non-empty for plugins that have at least one enterprise variant plugin that uses a
+   * different server key (e.g. {@code CSHARP_ENTERPRISE}). There can be more than one variant.
    */
-  @Nullable
-  private final SonarPlugin enterpriseVariant;
+  private final Set<SonarPlugin> enterpriseVariants;
   /**
    * Non-null for plugins whose enterprise edition is a drop-in replacement served under the
    * <em>same</em> plugin key (GO, IAC, TEXT).
    */
   @Nullable
   private final EnterpriseReplacement enterpriseReplacement;
+  private final Set<Dependency> dependencies;
 
   SonarPlugin(String key) {
     this.key = key;
-    this.enterpriseVariant = null;
+    this.enterpriseVariants = Set.of();
     this.enterpriseReplacement = null;
+    this.dependencies = Set.of();
   }
 
   /** Constructor for plugins with a different-key enterprise variant (CS, VBNET). */
-  SonarPlugin(String key, SonarPlugin enterpriseVariant) {
+  SonarPlugin(String key, SonarPlugin... enterpriseVariants) {
     this.key = key;
-    this.enterpriseVariant = enterpriseVariant;
+    this.enterpriseVariants = Set.of(enterpriseVariants);
     this.enterpriseReplacement = null;
+    this.dependencies = Set.of();
   }
 
   /** Constructor for same-key enterprise plugins (GO, IAC, TEXT). */
   SonarPlugin(String key, EnterpriseReplacement enterpriseReplacement) {
     this.key = key;
-    this.enterpriseVariant = null;
+    this.enterpriseVariants = Set.of();
     this.enterpriseReplacement = enterpriseReplacement;
+    this.dependencies = Set.of();
   }
 
+  /** Constructor for plugins with dependencies (e.g. SONARLINT_OMNISHARP). */
+  SonarPlugin(String key, Set<Dependency> dependencies) {
+    this.key = key;
+    this.enterpriseVariants = Set.of();
+    this.enterpriseReplacement = null;
+    this.dependencies = dependencies;
+  }
+
+  @Override
   public String getKey() {
     return key;
   }
 
   /**
-   * Returns the enterprise variant plugin (with a different key) for this plugin, if any.
+   * Returns the enterprise variant plugins (with different keys) for this plugin, if any. Never null.
    */
-  public Optional<SonarPlugin> getEnterpriseVariant() {
-    return Optional.ofNullable(enterpriseVariant);
+  public Set<SonarPlugin> getEnterpriseVariants() {
+    return enterpriseVariants;
   }
 
   /**
@@ -154,6 +169,11 @@ public enum SonarPlugin {
     return Optional.ofNullable(enterpriseReplacement);
   }
 
+  public Set<Dependency> getDependencies() {
+    return dependencies;
+  }
+
+  @Override
   public Set<SonarLanguage> getLanguages() {
     var sonarLanguages = EnumSet.noneOf(SonarLanguage.class);
     sonarLanguages.addAll(Arrays.stream(SonarLanguage.values()).filter(l -> l.getPlugin().getKey().equals(key)).collect(Collectors.toSet()));

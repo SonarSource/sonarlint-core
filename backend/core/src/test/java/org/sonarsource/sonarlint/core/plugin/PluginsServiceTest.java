@@ -18,8 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 package org.sonarsource.sonarlint.core.plugin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,25 +31,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
@@ -107,9 +105,12 @@ class PluginsServiceTest {
     when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
     when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
+    var binariesArtifactSource = mock(BinariesArtifactSource.class);
+    when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
+
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory);
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource);
   }
 
   @Test
@@ -169,7 +170,7 @@ class PluginsServiceTest {
   void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServerWithRepackagedPluginAndPluginIsPresentOnTheServer_returnsTrue() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID);
 
     var result = underTest.shouldUseEnterpriseCSharpAnalyzer(connectionId);
 
@@ -233,7 +234,7 @@ class PluginsServiceTest {
   void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithRepackagedPluginAndPluginIsPresentOnTheServer_returnsTrue() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID);
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
@@ -242,86 +243,100 @@ class PluginsServiceTest {
 
   @ParameterizedTest
   @EnumSource(value = Language.class, names = {"CS", "VBNET", "COBOL"})
-  void getDotnetSupport_nullConnection_ReturnsExpectedProperties(Language language) {
+  void getEmbeddedPlugins_extraProperties_ReturnsExpectedDotnetProperties(Language language) {
     mockEnabledLanguages(language);
 
-    var result = underTest.getDotnetSupport(null);
+    var props = underTest.getEmbeddedPlugins().extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(ossPath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isFalse();
-    assertThat(result.isShouldUseVbNetEnterprise()).isFalse();
-    assertThat(result.isSupportsCsharp()).isEqualTo(language == Language.CS);
-    assertThat(result.isSupportsVbNet()).isEqualTo(language == Language.VBNET);
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", ossPath.toString());
+    if (language == Language.CS) {
+      assertThat(props).containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "false");
+    }
+    if (language == Language.VBNET) {
+      assertThat(props).containsEntry("sonar.cs.internal.shouldUseVbEnterprise", "false");
+    }
   }
 
   @Test
-  void getDotnetSupport_connectionForCloud_fallsBackToOss_whenEnterpriseNotInStorage() {
+  void getPlugins_extraProperties_forCloud_fallsBackToOss_whenEnterpriseNotInStorage() {
     var connectionId = "SQC";
     var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
     mockConnection(connection);
+    mockEnabledLanguages(Language.CS);
 
-    var result = underTest.getDotnetSupport(connectionId);
+    var props = underTest.getPlugins(connectionId).extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(ossPath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isTrue();
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", ossPath.toString())
+      .containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "true");
   }
 
   @Test
-  void getDotnetSupport_connectionForCloud_ReturnsEnterpriseProperties() {
+  void getPlugins_extraProperties_forCloud_ReturnsEnterpriseProperties() {
     var connectionId = "SQC";
     var connection = createConnection(connectionId, ConnectionKind.SONARCLOUD);
     mockConnection(connection);
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockEnabledLanguages(Language.CS, Language.VBNET);
 
-    var result = underTest.getDotnetSupport(connectionId);
+    var props = underTest.getPlugins(connectionId).extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(enterprisePath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isTrue();
-    assertThat(result.isShouldUseVbNetEnterprise()).isTrue();
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", enterprisePath.toString())
+      .containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "true")
+      .containsEntry("sonar.cs.internal.shouldUseVbEnterprise", "true");
   }
 
   @Test
-  void getDotnetSupport_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
+  void getPlugins_extraProperties_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockEnabledLanguages(Language.CS, Language.VBNET);
 
-    var result = underTest.getDotnetSupport(connectionId);
+    var props = underTest.getPlugins(connectionId).extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(enterprisePath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isTrue();
-    assertThat(result.isShouldUseVbNetEnterprise()).isTrue();
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", enterprisePath.toString())
+      .containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "true")
+      .containsEntry("sonar.cs.internal.shouldUseVbEnterprise", "true");
   }
 
   @Test
-  void getDotnetSupport_connectionIsToServerWithRepackagedCsharpPlugin_ReturnsEnterprisePropertiesForCsharp() {
+  void getPlugins_extraProperties_connectionIsToServerWithRepackagedCsharpPlugin_ReturnsEnterprisePropertiesForCsharp() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockEnabledLanguages(Language.CS, Language.VBNET);
 
-    var result = underTest.getDotnetSupport(connectionId);
+    var props = underTest.getPlugins(connectionId).extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(enterprisePath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isTrue();
-    assertThat(result.isShouldUseVbNetEnterprise()).isFalse();
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", enterprisePath.toString())
+      .containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "true")
+      .containsEntry("sonar.cs.internal.shouldUseVbEnterprise", "false");
   }
 
   @Test
-  void getDotnetSupport_connectionIsToServerWithRepackagedVbPlugin_ReturnsEnterprisePropertiesForVb() {
+  void getPlugins_extraProperties_connectionIsToServerWithRepackagedVbPlugin_ReturnsEnterprisePropertiesForVb() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.8"));
-    mockPlugin(PluginsSynchronizer.VBNET_ENTERPRISE_PLUGIN_ID);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID);
+    mockEnabledLanguages(Language.CS, Language.VBNET);
 
-    var result = underTest.getDotnetSupport(connectionId);
+    var props = underTest.getPlugins(connectionId).extraProperties();
 
-    assertThat(result.getActualCsharpAnalyzerPath()).isEqualTo(ossPath);
-    assertThat(result.isShouldUseCsharpEnterprise()).isFalse();
-    assertThat(result.isShouldUseVbNetEnterprise()).isTrue();
+    assertThat(props)
+      .containsEntry("sonar.cs.internal.analyzerPath", ossPath.toString())
+      .containsEntry("sonar.cs.internal.shouldUseCsharpEnterprise", "false")
+      .containsEntry("sonar.cs.internal.shouldUseVbEnterprise", "true");
   }
 
   @Test
   void should_return_list_size_equal_to_sonar_language_values() {
     var connectionId = "connection1";
+    mockNoConnection(connectionId);
 
     var result = underTest.getPluginStatuses(connectionId);
 
@@ -329,22 +344,8 @@ class PluginsServiceTest {
   }
 
   @Test
-  void unloadPlugins_should_publish_event_when_plugins_were_loaded() {
-    var connectionId = "connection1";
-    when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(mock(LoadedPlugins.class));
-
-    underTest.unloadPlugins(connectionId);
-
-    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
-    verify(eventPublisher).publishEvent(captor.capture());
-    assertThat(captor.getValue().connectionId()).isEqualTo(connectionId);
-    assertThat(captor.getValue().pluginStatuses()).isNotNull();
-  }
-
-  @Test
   void unloadPlugins_should_not_publish_event_when_no_plugins_were_loaded() {
     var connectionId = "connection1";
-    when(pluginsRepository.getLoadedPlugins(connectionId)).thenReturn(null);
 
     underTest.unloadPlugins(connectionId);
 
@@ -362,8 +363,6 @@ class PluginsServiceTest {
 
   @Test
   void unloadEmbeddedPlugins_should_not_publish_event_when_no_embedded_plugins_were_loaded() {
-    when(pluginsRepository.getLoadedEmbeddedPlugins()).thenReturn(null);
-
     underTest.unloadPlugins(null);
 
     verify(eventPublisher, never()).publishEvent(any());

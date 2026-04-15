@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import java.util.Map;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -65,7 +66,7 @@ class PluginLifecycleServiceTest {
   void reloadPluginsAndEvictCaches_unloads_then_loads_and_returns_new_plugins() {
     var connectionId = "conn1";
     var loadedPlugins = mock(LoadedPlugins.class);
-    when(pluginsService.getPlugins(connectionId)).thenReturn(loadedPlugins);
+    when(pluginsService.getPlugins(connectionId)).thenReturn(new PluginsConfiguration(null, loadedPlugins, Map.of()));
 
     var result = underTest.reloadPluginsAndEvictCaches(connectionId);
 
@@ -73,7 +74,7 @@ class PluginLifecycleServiceTest {
     verify(rulesRepository).evictFor(connectionId);
     verify(activeRulesService).evictFor(connectionId);
     verify(pluginsService).getPlugins(connectionId);
-    assertThat(result).isSameAs(loadedPlugins);
+    assertThat(result.plugins()).isSameAs(loadedPlugins);
   }
 
   @Test
@@ -88,7 +89,7 @@ class PluginLifecycleServiceTest {
   @Test
   void reloadEmbeddedPluginsAndEvictCaches_unloads_then_loads_and_returns_new_embedded_plugins() {
     var loadedPlugins = mock(LoadedPlugins.class);
-    when(pluginsService.getEmbeddedPlugins()).thenReturn(loadedPlugins);
+    when(pluginsService.getEmbeddedPlugins()).thenReturn(new PluginsConfiguration(null, loadedPlugins, Map.of()));
 
     var result = underTest.reloadEmbeddedPluginsAndEvictCaches();
 
@@ -96,7 +97,7 @@ class PluginLifecycleServiceTest {
     verify(rulesRepository).evictEmbedded();
     verify(activeRulesService).evictStandalone();
     verify(pluginsService).getEmbeddedPlugins();
-    assertThat(result).isSameAs(loadedPlugins);
+    assertThat(result.plugins()).isSameAs(loadedPlugins);
   }
 
 }

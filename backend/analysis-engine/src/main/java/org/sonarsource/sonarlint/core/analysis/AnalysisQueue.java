@@ -76,8 +76,8 @@ public class AnalysisQueue {
     }
   }
 
-  public synchronized void clearAllButAnalyses() {
-    removeAll(queuedCommand -> !(queuedCommand.command instanceof AnalyzeCommand));
+  public synchronized void clearAllButAnalysesAndResets() {
+    removeAll(queuedCommand -> !(queuedCommand.command instanceof AnalyzeCommand) && !(queuedCommand.command instanceof ResetPluginsCommand));
   }
 
   private Optional<QueuedCommand> pollNextReadyCommand() {

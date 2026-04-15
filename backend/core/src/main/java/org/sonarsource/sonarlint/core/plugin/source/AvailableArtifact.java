@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
 
 /**
  * An artifact (plugin or plugin dependency) known to a given {@link ArtifactSource}.
@@ -32,10 +34,5 @@ import org.sonarsource.sonarlint.core.commons.Version;
  * plugin on the current connection. Enterprise artifacts take priority over embedded sources
  * in {@code ConnectedArtifactsLoadingStrategy}.</p>
  */
-public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise) {
-
-  /** Backward-compatible constructor — {@code isEnterprise} defaults to {@code false}. */
-  public AvailableArtifact(String key, @Nullable Version version) {
-    this(key, version, false);
-  }
+public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact) {
 }

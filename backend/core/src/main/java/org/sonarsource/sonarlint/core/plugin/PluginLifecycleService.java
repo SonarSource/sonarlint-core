@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 
 /**
@@ -43,7 +42,7 @@ public class PluginLifecycleService {
     this.activeRulesService = activeRulesService;
   }
 
-  public LoadedPlugins reloadPluginsAndEvictCaches(String connectionId) {
+  public PluginsConfiguration reloadPluginsAndEvictCaches(String connectionId) {
     LOG.debug("Reloading plugins and evicting all related caches for connection '{}'", connectionId);
 
     unloadPluginsAndEvictCaches(connectionId);
@@ -58,7 +57,7 @@ public class PluginLifecycleService {
     activeRulesService.evictFor(connectionId);
   }
 
-  public LoadedPlugins reloadEmbeddedPluginsAndEvictCaches() {
+  public PluginsConfiguration reloadEmbeddedPluginsAndEvictCaches() {
     LOG.debug("Reloading embedded plugins and evicting all related caches");
 
     unloadEmbeddedPluginsAndEvictCaches();
