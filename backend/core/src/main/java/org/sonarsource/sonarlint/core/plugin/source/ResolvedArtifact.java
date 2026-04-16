@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version,
-  CompletableFuture<?> downloadFuture) {
+  @Nullable CompletableFuture<?> downloadFuture) {
   public static ResolvedArtifact premium() {
     return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null, null);
   }
