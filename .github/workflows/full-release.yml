@@ -16,7 +16,7 @@ on:
 jobs:
   release:
     name: Release
-    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@2d944d5ff92467db2dee4e1629a6c1b88cc6e953 # 1.4.3
+    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@6f94d0d49b2bb6d324f3110ef078e3a5bd95604e # 1.5.4
     if: always() && !failure() && !cancelled()
     permissions:
       statuses: read
@@ -46,7 +46,7 @@ jobs:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
         run: |
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$NEW_VERSION-SNAPSHOT"
-      - uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
           author: ${{ github.actor }} <${{ github.actor }}>
           commit-message: Prepare next development iteration

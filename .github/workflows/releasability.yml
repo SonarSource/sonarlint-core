@@ -17,7 +17,7 @@ jobs:
             contents: read
         if: github.event.workflow_run.conclusion == 'success'
         steps:
-            -   uses: SonarSource/gh-action_releasability/releasability-status@683b9a1ffd08c3a23af1d1bffb67a9d7bcfb1b08 # 3.0.4
+            -   uses: SonarSource/gh-action_releasability/releasability-status@52f09917764eac5a80045d103bfa91e7eaf0c8d6 # 3.0.5
                 with:
                     optional_checks: "Jira"
                 env:

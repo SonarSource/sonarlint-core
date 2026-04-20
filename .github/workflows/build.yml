@@ -28,7 +28,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/get-build-number@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         id: build-number
 
   build:
@@ -47,7 +47,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.15
-      - uses: SonarSource/ci-github-actions/build-maven@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/build-maven@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         id: build
         with:
           sonar-platform: none
@@ -84,11 +84,11 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+        uses: SonarSource/ci-github-actions/cache@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/config-maven@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -119,7 +119,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-test-report
           path: |
@@ -140,7 +140,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.3.15
-      - uses: SonarSource/ci-github-actions/config-maven@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/config-maven@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -162,7 +162,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-test-report
           path: |
@@ -226,7 +226,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/cache@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -245,7 +245,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/config-maven@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         with:
           artifactory-reader-role: private-reader
       - name: Run QA
@@ -272,7 +272,7 @@ jobs:
           fail-on-empty: false
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: qa-test-report ${{ matrix.name }}
           path: |
@@ -313,6 +313,6 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: SonarSource/ci-github-actions/promote@d8400ed2a8b8019e4dfe43d612a7eb6280334968 # 1.3.29
+      - uses: SonarSource/ci-github-actions/promote@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34
         with:
           promote-pull-request: true
