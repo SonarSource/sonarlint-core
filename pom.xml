@@ -81,7 +81,7 @@
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
     <flyway.version>11.20.3</flyway.version>
-    <bouncycastle.version>1.83</bouncycastle.version>
+    <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.77.0.95488</cfamily.version>
     <csharp.version>10.19.0.132793</csharp.version>
