@@ -18,9 +18,9 @@
   <description>Java Custom Rules</description>
 
   <properties>
-    <sonarjava.version>7.16.0.30901</sonarjava.version>
+    <sonarjava.version>8.28.0.43176</sonarjava.version>
     <analyzer.commons.version>2.1.0.1111</analyzer.commons.version>
-    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <sonar.apiVersion>13.5.0.4319</sonar.apiVersion>
     <!-- Always force Java 17 while SQ 9.9 is supported -->
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
