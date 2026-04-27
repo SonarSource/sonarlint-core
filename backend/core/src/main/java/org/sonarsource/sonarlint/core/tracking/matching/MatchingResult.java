@@ -30,30 +30,30 @@ import javax.annotation.CheckForNull;
 /**
  * Store the result of matching of issues.
  *
- * @param <LEFT>  type of the issues that are in the first collection
- * @param <RIGHT> type of the issues that are in the second collection
+ * @param <L>  type of the issues that are in the first collection
+ * @param <R> type of the issues that are in the second collection
  */
-public class MatchingResult<LEFT, RIGHT> {
+public class MatchingResult<L, R> {
 
   /**
    * Matched issues -> a left issue is associated to a right issue
    */
-  private final IdentityHashMap<LEFT, RIGHT> leftToRight = new IdentityHashMap<>();
+  private final IdentityHashMap<L, R> leftToRight = new IdentityHashMap<>();
 
-  private final Collection<LEFT> lefts;
+  private final Collection<L> lefts;
 
-  public MatchingResult(Collection<LEFT> leftIssues) {
+  public MatchingResult(Collection<L> leftIssues) {
     this.lefts = leftIssues;
   }
 
   /**
    * Returns an Iterable to be traversed when matching issues. That means
-   * that the traversal does not fail if method {@link #recordMatch(LEFT, RIGHT)}
+   * that the traversal does not fail if method {@link #recordMatch(L, R)}
    * is called.
    */
-  public Iterable<LEFT> getUnmatchedLefts() {
-    List<LEFT> result = new ArrayList<>();
-    for (LEFT left : lefts) {
+  public Iterable<L> getUnmatchedLefts() {
+    List<L> result = new ArrayList<>();
+    for (L left : lefts) {
       if (!leftToRight.containsKey(left)) {
         result.add(left);
       }
@@ -61,11 +61,11 @@ public class MatchingResult<LEFT, RIGHT> {
     return result;
   }
 
-  public Map<LEFT, RIGHT> getMatchedLefts() {
+  public Map<L, R> getMatchedLefts() {
     return leftToRight;
   }
 
-  void recordMatch(LEFT left, RIGHT right) {
+  void recordMatch(L left, R right) {
     leftToRight.put(left, right);
   }
 
@@ -74,11 +74,11 @@ public class MatchingResult<LEFT, RIGHT> {
   }
 
   @CheckForNull
-  public RIGHT getMatch(LEFT left) {
+  public R getMatch(L left) {
     return leftToRight.get(left);
   }
 
-  public Optional<RIGHT> getMatchOpt(LEFT left) {
+  public Optional<R> getMatchOpt(L left) {
     return Optional.ofNullable(getMatch(left));
   }
 

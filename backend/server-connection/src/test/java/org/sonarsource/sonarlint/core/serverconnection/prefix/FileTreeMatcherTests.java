@@ -102,7 +102,7 @@ class FileTreeMatcherTests {
   }
 
   @Test
-  void more_complex_test_with_multiple_files() throws Exception {
+  void more_complex_test_with_multiple_files() {
     List<Path> idePaths = Arrays.asList(
       Paths.get("local/sub/index.html"),
       Paths.get("local/sub/product1/index.html"),
