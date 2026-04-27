@@ -48,7 +48,7 @@ class ProjectBindingTests {
     assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding2.hashCode());
     assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding3.hashCode());
     assertThat(projectBinding1.hashCode()).isNotEqualTo(projectBinding4.hashCode());
-    assertThat(projectBinding1.hashCode()).isEqualTo(projectBinding5.hashCode());
+    assertThat(projectBinding1).hasSameHashCodeAs(projectBinding5);
   }
 
   @Test

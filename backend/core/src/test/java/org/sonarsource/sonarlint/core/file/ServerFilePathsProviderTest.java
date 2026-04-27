@@ -64,25 +64,25 @@ class ServerFilePathsProviderTest {
 
   private Path cacheDirectory;
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
-  private final ServerApi serverApi_A = mock(ServerApi.class);
-  private final ServerApi serverApi_B = mock(ServerApi.class);
+  private final ServerApi serverApiA = mock(ServerApi.class);
+  private final ServerApi serverApiB = mock(ServerApi.class);
   private final SonarLintCancelMonitor cancelMonitor = mock(SonarLintCancelMonitor.class);
-  private final ComponentApi componentApi_A = mock(ComponentApi.class);
-  private final ComponentApi componentApi_B = mock(ComponentApi.class);
+  private final ComponentApi componentApiA = mock(ComponentApi.class);
+  private final ComponentApi componentApiB = mock(ComponentApi.class);
   private ServerFilePathsProvider underTest;
 
   @BeforeEach
   void before(@TempDir Path storageDir) throws IOException {
     cacheDirectory = storageDir.resolve("cache");
     Files.createDirectories(cacheDirectory);
-    when(serverApi_A.component()).thenReturn(componentApi_A);
-    when(serverApi_B.component()).thenReturn(componentApi_B);
+    when(serverApiA.component()).thenReturn(componentApiA);
+    when(serverApiB.component()).thenReturn(componentApiB);
     when(sonarQubeClientManager.withActiveClientAndReturn(eq(CONNECTION_A), any())).thenAnswer(
-      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi_A)));
+      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApiA)));
     when(sonarQubeClientManager.withActiveClientAndReturn(eq(CONNECTION_B), any())).thenAnswer(
-      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi_B)));
-    mockServerFilePaths(componentApi_A, "pathA", "pathB");
-    mockServerFilePaths(componentApi_B, "pathC", "pathD");
+      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApiB)));
+    mockServerFilePaths(componentApiA, "pathA", "pathB");
+    mockServerFilePaths(componentApiB, "pathC", "pathD");
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(storageDir);
     underTest = new ServerFilePathsProvider(sonarQubeClientManager, userPaths);
@@ -119,8 +119,8 @@ class ServerFilePathsProviderTest {
   void fetch_from_in_memory_for_the_second_attempt() throws IOException {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
 
-    verify(componentApi_A, times(1)).getAllFileKeys(PROJECT_KEY, cancelMonitor);
-    verifyNoMoreInteractions(componentApi_A);
+    verify(componentApiA, times(1)).getAllFileKeys(PROJECT_KEY, cancelMonitor);
+    verifyNoMoreInteractions(componentApiA);
     FileUtils.deleteDirectory(cacheDirectory.toFile());
 
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
@@ -157,7 +157,7 @@ class ServerFilePathsProviderTest {
 
   @Test
   void shouldLogAndIgnoreOtherErrors() {
-    when(serverApi_A.component().getAllFileKeys(PROJECT_KEY, cancelMonitor)).thenAnswer(invocation -> {
+    when(serverApiA.component().getAllFileKeys(PROJECT_KEY, cancelMonitor)).thenAnswer(invocation -> {
       throw new IllegalStateException();
     });
 
