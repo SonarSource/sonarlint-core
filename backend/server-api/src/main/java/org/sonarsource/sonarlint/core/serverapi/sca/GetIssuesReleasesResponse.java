@@ -40,7 +40,7 @@ public record GetIssuesReleasesResponse(List<IssuesRelease> issuesReleases, Page
     }
 
     public enum Type {
-      VULNERABILITY, PROHIBITED_LICENSE
+      VULNERABILITY, PROHIBITED_LICENSE, MALWARE
     }
 
     public enum Status {

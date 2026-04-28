@@ -161,6 +161,52 @@ class ScaApiTests {
     }
 
     @Test
+    void should_get_issues_releases_of_malware_type() {
+      var uuid = UUID.randomUUID();
+      var jsonResponse = String.format("""
+      {
+        "issuesReleases": [
+          {
+            "key": "%s",
+            "type": "MALWARE",
+            "severity": "BLOCKER",
+            "quality": "SECURITY",
+            "status": "OPEN",
+            "vulnerabilityId": "CVE-2024-99999",
+            "cvssScore": "9.8",
+            "release": {
+              "packageName": "com.example.malware",
+              "version": "3.0.0"
+            },
+            "transitions": ["CONFIRM"]
+          }
+        ],
+        "page": {
+          "pageIndex": 1,
+          "pageSize": 100,
+          "total": 1
+        }
+      }
+      """, uuid);
+      mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=malware-project&branchKey=master&pageSize=500&pageIndex=1", jsonResponse);
+
+      var response = scaApi.getIssuesReleases("malware-project", "master", new SonarLintCancelMonitor());
+
+      assertThat(response.issuesReleases()).hasSize(1);
+      var issueRelease = response.issuesReleases().get(0);
+      assertThat(issueRelease.key()).isEqualTo(uuid);
+      assertThat(issueRelease.type()).isEqualTo(GetIssuesReleasesResponse.IssuesRelease.Type.MALWARE);
+      assertThat(issueRelease.severity()).isEqualTo(GetIssuesReleasesResponse.IssuesRelease.Severity.BLOCKER);
+      assertThat(issueRelease.quality()).isEqualTo(GetIssuesReleasesResponse.IssuesRelease.SoftwareQuality.SECURITY);
+      assertThat(issueRelease.status()).isEqualTo(GetIssuesReleasesResponse.IssuesRelease.Status.OPEN);
+      assertThat(issueRelease.vulnerabilityId()).isEqualTo("CVE-2024-99999");
+      assertThat(issueRelease.cvssScore()).isEqualTo("9.8");
+      assertThat(issueRelease.release().packageName()).isEqualTo("com.example.malware");
+      assertThat(issueRelease.release().version()).isEqualTo("3.0.0");
+      assertThat(issueRelease.transitions()).containsExactly(GetIssuesReleasesResponse.IssuesRelease.Transition.CONFIRM);
+    }
+
+    @Test
     void should_get_issues_releases_with_multiple_issues() {
       var uuid1 = UUID.randomUUID();
       var uuid2 = UUID.randomUUID();

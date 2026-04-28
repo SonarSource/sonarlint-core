@@ -48,7 +48,7 @@ public record ServerDependencyRisk(UUID key, Type type, Severity severity, Softw
   }
 
   public enum Type {
-    VULNERABILITY, PROHIBITED_LICENSE
+    VULNERABILITY, PROHIBITED_LICENSE, MALWARE
   }
 
   public enum Status {
