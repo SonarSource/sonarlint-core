@@ -63,7 +63,7 @@ class HotspotApiTests {
     underTest.fetch("h", new SonarLintCancelMonitor());
 
     var recordedRequest = mockServer.takeRequest();
-    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=h");
+    assertThat(recordedRequest.getTarget()).isEqualTo("/api/hotspots/show.protobuf?hotspot=h");
   }
 
   @Test
@@ -71,7 +71,7 @@ class HotspotApiTests {
     underTest.fetch("hot/spot", new SonarLintCancelMonitor());
 
     var recordedRequest = mockServer.takeRequest();
-    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
+    assertThat(recordedRequest.getTarget()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
   }
 
   @Test
