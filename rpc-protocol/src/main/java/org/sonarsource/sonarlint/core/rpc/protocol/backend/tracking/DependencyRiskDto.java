@@ -105,7 +105,7 @@ public class DependencyRiskDto {
   }
 
   public enum Type {
-    VULNERABILITY, PROHIBITED_LICENSE
+    VULNERABILITY, PROHIBITED_LICENSE, MALWARE
   }
 
   public enum Status {

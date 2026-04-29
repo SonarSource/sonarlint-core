@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
+import java.util.Objects;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
@@ -70,6 +71,15 @@ public class ScaSynchronizationService {
     var previousDependencyRiskKeys = previousDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
 
     var serverDependencyRisks = issuesReleases.issuesReleases().stream()
+      .filter(issueRelease -> {
+        if (issueRelease.type() == null || issueRelease.severity() == null || issueRelease.quality() == null || issueRelease.status() == null
+          || issueRelease.transitions().stream().anyMatch(Objects::isNull)) {
+          LOG.warn("[SYNC] Skipping dependency risk '{}': unknown enum value returned by the server (type={}, severity={}, quality={}, status={}, transitions={})",
+            issueRelease.key(), issueRelease.type(), issueRelease.severity(), issueRelease.quality(), issueRelease.status(), issueRelease.transitions());
+          return false;
+        }
+        return true;
+      })
       .map(issueRelease -> new ServerDependencyRisk(
         issueRelease.key(),
         ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
