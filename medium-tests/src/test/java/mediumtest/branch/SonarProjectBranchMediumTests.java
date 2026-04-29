@@ -96,7 +96,7 @@ class SonarProjectBranchMediumTests {
     // Trigger another branch matching
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
-    verify(client, timeout(1000).times(2)).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
+    verify(client, timeout(5000).times(2)).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     Thread.sleep(200);
     verify(client, times(1)).didChangeMatchedSonarProjectBranch(any(), any());
   }

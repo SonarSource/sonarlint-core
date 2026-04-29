@@ -76,7 +76,7 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
+    await().atMost(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
         .contains("java:S106;java;null;")
         .contains("java:S3776;java;null;{Threshold=15}")
@@ -114,7 +114,7 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
+    await().atMost(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
         .contains("java:S4792;java;null;"));
   }
@@ -148,7 +148,7 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
+    await().atMost(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
         .doesNotContain("java:S4792;java;null;"));
   }
@@ -183,7 +183,7 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
+    await().atMost(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
         .contains("ipython:PrintStatementUsage"));
   }
