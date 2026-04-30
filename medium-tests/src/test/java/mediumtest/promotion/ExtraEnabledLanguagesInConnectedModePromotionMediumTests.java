@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
@@ -66,7 +67,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
         List.of(abapFile.toUri()), Map.of(), false)).join();
 
-    verify(fakeClient).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
+    verify(fakeClient, timeout(5000)).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
 
   @SonarLintTest

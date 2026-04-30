@@ -358,7 +358,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
-    verify(client).showMessage(MessageType.ERROR,
+    verify(client, timeout(5000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
@@ -376,7 +376,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
-    verify(client).showMessage(MessageType.ERROR,
+    verify(client, timeout(5000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
