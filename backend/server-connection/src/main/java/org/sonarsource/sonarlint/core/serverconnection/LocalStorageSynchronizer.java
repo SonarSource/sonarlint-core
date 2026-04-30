@@ -54,8 +54,8 @@ public class LocalStorageSynchronizer {
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
-    var originalSettings = original.getSettings().getAll();
-    var updatedSettings = updated.getSettings().getAll();
+    var originalSettings = original.getSettings();
+    var updatedSettings = updated.getSettings();
     var diff = Maps.difference(originalSettings, updatedSettings);
     var updatedSettingsValueByKey = diff.entriesDiffering().entrySet().stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().rightValue()));
@@ -71,7 +71,7 @@ public class LocalStorageSynchronizer {
       var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
       configUpdateSummary = diffAnalyzerConfiguration(originalAnalyzerConfiguration, updatedAnalyzerConfiguration);
     } catch (StorageException e) {
-      configUpdateSummary = new AnalyzerSettingsUpdateSummary(updatedAnalyzerConfiguration.getSettings().getAll());
+      configUpdateSummary = new AnalyzerSettingsUpdateSummary(updatedAnalyzerConfiguration.getSettings());
     }
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
@@ -97,11 +97,10 @@ public class LocalStorageSynchronizer {
     var shouldForceRuleSetUpdate = outdatedSchema(currentSchemaVersion);
     var currentRuleSetsFinal = currentRuleSets;
     var projectSettings = new HashMap<>(serverApi.settings().getProjectSettings(projectKey, cancelMonitor));
-    var settings = new Settings(projectSettings);
     var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey, cancelMonitor).stream()
       .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
       .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, cancelMonitor)));
-    return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey, AnalyzerConfiguration.CURRENT_SCHEMA_VERSION);
+    return new AnalyzerConfiguration(projectSettings, ruleSetsByLanguageKey, AnalyzerConfiguration.CURRENT_SCHEMA_VERSION);
   }
 
   private static RuleSet toRuleSet(ServerApi serverApi, Map<String, RuleSet> currentRuleSets, QualityProfile profile, boolean forceUpdate,

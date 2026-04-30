@@ -124,7 +124,7 @@ public class FileExclusionService {
       LOG.debug("Unable to read settings in local storage", e);
       return false;
     }
-    var settings = new MapSettings(analyzerConfig.getSettings().getAll());
+    var settings = new MapSettings(analyzerConfig.getSettings());
     var exclusionFilters = new ServerFileExclusions(settings.asConfig());
     exclusionFilters.prepare();
     var idePath = clientFile.getClientRelativePath();
