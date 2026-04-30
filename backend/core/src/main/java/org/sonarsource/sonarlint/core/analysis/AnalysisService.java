@@ -186,7 +186,7 @@ public class AnalysisService {
     } else {
       enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
       analysisSettings = storageService.binding(effectiveBinding.get())
-        .analyzerConfiguration().read().getSettings().getAll();
+        .analyzerConfiguration().read().getSettings();
     }
     // TODO merge client side analysis settings
     return getPatterns(enabledLanguages, analysisSettings);
@@ -245,7 +245,7 @@ public class AnalysisService {
 
   private AnalysisConfig getConnectedAnalysisConfig(Binding binding, boolean hotspotsOnly, Map<String, String> userAnalysisProperties, @Nullable Trace trace) {
     var serverProperties = startChild(trace, "serverProperties", GET_ANALYSIS_CFG,
-      () -> storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll());
+      () -> storageService.binding(binding).analyzerConfiguration().read().getSettings());
     var analysisProperties = new HashMap<>(serverProperties);
     analysisProperties.putAll(userAnalysisProperties);
     var connectedActiveRules = startChild(trace, "buildConnectedActiveRules", GET_ANALYSIS_CFG,

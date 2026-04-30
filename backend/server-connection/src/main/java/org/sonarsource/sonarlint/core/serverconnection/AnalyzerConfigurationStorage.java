@@ -95,7 +95,7 @@ public class AnalyzerConfigurationStorage {
 
   private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {
     return new AnalyzerConfiguration(
-      new Settings(analyzerConfiguration.getSettingsMap()),
+      analyzerConfiguration.getSettingsMap(),
       analyzerConfiguration.getRuleSetsByLanguageKeyMap().entrySet().stream().collect(Collectors.toMap(
         Map.Entry::getKey,
         e -> adapt(e.getValue()))),
@@ -105,7 +105,7 @@ public class AnalyzerConfigurationStorage {
   private static Sonarlint.AnalyzerConfiguration adapt(AnalyzerConfiguration analyzerConfiguration) {
     return Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(analyzerConfiguration.getSchemaVersion())
-      .putAllSettings(analyzerConfiguration.getSettings().getAll())
+      .putAllSettings(analyzerConfiguration.getSettings())
       .putAllRuleSetsByLanguageKey(analyzerConfiguration.getRuleSetByLanguageKey().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> adapt(e.getValue()))))
       .build();
