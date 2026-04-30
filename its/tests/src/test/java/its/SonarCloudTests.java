@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -54,6 +55,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.MediaTypes;
@@ -95,6 +98,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeC
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
@@ -115,6 +119,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CPP;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.HTML;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
@@ -142,6 +148,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_MISRA = "sample-misra";
 
   public static final String CONNECTION_ID = "sonarcloud";
 
@@ -169,7 +176,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
     backend = clientLauncher.getServerProxy();
-    var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML);
+    var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, C, CPP);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
         new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URIS),
@@ -479,6 +486,41 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", projectKeyXml), "src/foo.xml");
     assertThat(issues).hasSize(1);
+  }
+
+  @Test
+  // the compile commands file is specific to Unix-like platforms, so skip on Windows
+  @DisabledOnOs(OS.WINDOWS)
+  void analysisMisraRules(@TempDir Path tmpDir) throws IOException {
+    restoreProfile("cpp-misra-sonarlint.xml");
+    provisionProject(PROJECT_KEY_MISRA, "Sample MISRA");
+    // MISRA rules require Enterprise Cloud org or trying to include them will return 403!
+    associateProjectToQualityProfile(PROJECT_KEY_MISRA, "cpp", "SonarLint IT MISRA");
+
+    var configScopeId = "analysisMisraRules";
+    openBoundConfigurationScope(configScopeId, PROJECT_KEY_MISRA);
+    waitForAnalysisToBeReady(configScopeId);
+
+    var projectDir = Path.of("projects").resolve(PROJECT_KEY_MISRA);
+    var filePath = projectDir.resolve("foo.cpp").toAbsolutePath().toString();
+    var compileCommandsFilePath = tmpDir.resolve("compile_commands.json");
+    Files.writeString(compileCommandsFilePath, """
+      [
+      {
+        "directory": "%s",
+        "command": "/usr/bin/c++ -g -std=gnu++20 -fdiagnostics-color=always -o CMakeFiles/untitled.dir/foo.cpp.o -c %s",
+        "file": "%s",
+        "output": "CMakeFiles/untitled.dir/foo.cpp.o"
+      }
+      ]""".formatted(projectDir.toAbsolutePath().toString(), filePath, filePath));
+
+    var issues = analyzeAndAwaitIssues(backend, client, configScopeId,
+      Path.of("projects", PROJECT_KEY_MISRA), "foo.cpp",
+      "sonar.cfamily.compile-commands", compileCommandsFilePath.toAbsolutePath().toString());
+
+    assertThat(issues)
+      .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getPrimaryMessage)
+      .containsOnly(tuple("cpp:M23_151", "Either add a parameter list or the \"&\" operator to this use of \"f\"."));
   }
 
   @Test
