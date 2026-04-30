@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -95,7 +96,8 @@ public class LocalStorageSynchronizer {
     }
     var shouldForceRuleSetUpdate = outdatedSchema(currentSchemaVersion);
     var currentRuleSetsFinal = currentRuleSets;
-    var settings = new Settings(serverApi.settings().getProjectSettings(projectKey, cancelMonitor));
+    var projectSettings = new HashMap<>(serverApi.settings().getProjectSettings(projectKey, cancelMonitor));
+    var settings = new Settings(projectSettings);
     var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey, cancelMonitor).stream()
       .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
       .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, cancelMonitor)));

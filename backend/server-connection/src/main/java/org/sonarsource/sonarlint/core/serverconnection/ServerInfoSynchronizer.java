@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -43,9 +45,17 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var globalSettings = serverApi.settings().getGlobalSettings(cancelMonitor);
+    var globalSettings = getGlobalSettings(serverApi, cancelMonitor);
     var supportedFeatures = serverApi.isSonarCloud() ? getSupportedFeaturesForSonarQubeCloud(serverApi, cancelMonitor) : serverApi.features().list(cancelMonitor);
     storage.serverInfo().store(serverStatus, supportedFeatures, globalSettings);
+  }
+
+  private static Map<String, String> getGlobalSettings(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    Map<String, String> globalSettings = new HashMap<>(serverApi.settings().getGlobalSettings(cancelMonitor));
+    if (serverApi.isSonarCloud()) {
+      globalSettings.put(ServerSettings.MISRA_COMPLIANCE_ENABLED, "true");
+    }
+    return globalSettings;
   }
 
   private static Set<Feature> getSupportedFeaturesForSonarQubeCloud(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
