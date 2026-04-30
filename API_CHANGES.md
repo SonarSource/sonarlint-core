@@ -1,3 +1,10 @@
+# 11.2.2
+
+## New features
+
+* Add `SHELL` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+* Add `AZUREPIPELINES` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+
 # 10.48
 
 ## New features
