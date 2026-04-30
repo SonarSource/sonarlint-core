@@ -28,7 +28,7 @@ jobs:
           artifactory-deployer-role: qa-deployer
           scanner-java-opts: '-Xmx2g'
       - name: Run IRIS sync
-        uses: SonarSource/unified-dogfooding-actions/run-iris@v1
+        uses: SonarSource/unified-dogfooding-actions/run-iris@54cee68ff08f10645c757675c59d232063e0b947 # 1.0.0
         with:
           primary_project_key: "org.sonarsource.sonarlint.core:sonarlint-core-parent"
           primary_platform: "Next"
