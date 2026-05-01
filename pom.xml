@@ -80,7 +80,7 @@
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
-    <flyway.version>12.1.0</flyway.version>
+    <flyway.version>11.20.3</flyway.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.80.0.98490</cfamily.version>
@@ -286,12 +286,12 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.21.2</version>
+        <version>2.21.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.21.2</version>
+        <version>2.21.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
