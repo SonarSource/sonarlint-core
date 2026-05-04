@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.matching.AnythingPattern;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -76,7 +75,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
-import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
+import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServlet;
+import org.sonarsource.sonarlint.core.test.utils.server.sse.SseCapableJetty12HttpServerFactory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -807,7 +807,7 @@ public class ServerFixture {
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String APPLICATION_JSON = "application/json";
 
-    private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
+    private final WireMockServer mockServer;
 
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
@@ -824,7 +824,8 @@ public class ServerFixture {
     private final boolean serverSentEventsEnabled;
     private final AbstractServerBuilder.DopTranslationBuilder dopTranslation;
     private final Set<String> features;
-    private SSEServer sseServer;
+    @Nullable
+    private final SSEServlet sseServlet;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
@@ -845,14 +846,18 @@ public class ServerFixture {
       this.smartNotifications = smartNotifications;
       this.globalSettings = globalSettings;
       this.dopTranslation = dopTranslation;
+      if (serverSentEventsEnabled) {
+        var sseFactory = new SseCapableJetty12HttpServerFactory();
+        this.sseServlet = sseFactory.getSseServlet();
+        this.mockServer = new WireMockServer(options().dynamicPort().httpServerFactory(sseFactory));
+      } else {
+        this.sseServlet = null;
+        this.mockServer = new WireMockServer(options().dynamicPort());
+      }
     }
 
     public void start() {
       mockServer.start();
-      if (serverSentEventsEnabled) {
-        sseServer = new SSEServer();
-        sseServer.start();
-      }
       registerWebApiResponses();
     }
 
@@ -1582,16 +1587,7 @@ public class ServerFixture {
     }
 
     private void registerPushApiResponses() {
-      if (!serverSentEventsEnabled) {
-        return;
-      }
-      // wiremock does not support SSE, so we redirect to our custom SSE server
-      mockServer.stubFor(get(urlPathEqualTo("/api/push/sonarlint_events"))
-        .withQueryParam("projectKeys", equalTo(String.join(",", projectsByProjectKey.keySet())))
-        .withQueryParam("languages", new AnythingPattern())
-        .willReturn(aResponse()
-          .withStatus(302)
-          .withHeader("Location", sseServer.getUrl())));
+      // SSE is handled directly by the servlet embedded in WireMock's Jetty — no stub needed
     }
 
     private void registerFeaturesApiResponses() {
@@ -1648,17 +1644,14 @@ public class ServerFixture {
     }
 
     public void pushEvent(String eventPayload) {
-      if (!serverSentEventsEnabled) {
+      if (!serverSentEventsEnabled || sseServlet == null) {
         throw new IllegalStateException("Please use withServerSentEventsEnabled() first");
       }
-      sseServer.sendEventToAllClients(eventPayload);
+      sseServlet.sendEventToAllClients(eventPayload);
     }
 
     public void shutdown() {
       mockServer.stop();
-      if (sseServer != null) {
-        sseServer.stop();
-      }
     }
 
     public String baseUrl() {

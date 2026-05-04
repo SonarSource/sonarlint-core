@@ -52,8 +52,8 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     final Dispatcher dispatcher = new Dispatcher() {
       @Override
       public MockResponse dispatch(RecordedRequest request) {
-        if (responsesByPath.containsKey(request.getPath())) {
-          return responsesByPath.get(request.getPath());
+        if (responsesByPath.containsKey(request.getTarget())) {
+          return responsesByPath.get(request.getTarget());
         }
         return new MockResponse.Builder().code(404).build();
       }
@@ -72,11 +72,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   }
 
   public void shutdown() {
-    try {
-      server.shutdown();
-    } catch (IOException e) {
-      throw new IllegalStateException("Cannot stop the mock web server", e);
-    }
+    server.close();
   }
 
   public void addStringResponse(String path, String body) {

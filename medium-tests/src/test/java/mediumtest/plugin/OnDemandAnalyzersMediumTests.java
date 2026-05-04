@@ -55,7 +55,7 @@ class OnDemandAnalyzersMediumTests {
 
   @AfterEach
   void tearDown() throws Exception {
-    mockWebServer.shutdown();
+    mockWebServer.close();
   }
 
   @SonarLintTest

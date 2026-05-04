@@ -47,14 +47,14 @@
     <sonar-plugin-api.version>13.4.2.4284</sonar-plugin-api.version>
     <sonar-markdown.version>25.3.0.104237</sonar-markdown.version>
     <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
-    <protobuf.version>4.28.2</protobuf.version>
+    <protobuf.version>4.34.1</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.0.0-alpha.16</okhttp.version>
+    <okhttp.version>5.3.2</okhttp.version>
     <junit.jupiter.version>5.14.3</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.13.2</gson.version>
-    <mockito.version>5.22.0</mockito.version>
+    <mockito.version>5.23.0</mockito.version>
     <kotlin.version>1.9.25</kotlin.version>
     <lsp4j.version>0.24.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
@@ -65,10 +65,10 @@
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
     <jgit6.version>6.10.1.202505221210-r</jgit6.version>
     <jgit7.version>7.5.0.202512021534-r</jgit7.version>
-    <sentry.version>8.34.0</sentry.version>
+    <sentry.version>8.38.0</sentry.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
-    <version.shade.plugin>3.6.1</version.shade.plugin>
+    <version.shade.plugin>3.6.2</version.shade.plugin>
 
     <!-- Exclude Maven Shade plug-in dependency as the test is done via the Maven build itself ... -->
     <sonar.coverage.exclusions>buildSrc/maven-shade-ext-bnd-transformer/**</sonar.coverage.exclusions>
@@ -158,7 +158,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>33.5.0-jre</version>
+        <version>33.6.0-jre</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -230,12 +230,12 @@
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
-        <version>5.4.4</version>
+        <version>5.6</version>
       </dependency>
       <dependency>
         <groupId>io.github.hakky54</groupId>
         <artifactId>ayza</artifactId>
-        <version>10.0.3</version>
+        <version>10.0.4</version>
       </dependency>
       <!-- Use the Jetty 12 variant that supports Servlet 6, to not conflict with Tomcat -->
       <dependency>
