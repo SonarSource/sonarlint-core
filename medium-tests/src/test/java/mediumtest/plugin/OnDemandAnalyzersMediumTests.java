@@ -88,6 +88,26 @@ class OnDemandAnalyzersMediumTests {
   }
 
   @SonarLintTest
+  void failed_cfamily_download_should_not_trigger_infinite_reload_loop(SonarLintTestHarness harness) {
+    for (int i = 0; i < 20; i++) {
+      mockWebServer.enqueue(new mockwebserver3.MockResponse.Builder().code(500).build());
+    }
+    var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
+    systemProperties.set(BinariesArtifact.PROPERTY_URL_PATTERN, serverUrl);
+
+    harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.CPP)
+      .withUnboundConfigScope("scopeId")
+      .start(harness.newFakeClient().build());
+
+    await().atMost(10, TimeUnit.SECONDS).until(() -> mockWebServer.getRequestCount() >= 1);
+
+    var requestCountAfterFirstAttempt = mockWebServer.getRequestCount();
+    await().during(2, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
+      .until(() -> mockWebServer.getRequestCount() == requestCountAfterFirstAttempt);
+  }
+
+  @SonarLintTest
   void should_download_server_plugins_in_connected_mode(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().withToken("connId", "token").build();
     var server = harness.newFakeSonarQubeServer()

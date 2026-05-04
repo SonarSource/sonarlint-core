@@ -84,9 +84,11 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
     getAllDownloadsFuture()
       .ifPresent(future -> {
         var logOutput = SonarLintLogger.get().getTargetForCopy();
-        future.thenRun(() -> {
-          SonarLintLogger.get().setTarget(logOutput);
-          runnable.run();
+        future.whenComplete((ignored, error) -> {
+          if (error == null) {
+            SonarLintLogger.get().setTarget(logOutput);
+            runnable.run();
+          }
         });
       });
   }

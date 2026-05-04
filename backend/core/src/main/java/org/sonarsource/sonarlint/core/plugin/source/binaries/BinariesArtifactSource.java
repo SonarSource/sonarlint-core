@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -179,10 +180,18 @@ public class BinariesArtifactSource implements ArtifactSource {
     try {
       var path = downloadAndCache(artifact);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createSuccessStatuses(artifact, path)));
-    } catch (Exception e) {
-      LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createdFailedStatuses(artifact)));
+    } catch (RuntimeException e) {
+      logAndPublishFailure(artifact, e);
+      throw e;
+    } catch (IOException e) {
+      logAndPublishFailure(artifact, e);
+      throw new UncheckedIOException(e);
     }
+  }
+
+  private void logAndPublishFailure(BinariesArtifact artifact, Exception e) {
+    LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createdFailedStatuses(artifact)));
   }
 
   private static List<PluginStatus> createSuccessStatuses(BinariesArtifact artifact, Path pluginPath) {

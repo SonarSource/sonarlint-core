@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -46,6 +47,7 @@ import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
@@ -142,13 +144,15 @@ class BinariesArtifactSourceTest {
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
     var source = buildSource();
 
-    source.load(Set.of("cpp"));
+    var result = source.load(Set.of("cpp"));
+    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
       failedStatus(SonarLanguage.C),
       failedStatus(SonarLanguage.CPP),
       failedStatus(SonarLanguage.OBJC));
+    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
   }
 
   @Test
@@ -157,13 +161,44 @@ class BinariesArtifactSourceTest {
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
     var source = buildSource();
 
-    source.load(Set.of("cpp"));
+    var result = source.load(Set.of("cpp"));
+    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
       failedStatus(SonarLanguage.C),
       failedStatus(SonarLanguage.CPP),
       failedStatus(SonarLanguage.OBJC));
+    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
+  }
+
+  /**
+   * Regression test for the infinite plugin reload loop triggered by a failed on-demand download.
+   *
+   * The bug: downloadAndFireEvent() swallowed exceptions, completing the download future normally.
+   * whenAllArtifactsDownloaded therefore always published PluginsSynchronizedEvent, which
+   * triggered ResetPluginsCommand -> cache clear -> new download -> infinite loop.
+   *
+   * The fix: rethrow the exception so the future completes exceptionally, preventing
+   * PluginsSynchronizedEvent from being published and stopping the loop.
+   */
+  @Test
+  void failed_download_future_completes_exceptionally_preventing_plugin_reload_loop() {
+    var httpClient = mock(HttpClient.class);
+    when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
+    var source = buildSource();
+
+    var loadResult = source.load(Set.of("cpp"));
+    var downloadFuture = loadResult.resolvedArtifactsByKey().get("cpp").downloadFuture();
+
+    var reloadTriggered = new AtomicBoolean(false);
+    new ArtifactsLoadingResult(EnumSet.of(SonarLanguage.CPP), loadResult.resolvedArtifactsByKey())
+      .whenAllArtifactsDownloaded(() -> reloadTriggered.set(true));
+
+    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isDone);
+    assertThat(downloadFuture).isCompletedExceptionally();
+    assertThat(reloadTriggered).isFalse();
   }
 
   @Test
