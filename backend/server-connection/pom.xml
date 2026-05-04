@@ -78,11 +78,6 @@
       <artifactId>xodus-vfs</artifactId>
       <version>${xodus.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
     <!-- unit tests -->
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>

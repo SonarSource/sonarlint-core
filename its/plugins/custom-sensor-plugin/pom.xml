@@ -72,11 +72,11 @@
         <!-- UTF-8 bundles are not supported by Java, so they must be converted during build -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>native2ascii-maven-plugin</artifactId>
-        <version>2.1.1</version>
+        <version>1.0-beta-1</version>
         <executions>
           <execution>
             <goals>
-              <goal>resources</goal>
+              <goal>native2ascii</goal>
             </goals>
           </execution>
         </executions>
