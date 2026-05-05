@@ -58,6 +58,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 
 public class SmartNotifications {
 
+  public static final String POLL_PERIOD_PROPERTY = "sonarlint.internal.smartNotifications.pollPeriod";
+
   private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final ConfigurationRepository configurationRepository;
@@ -90,7 +92,7 @@ public class SmartNotifications {
     smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadScheduledExecutor("Smart Notifications Polling"));
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(smartNotificationsPolling);
-    smartNotificationsPolling.getWrapped().scheduleAtFixedRate(() -> this.poll(cancelMonitor), 1, 60, TimeUnit.SECONDS);
+    smartNotificationsPolling.getWrapped().scheduleAtFixedRate(() -> this.poll(cancelMonitor), 1, getPollPeriod(), TimeUnit.SECONDS);
   }
 
   private void poll(SonarLintCancelMonitor cancelMonitor) {
@@ -138,6 +140,10 @@ public class SmartNotifications {
       return webSocketService.hasOpenConnection(region);
     }
     return false;
+  }
+
+  private static long getPollPeriod() {
+    return Long.parseLong(System.getProperty(POLL_PERIOD_PROPERTY, "60"));
   }
 
   @PreDestroy

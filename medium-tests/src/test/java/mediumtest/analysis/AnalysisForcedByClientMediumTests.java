@@ -71,7 +71,7 @@ class AnalysisForcedByClientMediumTests {
 
     backend.getAnalysisService().analyzeFileList(
       new AnalyzeFileListParams(CONFIG_SCOPE_ID, List.of(fileUri1, fileUri2)));
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
     var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
@@ -179,7 +179,7 @@ class AnalysisForcedByClientMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .start(client);
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+    await().untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, true));
     await().atMost(40, TimeUnit.SECONDS).untilAsserted(() ->

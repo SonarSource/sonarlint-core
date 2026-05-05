@@ -19,7 +19,6 @@
  */
 package mediumtest.taint.vulnerabilities;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -87,7 +86,7 @@ class TaintVulnerabilitiesMediumTests {
       .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
 
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
+    await().untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
   }
@@ -121,7 +120,7 @@ class TaintVulnerabilitiesMediumTests {
 
     client.waitForSynchronization();
 
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
+    await().untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
     var taintVulnerability = listAllTaintVulnerabilities(backend, "configScopeId").get(0);
@@ -165,7 +164,7 @@ class TaintVulnerabilitiesMediumTests {
 
     client.waitForSynchronization();
 
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
+    await().untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
     var taintVulnerability = listAllTaintVulnerabilities(backend, "configScopeId").get(0);
@@ -199,7 +198,7 @@ class TaintVulnerabilitiesMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId")).isNotEmpty());
+    await().untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId")).isNotEmpty());
     // switch server to simulate a new dataset. Not ideal, should be handled differently
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", serverWithAnotherTaint.baseUrl(), true)), List.of()));

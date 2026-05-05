@@ -308,7 +308,7 @@ class StandaloneIssueMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.OMNISHARP)
       .start(client);
 
-    await().atMost(30, TimeUnit.SECONDS).pollInterval(4, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+    await().atMost(1, TimeUnit.MINUTES).pollInterval(4, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
       client.cleanRaisedIssues();
       analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
       return true;

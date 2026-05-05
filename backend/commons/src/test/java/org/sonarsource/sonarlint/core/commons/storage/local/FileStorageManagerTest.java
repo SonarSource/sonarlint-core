@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.commons.storage.local;
 import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -150,10 +152,13 @@ class FileStorageManagerTest {
 
     storageManager.tryUpdateAtomically(dummy -> dummy.counter++);
     assertThat(storageManager.getStorage().counter).isEqualTo(1);
+    var previousLastModified = Files.getLastModifiedTime(filePath);
 
     var dummy = new Dummy();
     dummy.counter = 2;
     writeToLocalStorageFile(dummy);
+    // enforce a change of last modified time on disk to make sure storage is re-read
+    Files.setLastModifiedTime(filePath, FileTime.from(previousLastModified.toInstant().plusSeconds(1)));
 
     await().atMost(5, SECONDS).untilAsserted(() -> assertThat(storageManager.getStorage().counter).isEqualTo(2));
   }

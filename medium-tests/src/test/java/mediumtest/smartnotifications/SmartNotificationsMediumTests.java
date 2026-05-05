@@ -25,7 +25,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import mockwebserver3.MockResponse;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -39,7 +41,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketServer;
 import utils.MockWebServerExtensionWithProtobuf;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
+import static org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications.POLL_PERIOD_PROPERTY;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class SmartNotificationsMediumTests {
@@ -62,6 +64,7 @@ class SmartNotificationsMediumTests {
   private static final String CONNECTION_ID_2 = "connectionId2";
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
+  private static String previousPollPeriod;
   private static final String EVENT_PROJECT_1 = "{\"events\": [" +
     "{\"message\": \"msg1\"," +
     "\"link\": \"lnk\"," +
@@ -107,6 +110,21 @@ class SmartNotificationsMediumTests {
 
   private WebSocketServer webSocketServer;
 
+  @BeforeAll
+  static void setSmartNotificationsPollPeriod() {
+    previousPollPeriod = System.getProperty(POLL_PERIOD_PROPERTY);
+    System.setProperty(POLL_PERIOD_PROPERTY, "1");
+  }
+
+  @AfterAll
+  static void restoreSmartNotificationsPollPeriod() {
+    if (previousPollPeriod == null) {
+      System.clearProperty(POLL_PERIOD_PROPERTY);
+    } else {
+      System.setProperty(POLL_PERIOD_PROPERTY, previousPollPeriod);
+    }
+  }
+
   @AfterEach
   void tearDown() {
     if (webSocketServer != null) {
@@ -130,7 +148,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -153,7 +171,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -191,7 +209,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).hasSize(4));
+    await().untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).hasSize(4));
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult)
@@ -219,7 +237,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -248,7 +266,7 @@ class SmartNotificationsMediumTests {
           new ConfigurationScopeDto("scopeId", null, true, "sonarlint-core",
             new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)))));
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -269,7 +287,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -294,14 +312,14 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS, SERVER_SENT_EVENTS)
       .start(fakeClient);
 
-    await().atMost(2, SECONDS).until(() -> webSocketServer.getConnections().size() == 1);
+    await().until(() -> webSocketServer.getConnections().size() == 1);
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).isEmpty();
 
     webSocketServer.getConnections().get(0).sendMessage(NEW_ISSUES_EVENT);
 
-    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).isNotEmpty());
+    await().untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).isNotEmpty());
 
     notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -322,7 +340,7 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);

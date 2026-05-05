@@ -70,6 +70,7 @@ class CampaignMediumTests {
 
   private static final int MORE_THAN_TWO_WEEKS_AGO = 16;
   private static final String DEFAULT_KEY = "mediumTests";
+  private static final String FEEDBACK_NOTIFICATION_MESSAGE = "Enjoying SonarQube for IDE? We'd love to hear what you think.";
 
   @SystemStub
   SystemProperties propertiesStubs;
@@ -260,7 +261,8 @@ class CampaignMediumTests {
     var messageCaptor = ArgumentCaptor.forClass(String.class);
     var openInBrowserCaptor = ArgumentCaptor.forClass(URL.class);
 
-    verify(client, timeout(2000).times(2)).showMessageRequest(messageTypeCaptor.capture(),
+    awaitUntilShowMessageRequestCount(client, 2);
+    verify(client, times(2)).showMessageRequest(messageTypeCaptor.capture(),
       messageCaptor.capture(),
       actionsArgumentCaptor.capture());
     // showMessageRequest will be called twice - once for the feedback, and second time for the community fallback
@@ -270,6 +272,7 @@ class CampaignMediumTests {
     assertThat(actionsArgumentCaptor.getAllValues().get(1)).hasSize(1);
     assertThat(actionsArgumentCaptor.getAllValues().get(1).get(0)).extracting(MessageActionItem::getKey, MessageActionItem::getDisplayText, MessageActionItem::isPrimaryAction)
       .containsExactly("OPEN_COMMUNITY", "Open Community Forum", true);
+    await().untilAsserted(() -> verify(client).openUrlInBrowser(any()));
     verify(client, timeout(2000).times(1)).openUrlInBrowser(openInBrowserCaptor.capture());
     assertThat(openInBrowserCaptor.getValue()).hasToString("https://community.sonarsource.com/c/sl/11");
   }
@@ -285,10 +288,7 @@ class CampaignMediumTests {
     baseBackend(harness)
       .start(client);
 
-    verify(client, timeout(1500)).showMessageRequest(
-      eq(MessageType.INFO),
-      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
-      any());
+    awaitUntilFeedbackNotificationShown(client);
   }
 
   @SonarLintTest
@@ -310,10 +310,7 @@ class CampaignMediumTests {
     baseBackend(harness)
       .start(client);
 
-    verify(client, timeout(500)).showMessageRequest(
-      eq(MessageType.INFO),
-      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
-      any());
+    awaitUntilFeedbackNotificationShown(client);
   }
 
   @SonarLintTest
@@ -335,10 +332,7 @@ class CampaignMediumTests {
     baseBackend(harness)
       .start(client);
 
-    verify(client, timeout(500)).showMessageRequest(
-      eq(MessageType.INFO),
-      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
-      any());
+    awaitUntilFeedbackNotificationShown(client);
   }
 
   @SonarLintTest
@@ -413,10 +407,7 @@ class CampaignMediumTests {
         assertThat(Files.exists(campaignsFile)).isTrue();
       });
 
-    verify(client, timeout(5000)).showMessageRequest(
-      eq(MessageType.INFO),
-      eq("Enjoying SonarQube for IDE? We'd love to hear what you think."),
-      any());
+    awaitUntilFeedbackNotificationShown(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
     assertThat(getCampaigns(campaignsFile))
@@ -472,6 +463,17 @@ class CampaignMediumTests {
 
   private Path getTelemetryPath(String productKey) {
     return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
+  }
+
+  private static void awaitUntilFeedbackNotificationShown(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
+    await().untilAsserted(() -> verify(client).showMessageRequest(
+      eq(MessageType.INFO),
+      eq(FEEDBACK_NOTIFICATION_MESSAGE),
+      any()));
+  }
+
+  private static void awaitUntilShowMessageRequestCount(SonarLintBackendFixture.FakeSonarLintRpcClient client, int expectedInvocations) {
+    await().untilAsserted(() -> verify(client, times(expectedInvocations)).showMessageRequest(any(), any(), any()));
   }
 
   private SonarLintBackendFixture.SonarLintBackendBuilder baseBackend(SonarLintTestHarness harness) {

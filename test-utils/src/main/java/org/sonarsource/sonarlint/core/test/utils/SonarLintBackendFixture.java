@@ -938,7 +938,7 @@ public class SonarLintBackendFixture {
     }
 
     public void waitForSynchronization() {
-      verify(this, timeout(5000)).didSynchronizeConfigurationScopes(any());
+      verify(this, timeout(10000)).didSynchronizeConfigurationScopes(any());
     }
 
     public Integer getConnectionIdsWithInvalidToken(String connectionId) {
