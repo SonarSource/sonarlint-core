@@ -31,8 +31,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -296,6 +298,41 @@ class AnalysisSchedulerMediumTests {
 
     await().until(analyzeCommand.getFutureResult()::isDone);
     assertThat(threadTermination).hasValue("INTERRUPTED");
+  }
+
+  @Test
+  void should_wait_for_executing_command_to_return_before_stopping_engine(@TempDir Path baseDir) throws IOException, InterruptedException {
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
+    ClientInputFile inputFile = preparePythonInputFile(baseDir, content);
+
+    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(inputFile)
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    var analysisStarted = new CountDownLatch(1);
+    var commandReturned = new AtomicBoolean(false);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> {
+        analysisStarted.countDown();
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException ignored) {
+          // expected when the scheduler is stopped
+        }
+        pause(300);
+        commandReturned.set(true);
+      }, ANALYSIS_READY_SUPPLIER, Set.of(), Map.of());
+    analysisScheduler.post(analyzeCommand);
+    analysisStarted.await();
+
+    analysisScheduler.stop();
+    engineStopped = true;
+
+    assertThat(commandReturned).isTrue();
   }
 
   @Test
