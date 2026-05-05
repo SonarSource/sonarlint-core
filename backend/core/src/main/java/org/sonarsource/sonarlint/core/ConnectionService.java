@@ -20,10 +20,15 @@
 package org.sonarsource.sonarlint.core;
 
 import jakarta.inject.Inject;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -168,6 +173,12 @@ public class ConnectionService {
 
   public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     SonarLintCancelMonitor cancelMonitor) {
+    if (transientConnection.isLeft()) {
+      var urlError = validateServerUrl(transientConnection.getLeft().getServerUrl());
+      if (urlError.isPresent()) {
+        return new ValidateConnectionResponse(false, urlError.get());
+      }
+    }
     try {
       var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
       var serverChecker = new ServerVersionAndStatusChecker(serverApi);
@@ -187,6 +198,28 @@ public class ConnectionService {
       LOG.error("Error validating connection", e);
       return new ValidateConnectionResponse(false, e.getMessage());
     }
+  }
+
+  private record UrlCheck(Predicate<URI> predicate, String errorMessage) {}
+
+  private static final List<UrlCheck> SERVER_URL_CHECKS = List.of(
+    new UrlCheck(uri -> !"http".equals(uri.getScheme()) && !"https".equals(uri.getScheme()), "only http and https schemes are supported"),
+    new UrlCheck(uri -> uri.getQuery() != null, "query string is not allowed"),
+    new UrlCheck(uri -> uri.getFragment() != null, "fragment is not allowed"),
+    new UrlCheck(uri -> uri.getPath() != null && Arrays.asList(uri.getPath().split("/")).contains(".."), "path must not contain '..'")
+  );
+
+  private static Optional<String> validateServerUrl(String serverUrl) {
+    URI uri;
+    try {
+      uri = new URI(serverUrl);
+    } catch (URISyntaxException e) {
+      return Optional.of("Invalid server URL: " + e.getMessage());
+    }
+    return SERVER_URL_CHECKS.stream()
+      .filter(check -> check.predicate().test(uri))
+      .findFirst()
+      .map(check -> "Invalid server URL: " + check.errorMessage());
   }
 
   public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, @Nullable HelpGenerateUserTokenParams.Utm utm, SonarLintCancelMonitor cancelMonitor) {

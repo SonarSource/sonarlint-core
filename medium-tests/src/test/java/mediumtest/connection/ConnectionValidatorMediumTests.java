@@ -186,4 +186,72 @@ class ConnectionValidatorMediumTests {
     assertThat(response.getMessage()).startsWith("Request failed");
   }
 
+  @SonarLintTest
+  void test_connection_rejects_url_with_query_string(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("https://evil.com/path?", A_TOKEN))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+    assertThat(response.getMessage()).contains("query");
+  }
+
+  @SonarLintTest
+  void test_connection_rejects_url_with_fragment(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("https://evil.com/path#section", A_TOKEN))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+    assertThat(response.getMessage()).contains("fragment");
+  }
+
+  @SonarLintTest
+  void test_connection_rejects_url_with_path_traversal(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("https://evil.com/../other", A_TOKEN))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+    assertThat(response.getMessage()).contains("..");
+  }
+
+  @SonarLintTest
+  void test_connection_rejects_url_with_non_http_scheme(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("file:///etc/passwd", A_TOKEN))).join();
+
+    assertThat(response.isSuccess()).isFalse();
+    assertThat(response.getMessage()).containsIgnoringCase("scheme");
+  }
+
+  @SonarLintTest
+  void test_connection_allows_url_with_subpath(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
+      .start();
+    serverMock.stubFor(get("/sonarqube/api/system/status")
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
+    serverMock.stubFor(get("/sonarqube/api/authentication/validate?format=json")
+      .willReturn(aResponse().withBody("{\"valid\": true}")));
+
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto(serverMock.baseUrl() + "/sonarqube", A_TOKEN))).join();
+
+    assertThat(response.isSuccess()).isTrue();
+  }
+
 }
