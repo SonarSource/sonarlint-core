@@ -57,7 +57,7 @@ public enum SonarPluginDependency implements SonarArtifact {
 
   public Set<SonarPlugin> getDependents() {
     return Arrays.stream(SonarPlugin.values())
-      .filter(plugin -> plugin.getDependencies().stream().anyMatch(dep -> dep.artifact().equals(this)))
+      .filter(plugin -> plugin.getDependencies().stream().anyMatch(dep -> dep.anyRequiredArtifacts().contains(this)))
       .collect(Collectors.toSet());
   }
 }

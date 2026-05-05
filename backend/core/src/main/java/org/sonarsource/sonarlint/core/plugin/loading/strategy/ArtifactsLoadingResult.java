@@ -62,11 +62,11 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
   private boolean areRequiredDependenciesPresent(String key) {
     return SonarPlugin.findByKey(key)
       .map(plugin -> plugin.getDependencies().stream()
-        .filter(dep -> !dep.optional())
-        .allMatch(dep -> {
-          var depArtifact = resolvedArtifactsByKey.get(dep.artifact().getKey());
-          return depArtifact != null && depArtifact.path() != null;
-        }))
+        .allMatch(dep -> dep.anyRequiredArtifacts().stream()
+          .anyMatch(artifact -> {
+            var depArtifact = resolvedArtifactsByKey.get(artifact.getKey());
+            return depArtifact != null && depArtifact.path() != null;
+          })))
       .orElse(true);
   }
 

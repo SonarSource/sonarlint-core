@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.commons.plugins;
 
-public record Dependency(SonarArtifact artifact, boolean optional) {
-  public static Dependency optional(SonarArtifact artifact) {
-    return new Dependency(artifact, true);
+import java.util.Arrays;
+import java.util.List;
+
+public record Dependency(List<SonarArtifact> anyRequiredArtifacts) {
+
+  public static Dependency on(SonarArtifact artifact) {
+    return onOneOf(artifact);
   }
 
-  public static Dependency required(SonarArtifact key) {
-    return new Dependency(key, false);
+  public static Dependency onOneOf(SonarArtifact... artifacts) {
+    return new Dependency(Arrays.asList(artifacts));
   }
 }

@@ -53,8 +53,7 @@ abstract class BaseArtifactsLoadingStrategy implements ArtifactsLoadingStrategy 
   }
 
   /**
-   * Removes plugins that are missing at least one required (non-optional) dependency in the
-   * candidate map.
+   * Removes plugins that are missing at least one dependency in the candidate map.
    */
   protected static void removeMissingRequiredDeps(Map<String, ArtifactCandidate> candidates) {
     candidates.entrySet().removeIf(e -> {
@@ -62,8 +61,7 @@ abstract class BaseArtifactsLoadingStrategy implements ArtifactsLoadingStrategy 
       return sonarArtifact.isPresent()
         && sonarArtifact.get() instanceof SonarPlugin plugin
         && plugin.getDependencies().stream()
-          .filter(dep -> !dep.optional())
-          .anyMatch(dep -> !candidates.containsKey(dep.artifact().getKey()));
+          .anyMatch(dep -> dep.anyRequiredArtifacts().stream().noneMatch(artifact -> candidates.containsKey(artifact.getKey())));
     });
   }
 }
