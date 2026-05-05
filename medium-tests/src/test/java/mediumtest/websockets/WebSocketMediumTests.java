@@ -983,7 +983,7 @@ class WebSocketMediumTests {
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
 
-      webSocketServerEU.getConnections().get(0).sendMessage(
+      webSocketServerEU.getConnections().getFirst().sendMessage(
         """
           {
             "event": "TaintVulnerabilityRaised",

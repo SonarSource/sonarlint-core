@@ -64,9 +64,9 @@
     </dependency>
     <!-- For WebSockets testing -->
     <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-websocket</artifactId>
-      <version>11.0.21</version>
+      <groupId>org.java-websocket</groupId>
+      <artifactId>Java-WebSocket</artifactId>
+      <version>1.6.0</version>
     </dependency>
     <!-- For Plugins testing -->
     <dependency>
