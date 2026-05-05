@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import jakarta.annotation.PreDestroy;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.CoreProperties;
@@ -96,6 +97,11 @@ public class FileExclusionService {
     this.pathTranslationService = pathTranslationService;
     this.clientFileSystemService = clientFileSystemService;
     this.client = client;
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    serverExclusionByUriCache.close();
   }
 
   public boolean computeIfExcluded(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
