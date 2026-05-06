@@ -126,7 +126,7 @@ class ArtifactsLoadingResultTest {
       SonarPluginDependency.OMNISHARP_NET472.getKey(), activeArtifact(Path.of("omnisharp-net472.tar.gz")),
       SonarPluginDependency.OMNISHARP_NET6.getKey(), activeArtifact(Path.of("omnisharp-net6.tar.gz"))));
 
-    assertThat(result.getPluginPaths()).doesNotContain(omnisharpPath);
+    assertThat(result.getPluginPaths()).isEmpty();
   }
 
   private static ArtifactsLoadingResult resultWithFutures(Map<String, CompletableFuture<Void>> futures) {
