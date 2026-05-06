@@ -19,7 +19,8 @@
  */
 package mediumtest.plugin;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +80,7 @@ class OnDemandAnalyzersMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.CPP)
       .start(client);
 
-    await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+    await().atMost(15, SECONDS).untilAsserted(() -> {
       var statuses = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).get().getPluginStatuses();
       var cfamilyStatusOpt = statuses.stream().filter(s -> "C/C++/Objective-C".equals(s.getPluginName()) || s.getPluginName().contains("C++")).findFirst();
       assertThat(cfamilyStatusOpt).isPresent();
@@ -90,7 +91,7 @@ class OnDemandAnalyzersMediumTests {
   @SonarLintTest
   void failed_cfamily_download_should_not_trigger_infinite_reload_loop(SonarLintTestHarness harness) {
     for (int i = 0; i < 20; i++) {
-      mockWebServer.enqueue(new mockwebserver3.MockResponse.Builder().code(500).build());
+      mockWebServer.enqueue(new MockResponse.Builder().code(500).build());
     }
     var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
     systemProperties.set(BinariesArtifact.PROPERTY_URL_PATTERN, serverUrl);
@@ -100,10 +101,10 @@ class OnDemandAnalyzersMediumTests {
       .withUnboundConfigScope("scopeId")
       .start(harness.newFakeClient().build());
 
-    await().atMost(10, TimeUnit.SECONDS).until(() -> mockWebServer.getRequestCount() >= 1);
+    await().atMost(10, SECONDS).until(() -> mockWebServer.getRequestCount() >= 1);
 
     var requestCountAfterFirstAttempt = mockWebServer.getRequestCount();
-    await().during(2, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
+    await().during(2, SECONDS).atMost(5, SECONDS)
       .until(() -> mockWebServer.getRequestCount() == requestCountAfterFirstAttempt);
   }
 
@@ -127,7 +128,7 @@ class OnDemandAnalyzersMediumTests {
 
     client.waitForSynchronization();
     
-    await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+    await().atMost(15, SECONDS).untilAsserted(() -> {
       var statuses = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams("scopeId")).get().getPluginStatuses();
       var javaStatusOpt = statuses.stream().filter(s -> "Java".equals(s.getPluginName())).findFirst();
       assertThat(javaStatusOpt).isPresent();

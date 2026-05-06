@@ -198,7 +198,8 @@ class BinariesArtifactSourceTest {
 
     await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isDone);
     assertThat(downloadFuture).isCompletedExceptionally();
-    assertThat(reloadTriggered).isFalse();
+    await().during(200, TimeUnit.MILLISECONDS).atMost(1, TimeUnit.SECONDS)
+      .until(() -> !reloadTriggered.get());
   }
 
   @Test

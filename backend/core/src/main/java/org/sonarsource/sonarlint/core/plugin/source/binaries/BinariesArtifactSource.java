@@ -180,12 +180,17 @@ public class BinariesArtifactSource implements ArtifactSource {
     try {
       var path = downloadAndCache(artifact);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createSuccessStatuses(artifact, path)));
-    } catch (RuntimeException e) {
+    } catch (Exception e) {
       logAndPublishFailure(artifact, e);
-      throw e;
-    } catch (IOException e) {
-      logAndPublishFailure(artifact, e);
-      throw new UncheckedIOException(e);
+      // Rethrow so the download future completes exceptionally, preventing the plugin reload loop.
+      // IOException is wrapped because this method is invoked as a Runnable and cannot declare checked exceptions.
+      if (e instanceof RuntimeException re) {
+        throw re;
+      }
+      if (e instanceof IOException ioe) {
+        throw new UncheckedIOException(ioe);
+      }
+      throw new IllegalStateException("Unexpected checked exception from downloadAndCache", e);
     }
   }
 
