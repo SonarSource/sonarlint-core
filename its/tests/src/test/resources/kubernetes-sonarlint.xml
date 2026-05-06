@@ -5,7 +5,7 @@
   <rules>
     <rule>
       <repositoryKey>kubernetes</repositoryKey>
-      <key>S6433</key>
+      <key>S1135</key>
       <priority>MAJOR</priority>
     </rule>
   </rules>

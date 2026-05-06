@@ -388,7 +388,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "10.0")
     void shouldRaiseIssuesOnAKubernetesProject() {
       var configScopeId = "shouldRaiseIssuesOnAKubernetesProject";
       var projectKey = "sample-kubernetes";
@@ -399,9 +399,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      var rawIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", "sample-kubernetes"), "src/sample.yaml");
+      var raisedIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-kubernetes"), "src/sample.yaml");
 
-      assertThat(rawIssues).hasSize(1);
+      assertThat(raisedIssues)
+        .extracting(RaisedFindingDto::getRuleKey)
+        .containsOnly("kubernetes:S1135");
     }
 
     @Test
