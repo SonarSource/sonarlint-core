@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -180,9 +181,22 @@ public class BinariesArtifactSource implements ArtifactSource {
       var path = downloadAndCache(artifact);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createSuccessStatuses(artifact, path)));
     } catch (Exception e) {
-      LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createdFailedStatuses(artifact)));
+      logAndPublishFailure(artifact, e);
+      // Rethrow so the download future completes exceptionally, preventing the plugin reload loop.
+      // IOException is wrapped because this method is invoked as a Runnable and cannot declare checked exceptions.
+      if (e instanceof RuntimeException re) {
+        throw re;
+      }
+      if (e instanceof IOException ioe) {
+        throw new UncheckedIOException(ioe);
+      }
+      throw new IllegalStateException("Unexpected checked exception from downloadAndCache", e);
     }
+  }
+
+  private void logAndPublishFailure(BinariesArtifact artifact, Exception e) {
+    LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createdFailedStatuses(artifact)));
   }
 
   private static List<PluginStatus> createSuccessStatuses(BinariesArtifact artifact, Path pluginPath) {
