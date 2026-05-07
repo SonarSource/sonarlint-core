@@ -54,6 +54,10 @@ public class PluginLocator {
   public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-" + SONAR_KOTLIN_PLUGIN_VERSION + ".jar";
   public static final String SONAR_KOTLIN_PLUGIN_JAR_HASH = "XXX";
 
+  public static final String SONAR_OMNISHARP_PLUGIN_VERSION = "1.42.0.101759";
+  public static final String SONAR_OMNISHARP_PLUGIN_JAR = "sonarlint-omnisharp-plugin-" + SONAR_OMNISHARP_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_OMNISHARP_PLUGIN_JAR_HASH = "XXX";
+
   public static final String SONAR_XML_PLUGIN_VERSION = "2.16.0.7616";
   public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-" + SONAR_XML_PLUGIN_VERSION + ".jar";
   public static final String SONAR_XML_PLUGIN_JAR_HASH = "XXX";
@@ -108,6 +112,10 @@ public class PluginLocator {
 
   public static Path getKotlinPluginPath() {
     return getPluginPath(SONAR_KOTLIN_PLUGIN_JAR);
+  }
+
+  public static Path getOmnisharpPluginPath() {
+    return getPluginPath(SONAR_OMNISHARP_PLUGIN_JAR);
   }
 
   private static Path getPluginPath(String file) {

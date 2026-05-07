@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
@@ -253,6 +255,72 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getTextRange().getStartLineOffset())
       .containsOnly(
         tuple("c:S3805", 1, 0));
+  }
+
+  @SonarLintTest
+  // disabled on Windows for now, failure probably related to the setup of the environment
+  @DisabledOnOs(OS.WINDOWS)
+  void simpleCsharp(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var inputFile = createFile(baseDir, "Foo.cs", """
+      public class Foo {
+        public void Bar() {
+          int x = 0;
+        }
+      }
+      """);
+    var projectFile = createFile(baseDir, "Foo.csproj", """
+      <Project Sdk="Microsoft.NET.Sdk">
+        <PropertyGroup>
+          <TargetFramework>net8.0</TargetFramework>
+          <ImplicitUsings>enable</ImplicitUsings>
+          <Nullable>enable</Nullable>
+        </PropertyGroup>
+      </Project>
+      """);
+    var solutionFile = createFile(baseDir, "Foo.sln", """
+      Microsoft Visual Studio Solution File, Format Version 12.00
+      # Visual Studio Version 17
+      VisualStudioVersion = 17.0.31903.59
+      MinimumVisualStudioVersion = 10.0.40219.1
+      Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Foo", "Foo.csproj", "{E12D8452-922F-4E47-94F0-8DF1480E64A0}"
+      EndProject
+      Global
+        GlobalSection(SolutionConfigurationPlatforms) = preSolution
+          Debug|Any CPU = Debug|Any CPU
+          Release|Any CPU = Release|Any CPU
+        EndGlobalSection
+        GlobalSection(ProjectConfigurationPlatforms) = postSolution
+          {E12D8452-922F-4E47-94F0-8DF1480E64A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+          {E12D8452-922F-4E47-94F0-8DF1480E64A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+          {E12D8452-922F-4E47-94F0-8DF1480E64A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+          {E12D8452-922F-4E47-94F0-8DF1480E64A0}.Release|Any CPU.Build.0 = Release|Any CPU
+        EndGlobalSection
+      EndGlobal
+      """);
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true),
+        new ClientFileDto(projectFile.toUri(), baseDir.relativize(projectFile), CONFIGURATION_SCOPE_ID, false, null, projectFile, null, null, true),
+        new ClientFileDto(solutionFile.toUri(), baseDir.relativize(solutionFile), CONFIGURATION_SCOPE_ID, false, null, solutionFile, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.OMNISHARP)
+      .start(client);
+
+    await().atMost(30, TimeUnit.SECONDS).pollInterval(4, TimeUnit.SECONDS).ignoreExceptions().until(() -> {
+      client.cleanRaisedIssues();
+      analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
+      return true;
+    });
+    var issues = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(inputFile.toUri());
+
+    assertThat(issues)
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine())
+      .containsOnly(
+        tuple("csharpsquid:S3903", 1),
+        tuple("csharpsquid:S2325", 2),
+        tuple("csharpsquid:S1481", 3));
   }
 
   @SonarLintTest
