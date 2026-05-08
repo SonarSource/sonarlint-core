@@ -37,7 +37,6 @@ public class HotspotDetailsDto {
   @Deprecated(forRemoval = true)
   @Nullable
   private final String resolution;
-  @Deprecated(forRemoval = true)
   private final HotspotRule rule;
   @Deprecated(forRemoval = true)
   @Nullable
