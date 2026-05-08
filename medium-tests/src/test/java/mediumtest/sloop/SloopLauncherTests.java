@@ -304,7 +304,7 @@ class SloopLauncherTests {
 
     @Override
     public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
-
+      // Intentionally empty - not needed for tests
     }
 
     @Override
