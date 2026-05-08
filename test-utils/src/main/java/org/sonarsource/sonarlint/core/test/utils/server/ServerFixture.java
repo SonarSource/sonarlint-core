@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -933,7 +934,7 @@ public class ServerFixture {
           mockServer.stubFor(get("/api/plugins/download?plugin=" + pluginKey)
             .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody(pluginContent)));
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw new UncheckedIOException(e);
         }
       });
     }
