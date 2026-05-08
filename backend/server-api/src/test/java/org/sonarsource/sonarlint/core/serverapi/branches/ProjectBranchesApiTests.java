@@ -38,7 +38,7 @@ class ProjectBranchesApiTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  private final static String PROJECT_KEY = "project1";
+  private static final String PROJECT_KEY = "project1";
 
   private ProjectBranchesApi underTest;
 
