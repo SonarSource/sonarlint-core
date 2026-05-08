@@ -99,7 +99,7 @@ public class SonarLintFileSystem implements FileSystem {
     }
 
     var sb = new StringBuilder();
-    sb.append("expected one element but was: <" + first);
+    sb.append("expected one element but was: <").append(first);
     for (var i = 0; i < 4 && iterator.hasNext(); i++) {
       sb.append(", ").append(iterator.next());
     }
