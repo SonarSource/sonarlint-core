@@ -33,6 +33,7 @@ import javax.annotation.CheckForNull;
  * @param <L>  type of the issues that are in the first collection
  * @param <R> type of the issues that are in the second collection
  */
+@SuppressWarnings("java:S119")
 public class MatchingResult<L, R> {
 
   /**
