@@ -198,7 +198,7 @@ class SloopLauncherTests {
 
     @Override
     public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
-
+      // No-op, not needed for tests
     }
 
     @Override
