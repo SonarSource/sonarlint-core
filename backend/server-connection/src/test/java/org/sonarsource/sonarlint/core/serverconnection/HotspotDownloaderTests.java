@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -102,31 +103,25 @@ class HotspotDownloaderTests {
     assertThat(result.getClosedHotspotKeys()).isEmpty();
 
     var serverHotspot1 = result.getChangedHotspots().get(0);
-    assertThat(serverHotspot1.getKey()).isEqualTo("someHotspotKey");
-    assertThat(serverHotspot1.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
-    assertThat(serverHotspot1.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
-    assertThat(serverHotspot1.getStatus()).isEqualTo(HotspotReviewStatus.TO_REVIEW);
-    assertThat(serverHotspot1.getMessage()).isEqualTo("This is security sensitive");
-    assertThat(serverHotspot1.getCreationDate()).isAfter(Instant.EPOCH);
-    assertThat(serverHotspot1.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(serverHotspot1.getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(serverHotspot1.getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(serverHotspot1.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(((TextRangeWithHash) serverHotspot1.getTextRange()).getHash()).isEqualTo("clearly not a hash");
-    assertThat(serverHotspot1.getRuleKey()).isEqualTo("java:S123");
+    assertHotspotFields(serverHotspot1, "someHotspotKey", HotspotReviewStatus.TO_REVIEW, 1, 2, 3, 4, "clearly not a hash");
 
     var serverHotspot2 = result.getChangedHotspots().get(1);
-    assertThat(serverHotspot2.getKey()).isEqualTo("otherHotspotKey");
-    assertThat(serverHotspot2.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
-    assertThat(serverHotspot2.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
-    assertThat(serverHotspot2.getStatus()).isEqualTo(HotspotReviewStatus.SAFE);
-    assertThat(serverHotspot2.getMessage()).isEqualTo("This is security sensitive");
-    assertThat(serverHotspot2.getCreationDate()).isAfter(Instant.EPOCH);
-    assertThat(serverHotspot2.getTextRange().getStartLine()).isEqualTo(5);
-    assertThat(serverHotspot2.getTextRange().getStartLineOffset()).isEqualTo(6);
-    assertThat(serverHotspot2.getTextRange().getEndLine()).isEqualTo(7);
-    assertThat(serverHotspot2.getTextRange().getEndLineOffset()).isEqualTo(8);
-    assertThat(((TextRangeWithHash) serverHotspot2.getTextRange()).getHash()).isEqualTo("not a hash either");
-    assertThat(serverHotspot2.getRuleKey()).isEqualTo("java:S123");
+    assertHotspotFields(serverHotspot2, "otherHotspotKey", HotspotReviewStatus.SAFE, 5, 6, 7, 8, "not a hash either");
+  }
+
+  private static void assertHotspotFields(ServerHotspot hotspot, String expectedKey, HotspotReviewStatus expectedStatus,
+    int expectedStartLine, int expectedStartLineOffset, int expectedEndLine, int expectedEndLineOffset, String expectedHash) {
+    assertThat(hotspot.getKey()).isEqualTo(expectedKey);
+    assertThat(hotspot.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
+    assertThat(hotspot.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
+    assertThat(hotspot.getStatus()).isEqualTo(expectedStatus);
+    assertThat(hotspot.getMessage()).isEqualTo("This is security sensitive");
+    assertThat(hotspot.getCreationDate()).isAfter(Instant.EPOCH);
+    assertThat(hotspot.getTextRange().getStartLine()).isEqualTo(expectedStartLine);
+    assertThat(hotspot.getTextRange().getStartLineOffset()).isEqualTo(expectedStartLineOffset);
+    assertThat(hotspot.getTextRange().getEndLine()).isEqualTo(expectedEndLine);
+    assertThat(hotspot.getTextRange().getEndLineOffset()).isEqualTo(expectedEndLineOffset);
+    assertThat(((TextRangeWithHash) hotspot.getTextRange()).getHash()).isEqualTo(expectedHash);
+    assertThat(hotspot.getRuleKey()).isEqualTo("java:S123");
   }
 }
