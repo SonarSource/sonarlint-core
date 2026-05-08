@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.rpc.protocol;
 
 public class SonarLintRpcErrorCode {
 
+  private SonarLintRpcErrorCode() {
+  }
+
   public static final int CONNECTION_NOT_FOUND = -1;
   public static final int CONFIG_SCOPE_NOT_FOUND = -2;
   public static final int RULE_NOT_FOUND = -3;
