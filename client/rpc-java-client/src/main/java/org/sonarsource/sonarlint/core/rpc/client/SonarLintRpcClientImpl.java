@@ -304,10 +304,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestAsync(cancelChecker -> new CheckServerTrustedResponse(delegate.checkServerTrusted(params.getChain(), params.getAuthType())));
   }
 
-  @Override
-  public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-    notify(() -> delegate.didReceiveServerHotspotEvent(params));
-  }
+
 
   @Override
   public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {

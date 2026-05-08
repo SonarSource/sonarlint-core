@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
@@ -179,10 +178,7 @@ public interface SonarLintRpcClientDelegate {
    */
   boolean checkServerTrusted(List<X509CertificateDto> chain, String authType);
 
-  @Deprecated(since = "10.3")
-  default void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-    // no-op
-  }
+
 
   /**
    * @return null if the client is unable to match the branch
