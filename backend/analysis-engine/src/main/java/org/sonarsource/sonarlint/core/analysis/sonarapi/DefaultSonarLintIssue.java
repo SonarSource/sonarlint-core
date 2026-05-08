@@ -44,11 +44,9 @@ import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.SensorQuickFix;
 import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
-import org.sonarsource.sonarlint.plugin.api.issue.NewSonarLintIssue;
-
 import static java.util.Objects.requireNonNull;
 
-public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue {
+public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue {
 
   private final SonarLintInputProject project;
   private final Path baseDir;
@@ -222,7 +220,6 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     return new SensorQuickFix();
   }
 
-  @Override
   public DefaultSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {
     // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
     quickFixes.add((QuickFix) newQuickFix);
