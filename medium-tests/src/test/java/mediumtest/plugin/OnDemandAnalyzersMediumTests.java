@@ -19,7 +19,6 @@
  */
 package mediumtest.plugin;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -37,6 +36,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
 import utils.TestPlugin;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -55,7 +55,7 @@ class OnDemandAnalyzersMediumTests {
   }
 
   @AfterEach
-  void tearDown() throws Exception {
+  void tearDown() {
     mockWebServer.close();
   }
 
