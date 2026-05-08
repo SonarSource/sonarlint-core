@@ -133,6 +133,9 @@ public enum SonarLanguage {
   }
 
   public static class Constants {
+    private Constants() {
+    }
+
     private static final String NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE = "<no public property provided for this language>";
   }
 
