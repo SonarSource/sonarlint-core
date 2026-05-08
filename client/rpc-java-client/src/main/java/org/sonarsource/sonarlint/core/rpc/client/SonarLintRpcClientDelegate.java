@@ -179,6 +179,9 @@ public interface SonarLintRpcClientDelegate {
    */
   boolean checkServerTrusted(List<X509CertificateDto> chain, String authType);
 
+  /**
+   * @deprecated since 10.3
+   */
   @Deprecated(since = "10.3")
   default void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
     // no-op
