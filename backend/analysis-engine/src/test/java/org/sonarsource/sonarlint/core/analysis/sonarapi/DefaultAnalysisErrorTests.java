@@ -69,7 +69,8 @@ class DefaultAnalysisErrorTests {
   @Test
   void test_no_storage() {
     var analysisError = new DefaultAnalysisError();
-    assertThrows(NullPointerException.class, () -> analysisError.onFile(inputFile).save());
+    var error = analysisError.onFile(inputFile);
+    assertThrows(NullPointerException.class, () -> error.save());
   }
 
   @Test
