@@ -136,7 +136,7 @@ class IssuesStatusChangeMediumTests {
     var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
 
     var changeStatusFuture = issueService.changeStatus(params);
-    assertDoesNotThrow(() -> changeStatusFuture.get());
+    assertDoesNotThrow(changeStatusFuture::get);
   }
 
   @SonarLintTest
