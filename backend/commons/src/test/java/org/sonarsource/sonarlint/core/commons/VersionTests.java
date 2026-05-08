@@ -40,8 +40,8 @@ class VersionTests {
     var version = Version.create("1.2");
     assertThat(version.getMajor()).isEqualTo(1);
     assertThat(version.getMinor()).isEqualTo(2);
-    assertThat(version.getPatch()).isEqualTo(0);
-    assertThat(version.getBuild()).isEqualTo(0);
+    assertThat(version.getPatch()).isZero();
+    assertThat(version.getBuild()).isZero();
     assertThat(version.getQualifier()).isEmpty();
   }
 
