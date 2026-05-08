@@ -54,7 +54,7 @@ public class ValidationFilter implements HttpFilterHandler {
     var params = AttributeUtils.getParams(context);
     if (!isSonarCloud && params.containsKey("server")) {
       var serverUrl = params.get("server");
-      if (Strings.CI.startsWithAny(serverUrl, SonarCloudRegion.CLOUD_URLS)) {
+      if (Strings.CI.startsWithAny(serverUrl, SonarCloudRegion.getCloudUrls())) {
         var response = new BasicClassicHttpResponse(HttpStatus.SC_BAD_REQUEST);
         client.showMessage(new ShowMessageParams(MessageType.ERROR,
           "Invalid request to SonarQube backend. " +
