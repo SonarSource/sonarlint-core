@@ -763,10 +763,7 @@ public class SonarLintBackendFixture {
       credentialsByConnectionId.put(connectionId, Either.forLeft(new TokenDto(token)));
     }
 
-    @Override
-    public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-      // no-op
-    }
+
 
     @Override
     public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, SonarLintCancelChecker cancelChecker) {
