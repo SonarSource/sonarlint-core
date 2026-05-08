@@ -209,11 +209,12 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     @Nullable
     private final String organizationKey;
     private final boolean isSonarCloud;
+    @Nullable
     private final FixSuggestionPayload fixSuggestion;
 
     public ShowFixSuggestionQuery(@Nullable String serverUrl, String projectKey, String issueKey, @Nullable String branch,
       @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud,
-      FixSuggestionPayload fixSuggestion) {
+      @Nullable FixSuggestionPayload fixSuggestion) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
@@ -229,7 +230,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       return isNotBlank(projectKey) && isNotBlank(issueKey)
         && (isSonarCloud || isNotBlank(serverUrl))
         && (!isSonarCloud || isNotBlank(organizationKey))
-        && fixSuggestion.isValid() && isTokenValid();
+        && fixSuggestion != null && fixSuggestion.isValid() && isTokenValid();
     }
 
     /**
@@ -275,6 +276,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       return tokenValue;
     }
 
+    @Nullable
     public FixSuggestionPayload getFixSuggestion() {
       return fixSuggestion;
     }
