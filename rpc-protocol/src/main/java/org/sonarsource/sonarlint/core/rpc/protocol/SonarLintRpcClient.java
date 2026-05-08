@@ -226,7 +226,8 @@ public interface SonarLintRpcClient {
    */
   @Deprecated(since = "10.3")
   @JsonNotification
-  void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params);
+  default void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+  }
 
   @JsonRequest
   CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params);
