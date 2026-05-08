@@ -20,4 +20,9 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.progress;
 
 public class ProgressEndNotification {
+  // This empty DTO class is used as a marker notification in the RPC protocol
+  // to signal the end of a progress reporting sequence.
+  public ProgressEndNotification() {
+    // Default constructor
+  }
 }
