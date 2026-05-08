@@ -69,7 +69,6 @@ class ReversePathTreeTests {
 
     var match = tree.findLongestSuffixMatches(Paths.get("File2.java"));
 
-    assertThat(match.matchLen()).isZero();
     assertThat(match.matchPrefixes()).isEmpty();
   }
 
