@@ -27,12 +27,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -223,28 +227,15 @@ class PushApiTests {
       .containsOnly(Map.of("key1", "value1"));
   }
 
-  @Test
-  void should_not_notify_while_event_is_incomplete() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+  private static Stream<Arguments> invalidEventBodies() {
+    return Stream.of(
+      Arguments.of("incomplete event", """
         event: RuleSetChanged
         data: {\
           "projects": ["projectKey1", "projectKey2"],\
           "activatedRules":
-        """)
-      .build();
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
-
-    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
-    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
-
-    assertThat(receivedEvents).isEmpty();
-  }
-
-  @Test
-  void should_ignore_events_without_project_keys() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+        """),
+      Arguments.of("event without project keys", """
         event: RuleSetChanged
         data: {\
           "activatedRules": ["java:S1234"],\
@@ -258,71 +249,23 @@ class PushApiTests {
             }]\
           }]\
         }
-        """)
-      .build();
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
-
-    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
-    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
-
-    assertThat(receivedEvents).isEmpty();
-  }
-
-  @Test
-  void should_ignore_unknown_events() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+        """),
+      Arguments.of("unknown event", """
         event: UnknownEvent
         data: "plop"
         
-        """)
-      .build();
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
-
-    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
-    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
-
-    assertThat(receivedEvents).isEmpty();
-  }
-
-  @Test
-  void should_ignore_ruleset_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+        """),
+      Arguments.of("ruleset changed event with invalid json", """
         event: RuleSetChanged
         data: {]
         
-        """)
-      .build();
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
-
-    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
-    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
-
-    assertThat(receivedEvents).isEmpty();
-  }
-
-  @Test
-  void should_ignore_setting_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+        """),
+      Arguments.of("setting changed event with invalid json", """
         event: SettingChanged
         data: {]
         
-        """)
-      .build();
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
-
-    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
-    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
-
-    assertThat(receivedEvents).isEmpty();
-  }
-
-  @Test
-  void should_ignore_invalid_setting_changed_events() {
-    var mockResponse = new MockResponse.Builder()
-      .body("""
+        """),
+      Arguments.of("invalid setting changed event", """
         event: SettingChanged
         data: {\
           "projects": ["projectKey1", "projectKey2"],\
@@ -333,6 +276,14 @@ class PushApiTests {
         }
         
         """)
+    );
+  }
+
+  @ParameterizedTest(name = "should not produce events for {0}")
+  @MethodSource("invalidEventBodies")
+  void should_not_produce_events_for_invalid_or_incomplete_data(String description, String body) {
+    var mockResponse = new MockResponse.Builder()
+      .body(body)
       .build();
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
