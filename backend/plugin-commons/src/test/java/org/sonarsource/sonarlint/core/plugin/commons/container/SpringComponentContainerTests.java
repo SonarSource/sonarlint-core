@@ -295,6 +295,7 @@ class SpringComponentContainerTests {
     }
   }
 
+  @SuppressWarnings("java:S1172")
   private static class ExtensionWithMultipleConstructorsAndNoAnnotations {
     private boolean gotBothArgs = false;
 
