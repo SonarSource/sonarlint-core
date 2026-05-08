@@ -23,19 +23,19 @@ import java.util.Map;
 
 public class AnalyzerConfiguration {
   public static final int CURRENT_SCHEMA_VERSION = 1;
-  private final Map<String, String> settings;
+  private final Map<String, String> analyzerSettings;
   private final Map<String, RuleSet> ruleSetByLanguageKey;
 
   private final int schemaVersion;
 
-  public AnalyzerConfiguration(Map<String, String> settings, Map<String, RuleSet> ruleSetByLanguageKey, int schemaVersion) {
-    this.settings = settings;
+  public AnalyzerConfiguration(Map<String, String> analyzerSettings, Map<String, RuleSet> ruleSetByLanguageKey, int schemaVersion) {
+    this.analyzerSettings = analyzerSettings;
     this.ruleSetByLanguageKey = ruleSetByLanguageKey;
     this.schemaVersion = schemaVersion;
   }
 
   public Map<String, String> getSettings() {
-    return settings;
+    return analyzerSettings;
   }
 
   public Map<String, RuleSet> getRuleSetByLanguageKey() {
