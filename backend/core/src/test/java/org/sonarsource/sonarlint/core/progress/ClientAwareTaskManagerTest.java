@@ -40,7 +40,7 @@ class ClientAwareTaskManagerTest {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  void it_should_throw_when_interrupted() throws InterruptedException {
+  void it_should_throw_when_interrupted() {
     var client = mock(SonarLintRpcClient.class);
     when(client.startProgress(any())).thenReturn(new CompletableFuture<>());
     var taskManager = new ClientAwareTaskManager(client);
@@ -54,7 +54,7 @@ class ClientAwareTaskManagerTest {
       }
     });
     thread.start();
-    Thread.sleep(500);
+    await().until(() -> thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING);
 
     thread.interrupt();
 
