@@ -40,7 +40,7 @@ class PriorityBeanFactoryTests {
   private final DefaultListableBeanFactory beanFactory = new PriorityBeanFactory();
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     // needed to support autowiring with @Inject
     beanFactory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
     // needed to read @Priority
