@@ -221,7 +221,6 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     return new SensorQuickFix();
   }
 
-  @Override
   public DefaultSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {
     // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
     quickFixes.add((QuickFix) newQuickFix);
