@@ -100,8 +100,8 @@ public class SensorsExecutor {
     LOG.debug("Execute Sensor: {}", sensorName);
     try {
       startChild(trace, "executeSensor", sensorName, () -> sensor.execute(context));
-    } catch (Exception e) {
-      LOG.error("Error executing sensor: '{}'", sensorName, e);
+    } catch (Throwable t) {
+      LOG.error("Error executing sensor: '{}'", sensorName, t);
     }
   }
 
