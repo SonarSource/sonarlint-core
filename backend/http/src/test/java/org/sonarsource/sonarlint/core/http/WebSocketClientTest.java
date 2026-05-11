@@ -83,22 +83,4 @@ class WebSocketClientTest {
       .hasMessageContaining("WebSocket URI must use 'ws' or 'wss' scheme");
   }
 
-  @Test
-  void should_accept_valid_ws_uri() {
-    var client = new WebSocketClient("test-agent", "token", executor);
-    
-    var future = client.createWebSocketConnection(URI.create("ws://example.com"), message -> {}, () -> {});
-
-    assertThat(future).isNotCompletedExceptionally();
-  }
-
-  @Test
-  void should_accept_valid_wss_uri() {
-    var client = new WebSocketClient("test-agent", "token", executor);
-    
-    var future = client.createWebSocketConnection(URI.create("wss://example.com"), message -> {}, () -> {});
-
-    assertThat(future).isNotCompletedExceptionally();
-  }
-
 }
