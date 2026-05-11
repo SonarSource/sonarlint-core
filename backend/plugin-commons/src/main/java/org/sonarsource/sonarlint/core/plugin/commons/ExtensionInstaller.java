@@ -51,8 +51,8 @@ public class ExtensionInstaller {
       try {
         plugin.define(context);
         loadExtensions(container, pluginKey, context, extensionFilter);
-      } catch (Exception e) {
-        LOG.error("Error loading components for plugin '{}'", pluginKey, e);
+      } catch (Throwable t) {
+        LOG.error("Error loading components for plugin '{}'", pluginKey, t);
       }
     }
   }
