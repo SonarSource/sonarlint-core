@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +97,7 @@ class CampaignMediumTests {
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
   }
 
   @SonarLintTest
@@ -113,7 +114,7 @@ class CampaignMediumTests {
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -139,7 +140,7 @@ class CampaignMediumTests {
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -162,7 +163,7 @@ class CampaignMediumTests {
         .hasSize(1)
         .contains(Map.entry(
           CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "CLOSED")))
+          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), "CLOSED")))
     );
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent())
@@ -235,7 +236,7 @@ class CampaignMediumTests {
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "MAYBE_LATER")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "MAYBE_LATER")));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -257,7 +258,7 @@ class CampaignMediumTests {
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(), "LOVE_IT")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "LOVE_IT")));
 
     ArgumentCaptor<List<MessageActionItem>> actionsArgumentCaptor = ArgumentCaptor.forClass(List.class);
     var messageTypeCaptor = ArgumentCaptor.forClass(MessageType.class);
@@ -308,7 +309,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_trigger_notification_again_after_week_for_maybe_later(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(LocalDate.now().minusDays(8), "MAYBE_LATER");
+    saveFeedbackCampaign(LocalDate.now(ZoneId.systemDefault()).minusDays(8), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
     baseBackend(harness)
@@ -322,7 +323,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_not_trigger_notification_again_after_less_then_week_for_maybe_later(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(LocalDate.now().minusDays(6), "MAYBE_LATER");
+    saveFeedbackCampaign(LocalDate.now(ZoneId.systemDefault()).minusDays(6), "MAYBE_LATER");
     var client = harness.newFakeClient().build();
 
     baseBackend(harness)
@@ -333,7 +334,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_trigger_notification_again_after_6_months_for_ignore(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(LocalDate.now().minusMonths(6).minusDays(1), "IGNORE");
+    saveFeedbackCampaign(LocalDate.now(ZoneId.systemDefault()).minusMonths(6).minusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
     baseBackend(harness)
@@ -347,7 +348,7 @@ class CampaignMediumTests {
 
   @SonarLintTest
   void it_should_not_trigger_notification_again_after_less_then_6_months_for_ignore(SonarLintTestHarness harness) {
-    saveFeedbackCampaign(LocalDate.now().minusMonths(6).plusDays(1), "IGNORE");
+    saveFeedbackCampaign(LocalDate.now(ZoneId.systemDefault()).minusMonths(6).plusDays(1), "IGNORE");
     var client = harness.newFakeClient().build();
 
     baseBackend(harness)
@@ -445,7 +446,7 @@ class CampaignMediumTests {
         .hasSize(1)
         .contains(Map.entry(
           CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), response))));
+          new CampaignsLocalStorage.Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), response))));
     verify(client, timeout(500)).openUrlInBrowser(URI.create(expectedUrl).toURL());
   }
 
@@ -467,7 +468,7 @@ class CampaignMediumTests {
   private void saveTelemetryInstallTime(String productKey, int daysAgo) {
     var telemetryPath = getTelemetryPath(productKey);
     TelemetryLocalStorageManager telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
-    telemetryStorageManager.tryUpdateAtomically(data -> data.setInstallTime(OffsetDateTime.now().minusDays(daysAgo)));
+    telemetryStorageManager.tryUpdateAtomically(data -> data.setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()).minusDays(daysAgo)));
   }
 
   private Path getCampaignsPath(String productKey) {

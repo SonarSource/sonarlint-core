@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,7 +100,7 @@ public class TelemetryHttpClient {
   }
 
   private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
-    var systemTime = OffsetDateTime.now();
+    var systemTime = OffsetDateTime.now(ZoneId.systemDefault());
     var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
     var notifications = TelemetryUtils.toPayload(telemetryLiveAttrs.isDevNotificationsDisabled(), data.notifications());

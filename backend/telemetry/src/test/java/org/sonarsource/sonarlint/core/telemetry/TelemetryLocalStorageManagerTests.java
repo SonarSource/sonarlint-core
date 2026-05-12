@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
@@ -44,7 +45,7 @@ class TelemetryLocalStorageManagerTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private final LocalDate today = LocalDate.now();
+  private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
   private Path filePath;
 
   @BeforeEach
@@ -66,7 +67,7 @@ class TelemetryLocalStorageManagerTests {
   }
 
   private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
-    var now = OffsetDateTime.now();
+    var now = OffsetDateTime.now(ZoneId.systemDefault());
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
@@ -105,7 +106,7 @@ class TelemetryLocalStorageManagerTests {
   void should_fix_invalid_numDays() {
     var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
-    var tenDaysAgo = OffsetDateTime.now().minusDays(10);
+    var tenDaysAgo = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(10);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(tenDaysAgo);
@@ -124,7 +125,7 @@ class TelemetryLocalStorageManagerTests {
     var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(data -> {
-      data.setInstallTime(OffsetDateTime.now().plusDays(5));
+      data.setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()).plusDays(5));
       data.setLastUseDate(today.plusDays(7));
       data.setNumUseDays(100);
     });
@@ -201,7 +202,7 @@ class TelemetryLocalStorageManagerTests {
   @Test
   void should_migrate_telemetry() {
     var initializeParams = mock(InitializeParams.class);
-    var expectedInstallTime = OffsetDateTime.now();
+    var expectedInstallTime = OffsetDateTime.now(ZoneId.systemDefault());
     when(initializeParams.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(expectedInstallTime, 42, false));
 
     var storageManager = new TelemetryLocalStorageManager(filePath, initializeParams);

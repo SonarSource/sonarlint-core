@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.smartnotifications;
 
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class LastEventPollingTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now().minusDays(5);
+  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(5);
   private static final String PROJECT_KEY = "projectKey";
   private static final String CONNECTION_ID = "connectionId";
   private static final String FILE_NAME = "last_event_polling.pb";
@@ -83,7 +84,7 @@ class LastEventPollingTests {
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
-    assertThat(result).isBeforeOrEqualTo(ZonedDateTime.now()).isAfter(ZonedDateTime.now().minusSeconds(3));
+    assertThat(result).isBeforeOrEqualTo(ZonedDateTime.now(ZoneId.systemDefault())).isAfter(ZonedDateTime.now(ZoneId.systemDefault()).minusSeconds(3));
   }
 
   private static UserPaths userPathsFrom(Path tmpDir) {

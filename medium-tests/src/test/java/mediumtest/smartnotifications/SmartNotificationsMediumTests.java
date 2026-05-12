@@ -19,6 +19,7 @@
  */
 package mediumtest.smartnotifications;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -52,7 +53,7 @@ class SmartNotificationsMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now().minusHours(1);
+  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now(ZoneId.systemDefault()).minusHours(1);
   private static final String PROJECT_KEY = "projectKey";
   private static final String PROJECT_KEY_2 = "projectKey2";
   private static final String PROJECT_KEY_3 = "projectKey3";

@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ class TelemetryUtils {
    * @return true if it's a different day than the reference
    */
   static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDate date) {
-    return date == null || !date.equals(LocalDate.now());
+    return date == null || !date.equals(LocalDate.now(ZoneId.systemDefault()));
   }
 
   /**
@@ -115,8 +116,8 @@ class TelemetryUtils {
    */
   static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime dateTime, long hours) {
     return dateTime == null ||
-      (!LocalDate.now().equals(dateTime.toLocalDate())
-        && (dateTime.until(LocalDateTime.now(), ChronoUnit.HOURS) >= hours));
+      (!LocalDate.now(ZoneId.systemDefault()).equals(dateTime.toLocalDate())
+        && (dateTime.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS) >= hours));
   }
 
   private static <T> BinaryOperator<T> throwingMerger() {

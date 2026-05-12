@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -117,13 +118,13 @@ public class CampaignService {
   }
 
   private boolean isInstalledLongEnough() {
-    return OffsetDateTime.now().minusDays(TWO_WEEKS).isAfter(telemetryService.installTime());
+    return OffsetDateTime.now(ZoneId.systemDefault()).minusDays(TWO_WEEKS).isAfter(telemetryService.installTime());
   }
 
   private static boolean postponeTimePassed(String lastResponse, Campaign feedbackCampaign) {
     var postpone = POSTPONE_PERIODS.get(lastResponse);
     var lastShown = feedbackCampaign.lastNotificationShownOn();
-    return lastShown.plus(postpone).isBefore(LocalDate.now());
+    return lastShown.plus(postpone).isBefore(LocalDate.now(ZoneId.systemDefault()));
   }
 
   private void showFeedbackMessage() {
@@ -150,7 +151,7 @@ public class CampaignService {
 
       if (existingCampaign == null || !wasShownRecently(existingCampaign.lastNotificationShownOn())) {
         campaigns.put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), "IGNORE"));
+          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), "IGNORE"));
         shouldShow.set(true);
       }
     });
@@ -159,7 +160,7 @@ public class CampaignService {
   }
 
   private static boolean wasShownRecently(LocalDate lastShown) {
-    var today = LocalDate.now();
+    var today = LocalDate.now(ZoneId.systemDefault());
     var yesterday = today.minusDays(1);
     // Consider "recently shown" if shown today or yesterday, this prevents midnight edge case where notification fires just after midnight
     return lastShown.equals(today) || lastShown.equals(yesterday);
@@ -180,7 +181,7 @@ public class CampaignService {
   private void handleFeedbackResponse(String responseOption) {
     fileStorageManager.tryUpdateAtomically(storage -> storage.campaigns().put(
       CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-      new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(), responseOption)));
+      new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), responseOption)));
     eventPublisher.publishEvent(new CampaignResolvedEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
       responseOption));
 
