@@ -32,7 +32,7 @@ public class DateUtils {
 
   public static String toAge(long time) {
     var creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
-    var now = LocalDateTime.now();
+    var now = LocalDateTime.now(ZoneId.systemDefault());
 
     var years = ChronoUnit.YEARS.between(creation, now);
     if (years > 0) {

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +46,7 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_should_return_true_if_older() {
-    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now().minusDays(1))).isTrue();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(ZoneId.systemDefault()).minusDays(1))).isTrue();
   }
 
   @Test
@@ -71,7 +72,7 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_should_return_false_if_same() {
-    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now())).isFalse();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(ZoneId.systemDefault()))).isFalse();
   }
 
   @Test
@@ -81,7 +82,7 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_with_hours_should_return_false_if_day_same() {
-    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(LocalDateTime.now(), 100)).isFalse();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(LocalDateTime.now(ZoneId.systemDefault()), 100)).isFalse();
   }
 
   @Test
@@ -112,15 +113,15 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_with_hours_should_return_false_if_different_day_but_within_hours() {
-    var date = LocalDateTime.now().minusDays(1);
-    var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
+    var date = LocalDateTime.now(ZoneId.systemDefault()).minusDays(1);
+    var hours = date.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS);
     assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours + 1)).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_if_different_day_and_beyond_hours() {
-    var date = LocalDateTime.now().minusDays(1);
-    var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
+    var date = LocalDateTime.now(ZoneId.systemDefault()).minusDays(1);
+    var hours = date.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS);
     assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours)).isTrue();
   }
 

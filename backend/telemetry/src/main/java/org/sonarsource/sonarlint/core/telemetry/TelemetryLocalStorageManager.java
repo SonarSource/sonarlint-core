@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
@@ -68,7 +69,7 @@ public class TelemetryLocalStorageManager {
     if (telemetryMigration == null) {
       return false;
     }
-    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now());
+    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now(ZoneId.systemDefault()));
     return duration.getSeconds() < 10 && inMemoryStorage.numUseDays() == 0;
   }
 

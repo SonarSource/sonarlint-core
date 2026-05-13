@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -113,7 +114,7 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   TelemetryLocalStorage() {
     enabled = true;
-    installTime = OffsetDateTime.now();
+    installTime = OffsetDateTime.now(ZoneId.systemDefault());
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
     issueStatusChangedRuleKeys = new HashSet<>();
@@ -225,7 +226,7 @@ public class TelemetryLocalStorage implements LocalStorage {
   }
 
   void setLastUploadTime() {
-    setLastUploadTime(LocalDateTime.now());
+    setLastUploadTime(LocalDateTime.now(ZoneId.systemDefault()));
   }
 
   void setLastUploadTime(@Nullable LocalDateTime dateTime) {
@@ -314,7 +315,7 @@ public class TelemetryLocalStorage implements LocalStorage {
   }
 
   private void markSonarLintAsUsedToday() {
-    var now = LocalDate.now();
+    var now = LocalDate.now(ZoneId.systemDefault());
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
     }
@@ -341,16 +342,16 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   @Override
   public void validateAndMigrate() {
-    var today = LocalDate.now();
+    var today = LocalDate.now(ZoneId.systemDefault());
 
     // migrate deprecated installDate
     if (installDate != null && (installTime == null || installTime.toLocalDate().isAfter(installDate))) {
-      setInstallTime(installDate.atTime(OffsetTime.now()));
+      setInstallTime(installDate.atTime(OffsetTime.now(ZoneId.systemDefault())));
     }
 
     // fix install time if necessary
-    if (installTime == null || installTime.isAfter(OffsetDateTime.now())) {
-      setInstallTime(OffsetDateTime.now());
+    if (installTime == null || installTime.isAfter(OffsetDateTime.now(ZoneId.systemDefault()))) {
+      setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()));
     }
 
     // calculate use days

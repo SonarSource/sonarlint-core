@@ -34,11 +34,11 @@ class DateUtilsTests {
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 3_600_000 - 100_000)).isEqualTo("1 hour ago");
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 2 * 3_600_000 - 100_000)).isEqualTo("2 hours ago");
     assertThat(DateUtils.toAge(System.currentTimeMillis() - 24 * 3_600_000 - 100_000)).isEqualTo("1 day ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now().minusMonths(5)
+    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(5)
       .atZone(ZoneId.systemDefault())
       .toInstant()
       .toEpochMilli())).isEqualTo("5 months ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now().minusMonths(15)
+    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(15)
       .atZone(ZoneId.systemDefault())
       .toInstant()
       .toEpochMilli())).isEqualTo("1 year ago");

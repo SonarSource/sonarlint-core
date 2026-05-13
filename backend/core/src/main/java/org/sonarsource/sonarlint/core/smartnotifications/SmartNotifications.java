@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -128,7 +129,7 @@ public class SmartNotifications {
     }
 
     projectKeysByLastEventPolling.keySet()
-      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
+      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(ZoneId.systemDefault()), connectionId, projectKey));
   }
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
@@ -147,7 +148,7 @@ public class SmartNotifications {
   }
 
   private static ZonedDateTime getLastNotificationTime(ZonedDateTime lastTime) {
-    var oneDayAgo = ZonedDateTime.now().minusDays(1);
+    var oneDayAgo = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
