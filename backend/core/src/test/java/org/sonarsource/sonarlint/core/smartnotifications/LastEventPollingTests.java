@@ -84,7 +84,8 @@ class LastEventPollingTests {
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
-    assertThat(result).isBeforeOrEqualTo(ZonedDateTime.now(ZoneId.systemDefault())).isAfter(ZonedDateTime.now(ZoneId.systemDefault()).minusSeconds(3));
+    var now = ZonedDateTime.now(ZoneId.systemDefault());
+    assertThat(result).isBeforeOrEqualTo(now).isAfter(now.minusSeconds(3));
   }
 
   private static UserPaths userPathsFrom(Path tmpDir) {
