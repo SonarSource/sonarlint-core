@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.promotion.campaign;
 
+
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
