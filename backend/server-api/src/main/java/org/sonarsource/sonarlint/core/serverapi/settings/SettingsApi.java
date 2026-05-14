@@ -32,12 +32,17 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
 public class SettingsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
 
   private final ServerApiHelper helper;
+  private final String apiSettingsPath;
 
   public SettingsApi(ServerApiHelper helper) {
+    this(helper, "/api/settings/values.protobuf");
+  }
+
+  public SettingsApi(ServerApiHelper helper, String apiSettingsPath) {
     this.helper = helper;
+    this.apiSettingsPath = apiSettingsPath;
   }
 
   public Map<String, String> getGlobalSettings(SonarLintCancelMonitor cancelMonitor) {
@@ -50,7 +55,7 @@ public class SettingsApi {
 
   private Map<String, String> getSettings(String queryParameters, SonarLintCancelMonitor cancelMonitor) {
     var settings = new HashMap<String, String>();
-    var url = API_SETTINGS_PATH + queryParameters;
+    var url = apiSettingsPath + queryParameters;
     ServerApiHelper.consumeTimed(
       () -> helper.get(url, cancelMonitor),
       response -> {

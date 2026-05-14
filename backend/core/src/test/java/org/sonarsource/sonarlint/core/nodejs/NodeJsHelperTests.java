@@ -239,9 +239,9 @@ class NodeJsHelperTests {
   void whereOnWindowsCanReturnMultipleCandidates() {
     when(system2.isOsWindows()).thenReturn(true);
 
-    var fake_node_path2 = Paths.get("foo2/node");
+    var fakeNodePath2 = Paths.get("foo2/node");
 
-    registerWhereAnswer(FAKE_NODE_PATH.toString(), fake_node_path2.toString());
+    registerWhereAnswer(FAKE_NODE_PATH.toString(), fakeNodePath2.toString());
     registerNodeVersionAnswer("v10.5.4");
 
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
@@ -251,7 +251,7 @@ class NodeJsHelperTests {
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: "
-        + FAKE_NODE_PATH + "\n" + fake_node_path2,
+        + FAKE_NODE_PATH + "\n" + fakeNodePath2,
       "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
