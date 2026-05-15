@@ -106,7 +106,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.java</groupId>
                   <artifactId>sonar-java-plugin</artifactId>
-                  <version>8.25.0.42802</version>
+                  <version>8.29.0.43460</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
@@ -118,37 +118,37 @@
                 <artifactItem>
                   <groupId>org.sonarsource.php</groupId>
                   <artifactId>sonar-php-plugin</artifactId>
-                  <version>3.55.0.15704</version>
+                  <version>3.57.0.15976</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
-                  <version>5.18.0.31561</version>
+                  <version>5.22.0.33216</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.xml</groupId>
                   <artifactId>sonar-xml-plugin</artifactId>
-                  <version>2.16.0.7616</version>
+                  <version>2.17.0.7895</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.text</groupId>
                   <artifactId>sonar-text-plugin</artifactId>
-                  <version>2.41.0.10709</version>
+                  <version>2.43.0.11106</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.kotlin</groupId>
                   <artifactId>sonar-kotlin-plugin</artifactId>
-                  <version>3.4.0.8957</version>
+                  <version>3.6.0.9326</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.sonarlint.omnisharp</groupId>
                   <artifactId>sonarlint-omnisharp-plugin</artifactId>
-                  <version>1.42.0.101759</version>
+                  <version>1.43.0.101782</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
@@ -223,13 +223,13 @@
                     <artifactItem>
                       <groupId>com.sonarsource.cpp</groupId>
                       <artifactId>sonar-cfamily-plugin</artifactId>
-                      <version>6.78.0.96395</version>
+                      <version>6.81.1.99296</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>org.sonarsource.java</groupId>
                       <artifactId>sonar-java-symbolic-execution-plugin</artifactId>
-                      <version>8.19.0.1586</version>
+                      <version>8.21.0.1991</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>

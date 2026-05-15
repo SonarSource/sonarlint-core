@@ -44,16 +44,16 @@
     -->
     <maven.compiler.release>21</maven.compiler.release>
 
-    <sonar-plugin-api.version>13.4.2.4284</sonar-plugin-api.version>
-    <sonar-markdown.version>25.3.0.104237</sonar-markdown.version>
-    <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
+    <sonar-plugin-api.version>13.6.0.4371</sonar-plugin-api.version>
+    <sonar-markdown.version>25.12.0.117093</sonar-markdown.version>
+    <sonar-scanner-protocol.version>9.9.9.104369</sonar-scanner-protocol.version>
     <protobuf.version>4.34.1</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>5.3.2</okhttp.version>
-    <junit.jupiter.version>5.14.3</junit.jupiter.version>
+    <junit.jupiter.version>5.14.4</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
-    <gson.version>2.13.2</gson.version>
+    <gson.version>2.14.0</gson.version>
     <mockito.version>5.23.0</mockito.version>
     <kotlin.version>1.9.25</kotlin.version>
     <lsp4j.version>0.24.0</lsp4j.version>
@@ -64,8 +64,8 @@
 
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
     <jgit6.version>6.10.1.202505221210-r</jgit6.version>
-    <jgit7.version>7.5.0.202512021534-r</jgit7.version>
-    <sentry.version>8.38.0</sentry.version>
+    <jgit7.version>7.6.0.202603022253-r</jgit7.version>
+    <sentry.version>8.41.0</sentry.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
     <version.shade.plugin>3.6.2</version.shade.plugin>
@@ -79,7 +79,7 @@
     <sonar.organization>sonarsource</sonar.organization>
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
-    <jooq.version>3.19.15</jooq.version>
+    <jooq.version>3.21.3</jooq.version>
     <flyway.version>11.20.3</flyway.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
@@ -100,7 +100,7 @@
       <dependency>
         <groupId>org.springframework</groupId>
          <artifactId>spring-framework-bom</artifactId>
-         <version>6.2.16</version>
+         <version>6.2.18</version>
          <type>pom</type>
          <scope>import</scope>
       </dependency>
@@ -138,12 +138,12 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.21.0</version>
+        <version>2.22.0</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.21.0</version>
+        <version>1.22.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -169,7 +169,7 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.18.7</version>
+        <version>1.18.8-jdk5</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
@@ -195,7 +195,7 @@
       <dependency>
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
-        <version>2.0.1</version>
+        <version>2.0.1.MR</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
