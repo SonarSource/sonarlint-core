@@ -20,7 +20,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.4.11
-      - uses: SonarSource/ci-github-actions/build-maven@23d3a5700259f9890438851083904c6d5e87ff4e # 1.3.34 # dogfood
+      - uses: SonarSource/ci-github-actions/build-maven@9456e3aab93a6c6d0c459b977aaa594bda102e29 # 1.4.0 # dogfood
         with:
           maven-args: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
           run-shadow-scans: true
@@ -28,7 +28,7 @@ jobs:
           artifactory-deployer-role: qa-deployer
           scanner-java-opts: '-Xmx2g'
       - name: Run IRIS sync
-        uses: SonarSource/unified-dogfooding-actions/run-iris@v1
+        uses: SonarSource/unified-dogfooding-actions/run-iris@54cee68ff08f10645c757675c59d232063e0b947 # 1.0.0
         with:
           primary_project_key: "org.sonarsource.sonarlint.core:sonarlint-core-parent"
           primary_platform: "Next"
