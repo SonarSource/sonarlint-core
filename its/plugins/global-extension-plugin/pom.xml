@@ -18,7 +18,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
+    <sonar.apiVersion>13.6.0.4371</sonar.apiVersion>
     <!-- Always force Java 17 while SQ 9.9 is supported -->
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
@@ -33,7 +33,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.36</version>
+      <version>2.0.17</version>
     </dependency>
     <dependency>
       <!-- packaged with the plugin -->

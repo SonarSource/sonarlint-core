@@ -19,8 +19,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
-    <sonar.testing-harness>9.9.0.65466</sonar.testing-harness>
+    <sonar.apiVersion>13.6.0.4371</sonar.apiVersion>
+    <sonar.testing-harness>26.5.0.122743</sonar.testing-harness>
     <!-- Always force Java 17 while SQ 9.9 is supported -->
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
@@ -72,7 +72,7 @@
         <!-- UTF-8 bundles are not supported by Java, so they must be converted during build -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>native2ascii-maven-plugin</artifactId>
-        <version>1.0-beta-1</version>
+        <version>2.1.1</version>
         <executions>
           <execution>
             <goals>
