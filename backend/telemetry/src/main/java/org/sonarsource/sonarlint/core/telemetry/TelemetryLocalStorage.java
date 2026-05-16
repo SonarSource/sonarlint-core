@@ -158,12 +158,18 @@ public class TelemetryLocalStorage implements LocalStorage {
     return quickFixCountByRuleKey;
   }
 
-  @Deprecated
+  /**
+   * @deprecated
+   */
+  @Deprecated(forRemoval = true)
   void setInstallDate(LocalDate date) {
     this.installDate = date;
   }
 
-  @Deprecated
+  /**
+   * @deprecated use {@link #installTime()} instead
+   */
+  @Deprecated(forRemoval = true)
   public LocalDate installDate() {
     return installDate;
   }

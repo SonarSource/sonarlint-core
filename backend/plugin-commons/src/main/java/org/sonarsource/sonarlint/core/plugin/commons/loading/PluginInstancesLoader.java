@@ -189,7 +189,7 @@ public class PluginInstancesLoader implements Closeable {
           instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
         } catch (UnsupportedClassVersionError e) {
           LOG.error("The plugin [{}] does not support Java {}", pluginKey, SystemUtils.JAVA_RUNTIME_VERSION, e);
-        } catch (Throwable e) {
+        } catch (Exception e) {
           LOG.error("Fail to instantiate class [{}] of plugin [{}]", mainClass, pluginKey, e);
         }
       }
