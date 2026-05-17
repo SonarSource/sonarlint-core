@@ -309,24 +309,21 @@ public class ServerApiHelper {
   private <G, F> void getPaginatedBaseUrl(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker, String pageFieldName,
     String pageSizeFieldName) {
-    var page = new AtomicInteger(0);
-    var stop = new AtomicBoolean(false);
-    var loaded = new AtomicInteger(0);
+    var paginationState = new PaginationState(baseUrl, limitToTwentyPages);
     do {
-      page.incrementAndGet();
+      paginationState.page.incrementAndGet();
       var fullUrl = baseUrl + (baseUrl.contains("?") ? "&" : "?") +
-        pageSizeFieldName + "=" + PAGE_SIZE + "&" + pageFieldName + "=" + page;
+        pageSizeFieldName + "=" + PAGE_SIZE + "&" + pageFieldName + "=" + paginationState.page;
       ServerApiHelper.consumeTimed(
         () -> rawGetUrl(fullUrl, cancelChecker),
-        response -> processPage(baseUrl, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
+        response -> processPage(responseParser, getPagingTotal, itemExtractor, itemConsumer, paginationState,
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
-    } while (!stop.get() && !cancelChecker.isCanceled());
+    } while (!paginationState.stop.get() && !cancelChecker.isCanceled());
   }
 
-  private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
-    Consumer<F> itemConsumer, boolean limitToTwentyPages, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
-    HttpClient.Response response)
+  private static <F, G> void processPage(CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
+    Consumer<F> itemConsumer, PaginationState paginationState, HttpClient.Response response)
     throws IOException {
     if (!response.isSuccessful()) {
       throw handleError(response);
@@ -339,15 +336,28 @@ public class ServerApiHelper {
     var items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {
       itemConsumer.accept(item);
-      loaded.incrementAndGet();
+      paginationState.loaded.incrementAndGet();
     }
     var isEmpty = items.isEmpty();
     var pagingTotal = getPagingTotal.apply(protoBufResponse).longValue();
     // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
-    stop.set(isEmpty || (pagingTotal > 0 && (long) page.get() * PAGE_SIZE >= pagingTotal));
-    if (!stop.get() && limitToTwentyPages && page.get() >= MAX_PAGES) {
-      stop.set(true);
-      LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
+    paginationState.stop.set(isEmpty || (pagingTotal > 0 && (long) paginationState.page.get() * PAGE_SIZE >= pagingTotal));
+    if (!paginationState.stop.get() && paginationState.limitToTwentyPages && paginationState.page.get() >= MAX_PAGES) {
+      paginationState.stop.set(true);
+      LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", paginationState.baseUrl, MAX_PAGES);
+    }
+  }
+
+  private static class PaginationState {
+    final String baseUrl;
+    final boolean limitToTwentyPages;
+    final AtomicInteger page = new AtomicInteger(0);
+    final AtomicBoolean stop = new AtomicBoolean(false);
+    final AtomicInteger loaded = new AtomicInteger(0);
+
+    PaginationState(String baseUrl, boolean limitToTwentyPages) {
+      this.baseUrl = baseUrl;
+      this.limitToTwentyPages = limitToTwentyPages;
     }
   }
 

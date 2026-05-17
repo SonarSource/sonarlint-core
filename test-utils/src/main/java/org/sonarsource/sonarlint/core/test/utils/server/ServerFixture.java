@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -428,26 +429,13 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey) {
-          return withIssue(issueKey, "ruleKey", "message", "author", "filePath", "OPEN", null, Instant.now(),
-            new TextRange(1, 2, 3, 4));
+          return withIssue(issueKey, UnaryOperator.identity());
         }
 
-        public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String status, @Nullable String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, RuleType.BUG));
-          return this;
-        }
-
-        public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity));
-          return this;
-        }
-
-        public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
-          Map<SoftwareQuality, ImpactSeverity> impacts) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity, impacts));
+        public ServerProjectBranchBuilder withIssue(String issueKey, UnaryOperator<IssueBuilder> issueBuilder) {
+          var builder = new IssueBuilder();
+          issueBuilder.apply(builder);
+          this.issues.add(builder.build(issueKey));
           return this;
         }
 
@@ -660,6 +648,97 @@ public class ServerFixture {
         public ServerProjectBranchBuilder.ServerHotspot build(String hotspotKey) {
           return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, ruleKey, message, author, filePath, reviewStatus, textRange, canChangeStatus, creationDate,
             vulnerabilityProbability);
+        }
+      }
+
+      public static class IssueBuilder {
+        private String ruleKey = "ruleKey";
+        private String message = "message";
+        private String author = "author";
+        private String filePath = "filePath";
+        private String status = "OPEN";
+        @Nullable
+        private String resolution;
+        private Instant creationDate = Instant.now();
+        private TextRange textRange = new TextRange(1, 2, 3, 4);
+        private RuleType ruleType = RuleType.BUG;
+        private String hash = "hash";
+        private Constants.Severity severity = Constants.Severity.BLOCKER;
+        private boolean manualSeverity = false;
+        private Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
+
+        public IssueBuilder withRuleKey(String ruleKey) {
+          this.ruleKey = ruleKey;
+          return this;
+        }
+
+        public IssueBuilder withMessage(String message) {
+          this.message = message;
+          return this;
+        }
+
+        public IssueBuilder withAuthor(String author) {
+          this.author = author;
+          return this;
+        }
+
+        public IssueBuilder withFilePath(String filePath) {
+          this.filePath = filePath;
+          return this;
+        }
+
+        public IssueBuilder withStatus(String status) {
+          this.status = status;
+          return this;
+        }
+
+        public IssueBuilder withResolution(@Nullable String resolution) {
+          this.resolution = resolution;
+          return this;
+        }
+
+        public IssueBuilder withCreationDate(Instant creationDate) {
+          this.creationDate = creationDate;
+          return this;
+        }
+
+        public IssueBuilder withTextRange(TextRange textRange) {
+          this.textRange = textRange;
+          return this;
+        }
+
+        public IssueBuilder withRuleType(RuleType ruleType) {
+          this.ruleType = ruleType;
+          return this;
+        }
+
+        public IssueBuilder withHash(String hash) {
+          this.hash = hash;
+          this.manualSeverity = true;
+          return this;
+        }
+
+        public IssueBuilder withSeverity(Constants.Severity severity) {
+          this.severity = severity;
+          this.manualSeverity = true;
+          return this;
+        }
+
+        public IssueBuilder withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+          this.impacts = impacts;
+          return this;
+        }
+
+        public ServerProjectBranchBuilder.ServerIssue build(String issueKey) {
+          if (manualSeverity) {
+            if (!impacts.isEmpty()) {
+              return new ServerProjectBranchBuilder.ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash,
+                severity, impacts);
+            }
+            return new ServerProjectBranchBuilder.ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash,
+              severity);
+          }
+          return new ServerProjectBranchBuilder.ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType);
         }
       }
     }
@@ -931,7 +1010,7 @@ public class ServerFixture {
           mockServer.stubFor(get("/api/plugins/download?plugin=" + pluginKey)
             .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody(pluginContent)));
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw new UncheckedIOException(e);
         }
       });
     }

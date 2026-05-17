@@ -107,7 +107,8 @@ class SonarLintFileSystemTests {
     inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(SonarLanguage.JAVA).build());
     inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setLanguage(SonarLanguage.JAVA).build());
 
-    var thrown = assertThrows(IllegalArgumentException.class, () -> fs.inputFile(fs.predicates().all()));
+    var predicate = fs.predicates().all();
+    var thrown = assertThrows(IllegalArgumentException.class, () -> fs.inputFile(predicate));
     assertThat(thrown).hasMessageStartingWith("expected one element");
   }
 

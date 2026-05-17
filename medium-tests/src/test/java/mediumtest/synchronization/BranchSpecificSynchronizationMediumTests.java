@@ -53,7 +53,8 @@ class BranchSpecificSynchronizationMediumTests {
     var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey",
         project -> project.withBranch("main",
-          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
+          branch -> branch.withIssue("key", issue -> issue.withRuleKey("ruleKey").withMessage("msg").withAuthor("author").withFilePath("file/path")
+            .withStatus("REVIEWED").withResolution("SAFE").withTextRange(new TextRange(1, 0, 3, 4)))
             .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
 
@@ -75,10 +76,12 @@ class BranchSpecificSynchronizationMediumTests {
       .withProject("projectKey",
         project -> project
           .withBranch("branchNameParent",
-            branch -> branch.withIssue("keyParent", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
+            branch -> branch.withIssue("keyParent", issue -> issue.withRuleKey("ruleKey").withMessage("msg").withAuthor("author").withFilePath("file/path")
+              .withStatus("REVIEWED").withResolution("SAFE").withTextRange(new TextRange(1, 0, 3, 4)))
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile")))
           .withBranch("branchNameChild",
-            branch -> branch.withIssue("keyChild", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
+            branch -> branch.withIssue("keyChild", issue -> issue.withRuleKey("ruleKey").withMessage("msg").withAuthor("author").withFilePath("file/path")
+              .withStatus("REVIEWED").withResolution("SAFE").withTextRange(new TextRange(1, 0, 3, 4)))
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
 
