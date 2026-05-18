@@ -109,8 +109,9 @@ class ConnectionSyncMediumTests {
     var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("main",
-          branch -> branch.withTaintIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4),
-            RuleType.VULNERABILITY)))
+          branch -> branch.withTaintIssue("issueKey",
+            taint -> taint.withRuleKey("rule:key").withMessage("message").withAuthor("author").withFilePath("file/path")
+              .withIntroductionDate(introductionDate))))
       .start();
 
     server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(404)));

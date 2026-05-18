@@ -562,7 +562,8 @@ class ServerSentEventsMediumTests {
         .withProject(projectKey,
           project -> project.withBranch(branchName,
             branch -> branch
-              .withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "WONTFIX", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
+              .withTaintIssue("key1", taint -> taint.withRuleKey("ruleKey").withMessage("msg").withAuthor("author").withFilePath("file/path")
+                .withStatus("REVIEWED").withResolution("WONTFIX").withIntroductionDate(introductionDate).withTextRange(new TextRange(1, 0, 3, 4)))
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
       harness.newBackend()

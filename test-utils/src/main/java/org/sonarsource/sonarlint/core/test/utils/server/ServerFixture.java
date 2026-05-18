@@ -410,6 +410,11 @@ public class ServerFixture {
       }
 
       public static class ServerProjectBranchBuilder {
+        private static final String DEFAULT_RULE_KEY = "ruleKey";
+        private static final String DEFAULT_MESSAGE = "message";
+        private static final String DEFAULT_AUTHOR = "author";
+        private static final String DEFAULT_FILE_PATH = "filePath";
+
         protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
         protected final Collection<ServerIssue> issues = new ArrayList<>();
         private final Collection<ServerIssue> taintIssues = new ArrayList<>();
@@ -428,26 +433,37 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey) {
-          return withIssue(issueKey, "ruleKey", "message", "author", "filePath", "OPEN", null, Instant.now(),
-            new TextRange(1, 2, 3, 4));
+          return withIssue(issueKey, UnaryOperator.identity());
+        }
+
+        public ServerProjectBranchBuilder withIssue(String issueKey, UnaryOperator<IssueBuilder> issueBuilder) {
+          var builder = new IssueBuilder();
+          issueBuilder.apply(builder);
+          this.issues.add(builder.build(issueKey));
+          return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String status, @Nullable String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, RuleType.BUG));
+          this.issues.add(new ServerIssue.ServerIssueBuilder(issueKey, ruleKey, message, author, filePath, status, textRange)
+            .withResolution(resolution).withIntroductionDate(creationDate).build());
           return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity));
+          this.issues.add(new ServerIssue.ServerIssueBuilder(issueKey, ruleKey, message, author, filePath, status, textRange)
+            .withResolution(resolution).withIntroductionDate(creationDate).withRuleType(ruleType)
+            .withHashAndSeverity(hash, severity).build());
           return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
           Map<SoftwareQuality, ImpactSeverity> impacts) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity, impacts));
+          this.issues.add(new ServerIssue.ServerIssueBuilder(issueKey, ruleKey, message, author, filePath, status, textRange)
+            .withResolution(resolution).withIntroductionDate(creationDate).withRuleType(ruleType)
+            .withHashAndSeverity(hash, severity).withImpacts(impacts).build());
           return this;
         }
 
@@ -457,9 +473,10 @@ public class ServerFixture {
           return this;
         }
 
-        public ServerProjectBranchBuilder withTaintIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String status, String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
-          this.taintIssues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType));
+        public ServerProjectBranchBuilder withTaintIssue(String issueKey, UnaryOperator<TaintIssueBuilder> taintIssueBuilder) {
+          var builder = new TaintIssueBuilder();
+          taintIssueBuilder.apply(builder);
+          this.taintIssues.add(builder.build(issueKey));
           return this;
         }
 
@@ -480,18 +497,17 @@ public class ServerFixture {
           private final Instant creationDate;
           private final VulnerabilityProbability vulnerabilityProbability;
 
-          private ServerHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath, HotspotReviewStatus status, TextRange textRange,
-            boolean canChangeStatus, Instant creationDate, VulnerabilityProbability vulnerabilityProbability) {
+          private ServerHotspot(String hotspotKey, HotspotBuilder builder) {
             this.hotspotKey = hotspotKey;
-            this.ruleKey = ruleKey;
-            this.message = message;
-            this.author = author;
-            this.filePath = filePath;
-            this.status = status;
-            this.textRange = textRange;
-            this.canChangeStatus = canChangeStatus;
-            this.creationDate = creationDate;
-            this.vulnerabilityProbability = vulnerabilityProbability;
+            this.ruleKey = builder.ruleKey;
+            this.message = builder.message;
+            this.author = builder.author;
+            this.filePath = builder.filePath;
+            this.status = builder.reviewStatus;
+            this.textRange = builder.textRange;
+            this.canChangeStatus = builder.canChangeStatus;
+            this.creationDate = builder.creationDate;
+            this.vulnerabilityProbability = builder.vulnerabilityProbability;
           }
 
           public String getFilePath() {
@@ -510,41 +526,26 @@ public class ServerFixture {
           private final Instant introductionDate;
           private final TextRange textRange;
           private final RuleType ruleType;
-          private String hash;
-          private Constants.Severity severity;
-          private boolean manualSeverity = false;
-          private Map<SoftwareQuality, ImpactSeverity> impacts;
+          private final String hash;
+          private final Constants.Severity severity;
+          private final boolean manualSeverity;
+          private final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity,
-            Map<SoftwareQuality, ImpactSeverity> impacts) {
-            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType, hash, severity);
-            this.impacts = impacts;
-          }
-
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
-            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType);
-            this.hash = hash;
-            this.severity = severity;
-            this.manualSeverity = true;
-          }
-
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
-            this.issueKey = issueKey;
-            this.ruleKey = ruleKey;
-            this.message = message;
-            this.author = author;
-            this.filePath = filePath;
-            this.status = status;
-            this.resolution = resolution;
-            this.introductionDate = introductionDate;
-            this.textRange = textRange;
-            this.ruleType = ruleType;
-            this.hash = "hash";
-            this.severity = Constants.Severity.BLOCKER;
-            this.impacts = Collections.emptyMap();
+          private ServerIssue(ServerIssueBuilder builder) {
+            this.issueKey = builder.issueKey;
+            this.ruleKey = builder.ruleKey;
+            this.message = builder.message;
+            this.author = builder.author;
+            this.filePath = builder.filePath;
+            this.status = builder.status;
+            this.resolution = builder.resolution;
+            this.introductionDate = builder.introductionDate;
+            this.textRange = builder.textRange;
+            this.ruleType = builder.ruleType;
+            this.hash = builder.hash;
+            this.severity = builder.severity;
+            this.manualSeverity = builder.manualSeverity;
+            this.impacts = builder.impacts;
           }
 
           public String getFilePath() {
@@ -553,6 +554,65 @@ public class ServerFixture {
 
           public boolean isResolved() {
             return StringUtils.isNotEmpty(resolution);
+          }
+
+          static class ServerIssueBuilder {
+            private final String issueKey;
+            private final String ruleKey;
+            private final String message;
+            private final String author;
+            private final String filePath;
+            private final String status;
+            private final TextRange textRange;
+            private String resolution;
+            private Instant introductionDate = Instant.now();
+            private RuleType ruleType = RuleType.BUG;
+            private String hash = "hash";
+            private Constants.Severity severity = Constants.Severity.BLOCKER;
+            private boolean manualSeverity = false;
+            private Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
+
+            ServerIssueBuilder(String issueKey, String ruleKey, String message, String author, String filePath,
+              String status, TextRange textRange) {
+              this.issueKey = issueKey;
+              this.ruleKey = ruleKey;
+              this.message = message;
+              this.author = author;
+              this.filePath = filePath;
+              this.status = status;
+              this.textRange = textRange;
+            }
+
+            ServerIssueBuilder withResolution(@Nullable String resolution) {
+              this.resolution = resolution;
+              return this;
+            }
+
+            ServerIssueBuilder withIntroductionDate(Instant introductionDate) {
+              this.introductionDate = introductionDate;
+              return this;
+            }
+
+            ServerIssueBuilder withRuleType(RuleType ruleType) {
+              this.ruleType = ruleType;
+              return this;
+            }
+
+            ServerIssueBuilder withHashAndSeverity(String hash, Constants.Severity severity) {
+              this.hash = hash;
+              this.severity = severity;
+              this.manualSeverity = true;
+              return this;
+            }
+
+            ServerIssueBuilder withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+              this.impacts = impacts;
+              return this;
+            }
+
+            ServerIssue build() {
+              return new ServerIssue(this);
+            }
           }
         }
       }
@@ -602,10 +662,10 @@ public class ServerFixture {
       }
 
       public static class HotspotBuilder {
-        private String ruleKey = "ruleKey";
-        private String message = "message";
-        private String author = "author";
-        private String filePath = "filePath";
+        private String ruleKey = ServerProjectBranchBuilder.DEFAULT_RULE_KEY;
+        private String message = ServerProjectBranchBuilder.DEFAULT_MESSAGE;
+        private String author = ServerProjectBranchBuilder.DEFAULT_AUTHOR;
+        private String filePath = ServerProjectBranchBuilder.DEFAULT_FILE_PATH;
         private HotspotReviewStatus reviewStatus = HotspotReviewStatus.TO_REVIEW;
         private TextRange textRange = new TextRange(1, 2, 3, 4);
         private boolean canChangeStatus = true;
@@ -658,8 +718,157 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder.ServerHotspot build(String hotspotKey) {
-          return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, ruleKey, message, author, filePath, reviewStatus, textRange, canChangeStatus, creationDate,
-            vulnerabilityProbability);
+          return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, this);
+        }
+      }
+
+      public static class TaintIssueBuilder {
+        private String ruleKey = ServerProjectBranchBuilder.DEFAULT_RULE_KEY;
+        private String message = ServerProjectBranchBuilder.DEFAULT_MESSAGE;
+        private String author = ServerProjectBranchBuilder.DEFAULT_AUTHOR;
+        private String filePath = ServerProjectBranchBuilder.DEFAULT_FILE_PATH;
+        private String status = "OPEN";
+        @Nullable
+        private String resolution;
+        private Instant introductionDate = Instant.now();
+        private TextRange textRange = new TextRange(1, 2, 3, 4);
+        private RuleType ruleType = RuleType.VULNERABILITY;
+
+        public TaintIssueBuilder withRuleKey(String ruleKey) {
+          this.ruleKey = ruleKey;
+          return this;
+        }
+
+        public TaintIssueBuilder withMessage(String message) {
+          this.message = message;
+          return this;
+        }
+
+        public TaintIssueBuilder withAuthor(String author) {
+          this.author = author;
+          return this;
+        }
+
+        public TaintIssueBuilder withFilePath(String filePath) {
+          this.filePath = filePath;
+          return this;
+        }
+
+        public TaintIssueBuilder withStatus(String status) {
+          this.status = status;
+          return this;
+        }
+
+        public TaintIssueBuilder withResolution(@Nullable String resolution) {
+          this.resolution = resolution;
+          return this;
+        }
+
+        public TaintIssueBuilder withIntroductionDate(Instant introductionDate) {
+          this.introductionDate = introductionDate;
+          return this;
+        }
+
+        public TaintIssueBuilder withTextRange(TextRange textRange) {
+          this.textRange = textRange;
+          return this;
+        }
+
+        public TaintIssueBuilder withRuleType(RuleType ruleType) {
+          this.ruleType = ruleType;
+          return this;
+        }
+
+        public ServerProjectBranchBuilder.ServerIssue build(String issueKey) {
+          return new ServerProjectBranchBuilder.ServerIssue.ServerIssueBuilder(issueKey, ruleKey, message, author, filePath, status, textRange)
+            .withResolution(resolution).withIntroductionDate(introductionDate).withRuleType(ruleType).build();
+        }
+      }
+
+      public static class IssueBuilder {
+        private String ruleKey = ServerProjectBranchBuilder.DEFAULT_RULE_KEY;
+        private String message = ServerProjectBranchBuilder.DEFAULT_MESSAGE;
+        private String author = ServerProjectBranchBuilder.DEFAULT_AUTHOR;
+        private String filePath = ServerProjectBranchBuilder.DEFAULT_FILE_PATH;
+        private String status = "OPEN";
+        @Nullable
+        private String resolution;
+        private Instant creationDate = Instant.now();
+        private TextRange textRange = new TextRange(1, 2, 3, 4);
+        private RuleType ruleType = RuleType.BUG;
+        @Nullable
+        private String hash;
+        @Nullable
+        private Constants.Severity severity;
+        private Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
+
+        public IssueBuilder withRuleKey(String ruleKey) {
+          this.ruleKey = ruleKey;
+          return this;
+        }
+
+        public IssueBuilder withMessage(String message) {
+          this.message = message;
+          return this;
+        }
+
+        public IssueBuilder withAuthor(String author) {
+          this.author = author;
+          return this;
+        }
+
+        public IssueBuilder withFilePath(String filePath) {
+          this.filePath = filePath;
+          return this;
+        }
+
+        public IssueBuilder withStatus(String status) {
+          this.status = status;
+          return this;
+        }
+
+        public IssueBuilder withResolution(@Nullable String resolution) {
+          this.resolution = resolution;
+          return this;
+        }
+
+        public IssueBuilder withCreationDate(Instant creationDate) {
+          this.creationDate = creationDate;
+          return this;
+        }
+
+        public IssueBuilder withTextRange(TextRange textRange) {
+          this.textRange = textRange;
+          return this;
+        }
+
+        public IssueBuilder withRuleType(RuleType ruleType) {
+          this.ruleType = ruleType;
+          return this;
+        }
+
+        public IssueBuilder withHash(String hash) {
+          this.hash = hash;
+          return this;
+        }
+
+        public IssueBuilder withSeverity(Constants.Severity severity) {
+          this.severity = severity;
+          return this;
+        }
+
+        public IssueBuilder withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+          this.impacts = impacts;
+          return this;
+        }
+
+        public ServerProjectBranchBuilder.ServerIssue build(String issueKey) {
+          var builder = new ServerProjectBranchBuilder.ServerIssue.ServerIssueBuilder(issueKey, ruleKey, message, author, filePath, status, textRange)
+            .withResolution(resolution).withIntroductionDate(creationDate).withRuleType(ruleType).withImpacts(impacts);
+          if (hash != null && severity != null) {
+            builder.withHashAndSeverity(hash, severity);
+          }
+          return builder.build();
         }
       }
     }

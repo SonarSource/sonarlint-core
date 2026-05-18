@@ -182,14 +182,15 @@ class TaintVulnerabilitiesMediumTests {
   @SonarLintTest
   void it_should_refresh_taint_vulnerabilities_when_requested(SonarLintTestHarness harness) {
     var serverWithATaint = harness.newFakeSonarQubeServer()
-      .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withTaintIssue("oldIssueKey", "rule:key", "message", "author", "file/path", "OPEN", null,
-        Instant.now(), new TextRange(1, 2, 3, 4), RuleType.VULNERABILITY)))
+      .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withTaintIssue("oldIssueKey",
+        taint -> taint.withRuleKey("rule:key").withMessage("message").withAuthor("author").withFilePath("file/path"))))
       .start();
     var newestIntroductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     var serverWithAnotherTaint = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
-        project -> project.withBranch("main", branch -> branch.withTaintIssue("anotherIssueKey", "rule:key", "message", "author", "file/path", "OPEN", null,
-          newestIntroductionDate, new TextRange(1, 2, 3, 4), RuleType.VULNERABILITY)))
+        project -> project.withBranch("main", branch -> branch.withTaintIssue("anotherIssueKey",
+          taint -> taint.withRuleKey("rule:key").withMessage("message").withAuthor("author").withFilePath("file/path")
+            .withIntroductionDate(newestIntroductionDate))))
       .start();
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
