@@ -66,16 +66,75 @@ public class ServerHotspot {
    * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
    * when using with H2 UUID should always be set
    */
-  public ServerHotspot(String key,
-    String ruleKey,
-    String message,
-    Path filePath,
-    TextRange textRange,
-    Instant creationDate,
-    HotspotReviewStatus status,
-    VulnerabilityProbability vulnerabilityProbability,
-    @Nullable String assignee) {
-    this(null, key, ruleKey, message, filePath, textRange, creationDate, status, vulnerabilityProbability, assignee);
+  private ServerHotspot(Builder builder) {
+    this(null, builder.key, builder.ruleKey, builder.message, builder.filePath, builder.textRange,
+      builder.creationDate, builder.status, builder.vulnerabilityProbability, builder.assignee);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private String key;
+    private String ruleKey;
+    private String message;
+    private Path filePath;
+    private TextRange textRange;
+    private Instant creationDate;
+    private HotspotReviewStatus status;
+    private VulnerabilityProbability vulnerabilityProbability;
+    @Nullable
+    private String assignee;
+
+    public Builder setKey(String key) {
+      this.key = key;
+      return this;
+    }
+
+    public Builder setRuleKey(String ruleKey) {
+      this.ruleKey = ruleKey;
+      return this;
+    }
+
+    public Builder setMessage(String message) {
+      this.message = message;
+      return this;
+    }
+
+    public Builder setFilePath(Path filePath) {
+      this.filePath = filePath;
+      return this;
+    }
+
+    public Builder setTextRange(TextRange textRange) {
+      this.textRange = textRange;
+      return this;
+    }
+
+    public Builder setCreationDate(Instant creationDate) {
+      this.creationDate = creationDate;
+      return this;
+    }
+
+    public Builder setStatus(HotspotReviewStatus status) {
+      this.status = status;
+      return this;
+    }
+
+    public Builder setVulnerabilityProbability(VulnerabilityProbability vulnerabilityProbability) {
+      this.vulnerabilityProbability = vulnerabilityProbability;
+      return this;
+    }
+
+    public Builder setAssignee(@Nullable String assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    public ServerHotspot build() {
+      return new ServerHotspot(this);
+    }
   }
 
   @CheckForNull
@@ -116,7 +175,11 @@ public class ServerHotspot {
   }
 
   public ServerHotspot withStatus(HotspotReviewStatus newStatus) {
-    return new ServerHotspot(key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability, assignee);
+    return ServerHotspot.builder()
+      .setKey(key).setRuleKey(ruleKey).setMessage(message).setFilePath(filePath)
+      .setTextRange(textRange).setCreationDate(creationDate).setStatus(newStatus)
+      .setVulnerabilityProbability(vulnerabilityProbability).setAssignee(assignee)
+      .build();
   }
 
   public VulnerabilityProbability getVulnerabilityProbability() {

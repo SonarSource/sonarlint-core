@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.issue;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -113,6 +114,7 @@ public class IssueService {
   private final AiCodeFixService aiCodeFixService;
   private final LocalOnlyIssuesRepository localOnlyIssuesRepository;
 
+  @Inject
   public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
     XodusLocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository, ApplicationEventPublisher eventPublisher,
     FindingReportingService findingReportingService, SeverityModeService severityModeService, NewCodeService newCodeService, ActiveRulesService activeRulesService,

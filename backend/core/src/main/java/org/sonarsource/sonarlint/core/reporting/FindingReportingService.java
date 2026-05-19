@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
+import jakarta.inject.Inject;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -85,6 +86,7 @@ public class FindingReportingService {
   private final boolean isStreamingEnabled;
   private final AiCodeFixService aiCodeFixService;
 
+  @Inject
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher, InitializeParams initializeParams,
     AiCodeFixService aiCodeFixService) {

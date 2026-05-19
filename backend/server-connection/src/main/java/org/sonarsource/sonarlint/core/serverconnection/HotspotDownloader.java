@@ -69,17 +69,17 @@ public class HotspotDownloader {
 
   private static ServerHotspot convertLiteHotspot(Hotspots.HotspotLite liteHotspotFromWs) {
     var creationDate = Instant.ofEpochMilli(liteHotspotFromWs.getCreationDate());
-    return new ServerHotspot(
-      liteHotspotFromWs.getKey(),
-      liteHotspotFromWs.getRuleKey(),
-      liteHotspotFromWs.getMessage(),
-      Path.of(liteHotspotFromWs.getFilePath()),
-      toServerHotspotTextRange(liteHotspotFromWs.getTextRange()),
-      creationDate,
-      fromHotspotLite(liteHotspotFromWs),
-      VulnerabilityProbability.valueOf(liteHotspotFromWs.getVulnerabilityProbability()),
-      liteHotspotFromWs.getAssignee()
-    );
+    return ServerHotspot.builder()
+      .setKey(liteHotspotFromWs.getKey())
+      .setRuleKey(liteHotspotFromWs.getRuleKey())
+      .setMessage(liteHotspotFromWs.getMessage())
+      .setFilePath(Path.of(liteHotspotFromWs.getFilePath()))
+      .setTextRange(toServerHotspotTextRange(liteHotspotFromWs.getTextRange()))
+      .setCreationDate(creationDate)
+      .setStatus(fromHotspotLite(liteHotspotFromWs))
+      .setVulnerabilityProbability(VulnerabilityProbability.valueOf(liteHotspotFromWs.getVulnerabilityProbability()))
+      .setAssignee(liteHotspotFromWs.getAssignee())
+      .build();
   }
 
   private static HotspotReviewStatus fromHotspotLite(Hotspots.HotspotLite hotspot) {

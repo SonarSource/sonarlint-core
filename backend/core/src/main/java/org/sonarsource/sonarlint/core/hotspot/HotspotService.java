@@ -187,16 +187,17 @@ public class HotspotService {
   }
 
   private void updateStorage(String connectionId, SecurityHotspotRaisedEvent event) {
-    var hotspot = new ServerHotspot(
-      event.getHotspotKey(),
-      event.getRuleKey(),
-      event.getMainLocation().getMessage(),
-      event.getMainLocation().getFilePath(),
-      TaintVulnerabilityTrackingService.adapt(event.getMainLocation().getTextRange()),
-      event.getCreationDate(),
-      event.getStatus(),
-      event.getVulnerabilityProbability(),
-      null);
+    var hotspot = ServerHotspot.builder()
+      .setKey(event.getHotspotKey())
+      .setRuleKey(event.getRuleKey())
+      .setMessage(event.getMainLocation().getMessage())
+      .setFilePath(event.getMainLocation().getFilePath())
+      .setTextRange(TaintVulnerabilityTrackingService.adapt(event.getMainLocation().getTextRange()))
+      .setCreationDate(event.getCreationDate())
+      .setStatus(event.getStatus())
+      .setVulnerabilityProbability(event.getVulnerabilityProbability())
+      .setAssignee(null)
+      .build();
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().insert(event.getBranch(), hotspot);
   }

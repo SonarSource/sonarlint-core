@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
 import com.google.common.collect.Sets;
+import jakarta.inject.Inject;
 import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -69,6 +70,7 @@ public class AiCodeFixService {
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
   private final AiCodeFixRepository aiCodeFixRepository;
 
+  @Inject
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService,
     ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixRepository aiCodeFixRepository) {

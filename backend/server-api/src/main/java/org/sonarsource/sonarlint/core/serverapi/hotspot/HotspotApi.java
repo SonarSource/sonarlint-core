@@ -223,16 +223,17 @@ public class HotspotApi {
   }
 
   private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, Path filePath) {
-    return new ServerHotspot(
-      hotspot.getKey(),
-      hotspot.getRuleKey(),
-      hotspot.getMessage(),
-      filePath,
-      convertTextRange(hotspot.getTextRange()),
-      ServerApiUtils.parseOffsetDateTime(hotspot.getCreationDate()).toInstant(),
-      getStatus(hotspot),
-      VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()),
-      hotspot.getAssignee());
+    return ServerHotspot.builder()
+      .setKey(hotspot.getKey())
+      .setRuleKey(hotspot.getRuleKey())
+      .setMessage(hotspot.getMessage())
+      .setFilePath(filePath)
+      .setTextRange(convertTextRange(hotspot.getTextRange()))
+      .setCreationDate(ServerApiUtils.parseOffsetDateTime(hotspot.getCreationDate()).toInstant())
+      .setStatus(getStatus(hotspot))
+      .setVulnerabilityProbability(VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()))
+      .setAssignee(hotspot.getAssignee())
+      .build();
   }
 
   private static HotspotReviewStatus getStatus(Hotspots.SearchWsResponse.Hotspot hotspot) {

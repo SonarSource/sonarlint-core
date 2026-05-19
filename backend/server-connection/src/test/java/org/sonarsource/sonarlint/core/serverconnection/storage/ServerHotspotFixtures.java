@@ -37,14 +37,16 @@ public class ServerHotspotFixtures {
   }
 
   public static ServerHotspot aServerHotspot(String key, Path filePath) {
-    return new ServerHotspot(
-      key,
-      "repo:key",
-      "message",
-      filePath,
-      new TextRangeWithHash(1, 2, 3, 4, ""),
-      Instant.now(),
-      HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.HIGH,
-      "test@user.com");
+    return ServerHotspot.builder()
+      .setKey(key)
+      .setRuleKey("repo:key")
+      .setMessage("message")
+      .setFilePath(filePath)
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, ""))
+      .setCreationDate(Instant.now())
+      .setStatus(HotspotReviewStatus.TO_REVIEW)
+      .setVulnerabilityProbability(VulnerabilityProbability.HIGH)
+      .setAssignee("test@user.com")
+      .build();
   }
 }

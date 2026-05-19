@@ -75,14 +75,14 @@ public class TelemetryHttpClient {
   void upload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
     try {
       sendPost(createPayload(data, telemetryLiveAttributes));
-    } catch (Throwable catchEmAll) {
+    } catch (Exception catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
       }
     }
     try {
       sendMetricsPostIfNeeded(new TelemetryMeasuresBuilder(platform, product, data, telemetryLiveAttributes).build());
-    } catch (Throwable catchEmAll) {
+    } catch (Exception catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry metrics data", catchEmAll);
       }
@@ -92,7 +92,7 @@ public class TelemetryHttpClient {
   void optOut(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
     try {
       sendDelete(createPayload(data, telemetryLiveAttributes));
-    } catch (Throwable catchEmAll) {
+    } catch (Exception catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry opt-out", catchEmAll);
       }

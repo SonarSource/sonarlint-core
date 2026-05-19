@@ -428,26 +428,37 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey) {
-          return withIssue(issueKey, "ruleKey", "message", "author", "filePath", "OPEN", null, Instant.now(),
-            new TextRange(1, 2, 3, 4));
+          this.issues.add(new ServerIssueBuilder(issueKey).build());
+          return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String status, @Nullable String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, RuleType.BUG));
+          this.issues.add(new ServerIssueBuilder(issueKey)
+            .withRuleKey(ruleKey).withMessage(message).withAuthor(author).withFilePath(filePath)
+            .withStatus(status).withResolution(resolution).withIntroductionDate(creationDate)
+            .withTextRange(textRange).withRuleType(RuleType.BUG).build());
           return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity));
+          this.issues.add(new ServerIssueBuilder(issueKey)
+            .withRuleKey(ruleKey).withMessage(message).withAuthor(author).withFilePath(filePath)
+            .withStatus(status).withResolution(resolution).withIntroductionDate(creationDate)
+            .withTextRange(textRange).withRuleType(ruleType).withHash(hash).withSeverity(severity)
+            .withManualSeverity(true).build());
           return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
           Map<SoftwareQuality, ImpactSeverity> impacts) {
-          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity, impacts));
+          this.issues.add(new ServerIssueBuilder(issueKey)
+            .withRuleKey(ruleKey).withMessage(message).withAuthor(author).withFilePath(filePath)
+            .withStatus(status).withResolution(resolution).withIntroductionDate(creationDate)
+            .withTextRange(textRange).withRuleType(ruleType).withHash(hash).withSeverity(severity)
+            .withManualSeverity(true).withImpacts(impacts).build());
           return this;
         }
 
@@ -459,7 +470,10 @@ public class ServerFixture {
 
         public ServerProjectBranchBuilder withTaintIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String status, String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
-          this.taintIssues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType));
+          this.taintIssues.add(new ServerIssueBuilder(issueKey)
+            .withRuleKey(ruleKey).withMessage(message).withAuthor(author).withFilePath(filePath)
+            .withStatus(status).withResolution(resolution).withIntroductionDate(introductionDate)
+            .withTextRange(textRange).withRuleType(ruleType).build());
           return this;
         }
 
@@ -499,6 +513,96 @@ public class ServerFixture {
           }
         }
 
+        protected static class ServerIssueBuilder {
+          private final String issueKey;
+          private String ruleKey = "ruleKey";
+          private String message = "message";
+          private String author = "author";
+          private String filePath = "filePath";
+          private String status = "OPEN";
+          private String resolution;
+          private Instant introductionDate = Instant.now();
+          private TextRange textRange = new TextRange(1, 2, 3, 4);
+          private RuleType ruleType = RuleType.BUG;
+          private String hash = "hash";
+          private Constants.Severity severity = Constants.Severity.BLOCKER;
+          private boolean manualSeverity = false;
+          private Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
+
+          protected ServerIssueBuilder(String issueKey) {
+            this.issueKey = issueKey;
+          }
+
+          public ServerIssueBuilder withRuleKey(String ruleKey) {
+            this.ruleKey = ruleKey;
+            return this;
+          }
+
+          public ServerIssueBuilder withMessage(String message) {
+            this.message = message;
+            return this;
+          }
+
+          public ServerIssueBuilder withAuthor(String author) {
+            this.author = author;
+            return this;
+          }
+
+          public ServerIssueBuilder withFilePath(String filePath) {
+            this.filePath = filePath;
+            return this;
+          }
+
+          public ServerIssueBuilder withStatus(String status) {
+            this.status = status;
+            return this;
+          }
+
+          public ServerIssueBuilder withResolution(@Nullable String resolution) {
+            this.resolution = resolution;
+            return this;
+          }
+
+          public ServerIssueBuilder withIntroductionDate(Instant introductionDate) {
+            this.introductionDate = introductionDate;
+            return this;
+          }
+
+          public ServerIssueBuilder withTextRange(TextRange textRange) {
+            this.textRange = textRange;
+            return this;
+          }
+
+          public ServerIssueBuilder withRuleType(RuleType ruleType) {
+            this.ruleType = ruleType;
+            return this;
+          }
+
+          public ServerIssueBuilder withHash(String hash) {
+            this.hash = hash;
+            return this;
+          }
+
+          public ServerIssueBuilder withSeverity(Constants.Severity severity) {
+            this.severity = severity;
+            return this;
+          }
+
+          public ServerIssueBuilder withManualSeverity(boolean manualSeverity) {
+            this.manualSeverity = manualSeverity;
+            return this;
+          }
+
+          public ServerIssueBuilder withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+            this.impacts = impacts;
+            return this;
+          }
+
+          public ServerIssue build() {
+            return new ServerIssue(this);
+          }
+        }
+
         protected static class ServerIssue {
           private final String issueKey;
           private final String ruleKey;
@@ -510,41 +614,26 @@ public class ServerFixture {
           private final Instant introductionDate;
           private final TextRange textRange;
           private final RuleType ruleType;
-          private String hash;
-          private Constants.Severity severity;
-          private boolean manualSeverity = false;
-          private Map<SoftwareQuality, ImpactSeverity> impacts;
+          private final String hash;
+          private final Constants.Severity severity;
+          private final boolean manualSeverity;
+          private final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity,
-            Map<SoftwareQuality, ImpactSeverity> impacts) {
-            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType, hash, severity);
-            this.impacts = impacts;
-          }
-
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
-            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType);
-            this.hash = hash;
-            this.severity = severity;
-            this.manualSeverity = true;
-          }
-
-          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
-            this.issueKey = issueKey;
-            this.ruleKey = ruleKey;
-            this.message = message;
-            this.author = author;
-            this.filePath = filePath;
-            this.status = status;
-            this.resolution = resolution;
-            this.introductionDate = introductionDate;
-            this.textRange = textRange;
-            this.ruleType = ruleType;
-            this.hash = "hash";
-            this.severity = Constants.Severity.BLOCKER;
-            this.impacts = Collections.emptyMap();
+          private ServerIssue(ServerIssueBuilder builder) {
+            this.issueKey = builder.issueKey;
+            this.ruleKey = builder.ruleKey;
+            this.message = builder.message;
+            this.author = builder.author;
+            this.filePath = builder.filePath;
+            this.status = builder.status;
+            this.resolution = builder.resolution;
+            this.introductionDate = builder.introductionDate;
+            this.textRange = builder.textRange;
+            this.ruleType = builder.ruleType;
+            this.hash = builder.hash;
+            this.severity = builder.severity;
+            this.manualSeverity = builder.manualSeverity;
+            this.impacts = builder.impacts;
           }
 
           public String getFilePath() {
