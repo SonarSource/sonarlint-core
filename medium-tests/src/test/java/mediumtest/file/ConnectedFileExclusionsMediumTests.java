@@ -76,7 +76,7 @@ class ConnectedFileExclusionsMediumTests {
   }
 
   @SonarLintTest
-  void fileInclusionsExclusions(SonarLintTestHarness harness, @TempDir Path tmp) throws InterruptedException {
+  void fileInclusionsExclusions(SonarLintTestHarness harness, @TempDir Path tmp) {
     var server = harness.newFakeSonarQubeServer()
       .withProject(PROJECT_KEY)
       .start();
@@ -223,7 +223,7 @@ class ConnectedFileExclusionsMediumTests {
   }
 
   @SonarLintTest
-  void it_should_fallback_to_default_charset_if_encoding_is_unknown(SonarLintTestHarness harness, @TempDir Path tmp) throws InterruptedException {
+  void it_should_fallback_to_default_charset_if_encoding_is_unknown(SonarLintTestHarness harness, @TempDir Path tmp) {
     var server = harness.newFakeSonarQubeServer()
       .withProject(PROJECT_KEY)
       .start();
@@ -251,9 +251,8 @@ class ConnectedFileExclusionsMediumTests {
       .containsOnly(true);
   }
 
-  private void forceSyncOfConfigScope(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) throws InterruptedException {
-    Thread.sleep(100);
-    Mockito.clearInvocations(fakeClient);
+  private void forceSyncOfConfigScope(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) {
+    await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(1, TimeUnit.SECONDS).untilAsserted(() -> Mockito.clearInvocations(fakeClient));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(null, null, true)));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(MYSONAR, PROJECT_KEY, true)));
     verify(fakeClient, timeout(5000).atLeastOnce()).didSynchronizeConfigurationScopes(Set.of(CONFIG_SCOPE_ID));

@@ -228,44 +228,15 @@ class BindingSuggestionProviderTests {
 
   @Test
   void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey() {
-    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
-    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
-    when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
-
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
-    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(BindingConfiguration.noBinding());
-
-    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
-      .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1, PROJECT_NAME), Set.of(SQ_1_ID))));
-
-    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
-    when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
-    var searchIndex = new TextSearchIndex<ServerProject>();
-    searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
-    when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
-
-    underTest.suggestBindingForGivenScopesAndAllConnections(Set.of(CONFIG_SCOPE_ID_1));
-
-    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client, timeout(1000)).suggestBinding(captor.capture());
-
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsExactlyInAnyOrder(
-        "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
-        "Attempt to find a good match for 'KEYWORD' on connection '" + SQ_1_ID + "'...",
-        "Attempt to find a good match for 'KEYWORD' on connection '" + SC_1_ID + "'...",
-        "Best score = 0.33",
-        "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
-
-    var params = captor.getValue();
-    assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
-    assertThat(params.getSuggestions().get(CONFIG_SCOPE_ID_1))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsOnly(tuple(SC_1_ID, PROJECT_KEY_1, "Project 1"));
+    verifyFallbackToTextSearchAllConnections();
   }
 
   @Test
   void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey_and_no_other_clue() {
+    verifyFallbackToTextSearchAllConnections();
+  }
+
+  private void verifyFallbackToTextSearchAllConnections() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);

@@ -46,6 +46,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransport
 import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TelemetryLocalStorage implements LocalStorage {
+  /**
+   * @deprecated use {@link #installTime} instead
+   */
   @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
@@ -158,11 +161,17 @@ public class TelemetryLocalStorage implements LocalStorage {
     return quickFixCountByRuleKey;
   }
 
+  /**
+   * @deprecated use {@link #setInstallTime(OffsetDateTime)} instead
+   */
   @Deprecated
   void setInstallDate(LocalDate date) {
     this.installDate = date;
   }
 
+  /**
+   * @deprecated use {@link #installTime()} instead
+   */
   @Deprecated
   public LocalDate installDate() {
     return installDate;

@@ -38,12 +38,12 @@ public class RaisedIssueDto extends RaisedFindingDto {
   private final boolean isAiCodeFixable;
   private final ResolutionStatus resolutionStatus;
 
-  public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
-    Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
-    @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable, @Nullable ResolutionStatus resolutionStatus) {
-    super(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
-    this.isAiCodeFixable = isAiCodeFixable;
-    this.resolutionStatus = resolutionStatus;
+  private RaisedIssueDto(Builder builder) {
+    super(builder.id, builder.serverKey, builder.ruleKey, builder.primaryMessage, builder.severityMode,
+      builder.introductionDate, builder.isOnNewCode, builder.resolved, builder.textRange, builder.flows,
+      builder.quickFixes, builder.ruleDescriptionContextKey);
+    this.isAiCodeFixable = builder.isAiCodeFixable;
+    this.resolutionStatus = builder.resolutionStatus;
   }
 
   public boolean isAiCodeFixable() {
@@ -59,43 +59,107 @@ public class RaisedIssueDto extends RaisedFindingDto {
   }
 
   public static class Builder {
-    private final UUID id;
-    private final String serverKey;
-    private final String ruleKey;
-    private final String primaryMessage;
+    private UUID id;
+    private String serverKey;
+    private String ruleKey;
+    private String primaryMessage;
     private Either<StandardModeDetails, MQRModeDetails> severityMode;
-    private final Instant introductionDate;
-    private final boolean isOnNewCode;
+    private Instant introductionDate;
+    private boolean isOnNewCode;
     private boolean resolved;
-    private final TextRangeDto textRange;
-    private final List<IssueFlowDto> flows;
-    private final List<QuickFixDto> quickFixes;
-    private final String ruleDescriptionContextKey;
-    private final boolean isAiCodeFixable;
-    private final ResolutionStatus resolutionStatus;
+    private TextRangeDto textRange;
+    private List<IssueFlowDto> flows;
+    private List<QuickFixDto> quickFixes;
+    private String ruleDescriptionContextKey;
+    private boolean isAiCodeFixable;
+    private ResolutionStatus resolutionStatus;
 
-    private Builder(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
-      Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
-      @Nullable String ruleDescriptionContextKey, boolean isAiCodeFixable, ResolutionStatus resolutionStatus) {
-      this.id = id;
-      this.serverKey = serverKey;
-      this.ruleKey = ruleKey;
-      this.primaryMessage = primaryMessage;
-      this.severityMode = severityMode;
-      this.introductionDate = introductionDate;
-      this.isOnNewCode = isOnNewCode;
-      this.resolved = resolved;
-      this.textRange = textRange;
-      this.flows = flows;
-      this.quickFixes = quickFixes;
-      this.ruleDescriptionContextKey = ruleDescriptionContextKey;
-      this.isAiCodeFixable = isAiCodeFixable;
-      this.resolutionStatus = resolutionStatus;
+    public Builder() {
+      // default constructor
     }
 
     public static Builder from(RaisedIssueDto dto) {
-      return new Builder(dto.getId(), dto.getServerKey(), dto.getRuleKey(), dto.getPrimaryMessage(), dto.getSeverityMode(), dto.getIntroductionDate(), dto.isOnNewCode(),
-        dto.isResolved(), dto.getTextRange(), dto.getFlows(), dto.getQuickFixes(), dto.getRuleDescriptionContextKey(), dto.isAiCodeFixable(), dto.getResolutionStatus());
+      var builder = new Builder();
+      builder.id = dto.getId();
+      builder.serverKey = dto.getServerKey();
+      builder.ruleKey = dto.getRuleKey();
+      builder.primaryMessage = dto.getPrimaryMessage();
+      builder.severityMode = dto.getSeverityMode();
+      builder.introductionDate = dto.getIntroductionDate();
+      builder.isOnNewCode = dto.isOnNewCode();
+      builder.resolved = dto.isResolved();
+      builder.textRange = dto.getTextRange();
+      builder.flows = dto.getFlows();
+      builder.quickFixes = dto.getQuickFixes();
+      builder.ruleDescriptionContextKey = dto.getRuleDescriptionContextKey();
+      builder.isAiCodeFixable = dto.isAiCodeFixable();
+      builder.resolutionStatus = dto.getResolutionStatus();
+      return builder;
+    }
+
+    public Builder setId(UUID id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder setServerKey(@Nullable String serverKey) {
+      this.serverKey = serverKey;
+      return this;
+    }
+
+    public Builder setRuleKey(String ruleKey) {
+      this.ruleKey = ruleKey;
+      return this;
+    }
+
+    public Builder setPrimaryMessage(String primaryMessage) {
+      this.primaryMessage = primaryMessage;
+      return this;
+    }
+
+    public Builder setSeverityMode(Either<StandardModeDetails, MQRModeDetails> severityMode) {
+      this.severityMode = severityMode;
+      return this;
+    }
+
+    public Builder setIntroductionDate(Instant introductionDate) {
+      this.introductionDate = introductionDate;
+      return this;
+    }
+
+    public Builder setIsOnNewCode(boolean isOnNewCode) {
+      this.isOnNewCode = isOnNewCode;
+      return this;
+    }
+
+    public Builder setTextRange(@Nullable TextRangeDto textRange) {
+      this.textRange = textRange;
+      return this;
+    }
+
+    public Builder setFlows(List<IssueFlowDto> flows) {
+      this.flows = flows;
+      return this;
+    }
+
+    public Builder setQuickFixes(List<QuickFixDto> quickFixes) {
+      this.quickFixes = quickFixes;
+      return this;
+    }
+
+    public Builder setRuleDescriptionContextKey(@Nullable String ruleDescriptionContextKey) {
+      this.ruleDescriptionContextKey = ruleDescriptionContextKey;
+      return this;
+    }
+
+    public Builder setIsAiCodeFixable(boolean isAiCodeFixable) {
+      this.isAiCodeFixable = isAiCodeFixable;
+      return this;
+    }
+
+    public Builder setResolutionStatus(@Nullable ResolutionStatus resolutionStatus) {
+      this.resolutionStatus = resolutionStatus;
+      return this;
     }
 
     public Builder withResolution(boolean resolved) {
@@ -114,8 +178,7 @@ public class RaisedIssueDto extends RaisedFindingDto {
     }
 
     public RaisedIssueDto buildIssue() {
-      return new RaisedIssueDto(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes,
-        ruleDescriptionContextKey, isAiCodeFixable, resolutionStatus);
+      return new RaisedIssueDto(this);
     }
   }
 }
