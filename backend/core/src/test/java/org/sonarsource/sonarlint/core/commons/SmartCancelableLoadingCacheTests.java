@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -83,8 +84,9 @@ class SmartCancelableLoadingCacheTests {
   @Test
   @TakeThreadDumpAfter(seconds = 10)
   void should_wait_for_long_computation() {
+    var latch = new CountDownLatch(1);
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class))).thenAnswer(invocation -> {
-      Thread.sleep(100);
+      latch.await(100, TimeUnit.MILLISECONDS);
       return A_VALUE;
     });
 

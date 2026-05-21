@@ -54,6 +54,7 @@ public class DidUpdateBindingParams {
     this.origin = origin;
   }
 
+  @SuppressWarnings("java:S5738")
   public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
@@ -62,10 +63,12 @@ public class DidUpdateBindingParams {
   }
 
 
+  @SuppressWarnings("java:S5738")
   public BindingMode getBindingMode() {
     return bindingMode;
   }
 
+  @SuppressWarnings("java:S5738")
   public BindingSuggestionOrigin getOrigin() {
     return origin;
   }
