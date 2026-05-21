@@ -80,17 +80,25 @@ public class ScaSynchronizationService {
         }
         return true;
       })
-      .map(issueRelease -> new ServerDependencyRisk(
-        issueRelease.key(),
-        ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
-        ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name()),
-        ServerDependencyRisk.SoftwareQuality.valueOf(issueRelease.quality().name()),
-        ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
-        issueRelease.release().packageName(),
-        issueRelease.release().version(),
-        issueRelease.vulnerabilityId(),
-        issueRelease.cvssScore(),
-        issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList()))
+      .map(issueRelease -> {
+        try {
+          return new ServerDependencyRisk(
+            issueRelease.key(),
+            ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
+            ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name()),
+            ServerDependencyRisk.SoftwareQuality.valueOf(issueRelease.quality().name()),
+            ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
+            issueRelease.release().packageName(),
+            issueRelease.release().version(),
+            issueRelease.vulnerabilityId(),
+            issueRelease.cvssScore(),
+            issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList());
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping dependency risk '{}': {}", issueRelease.key(), e.getMessage());
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
       .toList();
 
     findingsStore.replaceAllDependencyRisksOfBranch(branchName, serverDependencyRisks);
