@@ -10,6 +10,11 @@
   <name>SonarLint Core - Test Utils</name>
   <description>Test utils for SonarLint</description>
 
+  <properties>
+    <!-- Keep the module analyzed, but do not enforce coverage on shared test utilities. -->
+    <sonar.coverage.exclusions>**/*</sonar.coverage.exclusions>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
