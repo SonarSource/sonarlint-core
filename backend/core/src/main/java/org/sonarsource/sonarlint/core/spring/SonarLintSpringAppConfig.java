@@ -114,6 +114,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigu
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
+import org.sonarsource.sonarlint.core.sca.ScaProjectAnalysisService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
@@ -225,6 +226,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ClientAwareTaskManager.class,
   ScaSynchronizationService.class,
   DependencyRiskService.class,
+  ScaProjectAnalysisService.class,
   ToggleAutomaticAnalysisRequestHandler.class,
   AnalyzeFileListRequestHandler.class,
   AiAgentService.class,

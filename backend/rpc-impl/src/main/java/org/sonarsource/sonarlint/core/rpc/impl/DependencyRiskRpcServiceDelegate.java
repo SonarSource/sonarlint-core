@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ChangeDependencyRiskStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
@@ -31,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.ListAllDependency
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.OpenDependencyRiskInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
+import org.sonarsource.sonarlint.core.sca.ScaProjectAnalysisService;
 
 public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate implements DependencyRiskRpcService {
 
@@ -42,6 +45,11 @@ public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate
   public CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params) {
     return requestAsync(cancelMonitor -> new ListAllDependencyRisksResponse(getBean(DependencyRiskService.class)
       .listAll(params.getConfigurationScopeId(), params.shouldRefresh(), cancelMonitor)));
+  }
+
+  @Override
+  public CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params) {
+    return requestAsync(cancelMonitor -> getBean(ScaProjectAnalysisService.class).analyzeProject(params), params.getConfigurationScopeId());
   }
 
   @Override
