@@ -74,6 +74,7 @@ class HotspotApiTests {
     assertThat(recordedRequest.getTarget()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
   }
 
+  @SuppressWarnings("removal")
   @Test
   void it_should_adapt_and_return_the_hotspot_details() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
