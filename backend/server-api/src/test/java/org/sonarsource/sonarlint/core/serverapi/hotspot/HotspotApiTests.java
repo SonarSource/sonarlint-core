@@ -74,6 +74,7 @@ class HotspotApiTests {
     assertThat(recordedRequest.getTarget()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
   }
 
+  @SuppressWarnings("removal")
   @Test
   void it_should_adapt_and_return_the_hotspot_details() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
@@ -114,6 +115,7 @@ class HotspotApiTests {
     assertThat(hotspot.codeSnippet).isEqualTo("My\n\tCode\n  Snippet");
   }
 
+  @SuppressWarnings("java:S5738")
   @Test
   void it_should_extract_single_line_snippet() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
@@ -175,7 +177,7 @@ class HotspotApiTests {
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
-    assertThat(hotspot.resolution).isNull();
+    assertThat(hotspot).extracting("resolution").isNull();
   }
 
   @Test
