@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -160,7 +159,7 @@ class AnalysisReadinessMediumTests {
 
     // bind to 2nd project
     backend.getConfigurationService()
-      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey2", true), BindingMode.MANUAL, null));
+      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey2", true)));
 
     // analysis becomes not ready after binding change
     verify(client, timeout(500)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), false);
@@ -174,7 +173,7 @@ class AnalysisReadinessMediumTests {
 
     // bind again to 1st project that should be ready
     backend.getConfigurationService()
-      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true), BindingMode.MANUAL, null));
+      .didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true)));
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID))
       .extracting(RaisedFindingDto::getRuleKey).containsExactly("xml:S3421"));

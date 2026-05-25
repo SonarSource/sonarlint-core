@@ -178,6 +178,7 @@ class HotspotApiTests {
     assertThat(hotspot.resolution).isNull();
   }
 
+  @SuppressWarnings("removal")
   @Test
   void it_should_map_acknowledged_status_for_show() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()

@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -772,9 +771,7 @@ class IssueTrackingMediumTests {
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
-      new BindingConfigurationDto("connectionId", "projectKey", true),
-      BindingMode.MANUAL,
-      null));
+      new BindingConfigurationDto("connectionId", "projectKey", true)));
     server.getMockServer().stubFor(get("/api/qualityprofiles/search.protobuf?project=projectKey")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addProfiles(
         Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
