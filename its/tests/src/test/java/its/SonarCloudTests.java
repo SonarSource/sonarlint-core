@@ -28,6 +28,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -39,7 +41,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -58,7 +59,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
@@ -629,13 +629,9 @@ class SonarCloudTests extends AbstractConnectedTests {
       // environment the backing services are slow to warm, so the vulnerability and even this search call can take well
       // over the default 10s to settle. Use a generous ceiling - it has no happy-path cost as await() returns as soon as
       // the condition holds.
-      AtomicReference<Issues.Issue> issue = new AtomicReference<>();
-      await().atMost(2, TimeUnit.MINUTES).untilAsserted(() -> {
-        var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT))))
-          .getIssuesList();
-        assertThat(issuesList).hasSize(1);
-        issue.set(issuesList.get(0));
-      });
+      var taints = await().atMost(2, TimeUnit.MINUTES).until(
+        () -> adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT)))).getIssuesList(),
+        issues -> issues.size() == 1);
       // Ensure the source is available, it can take some time to propagate after the analysis, especially on SQC US
       await().atMost(2, TimeUnit.MINUTES).untilAsserted(() -> {
         try {
@@ -646,28 +642,28 @@ class SonarCloudTests extends AbstractConnectedTests {
         }
       });
 
-      var issueKey = issue.get().getKey();
+      var issueKey = taints.getFirst().getKey();
 
       var taintVulnerabilities = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId, true)).get().getTaintVulnerabilities();
 
       assertThat(taintVulnerabilities).hasSize(1);
-      var taintVulnerability = taintVulnerabilities.get(0);
+      var taintVulnerability = taintVulnerabilities.getFirst();
       assertThat(taintVulnerability.getSonarServerKey()).isEqualTo(issueKey);
       assertThat(taintVulnerability.getRuleKey()).isEqualTo("javasecurity:S3649");
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
       assertThat(taintVulnerability.getRuleDescriptionContextKey()).isNull();
       assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
       assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
+      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().getFirst()).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
         ImpactSeverity.BLOCKER);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
       // the feature is not enabled for our org
       assertThat(taintVulnerability.isAiCodeFixable()).isFalse();
-      var flow = taintVulnerability.getFlows().get(0);
+      var flow = taintVulnerability.getFlows().getFirst();
       assertThat(flow.getLocations()).isNotEmpty();
-      assertThat(flow.getLocations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(flow.getLocations().get(flow.getLocations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"),
+      assertThat(flow.getLocations().getFirst().getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+      assertThat(flow.getLocations().getLast().getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"),
         hash("request.getParameter(\"pass\")"));
     }
   }
