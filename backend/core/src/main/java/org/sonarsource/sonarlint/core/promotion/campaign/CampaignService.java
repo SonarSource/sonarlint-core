@@ -23,10 +23,10 @@ package org.sonarsource.sonarlint.core.promotion.campaign;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.Period;
-import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -80,15 +80,17 @@ public class CampaignService {
   private final FileStorageManager<CampaignsLocalStorage> fileStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final ApplicationEventPublisher eventPublisher;
+  private final Clock clock;
   private final boolean isEnabled;
 
   public CampaignService(@Qualifier("campaignsPath") Path campaignsPath, SonarLintRpcClient client, InitializeParams initializeParams, TelemetryService telemetryService,
-    ApplicationEventPublisher eventPublisher) {
+    ApplicationEventPublisher eventPublisher, Clock clock) {
     this.productKey = initializeParams.getTelemetryConstantAttributes().getProductKey();
     this.client = client;
     this.telemetryService = telemetryService;
     this.fileStorageManager = new FileStorageManager<>(campaignsPath, CampaignsLocalStorage::new, CampaignsLocalStorage.class);
     this.eventPublisher = eventPublisher;
+    this.clock = clock;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
     this.isEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.PROMOTIONAL_CAMPAIGNS);
   }
@@ -119,13 +121,13 @@ public class CampaignService {
   }
 
   private boolean isInstalledLongEnough() {
-    return OffsetDateTime.now(ZoneId.systemDefault()).minusDays(TWO_WEEKS).isAfter(telemetryService.installTime());
+    return OffsetDateTime.now(clock).minusDays(TWO_WEEKS).isAfter(telemetryService.installTime());
   }
 
-  private static boolean postponeTimePassed(String lastResponse, Campaign feedbackCampaign) {
+  private boolean postponeTimePassed(String lastResponse, Campaign feedbackCampaign) {
     var postpone = POSTPONE_PERIODS.get(lastResponse);
     var lastShown = feedbackCampaign.lastNotificationShownOn();
-    return lastShown.plus(postpone).isBefore(LocalDate.now(ZoneId.systemDefault()));
+    return lastShown.plus(postpone).isBefore(LocalDate.now(clock));
   }
 
   private void showFeedbackMessage() {
@@ -152,7 +154,7 @@ public class CampaignService {
 
       if (existingCampaign == null || !wasShownRecently(existingCampaign.lastNotificationShownOn())) {
         campaigns.put(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), "IGNORE"));
+          new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(clock), "IGNORE"));
         shouldShow.set(true);
       }
     });
@@ -160,8 +162,8 @@ public class CampaignService {
     return shouldShow.get();
   }
 
-  private static boolean wasShownRecently(LocalDate lastShown) {
-    var today = LocalDate.now(ZoneId.systemDefault());
+  private boolean wasShownRecently(LocalDate lastShown) {
+    var today = LocalDate.now(clock);
     var yesterday = today.minusDays(1);
     // Consider "recently shown" if shown today or yesterday, this prevents midnight edge case where notification fires just after midnight
     return lastShown.equals(today) || lastShown.equals(yesterday);
@@ -182,7 +184,7 @@ public class CampaignService {
   private void handleFeedbackResponse(String responseOption) {
     fileStorageManager.tryUpdateAtomically(storage -> storage.campaigns().put(
       CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
-      new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(ZoneId.systemDefault()), responseOption)));
+      new Campaign(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN, LocalDate.now(clock), responseOption)));
     eventPublisher.publishEvent(new CampaignResolvedEvent(CampaignConstants.FEEDBACK_2026_01_CAMPAIGN,
       responseOption));
 
