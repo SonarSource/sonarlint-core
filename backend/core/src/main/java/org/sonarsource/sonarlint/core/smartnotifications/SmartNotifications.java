@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.time.ZoneId;
+import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -68,10 +68,11 @@ public class SmartNotifications {
   private final WebSocketService webSocketService;
   private final InitializeParams params;
   private final LastEventPolling lastEventPollingService;
+  private final Clock clock;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager,
-    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
+    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params, Clock clock) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
@@ -79,7 +80,8 @@ public class SmartNotifications {
     this.telemetryService = telemetryService;
     this.webSocketService = webSocketService;
     this.params = params;
-    lastEventPollingService = new LastEventPolling(storageService);
+    this.clock = clock;
+    lastEventPollingService = new LastEventPolling(storageService, clock);
   }
 
   @PostConstruct
@@ -129,7 +131,7 @@ public class SmartNotifications {
     }
 
     projectKeysByLastEventPolling.keySet()
-      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(ZoneId.systemDefault()), connectionId, projectKey));
+      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(clock), connectionId, projectKey));
   }
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
@@ -147,8 +149,8 @@ public class SmartNotifications {
     }
   }
 
-  private static ZonedDateTime getLastNotificationTime(ZonedDateTime lastTime) {
-    var oneDayAgo = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(1);
+  private ZonedDateTime getLastNotificationTime(ZonedDateTime lastTime) {
+    var oneDayAgo = ZonedDateTime.now(clock).minusDays(1);
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 

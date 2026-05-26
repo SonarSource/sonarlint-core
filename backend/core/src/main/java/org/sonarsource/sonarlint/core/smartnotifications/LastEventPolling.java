@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.smartnotifications;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -27,15 +28,21 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 public class LastEventPolling {
 
   private final StorageService storage;
+  private final Clock clock;
 
   public LastEventPolling(StorageService storage) {
+    this(storage, Clock.systemDefaultZone());
+  }
+
+  public LastEventPolling(StorageService storage, Clock clock) {
     this.storage = storage;
+    this.clock = clock;
   }
 
   public ZonedDateTime getLastEventPolling(String connectionId, String projectKey) {
     var lastEventPollingEpoch = storage.connection(connectionId).project(projectKey).smartNotifications().readLastEventPolling();
     return lastEventPollingEpoch.map(aLong -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(aLong), ZoneId.systemDefault()))
-      .orElseGet(ZonedDateTime::now);
+      .orElseGet(() -> ZonedDateTime.now(clock));
   }
 
   public void setLastEventPolling(ZonedDateTime dateTime, String connectionId, String projectKey) {

@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.smartnotifications;
 
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -43,7 +45,8 @@ class LastEventPollingTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now(ZoneId.systemDefault()).minusDays(5);
+  private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
+  private static final ZonedDateTime STORED_DATE = ZonedDateTime.now(FIXED_CLOCK).minusDays(5);
   private static final String PROJECT_KEY = "projectKey";
   private static final String CONNECTION_ID = "connectionId";
   private static final String FILE_NAME = "last_event_polling.pb";
@@ -80,12 +83,11 @@ class LastEventPollingTests {
   void should_not_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
     var databaseService = mock(SonarLintDatabaseService.class);
     var storage = new StorageService(userPathsFrom(tmpDir), databaseService);
-    var lastEventPolling = new LastEventPolling(storage);
+    var lastEventPolling = new LastEventPolling(storage, FIXED_CLOCK);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
-    var now = ZonedDateTime.now(ZoneId.systemDefault());
-    assertThat(result).isBeforeOrEqualTo(now).isAfter(now.minusSeconds(3));
+    assertThat(result).isEqualTo(ZonedDateTime.now(FIXED_CLOCK));
   }
 
   private static UserPaths userPathsFrom(Path tmpDir) {
