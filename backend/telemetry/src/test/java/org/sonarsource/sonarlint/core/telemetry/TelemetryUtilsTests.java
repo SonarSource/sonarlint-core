@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,14 +41,16 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.isGracePeriodElapsedAndDayChanged;
 
 class TelemetryUtilsTests {
+  private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
+
   @Test
   void dayChanged_should_return_true_for_null() {
-    assertThat(isGracePeriodElapsedAndDayChanged(null)).isTrue();
+    assertThat(isGracePeriodElapsedAndDayChanged((LocalDate) null, FIXED_CLOCK)).isTrue();
   }
 
   @Test
   void dayChanged_should_return_true_if_older() {
-    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(ZoneId.systemDefault()).minusDays(1))).isTrue();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(FIXED_CLOCK).minusDays(1), FIXED_CLOCK)).isTrue();
   }
 
   @Test
@@ -72,17 +76,17 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_should_return_false_if_same() {
-    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(ZoneId.systemDefault()))).isFalse();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now(FIXED_CLOCK), FIXED_CLOCK)).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_for_null() {
-    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(null, 1)).isTrue();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(null, 1, FIXED_CLOCK)).isTrue();
   }
 
   @Test
   void dayChanged_with_hours_should_return_false_if_day_same() {
-    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(LocalDateTime.now(ZoneId.systemDefault()), 100)).isFalse();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(LocalDateTime.now(FIXED_CLOCK), 100, FIXED_CLOCK)).isFalse();
   }
 
   @Test
@@ -113,16 +117,16 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_with_hours_should_return_false_if_different_day_but_within_hours() {
-    var date = LocalDateTime.now(ZoneId.systemDefault()).minusDays(1);
-    var hours = date.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS);
-    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours + 1)).isFalse();
+    var date = LocalDateTime.now(FIXED_CLOCK).minusDays(1);
+    var hours = date.until(LocalDateTime.now(FIXED_CLOCK), ChronoUnit.HOURS);
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours + 1, FIXED_CLOCK)).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_if_different_day_and_beyond_hours() {
-    var date = LocalDateTime.now(ZoneId.systemDefault()).minusDays(1);
-    var hours = date.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS);
-    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours)).isTrue();
+    var date = LocalDateTime.now(FIXED_CLOCK).minusDays(1);
+    var hours = date.until(LocalDateTime.now(FIXED_CLOCK), ChronoUnit.HOURS);
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours, FIXED_CLOCK)).isTrue();
   }
 
   @Test

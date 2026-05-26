@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,7 +50,11 @@ class TelemetryUtils {
    * @return true if it's a different day than the reference
    */
   static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDate date) {
-    return date == null || !date.equals(LocalDate.now(ZoneId.systemDefault()));
+    return isGracePeriodElapsedAndDayChanged(date, Clock.systemDefaultZone());
+  }
+
+  static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDate date, Clock clock) {
+    return date == null || !date.equals(LocalDate.now(clock));
   }
 
   /**
@@ -115,9 +119,13 @@ class TelemetryUtils {
    * @return true if it's a different day than the reference and at least hours have elapsed
    */
   static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime dateTime, long hours) {
+    return isGracePeriodElapsedAndDayChanged(dateTime, hours, Clock.systemDefaultZone());
+  }
+
+  static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime dateTime, long hours, Clock clock) {
     return dateTime == null ||
-      (!LocalDate.now(ZoneId.systemDefault()).equals(dateTime.toLocalDate())
-        && (dateTime.until(LocalDateTime.now(ZoneId.systemDefault()), ChronoUnit.HOURS) >= hours));
+      (!LocalDate.now(clock).equals(dateTime.toLocalDate())
+        && (dateTime.until(LocalDateTime.now(clock), ChronoUnit.HOURS) >= hours));
   }
 
   private static <T> BinaryOperator<T> throwingMerger() {
