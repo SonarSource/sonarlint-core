@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.utils;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
@@ -27,20 +29,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DateUtilsTests {
 
+  private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
+  private static final long FIXED_NOW_MILLIS = FIXED_CLOCK.millis();
+
   @Test
   void testAge() {
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 100)).isEqualTo("few seconds ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 65_000)).isEqualTo("1 minute ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 3_600_000 - 100_000)).isEqualTo("1 hour ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 2 * 3_600_000 - 100_000)).isEqualTo("2 hours ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 24 * 3_600_000 - 100_000)).isEqualTo("1 day ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(5)
+    assertThat(DateUtils.toAge(FIXED_NOW_MILLIS - 100, FIXED_CLOCK)).isEqualTo("few seconds ago");
+    assertThat(DateUtils.toAge(FIXED_NOW_MILLIS - 65_000, FIXED_CLOCK)).isEqualTo("1 minute ago");
+    assertThat(DateUtils.toAge(FIXED_NOW_MILLIS - 3_600_000 - 100_000, FIXED_CLOCK)).isEqualTo("1 hour ago");
+    assertThat(DateUtils.toAge(FIXED_NOW_MILLIS - 2 * 3_600_000 - 100_000, FIXED_CLOCK)).isEqualTo("2 hours ago");
+    assertThat(DateUtils.toAge(FIXED_NOW_MILLIS - 24 * 3_600_000 - 100_000, FIXED_CLOCK)).isEqualTo("1 day ago");
+    assertThat(DateUtils.toAge(LocalDateTime.now(FIXED_CLOCK).minusMonths(5)
       .atZone(ZoneId.systemDefault())
       .toInstant()
-      .toEpochMilli())).isEqualTo("5 months ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(15)
+      .toEpochMilli(), FIXED_CLOCK)).isEqualTo("5 months ago");
+    assertThat(DateUtils.toAge(LocalDateTime.now(FIXED_CLOCK).minusMonths(15)
       .atZone(ZoneId.systemDefault())
       .toInstant()
-      .toEpochMilli())).isEqualTo("1 year ago");
+      .toEpochMilli(), FIXED_CLOCK)).isEqualTo("1 year ago");
   }
 }
