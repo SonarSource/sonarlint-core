@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +37,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.isOlder;
 
 class TelemetryLocalStorageTests {
+  private static final Clock CLOCK = Clock.systemDefaultZone();
+
   @Test
   void usedAnalysis_should_increment_num_days_on_first_run() {
     var data = new TelemetryLocalStorage();
@@ -103,14 +105,14 @@ class TelemetryLocalStorageTests {
     data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(1);
 
-    data.setLastUseDate(LocalDate.now(ZoneId.systemDefault()).minusDays(1));
+    data.setLastUseDate(LocalDate.now(CLOCK).minusDays(1));
     data.setUsedAnalysis();
     assertThat(data.numUseDays()).isEqualTo(2);
   }
 
   @Test
   void test_isOlder_LocalDate() {
-    var date = LocalDate.now(ZoneId.systemDefault());
+    var date = LocalDate.now(CLOCK);
 
     assertThat(isOlder((LocalDate) null, null)).isTrue();
     assertThat(isOlder(null, date)).isTrue();
@@ -121,7 +123,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void test_isOlder_LocalDateTime() {
-    var date = LocalDateTime.now(ZoneId.systemDefault());
+    var date = LocalDateTime.now(CLOCK);
 
     assertThat(isOlder((LocalDateTime) null, null)).isTrue();
     assertThat(isOlder(null, date)).isTrue();
@@ -133,7 +135,7 @@ class TelemetryLocalStorageTests {
   @Test
   void validate_should_reset_installTime_if_in_future() {
     var data = new TelemetryLocalStorage();
-    var now = OffsetDateTime.now(ZoneId.systemDefault());
+    var now = OffsetDateTime.now(CLOCK);
 
     data.validateAndMigrate();
     assertThat(data.installTime()).is(within3SecOfNow);
@@ -144,19 +146,19 @@ class TelemetryLocalStorageTests {
   }
 
   private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
-    var now = OffsetDateTime.now(ZoneId.systemDefault());
+    var now = OffsetDateTime.now(CLOCK);
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
   private final Condition<OffsetDateTime> about5DaysAgo = new Condition<>(p -> {
-    var fiveDaysAgo = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(5);
+    var fiveDaysAgo = OffsetDateTime.now(CLOCK).minusDays(5);
     return Math.abs(p.until(fiveDaysAgo, ChronoUnit.SECONDS)) < 3;
   }, "about5DaysAgo");
 
   @Test
   void validate_should_reset_lastUseDate_if_in_future() {
     var data = new TelemetryLocalStorage();
-    var today = LocalDate.now(ZoneId.systemDefault());
+    var today = LocalDate.now(CLOCK);
 
     data.setLastUseDate(today.plusDays(1));
     data.validateAndMigrate();
@@ -166,7 +168,7 @@ class TelemetryLocalStorageTests {
   @Test
   void should_migrate_installDate() {
     var data = new TelemetryLocalStorage();
-    data.setInstallDate(LocalDate.now(ZoneId.systemDefault()).minusDays(5));
+    data.setInstallDate(LocalDate.now(CLOCK).minusDays(5));
     data.validateAndMigrate();
     assertThat(data.installTime()).is(about5DaysAgo);
   }
@@ -174,12 +176,12 @@ class TelemetryLocalStorageTests {
   @Test
   void validate_should_reset_lastUseDate_if_before_installTime() {
     var data = new TelemetryLocalStorage();
-    var now = OffsetDateTime.now(ZoneId.systemDefault());
+    var now = OffsetDateTime.now(CLOCK);
 
     data.setInstallTime(now);
     data.setLastUseDate(now.minusDays(1).toLocalDate());
     data.validateAndMigrate();
-    assertThat(data.lastUseDate()).isEqualTo(LocalDate.now(ZoneId.systemDefault()));
+    assertThat(data.lastUseDate()).isEqualTo(LocalDate.now(CLOCK));
   }
 
   @Test
@@ -195,7 +197,7 @@ class TelemetryLocalStorageTests {
   @Test
   void validate_should_fix_numDays_if_incorrect() {
     var data = new TelemetryLocalStorage();
-    var installTime = OffsetDateTime.now(ZoneId.systemDefault()).minusDays(10);
+    var installTime = OffsetDateTime.now(CLOCK).minusDays(10);
     var lastUseDate = installTime.plusDays(3).toLocalDate();
     data.setInstallTime(installTime);
     data.setLastUseDate(lastUseDate);

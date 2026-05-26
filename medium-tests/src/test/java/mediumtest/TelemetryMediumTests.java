@@ -23,8 +23,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,6 +86,7 @@ import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 
 class TelemetryMediumTests {
+  private static final Clock CLOCK = Clock.systemDefaultZone();
 
   @RegisterExtension
   static WireMockExtension telemetryEndpointMock = WireMockExtension.newInstance()
@@ -651,7 +652,7 @@ class TelemetryMediumTests {
   @SonarLintTest
   void it_should_apply_telemetry_migration(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
-      .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now(ZoneId.systemDefault()), 42, false))
+      .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now(CLOCK), 42, false))
       .withTelemetryEnabled()
       .start();
 

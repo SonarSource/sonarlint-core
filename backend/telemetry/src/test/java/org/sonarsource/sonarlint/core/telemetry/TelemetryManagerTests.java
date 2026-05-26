@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Set;
@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType.PRE_COMMIT_ANALYSIS_TYPE;
 
 class TelemetryManagerTests {
+  private static final Clock CLOCK = Clock.systemDefaultZone();
   private static final int DEFAULT_NOTIF_CLICKED = 5;
   private static final int DEFAULT_NOTIF_COUNT = 10;
   private static final int DEFAULT_HELP_AND_FEEDBACK_COUNT = 12;
@@ -230,7 +231,7 @@ class TelemetryManagerTests {
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();
-      data.setLastUploadTime(LocalDateTime.now(ZoneId.systemDefault()).minusDays(2));
+      data.setLastUploadTime(LocalDateTime.now(CLOCK).minusDays(2));
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
@@ -264,9 +265,9 @@ class TelemetryManagerTests {
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
-      data.setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()).minusDays(10));
-      data.setLastUseDate(LocalDate.now(ZoneId.systemDefault()).minusDays(3));
-      data.setLastUploadTime(LocalDateTime.now(ZoneId.systemDefault()).minusDays(2));
+      data.setInstallTime(OffsetDateTime.now(CLOCK).minusDays(10));
+      data.setLastUseDate(LocalDate.now(CLOCK).minusDays(3));
+      data.setLastUploadTime(LocalDateTime.now(CLOCK).minusDays(2));
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
