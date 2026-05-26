@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.client.utils;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 public class DateUtils {
@@ -36,7 +35,7 @@ public class DateUtils {
   }
 
   public static String toAge(long time, Clock clock) {
-    var creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
+    var creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), clock.getZone());
     var now = LocalDateTime.now(clock);
 
     var years = ChronoUnit.YEARS.between(creation, now);
