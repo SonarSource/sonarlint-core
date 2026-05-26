@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.spring;
 
 import java.net.ProxySelector;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import javax.annotation.CheckForNull;
@@ -244,6 +245,11 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ServerPluginDownloader.class
 })
 public class SonarLintSpringAppConfig {
+
+  @Bean
+  Clock provideClock() {
+    return Clock.systemDefaultZone();
+  }
 
   @Bean(name = "applicationEventMulticaster")
   public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
