@@ -469,7 +469,7 @@ class CampaignMediumTests {
   private void saveTelemetryInstallTime(String productKey, int daysAgo) {
     var telemetryPath = getTelemetryPath(productKey);
     TelemetryLocalStorageManager telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class), Clock.systemDefaultZone());
-    telemetryStorageManager.tryUpdateAtomically(data -> data.setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()).minusDays(daysAgo)));
+    telemetryStorageManager.tryUpdateAtomically(data -> data.setInstallTime(OffsetDateTime.now(Clock.systemDefaultZone()).minusDays(daysAgo)));
   }
 
   private Path getCampaignsPath(String productKey) {

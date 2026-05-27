@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,7 +88,7 @@ import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 
 class TelemetryMediumTests {
-  private static final Clock CLOCK = Clock.systemDefaultZone();
+  private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
 
   @RegisterExtension
   static WireMockExtension telemetryEndpointMock = WireMockExtension.newInstance()
