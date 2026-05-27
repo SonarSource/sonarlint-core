@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectTrigger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -59,6 +60,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRiskAnalysisStatusParams.DependencyRiskAnalysisStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -205,6 +207,10 @@ public interface SonarLintRpcClientDelegate {
 
   default void didChangeDependencyRisks(String configurationScopeId, Set<UUID> closedDependencyRiskIds, List<DependencyRiskDto> addedDependencyRisks,
     List<DependencyRiskDto> updatedDependencyRisks) {
+  }
+
+  default void didChangeDependencyRiskAnalysisStatus(String configurationScopeId, DependencyRiskAnalysisStatus status, AnalyzeDependencyRiskProjectTrigger trigger,
+    boolean rerunRequested, @Nullable String message) {
   }
 
   default Path getBaseDir(String configurationScopeId) throws ConfigScopeNotFoundException {
