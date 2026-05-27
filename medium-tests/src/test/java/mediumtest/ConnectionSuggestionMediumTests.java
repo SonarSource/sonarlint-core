@@ -260,7 +260,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight()).isNotNull();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isFalse();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.PROPERTIES_FILE);
   }
 
@@ -294,7 +293,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
@@ -336,7 +334,6 @@ class ConnectionSuggestionMediumTests {
         assertThat(suggestion.getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
         assertThat(suggestion.getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
       }
-      assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
       assertThat(suggestion.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
     }
   }
@@ -374,7 +371,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
@@ -404,7 +400,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
