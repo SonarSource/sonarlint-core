@@ -61,21 +61,59 @@ public class AnalyzeDependencyRiskProjectResponse {
     private final List<String> dependencyFilePaths;
     private final List<List<String>> dependencyChains;
 
-    public AnalyzeDependencyRiskProjectReleaseDto(String key, String packageUrl, String packageManager, String packageName, String version,
-      @Nullable String licenseExpression, boolean known, boolean knownPackage, boolean newlyIntroduced, List<AnalyzeDependencyRiskProjectIssueDto> issues,
-      List<String> dependencyFilePaths, List<List<String>> dependencyChains) {
+    public AnalyzeDependencyRiskProjectReleaseDto(PackageDto packageDto, StatusDto statusDto, DependencyDto dependencyDto, String key,
+      List<AnalyzeDependencyRiskProjectIssueDto> issues) {
       this.key = key;
-      this.packageUrl = packageUrl;
-      this.packageManager = packageManager;
-      this.packageName = packageName;
-      this.version = version;
-      this.licenseExpression = licenseExpression;
-      this.known = known;
-      this.knownPackage = knownPackage;
-      this.newlyIntroduced = newlyIntroduced;
+      this.packageUrl = packageDto.packageUrl;
+      this.packageManager = packageDto.packageManager;
+      this.packageName = packageDto.packageName;
+      this.version = packageDto.version;
+      this.licenseExpression = packageDto.licenseExpression;
+      this.known = statusDto.known;
+      this.knownPackage = statusDto.knownPackage;
+      this.newlyIntroduced = statusDto.newlyIntroduced;
       this.issues = issues;
-      this.dependencyFilePaths = dependencyFilePaths;
-      this.dependencyChains = dependencyChains;
+      this.dependencyFilePaths = dependencyDto.dependencyFilePaths;
+      this.dependencyChains = dependencyDto.dependencyChains;
+    }
+
+    public static class PackageDto {
+      private final String packageUrl;
+      private final String packageManager;
+      private final String packageName;
+      private final String version;
+      @Nullable
+      private final String licenseExpression;
+
+      public PackageDto(String packageUrl, String packageManager, String packageName, String version, @Nullable String licenseExpression) {
+        this.packageUrl = packageUrl;
+        this.packageManager = packageManager;
+        this.packageName = packageName;
+        this.version = version;
+        this.licenseExpression = licenseExpression;
+      }
+    }
+
+    public static class StatusDto {
+      private final boolean known;
+      private final boolean knownPackage;
+      private final boolean newlyIntroduced;
+
+      public StatusDto(boolean known, boolean knownPackage, boolean newlyIntroduced) {
+        this.known = known;
+        this.knownPackage = knownPackage;
+        this.newlyIntroduced = newlyIntroduced;
+      }
+    }
+
+    public static class DependencyDto {
+      private final List<String> dependencyFilePaths;
+      private final List<List<String>> dependencyChains;
+
+      public DependencyDto(List<String> dependencyFilePaths, List<List<String>> dependencyChains) {
+        this.dependencyFilePaths = dependencyFilePaths;
+        this.dependencyChains = dependencyChains;
+      }
     }
 
     public String getKey() {
@@ -149,20 +187,58 @@ public class AnalyzeDependencyRiskProjectResponse {
     @Nullable
     private final List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions;
 
-    public AnalyzeDependencyRiskProjectIssueDto(@Nullable String key, String severity, @Nullable Boolean showIncreasedSeverityWarning, String type, String quality,
-      @Nullable String status, @Nullable String vulnerabilityId, @Nullable List<String> cweIds, @Nullable String cvssScore, @Nullable String spdxLicenseId,
-      @Nullable List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions) {
+    public AnalyzeDependencyRiskProjectIssueDto(ClassificationDto classification, VulnerabilityDto vulnerability, @Nullable String key) {
       this.key = key;
-      this.severity = severity;
-      this.showIncreasedSeverityWarning = showIncreasedSeverityWarning;
-      this.type = type;
-      this.quality = quality;
-      this.status = status;
-      this.vulnerabilityId = vulnerabilityId;
-      this.cweIds = cweIds;
-      this.cvssScore = cvssScore;
-      this.spdxLicenseId = spdxLicenseId;
-      this.versionOptions = versionOptions;
+      this.severity = classification.severity;
+      this.showIncreasedSeverityWarning = classification.showIncreasedSeverityWarning;
+      this.type = classification.type;
+      this.quality = classification.quality;
+      this.status = classification.status;
+      this.vulnerabilityId = vulnerability.vulnerabilityId;
+      this.cweIds = vulnerability.cweIds;
+      this.cvssScore = vulnerability.cvssScore;
+      this.spdxLicenseId = vulnerability.spdxLicenseId;
+      this.versionOptions = vulnerability.versionOptions;
+    }
+
+    public static class ClassificationDto {
+      private final String severity;
+      @Nullable
+      private final Boolean showIncreasedSeverityWarning;
+      private final String type;
+      private final String quality;
+      @Nullable
+      private final String status;
+
+      public ClassificationDto(String severity, @Nullable Boolean showIncreasedSeverityWarning, String type, String quality, @Nullable String status) {
+        this.severity = severity;
+        this.showIncreasedSeverityWarning = showIncreasedSeverityWarning;
+        this.type = type;
+        this.quality = quality;
+        this.status = status;
+      }
+    }
+
+    public static class VulnerabilityDto {
+      @Nullable
+      private final String vulnerabilityId;
+      @Nullable
+      private final List<String> cweIds;
+      @Nullable
+      private final String cvssScore;
+      @Nullable
+      private final String spdxLicenseId;
+      @Nullable
+      private final List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions;
+
+      public VulnerabilityDto(@Nullable String vulnerabilityId, @Nullable List<String> cweIds, @Nullable String cvssScore, @Nullable String spdxLicenseId,
+        @Nullable List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions) {
+        this.vulnerabilityId = vulnerabilityId;
+        this.cweIds = cweIds;
+        this.cvssScore = cvssScore;
+        this.spdxLicenseId = spdxLicenseId;
+        this.versionOptions = versionOptions;
+      }
     }
 
     @Nullable

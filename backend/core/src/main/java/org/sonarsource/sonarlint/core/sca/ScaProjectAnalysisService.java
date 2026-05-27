@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
-import com.sonar.sca.scanner.ScaScanner;
 import com.sonar.sca.scanner.ScaScannerOptionsBuilder;
 import com.sonar.sca.scanner.analyzeproject.AnalyzeProjectOptionsBuilder;
 import com.sonar.sca.scanner.analyzeproject.response.AnalysisErrorResource;
@@ -28,12 +27,12 @@ import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectRelease;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectResponse;
 import com.sonar.sca.scanner.analyzeproject.response.VersionOption;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.Strings;
@@ -42,6 +41,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -52,9 +52,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependency
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectReleaseDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectVersionOptionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
@@ -63,7 +60,6 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 public class ScaProjectAnalysisService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SCA_DOWNLOAD_BASE_URL_PROPERTY = "sonarlint.sca.downloadBaseUrl";
-  private static final String SCA_CLI_OVERRIDE_LOCATION_PROPERTY = "sonarlint.sca.cliOverrideLocation";
   private static final String SONARCLOUD_SCA_SCANNER_CDN_URL = "https://scanner.sonarcloud.io/tidelift-cli";
 
   private final ConfigurationRepository configurationRepository;
@@ -72,18 +68,25 @@ public class ScaProjectAnalysisService {
   private final ClientFileSystemService clientFileSystemService;
   private final StorageService storageService;
   private final UserPaths userPaths;
+  private final ScaScannerFactory scaScannerFactory;
 
   public ScaProjectAnalysisService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFileSystemService, StorageService storageService, UserPaths userPaths) {
+    SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFileSystemService, StorageService storageService, UserPaths userPaths,
+    ScaScannerFactory scaScannerFactory) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.clientFileSystemService = clientFileSystemService;
     this.storageService = storageService;
     this.userPaths = userPaths;
+    this.scaScannerFactory = scaScannerFactory;
   }
 
   public AnalyzeDependencyRiskProjectResponse analyzeProject(AnalyzeDependencyRiskProjectParams params) {
+    return analyzeProject(params, new SonarLintCancelMonitor());
+  }
+
+  public AnalyzeDependencyRiskProjectResponse analyzeProject(AnalyzeDependencyRiskProjectParams params, SonarLintCancelMonitor cancelMonitor) {
     var configurationScopeId = params.getConfigurationScopeId();
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var connection = connectionRepository.getConnectionById(binding.connectionId());
@@ -97,44 +100,69 @@ public class ScaProjectAnalysisService {
     }
     var endpointParams = connection.getEndpointParams();
     var apiBaseUrl = toScaApiBaseUrl(endpointParams);
+    if (apiBaseUrl == null) {
+      throw invalidArgument("Missing SCA API base URL");
+    }
     var downloadBaseUrl = firstNonBlank(System.getProperty(SCA_DOWNLOAD_BASE_URL_PROPERTY), toScaDownloadBaseUrl(endpointParams));
     if (downloadBaseUrl == null) {
       throw invalidArgument("Missing SCA scanner download base URL. Provide it in the request or with system property '" + SCA_DOWNLOAD_BASE_URL_PROPERTY + "'");
     }
     var sonarQubeClient = sonarQubeClientManager.getValidClientOrThrow(binding.connectionId());
     var credentials = sonarQubeClient.getCredentials();
+    if (!credentials.isLeft()) {
+      throw invalidArgument("SCA project analysis requires token credentials");
+    }
+    var sonarToken = credentials.getLeft().getToken();
     var sqServerVersion = endpointParams.isSonarCloud() ? null : storageService.connection(binding.connectionId()).serverInfo().read()
       .map(info -> info.version().getName())
       .orElse(null);
     Path workDir = null;
+    var active = new AtomicBoolean(true);
     try {
       workDir = createWorkDir();
       LOG.info("Running manual SCA project analysis for configuration scope '{}'", configurationScopeId);
-      var response = new ScaScanner(ScaScannerOptionsBuilder.builder()
+      cancelMonitor.checkCanceled();
+      var analysisThread = Thread.currentThread();
+      cancelMonitor.onCancel(() -> {
+        if (active.get()) {
+          analysisThread.interrupt();
+        }
+      });
+      var scanner = scaScannerFactory.create(ScaScannerOptionsBuilder.builder()
         .setApiBaseUrl(apiBaseUrl)
         .setDownloadBaseUrl(downloadBaseUrl)
-        .setSonarToken(toSonarToken(credentials))
-        .setHeaders(toHeaders(credentials))
+        .setSonarToken(sonarToken)
         .setCacheDir(userPaths.getWorkDir().resolve("sca-scanner/cache"))
-        .setCliOverrideLocation(toPath(System.getProperty(SCA_CLI_OVERRIDE_LOCATION_PROPERTY)))
-        .build())
-          .analyzeProject(AnalyzeProjectOptionsBuilder.builder()
-            .setProjectKey(binding.sonarProjectKey())
-            .setBaseDir(baseDir)
-            .setWorkDir(workDir)
-            .setExcludedPaths(List.copyOf(params.getExcludedPaths()))
-            .setScmExclusionEnabled(params.getScmExclusionEnabled() == null || params.getScmExclusionEnabled())
-            .setScannerProperties(Map.copyOf(params.getScannerProperties()))
-            .setInsideSqc(false)
-            .setSqServerVersion(sqServerVersion)
-            .setDebug(Boolean.TRUE.equals(params.getDebug()))
-            .build());
+        .build());
+      var response = scanner.analyzeProject(AnalyzeProjectOptionsBuilder.builder()
+        .setProjectKey(binding.sonarProjectKey())
+        .setBaseDir(baseDir)
+        .setWorkDir(workDir)
+        .setExcludedPaths(List.copyOf(params.getExcludedPaths()))
+        .setScmExclusionEnabled(params.getScmExclusionEnabled() == null || params.getScmExclusionEnabled())
+        .setScannerProperties(Map.copyOf(params.getScannerProperties()))
+        .setInsideSqc(false)
+        .setSqServerVersion(sqServerVersion)
+        .setDebug(Boolean.TRUE.equals(params.getDebug()))
+        .build());
+      if (cancelMonitor.isCanceled()) {
+        Thread.interrupted();
+        throw new CancellationException();
+      }
       return toDto(response);
     } catch (IOException e) {
+      if (cancelMonitor.isCanceled()) {
+        Thread.interrupted();
+        throw new CancellationException();
+      }
       throw invalidArgument("SCA project analysis failed: " + e.getMessage());
     } catch (IllegalArgumentException | IllegalStateException e) {
       throw invalidArgument(e.getMessage());
     } finally {
+      active.set(false);
+      if (cancelMonitor.isCanceled()) {
+        Thread.interrupted();
+      }
       deleteWorkDir(workDir);
     }
   }
@@ -148,33 +176,20 @@ public class ScaProjectAnalysisService {
 
   private static AnalyzeDependencyRiskProjectReleaseDto toDto(AnalyzeProjectRelease release) {
     return new AnalyzeDependencyRiskProjectReleaseDto(
+      new AnalyzeDependencyRiskProjectReleaseDto.PackageDto(release.packageUrl(), release.packageManager(), release.packageName(), release.version(), release.licenseExpression()),
+      new AnalyzeDependencyRiskProjectReleaseDto.StatusDto(release.known(), release.knownPackage(), release.newlyIntroduced()),
+      new AnalyzeDependencyRiskProjectReleaseDto.DependencyDto(release.dependencyFilePaths(), release.dependencyChains()),
       release.key(),
-      release.packageUrl(),
-      release.packageManager(),
-      release.packageName(),
-      release.version(),
-      release.licenseExpression(),
-      release.known(),
-      release.knownPackage(),
-      release.newlyIntroduced(),
-      release.issues().stream().map(ScaProjectAnalysisService::toDto).toList(),
-      release.dependencyFilePaths(),
-      release.dependencyChains());
+      release.issues().stream().map(ScaProjectAnalysisService::toDto).toList());
   }
 
   private static AnalyzeDependencyRiskProjectIssueDto toDto(AnalyzeProjectIssue issue) {
     return new AnalyzeDependencyRiskProjectIssueDto(
-      issue.key(),
-      issue.severity(),
-      issue.showIncreasedSeverityWarning(),
-      issue.type().name(),
-      issue.quality().name(),
-      issue.status(),
-      issue.vulnerabilityId(),
-      issue.cweIds(),
-      issue.cvssScore(),
-      issue.spdxLicenseId(),
-      issue.versionOptions() == null ? null : issue.versionOptions().stream().map(ScaProjectAnalysisService::toDto).toList());
+      new AnalyzeDependencyRiskProjectIssueDto.ClassificationDto(
+        issue.severity(), issue.showIncreasedSeverityWarning(), issue.type().name(), issue.quality().name(), issue.status()),
+      new AnalyzeDependencyRiskProjectIssueDto.VulnerabilityDto(issue.vulnerabilityId(), issue.cweIds(), issue.cvssScore(), issue.spdxLicenseId(),
+        issue.versionOptions() == null ? null : issue.versionOptions().stream().map(ScaProjectAnalysisService::toDto).toList()),
+      issue.key());
   }
 
   private static AnalyzeDependencyRiskProjectVersionOptionDto toDto(VersionOption versionOption) {
@@ -188,21 +203,6 @@ public class ScaProjectAnalysisService {
 
   private static AnalyzeDependencyRiskProjectErrorDto toDto(AnalysisErrorResource error) {
     return new AnalyzeDependencyRiskProjectErrorDto(error.id(), error.code().name(), error.path(), error.message());
-  }
-
-  @CheckForNull
-  private static String toSonarToken(Either<TokenDto, UsernamePasswordDto> credentials) {
-    return credentials.isLeft() ? credentials.getLeft().getToken() : null;
-  }
-
-  private static Map<String, String> toHeaders(Either<TokenDto, UsernamePasswordDto> credentials) {
-    if (credentials.isLeft()) {
-      return Map.of();
-    }
-    var usernamePassword = credentials.getRight();
-    var encodedCredentials = Base64.getEncoder()
-      .encodeToString((usernamePassword.getUsername() + ":" + usernamePassword.getPassword()).getBytes(StandardCharsets.UTF_8));
-    return Map.of("Authorization", "Basic " + encodedCredentials);
   }
 
   private Path createWorkDir() throws IOException {
@@ -222,15 +222,13 @@ public class ScaProjectAnalysisService {
     }
   }
 
-  @Nullable
-  private static Path toPath(@Nullable String path) {
-    return path == null ? null : Path.of(path);
-  }
-
   @CheckForNull
   private static String toScaApiBaseUrl(EndpointParams endpointParams) {
     if (endpointParams.isSonarCloud()) {
       var apiBaseUrl = endpointParams.getApiBaseUrl() == null ? endpointParams.getBaseUrl() : endpointParams.getApiBaseUrl();
+      if (apiBaseUrl == null) {
+        return null;
+      }
       return ServerApiHelper.concat(apiBaseUrl, "/sca");
     }
     return ServerApiHelper.concat(endpointParams.getBaseUrl(), "/api/v2/sca");

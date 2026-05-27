@@ -25,7 +25,9 @@ import javax.annotation.Nullable;
 
 public class AnalyzeDependencyRiskProjectParams {
   private final String configurationScopeId;
+  @Nullable
   private final List<String> excludedPaths;
+  @Nullable
   private final Map<String, String> scannerProperties;
   private final Boolean scmExclusionEnabled;
   private final Boolean debug;
@@ -34,7 +36,7 @@ public class AnalyzeDependencyRiskProjectParams {
     this(configurationScopeId, List.of(), Map.of(), null, null);
   }
 
-  public AnalyzeDependencyRiskProjectParams(String configurationScopeId, List<String> excludedPaths, Map<String, String> scannerProperties,
+  public AnalyzeDependencyRiskProjectParams(String configurationScopeId, @Nullable List<String> excludedPaths, @Nullable Map<String, String> scannerProperties,
     @Nullable Boolean scmExclusionEnabled, @Nullable Boolean debug) {
     this.configurationScopeId = configurationScopeId;
     this.excludedPaths = excludedPaths;
@@ -48,11 +50,11 @@ public class AnalyzeDependencyRiskProjectParams {
   }
 
   public List<String> getExcludedPaths() {
-    return excludedPaths;
+    return excludedPaths == null ? List.of() : excludedPaths;
   }
 
   public Map<String, String> getScannerProperties() {
-    return scannerProperties;
+    return scannerProperties == null ? Map.of() : scannerProperties;
   }
 
   @Nullable

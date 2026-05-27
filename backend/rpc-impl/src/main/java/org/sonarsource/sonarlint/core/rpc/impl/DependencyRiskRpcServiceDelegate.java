@@ -49,7 +49,7 @@ public class DependencyRiskRpcServiceDelegate extends AbstractRpcServiceDelegate
 
   @Override
   public CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params) {
-    return requestAsync(cancelMonitor -> getBean(ScaProjectAnalysisService.class).analyzeProject(params), params.getConfigurationScopeId());
+    return requestAsync(cancelMonitor -> getBean(ScaProjectAnalysisService.class).analyzeProject(params, cancelMonitor), params.getConfigurationScopeId());
   }
 
   @Override
