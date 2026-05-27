@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -467,7 +468,7 @@ class CampaignMediumTests {
 
   private void saveTelemetryInstallTime(String productKey, int daysAgo) {
     var telemetryPath = getTelemetryPath(productKey);
-    TelemetryLocalStorageManager telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class));
+    TelemetryLocalStorageManager telemetryStorageManager = new TelemetryLocalStorageManager(telemetryPath, mock(InitializeParams.class), Clock.systemDefaultZone());
     telemetryStorageManager.tryUpdateAtomically(data -> data.setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()).minusDays(daysAgo)));
   }
 

@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -111,10 +111,17 @@ public class TelemetryLocalStorage implements LocalStorage {
   private final Map<String, String> campaignsResolutions;
   private int supportedLanguagesPanelOpenedCount;
   private int supportedLanguagesPanelCtaClickedCount;
+  // transient: not serialized; on Gson read, set explicitly via setClock after deserialization.
+  private transient Clock clock;
 
   TelemetryLocalStorage() {
+    this(null);
+  }
+
+  TelemetryLocalStorage(@Nullable Clock clock) {
+    this.clock = clock;
     enabled = true;
-    installTime = OffsetDateTime.now(ZoneId.systemDefault());
+    installTime = OffsetDateTime.now(clockOrDefault());
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
     issueStatusChangedRuleKeys = new HashSet<>();
@@ -133,6 +140,14 @@ public class TelemetryLocalStorage implements LocalStorage {
     aiHooksInstalledCount = new EnumMap<>(AiAgent.class);
     campaignsShown = new HashMap<>();
     campaignsResolutions = new HashMap<>();
+  }
+
+  public void setClock(Clock clock) {
+    this.clock = clock;
+  }
+
+  private Clock clockOrDefault() {
+    return clock != null ? clock : Clock.systemDefaultZone();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -226,7 +241,7 @@ public class TelemetryLocalStorage implements LocalStorage {
   }
 
   void setLastUploadTime() {
-    setLastUploadTime(LocalDateTime.now(ZoneId.systemDefault()));
+    setLastUploadTime(LocalDateTime.now(clockOrDefault()));
   }
 
   void setLastUploadTime(@Nullable LocalDateTime dateTime) {
@@ -315,7 +330,7 @@ public class TelemetryLocalStorage implements LocalStorage {
   }
 
   private void markSonarLintAsUsedToday() {
-    var now = LocalDate.now(ZoneId.systemDefault());
+    var now = LocalDate.now(clockOrDefault());
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
     }
@@ -342,16 +357,17 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   @Override
   public void validateAndMigrate() {
-    var today = LocalDate.now(ZoneId.systemDefault());
+    var clock = clockOrDefault();
+    var today = LocalDate.now(clock);
 
     // migrate deprecated installDate
     if (installDate != null && (installTime == null || installTime.toLocalDate().isAfter(installDate))) {
-      setInstallTime(installDate.atTime(OffsetTime.now(ZoneId.systemDefault())));
+      setInstallTime(installDate.atTime(OffsetTime.now(clock)));
     }
 
     // fix install time if necessary
-    if (installTime == null || installTime.isAfter(OffsetDateTime.now(ZoneId.systemDefault()))) {
-      setInstallTime(OffsetDateTime.now(ZoneId.systemDefault()));
+    if (installTime == null || installTime.isAfter(OffsetDateTime.now(clock))) {
+      setInstallTime(OffsetDateTime.now(clock));
     }
 
     // calculate use days

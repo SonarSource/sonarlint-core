@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Set;
@@ -53,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType.PRE_COMMIT_ANALYSIS_TYPE;
 
 class TelemetryManagerTests {
-  private static final Clock CLOCK = Clock.systemDefaultZone();
+  private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
   private static final int DEFAULT_NOTIF_CLICKED = 5;
   private static final int DEFAULT_NOTIF_COUNT = 10;
   private static final int DEFAULT_HELP_AND_FEEDBACK_COUNT = 12;
@@ -69,8 +71,8 @@ class TelemetryManagerTests {
   @BeforeEach
   void setUp(@TempDir Path temp) {
     client = mock(TelemetryHttpClient.class);
-    storageManager = new TelemetryLocalStorageManager(temp.resolve("storage"), mock(InitializeParams.class));
-    telemetryManager = new TelemetryManager(storageManager, client);
+    storageManager = new TelemetryLocalStorageManager(temp.resolve("storage"), mock(InitializeParams.class), CLOCK);
+    telemetryManager = new TelemetryManager(storageManager, client, CLOCK);
   }
 
   @Test
@@ -87,7 +89,7 @@ class TelemetryManagerTests {
   @Test
   void disable_should_trigger_optout() {
     var mockStorageManager = mockTelemetryStorage();
-    var manager = new TelemetryManager(mockStorageManager, client);
+    var manager = new TelemetryManager(mockStorageManager, client, CLOCK);
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     manager.disable(telemetryPayload);

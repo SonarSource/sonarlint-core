@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
@@ -40,10 +40,16 @@ public class TelemetryLocalStorageManager {
   private final FileStorageManager<TelemetryLocalStorage> fileStorageManager;
   @Nullable
   private final TelemetryMigrationDto telemetryMigration;
+  private final Clock clock;
 
-  public TelemetryLocalStorageManager(@Qualifier("telemetryPath") Path telemetryPath, InitializeParams initializeParams) {
-    fileStorageManager = new FileStorageManager<>(telemetryPath, TelemetryLocalStorage::new, TelemetryLocalStorage.class);
+  public TelemetryLocalStorageManager(@Qualifier("telemetryPath") Path telemetryPath, InitializeParams initializeParams, Clock clock) {
+    this.clock = clock;
+    fileStorageManager = new FileStorageManager<>(telemetryPath, this::newStorage, TelemetryLocalStorage.class);
     this.telemetryMigration = initializeParams.getTelemetryMigration();
+  }
+
+  private TelemetryLocalStorage newStorage() {
+    return new TelemetryLocalStorage(clock);
   }
 
   @VisibleForTesting
@@ -53,6 +59,7 @@ public class TelemetryLocalStorageManager {
 
   private TelemetryLocalStorage getStorage() {
     var inMemoryStorage = fileStorageManager.getStorage();
+    inMemoryStorage.setClock(clock);
     applyTelemetryMigration(inMemoryStorage);
     return inMemoryStorage;
   }
@@ -69,12 +76,15 @@ public class TelemetryLocalStorageManager {
     if (telemetryMigration == null) {
       return false;
     }
-    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now(ZoneId.systemDefault()));
+    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now(clock));
     return duration.getSeconds() < 10 && inMemoryStorage.numUseDays() == 0;
   }
 
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
-    fileStorageManager.tryUpdateAtomically(updater);
+    fileStorageManager.tryUpdateAtomically(storage -> {
+      storage.setClock(clock);
+      updater.accept(storage);
+    });
   }
 
   public LocalDateTime lastUploadTime() {

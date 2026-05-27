@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
@@ -37,11 +39,15 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.isOlder;
 
 class TelemetryLocalStorageTests {
-  private static final Clock CLOCK = Clock.systemDefaultZone();
+  private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
+
+  private static TelemetryLocalStorage newStorage() {
+    return new TelemetryLocalStorage(CLOCK);
+  }
 
   @Test
   void usedAnalysis_should_increment_num_days_on_first_run() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -50,7 +56,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_should_not_increment_num_days_on_same_day() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -62,7 +68,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_with_duration_should_register_analyzer_performance() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.numUseDays()).isZero();
     assertThat(data.analyzers()).isEmpty();
 
@@ -96,7 +102,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_should_increment_num_days_when_day_changed() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -134,7 +140,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_installTime_if_in_future() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     var now = OffsetDateTime.now(CLOCK);
 
     data.validateAndMigrate();
@@ -157,7 +163,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_lastUseDate_if_in_future() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     var today = LocalDate.now(CLOCK);
 
     data.setLastUseDate(today.plusDays(1));
@@ -167,7 +173,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_migrate_installDate() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     data.setInstallDate(LocalDate.now(CLOCK).minusDays(5));
     data.validateAndMigrate();
     assertThat(data.installTime()).is(about5DaysAgo);
@@ -175,7 +181,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_lastUseDate_if_before_installTime() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     var now = OffsetDateTime.now(CLOCK);
 
     data.setInstallTime(now);
@@ -186,7 +192,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_numDays_if_lastUseDate_unset() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     data.setNumUseDays(3);
 
     data.validateAndMigrate();
@@ -196,7 +202,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_fix_numDays_if_incorrect() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     var installTime = OffsetDateTime.now(CLOCK).minusDays(10);
     var lastUseDate = installTime.plusDays(3).toLocalDate();
     data.setInstallTime(installTime);
@@ -213,7 +219,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_replace_fix_suggestion_snippet_status() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     var suggestionId = UUID.randomUUID().toString();
     data.fixSuggestionResolved(suggestionId, FixSuggestionStatus.ACCEPTED, 0);
@@ -230,7 +236,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_track_findings_filtered_by_type() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getFindingsFilteredCountersByType()).isEmpty();
 
     data.findingsFiltered("severity");
@@ -248,7 +254,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_clear_findings_filtered_counters() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     data.findingsFiltered("severity");
     data.findingsFiltered("location");
@@ -260,7 +266,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_track_dependency_risk_investigated() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getDependencyRiskInvestigatedRemotelyCount()).isZero();
     assertThat(data.getDependencyRiskInvestigatedLocallyCount()).isZero();
 
@@ -277,7 +283,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_clear_dependency_risk_investigated_counts_after_ping() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     data.incrementDependencyRiskInvestigatedRemotelyCount();
     data.incrementDependencyRiskInvestigatedLocallyCount();
@@ -291,7 +297,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_increment_new_bindings_counters_per_origin() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     assertThat(data.getNewBindingsPropertiesFileCount()).isZero();
     assertThat(data.getNewBindingsRemoteUrlCount()).isZero();
@@ -311,7 +317,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_reset_new_bindings_counters_on_clear_after_ping() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     data.incrementNewBindingsPropertiesFileCount();
     data.incrementNewBindingsRemoteUrlCount();
     data.incrementNewBindingsProjectNameCount();
@@ -327,7 +333,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_increment_suggested_remote_bindings_count() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getSuggestedRemoteBindingsCount()).isZero();
     data.incrementSuggestedRemoteBindingsCount();
     data.incrementSuggestedRemoteBindingsCount();
@@ -336,7 +342,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_increment_mcp_server_settings_requested_count() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getMcpServerConfigurationRequestedCount()).isZero();
     data.incrementMcpServerConfigurationRequestedCount();
     data.incrementMcpServerConfigurationRequestedCount();
@@ -345,7 +351,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_find_mcp_integration_enabled() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.isMcpIntegrationEnabled()).isFalse();
     data.setMcpIntegrationEnabled(true);
     assertThat(data.isMcpIntegrationEnabled()).isTrue();
@@ -353,7 +359,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_find_mcp_transport_mode_used() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getMcpTransportModeUsed()).isNull();
     data.setMcpTransportModeUsed(McpTransportMode.HTTP);
     assertThat(data.getMcpTransportModeUsed()).isEqualTo(McpTransportMode.HTTP);
@@ -361,7 +367,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_increment_link_clicked_count_for_each_link_separately() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getLabsLinkClickedCount()).isEmpty();
 
     data.ideLabsLinkClicked("1");
@@ -376,7 +382,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_increment_feedback_link_clicked_count_for_each_link_separately() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getLabsFeedbackLinkClickedCount()).isEmpty();
 
     data.ideLabsFeedbackLinkClicked("1");
@@ -391,7 +397,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_reset_link_clicked_data_after_ping() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     data.ideLabsLinkClicked("1");
     data.ideLabsLinkClicked("2");
@@ -406,7 +412,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_track_supported_languages_panel_opened() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getSupportedLanguagesPanelOpenedCount()).isZero();
 
     data.incrementSupportedLanguagesPanelOpenedCount();
@@ -416,7 +422,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_track_supported_languages_panel_cta_clicked() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
     assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isZero();
 
     data.incrementSupportedLanguagesPanelCtaClickedCount();
@@ -427,7 +433,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_clear_supported_languages_panel_counts_after_ping() {
-    var data = new TelemetryLocalStorage();
+    var data = newStorage();
 
     data.incrementSupportedLanguagesPanelOpenedCount();
     data.incrementSupportedLanguagesPanelCtaClickedCount();

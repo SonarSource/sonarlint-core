@@ -198,7 +198,7 @@ class TelemetryMediumTests {
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().enabled()).isTrue());
 
     // Emulate another process has disabled telemetry
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath(), mock(InitializeParams.class));
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath(), mock(InitializeParams.class), CLOCK);
     telemetryLocalStorageManager.tryUpdateAtomically(data -> data.setEnabled(false));
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();

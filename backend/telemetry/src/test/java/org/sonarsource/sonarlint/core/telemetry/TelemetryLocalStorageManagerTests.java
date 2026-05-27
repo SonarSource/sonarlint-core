@@ -21,8 +21,10 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.UUID;
@@ -44,7 +46,7 @@ class TelemetryLocalStorageManagerTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
-  private static final Clock CLOCK = Clock.systemDefaultZone();
+  private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-05-07T10:00:00Z"), ZoneId.systemDefault());
 
   private final LocalDate today = LocalDate.now(CLOCK);
   private Path filePath;
@@ -56,7 +58,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void test_default_data() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     var data = storage.tryRead();
     assertThat(filePath).doesNotExist();
@@ -74,7 +76,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_update_data() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryRead();
     assertThat(filePath).doesNotExist();
@@ -90,7 +92,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_installTime() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(null);
@@ -105,7 +107,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_numDays() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     var tenDaysAgo = OffsetDateTime.now(CLOCK).minusDays(10);
 
@@ -123,7 +125,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_dates_in_future() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(OffsetDateTime.now(CLOCK).plusDays(5));
@@ -140,7 +142,7 @@ class TelemetryLocalStorageManagerTests {
   @Test
   void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryRead())
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class), CLOCK).tryRead())
       .doesNotThrowAnyException();
 
   }
@@ -148,13 +150,13 @@ class TelemetryLocalStorageManagerTests {
   @Test
   void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryUpdateAtomically(d -> {}))
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class), CLOCK).tryUpdateAtomically(d -> {}))
       .doesNotThrowAnyException();
   }
 
   @Test
   void should_increment_open_hotspot_in_browser() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
@@ -165,7 +167,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_hotspot_status_changed() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
@@ -177,7 +179,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_issue_status_changed() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
 
     storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey1"));
     storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey2"));
@@ -189,7 +191,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_issue_ai_fixable() {
-    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class), CLOCK);
     var uuid1 = UUID.randomUUID();
     var uuid2 = UUID.randomUUID();
     var uuid3 = UUID.randomUUID();
@@ -206,7 +208,7 @@ class TelemetryLocalStorageManagerTests {
     var expectedInstallTime = OffsetDateTime.now(CLOCK);
     when(initializeParams.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(expectedInstallTime, 42, false));
 
-    var storageManager = new TelemetryLocalStorageManager(filePath, initializeParams);
+    var storageManager = new TelemetryLocalStorageManager(filePath, initializeParams, CLOCK);
 
     var localStorage = storageManager.tryRead();
     var actualInstallTime = localStorage.installTime();

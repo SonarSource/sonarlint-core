@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
@@ -35,10 +36,12 @@ public class TelemetryManager implements TelemetryUserSetting {
 
   private final TelemetryLocalStorageManager storageManager;
   private final TelemetryHttpClient client;
+  private final Clock clock;
 
-  TelemetryManager(TelemetryLocalStorageManager storageManager, TelemetryHttpClient client) {
+  TelemetryManager(TelemetryLocalStorageManager storageManager, TelemetryHttpClient client, Clock clock) {
     this.storageManager = storageManager;
     this.client = client;
+    this.clock = clock;
   }
 
   void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
@@ -50,8 +53,8 @@ public class TelemetryManager implements TelemetryUserSetting {
     });
   }
 
-  private static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime lastUploadTime) {
-    return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
+  private boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime lastUploadTime) {
+    return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD, clock);
   }
 
   private void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes, TelemetryLocalStorage localStorage) {
