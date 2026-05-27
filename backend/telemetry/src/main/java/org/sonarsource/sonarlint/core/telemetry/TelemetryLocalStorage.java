@@ -111,7 +111,8 @@ public class TelemetryLocalStorage implements LocalStorage {
   private final Map<String, String> campaignsResolutions;
   private int supportedLanguagesPanelOpenedCount;
   private int supportedLanguagesPanelCtaClickedCount;
-  // transient: not serialized; on Gson read, set explicitly via setClock after deserialization.
+  // transient tells Gson to skip this field on serialization/deserialization; setClock re-injects it after a read.
+  @SuppressWarnings("java:S2065")
   private transient Clock clock;
 
   TelemetryLocalStorage() {
@@ -357,17 +358,17 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   @Override
   public void validateAndMigrate() {
-    var clock = clockOrDefault();
-    var today = LocalDate.now(clock);
+    var effectiveClock = clockOrDefault();
+    var today = LocalDate.now(effectiveClock);
 
     // migrate deprecated installDate
     if (installDate != null && (installTime == null || installTime.toLocalDate().isAfter(installDate))) {
-      setInstallTime(installDate.atTime(OffsetTime.now(clock)));
+      setInstallTime(installDate.atTime(OffsetTime.now(effectiveClock)));
     }
 
     // fix install time if necessary
-    if (installTime == null || installTime.isAfter(OffsetDateTime.now(clock))) {
-      setInstallTime(OffsetDateTime.now(clock));
+    if (installTime == null || installTime.isAfter(OffsetDateTime.now(effectiveClock))) {
+      setInstallTime(OffsetDateTime.now(effectiveClock));
     }
 
     // calculate use days

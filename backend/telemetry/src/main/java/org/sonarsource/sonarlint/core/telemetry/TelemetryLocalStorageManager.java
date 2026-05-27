@@ -44,12 +44,16 @@ public class TelemetryLocalStorageManager {
 
   public TelemetryLocalStorageManager(@Qualifier("telemetryPath") Path telemetryPath, InitializeParams initializeParams, Clock clock) {
     this.clock = clock;
-    fileStorageManager = new FileStorageManager<>(telemetryPath, this::newStorage, TelemetryLocalStorage.class);
+    fileStorageManager = new FileStorageManager<>(telemetryPath, this::newStorage, TelemetryLocalStorage.class, this::injectClock);
     this.telemetryMigration = initializeParams.getTelemetryMigration();
   }
 
   private TelemetryLocalStorage newStorage() {
     return new TelemetryLocalStorage(clock);
+  }
+
+  private void injectClock(TelemetryLocalStorage storage) {
+    storage.setClock(clock);
   }
 
   @VisibleForTesting
@@ -59,7 +63,6 @@ public class TelemetryLocalStorageManager {
 
   private TelemetryLocalStorage getStorage() {
     var inMemoryStorage = fileStorageManager.getStorage();
-    inMemoryStorage.setClock(clock);
     applyTelemetryMigration(inMemoryStorage);
     return inMemoryStorage;
   }
@@ -81,10 +84,7 @@ public class TelemetryLocalStorageManager {
   }
 
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
-    fileStorageManager.tryUpdateAtomically(storage -> {
-      storage.setClock(clock);
-      updater.accept(storage);
-    });
+    fileStorageManager.tryUpdateAtomically(updater);
   }
 
   public LocalDateTime lastUploadTime() {

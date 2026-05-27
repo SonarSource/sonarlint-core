@@ -35,6 +35,7 @@ import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateAdapter;
 import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateTimeAdapter;
@@ -48,10 +49,16 @@ public class FileStorageManager<T extends LocalStorage> {
   private final Gson gson;
   private final Class<T> localStorageType;
   private final Supplier<T> defaultSupplier;
+  @Nullable
+  private final Consumer<T> postDeserialize;
   private T inMemoryStorage;
   private FileTime lastModified;
 
   public FileStorageManager(Path path, Supplier<T> defaultSupplier, Class<T> localStorageType) {
+    this(path, defaultSupplier, localStorageType, null);
+  }
+
+  public FileStorageManager(Path path, Supplier<T> defaultSupplier, Class<T> localStorageType, @Nullable Consumer<T> postDeserialize) {
     this.path = path;
     this.gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
@@ -60,6 +67,7 @@ public class FileStorageManager<T extends LocalStorage> {
       .create();
     this.localStorageType = localStorageType;
     this.defaultSupplier = defaultSupplier;
+    this.postDeserialize = postDeserialize;
     this.inMemoryStorage = defaultSupplier.get();
   }
 
@@ -139,6 +147,9 @@ public class FileStorageManager<T extends LocalStorage> {
       var decoded = Base64.getDecoder().decode(buf.array());
       var oldJson = new String(decoded, StandardCharsets.UTF_8);
       var localStorage = gson.fromJson(oldJson, localStorageType);
+      if (postDeserialize != null) {
+        postDeserialize.accept(localStorage);
+      }
       localStorage.validateAndMigrate();
 
       return localStorage;
