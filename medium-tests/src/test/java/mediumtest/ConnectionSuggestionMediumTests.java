@@ -434,7 +434,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight()).isNotNull();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 
@@ -462,7 +461,6 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.getConnectionSuggestion().getRight()).isNotNull();
     assertThat(connectionSuggestion.getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
     assertThat(connectionSuggestion.getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
-    assertThat(connectionSuggestion.isFromSharedConfiguration()).isTrue();
     assertThat(connectionSuggestion.getOrigin()).isEqualTo(BindingSuggestionOrigin.SHARED_CONFIGURATION);
   }
 

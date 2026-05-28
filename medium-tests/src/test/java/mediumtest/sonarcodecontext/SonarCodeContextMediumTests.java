@@ -112,7 +112,7 @@ class SonarCodeContextMediumTests {
 
     var newProjectKey = PROJECT_KEY + "-updated";
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(CONNECTION_ID, newProjectKey, true), null, null));
+      new BindingConfigurationDto(CONNECTION_ID, newProjectKey, true)));
 
     await().untilAsserted(() -> assertThat(Files.exists(sonarMd)).isTrue());
   }

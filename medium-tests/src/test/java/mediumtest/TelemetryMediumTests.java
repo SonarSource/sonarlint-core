@@ -560,15 +560,6 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
-  void it_should_record_addedImportedBindings(SonarLintTestHarness harness) {
-    var backend = setupClientAndBackend(harness);
-
-    backend.getTelemetryService().addedImportedBindings();
-
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getImportedAddedBindingsCount()).isEqualTo(1));
-  }
-
-  @SonarLintTest
   void it_should_record_addedAutomaticBindings(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
