@@ -30,11 +30,14 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class was removed from the plugin API but still used in older CFamily analyzer
  */
+/**
+ * @deprecated since 6.0
+ */
 @ScannerSide
 @ServerSide
 @ComputeEngineSide
 @Immutable
-@Deprecated
+@Deprecated(since = "6.0")
 public class SonarQubeVersion {
 
   private final Version version;

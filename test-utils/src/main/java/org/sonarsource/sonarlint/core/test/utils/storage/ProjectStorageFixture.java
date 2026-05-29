@@ -73,6 +73,9 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
 public class ProjectStorageFixture {
 
+  private ProjectStorageFixture() {
+  }
+
   public static class ProjectStorageBuilder {
     private final String connectionId;
     private final String projectKey;
