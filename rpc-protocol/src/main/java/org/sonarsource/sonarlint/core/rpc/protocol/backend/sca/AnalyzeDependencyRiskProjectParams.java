@@ -19,51 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
-
 public class AnalyzeDependencyRiskProjectParams {
   private final String configurationScopeId;
-  @Nullable
-  private final List<String> excludedPaths;
-  @Nullable
-  private final Map<String, String> scannerProperties;
-  private final Boolean scmExclusionEnabled;
-  private final Boolean debug;
 
   public AnalyzeDependencyRiskProjectParams(String configurationScopeId) {
-    this(configurationScopeId, List.of(), Map.of(), null, null);
-  }
-
-  public AnalyzeDependencyRiskProjectParams(String configurationScopeId, @Nullable List<String> excludedPaths, @Nullable Map<String, String> scannerProperties,
-    @Nullable Boolean scmExclusionEnabled, @Nullable Boolean debug) {
     this.configurationScopeId = configurationScopeId;
-    this.excludedPaths = excludedPaths;
-    this.scannerProperties = scannerProperties;
-    this.scmExclusionEnabled = scmExclusionEnabled;
-    this.debug = debug;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
-  }
-
-  public List<String> getExcludedPaths() {
-    return excludedPaths == null ? List.of() : excludedPaths;
-  }
-
-  public Map<String, String> getScannerProperties() {
-    return scannerProperties == null ? Map.of() : scannerProperties;
-  }
-
-  @Nullable
-  public Boolean getScmExclusionEnabled() {
-    return scmExclusionEnabled;
-  }
-
-  @Nullable
-  public Boolean getDebug() {
-    return debug;
   }
 }

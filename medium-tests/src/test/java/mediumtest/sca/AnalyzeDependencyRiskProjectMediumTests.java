@@ -31,14 +31,15 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
+import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.RequestFailed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -48,6 +49,7 @@ class AnalyzeDependencyRiskProjectMediumTests {
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   private static final String CONNECTION_ID = "connectionId";
   private static final String PROJECT_KEY = "projectKey";
+  private static final String SCA_ANALYSIS_WORK_DIR_SUBPATH = "sca-scanner/work";
 
   @SystemStub
   SystemProperties systemProperties;
@@ -91,7 +93,7 @@ class AnalyzeDependencyRiskProjectMediumTests {
       .isInstanceOf(CompletionException.class)
       .hasCauseInstanceOf(ResponseErrorException.class);
     var responseErrorException = (ResponseErrorException) throwable.getCause();
-    assertThat(responseErrorException.getResponseError().getCode()).isEqualTo(SonarLintRpcErrorCode.INVALID_ARGUMENT);
+    assertThat(responseErrorException.getResponseError().getCode()).isEqualTo(RequestFailed.getValue());
     assertThat(hasScaAnalysisWorkDir(backend)).isFalse();
   }
 
@@ -100,7 +102,7 @@ class AnalyzeDependencyRiskProjectMediumTests {
   }
 
   private static boolean hasScaAnalysisWorkDir(SonarLintTestRpcServer backend) throws IOException {
-    var scaWorkDir = backend.getWorkDir().resolve("sca-scanner/work");
+    var scaWorkDir = backend.getWorkDir().resolve(SCA_ANALYSIS_WORK_DIR_SUBPATH);
     if (!Files.isDirectory(scaWorkDir)) {
       return false;
     }

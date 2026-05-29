@@ -19,194 +19,160 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
+import com.sonar.sca.scanner.ScaScannerOptions;
 import com.sonar.sca.scanner.ScaScannerOptionsBuilder;
+import com.sonar.sca.scanner.analyzeproject.AnalyzeProjectOptions;
 import com.sonar.sca.scanner.analyzeproject.AnalyzeProjectOptionsBuilder;
-import com.sonar.sca.scanner.analyzeproject.response.AnalysisErrorResource;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectIssue;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectRelease;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectResponse;
-import com.sonar.sca.scanner.analyzeproject.response.VersionOption;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.CheckForNull;
+import java.util.UUID;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.Strings;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.SonarQubeClientManager;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectErrorDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectReleaseDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse.AnalyzeDependencyRiskProjectVersionOptionDto;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
+import org.sonarsource.sonarlint.core.sca.ScaAnalysisContextResolver.AnalysisContext;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 
+/**
+ * Orchestrates a manual SCA analysis for a configuration scope and returns a
+ * {@link AnalyzeDependencyRiskProjectResponse} whose {@code dependencyRisks} field is the merge of server-tracked
+ * dependency risks (from {@link DependencyRiskService#listAll}) and locally-detected risks.
+ * <p>
+ * The merge key is {@code localScannerIssue.key == serverDependencyRisk.id.toString()} (confirmed during PR review).
+ * Local-only entries without a server UUID are kept with a {@code null} id (see {@link DependencyRiskDtoMapper}).
+ * </p>
+ */
 public class ScaProjectAnalysisService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String SCA_DOWNLOAD_BASE_URL_PROPERTY = "sonarlint.sca.downloadBaseUrl";
-  private static final String SONARCLOUD_SCA_SCANNER_CDN_URL = "https://scanner.sonarcloud.io/tidelift-cli";
+  private static final String SCA_SCANNER_CACHE_SUBPATH = "sca-scanner/cache";
+  private static final String SCA_SCANNER_WORK_SUBPATH = "sca-scanner/work";
 
-  private final ConfigurationRepository configurationRepository;
-  private final ConnectionConfigurationRepository connectionRepository;
-  private final SonarQubeClientManager sonarQubeClientManager;
-  private final ClientFileSystemService clientFileSystemService;
-  private final StorageService storageService;
+  private final ScaAnalysisContextResolver contextResolver;
   private final UserPaths userPaths;
   private final ScaScannerFactory scaScannerFactory;
+  private final DependencyRiskService dependencyRiskService;
+  private final DependencyRiskDtoMapper dependencyRiskDtoMapper;
 
-  public ScaProjectAnalysisService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    SonarQubeClientManager sonarQubeClientManager, ClientFileSystemService clientFileSystemService, StorageService storageService, UserPaths userPaths,
-    ScaScannerFactory scaScannerFactory) {
-    this.configurationRepository = configurationRepository;
-    this.connectionRepository = connectionRepository;
-    this.sonarQubeClientManager = sonarQubeClientManager;
-    this.clientFileSystemService = clientFileSystemService;
-    this.storageService = storageService;
+  public ScaProjectAnalysisService(ScaAnalysisContextResolver contextResolver, UserPaths userPaths, ScaScannerFactory scaScannerFactory,
+    DependencyRiskService dependencyRiskService, DependencyRiskDtoMapper dependencyRiskDtoMapper) {
+    this.contextResolver = contextResolver;
     this.userPaths = userPaths;
     this.scaScannerFactory = scaScannerFactory;
-  }
-
-  public AnalyzeDependencyRiskProjectResponse analyzeProject(AnalyzeDependencyRiskProjectParams params) {
-    return analyzeProject(params, new SonarLintCancelMonitor());
+    this.dependencyRiskService = dependencyRiskService;
+    this.dependencyRiskDtoMapper = dependencyRiskDtoMapper;
   }
 
   public AnalyzeDependencyRiskProjectResponse analyzeProject(AnalyzeDependencyRiskProjectParams params, SonarLintCancelMonitor cancelMonitor) {
     var configurationScopeId = params.getConfigurationScopeId();
-    var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    var connection = connectionRepository.getConnectionById(binding.connectionId());
-    if (connection == null) {
-      throw new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND,
-        "The provided configuration scope is bound to an unknown connection: " + binding.connectionId(), binding.connectionId()));
-    }
-    var baseDir = clientFileSystemService.getBaseDir(configurationScopeId);
-    if (baseDir == null) {
-      throw invalidArgument("No base directory is available for configuration scope '" + configurationScopeId + "'");
-    }
-    var endpointParams = connection.getEndpointParams();
-    var apiBaseUrl = toScaApiBaseUrl(endpointParams);
-    if (apiBaseUrl == null) {
-      throw invalidArgument("Missing SCA API base URL");
-    }
-    var downloadBaseUrl = firstNonBlank(System.getProperty(SCA_DOWNLOAD_BASE_URL_PROPERTY), toScaDownloadBaseUrl(endpointParams));
-    if (downloadBaseUrl == null) {
-      throw invalidArgument("Missing SCA scanner download base URL. Provide it in the request or with system property '" + SCA_DOWNLOAD_BASE_URL_PROPERTY + "'");
-    }
-    var sonarQubeClient = sonarQubeClientManager.getValidClientOrThrow(binding.connectionId());
-    var credentials = sonarQubeClient.getCredentials();
-    if (!credentials.isLeft()) {
-      throw invalidArgument("SCA project analysis requires token credentials");
-    }
-    var sonarToken = credentials.getLeft().getToken();
-    var sqServerVersion = endpointParams.isSonarCloud() ? null : storageService.connection(binding.connectionId()).serverInfo().read()
-      .map(info -> info.version().getName())
-      .orElse(null);
+    var context = contextResolver.resolve(configurationScopeId);
+    var localResponse = runLocalAnalysis(configurationScopeId, context);
+    var serverRisks = loadServerRisks(configurationScopeId, cancelMonitor);
+    var mergedRisks = mergeRisks(serverRisks, localResponse.releases());
+    var errors = localResponse.errors().stream().map(dependencyRiskDtoMapper::toErrorDto).toList();
+    return new AnalyzeDependencyRiskProjectResponse(mergedRisks, localResponse.parsedFiles(), errors);
+  }
+
+  private AnalyzeProjectResponse runLocalAnalysis(String configurationScopeId, AnalysisContext context) {
     Path workDir = null;
-    var active = new AtomicBoolean(true);
     try {
       workDir = createWorkDir();
-      LOG.info("Running manual SCA project analysis for configuration scope '{}'", configurationScopeId);
-      cancelMonitor.checkCanceled();
-      var analysisThread = Thread.currentThread();
-      cancelMonitor.onCancel(() -> {
-        if (active.get()) {
-          analysisThread.interrupt();
-        }
-      });
-      var scanner = scaScannerFactory.create(ScaScannerOptionsBuilder.builder()
-        .setApiBaseUrl(apiBaseUrl)
-        .setDownloadBaseUrl(downloadBaseUrl)
-        .setSonarToken(sonarToken)
-        .setCacheDir(userPaths.getWorkDir().resolve("sca-scanner/cache"))
-        .build());
-      var response = scanner.analyzeProject(AnalyzeProjectOptionsBuilder.builder()
-        .setProjectKey(binding.sonarProjectKey())
-        .setBaseDir(baseDir)
-        .setWorkDir(workDir)
-        .setExcludedPaths(List.copyOf(params.getExcludedPaths()))
-        .setScmExclusionEnabled(params.getScmExclusionEnabled() == null || params.getScmExclusionEnabled())
-        .setScannerProperties(Map.copyOf(params.getScannerProperties()))
-        .setInsideSqc(false)
-        .setSqServerVersion(sqServerVersion)
-        .setDebug(Boolean.TRUE.equals(params.getDebug()))
-        .build());
-      if (cancelMonitor.isCanceled()) {
-        Thread.interrupted();
-        throw new CancellationException();
-      }
-      return toDto(response);
+      LOG.info("Running manual dependency risk analysis for configuration scope '{}'", configurationScopeId);
+      var scanner = scaScannerFactory.create(buildScannerOptions(context));
+      return scanner.analyzeProject(buildAnalyzeProjectOptions(context, workDir));
     } catch (IOException e) {
-      if (cancelMonitor.isCanceled()) {
-        Thread.interrupted();
-        throw new CancellationException();
-      }
-      throw invalidArgument("SCA project analysis failed: " + e.getMessage());
-    } catch (IllegalArgumentException | IllegalStateException e) {
+      throw requestFailed("Dependency risk analysis failed: " + e.getMessage());
+    } catch (IllegalArgumentException e) {
       throw invalidArgument(e.getMessage());
+    } catch (IllegalStateException e) {
+      throw requestFailed(e.getMessage());
     } finally {
-      active.set(false);
-      if (cancelMonitor.isCanceled()) {
-        Thread.interrupted();
-      }
       deleteWorkDir(workDir);
     }
   }
 
-  private static AnalyzeDependencyRiskProjectResponse toDto(AnalyzeProjectResponse response) {
-    return new AnalyzeDependencyRiskProjectResponse(
-      response.releases().stream().map(ScaProjectAnalysisService::toDto).toList(),
-      response.parsedFiles(),
-      response.errors().stream().map(ScaProjectAnalysisService::toDto).toList());
+  private ScaScannerOptions buildScannerOptions(AnalysisContext context) {
+    return ScaScannerOptionsBuilder.builder()
+      .setApiBaseUrl(context.endpoint().apiBaseUrl())
+      .setDownloadBaseUrl(context.endpoint().downloadBaseUrl())
+      .setSonarToken(context.sonarToken())
+      .setCacheDir(userPaths.getStorageRoot().resolve(SCA_SCANNER_CACHE_SUBPATH))
+      .build();
   }
 
-  private static AnalyzeDependencyRiskProjectReleaseDto toDto(AnalyzeProjectRelease release) {
-    return new AnalyzeDependencyRiskProjectReleaseDto(
-      new AnalyzeDependencyRiskProjectReleaseDto.PackageDto(release.packageUrl(), release.packageManager(), release.packageName(), release.version(), release.licenseExpression()),
-      new AnalyzeDependencyRiskProjectReleaseDto.StatusDto(release.known(), release.knownPackage(), release.newlyIntroduced()),
-      new AnalyzeDependencyRiskProjectReleaseDto.DependencyDto(release.dependencyFilePaths(), release.dependencyChains()),
-      release.key(),
-      release.issues().stream().map(ScaProjectAnalysisService::toDto).toList());
+  private static AnalyzeProjectOptions buildAnalyzeProjectOptions(AnalysisContext context, Path workDir) {
+    return AnalyzeProjectOptionsBuilder.builder()
+      .setProjectKey(context.binding().sonarProjectKey())
+      .setBaseDir(context.baseDir())
+      .setWorkDir(workDir)
+      .setScannerProperties(Map.copyOf(context.scannerProperties()))
+      .setInsideSqc(false)
+      .setSqServerVersion(context.sqServerVersion())
+      .build();
   }
 
-  private static AnalyzeDependencyRiskProjectIssueDto toDto(AnalyzeProjectIssue issue) {
-    return new AnalyzeDependencyRiskProjectIssueDto(
-      new AnalyzeDependencyRiskProjectIssueDto.ClassificationDto(
-        issue.severity(), issue.showIncreasedSeverityWarning(), issue.type().name(), issue.quality().name(), issue.status()),
-      new AnalyzeDependencyRiskProjectIssueDto.VulnerabilityDto(issue.vulnerabilityId(), issue.cweIds(), issue.cvssScore(), issue.spdxLicenseId(),
-        issue.versionOptions() == null ? null : issue.versionOptions().stream().map(ScaProjectAnalysisService::toDto).toList()),
-      issue.key());
+  private List<DependencyRiskDto> loadServerRisks(String configurationScopeId, SonarLintCancelMonitor cancelMonitor) {
+    return dependencyRiskService.listAll(configurationScopeId, false, cancelMonitor);
   }
 
-  private static AnalyzeDependencyRiskProjectVersionOptionDto toDto(VersionOption versionOption) {
-    return new AnalyzeDependencyRiskProjectVersionOptionDto(
-      versionOption.version(),
-      versionOption.vulnerabilityIds(),
-      versionOption.prerelease(),
-      versionOption.fixLevel(),
-      versionOption.descriptionCode());
+  private List<DependencyRiskDto> mergeRisks(List<DependencyRiskDto> serverRisks, List<AnalyzeProjectRelease> localReleases) {
+    var serverRiskById = new HashMap<UUID, DependencyRiskDto>();
+    serverRisks.forEach(risk -> serverRiskById.put(risk.getId(), risk));
+
+    var merged = new ArrayList<DependencyRiskDto>();
+    var matchedServerIds = new HashSet<UUID>();
+
+    for (var release : localReleases) {
+      for (var issue : release.issues()) {
+        var serverRisk = lookupServerRisk(serverRiskById, issue);
+        if (serverRisk != null) {
+          merged.add(dependencyRiskDtoMapper.enrichServerDto(serverRisk, release, issue));
+          matchedServerIds.add(serverRisk.getId());
+        } else {
+          dependencyRiskDtoMapper.toLocalOnlyDto(release, issue).ifPresent(merged::add);
+        }
+      }
+    }
+
+    // Append server-only risks
+    for (var serverRisk : serverRisks) {
+      if (!matchedServerIds.contains(serverRisk.getId())) {
+        merged.add(serverRisk);
+      }
+    }
+    return merged;
   }
 
-  private static AnalyzeDependencyRiskProjectErrorDto toDto(AnalysisErrorResource error) {
-    return new AnalyzeDependencyRiskProjectErrorDto(error.id(), error.code().name(), error.path(), error.message());
+  @Nullable
+  private static DependencyRiskDto lookupServerRisk(Map<UUID, DependencyRiskDto> byId, AnalyzeProjectIssue issue) {
+    var key = issue.key();
+    if (key == null || key.isBlank()) {
+      return null;
+    }
+    try {
+      return byId.get(UUID.fromString(key));
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
   }
 
   private Path createWorkDir() throws IOException {
-    var scaWorkDir = userPaths.getWorkDir().resolve("sca-scanner/work");
+    var scaWorkDir = userPaths.getWorkDir().resolve(SCA_SCANNER_WORK_SUBPATH);
     Files.createDirectories(scaWorkDir);
     LOG.debug("Using SCA scanner work directory: {}", scaWorkDir);
     return Files.createTempDirectory(scaWorkDir, "analyze-project-");
@@ -222,34 +188,16 @@ public class ScaProjectAnalysisService {
     }
   }
 
-  @CheckForNull
-  private static String toScaApiBaseUrl(EndpointParams endpointParams) {
-    if (endpointParams.isSonarCloud()) {
-      var apiBaseUrl = endpointParams.getApiBaseUrl() == null ? endpointParams.getBaseUrl() : endpointParams.getApiBaseUrl();
-      if (apiBaseUrl == null) {
-        return null;
-      }
-      return ServerApiHelper.concat(apiBaseUrl, "/sca");
-    }
-    return ServerApiHelper.concat(endpointParams.getBaseUrl(), "/api/v2/sca");
-  }
-
-  private static String toScaDownloadBaseUrl(EndpointParams endpointParams) {
-    if (endpointParams.isSonarCloud()) {
-      return SONARCLOUD_SCA_SCANNER_CDN_URL;
-    }
-    return ServerApiHelper.concat(endpointParams.getBaseUrl(), "/api/v2/sca/clis");
-  }
-
-  @CheckForNull
-  private static String firstNonBlank(@Nullable String first, @Nullable String second) {
-    if (first != null && !first.isBlank()) {
-      return first;
-    }
-    return second != null && !second.isBlank() ? second : null;
-  }
-
   private static ResponseErrorException invalidArgument(String message) {
-    return new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, Strings.CS.removeEnd(message, "."), null));
+    return new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, message, null));
+  }
+
+  private static ResponseErrorException requestFailed(String message) {
+    return new ResponseErrorException(new ResponseError(ResponseErrorCode.RequestFailed, message, null));
   }
 }
+
+
+
+
+

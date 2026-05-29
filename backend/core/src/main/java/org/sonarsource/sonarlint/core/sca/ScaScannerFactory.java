@@ -27,13 +27,13 @@ import java.io.IOException;
 
 public class ScaScannerFactory {
 
-  public Scanner create(ScaScannerOptions options) {
+  public ScaProjectScanner create(ScaScannerOptions options) {
     var scanner = new ScaScanner(options);
     return scanner::analyzeProject;
   }
 
   @FunctionalInterface
-  public interface Scanner {
+  public interface ScaProjectScanner {
     AnalyzeProjectResponse analyzeProject(AnalyzeProjectOptions options) throws IOException;
   }
 }

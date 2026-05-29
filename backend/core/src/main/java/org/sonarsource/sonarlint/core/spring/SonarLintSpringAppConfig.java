@@ -113,7 +113,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
+import org.sonarsource.sonarlint.core.sca.DependencyRiskDtoMapper;
 import org.sonarsource.sonarlint.core.sca.DependencyRiskService;
+import org.sonarsource.sonarlint.core.sca.ScaAnalysisContextResolver;
 import org.sonarsource.sonarlint.core.sca.ScaProjectAnalysisService;
 import org.sonarsource.sonarlint.core.sca.ScaScannerFactory;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
@@ -228,7 +230,9 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ScaSynchronizationService.class,
   DependencyRiskService.class,
   ScaScannerFactory.class,
+  ScaAnalysisContextResolver.class,
   ScaProjectAnalysisService.class,
+  DependencyRiskDtoMapper.class,
   ToggleAutomaticAnalysisRequestHandler.class,
   AnalyzeFileListRequestHandler.class,
   AiAgentService.class,

@@ -33,6 +33,10 @@ public interface DependencyRiskRpcService {
   @JsonRequest
   CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params);
 
+  /**
+   * Runs an on-demand dependency risk analysis for the given configuration scope and returns the resulting dependency
+   * risks together with local-analysis diagnostics.
+   */
   @JsonRequest
   CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params);
 

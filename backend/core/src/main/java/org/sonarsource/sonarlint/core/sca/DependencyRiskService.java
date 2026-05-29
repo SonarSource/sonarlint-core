@@ -147,19 +147,20 @@ public class DependencyRiskService {
   }
 
   private static DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
-    return new DependencyRiskDto(
-      serverDependencyRisk.key(),
-      DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
-      DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
-      DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()),
-      DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
-      serverDependencyRisk.packageName(),
-      serverDependencyRisk.packageVersion(),
-      serverDependencyRisk.vulnerabilityId(),
-      serverDependencyRisk.cvssScore(),
-      serverDependencyRisk.transitions().stream()
+    return DependencyRiskDto.builder()
+      .id(serverDependencyRisk.key())
+      .type(DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()))
+      .severity(DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()))
+      .quality(DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()))
+      .status(DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()))
+      .packageName(serverDependencyRisk.packageName())
+      .packageVersion(serverDependencyRisk.packageVersion())
+      .vulnerabilityId(serverDependencyRisk.vulnerabilityId())
+      .cvssScore(serverDependencyRisk.cvssScore())
+      .transitions(serverDependencyRisk.transitions().stream()
         .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
-        .toList());
+        .toList())
+      .build();
   }
 
   public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,

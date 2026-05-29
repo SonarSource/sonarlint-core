@@ -20,22 +20,37 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
+/**
+ * Response of an on-demand SCA project analysis.
+ * <p>
+ * {@link #getDependencyRisks()} contains the merged view of server-side tracked dependency risks (as returned by
+ * {@code listAll}) and locally-detected risks. Each {@link DependencyRiskDto} carries {@code matched}/{@code localOnly}
+ * flags and an optional {@link DependencyRiskDto.LocalAnalysisDetailsDto} block with local-analysis enrichment
+ * (dependency chains, dependency file paths, upgrade {@code versionOptions}, CWE ids, etc.).
+ * </p>
+ * <p>
+ * {@link #getParsedFiles()} and {@link #getErrors()} expose local-analysis diagnostics that have no equivalent in the
+ * server-tracked model.
+ * </p>
+ */
 public class AnalyzeDependencyRiskProjectResponse {
-  private final List<AnalyzeDependencyRiskProjectReleaseDto> releases;
+  private final List<DependencyRiskDto> dependencyRisks;
   private final List<String> parsedFiles;
   private final List<AnalyzeDependencyRiskProjectErrorDto> errors;
 
-  public AnalyzeDependencyRiskProjectResponse(List<AnalyzeDependencyRiskProjectReleaseDto> releases, List<String> parsedFiles,
+  public AnalyzeDependencyRiskProjectResponse(List<DependencyRiskDto> dependencyRisks, List<String> parsedFiles,
     List<AnalyzeDependencyRiskProjectErrorDto> errors) {
-    this.releases = releases;
+    this.dependencyRisks = dependencyRisks;
     this.parsedFiles = parsedFiles;
     this.errors = errors;
   }
 
-  public List<AnalyzeDependencyRiskProjectReleaseDto> getReleases() {
-    return releases;
+  public List<DependencyRiskDto> getDependencyRisks() {
+    return dependencyRisks;
   }
 
   public List<String> getParsedFiles() {
@@ -44,290 +59,6 @@ public class AnalyzeDependencyRiskProjectResponse {
 
   public List<AnalyzeDependencyRiskProjectErrorDto> getErrors() {
     return errors;
-  }
-
-  public static class AnalyzeDependencyRiskProjectReleaseDto {
-    private final String key;
-    private final String packageUrl;
-    private final String packageManager;
-    private final String packageName;
-    private final String version;
-    @Nullable
-    private final String licenseExpression;
-    private final boolean known;
-    private final boolean knownPackage;
-    private final boolean newlyIntroduced;
-    private final List<AnalyzeDependencyRiskProjectIssueDto> issues;
-    private final List<String> dependencyFilePaths;
-    private final List<List<String>> dependencyChains;
-
-    public AnalyzeDependencyRiskProjectReleaseDto(PackageDto packageDto, StatusDto statusDto, DependencyDto dependencyDto, String key,
-      List<AnalyzeDependencyRiskProjectIssueDto> issues) {
-      this.key = key;
-      this.packageUrl = packageDto.packageUrl;
-      this.packageManager = packageDto.packageManager;
-      this.packageName = packageDto.packageName;
-      this.version = packageDto.version;
-      this.licenseExpression = packageDto.licenseExpression;
-      this.known = statusDto.known;
-      this.knownPackage = statusDto.knownPackage;
-      this.newlyIntroduced = statusDto.newlyIntroduced;
-      this.issues = issues;
-      this.dependencyFilePaths = dependencyDto.dependencyFilePaths;
-      this.dependencyChains = dependencyDto.dependencyChains;
-    }
-
-    public static class PackageDto {
-      private final String packageUrl;
-      private final String packageManager;
-      private final String packageName;
-      private final String version;
-      @Nullable
-      private final String licenseExpression;
-
-      public PackageDto(String packageUrl, String packageManager, String packageName, String version, @Nullable String licenseExpression) {
-        this.packageUrl = packageUrl;
-        this.packageManager = packageManager;
-        this.packageName = packageName;
-        this.version = version;
-        this.licenseExpression = licenseExpression;
-      }
-    }
-
-    public static class StatusDto {
-      private final boolean known;
-      private final boolean knownPackage;
-      private final boolean newlyIntroduced;
-
-      public StatusDto(boolean known, boolean knownPackage, boolean newlyIntroduced) {
-        this.known = known;
-        this.knownPackage = knownPackage;
-        this.newlyIntroduced = newlyIntroduced;
-      }
-    }
-
-    public static class DependencyDto {
-      private final List<String> dependencyFilePaths;
-      private final List<List<String>> dependencyChains;
-
-      public DependencyDto(List<String> dependencyFilePaths, List<List<String>> dependencyChains) {
-        this.dependencyFilePaths = dependencyFilePaths;
-        this.dependencyChains = dependencyChains;
-      }
-    }
-
-    public String getKey() {
-      return key;
-    }
-
-    public String getPackageUrl() {
-      return packageUrl;
-    }
-
-    public String getPackageManager() {
-      return packageManager;
-    }
-
-    public String getPackageName() {
-      return packageName;
-    }
-
-    public String getVersion() {
-      return version;
-    }
-
-    @Nullable
-    public String getLicenseExpression() {
-      return licenseExpression;
-    }
-
-    public boolean isKnown() {
-      return known;
-    }
-
-    public boolean isKnownPackage() {
-      return knownPackage;
-    }
-
-    public boolean isNewlyIntroduced() {
-      return newlyIntroduced;
-    }
-
-    public List<AnalyzeDependencyRiskProjectIssueDto> getIssues() {
-      return issues;
-    }
-
-    public List<String> getDependencyFilePaths() {
-      return dependencyFilePaths;
-    }
-
-    public List<List<String>> getDependencyChains() {
-      return dependencyChains;
-    }
-  }
-
-  public static class AnalyzeDependencyRiskProjectIssueDto {
-    @Nullable
-    private final String key;
-    private final String severity;
-    @Nullable
-    private final Boolean showIncreasedSeverityWarning;
-    private final String type;
-    private final String quality;
-    @Nullable
-    private final String status;
-    @Nullable
-    private final String vulnerabilityId;
-    @Nullable
-    private final List<String> cweIds;
-    @Nullable
-    private final String cvssScore;
-    @Nullable
-    private final String spdxLicenseId;
-    @Nullable
-    private final List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions;
-
-    public AnalyzeDependencyRiskProjectIssueDto(ClassificationDto classification, VulnerabilityDto vulnerability, @Nullable String key) {
-      this.key = key;
-      this.severity = classification.severity;
-      this.showIncreasedSeverityWarning = classification.showIncreasedSeverityWarning;
-      this.type = classification.type;
-      this.quality = classification.quality;
-      this.status = classification.status;
-      this.vulnerabilityId = vulnerability.vulnerabilityId;
-      this.cweIds = vulnerability.cweIds;
-      this.cvssScore = vulnerability.cvssScore;
-      this.spdxLicenseId = vulnerability.spdxLicenseId;
-      this.versionOptions = vulnerability.versionOptions;
-    }
-
-    public static class ClassificationDto {
-      private final String severity;
-      @Nullable
-      private final Boolean showIncreasedSeverityWarning;
-      private final String type;
-      private final String quality;
-      @Nullable
-      private final String status;
-
-      public ClassificationDto(String severity, @Nullable Boolean showIncreasedSeverityWarning, String type, String quality, @Nullable String status) {
-        this.severity = severity;
-        this.showIncreasedSeverityWarning = showIncreasedSeverityWarning;
-        this.type = type;
-        this.quality = quality;
-        this.status = status;
-      }
-    }
-
-    public static class VulnerabilityDto {
-      @Nullable
-      private final String vulnerabilityId;
-      @Nullable
-      private final List<String> cweIds;
-      @Nullable
-      private final String cvssScore;
-      @Nullable
-      private final String spdxLicenseId;
-      @Nullable
-      private final List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions;
-
-      public VulnerabilityDto(@Nullable String vulnerabilityId, @Nullable List<String> cweIds, @Nullable String cvssScore, @Nullable String spdxLicenseId,
-        @Nullable List<AnalyzeDependencyRiskProjectVersionOptionDto> versionOptions) {
-        this.vulnerabilityId = vulnerabilityId;
-        this.cweIds = cweIds;
-        this.cvssScore = cvssScore;
-        this.spdxLicenseId = spdxLicenseId;
-        this.versionOptions = versionOptions;
-      }
-    }
-
-    @Nullable
-    public String getKey() {
-      return key;
-    }
-
-    public String getSeverity() {
-      return severity;
-    }
-
-    @Nullable
-    public Boolean getShowIncreasedSeverityWarning() {
-      return showIncreasedSeverityWarning;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public String getQuality() {
-      return quality;
-    }
-
-    @Nullable
-    public String getStatus() {
-      return status;
-    }
-
-    @Nullable
-    public String getVulnerabilityId() {
-      return vulnerabilityId;
-    }
-
-    @Nullable
-    public List<String> getCweIds() {
-      return cweIds;
-    }
-
-    @Nullable
-    public String getCvssScore() {
-      return cvssScore;
-    }
-
-    @Nullable
-    public String getSpdxLicenseId() {
-      return spdxLicenseId;
-    }
-
-    @Nullable
-    public List<AnalyzeDependencyRiskProjectVersionOptionDto> getVersionOptions() {
-      return versionOptions;
-    }
-  }
-
-  public static class AnalyzeDependencyRiskProjectVersionOptionDto {
-    private final String version;
-    private final List<String> vulnerabilityIds;
-    private final boolean prerelease;
-    private final String fixLevel;
-    private final String descriptionCode;
-
-    public AnalyzeDependencyRiskProjectVersionOptionDto(String version, List<String> vulnerabilityIds, boolean prerelease, String fixLevel, String descriptionCode) {
-      this.version = version;
-      this.vulnerabilityIds = vulnerabilityIds;
-      this.prerelease = prerelease;
-      this.fixLevel = fixLevel;
-      this.descriptionCode = descriptionCode;
-    }
-
-    public String getVersion() {
-      return version;
-    }
-
-    public List<String> getVulnerabilityIds() {
-      return vulnerabilityIds;
-    }
-
-    public boolean isPrerelease() {
-      return prerelease;
-    }
-
-    public String getFixLevel() {
-      return fixLevel;
-    }
-
-    public String getDescriptionCode() {
-      return descriptionCode;
-    }
   }
 
   public static class AnalyzeDependencyRiskProjectErrorDto {
@@ -352,7 +83,7 @@ public class AnalyzeDependencyRiskProjectResponse {
       return code;
     }
 
-    @Nullable
+    @CheckForNull
     public String getPath() {
       return path;
     }
@@ -361,4 +92,5 @@ public class AnalyzeDependencyRiskProjectResponse {
       return message;
     }
   }
+
 }
