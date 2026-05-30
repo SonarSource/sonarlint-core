@@ -69,14 +69,24 @@ class DefaultAnalysisErrorTests {
   @Test
   void test_no_storage() {
     var analysisError = new DefaultAnalysisError();
-    assertThrows(NullPointerException.class, () -> analysisError.onFile(inputFile).save());
+    var error = analysisError.onFile(inputFile);
+    assertThrows(NullPointerException.class, () -> error.save());
   }
 
   @Test
   void test_validation() {
-    assertThrows(IllegalArgumentException.class, () -> new DefaultAnalysisError(storage).onFile(null));
-    assertThrows(IllegalStateException.class, () -> new DefaultAnalysisError(storage).onFile(inputFile).onFile(inputFile));
-    assertThrows(IllegalStateException.class, () -> new DefaultAnalysisError(storage).at(textPointer).at(textPointer));
-    assertThrows(NullPointerException.class, () -> new DefaultAnalysisError(storage).save());
+    var error1 = new DefaultAnalysisError(storage);
+    assertThrows(IllegalArgumentException.class, () -> error1.onFile(null));
+
+    var error2 = new DefaultAnalysisError(storage);
+    error2.onFile(inputFile);
+    assertThrows(IllegalStateException.class, () -> error2.onFile(inputFile));
+
+    var error3 = new DefaultAnalysisError(storage);
+    error3.at(textPointer);
+    assertThrows(IllegalStateException.class, () -> error3.at(textPointer));
+
+    var error4 = new DefaultAnalysisError(storage);
+    assertThrows(NullPointerException.class, error4::save);
   }
 }
