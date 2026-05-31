@@ -113,7 +113,7 @@ public class SonarLintInputFile implements InputFile {
   /**
    * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
    */
-  @Deprecated
+  @Deprecated(forRemoval = true)
   @Override
   public File file() {
     return path().toFile();
@@ -122,7 +122,7 @@ public class SonarLintInputFile implements InputFile {
   /**
    * @deprecated avoid calling this method if possible, since it may require to create a temporary copy of the file
    */
-  @Deprecated
+  @Deprecated(since = "1.0")
   @Override
   public Path path() {
     return Paths.get(clientInputFile.getPath());
