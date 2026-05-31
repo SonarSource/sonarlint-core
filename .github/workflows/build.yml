@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2026.4.11
+          version: 2026.5.15
       - uses: SonarSource/ci-github-actions/build-maven@9456e3aab93a6c6d0c459b977aaa594bda102e29 # 1.4.0
         id: build
         with:
@@ -74,7 +74,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2026.4.11
+          version: 2026.5.15
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
@@ -142,7 +142,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2026.4.11
+          version: 2026.5.15
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
@@ -214,7 +214,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2026.4.11
+          version: 2026.5.15
       - name: Setup Java ${{ matrix.customOrchestratorJavaVersion }} for Orchestrator
         if: matrix.customOrchestratorJavaVersion
         run: |
