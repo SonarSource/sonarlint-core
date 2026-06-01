@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -92,6 +93,13 @@ class BindingSuggestionProviderTests {
   void setup() {
     when(sonarProjectsCache.getTextSearchIndex(anyString(), any(SonarLintCancelMonitor.class))).thenReturn(new TextSearchIndex<>());
     logTester.clear();
+  }
+
+  @AfterEach
+  void tearDown() {
+    // Drain the provider's async executor so a queued computation from this test cannot log into the
+    // (static, shared) logTester during a later test - which otherwise breaks assertions on empty logs.
+    underTest.shutdown();
   }
 
   @Test
