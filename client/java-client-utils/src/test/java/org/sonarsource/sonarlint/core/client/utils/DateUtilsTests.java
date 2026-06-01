@@ -19,28 +19,36 @@
  */
 package org.sonarsource.sonarlint.core.client.utils;
 
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DateUtilsTests {
 
+  private static final ZoneId ZONE = ZoneId.of("UTC");
+  private static final Instant NOW = Instant.parse("2026-06-01T12:00:00Z");
+  private static final Clock CLOCK = Clock.fixed(NOW, ZONE);
+
   @Test
-  void testAge() {
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 100)).isEqualTo("few seconds ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 65_000)).isEqualTo("1 minute ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 3_600_000 - 100_000)).isEqualTo("1 hour ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 2 * 3_600_000 - 100_000)).isEqualTo("2 hours ago");
-    assertThat(DateUtils.toAge(System.currentTimeMillis() - 24 * 3_600_000 - 100_000)).isEqualTo("1 day ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(5)
-      .atZone(ZoneId.systemDefault())
-      .toInstant()
-      .toEpochMilli())).isEqualTo("5 months ago");
-    assertThat(DateUtils.toAge(LocalDateTime.now(ZoneId.systemDefault()).minusMonths(15)
-      .atZone(ZoneId.systemDefault())
-      .toInstant()
-      .toEpochMilli())).isEqualTo("1 year ago");
+  void should_format_age_relative_to_clock() {
+    assertThat(toAge(NOW.minusMillis(100))).isEqualTo("few seconds ago");
+    assertThat(toAge(NOW.minusMillis(65_000))).isEqualTo("1 minute ago");
+    assertThat(toAge(NOW.minusMillis(3_600_000 + 100_000))).isEqualTo("1 hour ago");
+    assertThat(toAge(NOW.minusMillis(2 * 3_600_000 + 100_000))).isEqualTo("2 hours ago");
+    assertThat(toAge(NOW.minusMillis(24 * 3_600_000 + 100_000))).isEqualTo("1 day ago");
+    assertThat(toAge(now().minusMonths(5).toInstant())).isEqualTo("5 months ago");
+    assertThat(toAge(now().minusMonths(15).toInstant())).isEqualTo("1 year ago");
+  }
+
+  private static ZonedDateTime now() {
+    return ZonedDateTime.ofInstant(NOW, ZONE);
+  }
+
+  private static String toAge(Instant creation) {
+    return DateUtils.toAge(creation.toEpochMilli(), CLOCK);
   }
 }
