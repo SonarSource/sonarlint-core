@@ -76,6 +76,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRiskAnalysisStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
@@ -276,6 +277,10 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void didChangeDependencyRisks(DidChangeDependencyRisksParams params);
+
+  @JsonNotification
+  default void didChangeDependencyRiskAnalysisStatus(DidChangeDependencyRiskAnalysisStatusParams params) {
+  }
 
   @JsonNotification
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);

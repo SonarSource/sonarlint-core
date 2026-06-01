@@ -84,6 +84,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRiskAnalysisStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sca.DidChangeDependencyRisksParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
@@ -364,6 +365,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void didChangeDependencyRisks(DidChangeDependencyRisksParams params) {
     notify(() -> delegate.didChangeDependencyRisks(params.getConfigurationScopeId(), params.getClosedDependencyRiskIds(), params.getAddedDependencyRisks(),
       params.getUpdatedDependencyRisks()));
+  }
+
+  @Override
+  public void didChangeDependencyRiskAnalysisStatus(DidChangeDependencyRiskAnalysisStatusParams params) {
+    notify(() -> delegate.didChangeDependencyRiskAnalysisStatus(params.getConfigurationScopeId(), params.getStatus(), params.getTrigger(), params.isRerunRequested(),
+      params.getMessage()));
   }
 
   @Override

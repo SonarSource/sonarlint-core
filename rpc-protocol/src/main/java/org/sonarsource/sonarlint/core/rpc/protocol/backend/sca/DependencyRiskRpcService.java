@@ -40,6 +40,15 @@ public interface DependencyRiskRpcService {
   @JsonRequest
   CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params);
 
+  @JsonRequest
+  CompletableFuture<DependencyRiskAnalysisStatusResponse> getAnalysisStatus(GetDependencyRiskAnalysisStatusParams params);
+
+  @JsonRequest
+  CompletableFuture<CancelDependencyRiskAnalysisResponse> cancelAnalysis(CancelDependencyRiskAnalysisParams params);
+
+  @JsonRequest
+  CompletableFuture<DependencyRiskSupportedFilePatternsResponse> getSupportedFilePatterns();
+
     /**
    * <p> It changes a status of a Dependency Risk (SCA finding) that exists on the server. In detail, it is responsible for:
    * <ul>
