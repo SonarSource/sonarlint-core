@@ -92,12 +92,11 @@ class CampaignMediumTests {
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
-    await().until(() -> Files.exists(campaignsFile));
-    assertThat(getCampaigns(campaignsFile))
+    await().untilAsserted(() -> assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE"))));
   }
 
   @SonarLintTest
@@ -109,12 +108,11 @@ class CampaignMediumTests {
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
-    await().until(() -> Files.exists(campaignsFile));
-    assertThat(getCampaigns(campaignsFile))
+    await().untilAsserted(() -> assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE"))));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -135,12 +133,11 @@ class CampaignMediumTests {
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
-    await().until(() -> Files.exists(campaignsFile));
-    assertThat(getCampaigns(campaignsFile))
+    await().untilAsserted(() -> assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "IGNORE"))));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -231,12 +228,11 @@ class CampaignMediumTests {
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
-    await().until(() -> Files.exists(campaignsFile));
-    assertThat(getCampaigns(campaignsFile))
+    await().untilAsserted(() -> assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "MAYBE_LATER")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "MAYBE_LATER"))));
     verify(client, never()).openUrlInBrowser(any());
   }
 
@@ -253,19 +249,18 @@ class CampaignMediumTests {
       .start(client);
 
     var campaignsFile = getCampaignsPath(DEFAULT_KEY);
-    await().until(() -> Files.exists(campaignsFile));
-    assertThat(getCampaigns(campaignsFile))
+    await().untilAsserted(() -> assertThat(getCampaigns(campaignsFile))
       .hasSize(1)
       .contains(Map.entry(
         "feedback_2026_01",
-        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "LOVE_IT")));
+        new CampaignsLocalStorage.Campaign("feedback_2026_01", LocalDate.now(ZoneId.systemDefault()), "LOVE_IT"))));
 
     ArgumentCaptor<List<MessageActionItem>> actionsArgumentCaptor = ArgumentCaptor.forClass(List.class);
     var messageTypeCaptor = ArgumentCaptor.forClass(MessageType.class);
     var messageCaptor = ArgumentCaptor.forClass(String.class);
     var openInBrowserCaptor = ArgumentCaptor.forClass(URL.class);
 
-    verify(client, times(2)).showMessageRequest(messageTypeCaptor.capture(),
+    verify(client, timeout(2000).times(2)).showMessageRequest(messageTypeCaptor.capture(),
       messageCaptor.capture(),
       actionsArgumentCaptor.capture());
     // showMessageRequest will be called twice - once for the feedback, and second time for the community fallback
@@ -275,7 +270,7 @@ class CampaignMediumTests {
     assertThat(actionsArgumentCaptor.getAllValues().get(1)).hasSize(1);
     assertThat(actionsArgumentCaptor.getAllValues().get(1).get(0)).extracting(MessageActionItem::getKey, MessageActionItem::getDisplayText, MessageActionItem::isPrimaryAction)
       .containsExactly("OPEN_COMMUNITY", "Open Community Forum", true);
-    verify(client, times(1)).openUrlInBrowser(openInBrowserCaptor.capture());
+    verify(client, timeout(2000).times(1)).openUrlInBrowser(openInBrowserCaptor.capture());
     assertThat(openInBrowserCaptor.getValue()).hasToString("https://community.sonarsource.com/c/sl/11");
   }
 
