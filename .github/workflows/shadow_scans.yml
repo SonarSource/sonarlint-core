@@ -10,7 +10,7 @@ env:
 
 jobs:
   scan:
-    runs-on: sonar-xs-public
+    runs-on: sonar-m
     name: Scan on shadow platforms
     permissions:
       id-token: write
@@ -20,6 +20,9 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.4.11
+      - name: Install dotnet for Omnisharp tests
+        run: |
+          mise use dotnet@8
       - uses: SonarSource/ci-github-actions/build-maven@9456e3aab93a6c6d0c459b977aaa594bda102e29 # 1.4.0 # dogfood
         with:
           maven-args: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
@@ -27,6 +30,14 @@ jobs:
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
           scanner-java-opts: '-Xmx2g'
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shadow-scans-test-report
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
       - name: Run IRIS sync
         uses: SonarSource/unified-dogfooding-actions/run-iris@54cee68ff08f10645c757675c59d232063e0b947 # 1.0.0
         with:

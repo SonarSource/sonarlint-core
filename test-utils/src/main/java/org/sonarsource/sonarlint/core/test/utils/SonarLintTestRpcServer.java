@@ -78,12 +78,14 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   private final PipedInputStream clientToServerInputStream;
   private final PipedOutputStream serverToClientOutputStream;
   private final JsonRpcSpyInputStream serverToClientInputStream;
+  private final SonarLintRpcClientDelegate client;
   private Path userHome;
   private Path workDir;
   private Path storageRoot;
   private String productKey;
 
   public SonarLintTestRpcServer(SonarLintRpcClientDelegate client) throws IOException {
+    this.client = client;
     clientToServerOutputStream = new JsonRpcSpyOutputStream();
     clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 
@@ -94,6 +96,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     this.clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
     this.serverUsingRpc = clientLauncher.getServerProxy();
     this.serverUsingJava = serverLauncher.getServer();
+  }
+
+  /** The client delegate this backend was started with (e.g. a {@code FakeSonarLintRpcClient} in medium tests). */
+  public SonarLintRpcClientDelegate getClient() {
+    return client;
   }
 
   @Override

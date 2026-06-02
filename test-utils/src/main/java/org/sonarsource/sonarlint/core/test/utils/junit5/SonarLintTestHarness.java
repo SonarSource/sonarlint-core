@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -36,7 +37,8 @@ import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
-public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness> implements BeforeAllCallback, AfterEachCallback, AfterAllCallback {
+public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness>
+  implements BeforeAllCallback, AfterTestExecutionCallback, AfterEachCallback, AfterAllCallback {
   private static final Logger LOG = Logger.getLogger(SonarLintTestHarness.class.getName());
   private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
 
@@ -58,6 +60,32 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   public void afterAll(ExtensionContext context) {
     if (isStatic) {
       shutdownAll();
+    }
+  }
+
+  @Override
+  public void afterTestExecution(ExtensionContext context) {
+    // Runs before afterEach (which shuts the backends down), so the captured client logs are still available.
+    // On failure, dump them to stdout so they are retained in the Surefire report instead of being discarded.
+    if (context.getExecutionException().isPresent()) {
+      dumpBackendLogs(context);
+    }
+  }
+
+  // Stdout is intentional here: on failure the captured backend logs must be retained in the Surefire
+  // report (and the uploaded CI artifact). The test logback configuration defines no console appender,
+  // so routing through a logger would silently drop them - hence the deliberate System.out use.
+  @SuppressWarnings("java:S106")
+  private void dumpBackendLogs(ExtensionContext context) {
+    var testName = context.getDisplayName();
+    for (var i = 0; i < backends.size(); i++) {
+      var client = backends.get(i).getClient();
+      if (client instanceof SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) {
+        var dump = new StringBuilder("===== BACKEND LOGS (backend #" + i + ") for failed test: " + testName + " =====\n");
+        fakeClient.getLogs().forEach(log -> dump.append(log).append('\n'));
+        dump.append("===== END BACKEND LOGS (backend #").append(i).append(") =====");
+        System.out.println(dump);
+      }
     }
   }
 

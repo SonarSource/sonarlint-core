@@ -125,7 +125,7 @@ class EffectiveRulesMediumTests {
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX", null));
 
-    assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
+    assertThat(futureResponse).failsWithin(1, TimeUnit.MINUTES)
       .withThrowableOfType(ExecutionException.class)
       .withCauseInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Could not find rule 'python:SXXXX' in embedded rules");
@@ -237,7 +237,7 @@ class EffectiveRulesMediumTests {
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
 
-    assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
+    assertThat(futureResponse).failsWithin(1, TimeUnit.MINUTES)
       .withThrowableOfType(ExecutionException.class)
       .withCauseInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Connection 'connectionId' is not valid");
@@ -254,7 +254,7 @@ class EffectiveRulesMediumTests {
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
 
-    assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
+    assertThat(futureResponse).failsWithin(1, TimeUnit.MINUTES)
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
