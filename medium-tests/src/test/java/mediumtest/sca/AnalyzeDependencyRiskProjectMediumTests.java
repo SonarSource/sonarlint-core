@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture.StorageBuilder;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
@@ -57,7 +58,9 @@ class AnalyzeDependencyRiskProjectMediumTests {
   @SonarLintTest
   void it_should_fail_when_no_base_directory_is_available(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID)
+      .withSonarQubeConnection(CONNECTION_ID, storage -> storage
+        .withServerFeature(Feature.SCA)
+        .withServerVersion("2025.4"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start();
 
@@ -69,6 +72,42 @@ class AnalyzeDependencyRiskProjectMediumTests {
     var responseErrorException = (ResponseErrorException) throwable.getCause();
     assertThat(responseErrorException.getResponseError().getCode()).isEqualTo(SonarLintRpcErrorCode.INVALID_ARGUMENT);
     assertThat(responseErrorException.getResponseError().getMessage()).isEqualTo("No base directory is available for configuration scope 'configScopeId'");
+  }
+
+  @SonarLintTest
+  void it_should_fail_when_sonarcloud_sca_is_disabled(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudConnection(CONNECTION_ID, StorageBuilder::withEmptyServerInfo)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var throwable = catchThrowable(() -> analyzeProject(backend));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .hasCauseInstanceOf(ResponseErrorException.class);
+    var responseErrorException = (ResponseErrorException) throwable.getCause();
+    assertThat(responseErrorException.getResponseError().getCode()).isEqualTo(RequestFailed.getValue());
+    assertThat(responseErrorException.getResponseError().getMessage()).contains("does not have Advanced Security enabled");
+  }
+
+  @SonarLintTest
+  void it_should_fail_when_sonarqube_sca_is_disabled(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
+        .withServerVersion("2025.4"))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .start();
+
+    var throwable = catchThrowable(() -> analyzeProject(backend));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .hasCauseInstanceOf(ResponseErrorException.class);
+    var responseErrorException = (ResponseErrorException) throwable.getCause();
+    assertThat(responseErrorException.getResponseError().getCode()).isEqualTo(RequestFailed.getValue());
+    assertThat(responseErrorException.getResponseError().getMessage()).contains("does not have Advanced Security enabled");
   }
 
   @SonarLintTest

@@ -26,6 +26,7 @@ import com.sonar.sca.scanner.analyzeproject.response.AnalysisErrorResource;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectIssue;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectRelease;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectResponse;
+import com.sonar.sca.scanner.analyzeproject.response.Cwe;
 import com.sonar.sca.scanner.analyzeproject.response.ScaIssueType;
 import com.sonar.sca.scanner.analyzeproject.response.SoftwareQuality;
 import com.sonar.sca.scanner.analyzeproject.response.VersionOption;
@@ -59,6 +60,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRiskSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -104,6 +106,7 @@ class ScaProjectAnalysisServiceTests {
   private final CapturingScaScannerFactory scaScannerFactory = new CapturingScaScannerFactory();
   private final DependencyRiskService dependencyRiskService = mock(DependencyRiskService.class);
   private final DependencyRiskDtoMapper dependencyRiskDtoMapper = new DependencyRiskDtoMapper();
+  private final DependencyRiskMerger dependencyRiskMerger = new DependencyRiskMerger(dependencyRiskDtoMapper);
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository = new UserAnalysisPropertiesRepository();
 
   @Test
@@ -169,6 +172,18 @@ class ScaProjectAnalysisServiceTests {
   }
 
   @Test
+  void it_should_reject_analysis_when_sca_is_not_enabled() {
+    setupBoundScope();
+    when(dependencyRiskService.checkSupported(CONFIG_SCOPE_ID))
+      .thenReturn(new CheckDependencyRiskSupportedResponse(false, "Advanced Security is not enabled"));
+
+    assertThatThrownBy(() -> underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor()))
+      .hasMessageContaining("Advanced Security is not enabled");
+    assertThat(scaScannerFactory.scannerOptions).isNull();
+    assertThat(scaScannerFactory.analyzeProjectOptions).isNull();
+  }
+
+  @Test
   void it_should_merge_matched_local_issue_with_server_risk() throws IOException {
     setupBoundSqWithDefaults();
     var sharedId = UUID.randomUUID();
@@ -181,8 +196,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getDependencyRisks()).hasSize(1);
     var merged = response.getDependencyRisks().get(0);
     assertThat(merged.getId()).isEqualTo(sharedId);
-    assertThat(merged.isMatched()).isTrue();
-    assertThat(merged.isLocalOnly()).isFalse();
+    assertThat(merged.getPresence()).isEqualTo(DependencyRiskDto.Presence.SERVER_AND_LOCAL);
     assertThat(merged.getStatus()).isEqualTo(DependencyRiskDto.Status.OPEN);
     assertThat(merged.getTransitions()).containsExactly(DependencyRiskDto.Transition.CONFIRM);
     assertThat(merged.getLocalAnalysisDetails()).isNotNull();
@@ -204,8 +218,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getDependencyRisks()).hasSize(1);
     var local = response.getDependencyRisks().get(0);
     assertThat(local.getId()).isEqualTo(localUuid);
-    assertThat(local.isMatched()).isFalse();
-    assertThat(local.isLocalOnly()).isTrue();
+    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
     assertThat(local.getStatus()).isEqualTo(DependencyRiskDto.Status.OPEN);
     assertThat(local.getTransitions()).isEmpty();
     assertThat(local.getLocalAnalysisDetails()).isNotNull();
@@ -222,8 +235,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getDependencyRisks()).hasSize(1);
     var local = response.getDependencyRisks().get(0);
     assertThat(local.getId()).isNull();
-    assertThat(local.isMatched()).isFalse();
-    assertThat(local.isLocalOnly()).isTrue();
+    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
     assertThat(local.getPackageName()).isEqualTo("org.example:library");
     assertThat(local.getPackageVersion()).isEqualTo("1.2.3");
     assertThat(local.getLocalAnalysisDetails()).isNotNull();
@@ -240,8 +252,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getDependencyRisks()).hasSize(1);
     var local = response.getDependencyRisks().get(0);
     assertThat(local.getId()).isNull();
-    assertThat(local.isMatched()).isFalse();
-    assertThat(local.isLocalOnly()).isTrue();
+    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
   }
 
   @Test
@@ -257,8 +268,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getDependencyRisks()).hasSize(1);
     var risk = response.getDependencyRisks().get(0);
     assertThat(risk.getId()).isEqualTo(serverOnlyId);
-    assertThat(risk.isMatched()).isFalse();
-    assertThat(risk.isLocalOnly()).isFalse();
+    assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.SERVER_ONLY);
     assertThat(risk.getLocalAnalysisDetails()).isNull();
   }
 
@@ -303,8 +313,7 @@ class ScaProjectAnalysisServiceTests {
     assertThat(response.getErrors()).hasSize(1);
     assertThat(response.getDependencyRisks()).hasSize(1);
     var risk = response.getDependencyRisks().get(0);
-    assertThat(risk.isLocalOnly()).isTrue();
-    assertThat(risk.isMatched()).isFalse();
+    assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
     assertThat(risk.getPackageName()).isEqualTo("org.example:library");
     assertThat(risk.getPackageVersion()).isEqualTo("1.2.3");
     assertThat(risk.getVulnerabilityId()).isEqualTo("CVE-1234");
@@ -345,6 +354,7 @@ class ScaProjectAnalysisServiceTests {
 
   private void setupBoundScope() {
     configurationRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID), new BindingConfiguration(CONNECTION_ID, PROJECT_KEY, false));
+    lenient().when(dependencyRiskService.checkSupported(CONFIG_SCOPE_ID)).thenReturn(new CheckDependencyRiskSupportedResponse(true, null));
   }
 
   private void setupBoundSqWithDefaults() throws IOException {
@@ -396,6 +406,11 @@ class ScaProjectAnalysisServiceTests {
 
   private void setupServerRisks(List<DependencyRiskDto> risks) {
     lenient().when(dependencyRiskService.listAll(eq(CONFIG_SCOPE_ID), anyBoolean(), any())).thenReturn(risks);
+    lenient().when(dependencyRiskService.updateLocalAnalysisAndNotify(eq(CONFIG_SCOPE_ID), any(), any()))
+      .thenAnswer(invocation -> {
+        AnalyzeProjectResponse localAnalysis = invocation.getArgument(1);
+        return dependencyRiskMerger.merge(risks, localAnalysis);
+      });
   }
 
   private static AnalyzeProjectResponse sampleLocalOnlyResponse() {
@@ -403,7 +418,8 @@ class ScaProjectAnalysisServiceTests {
   }
 
   private static AnalyzeProjectResponse singleIssueResponse(String issueKey, String packageName, String version) {
-    var issue = new AnalyzeProjectIssue(issueKey, "HIGH", true, ScaIssueType.VULNERABILITY, SoftwareQuality.SECURITY, "OPEN", "CVE-1234", List.of("CWE-79"),
+    var issue = new AnalyzeProjectIssue(issueKey, "HIGH", true, ScaIssueType.VULNERABILITY, SoftwareQuality.SECURITY, "OPEN", "CVE-1234",
+      List.of(new Cwe("CWE-79", "Improper Neutralization of Input During Web Page Generation", "Cross-site scripting")),
       "9.8", "MIT", List.of(new VersionOption("1.2.4", List.of("CVE-5678"), false, "FULL", "UPGRADE")));
     var release = new AnalyzeProjectRelease("release-key", "pkg:maven/org.example/library@" + version, "maven", packageName, version, "MIT", true, true,
       false, List.of(issue), List.of("pom.xml"), List.of(List.of("root", packageName)));

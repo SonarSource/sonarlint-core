@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.sca;
 import com.sonar.sca.scanner.analyzeproject.response.AnalysisErrorResource;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectIssue;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectRelease;
+import com.sonar.sca.scanner.analyzeproject.response.Cwe;
 import com.sonar.sca.scanner.analyzeproject.response.VersionOption;
 import java.util.Collections;
 import java.util.List;
@@ -44,8 +45,8 @@ public class DependencyRiskDtoMapper {
   /**
    * Builds a local-only {@link DependencyRiskDto} for a freshly detected scanner issue.
    * <p>
-   * Local-only issues are not tracked by the server yet, so the scanner issue key can be missing. In that case the DTO
-   * id remains {@code null}, while {@code localOnly=true} makes it explicit that it is not a server-side dependency risk.
+   * Local-only issues are not matched to a server dependency risk. The scanner issue key can be missing or invalid; in
+   * that case the DTO id remains {@code null}, while {@link DependencyRiskDto.Presence#LOCAL_ONLY} makes the source explicit.
    */
   public Optional<DependencyRiskDto> toLocalOnlyDto(AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
     var id = parseUuidOrNull(issue.key());
@@ -64,7 +65,7 @@ public class DependencyRiskDtoMapper {
       .cvssScore(issue.cvssScore())
       .transitions(Collections.emptyList())
       .build();
-    return Optional.of(DependencyRiskDto.withLocalAnalysis(serverShape, buildLocalDetails(release, issue), false, true));
+    return Optional.of(DependencyRiskDto.withLocalAnalysis(serverShape, buildLocalDetails(release, issue), DependencyRiskDto.Presence.LOCAL_ONLY));
   }
 
   /**
@@ -73,7 +74,7 @@ public class DependencyRiskDtoMapper {
    * truth; local fields are attached as {@link LocalAnalysisDetailsDto}.
    */
   public DependencyRiskDto enrichServerDto(DependencyRiskDto serverDto, AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
-    return DependencyRiskDto.withLocalAnalysis(serverDto, buildLocalDetails(release, issue), true, false);
+    return DependencyRiskDto.withLocalAnalysis(serverDto, buildLocalDetails(release, issue), DependencyRiskDto.Presence.SERVER_AND_LOCAL);
   }
 
   public AnalyzeDependencyRiskProjectErrorDto toErrorDto(AnalysisErrorResource error) {
@@ -83,10 +84,14 @@ public class DependencyRiskDtoMapper {
   private static LocalAnalysisDetailsDto buildLocalDetails(AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
     var releaseDetails = new ReleaseDetailsDto(release.key(), release.packageUrl(), release.packageManager(),
       release.licenseExpression(), release.known(), release.knownPackage(), release.newlyIntroduced());
-    var issueDetails = new IssueDetailsDto(issue.showIncreasedSeverityWarning(), issue.cweIds(), issue.spdxLicenseId(),
+    var issueDetails = new IssueDetailsDto(issue.showIncreasedSeverityWarning(), toCweIds(issue), issue.spdxLicenseId(),
       toVersionOptionDtos(issue.versionOptions()));
     var dependencyDetails = new DependencyDetailsDto(release.dependencyFilePaths(), release.dependencyChains());
     return new LocalAnalysisDetailsDto(releaseDetails, issueDetails, dependencyDetails);
+  }
+
+  private static List<String> toCweIds(AnalyzeProjectIssue issue) {
+    return issue.cwes().stream().map(Cwe::code).toList();
   }
 
   @Nullable

@@ -61,7 +61,7 @@
     <logback.version>1.5.32</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.8</system.stubs.version>
-    <sca-scanner.version>2025.6.0.14826</sca-scanner.version>
+    <sca-scanner.version>2025.6.0.14965</sca-scanner.version>
 
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
     <jgit6.version>6.10.1.202505221210-r</jgit6.version>

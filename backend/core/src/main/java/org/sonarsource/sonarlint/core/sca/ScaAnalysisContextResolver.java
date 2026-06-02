@@ -95,7 +95,7 @@ public class ScaAnalysisContextResolver {
     }
     var downloadBaseUrl = StringUtils.firstNonBlank(System.getProperty(SCA_DOWNLOAD_BASE_URL_PROPERTY), toScaDownloadBaseUrl(endpointParams));
     if (downloadBaseUrl == null) {
-      throw invalidArgument("Missing SCA scanner download base URL. Provide it in the request or with system property '" + SCA_DOWNLOAD_BASE_URL_PROPERTY + "'");
+      throw invalidArgument("Missing SCA scanner download base URL. Try providing it with a system property '" + SCA_DOWNLOAD_BASE_URL_PROPERTY + "'");
     }
     return new ScannerEndpoint(apiBaseUrl, downloadBaseUrl, endpointParams.isSonarCloud());
   }

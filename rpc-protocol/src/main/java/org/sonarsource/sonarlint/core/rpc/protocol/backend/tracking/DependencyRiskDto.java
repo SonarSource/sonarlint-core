@@ -40,8 +40,7 @@ public class DependencyRiskDto {
   private final List<Transition> transitions;
   @Nullable
   private final LocalAnalysisDetailsDto localAnalysisDetails;
-  private final boolean matched;
-  private final boolean localOnly;
+  private final Presence presence;
 
   private DependencyRiskDto(Builder builder) {
     this.id = builder.id;
@@ -55,19 +54,17 @@ public class DependencyRiskDto {
     this.cvssScore = builder.cvssScore;
     this.transitions = builder.transitions;
     this.localAnalysisDetails = builder.localAnalysisDetails;
-    this.matched = builder.matched;
-    this.localOnly = builder.localOnly;
+    this.presence = builder.presence;
   }
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public static DependencyRiskDto withLocalAnalysis(DependencyRiskDto base, LocalAnalysisDetailsDto localAnalysisDetails, boolean matched, boolean localOnly) {
+  public static DependencyRiskDto withLocalAnalysis(DependencyRiskDto base, LocalAnalysisDetailsDto localAnalysisDetails, Presence presence) {
     return base.toBuilder()
       .localAnalysisDetails(localAnalysisDetails)
-      .matched(matched)
-      .localOnly(localOnly)
+      .presence(presence)
       .build();
   }
 
@@ -84,8 +81,7 @@ public class DependencyRiskDto {
       .cvssScore(cvssScore)
       .transitions(transitions)
       .localAnalysisDetails(localAnalysisDetails)
-      .matched(matched)
-      .localOnly(localOnly);
+      .presence(presence);
   }
 
   public static class Builder {
@@ -104,8 +100,7 @@ public class DependencyRiskDto {
     private List<Transition> transitions = List.of();
     @Nullable
     private LocalAnalysisDetailsDto localAnalysisDetails;
-    private boolean matched;
-    private boolean localOnly;
+    private Presence presence = Presence.SERVER_ONLY;
 
     public Builder id(@Nullable UUID id) {
       this.id = id;
@@ -162,13 +157,8 @@ public class DependencyRiskDto {
       return this;
     }
 
-    public Builder matched(boolean matched) {
-      this.matched = matched;
-      return this;
-    }
-
-    public Builder localOnly(boolean localOnly) {
-      this.localOnly = localOnly;
+    public Builder presence(Presence presence) {
+      this.presence = presence;
       return this;
     }
 
@@ -225,12 +215,8 @@ public class DependencyRiskDto {
     return localAnalysisDetails;
   }
 
-  public boolean isMatched() {
-    return matched;
-  }
-
-  public boolean isLocalOnly() {
-    return localOnly;
+  public Presence getPresence() {
+    return presence;
   }
 
   public static class LocalAnalysisDetailsDto {
@@ -421,5 +407,9 @@ public class DependencyRiskDto {
 
   public enum Transition {
     CONFIRM, REOPEN, SAFE, FIXED, ACCEPT
+  }
+
+  public enum Presence {
+    SERVER_ONLY, LOCAL_ONLY, SERVER_AND_LOCAL
   }
 }

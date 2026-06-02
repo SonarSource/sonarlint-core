@@ -23,18 +23,11 @@ import com.sonar.sca.scanner.ScaScannerOptions;
 import com.sonar.sca.scanner.ScaScannerOptionsBuilder;
 import com.sonar.sca.scanner.analyzeproject.AnalyzeProjectOptions;
 import com.sonar.sca.scanner.analyzeproject.AnalyzeProjectOptionsBuilder;
-import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectIssue;
-import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectRelease;
 import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectResponse;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -45,7 +38,6 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 import org.sonarsource.sonarlint.core.sca.ScaAnalysisContextResolver.AnalysisContext;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 
@@ -80,12 +72,20 @@ public class ScaProjectAnalysisService {
 
   public AnalyzeDependencyRiskProjectResponse analyzeProject(AnalyzeDependencyRiskProjectParams params, SonarLintCancelMonitor cancelMonitor) {
     var configurationScopeId = params.getConfigurationScopeId();
+    checkScaEnabled(configurationScopeId);
     var context = contextResolver.resolve(configurationScopeId);
     var localResponse = runLocalAnalysis(configurationScopeId, context);
-    var serverRisks = loadServerRisks(configurationScopeId, cancelMonitor);
-    var mergedRisks = mergeRisks(serverRisks, localResponse.releases());
+    var mergedRisks = dependencyRiskService.updateLocalAnalysisAndNotify(configurationScopeId, localResponse, cancelMonitor);
     var errors = localResponse.errors().stream().map(dependencyRiskDtoMapper::toErrorDto).toList();
     return new AnalyzeDependencyRiskProjectResponse(mergedRisks, localResponse.parsedFiles(), errors);
+  }
+
+  private void checkScaEnabled(String configurationScopeId) {
+    var supported = dependencyRiskService.checkSupported(configurationScopeId);
+    if (!supported.isSupported()) {
+      var reason = supported.getReason();
+      throw requestFailed(reason == null ? "Dependency risk analysis is not supported" : reason);
+    }
   }
 
   private AnalyzeProjectResponse runLocalAnalysis(String configurationScopeId, AnalysisContext context) {
@@ -126,51 +126,6 @@ public class ScaProjectAnalysisService {
       .build();
   }
 
-  private List<DependencyRiskDto> loadServerRisks(String configurationScopeId, SonarLintCancelMonitor cancelMonitor) {
-    return dependencyRiskService.listAll(configurationScopeId, false, cancelMonitor);
-  }
-
-  private List<DependencyRiskDto> mergeRisks(List<DependencyRiskDto> serverRisks, List<AnalyzeProjectRelease> localReleases) {
-    var serverRiskById = new HashMap<UUID, DependencyRiskDto>();
-    serverRisks.forEach(risk -> serverRiskById.put(risk.getId(), risk));
-
-    var merged = new ArrayList<DependencyRiskDto>();
-    var matchedServerIds = new HashSet<UUID>();
-
-    for (var release : localReleases) {
-      for (var issue : release.issues()) {
-        var serverRisk = lookupServerRisk(serverRiskById, issue);
-        if (serverRisk != null) {
-          merged.add(dependencyRiskDtoMapper.enrichServerDto(serverRisk, release, issue));
-          matchedServerIds.add(serverRisk.getId());
-        } else {
-          dependencyRiskDtoMapper.toLocalOnlyDto(release, issue).ifPresent(merged::add);
-        }
-      }
-    }
-
-    // Append server-only risks
-    for (var serverRisk : serverRisks) {
-      if (!matchedServerIds.contains(serverRisk.getId())) {
-        merged.add(serverRisk);
-      }
-    }
-    return merged;
-  }
-
-  @Nullable
-  private static DependencyRiskDto lookupServerRisk(Map<UUID, DependencyRiskDto> byId, AnalyzeProjectIssue issue) {
-    var key = issue.key();
-    if (key == null || key.isBlank()) {
-      return null;
-    }
-    try {
-      return byId.get(UUID.fromString(key));
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
-  }
-
   private Path createWorkDir() throws IOException {
     var scaWorkDir = userPaths.getWorkDir().resolve(SCA_SCANNER_WORK_SUBPATH);
     Files.createDirectories(scaWorkDir);
@@ -192,12 +147,7 @@ public class ScaProjectAnalysisService {
     return new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.INVALID_ARGUMENT, message, null));
   }
 
-  private static ResponseErrorException requestFailed(String message) {
-    return new ResponseErrorException(new ResponseError(ResponseErrorCode.RequestFailed, message, null));
+  private static ResponseErrorException requestFailed(@Nullable String message) {
+    return new ResponseErrorException(new ResponseError(ResponseErrorCode.RequestFailed, message == null ? "Dependency risk analysis failed" : message, null));
   }
 }
-
-
-
-
-

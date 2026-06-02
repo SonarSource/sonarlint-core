@@ -28,8 +28,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRi
  * Response of an on-demand SCA project analysis.
  * <p>
  * {@link #getDependencyRisks()} contains the merged view of server-side tracked dependency risks (as returned by
- * {@code listAll}) and locally-detected risks. Each {@link DependencyRiskDto} carries {@code matched}/{@code localOnly}
- * flags and an optional {@link DependencyRiskDto.LocalAnalysisDetailsDto} block with local-analysis enrichment
+ * {@code listAll}) and locally-detected risks. Each {@link DependencyRiskDto} carries a
+ * {@link DependencyRiskDto.Presence} and an optional {@link DependencyRiskDto.LocalAnalysisDetailsDto} block with local-analysis enrichment
  * (dependency chains, dependency file paths, upgrade {@code versionOptions}, CWE ids, etc.).
  * </p>
  * <p>
