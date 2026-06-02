@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -60,7 +62,7 @@ abstract class AbstractRpcServiceDelegate {
     cancelMonitor.watchForShutdown(requestsExecutor);
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     // We can maybe cancel early
-    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
+    var sequentialFuture = scheduleSequentialCheck(cancelMonitor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
     var requestFuture = sequentialFuture.thenApplyAsync(unused -> computeWithLogger(() -> {
       cancelMonitor.checkCanceled();
@@ -79,7 +81,7 @@ abstract class AbstractRpcServiceDelegate {
     cancelMonitor.watchForShutdown(requestsExecutor);
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     // We can maybe cancel early
-    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
+    var sequentialFuture = scheduleSequentialCheck(cancelMonitor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
     var requestFuture = sequentialFuture.thenComposeAsync(unused -> computeWithLogger(() -> {
       cancelMonitor.checkCanceled();
@@ -98,7 +100,7 @@ abstract class AbstractRpcServiceDelegate {
     cancelMonitor.watchForShutdown(requestsExecutor);
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     // We can maybe cancel early
-    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
+    var sequentialFuture = scheduleSequentialCheck(cancelMonitor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
     var requestFuture = sequentialFuture.<Void>thenApplyAsync(unused -> {
       doWithLogger(() -> {
@@ -124,13 +126,34 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected void notify(Runnable code, @Nullable String configScopeId) {
-    requestAndNotificationsSequentialExecutor.execute(() -> doWithLogger(() -> {
-      try {
-        code.run();
-      } catch (Throwable throwable) {
-        SonarLintLogger.get().error("Error when handling notification", throwable);
-      }
-    }, configScopeId));
+    try {
+      requestAndNotificationsSequentialExecutor.execute(() -> doWithLogger(() -> {
+        try {
+          code.run();
+        } catch (Throwable throwable) {
+          SonarLintLogger.get().error("Error when handling notification", throwable);
+        }
+      }, configScopeId));
+    } catch (RejectedExecutionException e) {
+      SonarLintLogger.get().debug("Skipping notification because RPC executor is shutting down");
+    }
+  }
+
+  private CompletableFuture<Void> scheduleSequentialCheck(SonarLintCancelMonitor cancelMonitor) {
+    if (isSequentialExecutorShutdown()) {
+      cancelMonitor.cancel();
+      return CompletableFuture.failedFuture(new CancellationException());
+    }
+    try {
+      return CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
+    } catch (RejectedExecutionException e) {
+      cancelMonitor.cancel();
+      return CompletableFuture.failedFuture(new CancellationException());
+    }
+  }
+
+  private boolean isSequentialExecutorShutdown() {
+    return requestAndNotificationsSequentialExecutor instanceof ExecutorService executorService && executorService.isShutdown();
   }
 
   private void doWithLogger(Runnable code, @Nullable String configScopeId) {

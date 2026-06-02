@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
 import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerBranchesRecord;
+import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.ServerFindingsRecord;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
@@ -566,9 +568,10 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   }
 
   private void batchMergeHotspots(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerHotspot> hotspots) {
-    trx.dsl().batchMerge(hotspots.stream()
-      .map(hotspot -> mapper.serverHotspotToRecord(hotspot, branchName, connectionId, sonarProjectKey)).toList())
-      .execute();
+    var recordsByServerKey = new LinkedHashMap<String, ServerFindingsRecord>();
+    hotspots.forEach(hotspot -> recordsByServerKey.put(hotspot.getKey(),
+      mapper.serverHotspotToRecord(hotspot, branchName, connectionId, sonarProjectKey)));
+    trx.dsl().batchMerge(recordsByServerKey.values()).execute();
   }
 
   private void batchMergeIssues(String branchName, String connectionId, String sonarProjectKey, Configuration trx, Collection<ServerIssue<?>> issues) {

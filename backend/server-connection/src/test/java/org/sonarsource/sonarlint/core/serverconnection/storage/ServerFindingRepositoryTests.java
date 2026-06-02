@@ -307,6 +307,20 @@ class ServerFindingRepositoryTests {
   }
 
   @Test
+  void merge_hotspots_deduplicates_by_server_key_in_batch() {
+    var duplicateKey = "HOTSPOT_KEY_DUPLICATE";
+    var first = hotspot(duplicateKey, filePath, 1, HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.LOW, null);
+    var second = new ServerHotspot(UUID.randomUUID(), duplicateKey, "rule", "updated message", filePath,
+      new TextRange(2, 0, 2, 1), Instant.now(), HotspotReviewStatus.SAFE, VulnerabilityProbability.HIGH, "reviewer");
+
+    repo.mergeHotspots(branch, List.of(first, second), Set.of(), Instant.now(), Set.of());
+
+    var loaded = repo.loadHotspots(branch, filePath);
+    assertThat(loaded).hasSize(1);
+    assertHotspotEquals(second, loaded.get(0));
+  }
+
+  @Test
   void branch_metadata_is_stored_during_merges() {
     // perform one merge for each type to set metadata
     repo.mergeIssues(branch, List.of(lineIssue("ISSUE_KEY_X", filePath, 1)), Set.of(), Instant.now(), Set.of());
