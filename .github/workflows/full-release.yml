@@ -32,7 +32,7 @@ jobs:
 
   bump-version:
     name: Create a PR to bump version
-    runs-on: sonar-xs-public
+    runs-on: sonar-xs
     needs:
       - release
     permissions:

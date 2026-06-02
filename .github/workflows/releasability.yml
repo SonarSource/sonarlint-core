@@ -10,7 +10,7 @@ on:
 jobs:
     releasability-status:
         name: Releasability status
-        runs-on: sonar-xs-public
+        runs-on: sonar-xs
         permissions:
             id-token: write
             statuses: write
