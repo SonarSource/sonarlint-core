@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
-import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
