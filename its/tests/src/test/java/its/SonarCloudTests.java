@@ -624,16 +624,20 @@ class SonarCloudTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_TAINT);
       waitForAnalysisToBeReady(configScopeId);
 
-      // Ensure a vulnerability has been reported on server side
+      // Ensure a vulnerability has been reported on server side. On SonarCloud the taint vulnerability is produced by an
+      // asynchronous pipeline that is NOT gated by analysis_reports/is_queue_empty, and on the under-used staging
+      // environment the backing services are slow to warm, so the vulnerability and even this search call can take well
+      // over the default 10s to settle. Use a generous ceiling - it has no happy-path cost as await() returns as soon as
+      // the condition holds.
       AtomicReference<Issues.Issue> issue = new AtomicReference<>();
-      await().untilAsserted(() -> {
+      await().atMost(2, TimeUnit.MINUTES).untilAsserted(() -> {
         var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT))))
           .getIssuesList();
         assertThat(issuesList).hasSize(1);
         issue.set(issuesList.get(0));
       });
       // Ensure the source is available, it can take some time to propagate after the analysis, especially on SQC US
-      await().untilAsserted(() -> {
+      await().atMost(2, TimeUnit.MINUTES).untilAsserted(() -> {
         try {
           var rawSource = adminWsClient.sources().raw(new RawRequest().setKey(projectKey + ":src/main/java/foo/DbHelper.java"));
           assertThat(rawSource).isNotEmpty();
@@ -686,8 +690,25 @@ class SonarCloudTests extends AbstractConnectedTests {
       .build());
   }
 
+  /**
+   * Triggers a cold start of the file-sources Lambda by issuing a blocking request to it, so a subsequent analysis hits
+   * a warm instance. Best-effort: any response (incl. an error) means the Lambda is up, so we ignore the outcome and
+   * never fail on it. See {@link #analyzeMavenProject} for why this is needed.
+   */
+  private static void warmUpFileSourcesLambda() {
+    try (var response = adminWsClient.wsConnector().call(new GetRequest("private/source-files"))) {
+      response.content();
+    } catch (Exception e) {
+      // ignored on purpose - the request only needs to reach the lambda to trigger its cold start
+    }
+  }
+
   private static void analyzeMavenProject(String projectKey, String projectDirName) throws IOException {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    // The file-sources Lambda backing batch/project can be cold on the under-used staging environment; its first call
+    // may time out server-side and surface as a transient 500 on batch/project that crashes the scanner. Issuing a
+    // blocking warmup request right before the scan keeps the analysis deterministic.
+    warmUpFileSourcesLambda();
     runMaven(projectDir, "clean", "package", "sonar:sonar",
       "-Dsonar.projectKey=" + projectKey,
       "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
