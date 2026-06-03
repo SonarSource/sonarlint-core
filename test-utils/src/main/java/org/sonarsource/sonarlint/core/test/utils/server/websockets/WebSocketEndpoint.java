@@ -25,11 +25,14 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketServer.CONNECTION_REPOSITORY_ATTRIBUTE_KEY;
 
 @ServerEndpoint(value = "/endpoint", configurator = ServletAwareConfig.class)
 public class WebSocketEndpoint {
+  private static final Logger LOG = Logger.getLogger(WebSocketEndpoint.class.getName());
   public static final String WS_REQUEST_KEY = "wsRequest";
   private WebSocketConnection connection;
 
@@ -40,7 +43,7 @@ public class WebSocketEndpoint {
 
   @OnMessage
   public void handleTextMessage(Session session, String message) {
-    System.out.println("Message received by web socket server: " + message);
+    LOG.log(Level.INFO, "Message received by web socket server: {0}", message);
     connection.addReceivedMessage(message);
   }
 

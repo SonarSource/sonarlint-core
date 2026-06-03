@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.hotspot;
 
+import jakarta.inject.Inject;
 import java.util.List;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -67,6 +68,7 @@ public class HotspotService {
   private final FindingReportingService findingReportingService;
   private final StorageService storageService;
 
+  @Inject
   public HotspotService(SonarLintRpcClient client, StorageService storageService, ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager, TelemetryService telemetryService,
     SonarProjectBranchTrackingService branchTrackingService, FindingReportingService findingReportingService) {
