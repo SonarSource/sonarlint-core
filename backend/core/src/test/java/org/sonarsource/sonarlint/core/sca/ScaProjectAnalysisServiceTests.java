@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -79,10 +78,10 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ScaProjectAnalysisServiceTests {
@@ -106,7 +105,6 @@ class ScaProjectAnalysisServiceTests {
   private final CapturingScaScannerFactory scaScannerFactory = new CapturingScaScannerFactory();
   private final DependencyRiskService dependencyRiskService = mock(DependencyRiskService.class);
   private final DependencyRiskDtoMapper dependencyRiskDtoMapper = new DependencyRiskDtoMapper();
-  private final DependencyRiskMerger dependencyRiskMerger = new DependencyRiskMerger(dependencyRiskDtoMapper);
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository = new UserAnalysisPropertiesRepository();
 
   @Test
@@ -127,7 +125,7 @@ class ScaProjectAnalysisServiceTests {
 
     assertSonarQubeScannerOptions(storageRoot);
     assertAnalysisOptions(baseDir, workDir);
-    assertLocalOnlyAnalysisResponse(response);
+    assertLocalAnalysisDiagnostics(response);
     assertThat(Files.exists(scaScannerFactory.analyzeProjectOptions.workDir())).isFalse();
   }
 
@@ -184,92 +182,15 @@ class ScaProjectAnalysisServiceTests {
   }
 
   @Test
-  void it_should_merge_matched_local_issue_with_server_risk() throws IOException {
-    setupBoundSqWithDefaults();
-    var sharedId = UUID.randomUUID();
-    var serverRisk = sampleServerRisk(sharedId, "org.example:library", "1.2.3");
-    setupServerRisks(List.of(serverRisk));
-    scaScannerFactory.response = singleIssueResponse(sharedId.toString(), "org.example:library", "1.2.3");
-
-    var response = underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
-
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var merged = response.getDependencyRisks().get(0);
-    assertThat(merged.getId()).isEqualTo(sharedId);
-    assertThat(merged.getPresence()).isEqualTo(DependencyRiskDto.Presence.SERVER_AND_LOCAL);
-    assertThat(merged.getStatus()).isEqualTo(DependencyRiskDto.Status.OPEN);
-    assertThat(merged.getTransitions()).containsExactly(DependencyRiskDto.Transition.CONFIRM);
-    assertThat(merged.getLocalAnalysisDetails()).isNotNull();
-    assertThat(merged.getLocalAnalysisDetails().getDependencyDetails().getDependencyFilePaths()).containsExactly("pom.xml");
-    assertThat(merged.getLocalAnalysisDetails().getDependencyDetails().getDependencyChains())
-      .containsExactly(List.of("root", "org.example:library"));
-    assertThat(merged.getLocalAnalysisDetails().getIssueDetails().getCweIds()).containsExactly("CWE-79");
-  }
-
-  @Test
-  void it_should_keep_local_only_when_no_matching_server_risk() throws IOException {
-    setupBoundSqWithDefaults();
-    var localUuid = UUID.randomUUID();
-    setupServerRisks(List.of());
-    scaScannerFactory.response = singleIssueResponse(localUuid.toString(), "org.example:library", "1.2.3");
-
-    var response = underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
-
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var local = response.getDependencyRisks().get(0);
-    assertThat(local.getId()).isEqualTo(localUuid);
-    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
-    assertThat(local.getStatus()).isEqualTo(DependencyRiskDto.Status.OPEN);
-    assertThat(local.getTransitions()).isEmpty();
-    assertThat(local.getLocalAnalysisDetails()).isNotNull();
-  }
-
-  @Test
-  void it_should_keep_local_only_without_uuid_key() throws IOException {
+  void it_should_update_dependency_risks_from_local_analysis() throws IOException {
     setupBoundSqWithDefaults();
     setupServerRisks(List.of());
-    scaScannerFactory.response = singleIssueResponse(null, "org.example:library", "1.2.3");
+    var localAnalysis = singleIssueResponse(null, "org.example:library", "1.2.3");
+    scaScannerFactory.response = localAnalysis;
 
-    var response = underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
+    underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
 
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var local = response.getDependencyRisks().get(0);
-    assertThat(local.getId()).isNull();
-    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
-    assertThat(local.getPackageName()).isEqualTo("org.example:library");
-    assertThat(local.getPackageVersion()).isEqualTo("1.2.3");
-    assertThat(local.getLocalAnalysisDetails()).isNotNull();
-  }
-
-  @Test
-  void it_should_keep_local_only_with_non_uuid_key() throws IOException {
-    setupBoundSqWithDefaults();
-    setupServerRisks(List.of());
-    scaScannerFactory.response = singleIssueResponse("not-a-uuid", "org.example:library", "1.2.3");
-
-    var response = underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
-
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var local = response.getDependencyRisks().get(0);
-    assertThat(local.getId()).isNull();
-    assertThat(local.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
-  }
-
-  @Test
-  void it_should_include_server_only_risks_unchanged() throws IOException {
-    setupBoundSqWithDefaults();
-    var serverOnlyId = UUID.randomUUID();
-    var serverOnly = sampleServerRisk(serverOnlyId, "org.example:lonely", "9.9.9");
-    setupServerRisks(List.of(serverOnly));
-    scaScannerFactory.response = new AnalyzeProjectResponse(List.of(), List.of(), List.of());
-
-    var response = underTest().analyzeProject(new AnalyzeDependencyRiskProjectParams(CONFIG_SCOPE_ID), new SonarLintCancelMonitor());
-
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var risk = response.getDependencyRisks().get(0);
-    assertThat(risk.getId()).isEqualTo(serverOnlyId);
-    assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.SERVER_ONLY);
-    assertThat(risk.getLocalAnalysisDetails()).isNull();
+    verify(dependencyRiskService).updateLocalAnalysisAndNotify(eq(CONFIG_SCOPE_ID), eq(localAnalysis), any());
   }
 
   @Test
@@ -308,42 +229,9 @@ class ScaProjectAnalysisServiceTests {
     assertThat(scaScannerFactory.analyzeProjectOptions.sqServerVersion()).isEqualTo("2025.4");
   }
 
-  private static void assertLocalOnlyAnalysisResponse(AnalyzeDependencyRiskProjectResponse response) {
+  private static void assertLocalAnalysisDiagnostics(AnalyzeDependencyRiskProjectResponse response) {
     assertThat(response.getParsedFiles()).containsExactly("pom.xml");
     assertThat(response.getErrors()).hasSize(1);
-    assertThat(response.getDependencyRisks()).hasSize(1);
-    var risk = response.getDependencyRisks().get(0);
-    assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
-    assertThat(risk.getPackageName()).isEqualTo("org.example:library");
-    assertThat(risk.getPackageVersion()).isEqualTo("1.2.3");
-    assertThat(risk.getVulnerabilityId()).isEqualTo("CVE-1234");
-    assertThat(risk.getCvssScore()).isEqualTo("9.8");
-    assertThat(risk.getSeverity()).isEqualTo(DependencyRiskDto.Severity.HIGH);
-    assertThat(risk.getQuality()).isEqualTo(DependencyRiskDto.SoftwareQuality.SECURITY);
-    assertThat(risk.getType()).isEqualTo(DependencyRiskDto.Type.VULNERABILITY);
-    assertThat(risk.getStatus()).isEqualTo(DependencyRiskDto.Status.OPEN);
-    assertThat(risk.getTransitions()).isEmpty();
-    assertThat(risk.getLocalAnalysisDetails()).isNotNull();
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().getReleaseKey()).isEqualTo("release-key");
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().getPackageUrl()).isEqualTo("pkg:maven/org.example/library@1.2.3");
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().getPackageManager()).isEqualTo("maven");
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().getLicenseExpression()).isEqualTo("MIT");
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().isKnown()).isTrue();
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().isKnownPackage()).isTrue();
-    assertThat(risk.getLocalAnalysisDetails().getReleaseDetails().isNewlyIntroduced()).isFalse();
-    assertThat(risk.getLocalAnalysisDetails().getDependencyDetails().getDependencyFilePaths()).containsExactly("pom.xml");
-    assertThat(risk.getLocalAnalysisDetails().getDependencyDetails().getDependencyChains())
-      .containsExactly(List.of("root", "org.example:library"));
-    assertThat(risk.getLocalAnalysisDetails().getIssueDetails().getCweIds()).containsExactly("CWE-79");
-    assertThat(risk.getLocalAnalysisDetails().getIssueDetails().getSpdxLicenseId()).isEqualTo("MIT");
-    assertThat(risk.getLocalAnalysisDetails().getIssueDetails().getShowIncreasedSeverityWarning()).isTrue();
-    assertThat(risk.getLocalAnalysisDetails().getIssueDetails().getVersionOptions()).hasSize(1);
-    var versionOption = risk.getLocalAnalysisDetails().getIssueDetails().getVersionOptions().get(0);
-    assertThat(versionOption.getVersion()).isEqualTo("1.2.4");
-    assertThat(versionOption.getVulnerabilityIds()).containsExactly("CVE-5678");
-    assertThat(versionOption.isPrerelease()).isFalse();
-    assertThat(versionOption.getFixLevel()).isEqualTo("FULL");
-    assertThat(versionOption.getDescriptionCode()).isEqualTo("UPGRADE");
   }
 
   private ScaProjectAnalysisService underTest() {
@@ -405,12 +293,7 @@ class ScaProjectAnalysisServiceTests {
   }
 
   private void setupServerRisks(List<DependencyRiskDto> risks) {
-    lenient().when(dependencyRiskService.listAll(eq(CONFIG_SCOPE_ID), anyBoolean(), any())).thenReturn(risks);
-    lenient().when(dependencyRiskService.updateLocalAnalysisAndNotify(eq(CONFIG_SCOPE_ID), any(), any()))
-      .thenAnswer(invocation -> {
-        AnalyzeProjectResponse localAnalysis = invocation.getArgument(1);
-        return dependencyRiskMerger.merge(risks, localAnalysis);
-      });
+    lenient().when(dependencyRiskService.updateLocalAnalysisAndNotify(eq(CONFIG_SCOPE_ID), any(), any())).thenReturn(risks);
   }
 
   private static AnalyzeProjectResponse sampleLocalOnlyResponse() {
@@ -427,20 +310,6 @@ class ScaProjectAnalysisServiceTests {
     return new AnalyzeProjectResponse(List.of(release), List.of("pom.xml"), List.of(error));
   }
 
-  private static DependencyRiskDto sampleServerRisk(UUID id, String packageName, String packageVersion) {
-    return DependencyRiskDto.builder()
-      .id(id)
-      .type(DependencyRiskDto.Type.VULNERABILITY)
-      .severity(DependencyRiskDto.Severity.HIGH)
-      .quality(DependencyRiskDto.SoftwareQuality.SECURITY)
-      .status(DependencyRiskDto.Status.OPEN)
-      .packageName(packageName)
-      .packageVersion(packageVersion)
-      .vulnerabilityId("CVE-1234")
-      .cvssScore("9.8")
-      .transitions(List.of(DependencyRiskDto.Transition.CONFIRM))
-      .build();
-  }
 
   private static class CapturingScaScannerFactory extends ScaScannerFactory {
     private AnalyzeProjectResponse response;
@@ -457,9 +326,3 @@ class ScaProjectAnalysisServiceTests {
     }
   }
 }
-
-
-
-
-
-

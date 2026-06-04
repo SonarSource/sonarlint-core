@@ -26,7 +26,6 @@ import com.sonar.sca.scanner.analyzeproject.response.Cwe;
 import com.sonar.sca.scanner.analyzeproject.response.VersionOption;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -37,7 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRi
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto.LocalAnalysisDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto.ReleaseDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto.VersionOptionDto;
-
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 
 public class DependencyRiskDtoMapper {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -46,13 +45,11 @@ public class DependencyRiskDtoMapper {
    * Builds a local-only {@link DependencyRiskDto} for a freshly detected scanner issue.
    * <p>
    * Local-only issues are not matched to a server dependency risk. The scanner issue key can be missing or invalid; in
-   * that case the DTO id remains {@code null}, while {@link DependencyRiskDto.Presence#LOCAL_ONLY} makes the source explicit.
+   * that case the {@link DependencyRiskDto} builder assigns an unstable random id, while {@link DependencyRiskDto.Presence#LOCAL_ONLY}
+   * makes the source explicit.
    */
-  public Optional<DependencyRiskDto> toLocalOnlyDto(AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
+  public DependencyRiskDto toLocalOnlyDto(AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
     var id = parseUuidOrNull(issue.key());
-    if (id == null) {
-      LOG.debug("Keeping local-only SCA issue without server UUID (package={}, vulnerability={})", release.packageName(), issue.vulnerabilityId());
-    }
     var serverShape = DependencyRiskDto.builder()
       .id(id)
       .type(toType(issue.type().name()))
@@ -65,7 +62,11 @@ public class DependencyRiskDtoMapper {
       .cvssScore(issue.cvssScore())
       .transitions(Collections.emptyList())
       .build();
-    return Optional.of(DependencyRiskDto.withLocalAnalysis(serverShape, buildLocalDetails(release, issue), DependencyRiskDto.Presence.LOCAL_ONLY));
+    if (id == null) {
+      LOG.debug("Generated unstable local-only SCA issue id '{}' (package={}, vulnerability={})", serverShape.getId(),
+        release.packageName(), issue.vulnerabilityId());
+    }
+    return DependencyRiskDto.withLocalAnalysis(serverShape, buildLocalDetails(release, issue), DependencyRiskDto.Presence.LOCAL_ONLY);
   }
 
   /**
@@ -81,6 +82,24 @@ public class DependencyRiskDtoMapper {
     return new AnalyzeDependencyRiskProjectErrorDto(error.id(), error.code().name(), error.path(), error.message());
   }
 
+  public DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
+    return DependencyRiskDto.builder()
+      .id(serverDependencyRisk.key())
+      .type(DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()))
+      .severity(DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()))
+      .quality(DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()))
+      .status(DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()))
+      .packageName(serverDependencyRisk.packageName())
+      .packageVersion(serverDependencyRisk.packageVersion())
+      .vulnerabilityId(serverDependencyRisk.vulnerabilityId())
+      .cvssScore(serverDependencyRisk.cvssScore())
+      .transitions(serverDependencyRisk.transitions().stream()
+        .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
+        .toList())
+      .presence(DependencyRiskDto.Presence.SERVER_ONLY)
+      .build();
+  }
+
   private static LocalAnalysisDetailsDto buildLocalDetails(AnalyzeProjectRelease release, AnalyzeProjectIssue issue) {
     var releaseDetails = new ReleaseDetailsDto(release.key(), release.packageUrl(), release.packageManager(),
       release.licenseExpression(), release.known(), release.knownPackage(), release.newlyIntroduced());
@@ -90,8 +109,13 @@ public class DependencyRiskDtoMapper {
     return new LocalAnalysisDetailsDto(releaseDetails, issueDetails, dependencyDetails);
   }
 
+  @Nullable
   private static List<String> toCweIds(AnalyzeProjectIssue issue) {
-    return issue.cwes().stream().map(Cwe::code).toList();
+    var cwes = issue.cwes();
+    if (cwes == null) {
+      return null;
+    }
+    return cwes.stream().map(Cwe::code).toList();
   }
 
   @Nullable
@@ -161,6 +185,3 @@ public class DependencyRiskDtoMapper {
     }
   }
 }
-
-
-

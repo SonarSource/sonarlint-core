@@ -4,7 +4,7 @@
 
 * Replace the public constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto` with a builder.
     * Clients constructing this DTO directly, typically in tests, should use `DependencyRiskDto.builder()` instead.
-* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto#getId` can now return `null` for dependency risks found only by local analysis.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto#getId` is always non-null. Dependency risks found only by local analysis receive an unstable generated UUID when no server UUID is available.
 
 ## New features
 
@@ -16,8 +16,8 @@
     * Non-null only when `source` is `SONARQUBE_SERVER`; `null` for all other sources (embedded, SonarQube Cloud, unavailable).
 * Add `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService#analyzeProject` to run an on-demand local dependency-risk analysis for a configuration scope.
     * The method accepts `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams`, containing the `configurationScopeId` to analyze.
-    * It returns `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse`, containing the merged dependency risks, parsed dependency files and local-analysis errors.
-    * The returned dependency risks are merged with server-tracked dependency risks when possible, and can also include local-only risks.
+    * It returns `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse`, containing parsed dependency files and local-analysis errors.
+    * Dependency-risk view updates are delivered through `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didChangeDependencyRisks`; clients can also use `listAll` to read the current view.
 * Add local-analysis enrichment to `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto`.
     * Add `presence` to distinguish `SERVER_ONLY`, `LOCAL_ONLY` and `SERVER_AND_LOCAL` dependency risks.
     * Add nullable `localAnalysisDetails`, containing release details, issue details and dependency details.

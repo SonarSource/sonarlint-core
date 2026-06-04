@@ -42,13 +42,8 @@ import org.sonarsource.sonarlint.core.sca.ScaAnalysisContextResolver.AnalysisCon
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 
 /**
- * Orchestrates a manual SCA analysis for a configuration scope and returns a
- * {@link AnalyzeDependencyRiskProjectResponse} whose {@code dependencyRisks} field is the merge of server-tracked
- * dependency risks (from {@link DependencyRiskService#listAll}) and locally-detected risks.
- * <p>
- * The merge key is {@code localScannerIssue.key == serverDependencyRisk.id.toString()} (confirmed during PR review).
- * Local-only entries without a server UUID are kept with a {@code null} id (see {@link DependencyRiskDtoMapper}).
- * </p>
+ * Orchestrates a manual SCA analysis for a configuration scope. Dependency-risk view updates are sent through
+ * {@link DependencyRiskService#updateLocalAnalysisAndNotify(String, AnalyzeProjectResponse, SonarLintCancelMonitor)}.
  */
 public class ScaProjectAnalysisService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -75,9 +70,9 @@ public class ScaProjectAnalysisService {
     checkScaEnabled(configurationScopeId);
     var context = contextResolver.resolve(configurationScopeId);
     var localResponse = runLocalAnalysis(configurationScopeId, context);
-    var mergedRisks = dependencyRiskService.updateLocalAnalysisAndNotify(configurationScopeId, localResponse, cancelMonitor);
+    dependencyRiskService.updateLocalAnalysisAndNotify(configurationScopeId, localResponse, cancelMonitor);
     var errors = localResponse.errors().stream().map(dependencyRiskDtoMapper::toErrorDto).toList();
-    return new AnalyzeDependencyRiskProjectResponse(mergedRisks, localResponse.parsedFiles(), errors);
+    return new AnalyzeDependencyRiskProjectResponse(localResponse.parsedFiles(), errors);
   }
 
   private void checkScaEnabled(String configurationScopeId) {

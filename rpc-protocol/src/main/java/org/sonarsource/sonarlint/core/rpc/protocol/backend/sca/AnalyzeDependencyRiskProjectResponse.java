@@ -22,36 +22,23 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.sca;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto;
 
 /**
  * Response of an on-demand SCA project analysis.
- * <p>
- * {@link #getDependencyRisks()} contains the merged view of server-side tracked dependency risks (as returned by
- * {@code listAll}) and locally-detected risks. Each {@link DependencyRiskDto} carries a
- * {@link DependencyRiskDto.Presence} and an optional {@link DependencyRiskDto.LocalAnalysisDetailsDto} block with local-analysis enrichment
- * (dependency chains, dependency file paths, upgrade {@code versionOptions}, CWE ids, etc.).
- * </p>
  * <p>
  * {@link #getParsedFiles()} and {@link #getErrors()} expose local-analysis diagnostics that have no equivalent in the
  * server-tracked model.
  * </p>
  */
 public class AnalyzeDependencyRiskProjectResponse {
-  private final List<DependencyRiskDto> dependencyRisks;
   private final List<String> parsedFiles;
   private final List<AnalyzeDependencyRiskProjectErrorDto> errors;
 
-  public AnalyzeDependencyRiskProjectResponse(List<DependencyRiskDto> dependencyRisks, List<String> parsedFiles,
-    List<AnalyzeDependencyRiskProjectErrorDto> errors) {
-    this.dependencyRisks = dependencyRisks;
+  public AnalyzeDependencyRiskProjectResponse(List<String> parsedFiles, List<AnalyzeDependencyRiskProjectErrorDto> errors) {
     this.parsedFiles = parsedFiles;
     this.errors = errors;
   }
 
-  public List<DependencyRiskDto> getDependencyRisks() {
-    return dependencyRisks;
-  }
 
   public List<String> getParsedFiles() {
     return parsedFiles;

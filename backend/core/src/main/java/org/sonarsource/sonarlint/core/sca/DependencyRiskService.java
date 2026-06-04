@@ -66,13 +66,11 @@ public class DependencyRiskService {
   private final ScaSynchronizationService scaSynchronizationService;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
-  private final LocalDependencyRiskAnalysisCache localDependencyRiskAnalysisCache;
-  private final DependencyRiskMerger dependencyRiskMerger;
+  private final LocalDependencyRiskService localDependencyRiskService;
 
   public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
     SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, ScaSynchronizationService scaSynchronizationService,
-    SonarLintRpcClient client, TelemetryService telemetryService, LocalDependencyRiskAnalysisCache localDependencyRiskAnalysisCache,
-    DependencyRiskMerger dependencyRiskMerger) {
+    SonarLintRpcClient client, TelemetryService telemetryService, LocalDependencyRiskService localDependencyRiskService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.storageService = storageService;
@@ -81,8 +79,7 @@ public class DependencyRiskService {
     this.scaSynchronizationService = scaSynchronizationService;
     this.client = client;
     this.telemetryService = telemetryService;
-    this.localDependencyRiskAnalysisCache = localDependencyRiskAnalysisCache;
-    this.dependencyRiskMerger = dependencyRiskMerger;
+    this.localDependencyRiskService = localDependencyRiskService;
   }
 
   public List<DependencyRiskDto> listAll(String configurationScopeId, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
@@ -92,13 +89,14 @@ public class DependencyRiskService {
   }
 
   public List<DependencyRiskDto> updateLocalAnalysisAndNotify(String configurationScopeId, AnalyzeProjectResponse localAnalysis, SonarLintCancelMonitor cancelMonitor) {
-    localDependencyRiskAnalysisCache.put(configurationScopeId, localAnalysis);
-    var newRisks = listAll(configurationScopeId, false, cancelMonitor);
-    var delta = dependencyRiskMerger.computeDelta(newRisks);
-    if (!delta.addedRisks().isEmpty() || !delta.updatedRisks().isEmpty()) {
-      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), delta.addedRisks(), delta.updatedRisks()));
+    var update = configurationRepository.getEffectiveBinding(configurationScopeId)
+      .flatMap(binding -> branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId)
+        .map(branchName -> localDependencyRiskService.updateLocalAnalysisAndComputeUpdate(configurationScopeId, localAnalysis, binding, branchName)))
+      .orElseGet(DependencyRiskService::emptyLocalDependencyRiskUpdate);
+    if (update.hasChanges()) {
+      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, update.closedRiskIds(), update.addedRisks(), update.updatedRisks()));
     }
-    return newRisks;
+    return update.newRisks();
   }
 
   @EventListener
@@ -109,22 +107,16 @@ public class DependencyRiskService {
     configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, sonarProjectKey)
       .forEach(boundScope -> {
         var configurationScopeId = boundScope.getConfigScopeId();
-        var localAnalysis = localDependencyRiskAnalysisCache.get(configurationScopeId);
-        var addedRisks = summary.addedItems().stream()
-          .map(DependencyRiskService::toDto)
-          .toList();
-        var updatedRisks = summary.updatedItems().stream()
-          .map(DependencyRiskService::toDto)
-          .toList();
-        client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, summary.deletedItemIds(),
-          localAnalysis.map(analysis -> dependencyRiskMerger.enrichServerRisks(addedRisks, analysis)).orElse(addedRisks),
-          localAnalysis.map(analysis -> dependencyRiskMerger.enrichServerRisks(updatedRisks, analysis)).orElse(updatedRisks)));
+        var update = localDependencyRiskService.computeServerSynchronizationUpdate(configurationScopeId, summary);
+        if (update.hasChanges()) {
+          client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, update.closedRiskIds(), update.addedRisks(), update.updatedRisks()));
+        }
       });
   }
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    localDependencyRiskAnalysisCache.remove(event.getRemovedConfigurationScopeId());
+    localDependencyRiskService.remove(event.getRemovedConfigurationScopeId());
   }
 
   public CheckDependencyRiskSupportedResponse checkSupported(String configurationScopeId) {
@@ -167,32 +159,12 @@ public class DependencyRiskService {
           sonarQubeClientManager.withActiveClient(binding.connectionId(),
             serverApi -> scaSynchronizationService.synchronize(serverApi, binding.connectionId(), binding.sonarProjectKey(), matchedBranch, cancelMonitor));
         }
-        var projectStorage = storageService.binding(binding);
-        var serverRisks = projectStorage.findings().loadDependencyRisks(matchedBranch)
-          .stream().map(DependencyRiskService::toDto)
-          .toList();
-        return localDependencyRiskAnalysisCache.get(configurationScopeId)
-          .map(localAnalysis -> dependencyRiskMerger.merge(serverRisks, localAnalysis))
-          .orElse(serverRisks);
+        return localDependencyRiskService.listAll(configurationScopeId, binding, matchedBranch);
       }).orElseGet(Collections::emptyList);
   }
 
-  private static DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
-    return DependencyRiskDto.builder()
-      .id(serverDependencyRisk.key())
-      .type(DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()))
-      .severity(DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()))
-      .quality(DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()))
-      .status(DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()))
-      .packageName(serverDependencyRisk.packageName())
-      .packageVersion(serverDependencyRisk.packageVersion())
-      .vulnerabilityId(serverDependencyRisk.vulnerabilityId())
-      .cvssScore(serverDependencyRisk.cvssScore())
-      .transitions(serverDependencyRisk.transitions().stream()
-        .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
-        .toList())
-      .presence(DependencyRiskDto.Presence.SERVER_ONLY)
-      .build();
+  private static LocalDependencyRiskService.LocalDependencyRiskUpdate emptyLocalDependencyRiskUpdate() {
+    return new LocalDependencyRiskService.LocalDependencyRiskUpdate(List.of(), Set.of(), List.of(), List.of());
   }
 
   public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,
@@ -237,11 +209,8 @@ public class DependencyRiskService {
     serverConnection.withClientApi(serverApi -> {
       serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor);
       projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus, updatedDependencyRisk.transitions());
-      var updatedRisks = List.of(toDto(updatedDependencyRisk));
       client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(),
-        localDependencyRiskAnalysisCache.get(configurationScopeId)
-          .map(localAnalysis -> dependencyRiskMerger.enrichServerRisks(updatedRisks, localAnalysis))
-          .orElse(updatedRisks)));
+        localDependencyRiskService.enrichServerRisksWithLocalAnalysis(configurationScopeId, List.of(updatedDependencyRisk))));
     });
   }
 

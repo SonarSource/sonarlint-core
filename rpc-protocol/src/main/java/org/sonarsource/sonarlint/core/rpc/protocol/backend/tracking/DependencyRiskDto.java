@@ -25,7 +25,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public class DependencyRiskDto {
-  @Nullable
   private final UUID id;
   private final Type type;
   private final Severity severity;
@@ -43,7 +42,7 @@ public class DependencyRiskDto {
   private final Presence presence;
 
   private DependencyRiskDto(Builder builder) {
-    this.id = builder.id;
+    this.id = builder.id == null ? UUID.randomUUID() : builder.id;
     this.type = builder.type;
     this.severity = builder.severity;
     this.quality = builder.quality;
@@ -167,7 +166,6 @@ public class DependencyRiskDto {
     }
   }
 
-  @CheckForNull
   public UUID getId() {
     return id;
   }

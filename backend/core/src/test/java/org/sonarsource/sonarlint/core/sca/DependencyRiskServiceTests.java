@@ -28,15 +28,18 @@ import com.sonar.sca.scanner.analyzeproject.response.ScaIssueType;
 import com.sonar.sca.scanner.analyzeproject.response.SoftwareQuality;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
+import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -48,6 +51,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.ScaSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -55,6 +59,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,8 +81,7 @@ class DependencyRiskServiceTests {
   private final ScaSynchronizationService scaSynchronizationService = mock(ScaSynchronizationService.class);
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final TelemetryService telemetryService = mock(TelemetryService.class);
-  private final LocalDependencyRiskAnalysisCache localDependencyRiskAnalysisCache = new LocalDependencyRiskAnalysisCache();
-  private final DependencyRiskMerger dependencyRiskMerger = new DependencyRiskMerger(new DependencyRiskDtoMapper());
+  private final LocalDependencyRiskService localDependencyRiskService = new LocalDependencyRiskService(storageService, new DependencyRiskDtoMapper());
   private final SonarProjectStorage projectStorage = mock(SonarProjectStorage.class);
   private final ProjectServerIssueStore findingsStore = mock(ProjectServerIssueStore.class);
 
@@ -94,7 +98,7 @@ class DependencyRiskServiceTests {
     var sharedId = UUID.randomUUID();
     var serverRisk = sampleServerRisk(sharedId, "org.example:library", "1.2.3");
     setupServerRisks(List.of(serverRisk));
-    localDependencyRiskAnalysisCache.put(CONFIG_SCOPE_ID, singleIssueResponse(sharedId.toString(), "org.example:library", "1.2.3"));
+    putLocalAnalysis(CONFIG_SCOPE_ID, singleIssueResponse(sharedId.toString(), "org.example:library", "1.2.3"));
 
     var risks = underTest().listAll(CONFIG_SCOPE_ID, false, new SonarLintCancelMonitor());
 
@@ -133,10 +137,32 @@ class DependencyRiskServiceTests {
     assertThat(params.getAddedDependencyRisks())
       .singleElement()
       .satisfies(risk -> {
-        assertThat(risk.getId()).isNull();
+        assertThat(risk.getId()).isNotNull();
         assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
         assertThat(risk.getPackageName()).isEqualTo("org.example:local-only");
       });
+  }
+
+  @Test
+  void updateLocalAnalysisAndNotify_should_close_previous_local_only_snapshot_when_reanalyzing() {
+    setupBoundScope();
+    setupServerRisks(List.of());
+
+    underTest().updateLocalAnalysisAndNotify(CONFIG_SCOPE_ID, singleIssueResponse(null, "org.example:local-only", "1.2.3"), new SonarLintCancelMonitor());
+    underTest().updateLocalAnalysisAndNotify(CONFIG_SCOPE_ID, singleIssueResponse(null, "org.example:local-only", "1.2.3"), new SonarLintCancelMonitor());
+
+    var paramsCaptor = ArgumentCaptor.forClass(DidChangeDependencyRisksParams.class);
+    verify(client, times(2)).didChangeDependencyRisks(paramsCaptor.capture());
+    var firstLocalOnlyRisk = paramsCaptor.getAllValues().get(0).getAddedDependencyRisks().get(0);
+    var secondParams = paramsCaptor.getAllValues().get(1);
+    assertThat(secondParams.getClosedDependencyRiskIds()).containsExactly(firstLocalOnlyRisk.getId());
+    assertThat(secondParams.getAddedDependencyRisks())
+      .singleElement()
+      .satisfies(risk -> {
+        assertThat(risk.getId()).isNotEqualTo(firstLocalOnlyRisk.getId());
+        assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
+      });
+    assertThat(secondParams.getUpdatedDependencyRisks()).isEmpty();
   }
 
   @Test
@@ -144,25 +170,77 @@ class DependencyRiskServiceTests {
     var otherConfigurationScopeId = "otherConfigScopeId";
     var removedAnalysis = singleIssueResponse(UUID.randomUUID().toString(), "org.example:removed", "1.2.3");
     var otherAnalysis = singleIssueResponse(UUID.randomUUID().toString(), "org.example:other", "4.5.6");
-    localDependencyRiskAnalysisCache.put(CONFIG_SCOPE_ID, removedAnalysis);
-    localDependencyRiskAnalysisCache.put(otherConfigurationScopeId, otherAnalysis);
+    putLocalAnalysis(CONFIG_SCOPE_ID, removedAnalysis);
+    putLocalAnalysis(otherConfigurationScopeId, otherAnalysis);
 
     underTest().onConfigurationScopeRemoved(new ConfigurationScopeRemovedEvent(new ConfigurationScope(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID), BindingConfiguration.noBinding()));
 
-    assertThat(localDependencyRiskAnalysisCache.get(CONFIG_SCOPE_ID)).isEmpty();
-    assertThat(localDependencyRiskAnalysisCache.get(otherConfigurationScopeId)).containsSame(otherAnalysis);
+    assertThat(localDependencyRiskService.mergeWithLocalAnalysis(CONFIG_SCOPE_ID, List.of())).isEmpty();
+    assertThat(localDependencyRiskService.mergeWithLocalAnalysis(otherConfigurationScopeId, List.of()))
+      .singleElement()
+      .satisfies(risk -> assertThat(risk.getPackageName()).isEqualTo("org.example:other"));
+  }
+
+  @Test
+  void onDependencyRisksSynchronized_should_update_deleted_server_risk_to_local_only_when_still_found_locally() {
+    setupBoundScope();
+    var deletedRiskId = UUID.randomUUID();
+    putLocalAnalysis(CONFIG_SCOPE_ID, singleIssueResponse(deletedRiskId.toString(), "org.example:library", "1.2.3"));
+    var summary = new UpdateSummary<ServerDependencyRisk>(Set.of(deletedRiskId), List.of(), List.of());
+
+    underTest().onDependencyRisksSynchronized(new DependencyRisksSynchronizedEvent(CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, summary));
+
+    var paramsCaptor = ArgumentCaptor.forClass(DidChangeDependencyRisksParams.class);
+    verify(client).didChangeDependencyRisks(paramsCaptor.capture());
+    var params = paramsCaptor.getValue();
+    assertThat(params.getClosedDependencyRiskIds()).isEmpty();
+    assertThat(params.getAddedDependencyRisks()).isEmpty();
+    assertThat(params.getUpdatedDependencyRisks())
+      .singleElement()
+      .satisfies(risk -> {
+        assertThat(risk.getId()).isEqualTo(deletedRiskId);
+        assertThat(risk.getPresence()).isEqualTo(DependencyRiskDto.Presence.LOCAL_ONLY);
+        assertThat(risk.getPackageName()).isEqualTo("org.example:library");
+      });
+  }
+
+  @Test
+  void onDependencyRisksSynchronized_should_close_deleted_server_risk_when_not_found_locally() {
+    setupBoundScope();
+    var deletedRiskId = UUID.randomUUID();
+    putLocalAnalysis(CONFIG_SCOPE_ID, singleIssueResponse(UUID.randomUUID().toString(), "org.example:library", "1.2.3"));
+    var summary = new UpdateSummary<ServerDependencyRisk>(Set.of(deletedRiskId), List.of(), List.of());
+
+    underTest().onDependencyRisksSynchronized(new DependencyRisksSynchronizedEvent(CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, summary));
+
+    var paramsCaptor = ArgumentCaptor.forClass(DidChangeDependencyRisksParams.class);
+    verify(client).didChangeDependencyRisks(paramsCaptor.capture());
+    var params = paramsCaptor.getValue();
+    assertThat(params.getClosedDependencyRiskIds()).containsExactly(deletedRiskId);
+    assertThat(params.getAddedDependencyRisks()).isEmpty();
+    assertThat(params.getUpdatedDependencyRisks()).isEmpty();
   }
 
   private DependencyRiskService underTest() {
     return new DependencyRiskService(configurationRepository, connectionRepository, storageService, sonarQubeClientManager, branchTrackingService,
-      scaSynchronizationService, client, telemetryService, localDependencyRiskAnalysisCache, dependencyRiskMerger);
+      scaSynchronizationService, client, telemetryService, localDependencyRiskService);
+  }
+
+  private void putLocalAnalysis(String configurationScopeId, AnalyzeProjectResponse localAnalysis) {
+    setupStorage();
+    localDependencyRiskService.updateLocalAnalysisAndComputeUpdate(configurationScopeId, localAnalysis, new Binding(CONNECTION_ID, PROJECT_KEY), BRANCH_NAME);
   }
 
   private void setupBoundScope() {
     configurationRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID), new BindingConfiguration(CONNECTION_ID, PROJECT_KEY, false));
     when(branchTrackingService.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).thenReturn(Optional.of(BRANCH_NAME));
+    setupStorage();
+  }
+
+  private void setupStorage() {
     when(storageService.binding(any())).thenReturn(projectStorage);
     when(projectStorage.findings()).thenReturn(findingsStore);
+    when(findingsStore.loadDependencyRisks(BRANCH_NAME)).thenReturn(List.of());
   }
 
   private void setupServerRisks(List<ServerDependencyRisk> serverRisks) {

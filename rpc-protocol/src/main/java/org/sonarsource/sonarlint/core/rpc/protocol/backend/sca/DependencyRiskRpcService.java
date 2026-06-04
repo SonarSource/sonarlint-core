@@ -34,8 +34,11 @@ public interface DependencyRiskRpcService {
   CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params);
 
   /**
-   * Runs an on-demand dependency risk analysis for the given configuration scope and returns the resulting dependency
-   * risks together with local-analysis diagnostics.
+   * Runs an on-demand dependency risk analysis for the given configuration scope.
+   * <p>
+   * Dependency-risk view updates are delivered through {@code SonarLintRpcClient#didChangeDependencyRisks}; the response
+   * only contains local-analysis diagnostics such as parsed dependency files and analysis errors.
+   * </p>
    */
   @JsonRequest
   CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params);
