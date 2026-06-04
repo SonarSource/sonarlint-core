@@ -44,16 +44,18 @@ public class SecurityHotspotRaisedEventParser implements EventParser<SecurityHot
       LOG.error("Invalid payload for 'SecurityHotspotRaised' event: {}", jsonData);
       return Optional.empty();
     }
-    return Optional.of(new SecurityHotspotRaisedEvent(
-      payload.key,
-      payload.projectKey,
-      VulnerabilityProbability.valueOf(payload.vulnerabilityProbability),
-      HotspotReviewStatus.fromStatusAndResolution(payload.status, payload.resolution),
-      Instant.ofEpochMilli(payload.creationDate),
-      payload.branch,
-      adapt(payload.mainLocation),
-      payload.ruleKey,
-      payload.ruleDescriptionContextKey, payload.assignee));
+    return Optional.of(new SecurityHotspotRaisedEvent.Builder()
+      .setHotspotKey(payload.key)
+      .setProjectKey(payload.projectKey)
+      .setVulnerabilityProbability(VulnerabilityProbability.valueOf(payload.vulnerabilityProbability))
+      .setStatus(HotspotReviewStatus.fromStatusAndResolution(payload.status, payload.resolution))
+      .setCreationDate(Instant.ofEpochMilli(payload.creationDate))
+      .setBranch(payload.branch)
+      .setMainLocation(adapt(payload.mainLocation))
+      .setRuleKey(payload.ruleKey)
+      .setRuleDescriptionContextKey(payload.ruleDescriptionContextKey)
+      .setAssignee(payload.assignee)
+      .build());
   }
 
   private static class HotspotRaisedEventPayload {

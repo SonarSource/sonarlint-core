@@ -46,24 +46,36 @@ public class ServerHotspotDetails {
   public final String codeSnippet;
   public final boolean canChangeStatus;
 
-  public ServerHotspotDetails(String message,
+  public ServerHotspotDetails(CodeContext codeContext,
     Path filePath,
-    TextRange textRange,
-    String author,
     Status status,
     @Nullable Resolution resolution,
     Rule rule,
-    @Nullable String codeSnippet,
     boolean canChangeStatus) {
-    this.message = message;
+    this.message = codeContext.message;
     this.filePath = filePath;
-    this.textRange = textRange;
-    this.author = author;
+    this.textRange = codeContext.textRange;
+    this.author = codeContext.author;
     this.status = status;
     this.resolution = resolution;
     this.rule = rule;
-    this.codeSnippet = codeSnippet;
+    this.codeSnippet = codeContext.codeSnippet;
     this.canChangeStatus = canChangeStatus;
+  }
+
+  public static class CodeContext {
+    public final String message;
+    public final TextRange textRange;
+    public final String author;
+    @CheckForNull
+    public final String codeSnippet;
+
+    public CodeContext(String message, TextRange textRange, String author, @Nullable String codeSnippet) {
+      this.message = message;
+      this.textRange = textRange;
+      this.author = author;
+      this.codeSnippet = codeSnippet;
+    }
   }
 
   @Deprecated(forRemoval = true)

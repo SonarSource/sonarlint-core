@@ -261,9 +261,7 @@ class SmartCancelableLoadingCacheTests {
     return invocation -> {
       var cancelChecker = (SonarLintCancelMonitor) invocation.getArgument(1);
       startedLatch.countDown();
-      while (!cancelChecker.isCanceled()) {
-        Thread.sleep(100);
-      }
+      await().untilAsserted(() -> assertThat(cancelChecker.isCanceled()).isTrue());
       if (wasCancelled != null) {
         wasCancelled.set(true);
       }

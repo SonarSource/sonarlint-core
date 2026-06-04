@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,19 +45,21 @@ public class ServerRule {
   private final CleanCodeAttribute cleanCodeAttribute;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
 
+  private ServerRule(Builder builder) {
+    this.name = builder.name;
+    this.severity = builder.severity;
+    this.type = builder.type;
+    this.language = SonarLanguage.forKey(builder.language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + builder.language));
+    this.htmlDesc = builder.htmlDesc;
+    this.descriptionSections = builder.descriptionSections;
+    this.htmlNote = builder.htmlNote;
+    this.educationPrincipleKeys = builder.educationPrincipleKeys;
+    this.cleanCodeAttribute = builder.cleanCodeAttribute;
+    this.impacts = builder.impacts;
+  }
 
-  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote,
-    Set<String> educationPrincipleKeys, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this.name = name;
-    this.severity = severity;
-    this.type = type;
-    this.language = SonarLanguage.forKey(language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + language));
-    this.htmlDesc = htmlDesc;
-    this.descriptionSections = descriptionSections;
-    this.htmlNote = htmlNote;
-    this.educationPrincipleKeys = educationPrincipleKeys;
-    this.cleanCodeAttribute = cleanCodeAttribute;
-    this.impacts = impacts;
+  public static Builder builder() {
+    return new Builder();
   }
 
   public String getName() {
@@ -139,6 +142,73 @@ public class ServerRule {
       public String getDisplayName() {
         return displayName;
       }
+    }
+  }
+
+  public static class Builder {
+    private String name;
+    private String htmlDesc;
+    private List<DescriptionSection> descriptionSections = Collections.emptyList();
+    private String htmlNote;
+    private IssueSeverity severity;
+    private RuleType type;
+    private String language;
+    private Set<String> educationPrincipleKeys = Collections.emptySet();
+    private CleanCodeAttribute cleanCodeAttribute;
+    private Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
+
+    public Builder setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder setSeverity(IssueSeverity severity) {
+      this.severity = severity;
+      return this;
+    }
+
+    public Builder setType(RuleType type) {
+      this.type = type;
+      return this;
+    }
+
+    public Builder setLanguage(String language) {
+      this.language = language;
+      return this;
+    }
+
+    public Builder setHtmlDesc(String htmlDesc) {
+      this.htmlDesc = htmlDesc;
+      return this;
+    }
+
+    public Builder setDescriptionSections(List<DescriptionSection> descriptionSections) {
+      this.descriptionSections = descriptionSections;
+      return this;
+    }
+
+    public Builder setHtmlNote(String htmlNote) {
+      this.htmlNote = htmlNote;
+      return this;
+    }
+
+    public Builder setEducationPrincipleKeys(Set<String> educationPrincipleKeys) {
+      this.educationPrincipleKeys = educationPrincipleKeys;
+      return this;
+    }
+
+    public Builder setCleanCodeAttribute(@Nullable CleanCodeAttribute cleanCodeAttribute) {
+      this.cleanCodeAttribute = cleanCodeAttribute;
+      return this;
+    }
+
+    public Builder setImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+      this.impacts = impacts;
+      return this;
+    }
+
+    public ServerRule build() {
+      return new ServerRule(this);
     }
   }
 }

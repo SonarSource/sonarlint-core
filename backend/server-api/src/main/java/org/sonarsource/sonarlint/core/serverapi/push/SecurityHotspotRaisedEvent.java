@@ -39,19 +39,17 @@ public class SecurityHotspotRaisedEvent implements ServerHotspotEvent {
   @Nullable
   private final String assignee;
 
-  public SecurityHotspotRaisedEvent(String hotspotKey, String projectKey, VulnerabilityProbability vulnerabilityProbability,
-    HotspotReviewStatus status, Instant creationDate, String branch, TaintVulnerabilityRaisedEvent.Location mainLocation, String ruleKey,
-    @Nullable String ruleDescriptionContextKey, @Nullable String assignee) {
-    this.hotspotKey = hotspotKey;
-    this.projectKey = projectKey;
-    this.vulnerabilityProbability = vulnerabilityProbability;
-    this.status = status;
-    this.creationDate = creationDate;
-    this.branch = branch;
-    this.mainLocation = mainLocation;
-    this.ruleKey = ruleKey;
-    this.ruleDescriptionContextKey = ruleDescriptionContextKey;
-    this.assignee = assignee;
+  private SecurityHotspotRaisedEvent(Builder builder) {
+    this.hotspotKey = builder.hotspotKey;
+    this.projectKey = builder.projectKey;
+    this.vulnerabilityProbability = builder.vulnerabilityProbability;
+    this.status = builder.status;
+    this.creationDate = builder.creationDate;
+    this.branch = builder.branch;
+    this.mainLocation = builder.mainLocation;
+    this.ruleKey = builder.ruleKey;
+    this.ruleDescriptionContextKey = builder.ruleDescriptionContextKey;
+    this.assignee = builder.assignee;
   }
 
   public String getHotspotKey() {
@@ -95,5 +93,74 @@ public class SecurityHotspotRaisedEvent implements ServerHotspotEvent {
   @Override
   public Path getFilePath() {
     return mainLocation.getFilePath();
+  }
+
+  public static class Builder {
+    private String hotspotKey;
+    private String projectKey;
+    private VulnerabilityProbability vulnerabilityProbability;
+    private HotspotReviewStatus status;
+    private Instant creationDate;
+    private String branch;
+    private TaintVulnerabilityRaisedEvent.Location mainLocation;
+    private String ruleKey;
+    @Nullable
+    private String ruleDescriptionContextKey;
+    @Nullable
+    private String assignee;
+
+    public Builder setHotspotKey(String hotspotKey) {
+      this.hotspotKey = hotspotKey;
+      return this;
+    }
+
+    public Builder setProjectKey(String projectKey) {
+      this.projectKey = projectKey;
+      return this;
+    }
+
+    public Builder setVulnerabilityProbability(VulnerabilityProbability vulnerabilityProbability) {
+      this.vulnerabilityProbability = vulnerabilityProbability;
+      return this;
+    }
+
+    public Builder setStatus(HotspotReviewStatus status) {
+      this.status = status;
+      return this;
+    }
+
+    public Builder setCreationDate(Instant creationDate) {
+      this.creationDate = creationDate;
+      return this;
+    }
+
+    public Builder setBranch(String branch) {
+      this.branch = branch;
+      return this;
+    }
+
+    public Builder setMainLocation(TaintVulnerabilityRaisedEvent.Location mainLocation) {
+      this.mainLocation = mainLocation;
+      return this;
+    }
+
+    public Builder setRuleKey(String ruleKey) {
+      this.ruleKey = ruleKey;
+      return this;
+    }
+
+    public Builder setRuleDescriptionContextKey(@Nullable String ruleDescriptionContextKey) {
+      this.ruleDescriptionContextKey = ruleDescriptionContextKey;
+      return this;
+    }
+
+    public Builder setAssignee(@Nullable String assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    public SecurityHotspotRaisedEvent build() {
+      return new SecurityHotspotRaisedEvent(this);
+    }
   }
 }

@@ -29,10 +29,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ServerHotspotDetailsTests {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
-    var hotspot = new ServerHotspotDetails("message",
-      Path.of("path"),
+    var codeContext = new ServerHotspotDetails.CodeContext("message",
       new TextRange(0, 1, 2, 3),
       "author",
+      "some code \n content");
+    var hotspot = new ServerHotspotDetails(codeContext,
+      Path.of("path"),
       ServerHotspotDetails.Status.TO_REVIEW,
       ServerHotspotDetails.Resolution.FIXED, new ServerHotspotDetails.Rule(
         "key",
@@ -42,7 +44,7 @@ class ServerHotspotDetailsTests {
         "risk",
         "vulnerability",
         "fix"),
-      "some code \n content", true);
+      true);
 
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo(Path.of("path"));

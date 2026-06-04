@@ -205,15 +205,18 @@ public class HotspotApi {
   }
 
   private static ServerHotspotDetails adapt(Hotspots.ShowWsResponse hotspot, @Nullable String codeSnippet) {
-    return new ServerHotspotDetails(
+    var codeContext = new ServerHotspotDetails.CodeContext(
       hotspot.getMessage(),
-      Path.of(hotspot.getComponent().getPath()),
       convertTextRange(hotspot.getTextRange()),
       hotspot.getAuthor(),
+      codeSnippet);
+    return new ServerHotspotDetails(
+      codeContext,
+      Path.of(hotspot.getComponent().getPath()),
       ServerHotspotDetails.Status.valueOf(hotspot.getStatus()),
       hotspot.hasResolution() ? ServerHotspotDetails.Resolution.valueOf(hotspot.getResolution()) : null,
       adapt(hotspot.getRule()),
-      codeSnippet, hotspot.getCanChangeStatus());
+      hotspot.getCanChangeStatus());
   }
 
   private static ServerHotspotDetails.Rule adapt(Hotspots.Rule rule) {
