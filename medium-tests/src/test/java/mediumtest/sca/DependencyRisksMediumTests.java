@@ -349,7 +349,7 @@ class DependencyRisksMediumTests {
     var response = checkSupported(backend, CONFIG_SCOPE_ID);
 
     assertThat(response.isSupported()).isFalse();
-    assertThat(response.getReason()).isEqualTo("The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
+    assertThat(response.getReason()).isEqualTo("The connected server does not have Advanced Security enabled (requires Enterprise edition or higher)");
   }
 
   private List<DependencyRiskDto> listAllDependencyRisks(SonarLintTestRpcServer backend, String configScopeId) {

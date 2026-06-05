@@ -33,7 +33,17 @@ public interface DependencyRiskRpcService {
   @JsonRequest
   CompletableFuture<ListAllDependencyRisksResponse> listAll(ListAllParams params);
 
-    /**
+  /**
+   * Runs an on-demand dependency risk analysis for the given configuration scope.
+   * <p>
+   * Dependency-risk view updates are delivered through {@code SonarLintRpcClient#didChangeDependencyRisks}; the response
+   * only contains local-analysis diagnostics such as parsed dependency files and analysis errors.
+   * </p>
+   */
+  @JsonRequest
+  CompletableFuture<AnalyzeDependencyRiskProjectResponse> analyzeProject(AnalyzeDependencyRiskProjectParams params);
+
+  /**
    * <p> It changes a status of a Dependency Risk (SCA finding) that exists on the server. In detail, it is responsible for:
    * <ul>
    *   <li>Changes the status of a Dependency Risk (identified by {@link ChangeDependencyRiskStatusParams#getDependencyRiskKey()})</li>

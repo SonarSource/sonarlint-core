@@ -1,5 +1,11 @@
 # 10.48
 
+## Potential breaking changes
+
+* Replace the public constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto` with a builder.
+    * Clients constructing this DTO directly, typically in tests, should use `DependencyRiskDto.builder()` instead.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto#getId` is always non-null. Dependency risks found only by local analysis receive an unstable generated UUID when no server UUID is available.
+
 ## New features
 
 * Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`.
@@ -8,6 +14,16 @@
 * Add `serverVersion` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
     * Contains the version of the SonarQube Server that provided the plugin (e.g. `"10.8.1"`).
     * Non-null only when `source` is `SONARQUBE_SERVER`; `null` for all other sources (embedded, SonarQube Cloud, unavailable).
+* Add `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService#analyzeProject` to run an on-demand local dependency-risk analysis for a configuration scope.
+    * The method accepts `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectParams`, containing the `configurationScopeId` to analyze.
+    * It returns `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.AnalyzeDependencyRiskProjectResponse`, containing parsed dependency files and local-analysis errors.
+    * Dependency-risk view updates are delivered through `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didChangeDependencyRisks`; clients can also use `listAll` to read the current view.
+* Add local-analysis enrichment to `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto`.
+    * Add `presence` to distinguish `SERVER_ONLY`, `LOCAL_ONLY` and `SERVER_AND_LOCAL` dependency risks.
+    * Add nullable `localAnalysisDetails`, containing release details, issue details and dependency details.
+    * Release details include release key, package URL, package manager, license expression, known flags and newly-introduced flag.
+    * Issue details include increased-severity warning, CWE ids, SPDX license id and version options.
+    * Dependency details include dependency file paths and dependency chains.
 * Introduce two new telemetry notification methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to track usage of the "Supported Languages" panel:
     * `supportedLanguagesPanelOpened` - call this each time the user opens the "Supported Languages" panel.
     * `supportedLanguagesPanelCtaClicked` - call this each time the user clicks the "set up connection/binding" CTA button in the "Supported Languages" panel.

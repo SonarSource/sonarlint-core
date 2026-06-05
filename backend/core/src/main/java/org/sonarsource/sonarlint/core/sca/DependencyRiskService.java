@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sca;
 
+import com.sonar.sca.scanner.analyzeproject.response.AnalyzeProjectResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -64,10 +66,11 @@ public class DependencyRiskService {
   private final ScaSynchronizationService scaSynchronizationService;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
+  private final LocalDependencyRiskService localDependencyRiskService;
 
   public DependencyRiskService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, StorageService storageService,
     SonarQubeClientManager sonarQubeClientManager, SonarProjectBranchTrackingService branchTrackingService, ScaSynchronizationService scaSynchronizationService,
-    SonarLintRpcClient client, TelemetryService telemetryService) {
+    SonarLintRpcClient client, TelemetryService telemetryService, LocalDependencyRiskService localDependencyRiskService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.storageService = storageService;
@@ -76,6 +79,7 @@ public class DependencyRiskService {
     this.scaSynchronizationService = scaSynchronizationService;
     this.client = client;
     this.telemetryService = telemetryService;
+    this.localDependencyRiskService = localDependencyRiskService;
   }
 
   public List<DependencyRiskDto> listAll(String configurationScopeId, boolean shouldRefresh, SonarLintCancelMonitor cancelMonitor) {
@@ -84,19 +88,35 @@ public class DependencyRiskService {
       .orElseGet(Collections::emptyList);
   }
 
+  public List<DependencyRiskDto> updateLocalAnalysisAndNotify(String configurationScopeId, AnalyzeProjectResponse localAnalysis, SonarLintCancelMonitor cancelMonitor) {
+    var update = configurationRepository.getEffectiveBinding(configurationScopeId)
+      .flatMap(binding -> branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId)
+        .map(branchName -> localDependencyRiskService.updateLocalAnalysisAndComputeUpdate(configurationScopeId, localAnalysis, binding, branchName)))
+      .orElseGet(DependencyRiskService::emptyLocalDependencyRiskUpdate);
+    if (update.hasChanges()) {
+      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, update.closedRiskIds(), update.addedRisks(), update.updatedRisks()));
+    }
+    return update.newRisks();
+  }
+
   @EventListener
   public void onDependencyRisksSynchronized(DependencyRisksSynchronizedEvent event) {
     var summary = event.summary();
     var connectionId = event.connectionId();
     var sonarProjectKey = event.sonarProjectKey();
     configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, sonarProjectKey)
-      .forEach(boundScope -> client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(boundScope.getConfigScopeId(), summary.deletedItemIds(),
-        summary.addedItems().stream()
-          .map(DependencyRiskService::toDto)
-          .toList(),
-        summary.updatedItems().stream()
-          .map(DependencyRiskService::toDto)
-          .toList())));
+      .forEach(boundScope -> {
+        var configurationScopeId = boundScope.getConfigScopeId();
+        var update = localDependencyRiskService.computeServerSynchronizationUpdate(configurationScopeId, summary);
+        if (update.hasChanges()) {
+          client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, update.closedRiskIds(), update.addedRisks(), update.updatedRisks()));
+        }
+      });
+  }
+
+  @EventListener
+  public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
+    localDependencyRiskService.remove(event.getRemovedConfigurationScopeId());
   }
 
   public CheckDependencyRiskSupportedResponse checkSupported(String configurationScopeId) {
@@ -127,7 +147,7 @@ public class DependencyRiskService {
       return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server version is lower than the minimum supported version 2025.4");
     }
     if (!serverInfo.hasFeature(Feature.SCA)) {
-      return new CheckDependencyRiskSupportedResponse(false, "The connected SonarQube Server does not have Advanced Security enabled (requires Enterprise edition or higher)");
+      return new CheckDependencyRiskSupportedResponse(false, "The connected server does not have Advanced Security enabled (requires Enterprise edition or higher)");
     }
     return new CheckDependencyRiskSupportedResponse(true, null);
   }
@@ -139,27 +159,12 @@ public class DependencyRiskService {
           sonarQubeClientManager.withActiveClient(binding.connectionId(),
             serverApi -> scaSynchronizationService.synchronize(serverApi, binding.connectionId(), binding.sonarProjectKey(), matchedBranch, cancelMonitor));
         }
-        var projectStorage = storageService.binding(binding);
-        return projectStorage.findings().loadDependencyRisks(matchedBranch)
-          .stream().map(DependencyRiskService::toDto)
-          .toList();
+        return localDependencyRiskService.listAll(configurationScopeId, binding, matchedBranch);
       }).orElseGet(Collections::emptyList);
   }
 
-  private static DependencyRiskDto toDto(ServerDependencyRisk serverDependencyRisk) {
-    return new DependencyRiskDto(
-      serverDependencyRisk.key(),
-      DependencyRiskDto.Type.valueOf(serverDependencyRisk.type().name()),
-      DependencyRiskDto.Severity.valueOf(serverDependencyRisk.severity().name()),
-      DependencyRiskDto.SoftwareQuality.valueOf(serverDependencyRisk.quality().name()),
-      DependencyRiskDto.Status.valueOf(serverDependencyRisk.status().name()),
-      serverDependencyRisk.packageName(),
-      serverDependencyRisk.packageVersion(),
-      serverDependencyRisk.vulnerabilityId(),
-      serverDependencyRisk.cvssScore(),
-      serverDependencyRisk.transitions().stream()
-        .map(transition -> DependencyRiskDto.Transition.valueOf(transition.name()))
-        .toList());
+  private static LocalDependencyRiskService.LocalDependencyRiskUpdate emptyLocalDependencyRiskUpdate() {
+    return new LocalDependencyRiskService.LocalDependencyRiskUpdate(List.of(), Set.of(), List.of(), List.of());
   }
 
   public void changeStatus(String configurationScopeId, UUID dependencyRiskKey, DependencyRiskTransition transition, @CheckForNull String comment,
@@ -204,7 +209,8 @@ public class DependencyRiskService {
     serverConnection.withClientApi(serverApi -> {
       serverApi.sca().changeStatus(dependencyRiskKey, transition.name(), comment, cancelMonitor);
       projectServerIssueStore.updateDependencyRiskStatus(dependencyRiskKey, newStatus, updatedDependencyRisk.transitions());
-      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(), List.of(toDto(updatedDependencyRisk))));
+      client.didChangeDependencyRisks(new DidChangeDependencyRisksParams(configurationScopeId, Set.of(), List.of(),
+        localDependencyRiskService.enrichServerRisksWithLocalAnalysis(configurationScopeId, List.of(updatedDependencyRisk))));
     });
   }
 
@@ -236,13 +242,9 @@ public class DependencyRiskService {
   }
 
   static String buildDependencyRiskBrowseUrl(String projectKey, String branch, UUID dependencyKey, EndpointParams endpointParams) {
-    var relativePath = new StringBuilder("/dependency-risks/")
-      .append(UrlUtils.urlEncode(dependencyKey.toString()))
-      .append("/what?id=")
-      .append(UrlUtils.urlEncode(projectKey))
-      .append("&branch=")
-      .append(UrlUtils.urlEncode(branch))
-      .toString();
+    var relativePath = "/dependency-risks/" + UrlUtils.urlEncode(dependencyKey.toString())
+      + "/what?id=" + UrlUtils.urlEncode(projectKey)
+      + "&branch=" + UrlUtils.urlEncode(branch);
 
     return ServerApiHelper.concat(endpointParams.getBaseUrl(), relativePath);
   }

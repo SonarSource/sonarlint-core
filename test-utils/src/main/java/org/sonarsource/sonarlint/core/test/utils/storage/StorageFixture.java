@@ -46,6 +46,7 @@ public class StorageFixture {
     private AiCodeFixFixtures.Builder aiCodeFixBuilder;
     private String serverVersion;
     private Map<String, String> globalSettings;
+    private boolean createServerInfo;
 
     private StorageBuilder(String connectionId) {
       this.connectionId = connectionId;
@@ -57,11 +58,17 @@ public class StorageFixture {
     }
 
     public StorageBuilder withServerVersion(String serverVersion) {
+      this.createServerInfo = true;
       this.serverVersion = serverVersion;
       return this;
     }
 
+    public void withEmptyServerInfo() {
+      this.createServerInfo = true;
+    }
+
     public StorageBuilder withServerFeature(Feature feature) {
+      this.createServerInfo = true;
       this.supportedFeatures.add(feature);
       return this;
     }
@@ -129,7 +136,7 @@ public class StorageFixture {
     }
 
     private void createServerInfo(Path connectionStorage) {
-      if (serverVersion != null || globalSettings != null || !supportedFeatures.isEmpty()) {
+      if (createServerInfo || globalSettings != null) {
         var version = serverVersion == null ? "0.0.0" : serverVersion;
         var settings = globalSettings == null ? Map.<String, String>of() : globalSettings;
         ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder()
