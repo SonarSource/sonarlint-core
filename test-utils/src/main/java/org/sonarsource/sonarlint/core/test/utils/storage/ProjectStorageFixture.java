@@ -74,6 +74,11 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 public class ProjectStorageFixture {
 
   public static class ProjectStorageBuilder {
+    private static final String START_LINE_OFFSET = "startLineOffset";
+    private static final String END_LINE = "endLine";
+    private static final String END_LINE_OFFSET = "endLineOffset";
+    private static final String RANGE_HASH = "rangeHash";
+
     private final String connectionId;
     private final String projectKey;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
@@ -292,10 +297,10 @@ public class ProjectStorageFixture {
       } else if (issue.textRangeWithHash() != null) {
         var textRange = issue.textRangeWithHash();
         issueEntity.setProperty("startLine", textRange.getStartLine());
-        issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-        issueEntity.setProperty("endLine", textRange.getEndLine());
-        issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-        issueEntity.setBlobString("rangeHash", textRange.getHash());
+        issueEntity.setProperty(START_LINE_OFFSET, textRange.getStartLineOffset());
+        issueEntity.setProperty(END_LINE, textRange.getEndLine());
+        issueEntity.setProperty(END_LINE_OFFSET, textRange.getEndLineOffset());
+        issueEntity.setBlobString(RANGE_HASH, textRange.getHash());
       }
       issueEntity.setBlob("impacts", toProtoImpacts(issue.impacts()));
 
@@ -319,10 +324,10 @@ public class ProjectStorageFixture {
       if (taint.textRange() != null) {
         var textRange = taint.textRange();
         taintIssueEntity.setProperty("startLine", textRange.getStartLine());
-        taintIssueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-        taintIssueEntity.setProperty("endLine", textRange.getEndLine());
-        taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-        taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
+        taintIssueEntity.setProperty(START_LINE_OFFSET, textRange.getStartLineOffset());
+        taintIssueEntity.setProperty(END_LINE, textRange.getEndLine());
+        taintIssueEntity.setProperty(END_LINE_OFFSET, textRange.getEndLineOffset());
+        taintIssueEntity.setBlobString(RANGE_HASH, textRange.getHash());
       }
       taintIssueEntity.setBlob("flows", toProtoFlows(taint.flows()));
       if (taint.ruleDescriptionContextKey() != null) {
@@ -391,10 +396,10 @@ public class ProjectStorageFixture {
       hotspotEntity.setProperty("creationDate", hotspot.introductionDate());
       var textRange = hotspot.textRangeWithHash();
       hotspotEntity.setProperty("startLine", textRange.getStartLine());
-      hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-      hotspotEntity.setProperty("endLine", textRange.getEndLine());
-      hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-      hotspotEntity.setBlobString("rangeHash", textRange.getHash());
+      hotspotEntity.setProperty(START_LINE_OFFSET, textRange.getStartLineOffset());
+      hotspotEntity.setProperty(END_LINE, textRange.getEndLine());
+      hotspotEntity.setProperty(END_LINE_OFFSET, textRange.getEndLineOffset());
+      hotspotEntity.setBlobString(RANGE_HASH, textRange.getHash());
 
       hotspotEntity.setProperty("status", hotspot.status());
       hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability().toString());
