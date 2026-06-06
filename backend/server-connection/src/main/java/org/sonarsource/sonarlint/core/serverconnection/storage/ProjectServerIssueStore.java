@@ -162,7 +162,7 @@ public interface ProjectServerIssueStore {
    * @param issueKey
    * @return the server issue if found, null otherwise
    */
-  ServerIssue<?> getIssue(String issueKey);
+  <G extends ServerIssue<G>> G getIssue(String issueKey);
 
   /**
    * Retrieve a hotspot from the store

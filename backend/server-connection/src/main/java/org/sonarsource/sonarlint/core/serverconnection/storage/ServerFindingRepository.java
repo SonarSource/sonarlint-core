@@ -376,15 +376,16 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     return true;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public ServerIssue<?> getIssue(String issueKey) {
+  public <G extends ServerIssue<G>> G getIssue(String issueKey) {
     var rec = database.selectFrom(SERVER_FINDINGS)
       .where(SERVER_FINDINGS.SERVER_KEY.eq(issueKey)
         .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.ISSUE.name()))
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
       .fetchOne();
-    return rec != null ? mapper.adaptIssue(rec) : null;
+    return rec != null ? (G) mapper.adaptIssue(rec) : null;
   }
 
   @Override
