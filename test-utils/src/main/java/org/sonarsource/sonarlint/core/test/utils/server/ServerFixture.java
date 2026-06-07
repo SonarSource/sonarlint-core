@@ -804,6 +804,8 @@ public class ServerFixture {
     public static final String API_COMPONENTS_SHOW_PROTOBUF_COMPONENT = "/api/components/show.protobuf?component=";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String APPLICATION_JSON = "application/json";
+    private static final String BRANCH_NAME_PARAM = "&branchName=";
+    private static final String API_SOURCES_RAW_KEY = "/api/sources/raw?key=";
 
     private final WireMockServer mockServer;
 
@@ -1194,7 +1196,7 @@ public class ServerFixture {
 
     private void registerApiHotspotsPullResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
+        var branchParameter = branchName == null ? "" : (BRANCH_NAME_PARAM + branchName);
         var timestamp = Hotspots.HotspotPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var hotspotsArray = branch.hotspots.stream().map(hotspot -> Hotspots.HotspotLite.newBuilder()
           .setKey(hotspot.hotspotKey)
@@ -1310,7 +1312,7 @@ public class ServerFixture {
 
     private void registerApiIssuesPullResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
+        var branchParameter = branchName == null ? "" : (BRANCH_NAME_PARAM + branchName);
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var issuesArray = branch.issues.stream().map(issue -> Issues.IssueLite.newBuilder()
           .setKey(issue.issueKey)
@@ -1342,7 +1344,7 @@ public class ServerFixture {
 
     private void registerApiIssuesPullTaintResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var branchParameter = branchName == null ? "" : ("&branchName=" + branchName);
+        var branchParameter = branchName == null ? "" : (BRANCH_NAME_PARAM + branchName);
         var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         var issuesArray = branch.taintIssues.stream().map(issue -> Issues.TaintVulnerabilityLite.newBuilder()
           .setKey(issue.issueKey)
@@ -1376,18 +1378,18 @@ public class ServerFixture {
     private void registerSourceApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> pullRequest.sourceFileByComponentKey
         .forEach((componentKey, sourceFile) -> mockServer
-          .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
+          .stubFor(get(API_SOURCES_RAW_KEY + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         if (branchName != null) {
           branch.sourceFileByComponentKey
             .forEach((componentKey, sourceFile) -> mockServer
-              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+              .stubFor(get(API_SOURCES_RAW_KEY + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
         }
       }));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> branch.sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get(API_SOURCES_RAW_KEY + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {

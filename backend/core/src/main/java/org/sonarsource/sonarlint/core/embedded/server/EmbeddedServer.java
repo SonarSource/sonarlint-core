@@ -38,11 +38,6 @@ import org.sonarsource.sonarlint.core.embedded.server.filter.CspFilter;
 import org.sonarsource.sonarlint.core.embedded.server.filter.ParseParamsFilter;
 import org.sonarsource.sonarlint.core.embedded.server.filter.RateLimitFilter;
 import org.sonarsource.sonarlint.core.embedded.server.filter.ValidationFilter;
-import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
-import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.handler.ShowHotspotRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.handler.ShowIssueRequestHandler;
-import org.sonarsource.sonarlint.core.embedded.server.handler.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.embeddedserver.EmbeddedServerStartedParams;
@@ -60,26 +55,12 @@ public class EmbeddedServer {
   private HttpServer server;
   private int port;
   private final boolean enabled;
-  private final StatusRequestHandler statusRequestHandler;
-  private final GeneratedUserTokenHandler generatedUserTokenHandler;
-  private final ShowHotspotRequestHandler showHotspotRequestHandler;
-  private final ShowIssueRequestHandler showIssueRequestHandler;
-  private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
-  private final ToggleAutomaticAnalysisRequestHandler toggleAutomaticAnalysisRequestHandler;
-  private final AnalyzeFileListRequestHandler analyzeFileListRequestHandler;
+  private final RequestHandlers requestHandlers;
   private final SonarLintRpcClient client;
 
-  public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
-    ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler,
-    ToggleAutomaticAnalysisRequestHandler toggleAutomaticAnalysisRequestHandler, AnalyzeFileListRequestHandler analyzeFileListRequestHandler, SonarLintRpcClient client) {
+  public EmbeddedServer(InitializeParams params, RequestHandlers requestHandlers, SonarLintRpcClient client) {
     this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
-    this.statusRequestHandler = statusRequestHandler;
-    this.generatedUserTokenHandler = generatedUserTokenHandler;
-    this.showHotspotRequestHandler = showHotspotRequestHandler;
-    this.showIssueRequestHandler = showIssueRequestHandler;
-    this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
-    this.toggleAutomaticAnalysisRequestHandler = toggleAutomaticAnalysisRequestHandler;
-    this.analyzeFileListRequestHandler = analyzeFileListRequestHandler;
+    this.requestHandlers = requestHandlers;
     this.client = client;
   }
 
@@ -111,13 +92,13 @@ public class EmbeddedServer {
           .addFilterAfter("RateLimiter", "CORS", new CorsFilter())
           .addFilterAfter("CORS", "Params", new ParseParamsFilter())
           .addFilterAfter("Params", "Validation", new ValidationFilter(client, SonarCloudActiveEnvironment.prod()))
-          .register("/sonarlint/api/status", statusRequestHandler)
-          .register("/sonarlint/api/token", generatedUserTokenHandler)
-          .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
-          .register("/sonarlint/api/issues/show", showIssueRequestHandler)
-          .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
-          .register("/sonarlint/api/analysis/automatic/config", toggleAutomaticAnalysisRequestHandler)
-          .register("/sonarlint/api/analysis/files", analyzeFileListRequestHandler)
+          .register("/sonarlint/api/status", requestHandlers.getStatusRequestHandler())
+          .register("/sonarlint/api/token", requestHandlers.getGeneratedUserTokenHandler())
+          .register("/sonarlint/api/hotspots/show", requestHandlers.getShowHotspotRequestHandler())
+          .register("/sonarlint/api/issues/show", requestHandlers.getShowIssueRequestHandler())
+          .register("/sonarlint/api/fix/show", requestHandlers.getShowFixSuggestionRequestHandler())
+          .register("/sonarlint/api/analysis/automatic/config", requestHandlers.getToggleAutomaticAnalysisRequestHandler())
+          .register("/sonarlint/api/analysis/files", requestHandlers.getAnalyzeFileListRequestHandler())
           .addFilterLast("CSP", new CspFilter())
           .create();
         startedServer.start();

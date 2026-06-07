@@ -26,34 +26,89 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 public class HotspotDetailsDto {
   private final String key;
   @Deprecated(forRemoval = true)
-  private final String message;
+  private String message;
   private final Path ideFilePath;
   @Deprecated(forRemoval = true)
-  private final TextRangeDto textRange;
+  private TextRangeDto textRange;
   @Deprecated(forRemoval = true)
-  private final String author;
+  private String author;
   @Deprecated(forRemoval = true)
-  private final String status;
-  @Deprecated(forRemoval = true)
-  @Nullable
-  private final String resolution;
-  @Deprecated(forRemoval = true)
-  private final HotspotRule rule;
+  private String status;
   @Deprecated(forRemoval = true)
   @Nullable
-  private final String codeSnippet;
+  private String resolution;
+  @Deprecated(forRemoval = true)
+  private HotspotRule rule;
+  @Deprecated(forRemoval = true)
+  @Nullable
+  private String codeSnippet;
 
-  public HotspotDetailsDto(String key, String message, Path ideFilePath, TextRangeDto textRange, String author, String status, @Nullable String resolution, HotspotRule rule,
-    @Nullable String codeSnippet) {
+  public HotspotDetailsDto(String key, Path ideFilePath) {
     this.key = key;
-    this.message = message;
     this.ideFilePath = ideFilePath;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setMessage(String message) {
+    this.message = message;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setTextRange(TextRangeDto textRange) {
     this.textRange = textRange;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setAuthor(String author) {
     this.author = author;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setStatus(String status) {
     this.status = status;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setResolution(@Nullable String resolution) {
     this.resolution = resolution;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setRule(HotspotRule rule) {
     this.rule = rule;
+    return this;
+  }
+
+  /**
+   * @deprecated use a more specific method instead
+   */
+  @Deprecated(forRemoval = true)
+  public HotspotDetailsDto setCodeSnippet(@Nullable String codeSnippet) {
     this.codeSnippet = codeSnippet;
+    return this;
   }
 
   public String getKey() {

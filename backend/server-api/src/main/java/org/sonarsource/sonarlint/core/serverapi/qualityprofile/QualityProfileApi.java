@@ -57,14 +57,15 @@ public class QualityProfileApi {
   }
 
   private static QualityProfile adapt(Qualityprofiles.SearchWsResponse.QualityProfile wsQualityProfile) {
-    return new QualityProfile(
-      wsQualityProfile.getIsDefault(),
-      wsQualityProfile.getKey(),
-      wsQualityProfile.getName(),
-      wsQualityProfile.getLanguage(),
-      wsQualityProfile.getLanguageName(),
-      wsQualityProfile.getActiveRuleCount(),
-      wsQualityProfile.getRulesUpdatedAt(),
-      wsQualityProfile.getUserUpdatedAt());
+    return QualityProfile.builder()
+      .setIsDefault(wsQualityProfile.getIsDefault())
+      .setKey(wsQualityProfile.getKey())
+      .setName(wsQualityProfile.getName())
+      .setLanguage(wsQualityProfile.getLanguage())
+      .setLanguageName(wsQualityProfile.getLanguageName())
+      .setActiveRuleCount(wsQualityProfile.getActiveRuleCount())
+      .setRulesUpdatedAt(wsQualityProfile.getRulesUpdatedAt())
+      .setUserUpdatedAt(wsQualityProfile.getUserUpdatedAt())
+      .build();
   }
 }

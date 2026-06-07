@@ -106,16 +106,14 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {
-    return new HotspotDetailsDto(
-      hotspotKey,
-      hotspot.message,
-      translation.serverToIdePath(hotspot.filePath),
-      adapt(hotspot.textRange),
-      hotspot.author,
-      hotspot.status.toString(),
-      hotspot.resolution != null ? hotspot.resolution.toString() : null,
-      adapt(hotspot.rule),
-      hotspot.codeSnippet);
+    return new HotspotDetailsDto(hotspotKey, translation.serverToIdePath(hotspot.filePath))
+      .setMessage(hotspot.message)
+      .setTextRange(adapt(hotspot.textRange))
+      .setAuthor(hotspot.author)
+      .setStatus(hotspot.status.toString())
+      .setResolution(hotspot.resolution != null ? hotspot.resolution.toString() : null)
+      .setRule(adapt(hotspot.rule))
+      .setCodeSnippet(hotspot.codeSnippet);
   }
 
   private static HotspotDetailsDto.HotspotRule adapt(ServerHotspotDetails.Rule rule) {

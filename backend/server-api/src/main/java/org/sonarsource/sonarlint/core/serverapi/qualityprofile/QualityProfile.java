@@ -29,16 +29,19 @@ public class QualityProfile {
   private final String rulesUpdatedAt;
   private final String userUpdatedAt;
 
-  public QualityProfile(boolean isDefault, String key, String name, String language, String languageName,
-    long activeRuleCount, String rulesUpdatedAt, String userUpdatedAt) {
-    this.isDefault = isDefault;
-    this.key = key;
-    this.name = name;
-    this.language = language;
-    this.languageName = languageName;
-    this.activeRuleCount = activeRuleCount;
-    this.rulesUpdatedAt = rulesUpdatedAt;
-    this.userUpdatedAt = userUpdatedAt;
+  private QualityProfile(Builder builder) {
+    this.isDefault = builder.isDefault;
+    this.key = builder.key;
+    this.name = builder.name;
+    this.language = builder.language;
+    this.languageName = builder.languageName;
+    this.activeRuleCount = builder.activeRuleCount;
+    this.rulesUpdatedAt = builder.rulesUpdatedAt;
+    this.userUpdatedAt = builder.userUpdatedAt;
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public boolean isDefault() {
@@ -71,5 +74,63 @@ public class QualityProfile {
 
   public String getUserUpdatedAt() {
     return userUpdatedAt;
+  }
+
+  public static class Builder {
+    private boolean isDefault;
+    private String key;
+    private String name;
+    private String language;
+    private String languageName;
+    private long activeRuleCount;
+    private String rulesUpdatedAt;
+    private String userUpdatedAt;
+
+    private Builder() {
+    }
+
+    public Builder setIsDefault(boolean isDefault) {
+      this.isDefault = isDefault;
+      return this;
+    }
+
+    public Builder setKey(String key) {
+      this.key = key;
+      return this;
+    }
+
+    public Builder setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder setLanguage(String language) {
+      this.language = language;
+      return this;
+    }
+
+    public Builder setLanguageName(String languageName) {
+      this.languageName = languageName;
+      return this;
+    }
+
+    public Builder setActiveRuleCount(long activeRuleCount) {
+      this.activeRuleCount = activeRuleCount;
+      return this;
+    }
+
+    public Builder setRulesUpdatedAt(String rulesUpdatedAt) {
+      this.rulesUpdatedAt = rulesUpdatedAt;
+      return this;
+    }
+
+    public Builder setUserUpdatedAt(String userUpdatedAt) {
+      this.userUpdatedAt = userUpdatedAt;
+      return this;
+    }
+
+    public QualityProfile build() {
+      return new QualityProfile(this);
+    }
   }
 }

@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.embedded.server.AnalyzeFileListRequestHand
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlers;
 import org.sonarsource.sonarlint.core.embedded.server.ToggleAutomaticAnalysisRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.handler.ShowFixSuggestionRequestHandler;
@@ -170,6 +171,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ConnectionService.class,
   TokenGeneratorHelper.class,
   EmbeddedServer.class,
+  RequestHandlers.class,
   StatusRequestHandler.class,
   GeneratedUserTokenHandler.class,
   AwaitingUserTokenFutureRepository.class,
