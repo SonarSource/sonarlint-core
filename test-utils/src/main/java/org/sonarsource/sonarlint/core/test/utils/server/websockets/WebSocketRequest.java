@@ -19,20 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
-public class WebSocketRequest {
-  private final String authorizationHeader;
-  private final String userAgent;
-
-  public WebSocketRequest(String authorizationHeader, String userAgent) {
-    this.authorizationHeader = authorizationHeader;
-    this.userAgent = userAgent;
-  }
-
-  public String getAuthorizationHeader() {
-    return authorizationHeader;
-  }
-
-  public String getUserAgent() {
-    return userAgent;
-  }
+public record WebSocketRequest(String authorizationHeader, String userAgent) {
 }

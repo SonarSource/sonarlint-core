@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.websocket;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -176,7 +178,12 @@ public class WebSocketManager {
     return connectionIdsInterestedInNotifications.contains(connectionId);
   }
 
-  public Set<String> getConnectionIdsInterestedInNotifications() {
-    return connectionIdsInterestedInNotifications;
+  public void shutdown() {
+    closeSocket("Backend is shutting down");
+    subscribedProjectKeysByConfigScopes.clear();
+    connectionIdsInterestedInNotifications.clear();
+    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop websocket manager executor service in a timely manner");
+    }
   }
 }

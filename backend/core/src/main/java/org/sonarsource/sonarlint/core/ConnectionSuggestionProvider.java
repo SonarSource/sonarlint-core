@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
@@ -187,6 +190,13 @@ public class ConnectionSuggestionProvider {
     return connectionAndBindingSuggestions.connectionSuggestionsByConfigScopeIds.containsKey(configScopeId) ?
       connectionAndBindingSuggestions.connectionSuggestionsByConfigScopeIds.get(configScopeId) :
       List.of();
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop connection suggestion provider executor service in a timely manner");
+    }
   }
 
   private record ConnectionAndBindingSuggestions(

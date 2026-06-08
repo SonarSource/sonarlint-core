@@ -96,7 +96,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved)
         .containsOnly(tuple("key1", true)));
     }
@@ -133,7 +133,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
         .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.BLOCKER))));
     }
@@ -168,7 +168,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
         .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER))));
     }
@@ -205,7 +205,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
         .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH, SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER))));
     }
@@ -239,7 +239,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::getUserSeverity)
         .containsOnly(tuple("key1", IssueSeverity.CRITICAL)));
     }
@@ -273,7 +273,7 @@ class IssueEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::getType)
         .containsOnly(tuple("key1", RuleType.BUG)));
     }

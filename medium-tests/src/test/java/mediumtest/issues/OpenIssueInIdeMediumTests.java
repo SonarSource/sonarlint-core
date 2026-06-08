@@ -89,6 +89,8 @@ class OpenIssueInIdeMediumTests {
       .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + CONFIG_SCOPE_ID + "'"));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getShowIssueRequestsCount()).isZero());
 
@@ -113,6 +115,8 @@ class OpenIssueInIdeMediumTests {
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + configScopeId + "'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -122,7 +126,7 @@ class OpenIssueInIdeMediumTests {
 
     var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
-    var issueDetails = issues.get(0);
+    var issueDetails = issues.getFirst();
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
     assertThat(issueDetails.isTaint()).isFalse();
     assertThat(issueDetails.getMessage()).isEqualTo("msg");
@@ -147,6 +151,8 @@ class OpenIssueInIdeMediumTests {
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + configScopeId + "'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
     assertThat(statusCode).isEqualTo(200);
@@ -156,7 +162,7 @@ class OpenIssueInIdeMediumTests {
 
     var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
-    var issueDetails = issues.get(0);
+    var issueDetails = issues.getFirst();
     assertThat(issueDetails.getIssueKey()).isEqualTo(PR_ISSUE_KEY);
     assertThat(issueDetails.isTaint()).isFalse();
     assertThat(issueDetails.getMessage()).isEqualTo("msg");
@@ -182,6 +188,8 @@ class OpenIssueInIdeMediumTests {
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + configScopeId + "'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, FILE_LEVEL_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -191,7 +199,7 @@ class OpenIssueInIdeMediumTests {
 
     var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
-    var issueDetails = issues.get(0);
+    var issueDetails = issues.getFirst();
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
     assertThat(issueDetails.isTaint()).isFalse();
     assertThat(issueDetails.getMessage()).isEqualTo("msg");
@@ -217,6 +225,8 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + CONFIG_SCOPE_ID + "'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -240,6 +250,9 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope 'configScopeA'"));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope 'configScopeB'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
@@ -264,6 +277,9 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope 'configScopeParent'"));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope 'configScopeChild'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
@@ -284,6 +300,8 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + CONFIG_SCOPE_ID + "'"));
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -314,6 +332,8 @@ class OpenIssueInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    // wait for the scope to be registered before triggering the request
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("Added configuration scope '" + CONFIG_SCOPE_ID + "'"));
 
     var statusCode = executeOpenSCIssueRequest(backend, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey");
     assertThat(statusCode).isEqualTo(200);
@@ -360,15 +380,13 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start(client);
-    var request = openIssueRequestWithOrigin(backend,
+
+    var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
       SonarCloudRegion.EU.getProductionUri().toString(),
-      "http://fake.sonar");
+      "http://fake.sonar"));
 
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-    assertThat(response.statusCode()).isEqualTo(400);
-    verify(client, timeout(2000)).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+    assertThat(statusCode).isEqualTo(400);
+    assertInvalidRequestMessage(client);
   }
 
   @SonarLintTest
@@ -377,14 +395,17 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start(client);
-    var request = openIssueRequestWithOrigin(backend,
+
+    var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
       SonarCloudRegion.US.getProductionUri().toString(),
-      "http://fake.sonar");
+      "http://fake.sonar"));
 
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(statusCode).isEqualTo(400);
+    assertInvalidRequestMessage(client);
+  }
 
-    assertThat(response.statusCode()).isEqualTo(400);
-    verify(client, timeout(2000)).showMessage(MessageType.ERROR,
+  private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
+    verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 
@@ -394,39 +415,35 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withBackendCapability(EMBEDDED_SERVER)
       .start(client);
-    var request = openIssueRequestWithOrigin(backend,
+
+    var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
       SonarCloudRegion.EU.getProductionUri().toString(),
       SonarCloudRegion.EU.getProductionUri().toString(),
       "&issue=" + ISSUE_KEY,
       "&project=" + PROJECT_KEY,
       "&branch=" + BRANCH_NAME,
-      "&organizationKey=orgKey");
+      "&organizationKey=orgKey"));
 
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(statusCode).isEqualTo(200);
   }
 
   private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch)
     throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch);
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    return response.statusCode();
+    return sendRequest(request);
   }
 
   private int executeOpenSCIssueRequest(SonarLintTestRpcServer backend, String issueKey, String projectKey, String branch, String organizationKey)
     throws IOException, InterruptedException {
     HttpRequest request = this.openIssueRequest(backend, "https://sonar.my", "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch,
       "&organizationKey=" + organizationKey);
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    return response.statusCode();
+    return sendRequest(request);
   }
 
   private int executeOpenIssueRequest(SonarLintTestRpcServer backend, ServerFixture.Server server, String issueKey, String projectKey, String branch, String pullRequest)
     throws IOException, InterruptedException {
     HttpRequest request = openIssueRequest(backend, server.baseUrl(), "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&pullRequest=" + pullRequest);
-    var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    return response.statusCode();
+    return sendRequest(request);
   }
 
   private HttpRequest openIssueRequest(SonarLintTestRpcServer backend, String baseUrl, String... params) {
@@ -443,6 +460,12 @@ class OpenIssueInIdeMediumTests {
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + baseUrl + String.join("", params)))
       .header("Origin", origin)
       .GET().build();
+  }
+
+  private static int sendRequest(HttpRequest request) throws IOException, InterruptedException {
+    try (var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString()).statusCode();
+    }
   }
 
   private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,

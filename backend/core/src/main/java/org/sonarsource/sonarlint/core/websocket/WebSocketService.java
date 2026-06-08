@@ -261,10 +261,6 @@ public class WebSocketService {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop websockets subscriber service in a timely manner");
     }
-    webSocketsByRegion.forEach((region, webSocketManager) -> {
-      webSocketManager.closeSocket("Backend is shutting down");
-      webSocketManager.getSubscribedProjectKeysByConfigScopes().clear();
-      webSocketManager.getConnectionIdsInterestedInNotifications().clear();
-    });
+    webSocketsByRegion.values().forEach(WebSocketManager::shutdown);
   }
 }

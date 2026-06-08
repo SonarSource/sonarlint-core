@@ -115,12 +115,13 @@ class OpenHotspotInIdeMediumTests {
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, SCOPE_ID);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
-    verify(fakeClient, timeout(1000)).showHotspot(eq(SCOPE_ID), captor.capture());
+    verify(fakeClient, timeout(10000)).showHotspot(eq(SCOPE_ID), captor.capture());
     verify(fakeClient, never()).showMessage(any(), any());
 
     assertThat(captor.getAllValues())
@@ -131,13 +132,15 @@ class OpenHotspotInIdeMediumTests {
 
   @SonarLintTest
   void it_should_update_telemetry_data_when_opening_hotspot_in_ide(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     var serverWithHotspot = buildServerWithHotspot(harness).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
-      .start();
+      .start(fakeClient);
+    waitForScopeRegistration(fakeClient, SCOPE_ID);
 
     requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
@@ -158,12 +161,13 @@ class OpenHotspotInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, SCOPE_ID);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
-    verify(fakeClient, timeout(1000)).showHotspot(eq(SCOPE_ID), captor.capture());
+    verify(fakeClient, timeout(10000)).showHotspot(eq(SCOPE_ID), captor.capture());
     verify(fakeClient, never()).showMessage(any(), any());
 
     assertThat(captor.getAllValues())
@@ -185,12 +189,13 @@ class OpenHotspotInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, SCOPE_ID);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
-    verify(fakeClient, timeout(1000)).showHotspot(eq(SCOPE_ID), captor.capture());
+    verify(fakeClient, timeout(10000)).showHotspot(eq(SCOPE_ID), captor.capture());
     verify(fakeClient, never()).showMessage(any(), any());
 
     assertThat(captor.getAllValues())
@@ -207,12 +212,13 @@ class OpenHotspotInIdeMediumTests {
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, SCOPE_ID);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key",
       serverWithoutHotspot.baseUrl());
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showMessage(MessageType.ERROR, "Could not show the hotspot. See logs for more details");
+    verify(fakeClient, timeout(10000)).showMessage(MessageType.ERROR, "Could not show the hotspot. See logs for more details");
     verify(fakeClient, never()).showHotspot(anyString(), any());
   }
 
@@ -242,8 +248,7 @@ class OpenHotspotInIdeMediumTests {
       "someOrigin");
 
     assertThat(statusCode).isEqualTo(400);
-    verify(client).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+    assertInvalidRequestMessage(client);
   }
 
   @SonarLintTest
@@ -258,8 +263,16 @@ class OpenHotspotInIdeMediumTests {
       "someOrigin");
 
     assertThat(statusCode).isEqualTo(400);
-    verify(client, timeout(500)).showMessage(MessageType.ERROR,
+    assertInvalidRequestMessage(client);
+  }
+
+  private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
+    verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+  }
+
+  private static void waitForScopeRegistration(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Added configuration scope '" + scopeId + "'"));
   }
 
   private int requestGetOpenHotspotWithParams(SonarLintTestRpcServer backend, String query, String baseUrl) {

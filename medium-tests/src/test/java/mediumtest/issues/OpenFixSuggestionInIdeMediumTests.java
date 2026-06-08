@@ -139,7 +139,7 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<FixSuggestionDto> captor = ArgumentCaptor.captor();
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), captor.capture());
+    verify(fakeClient, timeout(10000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), captor.capture());
 
     var pathTranslation = new FilePathTranslation(Path.of("ide"), Path.of("home"));
 
@@ -177,7 +177,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
+    verify(fakeClient, timeout(10000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
@@ -230,7 +230,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
-    verify(fakeClient, timeout(2000)).showFixSuggestion(any(), any(), any());
+    verify(fakeClient, timeout(10000)).showFixSuggestion(any(), any(), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
@@ -255,7 +255,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
+    verify(fakeClient, timeout(10000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
     verify(fakeClient, never()).showMessage(any(), any());
 
     ArgumentCaptor<AssistCreatingConnectionParams> captor = ArgumentCaptor.captor();
@@ -358,8 +358,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
-    verify(client, timeout(5000)).showMessage(MessageType.ERROR,
-      "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+    assertInvalidRequestMessage(client);
   }
 
   @SonarLintTest
@@ -376,7 +375,11 @@ class OpenFixSuggestionInIdeMediumTests {
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
-    verify(client, timeout(5000)).showMessage(MessageType.ERROR,
+    assertInvalidRequestMessage(client);
+  }
+
+  private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
+    verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
   }
 

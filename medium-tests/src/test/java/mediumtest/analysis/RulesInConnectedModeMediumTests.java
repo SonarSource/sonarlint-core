@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -76,11 +75,10 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
-        .contains("java:S106;java;null;")
-        .contains("java:S3776;java;null;{Threshold=15}")
-        .contains("java:myCustomRule;java;S124;{message=Needs to be reviewed, regularExpression=.*REVIEW.*}"));
+    await().untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+      .contains("java:S106;java;null;")
+      .contains("java:S3776;java;null;{Threshold=15}")
+      .contains("java:myCustomRule;java;S124;{message=Needs to be reviewed, regularExpression=.*REVIEW.*}"));
   }
 
   @SonarLintTest
@@ -114,9 +112,8 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
-        .contains("java:S4792;java;null;"));
+    await().untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+      .contains("java:S4792;java;null;"));
   }
 
   @SonarLintTest
@@ -148,9 +145,8 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
-        .doesNotContain("java:S4792;java;null;"));
+    await().untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+      .doesNotContain("java:S4792;java;null;"));
   }
 
   @SonarLintTest
@@ -183,9 +179,8 @@ class RulesInConnectedModeMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
-    await().atMost(3, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
-        .contains("ipython:PrintStatementUsage"));
+    await().untilAsserted(() -> assertThat(baseDir.resolve("activerules.dump")).content()
+      .contains("ipython:PrintStatementUsage"));
   }
 
 }

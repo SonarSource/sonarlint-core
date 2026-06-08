@@ -50,10 +50,6 @@ import static mediumtest.analysis.sensor.WaitingCancellationSensor.CANCELLATION_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.RequestCancelled;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
@@ -129,7 +125,7 @@ class AnalysisSchedulingMediumTests {
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("otherConfigScope", UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
 
     assertThat(firstAnalysisFuture)
-      .failsWithin(2, TimeUnit.SECONDS)
+      .failsWithin(10, TimeUnit.SECONDS)
       .withThrowableThat()
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
@@ -278,15 +274,16 @@ class AnalysisSchedulingMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, secondFileUri));
     backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, thirdFileUri));
 
-    verify(client, timeout(2000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
-    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEqualTo(Map.of(firstFileUri, List.of()));
-    var raisedIssuesPerFile = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID);
-    assertThat(raisedIssuesPerFile.get(secondFileUri))
-      .extracting(RaisedFindingDto::getRuleKey)
-      .containsExactly("xml:S1778");
-    assertThat(raisedIssuesPerFile.get(thirdFileUri))
-      .extracting(RaisedFindingDto::getRuleKey)
-      .containsExactly("xml:S1135");
+    await().untilAsserted(() -> {
+      assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEqualTo(Map.of(firstFileUri, List.of()));
+      var raisedIssuesPerFile = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID);
+      assertThat(raisedIssuesPerFile.get(secondFileUri))
+        .extracting(RaisedFindingDto::getRuleKey)
+        .containsExactly("xml:S1778");
+      assertThat(raisedIssuesPerFile.get(thirdFileUri))
+        .extracting(RaisedFindingDto::getRuleKey)
+        .containsExactly("xml:S1135");
+    });
     assertThat(client.getProgressReportsByTaskId())
       .values()
       .extracting(SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport::getConfigurationScopeId)

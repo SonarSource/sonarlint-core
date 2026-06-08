@@ -246,7 +246,12 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
       .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
       .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
       .create();
-    return gson.fromJson(decoded, TelemetryLocalStorage.class);
+    var telemetry = gson.fromJson(decoded, TelemetryLocalStorage.class);
+    if (telemetry == null) {
+      // use this exception type to allow retries with awaitility's untilAsserted method
+      throw new AssertionError("Telemetry file content is not ready yet");
+    }
+    return telemetry;
   }
 
   public LocalOnlyIssuesRepository getLocalOnlyIssuesRepository() {

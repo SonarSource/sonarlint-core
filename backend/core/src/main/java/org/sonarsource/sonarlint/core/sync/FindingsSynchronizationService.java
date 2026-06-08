@@ -19,14 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
+import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -36,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 public class FindingsSynchronizationService {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final int FETCH_ALL_ISSUES_THRESHOLD = 10;
   private final ConfigurationRepository configurationRepository;
   private final SonarProjectBranchTrackingService branchTrackingService;
@@ -103,5 +108,12 @@ public class FindingsSynchronizationService {
         .toList());
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(issueUpdaterExecutorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop findings synchronization executor service in a timely manner");
+    }
   }
 }

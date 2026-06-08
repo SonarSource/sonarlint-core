@@ -71,6 +71,7 @@ public class AnalysisQueue {
         LOG.debug("Picked command from the queue: {}, {} remaining", queuedCommand.command, queue.size());
         return tidyUp(queuedCommand);
       }
+      cleanUpExpiredNotReadyCommands();
       // wait for a new command to come in
       wait();
     }
@@ -107,10 +108,7 @@ public class AnalysisQueue {
   }
 
   private void cleanUpExpiredCommands(QueuedCommand nextQueuedCommand) {
-    var notReadyCommands = removeAll(queuedCommand -> !queuedCommand.command.isReady() && queuedCommand.getQueuedTime().plus(analysisExpirationDelay).isBefore(Instant.now()));
-    if (!notReadyCommands.isEmpty()) {
-      LOG.debug("Canceling {} not ready analyses", notReadyCommands.size());
-    }
+    cleanUpExpiredNotReadyCommands();
     if (nextQueuedCommand.command instanceof UnregisterModuleCommand unregisterCommand) {
       var expiredCommands = removeAll(
         queuedCommand -> (queuedCommand.command instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(unregisterCommand.getModuleKey()))
@@ -118,6 +116,13 @@ public class AnalysisQueue {
       if (!expiredCommands.isEmpty()) {
         LOG.debug("Canceling {} analyses expired by module unregistration", expiredCommands.size());
       }
+    }
+  }
+
+  private void cleanUpExpiredNotReadyCommands() {
+    var notReadyCommands = removeAll(queuedCommand -> !queuedCommand.command.isReady() && queuedCommand.getQueuedTime().plus(analysisExpirationDelay).isBefore(Instant.now()));
+    if (!notReadyCommands.isEmpty()) {
+      LOG.debug("Canceling {} not ready analyses", notReadyCommands.size());
     }
   }
 

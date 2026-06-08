@@ -19,29 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
-import jakarta.websocket.Session;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.java_websocket.WebSocket;
 
 public class WebSocketConnection {
   private final WebSocketRequest request;
   private boolean isOpened = true;
   private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
   private Throwable throwable;
-  private final Session session;
+  private final WebSocket session;
 
-  public WebSocketConnection(WebSocketRequest request, Session session) {
+  public WebSocketConnection(WebSocketRequest request, WebSocket session) {
     this.request = request;
     this.session = session;
   }
 
   public String getAuthorizationHeader() {
-    return request.getAuthorizationHeader();
+    return request.authorizationHeader();
   }
 
   public String getUserAgent() {
-    return request.getUserAgent();
+    return request.userAgent();
   }
 
   public boolean isOpened() {
@@ -65,29 +64,16 @@ public class WebSocketConnection {
   }
 
   public void sendMessage(String message) {
-    if (session == null) {
-      throw new IllegalStateException("Cannot send a message, session is null");
-    }
     if (!isOpened) {
       throw new IllegalStateException("Cannot send a message, the WebSocket is not opened");
     }
     if (throwable != null) {
       throw new IllegalStateException("Cannot send a message, the WebSocket previously errored", throwable);
     }
-    try {
-      session.getBasicRemote().sendText(message);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    session.send(message);
   }
 
   public void close() {
-    if (session != null) {
-      try {
-        session.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    session.close();
   }
 }

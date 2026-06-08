@@ -186,7 +186,7 @@ class HotspotEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .isEmpty());
     }
 
@@ -305,7 +305,7 @@ class HotspotEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", HotspotReviewStatus.SAFE)));
     }
@@ -380,7 +380,7 @@ class HotspotEventsMediumTests {
         """, serverHotspotKey, projectKey, baseDir.relativize(filePath)));
 
       // assert that the backend has updated the hotspot status
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, connectionId, projectKey, branchName, baseDir.relativize(filePath).toString()))
+      await().untilAsserted(() -> assertThat(readHotspots(backend, connectionId, projectKey, branchName, baseDir.relativize(filePath).toString()))
         .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
         .containsOnly(tuple(serverHotspotKey, HotspotReviewStatus.SAFE)));
 
@@ -424,7 +424,7 @@ class HotspotEventsMediumTests {
 
         """);
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
+      await().untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey, ServerHotspot::getAssignee)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", "assigneeEmail")));
     }
@@ -475,7 +475,7 @@ class HotspotEventsMediumTests {
         .withSonarQubeConnection(connectionId, serverWithHotspots)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetHotspots(fileUri, client, backend, CONFIG_SCOPE_ID);
       client.cleanRaisedHotspots();
 

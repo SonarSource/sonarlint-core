@@ -19,62 +19,113 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
-import java.io.File;
+import jakarta.annotation.Nullable;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import org.apache.catalina.LifecycleException;
-import org.apache.catalina.servlets.DefaultServlet;
-import org.apache.catalina.startup.Tomcat;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.java_websocket.WebSocket;
+import org.java_websocket.handshake.ClientHandshake;
 
 public class WebSocketServer {
-
-  public static final int DEFAULT_PORT = 54321;
-  public static final String CONNECTION_REPOSITORY_ATTRIBUTE_KEY = "connectionRepository";
-  private Tomcat tomcat;
-  private WebSocketConnectionRepository connectionRepository;
-  private final int port;
-
-  public WebSocketServer(int port) {
-    this.port = port;
-  }
-
-  public WebSocketServer() {
-    this(DEFAULT_PORT);
-  }
+  private Impl impl = new Impl(0);
+  private final Map<WebSocket, WebSocketConnection> connectionsBySocket = Collections.synchronizedMap(new LinkedHashMap<>());
 
   public void start() {
-    try {
-      var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
-      tomcat = new Tomcat();
-      tomcat.setBaseDir(baseDir);
-      tomcat.setPort(port);
-      var context = tomcat.addContext("", baseDir);
-      connectionRepository = new WebSocketConnectionRepository();
-      context.getServletContext().setAttribute(CONNECTION_REPOSITORY_ATTRIBUTE_KEY, connectionRepository);
-      context.addApplicationListener(ContextListener.class.getName());
-      Tomcat.addServlet(context, "dummy", new DefaultServlet()).addMapping("/");
-      // needed to start the endpoint
-      tomcat.getConnector();
-      tomcat.start();
-    } catch (LifecycleException e) {
-      throw new IllegalStateException(e);
-    }
+    impl.startSync();
   }
 
   public void stop() {
     try {
-      tomcat.stop();
-      tomcat.destroy();
-    } catch (LifecycleException e) {
-      throw new IllegalStateException(e);
+      impl.stop();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted", e);
     }
   }
 
-  public String getUrl() {
-    return "ws://localhost:" + port + "/endpoint";
+  public void restart() {
+    var port = getPort();
+    stop();
+    connectionsBySocket.clear();
+    impl = new Impl(port);
+    start();
+  }
+
+  public int getPort() {
+    return impl.getPort();
+  }
+
+  public URI getUri() {
+    return URI.create("ws://localhost:" + getPort());
   }
 
   public List<WebSocketConnection> getConnections() {
-    return connectionRepository.getConnections();
+    return connectionsBySocket.values().stream().toList();
   }
 
+  public class Impl extends org.java_websocket.server.WebSocketServer {
+    private final CountDownLatch started = new CountDownLatch(1);
+
+    public Impl(int port) {
+      super(new InetSocketAddress(port));
+    }
+
+    void startSync() {
+      this.start();
+      // start is asynchronous, need to wait for onStart to be called for port to be assigned and to consider server is up
+      try {
+        if (!started.await(10, TimeUnit.SECONDS)) {
+          throw new IllegalStateException("Timed out while starting WebSocket server");
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException("Interrupted", e);
+      }
+    }
+
+    @Override
+    public void onOpen(WebSocket socket, ClientHandshake handshake) {
+      connectionsBySocket.put(socket, createWsConnection(socket, handshake));
+    }
+
+    @Override
+    public void onClose(WebSocket socket, int code, String reason, boolean remote) {
+      var connection = connectionsBySocket.get(socket);
+      if (connection != null) {
+        connection.setIsClosed();
+      }
+    }
+
+    @Override
+    public void onMessage(WebSocket socket, String message) {
+      var connection = connectionsBySocket.get(socket);
+      if (connection != null) {
+        connection.addReceivedMessage(message);
+      }
+    }
+
+    @Override
+    public void onError(@Nullable WebSocket socket, Exception ex) {
+      if (socket != null) {
+        var connection = connectionsBySocket.get(socket);
+        if (connection != null) {
+          connection.setIsError(ex);
+        }
+      }
+    }
+
+    @Override
+    public void onStart() {
+      started.countDown();
+    }
+
+    private static WebSocketConnection createWsConnection(WebSocket conn, ClientHandshake handshake) {
+      return new WebSocketConnection(new WebSocketRequest(handshake.getFieldValue("Authorization"), handshake.getFieldValue("User-Agent")), conn);
+    }
+  }
 }

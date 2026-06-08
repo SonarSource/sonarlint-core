@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
@@ -32,18 +33,24 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
 public class AnalysisScheduler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final Runnable CANCELING_TERMINATION = () -> {
-  };
 
   private final AtomicReference<GlobalAnalysisContainer> globalAnalysisContainer = new AtomicReference<>();
   private final AnalysisQueue analysisQueue = new AnalysisQueue();
   private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-scheduler");
   private final LogOutput logOutput;
+  private final Consumer<Command> commandDequeuedHook;
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
   private final AtomicReference<Command> executingCommand = new AtomicReference<>();
 
   public AnalysisScheduler(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput) {
+    this(analysisGlobalConfig, loadedPlugins, logOutput, command -> {
+    });
+  }
+
+  // Package-private for tests that need to control the queue-to-execution handoff.
+  AnalysisScheduler(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput, Consumer<Command> commandDequeuedHook) {
     this.logOutput = logOutput;
+    this.commandDequeuedHook = commandDequeuedHook;
     // if the container cannot be started, the thread won't be started
     var analysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
     analysisContainer.startComponents();
@@ -60,25 +67,45 @@ public class AnalysisScheduler {
   }
 
   private void executeQueuedCommands() {
-    while (termination.get() == null) {
-      SonarLintLogger.get().setTarget(logOutput);
-      try {
-        var command = analysisQueue.takeNextCommand();
-        executingCommand.set(command);
-        if (termination.get() == CANCELING_TERMINATION) {
-          break;
+    try {
+      while (termination.get() == null) {
+        SonarLintLogger.get().setTarget(logOutput);
+        try {
+          var command = analysisQueue.takeNextCommand();
+          executingCommand.set(command);
+          try {
+            commandDequeuedHook.accept(command);
+            if (shouldStopBeforeExecuting(command)) {
+              break;
+            }
+            command.execute(globalAnalysisContainer.get().getModuleRegistry());
+          } finally {
+            executingCommand.compareAndSet(command, null);
+          }
+        } catch (InterruptedException e) {
+          if (termination.get() == null) {
+            LOG.error("Analysis engine interrupted", e);
+          }
+        } catch (Exception e) {
+          LOG.debug("Analysis command failed", e);
         }
-        executingCommand.get().execute(globalAnalysisContainer.get().getModuleRegistry());
-        executingCommand.set(null);
-      } catch (InterruptedException e) {
-        if (termination.get() != CANCELING_TERMINATION) {
-          LOG.error("Analysis engine interrupted", e);
-        }
-      } catch (Exception e) {
-        LOG.debug("Analysis command failed", e);
+      }
+    } finally {
+      var terminationAction = termination.get();
+      if (terminationAction != null) {
+        terminationAction.run();
       }
     }
-    termination.get().run();
+  }
+
+  private boolean shouldStopBeforeExecuting(Command command) {
+    if (termination.get() == null) {
+      return false;
+    }
+    if (executingCommand.compareAndSet(command, null)) {
+      command.cancel();
+    }
+    return true;
   }
 
   public void post(Command command) {
@@ -107,7 +134,7 @@ public class AnalysisScheduler {
     if (!analysisThread.isAlive()) {
       return;
     }
-    if (!termination.compareAndSet(null, CANCELING_TERMINATION)) {
+    if (!termination.compareAndSet(null, () -> globalAnalysisContainer.get().stopComponents())) {
       // already terminating
       return;
     }
@@ -117,6 +144,11 @@ public class AnalysisScheduler {
     }
     analysisThread.interrupt();
     analysisQueue.removeAll().forEach(Command::cancel);
-    globalAnalysisContainer.get().stopComponents();
+    try {
+      analysisThread.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.error("Interrupted while waiting for analysis engine to stop", e);
+    }
   }
 }
