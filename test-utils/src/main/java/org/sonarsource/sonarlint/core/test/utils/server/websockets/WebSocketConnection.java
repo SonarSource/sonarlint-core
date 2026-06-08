@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
 import jakarta.websocket.Session;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -77,7 +78,7 @@ public class WebSocketConnection {
     try {
       session.getBasicRemote().sendText(message);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -86,7 +87,7 @@ public class WebSocketConnection {
       try {
         session.close();
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new UncheckedIOException(e);
       }
     }
   }

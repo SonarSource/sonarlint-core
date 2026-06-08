@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
 import com.google.protobuf.Message;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public class ProtobufUtils {
 
@@ -37,7 +38,7 @@ public class ProtobufUtils {
       message.writeTo(baos);
       return Body.ofBinaryOrText(baos.toByteArray(), ContentTypeHeader.absent());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -49,7 +50,7 @@ public class ProtobufUtils {
       }
       return Body.ofBinaryOrText(baos.toByteArray(), ContentTypeHeader.absent());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
