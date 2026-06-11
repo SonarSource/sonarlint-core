@@ -64,7 +64,6 @@ class AnalyzeCommandTest {
     assertThat(cmd1.shouldCancelPost(cmd2)).isFalse();
   }
 
-
   @Test
   void if_should_cancel_task_in_queue_when_canceled() {
     var cmd = newAnalyzeCommand(Set.of(), Map.of());

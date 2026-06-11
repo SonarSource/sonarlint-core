@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +32,7 @@ public class OpenFilesRepository {
    * @return true if the file was previously not considered open; it is a newly opened file
    */
   public boolean considerOpened(String configurationScopeId, URI fileUri) {
-    var openFiles = openFilesByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new HashSet<>());
+    var openFiles = openFilesByConfigScopeId.computeIfAbsent(configurationScopeId, k -> ConcurrentHashMap.newKeySet());
     return openFiles.add(fileUri);
   }
 
