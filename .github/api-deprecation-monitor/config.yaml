@@ -1,0 +1,11 @@
+state_branch: api-deprecation-monitor-state
+
+unattended_defaults:
+  non_master_branch: keep
+  dirty_worktree: abort
+
+repos:
+  - name: sonarlint-core
+    directory: .
+    github_remote: SonarSource/sonarlint-core
+    default_branch: master

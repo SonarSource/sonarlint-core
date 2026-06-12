@@ -1,0 +1,605 @@
+#!/usr/bin/env python3
+"""API Deprecation Monitor CLI."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+DEFAULT_CONFIG = ".github/api-deprecation-monitor/config.yaml"
+CATALOG_DIR = "api-deprecation-monitor/api-catalog"
+CACHE_DIR = "api-deprecation-monitor/api-cache"
+REPORTS_DIR = "api-deprecation-monitor/api-reports"
+SCAN_STATE_FILE = "api-deprecation-monitor/api-catalog/scan_state.yaml"
+
+
+def repo_root() -> Path:
+    env = os.environ.get("API_MONITOR_REPO_ROOT")
+    if env:
+        return Path(env).resolve()
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return Path(result.stdout.strip()).resolve()
+
+
+def workspace_root(root: Path) -> Path:
+    env = os.environ.get("API_MONITOR_WORKSPACE")
+    if env:
+        return Path(env).resolve()
+    return root.parent
+
+
+def load_config(path: Path) -> dict[str, Any]:
+    with path.open() as f:
+        return yaml.safe_load(f) or {}
+
+
+def load_yaml(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    with path.open() as f:
+        return yaml.safe_load(f) or {}
+
+
+def save_yaml(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as f:
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+
+
+def iso_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def git_cmd(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def resolve_repo_path(root: Path, ws: Path, directory: str) -> Path:
+    if directory == ".":
+        return root
+    return ws / directory
+
+
+def cmd_sync_workspace(args: argparse.Namespace) -> int:
+    root = repo_root()
+    ws = workspace_root(root)
+    config = load_config(Path(args.config))
+    ws.mkdir(parents=True, exist_ok=True)
+    for repo in config.get("repos", []):
+        directory = repo.get("directory", ".")
+        if directory == ".":
+            continue
+        target = ws / directory
+        if target.exists():
+            print(f"  {repo['name']}: already present at {target}")
+            continue
+        url = repo.get("clone_url")
+        if not url:
+            print(f"  {repo['name']}: skip clone (no clone_url, directory={directory})")
+            continue
+        print(f"  {repo['name']}: cloning to {target}")
+        subprocess.run(["git", "clone", url, str(target)], check=True)
+    return 0
+
+
+def get_dirty_files(repo_path: Path) -> list[str]:
+    result = git_cmd(repo_path, "status", "--porcelain")
+    if result.returncode != 0:
+        return []
+    dirty = []
+    for line in result.stdout.splitlines():
+        if line.strip():
+            dirty.append(line[3:].strip())
+    return dirty
+
+
+def get_current_branch(repo_path: Path) -> str:
+    result = git_cmd(repo_path, "rev-parse", "--abbrev-ref", "HEAD")
+    return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def get_head_commit(repo_path: Path) -> str:
+    result = git_cmd(repo_path, "rev-parse", "HEAD")
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def get_changed_files_since(repo_path: Path, since_commit: str) -> list[str]:
+    if not since_commit:
+        return []
+    result = git_cmd(repo_path, "diff", "--name-only", f"{since_commit}..HEAD")
+    if result.returncode != 0:
+        return []
+    return [f for f in result.stdout.splitlines() if f.strip()]
+
+
+def cmd_prepare(args: argparse.Namespace) -> int:
+    root = repo_root()
+    ws = workspace_root(root)
+    config_path = Path(args.config)
+    if not config_path.is_absolute():
+        config_path = root / config_path
+    config = load_config(config_path)
+    scan_state = load_yaml(root / SCAN_STATE_FILE)
+
+    repo_filter = set(args.repos.split(",")) if args.repos else None
+    allow_dirty = set(args.allow_dirty.split(",")) if args.allow_dirty else set()
+    switch_branch = args.switch_branch
+    keep_branch = set(args.keep_branch.split(",")) if args.keep_branch else set()
+
+    non_master: list[dict[str, str]] = []
+    dirty_repos: list[dict[str, str]] = []
+    delta_repos: list[dict[str, Any]] = []
+
+    for repo_cfg in config.get("repos", []):
+        name = repo_cfg["name"]
+        if repo_filter and name not in repo_filter:
+            continue
+        repo_path = resolve_repo_path(root, ws, repo_cfg.get("directory", "."))
+        default_branch = repo_cfg.get("default_branch", "master")
+        branch = get_current_branch(repo_path)
+        dirty = get_dirty_files(repo_path)
+
+        if dirty and name not in allow_dirty:
+            dirty_repos.append({"name": name, "branch": branch, "dirty_files": dirty[:10]})
+            continue
+
+        if branch != default_branch and name not in keep_branch:
+            if switch_branch:
+                git_cmd(repo_path, "checkout", switch_branch)
+                branch = switch_branch
+            else:
+                non_master.append({"name": name, "branch": branch, "default_branch": default_branch})
+                continue
+
+        head = get_head_commit(repo_path)
+        prev = scan_state.get("repos", {}).get(name, {})
+        prev_commit = prev.get("last_scan_commit", "")
+        prev_at = prev.get("last_scanned_at", "")
+
+        if args.check_only:
+            scan_mode = "skip"
+            changed_files: list[str] = []
+        elif args.full_scan or not prev_commit:
+            scan_mode = "full"
+            changed_files = []
+        else:
+            changed_files = get_changed_files_since(repo_path, prev_commit)
+            scan_mode = "delta" if changed_files else "skip"
+
+        delta_repos.append(
+            {
+                "name": name,
+                "repo_path": str(repo_path),
+                "github_remote": repo_cfg.get("github_remote", ""),
+                "head_commit": head,
+                "scan_mode": scan_mode,
+                "changed_files": changed_files,
+                "branch": branch,
+            }
+        )
+
+    if non_master and not switch_branch and not keep_branch:
+        print(json.dumps({"exit": 2, "non_master": non_master}))
+        return 2
+    if dirty_repos and not allow_dirty:
+        print(json.dumps({"exit": 3, "dirty_repos": dirty_repos}))
+        return 3
+
+    output = {
+        "exit": 0,
+        "check_only": args.check_only,
+        "full_scan": args.full_scan,
+        "delta": {"repos": delta_repos},
+        "run_notes": [],
+    }
+    print(json.dumps(output))
+    return 0
+
+
+def merge_repo_result(catalog: dict[str, Any], result: dict[str, Any]) -> None:
+    repo_name = result["repo"]
+    repos = catalog.setdefault("repos", {})
+    repo_entry = repos.setdefault(repo_name, {"endpoints": [], "dependencies": [], "last_scan_commit": ""})
+    repo_entry["last_scanned_at"] = result.get("scanned_at", iso_now())
+    repo_entry["last_scan_commit"] = result.get("head_commit", repo_entry.get("last_scan_commit", ""))
+    repo_entry["scan_mode"] = result.get("scan_mode", "full")
+
+    existing_ids = {e["id"] for e in repo_entry.get("endpoints", [])}
+    for ep in result.get("endpoints", []):
+        if ep["id"] not in existing_ids:
+            repo_entry.setdefault("endpoints", []).append(ep)
+            existing_ids.add(ep["id"])
+        else:
+            for i, existing in enumerate(repo_entry["endpoints"]):
+                if existing["id"] == ep["id"]:
+                    repo_entry["endpoints"][i] = ep
+                    break
+
+    dep_key = lambda d: (d.get("name"), d.get("file", ""))
+    existing_deps = {dep_key(d) for d in repo_entry.get("dependencies", [])}
+    for dep in result.get("dependencies", []):
+        if dep_key(dep) not in existing_deps:
+            repo_entry.setdefault("dependencies", []).append(dep)
+
+
+def cmd_merge_catalog(args: argparse.Namespace) -> int:
+    root = repo_root()
+    catalog_path = root / CATALOG_DIR / "catalog.yaml"
+    catalog = load_yaml(catalog_path)
+    if not catalog:
+        catalog = {"schema_version": 1, "last_updated": iso_now(), "repos": {}}
+
+    results_path = Path(args.results_file)
+    with results_path.open() as f:
+        content = f.read()
+    docs = list(yaml.safe_load_all(content))
+    for doc in docs:
+        if doc:
+            merge_repo_result(catalog, doc)
+
+    catalog["last_updated"] = iso_now()
+    platforms: dict[str, int] = {}
+    total = 0
+    for repo_data in catalog.get("repos", {}).values():
+        for ep in repo_data.get("endpoints", []):
+            platform = ep.get("platform", "other")
+            platforms[platform] = platforms.get(platform, 0) + 1
+            total += 1
+    catalog["summary"] = {"total_endpoints": total, "platforms": platforms}
+    save_yaml(catalog_path, catalog)
+
+    scan_state = load_yaml(root / SCAN_STATE_FILE)
+    scan_state.setdefault("repos", {})
+    for repo_name, repo_data in catalog.get("repos", {}).items():
+        scan_state["repos"][repo_name] = {
+            "last_scanned_at": repo_data.get("last_scanned_at"),
+            "last_scan_commit": repo_data.get("last_scan_commit"),
+        }
+    save_yaml(root / SCAN_STATE_FILE, scan_state)
+
+    print(f"Catalog updated: {total} endpoints tracked across {len(platforms)} platforms")
+    return 0
+
+
+SOURCE_URLS = {
+    "github_breaking_changes.md": "https://docs.github.com/en/rest/about-the-rest-api/breaking-changes",
+    "github_api_versions.md": "https://docs.github.com/en/rest/about-the-rest-api/api-versions",
+    "github_changelog.md": "https://github.blog/changelog/label/rest-api/",
+    "gitlab_api_deprecations.md": "https://docs.gitlab.com/api/rest/deprecations/",
+    "gitlab_all_deprecations.md": "https://docs.gitlab.com/update/deprecations/",
+    "bitbucket_changelog.md": "https://developer.atlassian.com/cloud/bitbucket/changelog/",
+    "jira_changelog.md": "https://developer.atlassian.com/cloud/jira/platform/changelog/",
+    "slack_changelog.md": "https://api.slack.com/changelog",
+    "sonarqube_deprecations.md": "https://docs.sonarsource.com/sonarqube-server/latest/server-upgrade-and-maintenance/release-upgrade-notes/",
+    "sonarqube_web_api.md": "https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/",
+    "sonarcloud_changelog.md": "https://docs.sonarsource.com/sonarcloud/whats-new/",
+}
+
+
+def fetch_url(url: str) -> str:
+    import urllib.request
+
+    req = urllib.request.Request(url, headers={"User-Agent": "api-deprecation-monitor/1.0"})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def cmd_fetch_sources(args: argparse.Namespace) -> int:
+    root = repo_root()
+    sources_dir = root / CACHE_DIR / "sources"
+    sources_dir.mkdir(parents=True, exist_ok=True)
+    meta_path = root / CACHE_DIR / "fetch_meta.yaml"
+    meta = load_yaml(meta_path)
+    max_age_hours = 24
+    if args.max_age.endswith("h"):
+        max_age_hours = int(args.max_age[:-1])
+
+    now = datetime.now(timezone.utc)
+    fetched: list[str] = []
+    skipped: list[str] = []
+    errors: list[str] = []
+
+    for filename, url in SOURCE_URLS.items():
+        dest = sources_dir / filename
+        prev = meta.get("files", {}).get(filename, {})
+        if dest.exists() and prev.get("fetched_at"):
+            try:
+                fetched_at = datetime.fromisoformat(prev["fetched_at"].replace("Z", "+00:00"))
+                age_h = (now - fetched_at).total_seconds() / 3600
+                if age_h < max_age_hours:
+                    skipped.append(filename)
+                    continue
+            except (ValueError, TypeError):
+                pass
+        try:
+            content = fetch_url(url)
+            dest.write_text(content, encoding="utf-8")
+            meta.setdefault("files", {})[filename] = {
+                "fetched_at": iso_now(),
+                "source_url": url,
+                "size": len(content),
+            }
+            fetched.append(filename)
+        except Exception as exc:
+            errors.append(f"{filename}: {exc}")
+            if not dest.exists():
+                dest.write_text(f"# Fetch failed: {exc}\n# Source: {url}\n", encoding="utf-8")
+
+    meta["last_fetch"] = iso_now()
+    save_yaml(meta_path, meta)
+
+    catalog = load_yaml(root / CATALOG_DIR / "catalog.yaml")
+    deprecations = load_yaml(root / CATALOG_DIR / "deprecations.yaml")
+    platforms_in_catalog = set()
+    for repo_data in catalog.get("repos", {}).values():
+        for ep in repo_data.get("endpoints", []):
+            platforms_in_catalog.add(ep.get("platform", "other"))
+
+    catalog_updated = catalog.get("last_updated", "")
+    deprec_checked = deprecations.get("last_checked", "")
+    platforms_to_check = sorted(platforms_in_catalog) if fetched else []
+
+    result = {
+        "fetched": fetched,
+        "skipped": skipped,
+        "errors": errors,
+        "platforms_to_check": platforms_to_check,
+        "catalog_last_updated": catalog_updated,
+        "deprecations_last_checked": deprec_checked,
+        "cached_source_files": {k: str(sources_dir / k) for k in SOURCE_URLS},
+    }
+    print(json.dumps(result))
+    return 0
+
+
+def cmd_merge_verifications(args: argparse.Namespace) -> int:
+    root = repo_root()
+    dep_path = root / CATALOG_DIR / "deprecations.yaml"
+    deprecations = load_yaml(dep_path)
+    if not deprecations:
+        deprecations = {"schema_version": 1, "last_checked": iso_now(), "deprecations": []}
+
+    verdicts_path = Path(args.verdicts_file)
+    with verdicts_path.open() as f:
+        content = f.read()
+    verdicts = list(yaml.safe_load_all(content))
+
+    by_id = {d["id"]: d for d in deprecations.get("deprecations", [])}
+    for verdict_doc in verdicts:
+        if not verdict_doc:
+            continue
+        dep_id = verdict_doc.get("deprecation_id")
+        if dep_id not in by_id:
+            continue
+        entry = by_id[dep_id]
+        entry["verified_at"] = iso_now()
+        entry["verification"] = {
+            "verdict": verdict_doc.get("verdict"),
+            "verified_repos": verdict_doc.get("verified_repos", []),
+            "evidence": verdict_doc.get("evidence", []),
+            "notes": verdict_doc.get("notes", ""),
+        }
+        if verdict_doc.get("verdict") == "false_positive":
+            entry["status"] = "false_positive"
+
+    deprecations["deprecations"] = list(by_id.values())
+    save_yaml(dep_path, deprecations)
+    print(f"Merged {len([v for v in verdicts if v])} verification verdicts")
+    return 0
+
+
+def severity_from_sunset(sunset: str, today: str) -> str:
+    try:
+        sunset_dt = datetime.strptime(sunset[:10], "%Y-%m-%d").date()
+        today_dt = datetime.strptime(today[:10], "%Y-%m-%d").date()
+        days = (sunset_dt - today_dt).days
+        if days <= 90:
+            return "critical"
+        if days <= 180:
+            return "warning"
+        return "info"
+    except (ValueError, TypeError):
+        return "info"
+
+
+def cmd_generate_report(args: argparse.Namespace) -> int:
+    root = repo_root()
+    catalog = load_yaml(root / CATALOG_DIR / "catalog.yaml")
+    deprecations = load_yaml(root / CATALOG_DIR / "deprecations.yaml")
+    trigger = args.trigger or "cron"
+    run_notes = json.loads(args.run_notes) if args.run_notes else []
+    repos_scanned = json.loads(args.repos_scanned) if args.repos_scanned else []
+    repos_skipped = json.loads(args.repos_skipped) if args.repos_skipped else []
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    active_deps = [
+        d
+        for d in deprecations.get("deprecations", [])
+        if d.get("affected_repos")
+        and d.get("status", "open") in ("open", "missing")
+        and d.get("verification", {}).get("verdict") != "false_positive"
+    ]
+
+    critical = [d for d in active_deps if d.get("severity") == "critical"]
+    warning = [d for d in active_deps if d.get("severity") == "warning"]
+
+    lines = [
+        "# API Deprecation Monitor Report",
+        f"**Generated:** {iso_now()} · **Trigger:** {trigger}",
+        f"**Repos scanned:** {', '.join(repos_scanned) or 'none'} · **Repos skipped:** {', '.join(repos_skipped) or 'none'}",
+        "",
+        "## Run notes",
+    ]
+    if run_notes:
+        lines.extend(f"- {n}" for n in run_notes)
+    else:
+        lines.append("- No issues during prepare/bootstrap.")
+
+    lines.extend(["", "## Recommended Actions"])
+    if not active_deps:
+        lines.append("No new action needed this week — no active deprecations affecting cataloged endpoints.")
+    else:
+        for i, dep in enumerate(active_deps, 1):
+            kind = dep.get("kind", "deprecation")
+            lines.append(
+                f"{i}. **[{dep.get('severity', 'info').upper()}]** {dep.get('title')} "
+                f"({kind}) — sunset {dep.get('sunset_date', 'TBD')}"
+            )
+
+    lines.extend(["", "## Findings", "", "### Deprecations"])
+    lines.append(
+        "| Kind | Endpoint | Platform | Sunset | Severity | Repos | Source |"
+    )
+    lines.append("|---|---|---|---|---|---|---|")
+    for dep in deprecations.get("deprecations", []):
+        if not dep.get("affected_repos"):
+            continue
+        repos = ", ".join(r["repo"] for r in dep["affected_repos"])
+        src = f"[source notice]({dep.get('source_url', '#')})"
+        lines.append(
+            f"| {dep.get('kind', 'deprecation')} | {dep.get('affected_endpoint', '')} "
+            f"| {dep.get('platform', '')} | {dep.get('sunset_date', '')} "
+            f"| {dep.get('severity', '')} | {repos} | {src} |"
+        )
+
+    for dep in deprecations.get("deprecations", []):
+        if not dep.get("affected_repos"):
+            continue
+        lines.extend(
+            [
+                "",
+                f"### [{dep['id']}] {dep.get('title', '')}",
+                f"- Kind: {dep.get('kind', 'deprecation')}, platform: {dep.get('platform')}, "
+                f"endpoint: `{dep.get('affected_endpoint', '')}`",
+                f"- Announced: {dep.get('announcement_date', '')}, sunset: {dep.get('sunset_date', '')}, "
+                f"severity: {dep.get('severity', '')}",
+            ]
+        )
+        if dep.get("replacement"):
+            lines.append(f"- Replacement: {dep['replacement']}")
+        for ar in dep.get("affected_repos", []):
+            remote = "SonarSource/sonarlint-core"
+            commit = catalog.get("repos", {}).get(ar["repo"], {}).get("last_scan_commit", "master")
+            for f in ar.get("files", []):
+                link = f"https://github.com/{remote}/blob/{commit}/{f}"
+                lines.append(f"- [{ar['repo']}] [{f}]({link})")
+        if dep.get("source_url"):
+            lines.append(f"- [source notice]({dep['source_url']})")
+
+    lines.extend(["", "## Catalog Summary", "| Platform | Endpoints | Repos |", "|---|---|---|"])
+    platform_repos: dict[str, set[str]] = {}
+    platform_counts: dict[str, int] = {}
+    for repo_name, repo_data in catalog.get("repos", {}).items():
+        for ep in repo_data.get("endpoints", []):
+            p = ep.get("platform", "other")
+            platform_counts[p] = platform_counts.get(p, 0) + 1
+            platform_repos.setdefault(p, set()).add(repo_name)
+    for p, count in sorted(platform_counts.items()):
+        lines.append(f"| {p} | {count} | {', '.join(sorted(platform_repos[p]))} |")
+
+    lines.extend(["", "## SDK/Library Versions", "| Library | Version | Repos |", "|---|---|---|"])
+    lib_repos: dict[str, dict[str, set[str]]] = {}
+    for repo_name, repo_data in catalog.get("repos", {}).items():
+        for dep in repo_data.get("dependencies", []):
+            name = dep.get("name", "")
+            ver = dep.get("version", "")
+            lib_repos.setdefault(name, {}).setdefault(ver, set()).add(repo_name)
+    for name in sorted(lib_repos):
+        for ver, repos in sorted(lib_repos[name].items()):
+            lines.append(f"| {name} | {ver} | {', '.join(sorted(repos))} |")
+
+    report_path = root / REPORTS_DIR / "report_latest.md"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    if active_deps:
+        summary_first = f"Action needed: {len(active_deps)} open deprecation(s) affect cataloged endpoints ({len(critical)} critical, {len(warning)} warning)."
+        highest = active_deps[0]
+        days = ""
+        if highest.get("sunset_date"):
+            try:
+                d = (datetime.strptime(highest["sunset_date"][:10], "%Y-%m-%d").date() -
+                     datetime.strptime(today, "%Y-%m-%d").date()).days
+                days = f" ({d} days)"
+            except ValueError:
+                pass
+        highest_signal = f"{highest.get('title')}: review {highest.get('affected_endpoint', '')} usage{days}."
+    else:
+        summary_first = "No new action needed this week — no verified deprecations affect cataloged endpoints."
+        highest_signal = "Continue monitoring; no actionable deprecation findings."
+
+    slack = {"summary": summary_first, "highest_signal": highest_signal}
+    slack_path = root / REPORTS_DIR / "slack_summary.json"
+    slack_path.write_text(json.dumps(slack, indent=2) + "\n", encoding="utf-8")
+
+    print(f"Report written to {REPORTS_DIR}/report_latest.md")
+    if critical or warning:
+        print(f"⚠ ATTENTION: {len(critical)} CRITICAL, {len(warning)} WARNING deprecation(s) affecting code")
+    else:
+        print("✓ No active deprecations or compatibility notices affecting cataloged endpoints.")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="API Deprecation Monitor")
+    parser.add_argument("--config", default=os.environ.get("API_MONITOR_CONFIG", DEFAULT_CONFIG))
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("sync-workspace")
+    p_prepare = sub.add_parser("prepare")
+    p_prepare.add_argument("--repos")
+    p_prepare.add_argument("--full-scan", action="store_true")
+    p_prepare.add_argument("--check-only", action="store_true")
+    p_prepare.add_argument("--allow-dirty")
+    p_prepare.add_argument("--switch-branch")
+    p_prepare.add_argument("--keep-branch")
+
+    p_merge = sub.add_parser("merge-catalog")
+    p_merge.add_argument("--results-file", required=True)
+
+    p_fetch = sub.add_parser("fetch-sources")
+    p_fetch.add_argument("--max-age", default="24h")
+
+    p_ver = sub.add_parser("merge-verifications")
+    p_ver.add_argument("--verdicts-file", required=True)
+
+    p_report = sub.add_parser("generate-report")
+    p_report.add_argument("--trigger", default="cron")
+    p_report.add_argument("--run-notes", default="[]")
+    p_report.add_argument("--repos-scanned", default="[]")
+    p_report.add_argument("--repos-skipped", default="[]")
+
+    args = parser.parse_args()
+    handlers = {
+        "sync-workspace": cmd_sync_workspace,
+        "prepare": cmd_prepare,
+        "merge-catalog": cmd_merge_catalog,
+        "fetch-sources": cmd_fetch_sources,
+        "merge-verifications": cmd_merge_verifications,
+        "generate-report": cmd_generate_report,
+    }
+    return handlers[args.command](args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

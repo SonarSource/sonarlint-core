@@ -55,3 +55,6 @@ scripts/patches/*license*.txt
 
 # Run configurations
 .run
+
+# API Deprecation Monitor artifacts (persisted on state_branch)
+/api-deprecation-monitor/
