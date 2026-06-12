@@ -532,8 +532,12 @@ def cmd_generate_report(args: argparse.Namespace) -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    if active_deps:
-        summary_first = f"Action needed: {len(active_deps)} open deprecation(s) affect cataloged endpoints ({len(critical)} critical, {len(warning)} warning)."
+    urgent = critical + warning
+    if urgent:
+        summary_first = f"Action needed this week: {len(urgent)} open deprecation(s) ({len(critical)} critical, {len(warning)} warning)."
+        highest = urgent[0]
+    elif active_deps:
+        summary_first = f"No new action needed this week — {len(active_deps)} info-level notice(s) tracked for long-term API migration."
         highest = active_deps[0]
         days = ""
         if highest.get("sunset_date"):
