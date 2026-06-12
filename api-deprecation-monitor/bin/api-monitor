@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export API_MONITOR_REPO_ROOT="${API_MONITOR_REPO_ROOT:-$(git -C "$SCRIPT_DIR/../.." rev-parse --show-toplevel 2>/dev/null || pwd)}"
+export API_MONITOR_WORKSPACE="${API_MONITOR_WORKSPACE:-$(dirname "$API_MONITOR_REPO_ROOT")}"
+exec python3 "$SCRIPT_DIR/../scripts/api_monitor.py" "$@"

@@ -46,6 +46,11 @@ Desktop.ini
 .sonar/
 .scannerwork
 
+# ---- API Deprecation Monitor (generated artifacts; persisted on state_branch)
+api-deprecation-monitor/api-catalog/
+api-deprecation-monitor/api-cache/
+api-deprecation-monitor/api-reports/
+
 # scripts patches, they are local to each developer
 scripts/patches/*.sh
 scripts/patches/*license*.txt
