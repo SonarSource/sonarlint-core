@@ -1,0 +1,144 @@
+last_checked: '2026-06-12T12:50:00+00:00'
+deprecations:
+- id: dep-001
+  kind: compatibility_notice
+  platform: sonarqube_server
+  title: Web API v1 endpoints subject to gradual v2 migration
+  affected_endpoint: /api/*
+  announcement_date: '2024-01-15'
+  sunset_date: staged rollout (v1 dropped as v2 equivalents ship; target 11.x LTS
+    cycle)
+  severity: WARNING
+  replacement: Migrate to Web API v2 equivalents at /api/v2/* as they become available;
+    monitor deprecation logs via api/system/logs?name=deprecation
+  source_url: https://www.sonarsource.com/blog/new-web-api-v2/
+  affected_repos:
+  - sonarlint-core
+  status: open
+  notes: sonarlint-core uses 36 v1 REST/protobuf endpoints (issues, hotspots, rules,
+    components, etc.). Already uses v2 for fix-suggestions, SCA, and dop-translation.
+    Remaining v1 endpoints follow SonarSource incremental deprecation policy (6-month
+    minimum after deprecation notice).
+  verified_at: '2026-06-12T12:52:08.361150+00:00'
+  verification:
+    verdict: confirmed
+    evidence:
+    - repo: sonarlint-core
+      file: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 162
+      note: Uses /api/issues/pull v1 protobuf endpoint
+    - repo: sonarlint-core
+      file: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 41
+      note: Already migrated fix-suggestions to /api/v2 on Server
+- id: dep-002
+  kind: compatibility_notice
+  platform: sonarqube_server
+  title: Legacy /batch/issues endpoint for pre-9.6 servers
+  affected_endpoint: /batch/issues
+  announcement_date: unknown
+  sunset_date: unknown
+  severity: INFO
+  replacement: /api/issues/pull (already primary path for SQ >= 9.6)
+  source_url: https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/
+  affected_repos:
+  - sonarlint-core
+  status: open
+  notes: downloadAllFromBatchIssues() retains /batch/issues for SonarQube Server <
+    9.6 and SonarCloud line-level issue sync. Code comment documents this as legacy
+    path.
+  verified_at: '2026-06-12T12:52:08.361150+00:00'
+  verification:
+    verdict: confirmed
+    evidence:
+    - repo: sonarlint-core
+      file: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 155
+      - 156
+      note: getBatchIssuesUrl returns /batch/issues?key=
+    - repo: sonarlint-core
+      file: backend/server-connection/src/main/java/org/sonarsource/sonarlint/core/serverconnection/issues/LineLevelServerIssue.java
+      lines:
+      - 34
+      note: Comment documents legacy /batch/issues for SQ < 9.6 and SC
+- id: dep-003
+  kind: compatibility_notice
+  platform: sonarqube_server
+  title: Bearer token authentication recommended since SonarQube 10.4
+  affected_endpoint: Authorization header scheme
+  announcement_date: '2024-01-15'
+  sunset_date: unknown
+  severity: INFO
+  replacement: Authorization Bearer token (already implemented in SonarQubeClientManager
+    for SQ >= 10.4 and SonarCloud)
+  source_url: https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/
+  affected_repos:
+  - sonarlint-core
+  status: open
+  notes: Basic auth still supported as fallback for older servers. No immediate action
+    required; monitor for basic-auth removal announcements.
+  verified_at: '2026-06-12T12:52:08.361150+00:00'
+  verification:
+    verdict: confirmed
+    evidence:
+    - repo: sonarlint-core
+      file: backend/core/src/main/java/org/sonarsource/sonarlint/core/SonarQubeClientManager.java
+      lines: []
+      note: Bearer token auth path exists for SQ >= 10.4
+- id: dep-004
+  kind: compatibility_notice
+  platform: sonarqube_cloud
+  title: SonarCloud-specific API paths differ from Server v2 prefix
+  affected_endpoint: /fix-suggestions/*, /sca/*, /dop-translation/*
+  announcement_date: unknown
+  sunset_date: unknown
+  severity: INFO
+  replacement: Continue using api_base_url paths without /api/v2 prefix on SonarCloud
+    (FixSuggestionsApi, ScaApi, ProjectBindingsApi)
+  source_url: https://docs.sonarsource.com/sonarqube-cloud/
+  affected_repos:
+  - sonarlint-core
+  status: open
+  notes: Dual-path logic in server-api layer correctly branches on isSonarCloud().
+    Watch for SonarCloud API unification announcements that could change path conventions.
+  verified_at: '2026-06-12T12:52:08.361150+00:00'
+  verification:
+    verdict: confirmed
+    evidence:
+    - repo: sonarlint-core
+      file: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 41
+      note: urlPrefix empty for SonarCloud, /api/v2 for Server
+    - repo: sonarlint-core
+      file: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 39
+      note: Branches between /fix-suggestions and /api/v2/fix-suggestions
+- id: dep-005
+  kind: compatibility_notice
+  platform: other
+  title: Sentry SDK DSN hardcoded default
+  affected_endpoint: https://o1316750.ingest.us.sentry.io/*
+  announcement_date: unknown
+  sunset_date: unknown
+  severity: INFO
+  replacement: Override via sonarlint.internal.monitoring.dsn system property
+  source_url: https://docs.sentry.io/platforms/java/
+  affected_repos:
+  - sonarlint-core
+  status: open
+  notes: MonitoringService embeds default Sentry DSN. Not a vendor API deprecation
+    but an operational risk if DSN rotation is required.
+  verified_at: '2026-06-12T12:52:08.361150+00:00'
+  verification:
+    verdict: confirmed
+    evidence:
+    - repo: sonarlint-core
+      file: backend/core/src/main/java/org/sonarsource/sonarlint/core/monitoring/MonitoringService.java
+      lines:
+      - 39
+      note: DSN_DEFAULT points to ingest.us.sentry.io

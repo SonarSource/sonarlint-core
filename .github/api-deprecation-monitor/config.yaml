@@ -1,0 +1,23 @@
+primary_repo: sonarlint-core
+
+state_branch: automation/api-monitor-state
+
+unattended_defaults:
+  non_master_branch: keep
+  dirty_worktree: abort
+
+repos:
+  - name: sonarlint-core
+    directory: .
+    github_remote: SonarSource/sonarlint-core
+
+sources:
+  github_changelog:
+    url: https://github.blog/changelog/
+    platforms: [github_cloud]
+  gitlab_releases:
+    url: https://about.gitlab.com/releases/
+    platforms: [gitlab_cloud]
+  sonarqube_deprecations:
+    url: https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/
+    platforms: [sonarqube_server, sonarqube_cloud]

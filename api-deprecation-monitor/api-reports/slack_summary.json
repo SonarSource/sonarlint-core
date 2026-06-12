@@ -1,0 +1,4 @@
+{
+  "summary": "No new action needed this week — initial catalog scan found 5 confirmed compatibility notices (1 WARNING, 4 INFO) with no hard sunset dates within 90 days.",
+  "highest_signal": "WARNING dep-001: sonarlint-core relies on 36 Web API v1 endpoints; track SonarQube v2 migration announcements and migrate issue/hotspot/rules paths as v2 equivalents ship in upcoming LTS releases."
+}

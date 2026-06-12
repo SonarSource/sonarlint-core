@@ -1,0 +1,581 @@
+last_updated: '2026-06-12T12:51:16.033378+00:00'
+repos:
+- name: sonarlint-core
+  last_scan_commit: 07fbe6f84669772b6615f9c915926186ea1e0153
+  last_scan_at: '2026-06-12T12:51:16.033378+00:00'
+  scan_mode: full
+  endpoints:
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/system/status
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/system/SystemApi.java
+      lines:
+      - 37
+      snippet: getAnonymousJson("api/system/status"
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/authentication/validate
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/authentication/AuthenticationApi.java
+      lines:
+      - 35
+      snippet: api/authentication/validate?format=json
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/features/list
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/features/FeaturesApi.java
+      lines:
+      - 40
+      snippet: api/features/list
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/plugins/installed
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/plugins/PluginsApi.java
+      lines:
+      - 33
+      snippet: API_PLUGINS_INSTALLED_PATH
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/plugins/download
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/plugins/PluginsApi.java
+      lines:
+      - 57
+      snippet: api/plugins/download?plugin=
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/users/current
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/users/UsersApi.java
+      lines:
+      - 40
+      snippet: /api/users/current
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/sources/raw
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/source/SourceApi.java
+      lines:
+      - 47
+      snippet: /api/sources/raw?key=
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/settings/values.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/settings/SettingsApi.java
+      lines:
+      - 35
+      snippet: API_SETTINGS_PATH
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/qualityprofiles/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/qualityprofile/QualityProfileApi.java
+      lines:
+      - 33
+      snippet: DEFAULT_QP_SEARCH_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/rules/show.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+      lines:
+      - 67
+      snippet: RULE_SHOW_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/rules/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+      lines:
+      - 140
+      snippet: /api/rules/search.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/components/show.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/component/ComponentApi.java
+      lines:
+      - 118
+      snippet: api/components/show.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/components/tree.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/component/ComponentApi.java
+      lines:
+      - 57
+      snippet: api/components/tree.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/components/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/component/ComponentApi.java
+      lines:
+      - 81
+      snippet: api/components/search.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/components/search_projects
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/component/ComponentApi.java
+      lines:
+      - 96
+      snippet: /api/components/search_projects
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/project_branches/list.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/branches/ProjectBranchesApi.java
+      lines:
+      - 33
+      snippet: LIST_ALL_PROJECT_BRANCHES_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/measures/component.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/newcode/NewCodeApi.java
+      lines:
+      - 37
+      snippet: GET_NEW_CODE_DEFINITION_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/organizations/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/organization/OrganizationApi.java
+      lines:
+      - 41
+      snippet: api/organizations/search.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/developers/search_events
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/developers/DevelopersApi.java
+      lines:
+      - 31
+      snippet: API_PATH = "api/developers/search_events"
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/issues/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 127
+      snippet: /api/issues/search.protobuf
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/issues/pull
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 162
+      snippet: /api/issues/pull?projectKey=
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/issues/pull_taint
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 206
+      snippet: /api/issues/pull_taint?projectKey=
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: /api/issues/do_transition
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 231
+      snippet: post("/api/issues/do_transition"
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: /api/issues/add_comment
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 236
+      snippet: post("/api/issues/add_comment"
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: /api/issues/anticipated_transitions
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 305
+      snippet: /api/issues/anticipated_transitions
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /batch/issues
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      lines:
+      - 157
+      snippet: /batch/issues?key=
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/hotspots/search.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+      lines:
+      - 59
+      snippet: HOTSPOTS_SEARCH_API_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/hotspots/show.protobuf
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+      lines:
+      - 60
+      snippet: HOTSPOTS_SHOW_API_URL
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/hotspots/pull
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+      lines:
+      - 61
+      snippet: HOTSPOTS_PULL_API_URL
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: api/hotspots/change_status
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+      lines:
+      - 77
+      snippet: api/hotspots/change_status
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: api/push/sonarlint_events
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/push/PushApi.java
+      lines:
+      - 45
+      snippet: API_PATH = "api/push/sonarlint_events"
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: /api/v2/fix-suggestions/ai-suggestions
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 41
+      snippet: /api/v2/fix-suggestions/ai-suggestions
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/v2/fix-suggestions/supported-rules
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 54
+      snippet: /api/v2/fix-suggestions/supported-rules
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/v2/dop-translation/project-bindings
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/projectbindings/ProjectBindingsApi.java
+      lines:
+      - 60
+      snippet: /api/v2/dop-translation/project-bindings
+  - platform: sonarqube_server
+    method: GET
+    path_or_pattern: /api/v2/sca/issues-releases
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 42
+      snippet: /sca/issues-releases
+  - platform: sonarqube_server
+    method: POST
+    path_or_pattern: /api/v2/sca/issues-releases/change-status
+    detection_method: url_literal
+    auth: jwt
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 78
+      snippet: /sca/issues-releases/change-status
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /fix-suggestions/supported-rules
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 53
+      snippet: /fix-suggestions/supported-rules (SonarCloud)
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: POST
+    path_or_pattern: /fix-suggestions/ai-suggestions
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 40
+      snippet: /fix-suggestions/ai-suggestions (SonarCloud)
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /fix-suggestions/organization-configs/{orgId}
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+      lines:
+      - 63
+      snippet: /fix-suggestions/organization-configs/
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /dop-translation/project-bindings
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/projectbindings/ProjectBindingsApi.java
+      lines:
+      - 43
+      snippet: /dop-translation/project-bindings?url=
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /organizations/organizations
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/organization/OrganizationApi.java
+      lines:
+      - 55
+      snippet: /organizations/organizations?organizationKey=
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /sca/issues-releases
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 42
+      snippet: /sca/issues-releases (SonarCloud)
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: POST
+    path_or_pattern: /sca/issues-releases/change-status
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 78
+      snippet: /sca/issues-releases/change-status (SonarCloud)
+  - platform: sonarqube_cloud
+    base_url: https://api.sonarcloud.io
+    method: GET
+    path_or_pattern: /sca/feature-enabled
+    detection_method: url_literal
+    auth: oauth
+    files:
+    - path: backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+      lines:
+      - 96
+      snippet: /sca/feature-enabled?organization=
+  - platform: sonarqube_cloud
+    base_url: wss://events-api.sonarcloud.io
+    method: unknown
+    path_or_pattern: WebSocket events stream
+    detection_method: config
+    auth: oauth
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/SonarCloudRegion.java
+      lines:
+      - 26
+      snippet: wss://events-api.sonarcloud.io/
+  - platform: sonarqube_cloud
+    base_url: https://sonarcloud.io
+    method: GET
+    path_or_pattern: /project/security_hotspots
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/hotspot/HotspotService.java
+      lines:
+      - 168
+      snippet: /project/security_hotspots?id=
+  - platform: sonarsource_binaries
+    base_url: https://binaries.sonarsource.com
+    method: GET
+    path_or_pattern: /CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-{version}.jar
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/plugin/source/binaries/BinariesArtifact.java
+      lines:
+      - 37
+      snippet: BINARIES_URL + cfamily path
+  - platform: sonarsource_binaries
+    base_url: https://binaries.sonarsource.com
+    method: GET
+    path_or_pattern: /Distribution/sonar-csharp-plugin/sonar-csharp-plugin-{version}.jar
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/plugin/source/binaries/BinariesArtifact.java
+      lines:
+      - 39
+      snippet: csharp plugin path
+  - platform: sonarsource_binaries
+    base_url: https://binaries.sonarsource.com
+    method: GET
+    path_or_pattern: /OmniSharp-Roslyn/{version}/omnisharp-*.tar.gz
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/plugin/source/binaries/BinariesArtifact.java
+      lines:
+      - 41
+      snippet: OmniSharp-Roslyn paths
+  - platform: sonarsource_telemetry
+    base_url: https://telemetry.sonarsource.com/sonarlint
+    method: POST
+    path_or_pattern: /
+    detection_method: config
+    auth: none
+    files:
+    - path: backend/telemetry/src/main/java/org/sonarsource/sonarlint/core/telemetry/TelemetryHttpClient.java
+      lines:
+      - 144
+      snippet: postAsync(endpoint, ...
+  - platform: sonarsource_telemetry
+    base_url: https://telemetry.sonarsource.com/sonarlint
+    method: POST
+    path_or_pattern: /metrics
+    detection_method: url_literal
+    auth: none
+    files:
+    - path: backend/telemetry/src/main/java/org/sonarsource/sonarlint/core/telemetry/TelemetryHttpClient.java
+      lines:
+      - 158
+      snippet: endpoint + "/metrics"
+  - platform: sonarsource_telemetry
+    base_url: https://events.sonardata.io
+    method: POST
+    path_or_pattern: /ide
+    detection_method: config
+    auth: api_key
+    files:
+    - path: backend/telemetry/src/main/java/org/sonarsource/sonarlint/core/telemetry/gessie/GessieHttpClient.java
+      lines:
+      - 52
+      snippet: endpoint + "/ide"
+  - platform: other
+    vendor: Sentry
+    base_url: https://o1316750.ingest.us.sentry.io
+    method: POST
+    path_or_pattern: /api/{projectId}/envelope/
+    detection_method: sdk_import
+    auth: unknown
+    files:
+    - path: backend/core/src/main/java/org/sonarsource/sonarlint/core/monitoring/MonitoringService.java
+      lines:
+      - 39
+      snippet: Sentry DSN ingest.us.sentry.io
+  libraries:
+  - name: io.sentry:sentry
+    version: 8.38.0
+    files:
+    - backend/core/src/main/java/org/sonarsource/sonarlint/core/monitoring/MonitoringService.java
+    - backend/commons/src/main/java/org/sonarsource/sonarlint/core/commons/tracing/Trace.java
+  - name: org.eclipse.jgit:org.eclipse.jgit
+    version: 7.5.0.202512021534-r
+    files:
+    - backend/commons/src/main/java/org/sonarsource/sonarlint/core/commons/util/git/GitService.java
+  - name: org.eclipse.jgit:org.eclipse.jgit
+    version: 6.10.1.202505221210-r
+    files:
+    - client/java-client-utils/src/main/java/org/sonarsource/sonarlint/core/client/utils/GitUtils.java
+  - name: com.squareup.okhttp3:okhttp
+    version: 5.3.2
+    files:
+    - pom.xml
+  - name: com.google.code.gson:gson
+    version: 2.13.2
+    files:
+    - pom.xml
+  - name: com.google.protobuf:protobuf-java
+    version: 4.34.1
+    files:
+    - pom.xml

@@ -1,0 +1,17 @@
+{
+  "github_changelog": {
+    "url": "https://github.blog/changelog/",
+    "sha256": "44d25088beae3f2b9d0af7e7ff7013b58ea35c4bd03568da2f61a3b46bafddb8",
+    "fetched_at": "2026-06-12T12:51:16.093418+00:00"
+  },
+  "gitlab_releases": {
+    "url": "https://about.gitlab.com/releases/",
+    "sha256": "cb601cb0ba8b0c3f03c436d49f9fe60dc9a3f28e01d0d1542991658c28acbd53",
+    "fetched_at": "2026-06-12T12:51:16.093418+00:00"
+  },
+  "sonarqube_deprecations": {
+    "url": "https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/",
+    "sha256": "813ed6d2e0ca4b605b492da57bd61585e42844ae77995d9e885e8e585124b9e8",
+    "fetched_at": "2026-06-12T12:51:16.093418+00:00"
+  }
+}
