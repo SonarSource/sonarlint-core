@@ -1,0 +1,215 @@
+schema_version: 1
+last_updated: '2026-06-12T12:55:44Z'
+repos:
+  sonarlint-core:
+    endpoints:
+    - platform: sonarqube_server
+      id: sonarlint-core-system-status
+      path: /api/system/status
+      method: GET
+      auth: Anonymous
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/system/SystemApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-auth-validate
+      path: /api/authentication/validate
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/authentication/AuthenticationApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-features-list
+      path: /api/features/list
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/features/FeaturesApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-users-current
+      path: /api/users/current
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/users/UsersApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-issues-search
+      path: /api/issues/search.protobuf
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-issues-pull
+      path: /api/issues/pull
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-issues-do-transition
+      path: /api/issues/do_transition
+      method: POST
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-hotspots-search
+      path: /api/hotspots/search.protobuf
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-hotspots-change-status
+      path: /api/hotspots/change_status
+      method: POST
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-rules-search
+      path: /api/rules/search.protobuf
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-settings-values
+      path: /api/settings/values.protobuf
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/settings/SettingsApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-plugins-installed
+      path: /api/plugins/installed
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/plugins/PluginsApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-sqs-dop-project-bindings
+      path: /api/v2/dop-translation/project-bindings
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/projectbindings/ProjectBindingsApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-sqs-fix-suggestions-ai
+      path: /api/v2/fix-suggestions/ai-suggestions
+      method: POST
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-sqs-sca-issues-releases
+      path: /api/v2/sca/issues-releases
+      method: GET
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    - platform: sonarqube_server
+      id: sonarlint-core-sqs-sca-change-status
+      path: /api/v2/sca/issues-releases/change-status
+      method: POST
+      auth: Bearer token or Basic auth
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    - platform: sonarqube_cloud
+      id: sonarlint-core-sqc-sca-issues-releases
+      path: /sca/issues-releases
+      method: GET
+      auth: Bearer token
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    - platform: sonarqube_cloud
+      id: sonarlint-core-sqc-sca-change-status
+      path: /sca/issues-releases/change-status
+      method: POST
+      auth: Bearer token
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    - platform: sonarqube_cloud
+      id: sonarlint-core-sqc-sca-feature-enabled
+      path: /sca/feature-enabled
+      method: GET
+      auth: Bearer token
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    - platform: sonarqube_cloud
+      id: sonarlint-core-sqc-fix-suggestions-ai
+      path: /fix-suggestions/ai-suggestions
+      method: POST
+      auth: Bearer token
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/fixsuggestions/FixSuggestionsApi.java
+    - platform: sonarqube_cloud
+      id: sonarlint-core-sqc-dop-project-bindings
+      path: /dop-translation/project-bindings
+      method: GET
+      auth: Bearer token
+      source_files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/projectbindings/ProjectBindingsApi.java
+    - platform: sonarsource_binaries
+      id: sonarlint-core-binaries-cfamily-plugin
+      path: /CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-{version}.jar
+      method: GET
+      auth: Anonymous
+      source_files:
+      - backend/core/src/main/java/org/sonarsource/sonarlint/core/plugin/source/binaries/BinariesArtifact.java
+    - platform: sonarsource_binaries
+      id: sonarlint-core-binaries-omnisharp-mono
+      path: /OmniSharp-Roslyn/{version}/omnisharp-mono.tar.gz
+      method: GET
+      auth: Anonymous
+      source_files:
+      - backend/core/src/main/java/org/sonarsource/sonarlint/core/plugin/source/binaries/BinariesArtifact.java
+    - platform: other
+      id: sonarlint-core-telemetry-upload
+      vendor: SonarSource Telemetry
+      base_url: https://telemetry.sonarsource.com
+      path: /sonarlint
+      detection_method: url_literal
+      method: POST
+      source_files:
+      - backend/telemetry/src/main/java/org/sonarsource/sonarlint/core/telemetry/TelemetryHttpClient.java
+    - platform: other
+      id: sonarlint-core-sentry-ingest
+      vendor: Sentry
+      base_url: https://o1316750.ingest.us.sentry.io
+      path: /4508201175089152
+      detection_method: sdk
+      method: POST
+      source_files:
+      - backend/core/src/main/java/org/sonarsource/sonarlint/core/monitoring/MonitoringService.java
+    dependencies:
+    - name: org.sonarsource.api.plugin:sonar-plugin-api
+      version: 13.4.2.4284
+      platform: sonarqube_server
+      file: pom.xml
+    - name: org.sonarsource.sonarqube:sonar-scanner-protocol
+      version: 9.9.0.65466
+      platform: sonarqube_server
+      file: backend/server-api/pom.xml
+    - name: org.apache.httpcomponents.client5:httpclient5
+      version: 5.6.1
+      platform: other
+      file: backend/http/pom.xml
+    - name: com.squareup.okhttp3:okhttp
+      version: 5.3.2
+      platform: other
+      file: pom.xml
+    - name: io.sentry:sentry
+      version: 8.38.0
+      platform: other
+      file: backend/commons/pom.xml
+    last_scan_commit: 63f6dd6d9bd2fd7e699a7ea43399e27d42db75de
+    last_scanned_at: '2026-06-12T12:00:00Z'
+    scan_mode: full
+summary:
+  total_endpoints: 25
+  platforms:
+    sonarqube_server: 16
+    sonarqube_cloud: 5
+    sonarsource_binaries: 2
+    other: 2

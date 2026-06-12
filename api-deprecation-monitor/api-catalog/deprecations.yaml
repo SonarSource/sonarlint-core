@@ -1,0 +1,108 @@
+schema_version: 1
+last_checked: '2026-06-12T00:00:00Z'
+deprecations:
+- id: dep-001
+  kind: compatibility_notice
+  platform: sonarqube_server
+  title: SonarQube Web API v1 endpoints subject to gradual v2 migration
+  affected_endpoint: /api/*
+  announcement_date: '2024-01-01'
+  sunset_date: '2027-01-01'
+  severity: info
+  replacement: Migrate to Web API v2 endpoints at /api/v2/* as v2 equivalents become
+    available
+  source_url: https://www.sonarsource.com/blog/new-web-api-v2
+  affected_repos:
+  - repo: sonarlint-core
+    files:
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/settings/SettingsApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/component/ComponentApi.java
+  status: open
+  first_detected: '2026-06-12'
+  notes: SonarSource is incrementally deprecating v1 Web API endpoints; v1 remains
+    supported per deprecation policy until replaced in a future LTA release.
+  verified_at: '2026-06-12T12:57:16Z'
+  verification:
+    verdict: partial
+    verified_repos:
+    - repo: sonarlint-core
+      files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+    evidence:
+    - IssueApi.java:231 posts to /api/issues/do_transition
+    - HotspotApi.java:59 defines HOTSPOTS_SEARCH_API_URL = /api/hotspots/search.protobuf
+    notes: Production code actively calls Web API v1 paths; no imminent sunset but
+      migration planning is warranted.
+- id: dep-002
+  kind: compatibility_notice
+  platform: sonarqube_cloud
+  title: SonarCloud Web API v1 at sonarcloud.io/api/ being replaced by v2 at api.sonarcloud.io
+  affected_endpoint: /api/*
+  announcement_date: '2024-01-01'
+  sunset_date: '2027-01-01'
+  severity: info
+  replacement: Use api.sonarcloud.io for v2 endpoints; existing v1 paths on sonarcloud.io
+    remain during transition
+  source_url: https://docs.sonarsource.com/sonarqube-cloud/appendices/web-api
+  affected_repos:
+  - repo: sonarlint-core
+    files:
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/plugins/PluginsApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/authentication/AuthenticationApi.java
+    - backend/core/src/main/java/org/sonarsource/sonarlint/core/SonarCloudRegion.java
+  status: open
+  first_detected: '2026-06-12'
+  notes: SonarLint already routes v2/SCA calls via api.sonarcloud.io; legacy v1 calls
+    use sonarcloud.io base URL.
+  verified_at: '2026-06-12T12:57:16Z'
+  verification:
+    verdict: partial
+    verified_repos:
+    - repo: sonarlint-core
+      files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/sca/ScaApi.java
+    evidence:
+    - SonarCloudRegion.java:26 defines apiProductionUri https://api.sonarcloud.io
+    - ScaApi.java:50 uses apiGetPaginated for SonarCloud SCA (api.sonarcloud.io)
+    - PluginsApi.java:43 still uses helper.get for /api/plugins/installed on sonarcloud.io
+      base
+    notes: v2/SCA already uses api.sonarcloud.io; legacy v1 plugin/auth calls remain
+      on sonarcloud.io base URL.
+- id: dep-003
+  kind: deprecation
+  platform: sonarqube_server
+  title: Protobuf-based Web API responses may be superseded by JSON v2 endpoints
+  affected_endpoint: /api/issues/search.protobuf
+  announcement_date: '2024-01-01'
+  sunset_date: '2027-06-01'
+  severity: info
+  replacement: Use Web API v2 JSON endpoints when available for issues, hotspots,
+    and rules
+  source_url: https://docs.sonarsource.com/sonarqube-server/extension-guide/web-api
+  affected_repos:
+  - repo: sonarlint-core
+    files:
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/hotspot/HotspotApi.java
+    - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+  status: open
+  first_detected: '2026-06-12'
+  notes: No imminent removal date; monitor SonarQube release notes for protobuf endpoint
+    deprecations.
+  verified_at: '2026-06-12T12:57:16Z'
+  verification:
+    verdict: confirmed
+    verified_repos:
+    - repo: sonarlint-core
+      files:
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/issue/IssueApi.java
+      - backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/rules/RulesApi.java
+    evidence:
+    - IssueApi.java:127 returns /api/issues/search.protobuf path
+    - RulesApi.java:67 RULE_SHOW_URL = /api/rules/show.protobuf?key=
+    notes: Multiple protobuf Web API endpoints are actively used in production server-api
+      code.

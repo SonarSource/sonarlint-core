@@ -1,0 +1,4 @@
+{
+  "summary": "No new action needed this week \u2014 3 info-level compatibility notices tracked for long-term SonarQube API v1/v2 migration.",
+  "highest_signal": "SonarQube Web API v1 endpoints subject to gradual v2 migration: review /api/* usage (203 days)."
+}

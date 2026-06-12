@@ -1,0 +1,34 @@
+files:
+  github_breaking_changes.md:
+    fetched_at: '2026-06-12T12:55:48Z'
+    source_url: https://docs.github.com/en/rest/about-the-rest-api/breaking-changes
+    size: 352130
+  github_api_versions.md:
+    fetched_at: '2026-06-12T12:55:48Z'
+    source_url: https://docs.github.com/en/rest/about-the-rest-api/api-versions
+    size: 269130
+  gitlab_api_deprecations.md:
+    fetched_at: '2026-06-12T12:55:48Z'
+    source_url: https://docs.gitlab.com/api/rest/deprecations/
+    size: 27400
+  gitlab_all_deprecations.md:
+    fetched_at: '2026-06-12T12:55:49Z'
+    source_url: https://docs.gitlab.com/update/deprecations/
+    size: 464200
+  bitbucket_changelog.md:
+    fetched_at: '2026-06-12T12:55:49Z'
+    source_url: https://developer.atlassian.com/cloud/bitbucket/changelog/
+    size: 512171
+  jira_changelog.md:
+    fetched_at: '2026-06-12T12:55:49Z'
+    source_url: https://developer.atlassian.com/cloud/jira/platform/changelog/
+    size: 424525
+  slack_changelog.md:
+    fetched_at: '2026-06-12T12:55:49Z'
+    source_url: https://api.slack.com/changelog
+    size: 574961
+  sonarqube_web_api.md:
+    fetched_at: '2026-06-12T12:55:51Z'
+    source_url: https://docs.sonarsource.com/sonarqube-server/latest/extension-guide/web-api/
+    size: 718531
+last_fetch: '2026-06-12T12:55:54Z'
