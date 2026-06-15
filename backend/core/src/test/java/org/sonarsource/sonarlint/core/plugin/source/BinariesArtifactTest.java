@@ -59,7 +59,7 @@ class BinariesArtifactTest {
   void should_return_version_from_properties() {
     var actual = BinariesArtifact.CFAMILY_PLUGIN.version();
 
-    assertThat(actual).isEqualTo("6.81.1.99296");
+    assertThat(actual).isEqualTo("6.82.0.99990");
   }
 
   @Test
