@@ -19,7 +19,6 @@
  */
 package its;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
@@ -32,10 +31,6 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,13 +52,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentCaptor;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
@@ -89,7 +81,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -97,8 +88,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRul
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -112,7 +101,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static its.utils.AnalysisUtils.analyzeAndAwaitHotspots;
 import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
@@ -124,10 +112,7 @@ import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CLOUDFORMATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.DOCKER;
@@ -939,137 +924,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   }
 
   @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class Hotspots {
-
-    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
-
-    @BeforeAll
-    void prepare() {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
-
-      // Build project to have bytecode and analyze
-      analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
-    }
-
-    @BeforeEach
-    void start() {
-      var globalProps = new HashMap<String, String>();
-      globalProps.put("sonar.global.label", "It works");
-    }
-
-    @AfterEach
-    void stop() {
-      adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-    }
-
-    @Test
-    // SonarQube should support opening security hotspots
-    @OnlyOnSonarQube(from = "9.9")
-    @Disabled
-    void shouldShowHotspotWhenOpenedFromSonarQube() throws InvalidProtocolBufferException {
-      var configScopeId = "shouldShowHotspotWhenOpenedFromSonarQube";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForAnalysisToBeReady(configScopeId);
-      var hotspotKey = getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT);
-
-      requestOpenHotspotWithParams(PROJECT_KEY_JAVA_HOTSPOT, hotspotKey);
-
-      var captor = ArgumentCaptor.forClass(HotspotDetailsDto.class);
-      verify(client, timeout(1000)).showHotspot(eq(configScopeId), captor.capture());
-
-      var actualHotspot = captor.getValue();
-      assertThat(actualHotspot.getKey()).isEqualTo(hotspotKey);
-      assertThat(actualHotspot.getMessage()).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.getIdeFilePath()).isEqualTo(Path.of("src/main/java/foo/Foo.java"));
-      assertThat(actualHotspot.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(9, 4, 9, 45));
-      assertThat(actualHotspot.getAuthor()).isEmpty();
-      assertThat(actualHotspot.getStatus()).isEqualTo("TO_REVIEW");
-      assertThat(actualHotspot.getResolution()).isNull();
-      assertThat(actualHotspot.getRule().getKey()).isEqualTo("java:S4792");
-    }
-
-    private int requestOpenHotspotWithParams(String projectKey, String hotspotKey) {
-      var request = HttpRequest.newBuilder()
-        .GET()
-        .uri(URI.create("http://localhost:" + serverLauncher.getServer().getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?server="
-          + URLEncoder.encode(ORCHESTRATOR.getServer().getUrl(), StandardCharsets.UTF_8) + "&project="
-          + projectKey + "&hotspot=" + hotspotKey))
-        .build();
-      HttpResponse<String> response;
-      try {
-        response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return -1;
-      }
-      return response.statusCode();
-    }
-
-    private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
-      var response = ORCHESTRATOR.getServer()
-        .newHttpCall("/api/hotspots/search.protobuf")
-        .setParam("projectKey", projectKey)
-        .setAdminCredentials()
-        .execute();
-      var parser = org.sonarqube.ws.Hotspots.SearchWsResponse.parser();
-      return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
-    }
-
-    @Test
-    void reportHotspots() {
-      var configScopeId = "reportHotspots";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, false);
-      waitForAnalysisToBeReady(configScopeId);
-      await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
-
-      var rawIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_JAVA_HOTSPOT), "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath());
-
-      assertThat(rawIssues)
-        .extracting(RaisedHotspotDto::getRuleKey, h -> h.getSeverityMode().getLeft().getType())
-        .containsExactly(tuple(javaRuleKey("S4792"), RuleType.SECURITY_HOTSPOT));
-    }
-
-    @Test
-    @OnlyOnSonarQube(from = "9.9")
-    void loadHotspotRuleDescription() throws Exception {
-      var configScopeId = "loadHotspotRuleDescription";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForAnalysisToBeReady(configScopeId);
-
-      var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "java:S4792", null)).get();
-      assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
-      assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(2).getContent().getLeft().getHtmlContent())
-        .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
-    }
-
-    @Test
-    void shouldMatchServerSecurityHotspots() throws InvalidProtocolBufferException {
-      var configScopeId = "shouldMatchServerSecurityHotspots";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForAnalysisToBeReady(configScopeId);
-
-      var hotspotKey = getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT);
-      resolveHotspotAsSafe(adminWsClient, hotspotKey);
-
-      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        // wait server event
-        var fooIssues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", "sample-java-hotspot"), "src/main/java/foo/Foo.java");
-
-        assertThat(fooIssues)
-          .extracting(RaisedFindingDto::getRuleKey, RaisedHotspotDto::getStatus)
-          .contains(tuple("java:S4792", HotspotStatus.SAFE));
-      });
-    }
-  }
-
-  @Nested
   class RuleDescription {
 
     @Test
@@ -1242,43 +1096,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var howToFixTab = extendedDescription.getTabs().get(1);
       assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
-    }
-
-    @Test
-    @OnlyOnSonarQube(from = "9.9")
-    void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
-      var configScopeId = "shouldEmulateDescriptionSectionsForHotspotRules";
-      var projectKey = "sample-java-hotspot-new-backend";
-      var projectName = "Java With Security Hotspots";
-      provisionProject(ORCHESTRATOR, projectKey, projectName);
-      openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForAnalysisToBeReady(configScopeId);
-
-      var activeRuleDetailsResponse = backend.getRulesService()
-        .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "java:S4792", null))
-        .get();
-
-      var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
-      assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
-      var riskTabContentPrefix = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)
-        // SONARJAVA-4739 Rule S4792 is deprecated
-        ? "<p>This rule is deprecated, and will eventually"
-        : "<p>Configuring loggers is security-sensitive.";
-      assertThat(extendedDescription.getTabs())
-        .hasSize(3)
-        .satisfiesExactlyInAnyOrder(
-          tab -> {
-            assertThat(tab.getTitle()).isEqualTo("What's the risk?");
-            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith(riskTabContentPrefix);
-          },
-          tab -> {
-            assertThat(tab.getTitle()).isEqualTo("Assess the risk");
-            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith("<h2>Ask Yourself Whether</h2>\n<ul>\n  <li>");
-          },
-          tab -> {
-            assertThat(tab.getTitle()).isEqualTo("How can I fix it?");
-            assertThat(tab.getContent().getLeft().getHtmlContent()).startsWith("<h2>Recommended Secure Coding Practices</h2>");
-          });
     }
 
     private List<String> extractTabContent(RuleDescriptionTabDto tab) {

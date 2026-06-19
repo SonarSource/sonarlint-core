@@ -89,7 +89,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -97,19 +96,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloud
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static its.utils.AnalysisUtils.analyzeAndAwaitHotspots;
 import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -541,55 +537,6 @@ class SonarCloudTests extends AbstractConnectedTests {
       .validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto("foo")), region))).get();
     assertThat(failIfWrongCredentials.isSuccess()).isFalse();
     assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
-  }
-
-  @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class Hotspots {
-    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
-
-    @BeforeAll
-    void prepare() throws Exception {
-      restoreProfile("java-sonarlint-with-hotspot.xml");
-      provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
-      associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
-      analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
-    }
-
-    @Test
-    void reportHotspots() {
-      var configScopeId = "reportHotspots";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
-      waitForAnalysisToBeReady(configScopeId);
-
-      var issues = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_JAVA_HOTSPOT), "src/main/java/foo/Foo.java");
-      assertThat(issues)
-        .extracting(RaisedHotspotDto::getRuleKey, h -> h.getSeverityMode().getLeft().getType())
-        .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
-    }
-
-    @Test
-    void loadHotspotRuleDescription() throws Exception {
-      openBoundConfigurationScope("loadHotspotRuleDescription", PROJECT_KEY_JAVA_HOTSPOT);
-
-      var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("loadHotspotRuleDescription", "java:S4792", null)).get();
-      assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
-      assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(2).getContent().getLeft().getHtmlContent())
-        .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
-    }
-
-    @Test
-    void shouldMatchServerSecurityHotspots() {
-      var configScopeId = "shouldMatchServerSecurityHotspots";
-      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
-      waitForAnalysisToBeReady(configScopeId);
-
-      var raisedHotspots = analyzeAndAwaitHotspots(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_JAVA_HOTSPOT), "src/main/java/foo/Foo.java");
-
-      assertThat(raisedHotspots).hasSize(1);
-      assertThat(raisedHotspots.get(0).getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-    }
   }
 
   private static void openBoundConfigurationScope(String configScopeId, String projectKey) {

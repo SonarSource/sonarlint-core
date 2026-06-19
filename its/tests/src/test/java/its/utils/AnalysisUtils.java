@@ -30,7 +30,6 @@ import java.util.UUID;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
@@ -59,25 +58,6 @@ public class AnalysisUtils {
     assertThat(response.getFailedAnalysisFiles()).isEmpty();
     var issues = await().until(() -> client.takeRaisedIssues(configScopeId), Objects::nonNull);
     return issues.values().stream().flatMap(List::stream).toList();
-  }
-
-  public static List<RaisedHotspotDto> analyzeAndAwaitHotspots(SonarLintRpcServer backend, MockSonarLintRpcClientDelegate client, String configScopeId, Path baseDir,
-    String filePathStr, String... properties) {
-    var filePath = baseDir.resolve(filePathStr);
-    var fileUri = filePath.toAbsolutePath().toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
-      List.of(),
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
-      List.of()));
-    return analyzeAndAwaitHotspots(backend, client, configScopeId, List.of(fileUri), toMap(properties));
-  }
-
-  public static List<RaisedHotspotDto> analyzeAndAwaitHotspots(SonarLintRpcServer backend, MockSonarLintRpcClientDelegate client, String configScopeId, List<URI> fileUris,
-    Map<String, String> extraProperties) {
-    var response = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), fileUris, extraProperties, true)).join();
-    assertThat(response.getFailedAnalysisFiles()).isEmpty();
-    var hotspots = await().until(() -> client.takeRaisedHotspots(configScopeId), Objects::nonNull);
-    return hotspots.values().stream().flatMap(List::stream).toList();
   }
 
   private static Map<String, String> toMap(String[] keyValues) {
