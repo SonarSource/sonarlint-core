@@ -210,7 +210,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.slang</groupId>
                       <artifactId>sonar-apex-plugin</artifactId>
-                      <version>1.24.0.2040</version>
+                      <version>1.25.0.2398</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
