@@ -535,13 +535,14 @@ public class AnalysisService {
 
   public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, Set<URI> files, Map<String, String> extraProperties,
     boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
+    var filesSnapshot = Set.copyOf(files);
     var rawIssues = new ArrayList<RawIssue>();
     var trace = newAnalysisTrace();
     var analysisTask = new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
-      () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType, trace),
+      () -> getAnalysisConfigForEngine(configurationScopeId, filesSnapshot, extraProperties, false, triggerType, trace),
       issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace, cancelChecker,
       taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
-      files, extraProperties);
+      filesSnapshot, extraProperties);
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues, trace);
   }
 
@@ -606,12 +607,13 @@ public class AnalysisService {
 
   private AnalyzeCommand getAnalyzeCommand(String configurationScopeId, Set<URI> files, ArrayList<RawIssue> rawIssues, boolean hotspotsOnly, TriggerType triggerType,
     UUID analysisId) {
+    var filesSnapshot = Set.copyOf(files);
     var trace = newAnalysisTrace();
     return new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
-      () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType, trace),
+      () -> getAnalysisConfigForEngine(configurationScopeId, filesSnapshot, Map.of(), hotspotsOnly, triggerType, trace),
       issue -> streamIssue(configurationScopeId, analysisId, rawIssues, issue), trace,
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
-      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
+      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), filesSnapshot, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {
