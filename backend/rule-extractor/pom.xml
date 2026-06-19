@@ -216,7 +216,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.tsql</groupId>
                       <artifactId>sonar-tsql-plugin</artifactId>
-                      <version>1.16.1.9133</version>
+                      <version>1.17.0.9312</version>
                       <type>jar</type>
                     </artifactItem>
                   </artifactItems>
