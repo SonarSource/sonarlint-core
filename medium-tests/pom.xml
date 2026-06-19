@@ -156,7 +156,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.sonarlint.omnisharp</groupId>
                   <artifactId>sonarlint-omnisharp-plugin</artifactId>
-                  <version>1.42.0.101759</version>
+                  <version>1.43.0.101782</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
