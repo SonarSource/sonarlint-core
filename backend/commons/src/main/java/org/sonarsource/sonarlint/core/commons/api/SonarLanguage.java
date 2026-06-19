@@ -50,6 +50,7 @@ public enum SonarLanguage {
   PYTHON("py", SonarPlugin.PYTHON, "Python", new String[]{".py"}, "sonar.python.file.suffixes"),
   RPG("rpg", SonarPlugin.RPG, "RPG", new String[]{".rpg", ".rpgle"}, "sonar.rpg.file.suffixes"),
   RUBY("ruby", SonarPlugin.RUBY, "Ruby", new String[]{".rb"}, "sonar.ruby.file.suffixes"),
+  RUST("rust", SonarPlugin.RUST, "Rust", new String[]{".rs"}, "sonar.rust.file.suffixes"),
   SCALA("scala", SonarPlugin.SCALA, "Scala", new String[]{".scala"}, "sonar.scala.file.suffixes"),
   SECRETS("secrets", SonarPlugin.TEXT, "Secrets", new String[0], "sonar.secrets.file.suffixes"),
   TEXT("text", SonarPlugin.TEXT, "Text", new String[0], "sonar.text.file.suffixes"),
