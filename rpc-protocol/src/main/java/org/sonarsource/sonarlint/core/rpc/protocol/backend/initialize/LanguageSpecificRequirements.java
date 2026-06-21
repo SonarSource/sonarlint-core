@@ -27,6 +27,9 @@ public class LanguageSpecificRequirements {
   private final OmnisharpRequirementsDto omnisharpRequirements;
   private final boolean omnisharpDownloadEnabled;
 
+  /**
+   * @deprecated since 11.2, use {@link #LanguageSpecificRequirements(JsTsRequirementsDto, boolean)} instead
+   */
   @Deprecated(since = "11.2", forRemoval = true)
   public LanguageSpecificRequirements(@Nullable JsTsRequirementsDto jsTsRequirements, @Nullable OmnisharpRequirementsDto omnisharpRequirements) {
     this.jsTsRequirements = jsTsRequirements;
