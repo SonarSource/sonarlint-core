@@ -341,7 +341,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var configScopeId = "analysisCustomSecrets";
       start(configScopeId, PROJECT_KEY_CUSTOM_SECRETS);
 
-      var issues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_CUSTOM_SECRETS), "src/file.md");
+      var issues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", PROJECT_KEY_CUSTOM_SECRETS), "src/file.yml");
 
       assertThat(issues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getPrimaryMessage)
