@@ -110,6 +110,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
 
     assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter()).isEmpty();
 
@@ -134,6 +135,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
@@ -173,6 +175,7 @@ class OpenFixSuggestionInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
@@ -198,6 +201,8 @@ class OpenFixSuggestionInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, "configScopeA");
+    waitForScopeRegistration(fakeClient, "configScopeB");
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
@@ -226,6 +231,8 @@ class OpenFixSuggestionInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, "configScopeParent");
+    waitForScopeRegistration(fakeClient, "configScopeChild");
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
@@ -251,6 +258,7 @@ class OpenFixSuggestionInIdeMediumTests {
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
       })
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
 
     var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
@@ -301,6 +309,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withBackendCapability(EMBEDDED_SERVER)
       .start(fakeClient);
+    waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
     HttpRequest request = HttpRequest.newBuilder()
       .uri(URI.create(
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + "&issue=" + ISSUE_KEY +
@@ -381,6 +390,10 @@ class OpenFixSuggestionInIdeMediumTests {
   private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
     verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
+  }
+
+  private static void waitForScopeRegistration(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Added configuration scope '" + scopeId + "'"));
   }
 
   private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey,
