@@ -1,4 +1,4 @@
 [tools]
 java = ["21", "temurin-17.0.18+8"]
 maven = "3.9"
-node = "20.20.2"
+node = "24.17.0"
