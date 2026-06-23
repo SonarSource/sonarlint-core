@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -72,6 +73,7 @@ public class SmartNotifications {
   private final LastEventPolling lastEventPollingService;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
+  @Inject
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager,
     SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
