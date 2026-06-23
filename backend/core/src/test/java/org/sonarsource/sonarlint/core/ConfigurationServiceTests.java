@@ -114,7 +114,7 @@ class ConfigurationServiceTests {
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Duplicate configuration scope registered: id1");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Updating configuration scope 'id1'");
   }
 
   @Test

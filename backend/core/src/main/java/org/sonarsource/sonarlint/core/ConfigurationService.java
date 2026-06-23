@@ -57,7 +57,7 @@ public class ConfigurationService {
       var bindingConfigInReferential = adapt(bindingDto);
       var previous = repository.addOrReplace(configScopeInReferential, bindingConfigInReferential);
       if (previous != null) {
-        LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
+        LOG.debug("Updating configuration scope '{}'", addedDto.getId());
       } else {
         LOG.debug("Added configuration scope '{}'", configScopeInReferential.id());
         addedIds.add(new ConfigurationScopeWithBinding(configScopeInReferential, bindingConfigInReferential));
