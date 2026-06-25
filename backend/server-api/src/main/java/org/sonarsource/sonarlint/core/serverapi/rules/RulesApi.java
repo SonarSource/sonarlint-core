@@ -118,17 +118,20 @@ public class RulesApi {
       },
       activeEntry -> {
         var ruleKey = activeEntry.getKey();
-        // Since we are querying rules for a given profile, we know there will be only one active rule per rule
-        Rules.Active ar = activeEntry.getValue().getActiveListList().get(0);
-        activeRulesByKey.put(ruleKey, new ServerActiveRule(
-          ruleKey,
-          IssueSeverity.valueOf(ar.getSeverity()),
-          ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
-          ruleTemplatesByRuleKey.get(ruleKey),
-          ar.getImpacts().getImpactsList().stream()
-            .map(impact -> new ImpactPayload(impact.getSoftwareQuality().toString(), ImpactSeverity.mapSeverity(impact.getSeverity().name()).name()))
-            .toList()));
-
+        try {
+          // Since we are querying rules for a given profile, we know there will be only one active rule per rule
+          Rules.Active ar = activeEntry.getValue().getActiveListList().get(0);
+          activeRulesByKey.put(ruleKey, new ServerActiveRule(
+            ruleKey,
+            IssueSeverity.valueOf(ar.getSeverity()),
+            ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
+            ruleTemplatesByRuleKey.get(ruleKey),
+            ar.getImpacts().getImpactsList().stream()
+              .map(impact -> new ImpactPayload(impact.getSoftwareQuality().toString(), ImpactSeverity.mapSeverity(impact.getSeverity().name()).name()))
+              .toList()));
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping active rule '{}': {}", ruleKey, e.getMessage());
+        }
       },
       false,
       cancelMonitor);
