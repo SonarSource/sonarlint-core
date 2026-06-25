@@ -110,7 +110,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.slang</groupId>
                   <artifactId>sonar-ruby-plugin</artifactId>
-                  <version>1.22.0.1992</version>
+                  <version>1.23.1.2494</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
