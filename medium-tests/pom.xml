@@ -252,6 +252,12 @@
                       <version>2.7.0.20531</version>
                       <type>jar</type>
                     </artifactItem>
+                    <artifactItem>
+                      <groupId>com.sonarsource.iac</groupId>
+                      <artifactId>sonar-iac-enterprise-plugin</artifactId>
+                      <version>2.11.0.21159</version>
+                      <type>jar</type>
+                    </artifactItem>
                   </artifactItems>
                   <outputDirectory>${project.build.directory}/plugins</outputDirectory>
                   <overWriteReleases>false</overWriteReleases>

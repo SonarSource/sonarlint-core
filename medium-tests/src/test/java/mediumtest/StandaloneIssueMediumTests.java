@@ -455,6 +455,58 @@ class StandaloneIssueMediumTests {
       tuple("kotlin:S6625", null));
   }
 
+  @SonarLintTest
+  void simpleShell(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, "foo.sh", """
+      #!/bin/bash
+      file=*.txt
+      echo $file
+      source ./missing.sh
+      """);
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.IAC)
+      .start(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
+
+    assertThat(issues)
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine())
+      .containsOnly(tuple("shell:S6573", 3));
+  }
+
+  @SonarLintTest
+  void simpleAzurePipelines(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, "azure-pipelines.yml", """
+      # TODO: remove this comment
+      trigger:
+      - main
+
+      steps:
+      - script: echo "Hello"
+      """);
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.IAC)
+      .start(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
+
+    assertThat(issues)
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine())
+      .containsOnly(tuple("azurepipelines:S1135", 1));
+  }
+
   // SLCORE-162
   @SonarLintTest
   void useRelativePathToEvaluatePathPatterns(SonarLintTestHarness harness, @TempDir Path baseDir) {

@@ -54,6 +54,10 @@ public class PluginLocator {
   public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-" + SONAR_KOTLIN_PLUGIN_VERSION + ".jar";
   public static final String SONAR_KOTLIN_PLUGIN_JAR_HASH = "XXX";
 
+  public static final String SONAR_IAC_ENTERPRISE_PLUGIN_VERSION = "2.11.0.21159";
+  public static final String SONAR_IAC_ENTERPRISE_PLUGIN_JAR = "sonar-iac-enterprise-plugin-" + SONAR_IAC_ENTERPRISE_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_IAC_ENTERPRISE_PLUGIN_JAR_HASH = "0d405f7b8a964f21eae0e37f5ed11150";
+
   public static final String SONAR_OMNISHARP_PLUGIN_VERSION = "1.42.0.101759";
   public static final String SONAR_OMNISHARP_PLUGIN_JAR = "sonarlint-omnisharp-plugin-" + SONAR_OMNISHARP_PLUGIN_VERSION + ".jar";
   public static final String SONAR_OMNISHARP_PLUGIN_JAR_HASH = "XXX";
@@ -112,6 +116,10 @@ public class PluginLocator {
 
   public static Path getKotlinPluginPath() {
     return getPluginPath(SONAR_KOTLIN_PLUGIN_JAR);
+  }
+
+  public static Path getIacEnterprisePluginPath() {
+    return getPluginPath(SONAR_IAC_ENTERPRISE_PLUGIN_JAR);
   }
 
   public static Path getOmnisharpPluginPath() {
