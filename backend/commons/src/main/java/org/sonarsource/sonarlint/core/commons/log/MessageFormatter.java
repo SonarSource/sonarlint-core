@@ -182,34 +182,34 @@ final class MessageFormatter {
 
       if (j == -1) {
         // no more variables
-        if (i == 0) { // this is a simple string
+        // this is a simple string
+        if (i == 0) {
           return new FormattingTuple(messagePattern, throwable);
-        } else { // add the tail string which contains no variables and return
-          // the result.
-          sbuf.append(messagePattern, i, messagePattern.length());
-          return new FormattingTuple(sbuf.toString(), throwable);
         }
-      } else {
-        if (isEscapedDelimiter(messagePattern, j)) {
-          if (!isDoubleEscaped(messagePattern, j)) {
-            L--; // DELIM_START was escaped, thus should not be incremented
-            sbuf.append(messagePattern, i, j - 1);
-            sbuf.append(DELIM_START);
-            i = j + 1;
-          } else {
-            // The escape character preceding the delimiter start is
-            // itself escaped: "abc x:\\{}"
-            // we have to consume one backward slash
-            sbuf.append(messagePattern, i, j - 1);
-            deeplyAppendParameter(sbuf, argArray[L], new HashMap<>());
-            i = j + 2;
-          }
+        // add the tail string which contains no variables and return
+        // the result.
+        sbuf.append(messagePattern, i, messagePattern.length());
+        return new FormattingTuple(sbuf.toString(), throwable);
+      }
+      if (isEscapedDelimiter(messagePattern, j)) {
+        if (!isDoubleEscaped(messagePattern, j)) {
+          L--; // DELIM_START was escaped, thus should not be incremented
+          sbuf.append(messagePattern, i, j - 1);
+          sbuf.append(DELIM_START);
+          i = j + 1;
         } else {
-          // normal case
-          sbuf.append(messagePattern, i, j);
+          // The escape character preceding the delimiter start is
+          // itself escaped: "abc x:\\{}"
+          // we have to consume one backward slash
+          sbuf.append(messagePattern, i, j - 1);
           deeplyAppendParameter(sbuf, argArray[L], new HashMap<>());
           i = j + 2;
         }
+      } else {
+        // normal case
+        sbuf.append(messagePattern, i, j);
+        deeplyAppendParameter(sbuf, argArray[L], new HashMap<>());
+        i = j + 2;
       }
     }
     // append the characters following the last {} pair.
