@@ -16,7 +16,7 @@ on:
 jobs:
   release:
     name: Release
-    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@7dd4782e88df1ac018969c71a89266c0d36dd758 # 1.7.2
+    uses: SonarSource/release-github-actions/.github/workflows/ide-automated-release.yml@ee9b885a1660aa7bfb409bd67c8e800cb747ce77 # 1.9.6
     if: always() && !failure() && !cancelled()
     permissions:
       statuses: read
@@ -40,7 +40,7 @@ jobs:
       pull-requests: write # write for peter-evans/create-pull-request
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
       - name: bump-version
         env: 
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
