@@ -51,6 +51,7 @@ public enum Language {
   PYTHON,
   RPG,
   RUBY,
+  RUST,
   SCALA,
   SECRETS,
   SHELL,

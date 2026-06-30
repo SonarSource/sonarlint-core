@@ -41,6 +41,7 @@ public enum Language {
   PYTHON("Python"),
   RPG("RPG"),
   RUBY("Ruby"),
+  RUST("Rust"),
   SCALA("Scala"),
   SECRETS("Secrets"),
   TEXT("Text"),
@@ -116,6 +117,8 @@ public enum Language {
         return RPG;
       case RUBY:
         return RUBY;
+      case RUST:
+        return RUST;
       case SCALA:
         return SCALA;
       case SECRETS:
