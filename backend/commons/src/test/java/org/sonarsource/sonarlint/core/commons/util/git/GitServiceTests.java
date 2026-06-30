@@ -40,9 +40,11 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,6 +54,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.mockito.Mockito.mock;
@@ -274,6 +277,24 @@ class GitServiceTests {
   @Test
   void it_should_return_empty_list_on_git_exception(@TempDir Path nonGitDir) {
     assertThat(getVCSChangedFiles(nonGitDir)).isEmpty();
+  }
+
+  @EnabledOnOs(WINDOWS)
+  @Test
+  void it_should_return_empty_list_on_windows_reserved_device_name_path(@TempDir Path gitDir) throws Exception {
+    var filePath = FilenameUtils.separatorsToUnix("dto/aux/CompromissoModel.java");
+
+    try (var gitRepo = createRepository(gitDir)) {
+      try {
+        createFile(gitDir, filePath, "line1");
+      } catch (IOException e) {
+        Assumptions.abort("Cannot create path with Windows reserved device name: " + filePath);
+      }
+      commit(gitRepo, filePath);
+      modifyFile(gitDir.resolve(Path.of("dto", "aux", "CompromissoModel.java")), "line1", "line2");
+    }
+
+    assertThat(getVCSChangedFiles(gitDir)).isEmpty();
   }
 
   @Test

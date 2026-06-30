@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
@@ -99,7 +100,7 @@ public class GitService {
         .filter(path -> path.normalize().startsWith(baseDir.normalize()))
         .map(Path::toUri)
         .collect(Collectors.toSet());
-    } catch (GitAPIException | GitException e) {
+    } catch (GitAPIException | GitException | JGitInternalException e) {
       LOG.debug("Git repository access error: ", e);
       return Set.of();
     }
