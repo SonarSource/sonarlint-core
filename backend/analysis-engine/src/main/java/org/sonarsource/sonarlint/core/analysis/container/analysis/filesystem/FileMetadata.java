@@ -147,44 +147,60 @@ public class FileMetadata {
   }
 
   private static void read(Reader reader, CharHandler... handlers) throws IOException {
-    char c;
     var i = reader.read();
     var afterCR = false;
     while (i != -1) {
-      c = (char) i;
+      var c = (char) i;
       if (afterCR) {
-        for (CharHandler handler : handlers) {
-          if (c == CARRIAGE_RETURN) {
-            handler.newLine();
-            handler.handleAll(c);
-          } else if (c == LINE_FEED) {
-            handler.handleAll(c);
-            handler.newLine();
-          } else {
-            handler.newLine();
-            handler.handleIgnoreEoL(c);
-            handler.handleAll(c);
-          }
-        }
-        afterCR = c == CARRIAGE_RETURN;
-      } else if (c == LINE_FEED) {
-        for (CharHandler handler : handlers) {
-          handler.handleAll(c);
-          handler.newLine();
-        }
-      } else if (c == CARRIAGE_RETURN) {
-        afterCR = true;
-        for (CharHandler handler : handlers) {
-          handler.handleAll(c);
-        }
+        processCharAfterCR(c, handlers);
       } else {
-        for (CharHandler handler : handlers) {
-          handler.handleIgnoreEoL(c);
-          handler.handleAll(c);
-        }
+        processChar(c, handlers);
       }
+      afterCR = c == CARRIAGE_RETURN;
       i = reader.read();
     }
+    finalizeHandlers(afterCR, handlers);
+  }
+
+  private static void processCharAfterCR(char c, CharHandler[] handlers) {
+    for (CharHandler handler : handlers) {
+      switch (c) {
+        case CARRIAGE_RETURN:
+          handler.newLine();
+          handler.handleAll(c);
+          break;
+        case LINE_FEED:
+          handler.handleAll(c);
+          handler.newLine();
+          break;
+        default:
+          handler.newLine();
+          handler.handleIgnoreEoL(c);
+          handler.handleAll(c);
+          break;
+      }
+    }
+  }
+
+  private static void processChar(char c, CharHandler[] handlers) {
+    for (CharHandler handler : handlers) {
+      switch (c) {
+        case LINE_FEED:
+          handler.handleAll(c);
+          handler.newLine();
+          break;
+        case CARRIAGE_RETURN:
+          handler.handleAll(c);
+          break;
+        default:
+          handler.handleIgnoreEoL(c);
+          handler.handleAll(c);
+          break;
+      }
+    }
+  }
+
+  private static void finalizeHandlers(boolean afterCR, CharHandler[] handlers) {
     for (CharHandler handler : handlers) {
       if (afterCR) {
         handler.newLine();
