@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -52,6 +54,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.pa
 import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoSoftwareQuality;
 
 public class IssueDownloader {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<SonarLanguage> enabledLanguages;
 
@@ -82,7 +86,11 @@ public class IssueDownloader {
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
       // We ignore project level issues
       if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
-        result.add(convertBatchIssue(batchIssue));
+        try {
+          result.add(convertBatchIssue(batchIssue));
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping issue '{}': {}", batchIssue.getKey(), e.getMessage());
+        }
       }
     }
 
@@ -106,7 +114,15 @@ public class IssueDownloader {
       // Ignore project level issues
       .filter(i -> i.getMainLocation().hasFilePath())
       .filter(not(IssueLite::getClosed))
-      .<ServerIssue<?>>map(IssueDownloader::convertLiteIssue)
+      .<ServerIssue<?>>map(i -> {
+        try {
+          return convertLiteIssue(i);
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping issue '{}': {}", i.getKey(), e.getMessage());
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
       .toList();
     var closedIssueKeys = apiResult.getIssues()
       .stream()
