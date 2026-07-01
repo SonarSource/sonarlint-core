@@ -28,6 +28,9 @@ public class HelpGenerateUserTokenParams {
 
   private final Utm utm;
 
+  /**
+   * @deprecated use {@link #HelpGenerateUserTokenParams(String, Utm)} instead
+   */
   @Deprecated
   public HelpGenerateUserTokenParams(String serverUrl) {
     this(serverUrl, null);

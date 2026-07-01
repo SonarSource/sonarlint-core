@@ -24,6 +24,9 @@ public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
+  /**
+   * @deprecated use {@link #origin} instead
+   */
   @Deprecated(forRemoval = true)
   private final boolean isFromSharedConfiguration;
   private final BindingSuggestionOrigin origin;
