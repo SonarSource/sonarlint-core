@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -56,11 +58,17 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 public class EntityMapper {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private static final Type IMPACTS_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
+  private static final Type TAINT_FLOWS_TYPE = new TypeToken<List<TaintFlow>>() {
+  }.getType();
+  private static final Type TRANSITIONS_TYPE = new TypeToken<List<String>>() {
+  }.getType();
+  private final Gson gson = new GsonBuilder().serializeNulls().create();
 
   public JSON serializeImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
     try {
-      return JSON.valueOf(objectMapper.writeValueAsString(impacts));
+      return JSON.valueOf(gson.toJson(impacts));
     } catch (Exception e) {
       return JSON.valueOf("{}");
     }
@@ -77,7 +85,7 @@ public class EntityMapper {
               textRangeWithHash.getHash()),
           l.message());
       }).toList())).toList();
-      return JSON.valueOf(objectMapper.writeValueAsString(flowsToSerialize));
+      return JSON.valueOf(gson.toJson(flowsToSerialize));
     } catch (Exception e) {
       return JSON.valueOf("[]");
     }
@@ -85,8 +93,11 @@ public class EntityMapper {
 
   List<ServerTaintIssue.Flow> deserializeTaintFlows(JSON flows) {
     try {
-      return objectMapper.readValue(flows.data(), new TypeReference<List<TaintFlow>>() {
-      }).stream()
+      List<TaintFlow> taintFlows = gson.fromJson(flows.data(), TAINT_FLOWS_TYPE);
+      if (taintFlows == null) {
+        return List.of();
+      }
+      return taintFlows.stream()
         .map(flow -> new ServerTaintIssue.Flow(flow.locations.stream()
           .map(l -> {
             var textRange = l.textRange;
@@ -103,7 +114,7 @@ public class EntityMapper {
     }
   }
 
-  // only needed to allow deserializing with Jackson
+  // only needed to allow JSON deserialization
   record TaintFlow(List<TaintLocation> locations) {
 
   }
@@ -120,7 +131,7 @@ public class EntityMapper {
     }
     try {
       var stringList = transitions.stream().map(Enum::name).toList();
-      return JSON.valueOf(objectMapper.writeValueAsString(stringList));
+      return JSON.valueOf(gson.toJson(stringList));
     } catch (Exception e) {
       LOG.error("Failed to serialize transitions {}", transitions, e);
       return JSON.valueOf("{}");
@@ -132,8 +143,10 @@ public class EntityMapper {
       return Map.of();
     }
     try {
-      var map = objectMapper.readValue(impactsJson.data(), new TypeReference<Map<String, String>>() {
-      });
+      Map<String, String> map = gson.fromJson(impactsJson.data(), IMPACTS_TYPE);
+      if (map == null) {
+        return Map.of();
+      }
       return map.entrySet().stream()
         .collect(Collectors.toMap(entry -> SoftwareQuality.valueOf(entry.getKey()), entry -> ImpactSeverity.valueOf(entry.getValue())));
     } catch (Exception e) {
@@ -147,8 +160,10 @@ public class EntityMapper {
       return List.of();
     }
     try {
-      var transitions = objectMapper.readValue(json.data(), new TypeReference<List<String>>() {
-      });
+      List<String> transitions = gson.fromJson(json.data(), TRANSITIONS_TYPE);
+      if (transitions == null) {
+        return List.of();
+      }
       return transitions.stream()
         .map(transition -> {
           try {

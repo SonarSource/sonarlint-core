@@ -19,11 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -95,6 +93,8 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
 
 public class ServerFixture {
+  private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1536,15 +1536,11 @@ public class ServerFixture {
 
     private void registerFixSuggestionsApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
-        try {
-          if (project.aiCodeFixSuggestion != null) {
-            mockServer.stubFor(post(serverKind == ServerKind.SONARCLOUD ? "/fix-suggestions/ai-suggestions" : "/api/v2/fix-suggestions/ai-suggestions")
-              .willReturn(jsonResponse(
-                new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()),
-                responseCodes.statusCode)));
-          }
-        } catch (JsonProcessingException e) {
-          throw new IllegalArgumentException(e);
+        if (project.aiCodeFixSuggestion != null) {
+          mockServer.stubFor(post(serverKind == ServerKind.SONARCLOUD ? "/fix-suggestions/ai-suggestions" : "/api/v2/fix-suggestions/ai-suggestions")
+            .willReturn(jsonResponse(
+              GSON.toJson(project.aiCodeFixSuggestion.build()),
+              responseCodes.statusCode)));
         }
       });
 

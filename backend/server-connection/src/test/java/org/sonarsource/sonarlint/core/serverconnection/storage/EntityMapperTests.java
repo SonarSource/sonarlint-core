@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +97,16 @@ class EntityMapperTests {
       new ServerTaintIssue.Flow(List.of(
         new ServerTaintIssue.ServerIssueLocation(path,
           new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1")))));
+  }
+
+  @Test
+  void should_serialize_and_deserialize_transitions() {
+    var transitions = List.of(ServerDependencyRisk.Transition.CONFIRM, ServerDependencyRisk.Transition.ACCEPT, ServerDependencyRisk.Transition.FIXED);
+
+    var json = underTest.serializeTransitions(transitions);
+
+    assertThat(json.data()).isEqualTo("[\"CONFIRM\",\"ACCEPT\",\"FIXED\"]");
+    assertThat(underTest.deserializeTransitions(json)).isEqualTo(transitions);
   }
 
 }
