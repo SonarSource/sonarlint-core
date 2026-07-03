@@ -82,6 +82,7 @@ public class ServerPluginDownloader {
     } catch (Exception e) {
       LOG.error("Failed to download plugin '{}' for connection '{}'", serverPlugin.getKey(), connectionId, e);
       fireFailedEvent(connectionId, sonarPlugin);
+      throw propagateFailure(e);
     }
   }
 
@@ -92,49 +93,38 @@ public class ServerPluginDownloader {
       LOG.error("Failed to download companion plugin '{}' for connection '{}'", plugin.getKey(), connectionId, e);
       eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
         List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.FAILED, null, null, null))));
+      throw propagateFailure(e);
     }
   }
 
   private void downloadPluginAndFireEvent(String connectionId, ServerPlugin serverPlugin, SonarPlugin sonarPlugin) {
-    var state = downloadPluginSync(connectionId, serverPlugin);
-    if (state == ArtifactState.SYNCED) {
-      var pluginKey = serverPlugin.getKey();
-      var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
-      var source = sourceFor(connectionId);
-      var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
-      var statuses = sonarPlugin.getLanguages().stream()
-        .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath, null))
-        .toList();
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
-    } else {
-      fireFailedEvent(connectionId, sonarPlugin);
-    }
+    downloadPluginSyncOrThrow(connectionId, serverPlugin);
+    var pluginKey = serverPlugin.getKey();
+    var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(pluginKey);
+    var source = sourceFor(connectionId);
+    var version = storedPath != null ? PluginJarUtils.readVersion(storedPath) : null;
+    var statuses = sonarPlugin.getLanguages().stream()
+      .map(l -> PluginStatus.forLanguage(l, ArtifactState.SYNCED, source, version, null, storedPath, null))
+      .toList();
+    eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId, statuses));
   }
 
   private void downloadUnknownPluginAndFireEvent(String connectionId, ServerPlugin plugin) {
-    var state = downloadPluginSync(connectionId, plugin);
-    var storedPath = state == ArtifactState.SYNCED
-      ? storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey())
-      : null;
+    downloadPluginSyncOrThrow(connectionId, plugin);
+    var storedPath = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey());
     var source = sourceFor(connectionId);
     eventPublisher.publishEvent(new PluginStatusUpdateEvent(connectionId,
-      List.of(PluginStatus.forCompanion(plugin.getKey(), state, source, storedPath, null))));
+      List.of(PluginStatus.forCompanion(plugin.getKey(), ArtifactState.SYNCED, source, storedPath, null))));
   }
 
-  ArtifactState downloadPluginSync(String connectionId, ServerPlugin serverPlugin) {
+  void downloadPluginSyncOrThrow(String connectionId, ServerPlugin serverPlugin) {
     var pluginKey = serverPlugin.getKey();
     LOG.info("[SYNC] Downloading plugin '{}'", serverPlugin.getFilename());
-    try {
-      var cancelMonitor = new SonarLintCancelMonitor();
-      sonarQubeClientManager.withActiveClient(connectionId,
-        api -> api.plugins().getPlugin(pluginKey,
-          binary -> storageService.connection(connectionId).plugins().store(serverPlugin, binary),
-          cancelMonitor));
-      return ArtifactState.SYNCED;
-    } catch (Exception e) {
-      LOG.error("Failed to download plugin '{}' for connection '{}'", pluginKey, connectionId, e);
-      return ArtifactState.FAILED;
-    }
+    var cancelMonitor = new SonarLintCancelMonitor();
+    sonarQubeClientManager.withActiveClient(connectionId,
+      api -> api.plugins().getPlugin(pluginKey,
+        binary -> storageService.connection(connectionId).plugins().store(serverPlugin, binary),
+        cancelMonitor));
   }
 
   private void fireFailedEvent(String connectionId, SonarPlugin sonarPlugin) {
@@ -148,6 +138,13 @@ public class ServerPluginDownloader {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarQubeCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
     return isSonarQubeCloud ? ArtifactOrigin.SONARQUBE_CLOUD : ArtifactOrigin.SONARQUBE_SERVER;
+  }
+
+  private static RuntimeException propagateFailure(Exception e) {
+    if (e instanceof RuntimeException runtimeException) {
+      return runtimeException;
+    }
+    return new IllegalStateException("Unexpected checked exception during plugin download", e);
   }
 
 }

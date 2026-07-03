@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -136,14 +135,13 @@ class ServerPluginDownloaderTest {
   }
 
   @Test
-  void should_perform_synchronous_download_and_return_state() {
+  void should_perform_synchronous_download() {
     downloadExecutor = mock(ExecutorService.class);
     var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
     var serverPlugin = mockServerPlugin("custom-plugin");
 
-    var state = downloader.downloadPluginSync("conn", serverPlugin);
+    downloader.downloadPluginSyncOrThrow("conn", serverPlugin);
 
-    assertThat(state).isEqualTo(ArtifactState.SYNCED);
     verify(sonarQubeClientManager).withActiveClient(any(), any());
   }
 
