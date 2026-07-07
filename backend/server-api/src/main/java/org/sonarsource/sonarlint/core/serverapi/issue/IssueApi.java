@@ -302,7 +302,8 @@ public class IssueApi {
   }
 
   public void anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues, SonarLintCancelMonitor cancelMonitor) {
-    serverApiHelper.post("/api/issues/anticipated_transitions?projectKey=" + projectKey, JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)), cancelMonitor);
+    serverApiHelper.post("/api/issues/anticipated_transitions?projectKey=" + urlEncode(projectKey),
+      JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)), cancelMonitor);
   }
 
   private static List<IssueAnticipatedTransition> adapt(List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
