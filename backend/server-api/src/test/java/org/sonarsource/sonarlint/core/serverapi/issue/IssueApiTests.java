@@ -20,12 +20,18 @@
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
@@ -186,6 +192,27 @@ class IssueApiTests {
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
     assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
+  }
+
+  @Test
+  void should_urlencode_project_key_when_syncing_anticipated_transitions() {
+    var projectKey = "my:org/project";
+    var encodedProjectKey = urlEncode(projectKey);
+    mockServer.addStringResponse("/api/issues/anticipated_transitions?projectKey=" + encodedProjectKey, "");
+
+    var issue = new LocalOnlyIssue(
+      UUID.randomUUID(),
+      Path.of("file.java"),
+      null,
+      null,
+      "ruleKey",
+      "message",
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now(), null));
+
+    underTest.anticipatedTransitions(projectKey, List.of(issue), new SonarLintCancelMonitor());
+
+    var recordedRequest = mockServer.takeRequest();
+    assertThat(recordedRequest.getTarget()).isEqualTo("/api/issues/anticipated_transitions?projectKey=" + encodedProjectKey);
   }
 
   @Test
