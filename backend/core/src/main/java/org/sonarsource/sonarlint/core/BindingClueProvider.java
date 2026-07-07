@@ -187,6 +187,9 @@ public class BindingClueProvider {
   private static BindingProperties extractSonarLintConfiguration(ClientFile sonarLintConfigurationFile) {
     try {
       var configuration = new Gson().fromJson(sonarLintConfigurationFile.getContent(), JsonObject.class);
+      if (configuration == null) {
+        return null;
+      }
       var projectKey = configuration.get("projectKey");
       var organization = configuration.get("sonarCloudOrganization");
       var serverUrl = configuration.get("sonarQubeUri");
