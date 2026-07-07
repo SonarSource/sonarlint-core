@@ -48,10 +48,7 @@ public class FailSafeExecutors {
     return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), r -> new Thread(r, threadName)) {
       @Override
       protected void afterExecute(Runnable task, @Nullable Throwable throwable) {
-        var extractedThrowable = extractThrowable(task, throwable);
-        if (extractedThrowable != null) {
-          LOG.error("An error occurred while executing a task in " + threadName, extractedThrowable);
-        }
+        logAfterExecute("a task in " + threadName, task, throwable);
         super.afterExecute(task, throwable);
       }
     };
@@ -61,10 +58,7 @@ public class FailSafeExecutors {
     return new ScheduledThreadPoolExecutor(1, r -> new Thread(r, threadName)) {
       @Override
       protected void afterExecute(Runnable task, @Nullable Throwable throwable) {
-        var extractedThrowable = extractThrowable(task, throwable);
-        if (extractedThrowable != null) {
-          LOG.error("An error occurred while executing a scheduled task in " + threadName, extractedThrowable);
-        }
+        logAfterExecute("a scheduled task in " + threadName, task, throwable);
         super.afterExecute(task, throwable);
       }
     };
@@ -74,19 +68,25 @@ public class FailSafeExecutors {
     return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory) {
       @Override
       protected void afterExecute(Runnable task, @Nullable Throwable throwable) {
-        var extractedThrowable = extractThrowable(task, throwable);
-        if (extractedThrowable != null) {
-          LOG.error("An error occurred while executing a task in " + Thread.currentThread(), extractedThrowable);
-        }
+        logAfterExecute("a task in " + Thread.currentThread(), task, throwable);
         super.afterExecute(task, throwable);
       }
     };
   }
 
+  private static void logAfterExecute(String taskDescription, Runnable task, @Nullable Throwable throwable) {
+    var extractedThrowable = extractThrowable(task, throwable);
+    if (extractedThrowable != null) {
+      LOG.error("An error occurred while executing " + taskDescription, extractedThrowable);
+    } else if (isCancellation(throwable)) {
+      LOG.debug("Task was cancelled in " + taskDescription);
+    }
+  }
+
   @CheckForNull
   private static Throwable extractThrowable(Runnable task, @Nullable Throwable throwable) {
     if (throwable != null) {
-      return throwable;
+      return isCancellation(throwable) ? null : throwable;
     }
     if (task instanceof FutureTask<?> futureTask) {
       try {
@@ -96,11 +96,16 @@ public class FailSafeExecutors {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (ExecutionException e) {
-        return e.getCause();
+        var cause = e.getCause();
+        return isCancellation(cause) ? null : cause;
       } catch (CancellationException e) {
         // nothing to do
       }
     }
     return null;
+  }
+
+  private static boolean isCancellation(@Nullable Throwable throwable) {
+    return throwable instanceof CancellationException;
   }
 }
