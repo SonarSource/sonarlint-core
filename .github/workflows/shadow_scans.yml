@@ -17,13 +17,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           version: 2026.4.11
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
-      - uses: SonarSource/ci-github-actions/build-maven@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0 # dogfood
+      - uses: SonarSource/ci-github-actions/build-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2 # dogfood
         with:
           maven-args: -Dcommercial -Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
           run-shadow-scans: true
