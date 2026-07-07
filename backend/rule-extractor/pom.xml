@@ -192,7 +192,7 @@
                     <artifactItem>
                       <groupId>com.sonarsource.plsql</groupId>
                       <artifactId>sonar-plsql-plugin</artifactId>
-                      <version>3.18.1.230</version>
+                      <version>3.22.0.8329</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
