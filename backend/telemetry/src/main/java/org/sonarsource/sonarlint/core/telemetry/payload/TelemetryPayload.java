@@ -119,7 +119,7 @@ public class TelemetryPayload {
   private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
-    boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
+    boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, @Nullable String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
     IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, TelemetryFixSuggestionPayload[] aiFixSuggestionsPayload,
