@@ -25,15 +25,20 @@ import java.util.EnumMap;
 import java.util.List;
 import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class EntityMapperTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final EntityMapper underTest = new EntityMapper();
 
