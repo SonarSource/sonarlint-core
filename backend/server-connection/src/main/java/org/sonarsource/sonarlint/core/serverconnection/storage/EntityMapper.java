@@ -169,7 +169,17 @@ public class EntityMapper {
     if (languages == null) {
       return Set.of();
     }
-    return Arrays.stream(languages).map(SonarLanguage::valueOf).collect(Collectors.toSet());
+    return Arrays.stream(languages)
+      .map(language -> {
+        try {
+          return SonarLanguage.valueOf(language);
+        } catch (IllegalArgumentException e) {
+          LOG.warn("Failed to deserialize language {}", language);
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
+      .collect(Collectors.toSet());
   }
 
   public String[] serializeLanguages(Set<SonarLanguage> enabledLanguages) {
