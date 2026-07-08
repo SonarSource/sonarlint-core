@@ -25,14 +25,20 @@ import java.util.EnumMap;
 import java.util.List;
 import org.jooq.JSON;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class EntityMapperTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final EntityMapper underTest = new EntityMapper();
 
@@ -74,6 +80,13 @@ class EntityMapperTests {
         "{\"filePath\":\"" + stringPath + "\",\"textRange\":{\"startLine\":5,\"startLineOffset\":6,\"endLine\":7,\"endLineOffset\":8,\"hash\":\"hash2\"}," +
         "\"message\":\"Message 2\"}]},{\"locations\":[{\"filePath\":\"" + stringPath + "\"," +
         "\"textRange\":{\"startLine\":1,\"startLineOffset\":2,\"endLine\":3,\"endLineOffset\":4,\"hash\":\"hash1\"},\"message\":\"Message 1\"}]}]");
+  }
+
+  @Test
+  void should_deserialize_languages_and_skip_unknown_names() {
+    var languages = underTest.deserializeLanguages(new String[] {"JAVA", "FUTURE_LANGUAGE", "PYTHON"});
+
+    assertThat(languages).containsExactlyInAnyOrder(SonarLanguage.JAVA, SonarLanguage.PYTHON);
   }
 
   @Test
