@@ -166,22 +166,22 @@ class SloopLauncherTests {
 
     @Override
     public void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope) {
-
+      // Not needed for tests
     }
 
     @Override
     public void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope) {
-
+      // Not needed for tests
     }
 
     @Override
     public void openUrlInBrowser(URL url) {
-
+      // No-op, not needed in tests
     }
 
     @Override
     public void showMessage(MessageType type, String text) {
-
+      // Not needed in dummy test client
     }
 
     @Override
@@ -198,7 +198,7 @@ class SloopLauncherTests {
 
     @Override
     public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
-
+      // Not needed for tests
     }
 
     @Override
