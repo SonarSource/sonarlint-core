@@ -28,7 +28,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/get-build-number@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         id: build-number
 
   build:
@@ -44,10 +44,10 @@ jobs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           version: 2026.4.11
-      - uses: SonarSource/ci-github-actions/build-maven@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/build-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         id: build
         with:
           sonar-platform: none
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           version: 2026.4.11
       - name: Install dotnet for Omnisharp tests
@@ -87,11 +87,11 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+        uses: SonarSource/ci-github-actions/cache@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/config-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -140,13 +140,13 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           version: 2026.4.11
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
-      - uses: SonarSource/ci-github-actions/config-maven@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/config-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -212,7 +212,7 @@ jobs:
             customOrchestratorJavaVersion: 17
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         with:
           version: 2026.4.11
       - name: Setup Java ${{ matrix.customOrchestratorJavaVersion }} for Orchestrator
@@ -232,7 +232,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/cache@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -251,7 +251,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/config-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         with:
           artifactory-reader-role: private-reader
       - name: Run QA
@@ -319,6 +319,6 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: SonarSource/ci-github-actions/promote@657e44543f55422ffd28b91d62fe5386f07d6030 # 1.6.0
+      - uses: SonarSource/ci-github-actions/promote@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
         with:
           promote-pull-request: true
