@@ -79,7 +79,8 @@
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
-    <flyway.version>11.20.3</flyway.version>
+    <flyway.version>12.10.0</flyway.version>
+    <jackson.version>2.22.1</jackson.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.82.1.100194</cfamily.version>
@@ -271,6 +272,11 @@
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-core</artifactId>
         <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonarsource.classloader</groupId>
