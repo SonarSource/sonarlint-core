@@ -298,6 +298,11 @@
         <artifactId>sonar-classloader</artifactId>
         <version>1.2.1.2095</version>
       </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>4.0.3</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
