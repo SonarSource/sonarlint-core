@@ -35,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
@@ -258,9 +256,9 @@ class StandaloneIssueMediumTests {
   }
 
   @SonarLintTest
-  // disabled on Windows for now, failure probably related to the setup of the environment
-  @DisabledOnOs(OS.WINDOWS)
-  void simpleCsharp(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void simpleCsharp(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
+    // Resolve 8.3 short Windows path (e.g. RUNNER~1) to its real form, or OmniSharp won't match the file to the project (SLCORE-2319)
+    baseDir = baseDir.toRealPath();
     var inputFile = createFile(baseDir, "Foo.cs", """
       public class Foo {
         public void Bar() {
