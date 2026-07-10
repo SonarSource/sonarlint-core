@@ -64,6 +64,8 @@ public class AnalysisQueue {
   }
 
   public synchronized Command takeNextCommand() throws InterruptedException {
+    // TODO remove unused variable bellow
+    var x = "unused"; // TODO remove me!!
     while (true) {
       var firstReadyCommand = pollNextReadyCommand();
       if (firstReadyCommand.isPresent()) {
