@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.SystemUtils;
@@ -56,17 +56,23 @@ public class NativeGitLocator {
   private static Optional<String> locateGitOnWindows() {
     var lines = new ArrayList<String>();
     var result = callWhereTool(lines::add);
-    return locateGitOnWindows(result, String.join("\n", lines));
+    return locateGitOnWindows(result, lines);
   }
 
-  static Optional<String> locateGitOnWindows(ProcessWrapperFactory.ProcessExecutionResult result, String lines) {
+  static Optional<String> locateGitOnWindows(ProcessWrapperFactory.ProcessExecutionResult result, List<String> lines) {
     // Windows will search current directory in addition to the PATH variable, which is unsecure.
     // To avoid it we use where.exe to find git binary only in PATH.
-
-    if (result.exitCode() == 0 && lines.contains("git.exe")) {
-      var out = Arrays.stream(lines.split(System.lineSeparator())).map(String::trim).findFirst();
-      LOG.debug("Found git.exe at {}", out);
-      return out;
+    // where.exe prints one path per line, so we pick the first one pointing to git.exe. The lines are
+    // already split by the process reader, so we must not join and re-split them (line separators differ).
+    if (result.exitCode() == 0) {
+      var gitExecutablePath = lines.stream()
+        .map(String::trim)
+        .filter(line -> line.contains("git.exe"))
+        .findFirst();
+      if (gitExecutablePath.isPresent()) {
+        LOG.debug("Found git.exe at {}", gitExecutablePath.get());
+        return gitExecutablePath;
+      }
     }
     LOG.debug("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
     return Optional.empty();
