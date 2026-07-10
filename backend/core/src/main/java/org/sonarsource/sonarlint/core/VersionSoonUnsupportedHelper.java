@@ -46,7 +46,8 @@ public class VersionSoonUnsupportedHelper {
 
   private static final String UNSUPPORTED_NOTIFICATION_ID = "sonarlint.unsupported.%s.%s.id";
   private static final String NOTIFICATION_MESSAGE = "The version '%s' used by the current connection '%s' will be soon unsupported. " +
-    "Please consider upgrading to the latest %s LTS version to ensure continued support and access to the latest features.";
+    "Please consider upgrading to the latest supported SonarQube LTS release (SonarQube Server %s or SonarQube Community Build %s) " +
+    "to ensure continued support and access to the latest features.";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configRepository;
@@ -109,7 +110,8 @@ public class VersionSoonUnsupportedHelper {
                 new ShowSoonUnsupportedMessageParams(
                   String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
                   configScopeId,
-                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())));
+                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts().getName(),
+                    VersionUtils.getCurrentCommunityBuildLts().getName())));
               LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
                 connection.getConnectionId(), version.getName()));
             }

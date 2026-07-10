@@ -85,7 +85,7 @@ class VersionSoonUnsupportedHelperTests {
     configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration);
     connectionRepository.addOrReplace(SQ_CONNECTION);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), any(), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.getMinimalSupportedVersion());
+      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
       new ConfigurationScopeWithBinding(
@@ -96,7 +96,7 @@ class VersionSoonUnsupportedHelperTests {
         BindingConfiguration.noBinding()))));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -110,9 +110,9 @@ class VersionSoonUnsupportedHelperTests {
     var serverApi = mock(ServerApi.class);
     var serverApi2 = mock(ServerApi.class);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.getMinimalSupportedVersion());
+      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID_2), eq(serverApi2), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion() + ".9"));
+      .thenReturn(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT + ".9"));
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
       new ConfigurationScopeWithBinding(
@@ -124,8 +124,8 @@ class VersionSoonUnsupportedHelperTests {
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly(
-        "Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported",
-        "Connection '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.getMinimalSupportedVersion() + ".9' is detected to be soon unsupported"));
+        "Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported",
+        "Connection '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT + ".9' is detected to be soon unsupported"));
   }
 
   @Test
@@ -143,13 +143,13 @@ class VersionSoonUnsupportedHelperTests {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.getMinimalSupportedVersion());
+      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -157,7 +157,7 @@ class VersionSoonUnsupportedHelperTests {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.getMinimalSupportedVersion());
+      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
@@ -165,7 +165,7 @@ class VersionSoonUnsupportedHelperTests {
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -173,13 +173,13 @@ class VersionSoonUnsupportedHelperTests {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion().getName() + ".9"));
+      .thenReturn(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".9"));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + ".9' is detected to be soon unsupported"));
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".9' is detected to be soon unsupported"));
   }
 
   @Test

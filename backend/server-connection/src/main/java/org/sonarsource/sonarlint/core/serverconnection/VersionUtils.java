@@ -23,26 +23,33 @@ import org.sonarsource.sonarlint.core.commons.Version;
 
 public class VersionUtils {
 
-  private static final Version CURRENT_LTS = Version.create("9.9");
-  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("9.9");
+  private static final Version CURRENT_LTS_SHORT = Version.create("25.1");
+  private static final Version CURRENT_LTS = Version.create("20" + CURRENT_LTS_SHORT);
+  public static final Version MINIMAL_SUPPORTED_VERSION_SHORT = Version.create("9.9");
+  // temporarily force a higher version to keep the check below correct
+  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("2025.1");
 
   private VersionUtils() {
+    // utility class
   }
 
   /**
-   * Right now since minimal supported version is equal to current LTS (9.9) this method will always return false.
-   * But it's important to keep it for the future when next LTS will be released, and we will have a grace period again.
+   * Versions in the grace-period window should trigger the soon-unsupported warning.
+   *
+   * The check currently uses two version ranges: the legacy or Community Build short numbering from the minimal
+   * supported short version (included) to the current Community Build LTS (excluded), and the SonarQube Server
+   * full-year numbering from the temporary full-year lower bound (included) to the current Server LTS (excluded).
    */
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
-    return currentVersion.compareTo(CURRENT_LTS) < 0 &&
-      currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION) >= 0;
+    return (currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION_SHORT) >= 0 && currentVersion.compareTo(CURRENT_LTS_SHORT) < 0)
+      || (currentVersion.compareTo(MINIMAL_SUPPORTED_VERSION) >= 0 && currentVersion.compareTo(CURRENT_LTS) < 0);
   }
 
   public static Version getCurrentLts() {
     return CURRENT_LTS;
   }
 
-  public static Version getMinimalSupportedVersion() {
-    return MINIMAL_SUPPORTED_VERSION;
+  public static Version getCurrentCommunityBuildLts() {
+    return CURRENT_LTS_SHORT;
   }
 }
