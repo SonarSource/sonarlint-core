@@ -29,7 +29,6 @@ import org.eclipse.jgit.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,7 +38,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -67,7 +65,6 @@ class NativeGitLocatorTests {
     assertThat(underTest.getNativeGitExecutable()).isEmpty();
   }
 
-  @EnabledOnOs(WINDOWS)
   @ParameterizedTest
   @MethodSource("gitLocations")
   void should_return_first_git_location(TestData testData, Optional<String> expectedLocation) {
