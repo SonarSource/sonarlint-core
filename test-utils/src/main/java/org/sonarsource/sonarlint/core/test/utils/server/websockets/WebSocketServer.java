@@ -65,7 +65,9 @@ public class WebSocketServer {
   }
 
   public List<WebSocketConnection> getConnections() {
-    return connectionsBySocket.values().stream().toList();
+    synchronized (connectionsBySocket) {
+      return List.copyOf(connectionsBySocket.values());
+    }
   }
 
   public class Impl extends org.java_websocket.server.WebSocketServer {

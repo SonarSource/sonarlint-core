@@ -112,7 +112,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .start(fakeClient);
     waitForScopeRegistration(fakeClient, CONFIG_SCOPE_ID);
 
-    assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter()).isEmpty();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getFixSuggestionReceivedCounter()).isEmpty());
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
