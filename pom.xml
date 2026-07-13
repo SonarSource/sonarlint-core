@@ -82,7 +82,7 @@
     <flyway.version>11.20.3</flyway.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
-    <cfamily.version>6.82.1.100194</cfamily.version>
+    <cfamily.version>6.83.0.100813</cfamily.version>
     <csharp.version>10.28.0.143324</csharp.version>
     <omnisharp.version>1.39.15</omnisharp.version>
   </properties>
