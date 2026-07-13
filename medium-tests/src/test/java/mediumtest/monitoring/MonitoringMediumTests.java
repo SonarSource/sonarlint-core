@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -450,7 +451,7 @@ class MonitoringMediumTests {
 
     backend.getTelemetryService().disableTelemetry();
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(Sentry.isEnabled()).isFalse());
+    awaitTelemetryStatus(backend, false);
   }
 
   @SonarLintTest
@@ -544,11 +545,11 @@ class MonitoringMediumTests {
 
     backend.getTelemetryService().disableTelemetry();
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(Sentry.isEnabled()).isFalse());
+    awaitTelemetryStatus(backend, false);
 
     backend.getTelemetryService().enableTelemetry();
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(Sentry.isEnabled()).isTrue());
+    awaitTelemetryStatus(backend, true);
   }
 
   @SonarLintTest
@@ -573,7 +574,7 @@ class MonitoringMediumTests {
 
     // Disable telemetry to close Sentry
     backend.getTelemetryService().disableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(Sentry.isEnabled()).isFalse());
+    awaitTelemetryStatus(backend, false);
 
     // Clear any existing events
     sentryServer.resetAll();
@@ -582,5 +583,13 @@ class MonitoringMediumTests {
     analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
     await().during(2000, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(sentryServer.getAllServeEvents()).isEmpty());
+  }
+
+  private static void awaitTelemetryStatus(SonarLintTestRpcServer backend, boolean enabled) {
+    await().atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> {
+        assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isEqualTo(enabled);
+        assertThat(Sentry.isEnabled()).isEqualTo(enabled);
+      });
   }
 }
