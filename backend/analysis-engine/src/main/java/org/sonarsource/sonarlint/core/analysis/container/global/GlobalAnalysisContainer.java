@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
@@ -38,6 +39,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   private ModuleRegistry moduleRegistry;
   private final AnalysisSchedulerConfiguration analysisGlobalConfig;
   private final LoadedPlugins loadedPlugins;
+  private final AtomicBoolean stopped = new AtomicBoolean();
 
   public GlobalAnalysisContainer(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
     this.analysisGlobalConfig = analysisGlobalConfig;
@@ -89,6 +91,9 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
 
   @Override
   public SpringComponentContainer stopComponents() {
+    if (!stopped.compareAndSet(false, true)) {
+      return this;
+    }
     try {
       if (moduleRegistry != null) {
         moduleRegistry.stopAll();

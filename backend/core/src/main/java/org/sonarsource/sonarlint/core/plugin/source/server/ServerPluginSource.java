@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -63,10 +62,9 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
  *       {@link EnterpriseReplacement}).</li>
  * </ul>
  *
- * <p>{@link #load} resolves a plugin: it returns the stored artifact when already on disk with a
- * matching hash, or schedules a background download (returning
- * {@link ArtifactState#DOWNLOADING}). It does <em>not</em> apply the skip-list check — that is
- * the responsibility of the loading strategy that owns this source.</p>
+ * <p>Each returned artifact is local when a stored JAR with the expected hash exists, or remote
+ * with a blocking download operation otherwise. The source does <em>not</em> apply the skip-list
+ * check — that is the responsibility of the loading strategy that owns this source.</p>
  */
 public class ServerPluginSource implements ArtifactSource {
 
@@ -104,6 +102,7 @@ public class ServerPluginSource implements ArtifactSource {
 
   private AvailableArtifact toAvailableArtifact(ServerPlugin plugin, Map<String, StoredPlugin> storedPlugins) {
     var stored = findStoredPlugin(plugin.getKey(), storedPlugins).filter(candidate -> candidate.hasSameHash(plugin));
+    stored.ifPresent(ignored -> LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", plugin.getKey()));
     ArtifactLocation location = stored
       .<ArtifactLocation>map(candidate -> toLocalLocation(candidate.getJarPath()))
       .orElseGet(() -> new ArtifactLocation.Remote(new ServerDownload(plugin)));

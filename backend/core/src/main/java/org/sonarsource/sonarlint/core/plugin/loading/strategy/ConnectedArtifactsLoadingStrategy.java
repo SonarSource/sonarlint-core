@@ -89,8 +89,7 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
   }
 
   /**
-   * Resolves all artifacts from all sources using a winner-map pattern. May schedule background
-   * downloads.
+   * Plans all artifacts from all sources using a winner-map pattern without starting downloads.
    *
    * <p>Priority (highest wins in normal cases): embedded &gt; server &gt; binaries.
    * Exception: enterprise server plugins beat embedded (see class Javadoc).</p>
@@ -126,7 +125,7 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     // Pass 2 (connected-specific): enterprise server plugins override even embedded
     serverArtifacts.stream()
       .filter(AvailableArtifact::isEnterprise)
-      .forEach(a -> candidates.computeIfPresent(a.key(), (k, existing) -> new ArtifactCandidate(existing.available(), serverSource)));
+      .forEach(artifact -> candidates.computeIfPresent(artifact.key(), (key, existing) -> new ArtifactCandidate(artifact, serverSource)));
 
     // Shared passes
     removeOrphanDependencies(candidates);

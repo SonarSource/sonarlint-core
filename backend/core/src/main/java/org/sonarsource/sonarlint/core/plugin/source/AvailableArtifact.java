@@ -36,21 +36,4 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
  */
 public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact,
   ArtifactLocation location) {
-
-  /**
-   * Temporary compatibility constructor for callers that do not inspect locations yet.
-   */
-  public AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact) {
-    this(key, version, isEnterprise, sonarArtifact, new ArtifactLocation.Remote(new ArtifactDownload() {
-      @Override
-      public String deduplicationKey() {
-        return "unspecified:" + key;
-      }
-
-      @Override
-      public ArtifactLocation.Local download() {
-        throw new UnsupportedOperationException("No download is defined for artifact " + key);
-      }
-    }));
-  }
 }

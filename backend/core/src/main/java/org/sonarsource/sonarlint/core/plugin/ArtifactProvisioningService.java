@@ -57,11 +57,18 @@ public class ArtifactProvisioningService {
     if (created.get()) {
       try {
         var provisioning = prepare(planSupplier.get());
+        var initialStatusesPublished = new CompletableFuture<Void>();
+        // Attach the batch before exposing the state, so synchronous callers cannot miss in-progress downloads.
+        // Download result notifications are gated to keep the initial DOWNLOADING status first.
+        scheduleDownloads(context, provisioning, initialStatusesPublished);
         // Complete before publishing because standalone status listeners synchronously query the
         // provisioning state again while handling the event.
         stateFuture.complete(provisioning.state());
-        publishStatuses(context, provisioning.state());
-        scheduleDownloads(context, provisioning);
+        try {
+          publishStatuses(context, provisioning.state());
+        } finally {
+          initialStatusesPublished.complete(null);
+        }
       } catch (Exception e) {
         if (!stateFuture.isDone()) {
           stateFuture.completeExceptionally(e);
@@ -81,13 +88,13 @@ public class ArtifactProvisioningService {
     return new Provisioning(state, downloadsToSchedule);
   }
 
-  private void scheduleDownloads(PluginContext context, Provisioning provisioning) {
+  private void scheduleDownloads(PluginContext context, Provisioning provisioning, CompletableFuture<Void> initialStatusesPublished) {
     if (provisioning.downloadsToSchedule().isEmpty()) {
       return;
     }
     var scheduledBatch = downloadCoordinator.schedule(provisioning.downloadsToSchedule().values());
     var observedOutcomes = new LinkedHashMap<String, CompletableFuture<DownloadOutcome>>();
-    scheduledBatch.outcomesByKey().forEach((key, outcome) -> observedOutcomes.put(key, outcome.thenApply(result -> {
+    scheduledBatch.outcomesByKey().forEach((key, outcome) -> observedOutcomes.put(key, outcome.thenCombine(initialStatusesPublished, (result, ignored) -> {
       provisioning.state().apply(result);
       publishStatuses(context, provisioning.state());
       return result;

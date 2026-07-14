@@ -72,19 +72,24 @@ public class ArtifactDownloadCoordinator {
 
   private CompletableFuture<DownloadOutcome> start(ArtifactDownload download) {
     var logOutput = SonarLintLogger.get().getTargetForCopy();
-    return CompletableFuture.supplyAsync(() -> {
+    var future = new CompletableFuture<DownloadOutcome>();
+    executor.execute(() -> {
       SonarLintLogger.get().setTarget(logOutput);
       try {
         var outcome = new DownloadOutcome.Success(download, download.download());
         failuresByKey.remove(download.deduplicationKey());
-        return outcome;
+        future.complete(outcome);
       } catch (Exception e) {
+        if (logOutput != null) {
+          SonarLintLogger.get().error("Failed to download artifact", e);
+        }
         var outcome = new DownloadOutcome.Failure(download, e);
         failuresByKey.put(download.deduplicationKey(), outcome);
-        return outcome;
+        future.complete(outcome);
       } finally {
         SonarLintLogger.get().setTarget(null);
       }
-    }, executor);
+    });
+    return future;
   }
 }

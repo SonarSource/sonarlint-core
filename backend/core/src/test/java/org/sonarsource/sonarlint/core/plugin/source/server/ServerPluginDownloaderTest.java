@@ -19,37 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source.server;
 
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.springframework.context.ApplicationEventPublisher;
 
-import static org.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,96 +42,54 @@ class ServerPluginDownloaderTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private StorageService storageService;
-  private ConnectionConfigurationRepository connectionRepo;
   private SonarQubeClientManager sonarQubeClientManager;
-  private ApplicationEventPublisher eventPublisher;
-  private ExecutorService downloadExecutor;
-  private PluginsStorage pluginsStorage;
-  private Path javaJar;
+  private ConnectionConfigurationRepository connectionRepository;
+  private ServerPluginDownloader downloader;
 
   @BeforeEach
   void setUp() {
-    storageService = mock(StorageService.class);
-    connectionRepo = mock(ConnectionConfigurationRepository.class);
     sonarQubeClientManager = mock(SonarQubeClientManager.class);
-    eventPublisher = mock(ApplicationEventPublisher.class);
-    var connectionStorage = mock(ConnectionStorage.class);
-    pluginsStorage = mock(PluginsStorage.class);
-
-    javaJar = Path.of("sonar-java-plugin.jar");
-
-    when(storageService.connection("conn")).thenReturn(connectionStorage);
-    when(connectionStorage.plugins()).thenReturn(pluginsStorage);
-
-    var connection = mock(AbstractConnectionConfiguration.class);
-    when(connection.getKind()).thenReturn(ConnectionKind.SONARQUBE);
-    when(connectionRepo.getConnectionById("conn")).thenReturn(connection);
+    connectionRepository = mock(ConnectionConfigurationRepository.class);
+    downloader = new ServerPluginDownloader(mock(StorageService.class), sonarQubeClientManager, connectionRepository);
   }
 
   @Test
-  void should_publish_synced_event_after_language_plugin_download_succeeds() {
-    downloadExecutor = Executors.newSingleThreadExecutor();
-    try {
-      var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
-      when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of(SonarPlugin.JAVA.getKey(), javaJar));
-
-      var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
-      downloader.schedulePluginDownload("conn", serverPlugin);
-
-      var expectedEvent = new PluginStatusUpdateEvent("conn",
-        List.of(PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, javaJar, null)));
-
-      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
-    } finally {
-      downloadExecutor.shutdownNow();
-    }
-  }
-
-  @Test
-  void should_publish_failed_event_when_language_plugin_download_fails() {
-    downloadExecutor = Executors.newSingleThreadExecutor();
-    try {
-      var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
-      var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
-
-      doThrow(new RuntimeException("Download failed")).when(sonarQubeClientManager).withActiveClient(any(), any());
-
-      downloader.schedulePluginDownload("conn", serverPlugin);
-
-      var expectedEvent = new PluginStatusUpdateEvent("conn", List.of(PluginStatus.failed(SonarLanguage.JAVA)));
-      await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(eventPublisher).publishEvent(expectedEvent));
-    } finally {
-      downloadExecutor.shutdownNow();
-    }
-  }
-
-  @Test
-  void should_deduplicate_concurrent_plugin_downloads() {
-    var mockedExecutor = mock(ExecutorService.class);
-    var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, mockedExecutor);
-    var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
-
-    downloader.schedulePluginDownload("conn", serverPlugin);
-    downloader.schedulePluginDownload("conn", serverPlugin);
-
-    verify(mockedExecutor, times(1)).execute(any(Runnable.class));
-  }
-
-  @Test
-  void should_perform_synchronous_download() {
-    downloadExecutor = mock(ExecutorService.class);
-    var downloader = new ServerPluginDownloader(storageService, sonarQubeClientManager, connectionRepo, eventPublisher, downloadExecutor);
-    var serverPlugin = mockServerPlugin("custom-plugin");
+  void should_perform_blocking_download() {
+    var serverPlugin = new ServerPlugin("custom-plugin", "hash", "custom.jar", true);
 
     downloader.downloadPluginSyncOrThrow("conn", serverPlugin);
 
     verify(sonarQubeClientManager).withActiveClient(any(), any());
   }
 
-  private static ServerPlugin mockServerPlugin(String pluginKey) {
-    var plugin = mock(ServerPlugin.class);
-    when(plugin.getKey()).thenReturn(pluginKey);
-    return plugin;
+  @Test
+  void should_return_sonarqube_cloud_origin_for_cloud_connection() {
+    mockConnection(ConnectionKind.SONARCLOUD, "https://sonarcloud.io");
+
+    assertThat(downloader.sourceFor("conn")).isEqualTo(ArtifactOrigin.SONARQUBE_CLOUD);
+  }
+
+  @Test
+  void should_return_sonarqube_server_origin_for_server_or_unknown_connection() {
+    mockConnection(ConnectionKind.SONARQUBE, "https://sonarqube.example");
+
+    assertThat(downloader.sourceFor("conn")).isEqualTo(ArtifactOrigin.SONARQUBE_SERVER);
+    assertThat(downloader.sourceFor("unknown")).isEqualTo(ArtifactOrigin.SONARQUBE_SERVER);
+  }
+
+  @Test
+  void should_build_deduplication_key_from_server_url_plugin_key_and_hash() {
+    mockConnection(ConnectionKind.SONARQUBE, "https://sonarqube.example");
+    var plugin = new ServerPlugin("java", "plugin-hash", "java.jar", true);
+
+    assertThat(downloader.deduplicationKeyFor("conn", plugin))
+      .isEqualTo("https://sonarqube.example/api/plugins/download?plugin=java#plugin-hash");
+  }
+
+  private void mockConnection(ConnectionKind kind, String url) {
+    var connection = mock(AbstractConnectionConfiguration.class);
+    when(connection.getKind()).thenReturn(kind);
+    when(connection.getUrl()).thenReturn(url);
+    when(connectionRepository.getConnectionById("conn")).thenReturn(connection);
   }
 }
