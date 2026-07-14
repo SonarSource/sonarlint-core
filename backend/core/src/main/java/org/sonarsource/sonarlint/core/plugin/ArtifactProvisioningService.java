@@ -33,10 +33,8 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
  * Creates and retains artifact provisioning state independently from loaded plugin instances.
  */
 public class ArtifactProvisioningService {
-  private static final Object STANDALONE_CONTEXT = new Object();
-
   private final ArtifactDownloadCoordinator downloadCoordinator;
-  private final Map<Object, ArtifactProvisioningState> stateByContext = new ConcurrentHashMap<>();
+  private final Map<PluginContext, ArtifactProvisioningState> stateByContext = new ConcurrentHashMap<>();
 
   public ArtifactProvisioningService(ArtifactDownloadCoordinator downloadCoordinator) {
     this.downloadCoordinator = downloadCoordinator;
@@ -53,16 +51,16 @@ public class ArtifactProvisioningService {
       state.setDownloadBatch(batch);
       batch.outcomesByKey().values().forEach(outcome -> outcome.thenAccept(state::apply));
     }
-    stateByContext.put(contextKey(connectionId), state);
+    stateByContext.put(PluginContext.from(connectionId), state);
     return state;
   }
 
   public Optional<ArtifactProvisioningState> get(@Nullable String connectionId) {
-    return Optional.ofNullable(stateByContext.get(contextKey(connectionId)));
+    return Optional.ofNullable(stateByContext.get(PluginContext.from(connectionId)));
   }
 
   public void clear(@Nullable String connectionId) {
-    stateByContext.remove(contextKey(connectionId));
+    stateByContext.remove(PluginContext.from(connectionId));
   }
 
   private static Map<String, ArtifactDownload> remoteDownloads(ArtifactPlan plan) {
@@ -73,9 +71,5 @@ public class ArtifactProvisioningService {
       }
     });
     return result;
-  }
-
-  private static Object contextKey(@Nullable String connectionId) {
-    return connectionId == null ? STANDALONE_CONTEXT : connectionId;
   }
 }

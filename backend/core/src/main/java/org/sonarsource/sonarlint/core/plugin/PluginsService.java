@@ -132,23 +132,19 @@ public class PluginsService {
   }
 
   public PluginsConfiguration getEmbeddedPlugins() {
-    var cached = pluginsRepository.getEmbeddedPlugins();
-    if (cached == null) {
-      cached = loadPlugins(null);
-      pluginsRepository.setEmbeddedPlugins(cached);
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null, getPluginStatuses(cached.artifactsResult())));
+    var lookup = pluginsRepository.getOrLoad(PluginContext.from(null), () -> loadPlugins(null));
+    if (lookup.created()) {
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null, getPluginStatuses(lookup.configuration().artifactsResult())));
     }
-    return cached;
+    return lookup.configuration();
   }
 
   public PluginsConfiguration getPlugins(String connectionId) {
-    var cached = pluginsRepository.getPlugins(connectionId);
-    if (cached == null) {
-      cached = loadPlugins(connectionId);
-      pluginsRepository.setPlugins(connectionId, cached);
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(cached.artifactsResult())));
+    var lookup = pluginsRepository.getOrLoad(PluginContext.from(connectionId), () -> loadPlugins(connectionId));
+    if (lookup.created()) {
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(lookup.configuration().artifactsResult())));
     }
-    return cached;
+    return lookup.configuration();
   }
 
   private PluginsConfiguration loadPlugins(@Nullable String connectionId) {
@@ -191,7 +187,7 @@ public class PluginsService {
 
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
-    pluginsRepository.unload(connectionId);
+    pluginsRepository.unload(PluginContext.from(connectionId));
     connectedArtifactsLoadingStrategyFactory.evict(connectionId);
   }
 
@@ -258,7 +254,7 @@ public class PluginsService {
 
   public void unloadEmbeddedPlugins() {
     logger.debug("Evict loaded embedded plugins");
-    pluginsRepository.unloadEmbedded();
+    pluginsRepository.unload(PluginContext.from(null));
   }
 
   @PreDestroy

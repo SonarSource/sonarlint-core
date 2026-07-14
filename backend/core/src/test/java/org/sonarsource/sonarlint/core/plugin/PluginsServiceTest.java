@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,6 +86,10 @@ class PluginsServiceTest {
   @BeforeEach
   void prepare() {
     pluginsRepository = mock(PluginsRepository.class);
+    when(pluginsRepository.getOrLoad(any(), any())).thenAnswer(invocation -> {
+      Supplier<PluginsConfiguration> loader = invocation.getArgument(1);
+      return new PluginsRepository.CacheLookup(loader.get(), true);
+    });
     storageService = mock(StorageService.class);
     connectionConfigurationStorage = mock(ConnectionConfigurationRepository.class);
     connectionStorage = mock(ConnectionStorage.class);

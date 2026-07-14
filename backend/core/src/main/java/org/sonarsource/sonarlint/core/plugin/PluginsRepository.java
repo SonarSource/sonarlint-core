@@ -20,70 +20,45 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.CheckForNull;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 public class PluginsRepository {
-  private final AtomicReference<PluginsConfiguration> embeddedPlugins = new AtomicReference<>();
-  private final Map<String, PluginsConfiguration> pluginsByConnectionId = new HashMap<>();
+  private final Map<PluginContext, PluginsConfiguration> configurationsByContext = new ConcurrentHashMap<>();
 
-  public void setEmbeddedPlugins(PluginsConfiguration config) {
-    this.embeddedPlugins.set(config);
+  public record CacheLookup(PluginsConfiguration configuration, boolean created) {
   }
 
-  @CheckForNull
-  public PluginsConfiguration getEmbeddedPlugins() {
-    return embeddedPlugins.get();
-  }
-
-  @CheckForNull
-  public PluginsConfiguration getPlugins(String connectionId) {
-    return pluginsByConnectionId.get(connectionId);
-  }
-
-  public void setPlugins(String connectionId, PluginsConfiguration config) {
-    pluginsByConnectionId.put(connectionId, config);
+  public CacheLookup getOrLoad(PluginContext context, Supplier<PluginsConfiguration> loader) {
+    var created = new AtomicBoolean();
+    var configuration = configurationsByContext.computeIfAbsent(context, ignored -> {
+      created.set(true);
+      return loader.get();
+    });
+    return new CacheLookup(configuration, created.get());
   }
 
   void unloadAllPlugins() throws IOException {
     Queue<IOException> exceptions = new LinkedList<>();
-    var embedded = embeddedPlugins.get();
-    if (embedded != null) {
-      tryAndCollectIOException(embedded.plugins()::close, exceptions);
-      embeddedPlugins.set(null);
-    }
-    synchronized (pluginsByConnectionId) {
-      pluginsByConnectionId.values().forEach(config -> tryAndCollectIOException(config.plugins()::close, exceptions));
-      pluginsByConnectionId.clear();
-    }
+    configurationsByContext.values().forEach(config -> tryAndCollectIOException(config.plugins()::close, exceptions));
+    configurationsByContext.clear();
     throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(String connectionId) {
-    var config = pluginsByConnectionId.remove(connectionId);
+  public void unload(PluginContext context) {
+    var config = configurationsByContext.remove(context);
     if (config != null) {
       try {
         config.plugins().close();
       } catch (IOException e) {
         throw new IllegalStateException("Unable to unload plugins", e);
-      }
-    }
-  }
-
-  public void unloadEmbedded() {
-    var config = embeddedPlugins.getAndSet(null);
-    if (config != null) {
-      try {
-        config.plugins().close();
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to unload embedded plugins", e);
       }
     }
   }
