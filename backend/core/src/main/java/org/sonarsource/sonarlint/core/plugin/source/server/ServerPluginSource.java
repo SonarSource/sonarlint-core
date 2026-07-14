@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -177,32 +176,6 @@ public class ServerPluginSource implements ArtifactSource {
     return replacementStartingInSonarQubeServerVersion != null && storageService.connection(connectionId).serverInfo().read()
       .map(info -> info.version().compareTo(replacementStartingInSonarQubeServerVersion) >= 0)
       .orElse(false);
-  }
-
-  @Override
-  public LoadResult load(Set<String> artifactKeys) {
-    var storedPlugins = loadStoredPlugins();
-    var resolved = new HashMap<String, ResolvedArtifact>();
-    try {
-      var serverPluginsByKey = serverPluginsCache.getPlugins(connectionId).orElse(List.of())
-        .stream().collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
-      for (var key : artifactKeys) {
-        var serverPlugin = serverPluginsByKey.get(key);
-        if (serverPlugin != null) {
-          resolved.put(key, resolveFromStorageOrSchedule(serverPlugin, storedPlugins, key));
-        } else {
-          findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-            .ifPresent(r -> resolved.put(key, r));
-        }
-      }
-    } catch (Exception e) {
-      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      for (var key : artifactKeys) {
-        findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-          .ifPresent(r -> resolved.put(key, r));
-      }
-    }
-    return new LoadResult(resolved);
   }
 
   private ResolvedArtifact resolveFromStorageOrSchedule(ServerPlugin serverPlugin,

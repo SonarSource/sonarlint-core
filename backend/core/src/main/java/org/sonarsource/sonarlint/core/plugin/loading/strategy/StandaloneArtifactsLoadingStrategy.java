@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +31,6 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -115,25 +112,4 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
     return candidates;
   }
 
-  @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
-    var candidates = selectArtifacts(enabledLanguages);
-
-    // Group winning keys by source, then load once per source
-    var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
-    candidates.forEach((key, candidate) -> keysBySource.computeIfAbsent(candidate.source(), s -> new HashSet<>()).add(key));
-    var result = new LinkedHashMap<String, ResolvedArtifact>();
-    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
-
-    // For each language not yet resolved and available only in connected mode, mark PREMIUM
-    for (var language : SonarLanguage.values()) {
-      var key = language.getPlugin().getKey();
-      if (!result.containsKey(key) && languageSupportRepository.isEnabledOnlyInConnectedMode(language)) {
-        result.put(key, ResolvedArtifact.premium());
-      }
-    }
-
-    return new ArtifactsLoadingResult(enabledLanguages, result);
-  }
 }
