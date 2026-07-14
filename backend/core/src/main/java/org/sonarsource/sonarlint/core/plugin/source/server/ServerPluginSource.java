@@ -183,12 +183,9 @@ public class ServerPluginSource implements ArtifactSource {
   public LoadResult load(Set<String> artifactKeys) {
     var storedPlugins = loadStoredPlugins();
     var resolved = new HashMap<String, ResolvedArtifact>();
-    var serverAccessible = false;
-    List<ServerPlugin> expectedServerPlugins = List.of();
     try {
       var serverPluginsByKey = serverPluginsCache.getPlugins(connectionId).orElse(List.of())
         .stream().collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
-      serverAccessible = true;
       for (var key : artifactKeys) {
         var serverPlugin = serverPluginsByKey.get(key);
         if (serverPlugin != null) {
@@ -198,27 +195,12 @@ public class ServerPluginSource implements ArtifactSource {
             .ifPresent(r -> resolved.put(key, r));
         }
       }
-      expectedServerPlugins = artifactKeys.stream()
-        .filter(serverPluginsByKey::containsKey)
-        .map(key -> {
-          var serverPlugin = serverPluginsByKey.get(key);
-          // If the stored file already has the correct hash but a different filename (e.g. in tests),
-          // use the stored filename so cleanUpUnknownPlugins does not delete it.
-          return findStoredPlugin(key, storedPlugins)
-            .filter(stored -> stored.hasSameHash(serverPlugin))
-            .map(stored -> new ServerPlugin(key, serverPlugin.getHash(), stored.getJarPath().getFileName().toString(), serverPlugin.isSonarLintSupported()))
-            .orElse(serverPlugin);
-        })
-        .toList();
     } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
       for (var key : artifactKeys) {
         findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
           .ifPresent(r -> resolved.put(key, r));
       }
-    }
-    if (serverAccessible) {
-      storageService.connection(connectionId).plugins().cleanUpUnknownPlugins(expectedServerPlugins);
     }
     return new LoadResult(resolved);
   }

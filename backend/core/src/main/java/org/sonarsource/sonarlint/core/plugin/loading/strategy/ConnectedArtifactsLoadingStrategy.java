@@ -69,12 +69,20 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  */
 public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrategy {
   private final ServerPluginSource serverSource;
+  private final ArtifactStorageCleaner storageCleaner;
   private final LanguageSupportRepository languageSupportRepository;
   private final List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
 
   ConnectedArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource,
     ServerPluginSource serverSource, LanguageSupportRepository languageSupportRepository) {
+    this(params, binariesSource, serverSource, languageSupportRepository, selectedArtifactKeys -> {
+    });
+  }
+
+  ConnectedArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource,
+    ServerPluginSource serverSource, LanguageSupportRepository languageSupportRepository, ArtifactStorageCleaner storageCleaner) {
     this.serverSource = serverSource;
+    this.storageCleaner = storageCleaner;
     this.languageSupportRepository = languageSupportRepository;
     // Ascending priority: binaries (fallback) → server → embedded (highest)
     this.artifactSourcesSortedByAscendingPriority = List.of(
@@ -94,6 +102,7 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
   public ArtifactPlan planArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var candidates = selectArtifacts(enabledLanguages);
+    cleanStorage(candidates);
     return new ArtifactPlan(enabledLanguages, candidates.entrySet().stream()
       .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().available(), (left, right) -> right, LinkedHashMap::new)), Map.of());
   }
@@ -133,6 +142,7 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
   public ArtifactsLoadingResult resolveArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var candidates = selectArtifacts(enabledLanguages);
+    cleanStorage(candidates);
 
     // Group winning keys by source, then load once per source.
     // Pre-populate all sources with empty sets so every source is always called (e.g. ServerPluginSource
@@ -145,5 +155,12 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     var result = new LinkedHashMap<String, ResolvedArtifact>();
     keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
     return new ArtifactsLoadingResult(enabledLanguages, result);
+  }
+
+  private void cleanStorage(Map<String, ArtifactCandidate> candidates) {
+    storageCleaner.clean(candidates.entrySet().stream()
+      .filter(entry -> entry.getValue().source() == serverSource)
+      .map(Map.Entry::getKey)
+      .collect(Collectors.toSet()));
   }
 }

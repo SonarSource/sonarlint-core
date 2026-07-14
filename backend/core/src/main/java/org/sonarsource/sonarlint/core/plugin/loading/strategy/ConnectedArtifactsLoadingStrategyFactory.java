@@ -24,6 +24,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerArtifactStorageCleaner;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -64,7 +65,8 @@ public class ConnectedArtifactsLoadingStrategyFactory {
   public ConnectedArtifactsLoadingStrategy getOrCreate(String connectionId) {
     return cache.computeIfAbsent(connectionId, id -> {
       var serverSource = new ServerPluginSource(id, storageService, serverPluginsCache, downloader);
-      return new ConnectedArtifactsLoadingStrategy(params, binariesSource, serverSource, languageSupportRepository);
+      var storageCleaner = new ServerArtifactStorageCleaner(id, storageService, serverPluginsCache);
+      return new ConnectedArtifactsLoadingStrategy(params, binariesSource, serverSource, languageSupportRepository, storageCleaner);
     });
   }
 
