@@ -44,6 +44,8 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -99,9 +101,37 @@ public class BinariesArtifactSource implements ArtifactSource {
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
     return Arrays.stream(BinariesArtifact.values())
       .filter(artifact -> artifact.getLanguages().stream().anyMatch(enabledLanguages::contains))
-      .map(artifact -> new AvailableArtifact(artifact.artifactKey(), Version.create(artifact.version()), false,
-        SonarPlugin.findByKey(artifact.artifactKey()).<SonarArtifact>map(p -> p).or(() -> SonarPluginDependency.findByKey(artifact.artifactKey()))))
+      .map(this::toAvailableArtifact)
       .toList();
+  }
+
+  private AvailableArtifact toAvailableArtifact(BinariesArtifact artifact) {
+    var version = Version.create(artifact.version());
+    var sonarArtifact = SonarPlugin.findByKey(artifact.artifactKey()).<SonarArtifact>map(p -> p)
+      .or(() -> SonarPluginDependency.findByKey(artifact.artifactKey()));
+    ArtifactLocation location = findCachedArtifact(artifact)
+      .<ArtifactLocation>map(cached -> new ArtifactLocation.Local(cached.path(), ArtifactOrigin.ON_DEMAND, version))
+      .orElseGet(() -> new ArtifactLocation.Remote(new BinariesDownload(artifact)));
+    return new AvailableArtifact(artifact.artifactKey(), version, false, sonarArtifact, location);
+  }
+
+  private class BinariesDownload implements ArtifactDownload {
+    private final BinariesArtifact artifact;
+
+    private BinariesDownload(BinariesArtifact artifact) {
+      this.artifact = artifact;
+    }
+
+    @Override
+    public String deduplicationKey() {
+      return artifact.artifactKey();
+    }
+
+    @Override
+    public ArtifactLocation.Local download() throws IOException {
+      var path = downloadAndCache(artifact);
+      return new ArtifactLocation.Local(path, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()));
+    }
   }
 
   @Override

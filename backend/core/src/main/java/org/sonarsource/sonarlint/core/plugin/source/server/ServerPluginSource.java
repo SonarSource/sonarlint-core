@@ -34,6 +34,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.EnterpriseReplacement;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -97,10 +99,46 @@ public class ServerPluginSource implements ArtifactSource {
    */
   @Override
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
+    var storedPlugins = loadStoredPlugins();
     return fetchServerPluginsSafely().stream()
       .filter(plugin -> isEligible(plugin, enabledLanguages))
-      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey())))
+      .map(plugin -> toAvailableArtifact(plugin, storedPlugins))
       .toList();
+  }
+
+  private AvailableArtifact toAvailableArtifact(ServerPlugin plugin, Map<String, StoredPlugin> storedPlugins) {
+    var stored = findStoredPlugin(plugin.getKey(), storedPlugins).filter(candidate -> candidate.hasSameHash(plugin));
+    ArtifactLocation location = stored
+      .<ArtifactLocation>map(candidate -> toLocalLocation(candidate.getJarPath()))
+      .orElseGet(() -> new ArtifactLocation.Remote(new ServerDownload(plugin)));
+    return new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey()), location);
+  }
+
+  private class ServerDownload implements ArtifactDownload {
+    private final ServerPlugin plugin;
+
+    private ServerDownload(ServerPlugin plugin) {
+      this.plugin = plugin;
+    }
+
+    @Override
+    public String deduplicationKey() {
+      return connectionId + ":" + plugin.getKey();
+    }
+
+    @Override
+    public ArtifactLocation.Local download() {
+      downloader.downloadPluginSyncOrThrow(connectionId, plugin);
+      var path = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey());
+      if (path == null) {
+        throw new IllegalStateException("Downloaded plugin was not found in storage: " + plugin.getKey());
+      }
+      return toLocalLocation(path);
+    }
+  }
+
+  private ArtifactLocation.Local toLocalLocation(Path pluginPath) {
+    return new ArtifactLocation.Local(pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath));
   }
 
   private static boolean isEligible(ServerPlugin plugin, Set<SonarLanguage> enabledLanguages) {
