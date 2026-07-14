@@ -22,44 +22,86 @@ package org.sonarsource.sonarlint.core.plugin;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactPlan;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownloadCoordinator;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadBatch;
+import org.sonarsource.sonarlint.core.plugin.source.DownloadOutcome;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Creates and retains artifact provisioning state independently from loaded plugin instances.
  */
 public class ArtifactProvisioningService {
   private final ArtifactDownloadCoordinator downloadCoordinator;
-  private final Map<PluginContext, ArtifactProvisioningState> stateByContext = new ConcurrentHashMap<>();
+  private final ApplicationEventPublisher eventPublisher;
+  private final Map<PluginContext, CompletableFuture<ArtifactProvisioningState>> stateByContext = new ConcurrentHashMap<>();
 
-  public ArtifactProvisioningService(ArtifactDownloadCoordinator downloadCoordinator) {
+  public ArtifactProvisioningService(ArtifactDownloadCoordinator downloadCoordinator, ApplicationEventPublisher eventPublisher) {
     this.downloadCoordinator = downloadCoordinator;
+    this.eventPublisher = eventPublisher;
   }
 
   public ArtifactProvisioningState getOrProvision(PluginContext context, Supplier<ArtifactPlan> planSupplier) {
-    return stateByContext.computeIfAbsent(context, ignored -> provision(planSupplier.get()));
+    var created = new AtomicBoolean();
+    var stateFuture = stateByContext.computeIfAbsent(context, ignored -> {
+      created.set(true);
+      return new CompletableFuture<>();
+    });
+    if (created.get()) {
+      try {
+        var provisioning = prepare(planSupplier.get());
+        // Complete before publishing because standalone status listeners synchronously query the
+        // provisioning state again while handling the event.
+        stateFuture.complete(provisioning.state());
+        publishStatuses(context, provisioning.state());
+        scheduleDownloads(context, provisioning);
+      } catch (Exception e) {
+        if (!stateFuture.isDone()) {
+          stateFuture.completeExceptionally(e);
+        }
+        stateByContext.remove(context, stateFuture);
+      }
+    }
+    return stateFuture.join();
   }
 
-  private ArtifactProvisioningState provision(ArtifactPlan plan) {
+  private Provisioning prepare(ArtifactPlan plan) {
     var downloadsByArtifactKey = remoteDownloads(plan);
     var state = new ArtifactProvisioningState(plan, downloadsByArtifactKey);
     var downloadsToSchedule = new LinkedHashMap<String, ArtifactDownload>();
     downloadsByArtifactKey.forEach((artifactKey, download) -> downloadCoordinator.getPreviousFailure(download.deduplicationKey())
       .ifPresentOrElse(failure -> state.markFailed(artifactKey), () -> downloadsToSchedule.put(download.deduplicationKey(), download)));
-    if (!downloadsToSchedule.isEmpty()) {
-      var batch = downloadCoordinator.schedule(downloadsToSchedule.values());
-      state.setDownloadBatch(batch);
-      batch.outcomesByKey().values().forEach(outcome -> outcome.thenAccept(state::apply));
+    return new Provisioning(state, downloadsToSchedule);
+  }
+
+  private void scheduleDownloads(PluginContext context, Provisioning provisioning) {
+    if (provisioning.downloadsToSchedule().isEmpty()) {
+      return;
     }
-    return state;
+    var scheduledBatch = downloadCoordinator.schedule(provisioning.downloadsToSchedule().values());
+    var observedOutcomes = new LinkedHashMap<String, CompletableFuture<DownloadOutcome>>();
+    scheduledBatch.outcomesByKey().forEach((key, outcome) -> observedOutcomes.put(key, outcome.thenApply(result -> {
+      provisioning.state().apply(result);
+      publishStatuses(context, provisioning.state());
+      return result;
+    })));
+    var observedCompletion = CompletableFuture.allOf(observedOutcomes.values().toArray(CompletableFuture[]::new))
+      .thenApply(ignored -> observedOutcomes.values().stream().map(CompletableFuture::join).toList());
+    provisioning.state().setDownloadBatch(new DownloadBatch(Map.copyOf(observedOutcomes), observedCompletion));
+  }
+
+  private void publishStatuses(PluginContext context, ArtifactProvisioningState state) {
+    eventPublisher.publishEvent(new PluginStatusesChangedEvent(context.connectionId(), PluginStatusResolver.from(state.asLoadingResult())));
   }
 
   public Optional<ArtifactProvisioningState> get(PluginContext context) {
-    return Optional.ofNullable(stateByContext.get(context));
+    return Optional.ofNullable(stateByContext.get(context)).map(CompletableFuture::join);
   }
 
   public void clear(PluginContext context) {
@@ -74,5 +116,8 @@ public class ArtifactProvisioningService {
       }
     });
     return result;
+  }
+
+  private record Provisioning(ArtifactProvisioningState state, Map<String, ArtifactDownload> downloadsToSchedule) {
   }
 }

@@ -118,7 +118,7 @@ class PluginsServiceTest {
     when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
-      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
+      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class),
       standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, artifactProvisioningService);
   }
 
