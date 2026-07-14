@@ -39,6 +39,11 @@ import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 public interface ArtifactsLoadingStrategy {
 
   /**
+   * Selects the effective artifacts without scheduling downloads.
+   */
+  ArtifactPlan planArtifacts();
+
+  /**
    * Resolves all artifacts (plugins and plugin dependencies) from all managed sources.
    * Higher-priority sources overwrite lower-priority ones for the same key.
    * May schedule background downloads; entries with a {@code null} path are still being fetched.

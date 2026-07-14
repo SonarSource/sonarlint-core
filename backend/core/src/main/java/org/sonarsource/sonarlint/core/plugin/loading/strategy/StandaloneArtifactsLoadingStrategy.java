@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
@@ -77,8 +80,21 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
    * cannot be provided by either source are reported as {@link ArtifactState#PREMIUM}.</p>
    */
   @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
+  public ArtifactPlan planArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+    var candidates = selectArtifacts(enabledLanguages);
+    var unavailable = new LinkedHashMap<String, ArtifactState>();
+    for (var language : SonarLanguage.values()) {
+      var key = language.getPlugin().getKey();
+      if (!candidates.containsKey(key) && languageSupportRepository.isEnabledOnlyInConnectedMode(language)) {
+        unavailable.put(key, ArtifactState.PREMIUM);
+      }
+    }
+    return new ArtifactPlan(enabledLanguages, candidates.entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().available(), (left, right) -> right, LinkedHashMap::new)), unavailable);
+  }
+
+  private LinkedHashMap<String, ArtifactCandidate> selectArtifacts(Set<SonarLanguage> enabledLanguages) {
 
     // Winner-map: ascending priority, last writer wins per key
     var candidates = new LinkedHashMap<String, ArtifactCandidate>();
@@ -95,6 +111,14 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
 
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
+
+    return candidates;
+  }
+
+  @Override
+  public ArtifactsLoadingResult resolveArtifacts() {
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+    var candidates = selectArtifacts(enabledLanguages);
 
     // Group winning keys by source, then load once per source
     var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();

@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
@@ -87,8 +91,14 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
    * Exception: enterprise server plugins beat embedded (see class Javadoc).</p>
    */
   @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
+  public ArtifactPlan planArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    var candidates = selectArtifacts(enabledLanguages);
+    return new ArtifactPlan(enabledLanguages, candidates.entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().available(), (left, right) -> right, LinkedHashMap::new)), Map.of());
+  }
+
+  private LinkedHashMap<String, ArtifactCandidate> selectArtifacts(Set<SonarLanguage> enabledLanguages) {
 
     // Query server artifacts once; reused in normal pass and enterprise-override pass
     var serverArtifacts = serverSource.listAvailableArtifacts(enabledLanguages);
@@ -115,6 +125,14 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     // Shared passes
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
+
+    return candidates;
+  }
+
+  @Override
+  public ArtifactsLoadingResult resolveArtifacts() {
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    var candidates = selectArtifacts(enabledLanguages);
 
     // Group winning keys by source, then load once per source.
     // Pre-populate all sources with empty sets so every source is always called (e.g. ServerPluginSource
