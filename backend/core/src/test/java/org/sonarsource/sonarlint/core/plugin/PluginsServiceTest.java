@@ -82,6 +82,7 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
+  private ArtifactProvisioningService artifactProvisioningService;
 
   @BeforeEach
   void prepare() {
@@ -106,8 +107,11 @@ class PluginsServiceTest {
     var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
 
     var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
-    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
-    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
+    var artifactsLoadingResult = new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact));
+    var provisioningState = mock(ArtifactProvisioningState.class);
+    when(provisioningState.asLoadingResult()).thenReturn(artifactsLoadingResult);
+    artifactProvisioningService = mock(ArtifactProvisioningService.class);
+    when(artifactProvisioningService.getOrProvision(any(), any())).thenReturn(provisioningState);
     when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
     var binariesArtifactSource = mock(BinariesArtifactSource.class);
@@ -115,7 +119,7 @@ class PluginsServiceTest {
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource);
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, artifactProvisioningService);
   }
 
   @Test

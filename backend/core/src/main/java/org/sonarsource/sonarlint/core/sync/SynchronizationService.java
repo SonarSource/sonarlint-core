@@ -366,12 +366,12 @@ public class SynchronizationService {
   }
 
   private void synchronizePlugins(String connectionId) {
-    var plugins = pluginsService.getPlugins(connectionId);
+    var provisioningState = pluginsService.provisionArtifacts(connectionId);
     // synchronization is synchronous, wait for downloads to happen
-    plugins.artifactsResult().getAllDownloadsFuture()
-      .ifPresent(future -> {
+    provisioningState.downloadBatch()
+      .ifPresent(batch -> {
         try {
-          future.get(5, TimeUnit.MINUTES);
+          batch.completion().get(5, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw new RuntimeException(e);

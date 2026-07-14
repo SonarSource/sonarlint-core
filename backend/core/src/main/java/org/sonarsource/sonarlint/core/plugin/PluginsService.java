@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
@@ -72,13 +71,15 @@ public class PluginsService {
   private final StandaloneArtifactsLoadingStrategy standaloneArtifactsLoadingStrategy;
   private final ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
   private final BinariesArtifactSource binariesArtifactSource;
+  private final ArtifactProvisioningService artifactProvisioningService;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository,
     StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository,
     NodeJsService nodeJsService, ApplicationEventPublisher eventPublisher,
     StandaloneArtifactsLoadingStrategy standaloneArtifactsLoadingStrategy,
     ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory,
-    BinariesArtifactSource binariesArtifactSource) {
+    BinariesArtifactSource binariesArtifactSource,
+    ArtifactProvisioningService artifactProvisioningService) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.storageService = storageService;
@@ -90,11 +91,11 @@ public class PluginsService {
     this.standaloneArtifactsLoadingStrategy = standaloneArtifactsLoadingStrategy;
     this.connectedArtifactsLoadingStrategyFactory = connectedArtifactsLoadingStrategyFactory;
     this.binariesArtifactSource = binariesArtifactSource;
+    this.artifactProvisioningService = artifactProvisioningService;
   }
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
-    var plugins = connectionId == null ? getEmbeddedPlugins() : getPlugins(connectionId);
-    return getPluginStatuses(plugins.artifactsResult());
+    return getPluginStatuses(provisionArtifacts(connectionId).asLoadingResult());
   }
 
   private static List<PluginStatus> getPluginStatuses(ArtifactsLoadingResult result) {
@@ -151,9 +152,7 @@ public class PluginsService {
   }
 
   private PluginsConfiguration loadPlugins(@Nullable String connectionId) {
-    var strategy = getPluginLoadingStrategy(connectionId);
-    var artifactsResult = strategy.resolveArtifacts();
-    artifactsResult.whenAllArtifactsDownloaded(() -> eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId)));
+    var artifactsResult = provisionArtifacts(connectionId).asLoadingResult();
 
     var config = new PluginsLoader.Configuration(new HashSet<>(artifactsResult.getPluginPaths()), artifactsResult.enabledLanguages(),
       enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
@@ -191,6 +190,7 @@ public class PluginsService {
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
     pluginsRepository.evict(PluginContext.from(connectionId));
+    artifactProvisioningService.clear(PluginContext.from(connectionId));
     connectedArtifactsLoadingStrategyFactory.evict(connectionId);
   }
 
@@ -258,6 +258,12 @@ public class PluginsService {
   public void unloadEmbeddedPlugins() {
     logger.debug("Evict loaded embedded plugins");
     pluginsRepository.evict(PluginContext.from(null));
+    artifactProvisioningService.clear(PluginContext.from(null));
+  }
+
+  public ArtifactProvisioningState provisionArtifacts(@Nullable String connectionId) {
+    var context = PluginContext.from(connectionId);
+    return artifactProvisioningService.getOrProvision(context, () -> getPluginLoadingStrategy(connectionId).planArtifacts());
   }
 
   @PreDestroy

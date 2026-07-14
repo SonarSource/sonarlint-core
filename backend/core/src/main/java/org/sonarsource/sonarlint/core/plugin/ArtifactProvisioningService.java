@@ -23,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
+import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactPlan;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownloadCoordinator;
@@ -40,7 +40,11 @@ public class ArtifactProvisioningService {
     this.downloadCoordinator = downloadCoordinator;
   }
 
-  public ArtifactProvisioningState provision(@Nullable String connectionId, ArtifactPlan plan) {
+  public ArtifactProvisioningState getOrProvision(PluginContext context, Supplier<ArtifactPlan> planSupplier) {
+    return stateByContext.computeIfAbsent(context, ignored -> provision(planSupplier.get()));
+  }
+
+  private ArtifactProvisioningState provision(ArtifactPlan plan) {
     var downloadsByArtifactKey = remoteDownloads(plan);
     var state = new ArtifactProvisioningState(plan, downloadsByArtifactKey);
     var downloadsToSchedule = new LinkedHashMap<String, ArtifactDownload>();
@@ -51,16 +55,15 @@ public class ArtifactProvisioningService {
       state.setDownloadBatch(batch);
       batch.outcomesByKey().values().forEach(outcome -> outcome.thenAccept(state::apply));
     }
-    stateByContext.put(PluginContext.from(connectionId), state);
     return state;
   }
 
-  public Optional<ArtifactProvisioningState> get(@Nullable String connectionId) {
-    return Optional.ofNullable(stateByContext.get(PluginContext.from(connectionId)));
+  public Optional<ArtifactProvisioningState> get(PluginContext context) {
+    return Optional.ofNullable(stateByContext.get(context));
   }
 
-  public void clear(@Nullable String connectionId) {
-    stateByContext.remove(PluginContext.from(connectionId));
+  public void clear(PluginContext context) {
+    stateByContext.remove(context);
   }
 
   private static Map<String, ArtifactDownload> remoteDownloads(ArtifactPlan plan) {
