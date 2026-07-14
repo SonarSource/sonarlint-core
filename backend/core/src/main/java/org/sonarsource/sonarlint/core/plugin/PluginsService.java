@@ -187,7 +187,7 @@ public class PluginsService {
 
   public void unloadPlugins(String connectionId) {
     logger.debug("Evict loaded plugins for connection '{}'", connectionId);
-    pluginsRepository.unload(PluginContext.from(connectionId));
+    pluginsRepository.evict(PluginContext.from(connectionId));
     connectedArtifactsLoadingStrategyFactory.evict(connectionId);
   }
 
@@ -254,7 +254,7 @@ public class PluginsService {
 
   public void unloadEmbeddedPlugins() {
     logger.debug("Evict loaded embedded plugins");
-    pluginsRepository.unload(PluginContext.from(null));
+    pluginsRepository.evict(PluginContext.from(null));
   }
 
   @PreDestroy

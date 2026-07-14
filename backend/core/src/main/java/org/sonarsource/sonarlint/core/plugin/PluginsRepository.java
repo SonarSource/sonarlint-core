@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
@@ -52,8 +53,13 @@ public class PluginsRepository {
     throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(PluginContext context) {
-    var config = configurationsByContext.remove(context);
+  public void evict(PluginContext context) {
+    var removed = new AtomicReference<PluginsConfiguration>();
+    configurationsByContext.compute(context, (ignored, current) -> {
+      removed.set(current);
+      return null;
+    });
+    var config = removed.get();
     if (config != null) {
       try {
         config.plugins().close();
