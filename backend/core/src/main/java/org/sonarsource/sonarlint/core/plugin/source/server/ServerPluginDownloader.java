@@ -140,6 +140,12 @@ public class ServerPluginDownloader {
     return isSonarQubeCloud ? ArtifactOrigin.SONARQUBE_CLOUD : ArtifactOrigin.SONARQUBE_SERVER;
   }
 
+  String deduplicationKeyFor(String connectionId, ServerPlugin plugin) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    var serverUrl = connection != null ? connection.getUrl() : connectionId;
+    return serverUrl + "/api/plugins/download?plugin=" + plugin.getKey() + "#" + plugin.getHash();
+  }
+
   private static RuntimeException propagateFailure(Exception e) {
     if (e instanceof RuntimeException runtimeException) {
       return runtimeException;

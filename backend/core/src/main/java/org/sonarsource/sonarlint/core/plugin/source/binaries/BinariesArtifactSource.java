@@ -124,7 +124,7 @@ public class BinariesArtifactSource implements ArtifactSource {
 
     @Override
     public String deduplicationKey() {
-      return artifact.artifactKey();
+      return String.format(artifact.urlPattern(), artifact.version());
     }
 
     @Override

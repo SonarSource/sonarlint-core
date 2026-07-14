@@ -123,7 +123,7 @@ public class ServerPluginSource implements ArtifactSource {
 
     @Override
     public String deduplicationKey() {
-      return connectionId + ":" + plugin.getKey();
+      return downloader.deduplicationKeyFor(connectionId, plugin);
     }
 
     @Override
