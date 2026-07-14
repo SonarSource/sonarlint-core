@@ -106,7 +106,7 @@ class PluginsServiceTest {
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
     var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
 
-    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
     var artifactsLoadingResult = new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact));
     var provisioningState = mock(ArtifactProvisioningState.class);
     when(provisioningState.asLoadingResult()).thenReturn(artifactsLoadingResult);

@@ -20,13 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin.source;
 
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version,
-  @Nullable CompletableFuture<?> downloadFuture) {
+public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
   public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null, null);
+    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
   }
 }

@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
@@ -109,7 +108,7 @@ public class BinariesArtifactSource implements ArtifactSource {
     var sonarArtifact = SonarPlugin.findByKey(artifact.artifactKey()).<SonarArtifact>map(p -> p)
       .or(() -> SonarPluginDependency.findByKey(artifact.artifactKey()));
     ArtifactLocation location = findCachedArtifact(artifact)
-      .<ArtifactLocation>map(cached -> new ArtifactLocation.Local(cached.path(), ArtifactOrigin.ON_DEMAND, version))
+      .<ArtifactLocation>map(cached -> new ArtifactLocation.Local(cached, ArtifactOrigin.ON_DEMAND, version))
       .orElseGet(() -> new ArtifactLocation.Remote(new BinariesDownload(artifact)));
     return new AvailableArtifact(artifact.artifactKey(), version, false, sonarArtifact, location);
   }
@@ -133,22 +132,17 @@ public class BinariesArtifactSource implements ArtifactSource {
     }
   }
 
-  private ResolvedArtifact scheduleDownload(BinariesArtifact artifact) {
-    var downloadFuture = uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
-  }
-
-  private Optional<ResolvedArtifact> findCachedArtifact(BinariesArtifact artifact) {
+  private Optional<Path> findCachedArtifact(BinariesArtifact artifact) {
     var artifactKey = artifact.artifactKey();
     var cached = cachedArtifactPaths.get(artifactKey);
     if (cached != null && Files.exists(cached)) {
-      return Optional.of(toActiveArtifact(artifact, cached));
+      return Optional.of(cached);
     }
     var pluginPath = buildArtifactLocalPath(artifact);
     if (Files.exists(pluginPath)) {
       if (isValidCache(pluginPath, artifact)) {
         cachedArtifactPaths.put(artifactKey, pluginPath);
-        return Optional.of(toActiveArtifact(artifact, pluginPath));
+        return Optional.of(pluginPath);
       }
       LOG.warn("Invalid cached artifact {}, will re-download", artifactKey);
       FileUtils.deleteQuietly(pluginPath.toFile());
@@ -177,10 +171,6 @@ public class BinariesArtifactSource implements ArtifactSource {
       }
     }
     return signatureVerifier.verify(pluginPath, artifact);
-  }
-
-  private static ResolvedArtifact toActiveArtifact(BinariesArtifact artifact, Path artifactPath) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, artifactPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()), null);
   }
 
   private Path downloadAndCache(BinariesArtifact artifact) throws IOException {

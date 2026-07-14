@@ -93,7 +93,7 @@ public class ArtifactProvisioningState {
     var state = local.origin() == ArtifactOrigin.SONARQUBE_SERVER || local.origin() == ArtifactOrigin.SONARQUBE_CLOUD
       ? ArtifactState.SYNCED
       : ArtifactState.ACTIVE;
-    return new ResolvedArtifact(state, local.path(), local.origin(), local.version(), null);
+    return new ResolvedArtifact(state, local.path(), local.origin(), local.version());
   }
 
   private static ResolvedArtifact downloading() {
@@ -101,6 +101,6 @@ public class ArtifactProvisioningState {
   }
 
   private static ResolvedArtifact unresolved(ArtifactState state) {
-    return new ResolvedArtifact(state, null, null, null, null);
+    return new ResolvedArtifact(state, null, null, null);
   }
 }

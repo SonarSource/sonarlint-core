@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.EnterpriseReplacement;
@@ -40,7 +38,6 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -178,24 +175,9 @@ public class ServerPluginSource implements ArtifactSource {
       .orElse(false);
   }
 
-  private ResolvedArtifact resolveFromStorageOrSchedule(ServerPlugin serverPlugin,
-    Map<String, StoredPlugin> storedPlugins, String pluginKey) {
-    var stored = findStoredPlugin(pluginKey, storedPlugins);
-    if (stored.isPresent() && stored.get().hasSameHash(serverPlugin)) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", pluginKey);
-      return toResolvedArtifact(stored.get().getJarPath());
-    }
-    var downloadFuture = downloader.schedulePluginDownload(connectionId, serverPlugin);
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
-  }
-
   private static Optional<StoredPlugin> findStoredPlugin(String pluginKey, Map<String, StoredPlugin> storedPlugins) {
     return Optional.ofNullable(storedPlugins.get(pluginKey))
       .filter(plugin -> Files.exists(plugin.getJarPath()));
-  }
-
-  private ResolvedArtifact toResolvedArtifact(Path pluginPath) {
-    return new ResolvedArtifact(ArtifactState.SYNCED, pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath), null);
   }
 
   private Map<String, StoredPlugin> loadStoredPlugins() {
