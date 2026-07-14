@@ -97,6 +97,7 @@ import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifact
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownloadCoordinator;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesLocalCacheManager;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesSignatureVerifier;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
@@ -239,6 +240,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   StandaloneArtifactsLoadingStrategy.class,
   ConnectedArtifactsLoadingStrategyFactory.class,
   BinariesArtifactSource.class,
+  ArtifactDownloadCoordinator.class,
   BinariesLocalCacheManager.class,
   BinariesSignatureVerifier.class,
   ServerPluginDownloader.class
