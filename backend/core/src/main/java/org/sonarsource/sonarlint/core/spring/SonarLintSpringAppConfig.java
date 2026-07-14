@@ -89,6 +89,7 @@ import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringUserIdStore;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
+import org.sonarsource.sonarlint.core.plugin.ArtifactProvisioningService;
 import org.sonarsource.sonarlint.core.plugin.PluginStatusNotifierService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -166,6 +167,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   PluginStatusNotifierService.class,
   PluginsRepository.class,
   PluginLifecycleService.class,
+  ArtifactProvisioningService.class,
   SkippedPluginsRepository.class,
   LanguageSupportRepository.class,
   ConnectionService.class,
