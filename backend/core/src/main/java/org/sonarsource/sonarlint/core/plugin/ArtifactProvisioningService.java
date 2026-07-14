@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownloadCoordinator;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.DownloadBatch;
 import org.sonarsource.sonarlint.core.plugin.source.DownloadOutcome;
+import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 /**
@@ -92,7 +93,11 @@ public class ArtifactProvisioningService {
       return result;
     })));
     var observedCompletion = CompletableFuture.allOf(observedOutcomes.values().toArray(CompletableFuture[]::new))
-      .thenApply(ignored -> observedOutcomes.values().stream().map(CompletableFuture::join).toList());
+      .thenApply(ignored -> observedOutcomes.values().stream().map(CompletableFuture::join).toList())
+      .thenApply(outcomes -> {
+        eventPublisher.publishEvent(new PluginsSynchronizedEvent(context.connectionId()));
+        return outcomes;
+      });
     provisioning.state().setDownloadBatch(new DownloadBatch(Map.copyOf(observedOutcomes), observedCompletion));
   }
 
