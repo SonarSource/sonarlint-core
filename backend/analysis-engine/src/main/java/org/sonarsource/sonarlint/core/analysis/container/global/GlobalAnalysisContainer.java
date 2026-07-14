@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
+import java.io.IOException;
 import java.time.Clock;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
@@ -41,6 +42,21 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   public GlobalAnalysisContainer(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
     this.analysisGlobalConfig = analysisGlobalConfig;
     this.loadedPlugins = loadedPlugins;
+  }
+
+  @Override
+  public GlobalAnalysisContainer startComponents() {
+    try {
+      super.startComponents();
+      return this;
+    } catch (RuntimeException | Error startFailure) {
+      try {
+        stopComponents();
+      } catch (RuntimeException | Error stopFailure) {
+        startFailure.addSuppressed(stopFailure);
+      }
+      throw startFailure;
+    }
   }
 
   @Override
@@ -83,9 +99,21 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
     } catch (Exception e) {
       LOG.error("Cannot close analysis engine", e);
     } finally {
-      super.stopComponents();
+      try {
+        super.stopComponents();
+      } finally {
+        closePlugins();
+      }
     }
     return this;
+  }
+
+  private void closePlugins() {
+    try {
+      loadedPlugins.close();
+    } catch (IOException e) {
+      LOG.error("Cannot close plugin classloaders", e);
+    }
   }
 
   private void declarePluginProperties() {

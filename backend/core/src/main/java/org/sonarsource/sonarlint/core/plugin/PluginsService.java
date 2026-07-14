@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import jakarta.annotation.PreDestroy;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -147,6 +146,10 @@ public class PluginsService {
     return lookup.configuration();
   }
 
+  public void transferOwnershipToAnalysisScheduler(@Nullable String connectionId, PluginsConfiguration configuration) {
+    pluginsRepository.transferOwnership(PluginContext.from(connectionId), configuration);
+  }
+
   private PluginsConfiguration loadPlugins(@Nullable String connectionId) {
     var strategy = getPluginLoadingStrategy(connectionId);
     var artifactsResult = strategy.resolveArtifacts();
@@ -258,7 +261,7 @@ public class PluginsService {
   }
 
   @PreDestroy
-  public void shutdown() throws IOException {
+  public void shutdown() {
     try {
       pluginsRepository.unloadAllPlugins();
     } catch (Exception e) {
