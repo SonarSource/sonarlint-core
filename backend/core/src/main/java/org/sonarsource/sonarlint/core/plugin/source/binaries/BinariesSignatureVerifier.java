@@ -25,10 +25,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPObjectFactory;
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
@@ -37,12 +41,15 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProv
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
- * Verifies the PGP signature of downloaded artifacts using the SonarSource public key.
+ * Verifies the PGP signature of downloaded artifacts using the SonarSource public keys.
  */
 public class BinariesSignatureVerifier {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String SONAR_PUBLIC_KEY = "ondemand/sonarsource-public.key";
+  private static final List<String> SONAR_PUBLIC_KEYS = List.of(
+    "ondemand/sonarsource-public.key",
+    // Kept temporarily for artifacts signed before the July 2026 signing key rotation
+    "ondemand/sonarsource-public-legacy.key");
   private static final BouncyCastleProvider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
   boolean verify(Path artifactFile, BinariesArtifact artifact) {
@@ -50,36 +57,40 @@ public class BinariesSignatureVerifier {
   }
 
   boolean verify(Path artifactFile, String signatureResourcePath) {
-    var keyRing = loadPublicKeyRing();
-    if (keyRing == null) {
+    var keyRings = loadPublicKeyRings();
+    if (keyRings == null) {
       return false;
     }
-    var isValid = verifyPgpSignature(artifactFile, signatureResourcePath, keyRing);
+    var isValid = verifyPgpSignature(artifactFile, signatureResourcePath, keyRings);
     if (isValid) {
       LOG.debug("Artifact file signature verified successfully");
     }
     return isValid;
   }
 
-  private PGPPublicKeyRingCollection loadPublicKeyRing() {
-    try (var keyStream = getClass().getClassLoader().getResourceAsStream(SONAR_PUBLIC_KEY)) {
-      if (keyStream == null) {
-        throw new FileNotFoundException("PGP key not found in resources: " + SONAR_PUBLIC_KEY);
-      }
+  private List<PGPPublicKeyRingCollection> loadPublicKeyRings() {
+    var keyRings = new ArrayList<PGPPublicKeyRingCollection>();
+    for (var publicKeyResourcePath : SONAR_PUBLIC_KEYS) {
+      try (var keyStream = getClass().getClassLoader().getResourceAsStream(publicKeyResourcePath)) {
+        if (keyStream == null) {
+          throw new FileNotFoundException("PGP key not found in resources: " + publicKeyResourcePath);
+        }
 
-      var decoder = PGPUtil.getDecoderStream(new BufferedInputStream(keyStream));
-      return new PGPPublicKeyRingCollection(decoder, new JcaKeyFingerprintCalculator());
-    } catch (IOException | PGPException e) {
-      LOG.error("Error loading public key ring", e);
-      return null;
+        var decoder = PGPUtil.getDecoderStream(new BufferedInputStream(keyStream));
+        keyRings.add(new PGPPublicKeyRingCollection(decoder, new JcaKeyFingerprintCalculator()));
+      } catch (IOException | PGPException e) {
+        LOG.error("Error loading public key ring from " + publicKeyResourcePath, e);
+        return null;
+      }
     }
+    return keyRings;
   }
 
   private InputStream loadBundledSignature(String signatureResourcePath) {
     return getClass().getClassLoader().getResourceAsStream(signatureResourcePath);
   }
 
-  private boolean verifyPgpSignature(Path dataFile, String signatureResourcePath, PGPPublicKeyRingCollection keyRing) {
+  private boolean verifyPgpSignature(Path dataFile, String signatureResourcePath, List<PGPPublicKeyRingCollection> keyRings) {
     try (var signatureStream = loadBundledSignature(signatureResourcePath)) {
       if (signatureStream == null) {
         LOG.error("Could not find bundled signature at resource path: {}", signatureResourcePath);
@@ -97,7 +108,7 @@ public class BinariesSignatureVerifier {
         }
 
         var signature = signatureList.get(0);
-        var publicKey = keyRing.getPublicKey(signature.getKeyID());
+        var publicKey = findPublicKey(keyRings, signature.getKeyID());
         if (publicKey == null) {
           LOG.error("Public key not found for signature keyID={}", signature.getKeyID());
           return false;
@@ -119,6 +130,14 @@ public class BinariesSignatureVerifier {
       LOG.error("Error verifying PGP signature", e);
       return false;
     }
+  }
+
+  private static PGPPublicKey findPublicKey(List<PGPPublicKeyRingCollection> keyRings, long keyId) {
+    return keyRings.stream()
+      .map(keyRing -> keyRing.getPublicKey(keyId))
+      .filter(Objects::nonNull)
+      .findFirst()
+      .orElse(null);
   }
 
   private static PGPSignatureList extractSignatureList(PGPObjectFactory pgpFact) {
