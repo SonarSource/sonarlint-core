@@ -25,6 +25,9 @@ public class AssistBindingParams {
   private final String connectionId;
   private final String projectKey;
   private final String configScopeId;
+  /**
+   * @deprecated Use {@link #getOrigin()} instead.
+   */
   @Deprecated(forRemoval = true)
   private final boolean isFromSharedConfiguration;
   private final BindingSuggestionOrigin origin;
