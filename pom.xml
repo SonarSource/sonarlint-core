@@ -79,7 +79,8 @@
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.19.15</jooq.version>
-    <flyway.version>11.20.3</flyway.version>
+    <flyway.version>12.10.0</flyway.version>
+    <jackson.version>2.22.1</jackson.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.83.0.100813</cfamily.version>
@@ -242,6 +243,21 @@
         <artifactId>wiremock-jetty12</artifactId>
         <version>3.13.2</version>
       </dependency>
+      <!-- Override Jetty version brought in by wiremock-jetty12 -->
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>12.1.11</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>12.1.11</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
@@ -273,9 +289,30 @@
         <version>${flyway.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <!-- Override version brought transitively by wiremock-jetty12 to match jackson.version -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>2.21</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.sonarsource.classloader</groupId>
         <artifactId>sonar-classloader</artifactId>
         <version>1.2.1.2095</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>4.0.3</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
