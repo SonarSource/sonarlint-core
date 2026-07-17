@@ -83,7 +83,7 @@
     <bouncycastle.version>1.84</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.83.0.100813</cfamily.version>
-    <csharp.version>10.28.0.143324</csharp.version>
+    <csharp.version>10.29.0.143774</csharp.version>
     <omnisharp.version>1.39.15</omnisharp.version>
   </properties>
 
