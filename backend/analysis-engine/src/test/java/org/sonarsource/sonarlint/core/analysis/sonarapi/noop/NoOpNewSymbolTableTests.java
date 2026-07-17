@@ -21,17 +21,22 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class NoOpNewSymbolTableTests {
 
   @Test
   void improve_coverage() {
-    new NoOpNewSymbolTable()
+    var symbolTable = new NoOpNewSymbolTable();
+    var result = symbolTable
       .onFile(null)
       .newReference(null)
       .newReference(0, 0, 0, 0)
       .newSymbol(null)
-      .newSymbol(0, 0, 0, 0)
-      .save();
+      .newSymbol(0, 0, 0, 0);
+
+    assertThat(result).isEqualTo(symbolTable);
+    result.save();
   }
 
 }
