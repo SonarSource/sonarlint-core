@@ -17,16 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.source;
+package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
-import java.util.Map;
+import java.util.Set;
 
 /**
- * The result of a batch {@link ArtifactSource#load(java.util.Set)} call.
- *
- * <p>Wraps the resolved artifacts by key. Using a dedicated type instead of a raw map leaves
- * room for future fields (e.g. the set of artifacts that were available from this source but
- * not selected as winners, needed by {@code ServerPluginSource} to write empty reference files).</p>
+ * Cleans source-specific storage after artifact selection.
  */
-public record LoadResult(Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
+public interface ArtifactStorageCleaner {
+
+  void clean(Set<String> selectedArtifactKeys);
 }

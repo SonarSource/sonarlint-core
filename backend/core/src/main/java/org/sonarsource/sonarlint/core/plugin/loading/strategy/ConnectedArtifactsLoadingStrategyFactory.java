@@ -21,20 +21,19 @@ package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
-import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
-import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerArtifactStorageCleaner;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginsCache;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginDownloader;
+import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 /**
  * Creates and caches {@link ConnectedArtifactsLoadingStrategy} instances, one per connection ID.
  *
- * <p>The cache ensures that the same strategy — and its underlying
- * {@link ServerPluginSource} — is reused across calls for the same connection, which is required
- * for consistent in-progress download tracking. Call {@link #evict(String)} when a connection is
- * removed.</p>
+ * <p>The cache reuses the same strategy and its per-connection source across calls. Call
+ * {@link #evict(String)} when the connection's artifact view must be rebuilt.</p>
  */
 public class ConnectedArtifactsLoadingStrategyFactory {
 
@@ -64,7 +63,8 @@ public class ConnectedArtifactsLoadingStrategyFactory {
   public ConnectedArtifactsLoadingStrategy getOrCreate(String connectionId) {
     return cache.computeIfAbsent(connectionId, id -> {
       var serverSource = new ServerPluginSource(id, storageService, serverPluginsCache, downloader);
-      return new ConnectedArtifactsLoadingStrategy(params, binariesSource, serverSource, languageSupportRepository);
+      var storageCleaner = new ServerArtifactStorageCleaner(id, storageService, serverPluginsCache);
+      return new ConnectedArtifactsLoadingStrategy(params, binariesSource, serverSource, languageSupportRepository, storageCleaner);
     });
   }
 

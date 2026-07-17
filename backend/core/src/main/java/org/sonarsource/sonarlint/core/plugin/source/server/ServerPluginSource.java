@@ -27,19 +27,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.EnterpriseReplacement;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -65,10 +62,9 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
  *       {@link EnterpriseReplacement}).</li>
  * </ul>
  *
- * <p>{@link #load} resolves a plugin: it returns the stored artifact when already on disk with a
- * matching hash, or schedules a background download (returning
- * {@link ArtifactState#DOWNLOADING}). It does <em>not</em> apply the skip-list check — that is
- * the responsibility of the loading strategy that owns this source.</p>
+ * <p>Each returned artifact is local when a stored JAR with the expected hash exists, or remote
+ * with a blocking download operation otherwise. The source does <em>not</em> apply the skip-list
+ * check — that is the responsibility of the loading strategy that owns this source.</p>
  */
 public class ServerPluginSource implements ArtifactSource {
 
@@ -97,10 +93,47 @@ public class ServerPluginSource implements ArtifactSource {
    */
   @Override
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
+    var storedPlugins = loadStoredPlugins();
     return fetchServerPluginsSafely().stream()
       .filter(plugin -> isEligible(plugin, enabledLanguages))
-      .map(plugin -> new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey())))
+      .map(plugin -> toAvailableArtifact(plugin, storedPlugins))
       .toList();
+  }
+
+  private AvailableArtifact toAvailableArtifact(ServerPlugin plugin, Map<String, StoredPlugin> storedPlugins) {
+    var stored = findStoredPlugin(plugin.getKey(), storedPlugins).filter(candidate -> candidate.hasSameHash(plugin));
+    stored.ifPresent(ignored -> LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", plugin.getKey()));
+    ArtifactLocation location = stored
+      .<ArtifactLocation>map(candidate -> toLocalLocation(candidate.getJarPath()))
+      .orElseGet(() -> new ArtifactLocation.Remote(new ServerDownload(plugin)));
+    return new AvailableArtifact(plugin.getKey(), null, isEnterprisePlugin(plugin.getKey()), SonarPlugin.findByKey(plugin.getKey()), location);
+  }
+
+  private class ServerDownload implements ArtifactDownload {
+    private final ServerPlugin plugin;
+
+    private ServerDownload(ServerPlugin plugin) {
+      this.plugin = plugin;
+    }
+
+    @Override
+    public String deduplicationKey() {
+      return downloader.deduplicationKeyFor(connectionId, plugin);
+    }
+
+    @Override
+    public ArtifactLocation.Local download() {
+      downloader.downloadPluginSyncOrThrow(connectionId, plugin);
+      var path = storageService.connection(connectionId).plugins().getStoredPluginPathsByKey().get(plugin.getKey());
+      if (path == null) {
+        throw new IllegalStateException("Downloaded plugin was not found in storage: " + plugin.getKey());
+      }
+      return toLocalLocation(path);
+    }
+  }
+
+  private ArtifactLocation.Local toLocalLocation(Path pluginPath) {
+    return new ArtifactLocation.Local(pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath));
   }
 
   private static boolean isEligible(ServerPlugin plugin, Set<SonarLanguage> enabledLanguages) {
@@ -141,68 +174,9 @@ public class ServerPluginSource implements ArtifactSource {
       .orElse(false);
   }
 
-  @Override
-  public LoadResult load(Set<String> artifactKeys) {
-    var storedPlugins = loadStoredPlugins();
-    var resolved = new HashMap<String, ResolvedArtifact>();
-    var serverAccessible = false;
-    List<ServerPlugin> expectedServerPlugins = List.of();
-    try {
-      var serverPluginsByKey = serverPluginsCache.getPlugins(connectionId).orElse(List.of())
-        .stream().collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
-      serverAccessible = true;
-      for (var key : artifactKeys) {
-        var serverPlugin = serverPluginsByKey.get(key);
-        if (serverPlugin != null) {
-          resolved.put(key, resolveFromStorageOrSchedule(serverPlugin, storedPlugins, key));
-        } else {
-          findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-            .ifPresent(r -> resolved.put(key, r));
-        }
-      }
-      expectedServerPlugins = artifactKeys.stream()
-        .filter(serverPluginsByKey::containsKey)
-        .map(key -> {
-          var serverPlugin = serverPluginsByKey.get(key);
-          // If the stored file already has the correct hash but a different filename (e.g. in tests),
-          // use the stored filename so cleanUpUnknownPlugins does not delete it.
-          return findStoredPlugin(key, storedPlugins)
-            .filter(stored -> stored.hasSameHash(serverPlugin))
-            .map(stored -> new ServerPlugin(key, serverPlugin.getHash(), stored.getJarPath().getFileName().toString(), serverPlugin.isSonarLintSupported()))
-            .orElse(serverPlugin);
-        })
-        .toList();
-    } catch (Exception e) {
-      LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      for (var key : artifactKeys) {
-        findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-          .ifPresent(r -> resolved.put(key, r));
-      }
-    }
-    if (serverAccessible) {
-      storageService.connection(connectionId).plugins().cleanUpUnknownPlugins(expectedServerPlugins);
-    }
-    return new LoadResult(resolved);
-  }
-
-  private ResolvedArtifact resolveFromStorageOrSchedule(ServerPlugin serverPlugin,
-    Map<String, StoredPlugin> storedPlugins, String pluginKey) {
-    var stored = findStoredPlugin(pluginKey, storedPlugins);
-    if (stored.isPresent() && stored.get().hasSameHash(serverPlugin)) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", pluginKey);
-      return toResolvedArtifact(stored.get().getJarPath());
-    }
-    var downloadFuture = downloader.schedulePluginDownload(connectionId, serverPlugin);
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
-  }
-
   private static Optional<StoredPlugin> findStoredPlugin(String pluginKey, Map<String, StoredPlugin> storedPlugins) {
     return Optional.ofNullable(storedPlugins.get(pluginKey))
       .filter(plugin -> Files.exists(plugin.getJarPath()));
-  }
-
-  private ResolvedArtifact toResolvedArtifact(Path pluginPath) {
-    return new ResolvedArtifact(ArtifactState.SYNCED, pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath), null);
   }
 
   private Map<String, StoredPlugin> loadStoredPlugins() {

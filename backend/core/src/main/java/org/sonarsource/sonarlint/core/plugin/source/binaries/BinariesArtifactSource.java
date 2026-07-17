@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -41,18 +39,12 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationEventPublisher;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils.extractTarGz;
 
@@ -60,11 +52,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils
  * Artifact source backed by publicly downloadable artifacts from binaries.sonarsource.com.
  * Handles both plugins (CFamily, C# OSS) and plugin dependencies (OmniSharp distributions).
  *
- * <p>{@link #listAvailableArtifacts(Set)} is a pure query: it returns all known artifacts, with a
- * non-null {@code jarPath} only for those already cached and verified on disk. {@link #load(String)}
- * schedules a background download when the artifact is not yet cached, returning
- * {@link ArtifactState#DOWNLOADING} immediately. A {@link PluginStatusUpdateEvent} is published
- * when the download completes.</p>
+ * <p>{@link #listAvailableArtifacts(Set)} returns local cached artifacts and blocking remote
+ * download operations for artifacts that are not cached yet.</p>
  */
 public class BinariesArtifactSource implements ArtifactSource {
 
@@ -75,20 +64,15 @@ public class BinariesArtifactSource implements ArtifactSource {
   private final HttpClientProvider httpClientProvider;
   private final BinariesSignatureVerifier signatureVerifier;
   private final BinariesLocalCacheManager cacheManager;
-  private final ApplicationEventPublisher eventPublisher;
-  private final UniqueTaskExecutor uniqueTaskExecutor;
 
   private final Map<String, Path> cachedArtifactPaths = new ConcurrentHashMap<>();
 
   BinariesArtifactSource(UserPaths userPaths, HttpClientProvider httpClientProvider,
-    ApplicationEventPublisher eventPublisher, @Qualifier("pluginDownloadExecutor") ExecutorService downloadExecutor,
     BinariesSignatureVerifier signatureVerifier, BinariesLocalCacheManager binariesLocalCacheManager) {
     this.cacheBaseDirectory = userPaths.getStorageRoot().resolve(CACHE_SUBDIR);
     this.httpClientProvider = httpClientProvider;
     this.signatureVerifier = signatureVerifier;
     this.cacheManager = binariesLocalCacheManager;
-    this.eventPublisher = eventPublisher;
-    this.uniqueTaskExecutor = new UniqueTaskExecutor(downloadExecutor);
   }
 
   /**
@@ -99,41 +83,50 @@ public class BinariesArtifactSource implements ArtifactSource {
   public List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) {
     return Arrays.stream(BinariesArtifact.values())
       .filter(artifact -> artifact.getLanguages().stream().anyMatch(enabledLanguages::contains))
-      .map(artifact -> new AvailableArtifact(artifact.artifactKey(), Version.create(artifact.version()), false,
-        SonarPlugin.findByKey(artifact.artifactKey()).<SonarArtifact>map(p -> p).or(() -> SonarPluginDependency.findByKey(artifact.artifactKey()))))
+      .map(this::toAvailableArtifact)
       .toList();
   }
 
-  @Override
-  public LoadResult load(Set<String> artifactKeys) {
-    var resolved = new HashMap<String, ResolvedArtifact>();
-    for (var key : artifactKeys) {
-      BinariesArtifact.findByKey(key).ifPresent(artifact -> {
-        var resolvedArtifact = findCachedArtifact(artifact)
-          .map(cached -> toActiveArtifact(artifact, cached.path()))
-          .orElseGet(() -> scheduleDownload(artifact));
-        resolved.put(key, resolvedArtifact);
-      });
+  private AvailableArtifact toAvailableArtifact(BinariesArtifact artifact) {
+    var version = Version.create(artifact.version());
+    var sonarArtifact = SonarPlugin.findByKey(artifact.artifactKey()).<SonarArtifact>map(p -> p)
+      .or(() -> SonarPluginDependency.findByKey(artifact.artifactKey()));
+    ArtifactLocation location = findCachedArtifact(artifact)
+      .<ArtifactLocation>map(cached -> new ArtifactLocation.Local(cached, ArtifactOrigin.ON_DEMAND, version))
+      .orElseGet(() -> new ArtifactLocation.Remote(new BinariesDownload(artifact)));
+    return new AvailableArtifact(artifact.artifactKey(), version, false, sonarArtifact, location);
+  }
+
+  private class BinariesDownload implements ArtifactDownload {
+    private final BinariesArtifact artifact;
+
+    private BinariesDownload(BinariesArtifact artifact) {
+      this.artifact = artifact;
     }
-    return new LoadResult(resolved);
+
+    @Override
+    public String deduplicationKey() {
+      return String.format(artifact.urlPattern(), artifact.version());
+    }
+
+    @Override
+    public ArtifactLocation.Local download() throws IOException {
+      var path = downloadAndCache(artifact);
+      return new ArtifactLocation.Local(path, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()));
+    }
   }
 
-  private ResolvedArtifact scheduleDownload(BinariesArtifact artifact) {
-    var downloadFuture = uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
-  }
-
-  private Optional<ResolvedArtifact> findCachedArtifact(BinariesArtifact artifact) {
+  private Optional<Path> findCachedArtifact(BinariesArtifact artifact) {
     var artifactKey = artifact.artifactKey();
     var cached = cachedArtifactPaths.get(artifactKey);
     if (cached != null && Files.exists(cached)) {
-      return Optional.of(toActiveArtifact(artifact, cached));
+      return Optional.of(cached);
     }
     var pluginPath = buildArtifactLocalPath(artifact);
     if (Files.exists(pluginPath)) {
       if (isValidCache(pluginPath, artifact)) {
         cachedArtifactPaths.put(artifactKey, pluginPath);
-        return Optional.of(toActiveArtifact(artifact, pluginPath));
+        return Optional.of(pluginPath);
       }
       LOG.warn("Invalid cached artifact {}, will re-download", artifactKey);
       FileUtils.deleteQuietly(pluginPath.toFile());
@@ -164,58 +157,12 @@ public class BinariesArtifactSource implements ArtifactSource {
     return signatureVerifier.verify(pluginPath, artifact);
   }
 
-  private static ResolvedArtifact toActiveArtifact(BinariesArtifact artifact, Path artifactPath) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, artifactPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()), null);
-  }
-
   private Path downloadAndCache(BinariesArtifact artifact) throws IOException {
     var pluginPath = buildArtifactLocalPath(artifact);
     downloadAndVerify(artifact, pluginPath);
     cacheManager.cleanupOldVersions(cacheBaseDirectory.resolve(artifact.artifactKey()), artifact.version());
     cachedArtifactPaths.put(artifact.artifactKey(), pluginPath);
     return pluginPath;
-  }
-
-  private void downloadAndFireEvent(BinariesArtifact artifact) {
-    try {
-      var path = downloadAndCache(artifact);
-      eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createSuccessStatuses(artifact, path)));
-    } catch (Exception e) {
-      logAndPublishFailure(artifact, e);
-      // Rethrow so the download future completes exceptionally, preventing the plugin reload loop.
-      // IOException is wrapped because this method is invoked as a Runnable and cannot declare checked exceptions.
-      if (e instanceof RuntimeException re) {
-        throw re;
-      }
-      if (e instanceof IOException ioe) {
-        throw new UncheckedIOException(ioe);
-      }
-      throw new IllegalStateException("Unexpected checked exception from downloadAndCache", e);
-    }
-  }
-
-  private void logAndPublishFailure(BinariesArtifact artifact, Exception e) {
-    LOG.error("Failed to download artifact with key {}", artifact.artifactKey(), e);
-    eventPublisher.publishEvent(new PluginStatusUpdateEvent(null, createdFailedStatuses(artifact)));
-  }
-
-  private static List<PluginStatus> createSuccessStatuses(BinariesArtifact artifact, Path pluginPath) {
-    if (artifact.isArchive()) {
-      return List.of(PluginStatus.forCompanion(artifact.artifactKey(), ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, pluginPath, null));
-    }
-    var version = Version.create(artifact.version());
-    return artifact.getLanguages().stream()
-      .map(language -> PluginStatus.forLanguage(language, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, version, null, pluginPath, null))
-      .toList();
-  }
-
-  private static List<PluginStatus> createdFailedStatuses(BinariesArtifact artifact) {
-    if (artifact.isArchive()) {
-      return List.of(PluginStatus.forCompanion(artifact.artifactKey(), ArtifactState.FAILED, null, null, null));
-    }
-    return artifact.getLanguages().stream()
-      .map(PluginStatus::failed)
-      .toList();
   }
 
   public Map<String, String> getOmnisharpExtraProperties() {

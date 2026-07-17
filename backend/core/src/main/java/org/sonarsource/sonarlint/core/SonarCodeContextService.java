@@ -219,7 +219,8 @@ public class SonarCodeContextService {
     try {
       var current = baseDir;
       while (current != null) {
-        if (Files.isDirectory(current.resolve(".git"))) {
+        var gitMetadata = current.resolve(".git");
+        if (Files.isRegularFile(gitMetadata) || Files.isRegularFile(gitMetadata.resolve("HEAD"))) {
           return current;
         }
         current = current.getParent();

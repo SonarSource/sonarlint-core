@@ -19,34 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class UniqueTaskExecutor {
-
-  private final Map<String, CompletableFuture<Void>> inProgress = new ConcurrentHashMap<>();
-  private final ExecutorService executor;
-
-  public UniqueTaskExecutor(ExecutorService executor) {
-    this.executor = executor;
-  }
-
-  public CompletableFuture<Void> scheduleIfAbsent(String key, Runnable task) {
-    return inProgress.computeIfAbsent(key, k -> {
-      var logOutput = SonarLintLogger.get().getTargetForCopy();
-      return CompletableFuture.runAsync(() -> {
-        SonarLintLogger.get().setTarget(logOutput);
-        try {
-          task.run();
-        } finally {
-          inProgress.remove(key);
-          SonarLintLogger.get().setTarget(null);
-        }
-      }, executor);
-    });
-  }
-
+public record DownloadBatch(Map<String, CompletableFuture<DownloadOutcome>> outcomesByKey,
+  CompletableFuture<List<DownloadOutcome>> completion) {
 }

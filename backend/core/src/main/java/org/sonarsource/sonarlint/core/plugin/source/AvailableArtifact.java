@@ -34,5 +34,6 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarArtifact;
  * plugin on the current connection. Enterprise artifacts take priority over embedded sources
  * in {@code ConnectedArtifactsLoadingStrategy}.</p>
  */
-public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact) {
+public record AvailableArtifact(String key, @Nullable Version version, boolean isEnterprise, Optional<? extends SonarArtifact> sonarArtifact,
+  ArtifactLocation location) {
 }

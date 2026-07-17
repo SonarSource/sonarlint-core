@@ -23,12 +23,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
@@ -68,46 +65,5 @@ public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<St
             return depArtifact != null && depArtifact.path() != null;
           })))
       .orElse(true);
-  }
-
-  /**
-   * Returns a future that completes when all pending downloads finish, whether they succeed or fail.
-   * The future itself always completes normally — individual download failures are reported via
-   * {@link org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent}.
-   */
-  public Optional<CompletableFuture<Void>> getAllDownloadsFuture() {
-    var pendingFutures = collectPendingDownloadFutures();
-    if (pendingFutures.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(normalizedAllOf(pendingFutures));
-  }
-
-  public void whenAllArtifactsDownloaded(Runnable runnable) {
-    var pendingFutures = collectPendingDownloadFutures();
-    if (pendingFutures.isEmpty()) {
-      return;
-    }
-    var logOutput = SonarLintLogger.get().getTargetForCopy();
-    normalizedAllOf(pendingFutures).thenRun(() -> {
-      if (pendingFutures.stream().anyMatch(f -> !f.isCompletedExceptionally())) {
-        SonarLintLogger.get().setTarget(logOutput);
-        runnable.run();
-      }
-    });
-  }
-
-  private List<CompletableFuture<?>> collectPendingDownloadFutures() {
-    return resolvedArtifactsByKey.values().stream()
-      .map(ResolvedArtifact::downloadFuture)
-      .filter(Objects::nonNull)
-      .toList();
-  }
-
-  private static CompletableFuture<Void> normalizedAllOf(List<CompletableFuture<?>> futures) {
-    var normalized = futures.stream()
-      .map(f -> f.exceptionally(e -> null))
-      .toArray(CompletableFuture[]::new);
-    return CompletableFuture.allOf(normalized);
   }
 }

@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.nio.file.Path;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+/**
+ * A blocking operation able to materialize a remote artifact locally.
+ *
+ * <p>The deduplication key is defined by the source because the source knows when two download
+ * operations are interchangeable. Operations sharing a key must produce a local artifact that is
+ * usable by every requester.</p>
+ */
+public interface ArtifactDownload {
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
-  }
+  String deduplicationKey();
+
+  ArtifactLocation.Local download() throws Exception;
 }

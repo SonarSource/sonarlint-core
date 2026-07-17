@@ -83,7 +83,7 @@ public class AnalysisSchedulerCache {
 
   private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId, @Nullable Trace trace) {
     return connectedSchedulerByConnectionId.computeIfAbsent(connectionId,
-      k -> createScheduler(pluginsService.getPlugins(connectionId), trace));
+      k -> createScheduler(connectionId, pluginsService.getPlugins(connectionId), trace));
   }
 
   @CheckForNull
@@ -94,7 +94,7 @@ public class AnalysisSchedulerCache {
   private synchronized AnalysisScheduler getOrCreateStandaloneScheduler(@Nullable Trace trace) {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), trace);
+      scheduler = createScheduler(null, pluginsService.getEmbeddedPlugins(), trace);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -105,9 +105,11 @@ public class AnalysisSchedulerCache {
     return standaloneScheduler.get();
   }
 
-  private AnalysisScheduler createScheduler(PluginsConfiguration pluginsConfiguration, @Nullable Trace trace) {
+  private AnalysisScheduler createScheduler(@Nullable String connectionId, PluginsConfiguration pluginsConfiguration, @Nullable Trace trace) {
     var config = buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), trace);
-    return new AnalysisScheduler(config, pluginsConfiguration.plugins(), SonarLintLogger.get().getTargetForCopy());
+    var logOutput = SonarLintLogger.get().getTargetForCopy();
+    pluginsService.transferOwnershipToAnalysisScheduler(connectionId, pluginsConfiguration);
+    return new AnalysisScheduler(config, pluginsConfiguration.plugins(), logOutput);
   }
 
   private AnalysisSchedulerConfiguration buildSchedulerConfiguration(Map<String, String> extraProperties, @Nullable Trace trace) {
@@ -122,8 +124,10 @@ public class AnalysisSchedulerCache {
       .build();
   }
 
-  private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration) {
-    return new SchedulerResetConfiguration(buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), null), pluginsConfiguration.plugins());
+  private SchedulerResetConfiguration toSchedulerResetConfiguration(@Nullable String connectionId, PluginsConfiguration pluginsConfiguration) {
+    var schedulerConfiguration = buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), null);
+    pluginsService.transferOwnershipToAnalysisScheduler(connectionId, pluginsConfiguration);
+    return new SchedulerResetConfiguration(schedulerConfiguration, pluginsConfiguration.plugins());
   }
 
   private ClientModuleFileSystem getFileSystem(String configurationScopeId) {
@@ -138,7 +142,7 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId)));
+      scheduler.reset(() -> toSchedulerResetConfiguration(connectionId, pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId)));
     } else {
       // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
       // This ensures that when the scheduler is eventually created, it won't use stale cached data
@@ -149,7 +153,7 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadStandalonePlugins() {
     var scheduler = standaloneScheduler.get();
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches()));
+      scheduler.reset(() -> toSchedulerResetConfiguration(null, pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches()));
     } else {
       pluginLifecycleService.unloadEmbeddedPluginsAndEvictCaches();
     }
@@ -184,10 +188,10 @@ public class AnalysisSchedulerCache {
   private synchronized void resetStartedSchedulers() {
     var standaloneAnalysisScheduler = this.standaloneScheduler.get();
     if (standaloneAnalysisScheduler != null) {
-      standaloneAnalysisScheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getEmbeddedPlugins()));
+      standaloneAnalysisScheduler.reset(() -> toSchedulerResetConfiguration(null, pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches()));
     }
     connectedSchedulerByConnectionId.forEach(
-      (connectionId, scheduler) -> scheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getPlugins(connectionId))));
+      (connectionId, scheduler) -> scheduler.reset(() -> toSchedulerResetConfiguration(connectionId, pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId))));
   }
 
   private synchronized void stopAll() {

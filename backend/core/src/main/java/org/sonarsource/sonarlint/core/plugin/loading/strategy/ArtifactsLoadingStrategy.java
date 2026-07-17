@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
 /**
  * Defines how {@link org.sonarsource.sonarlint.core.plugin.source.ArtifactSource ArtifactSource}
@@ -39,11 +38,8 @@ import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 public interface ArtifactsLoadingStrategy {
 
   /**
-   * Resolves all artifacts (plugins and plugin dependencies) from all managed sources.
-   * Higher-priority sources overwrite lower-priority ones for the same key.
-   * May schedule background downloads; entries with a {@code null} path are still being fetched.
-   *
-   * @return a map from artifact key to its current {@link ResolvedArtifact}
+   * Selects the effective artifacts without scheduling downloads.
    */
-  ArtifactsLoadingResult resolveArtifacts();
+  ArtifactPlan planArtifacts();
+
 }
