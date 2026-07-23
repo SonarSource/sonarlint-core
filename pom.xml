@@ -44,28 +44,28 @@
     -->
     <maven.compiler.release>21</maven.compiler.release>
 
-    <sonar-plugin-api.version>13.4.2.4284</sonar-plugin-api.version>
-    <sonar-markdown.version>25.3.0.104237</sonar-markdown.version>
-    <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
-    <protobuf.version>4.34.1</protobuf.version>
+    <sonar-plugin-api.version>13.8.0.4399</sonar-plugin-api.version>
+    <sonar-markdown.version>25.12.0.117093</sonar-markdown.version>
+    <sonar-scanner-protocol.version>9.9.9.104369</sonar-scanner-protocol.version>
+    <protobuf.version>4.35.1</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.3.2</okhttp.version>
-    <junit.jupiter.version>5.14.3</junit.jupiter.version>
+    <okhttp.version>5.4.0</okhttp.version>
+    <junit.jupiter.version>5.14.4</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
-    <gson.version>2.13.2</gson.version>
+    <gson.version>2.14.0</gson.version>
     <mockito.version>5.23.0</mockito.version>
     <kotlin.version>1.9.25</kotlin.version>
     <lsp4j.version>0.24.0</lsp4j.version>
-    <slf4j.version>2.0.17</slf4j.version>
-    <logback.version>1.5.32</logback.version>
+    <slf4j.version>2.0.18</slf4j.version>
+    <logback.version>1.5.38</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.8</system.stubs.version>
 
     <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
     <jgit6.version>6.10.1.202505221210-r</jgit6.version>
-    <jgit7.version>7.5.0.202512021534-r</jgit7.version>
-    <sentry.version>8.38.0</sentry.version>
+    <jgit7.version>7.7.0.202606012155-r</jgit7.version>
+    <sentry.version>8.49.0</sentry.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
     <version.shade.plugin>3.6.2</version.shade.plugin>
@@ -78,9 +78,9 @@
     <sonar.organization>sonarsource</sonar.organization>
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
-    <jooq.version>3.19.15</jooq.version>
+    <jooq.version>3.21.6</jooq.version>
     <flyway.version>11.20.3</flyway.version>
-    <bouncycastle.version>1.84</bouncycastle.version>
+    <bouncycastle.version>1.85</bouncycastle.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.83.0.100813</cfamily.version>
     <csharp.version>10.29.0.143774</csharp.version>
