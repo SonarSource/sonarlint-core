@@ -203,7 +203,7 @@ class SloopLauncherTests {
 
     @Override
     public void showSmartNotification(ShowSmartNotificationParams params) {
-
+      // Not needed for tests
     }
 
     @Override
@@ -213,12 +213,12 @@ class SloopLauncherTests {
 
     @Override
     public void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails) {
-
+      // Not needed for tests using this dummy client
     }
 
     @Override
     public void showIssue(String configurationScopeId, IssueDetailsDto issueDetails) {
-
+      // Not needed for tests using this dummy client
     }
 
     @Override
@@ -238,7 +238,7 @@ class SloopLauncherTests {
 
     @Override
     public void startProgress(StartProgressParams params) throws UnsupportedOperationException {
-
+      // Not needed in dummy test client
     }
 
     @Override

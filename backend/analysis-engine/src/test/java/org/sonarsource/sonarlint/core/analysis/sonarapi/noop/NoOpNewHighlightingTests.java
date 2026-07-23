@@ -21,14 +21,20 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class NoOpNewHighlightingTests {
 
   @Test
   void improve_coverage() {
-    new NoOpNewHighlighting().onFile(null)
+    var originalHighlighting = new NoOpNewHighlighting();
+    var highlighting = originalHighlighting.onFile(null)
       .highlight(null, null)
-      .highlight(0, 0, 0, 0, null)
-      .save();
+      .highlight(0, 0, 0, 0, null);
+
+    assertThat(highlighting).isEqualTo(originalHighlighting);
+
+    highlighting.save();
   }
 
 }
