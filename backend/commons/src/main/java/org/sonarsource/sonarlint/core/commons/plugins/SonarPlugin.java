@@ -35,6 +35,7 @@ public enum SonarPlugin implements SonarArtifact {
   CSHARP_ENTERPRISE("csharpenterprise"),
   CS_OSS("csharp", CSHARP_ENTERPRISE),
   COBOL("cobol"),
+  DRE("dre"),
   GO("go", new EnterpriseReplacement(true, Version.create("2025.2"))),
   IAC("iac", new EnterpriseReplacement(true, Version.create("2025.1"))),
   JAVA("java"),

@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 public enum SonarLanguage {
 
   ABAP("abap", SonarPlugin.ABAP, "Abap", new String[]{".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
-  APEX("apex", SonarPlugin.APEX, "Apex", new String[]{".cls", ".trigger"}, "sonar.apex.file.suffixes"),
+  APEX("apex", SonarPlugin.DRE, "Apex", new String[]{".cls", ".trigger", ".apex"}, "sonar.apex.file.suffixes"),
   C("c", SonarPlugin.C_FAMILY, "C", new String[]{".c", ".h"}, "sonar.c.file.suffixes"),
   CPP("cpp", SonarPlugin.C_FAMILY, "C++", new String[]{".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
   CS("cs", SonarPlugin.CS_OSS, "C#", new String[]{".cs", ".razor"}, "sonar.cs.file.suffixes"),

@@ -112,6 +112,15 @@ class LanguageDetectionTests {
   }
 
   @Test
+  void recognise_apex_files() {
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+
+    assertThat(detection.language(newInputFile("MyClass.cls"))).isEqualTo(SonarLanguage.APEX);
+    assertThat(detection.language(newInputFile("MyTrigger.trigger"))).isEqualTo(SonarLanguage.APEX);
+    assertThat(detection.language(newInputFile("Anonymous.apex"))).isEqualTo(SonarLanguage.APEX);
+  }
+
+  @Test
   void recognise_terraform_file() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 

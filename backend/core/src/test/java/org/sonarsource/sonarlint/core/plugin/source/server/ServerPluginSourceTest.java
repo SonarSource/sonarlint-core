@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerRequestException;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
@@ -264,6 +265,19 @@ class ServerPluginSourceTest {
     var result = source.listAvailableArtifacts(Set.of());
 
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void listAvailableArtifacts_should_use_dre_instead_of_legacy_apex_when_apex_is_enabled() {
+    mockServerPlugins("conn", List.of(
+      mockServerPlugin(SonarPlugin.DRE.getKey()),
+      mockServerPlugin(SonarPlugin.APEX.getKey())));
+    var source = createSource("conn");
+
+    var result = source.listAvailableArtifacts(Set.of(SonarLanguage.APEX));
+
+    assertThat(result).extracting(AvailableArtifact::key)
+      .containsExactly(SonarPlugin.DRE.getKey());
   }
 
   @Test
