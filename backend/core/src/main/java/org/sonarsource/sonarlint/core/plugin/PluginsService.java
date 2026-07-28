@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.PluginFallback;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -116,8 +117,8 @@ public class PluginsService {
   }
 
   /**
-   * Returns the effective plugin key for a language, preferring the enterprise variant if it is
-   * already present in the resolved map.
+   * Returns the effective plugin key for a language, preferring an enterprise variant, then the
+   * primary plugin, then its fallback when present in the resolved map.
    */
   private static String resolvePluginKey(SonarLanguage language, Map<String, ResolvedArtifact> resolved) {
     var baseKey = language.getPlugin().getKey();
@@ -125,9 +126,16 @@ public class PluginsService {
       .map(SonarPlugin::getEnterpriseVariants)
       .map(variants -> variants.stream().map(SonarPlugin::getKey).collect(Collectors.toSet()))
       .orElseGet(Set::of);
-    return enterpriseKeys.stream()
+    var enterpriseKey = enterpriseKeys.stream()
       .filter(resolved::containsKey)
-      .findFirst()
+      .findFirst();
+    if (enterpriseKey.isPresent() || resolved.containsKey(baseKey)) {
+      return enterpriseKey.orElse(baseKey);
+    }
+    return language.getPluginFallback()
+      .map(PluginFallback::plugin)
+      .map(SonarPlugin::getKey)
+      .filter(resolved::containsKey)
       .orElse(baseKey);
   }
 

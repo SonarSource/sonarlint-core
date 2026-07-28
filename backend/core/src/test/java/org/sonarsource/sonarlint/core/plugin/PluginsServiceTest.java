@@ -344,6 +344,21 @@ class PluginsServiceTest {
   }
 
   @Test
+  void getPluginStatuses_should_report_apex_as_supported_by_dre_fallback() {
+    var connectionId = "connection1";
+    var dreArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null, null);
+    var artifactsResult = new ArtifactsLoadingResult(Set.of(SonarLanguage.APEX), Map.of("dre", dreArtifact));
+    when(pluginsRepository.getPlugins(connectionId)).thenReturn(new PluginsConfiguration(artifactsResult, null, Map.of()));
+
+    var apexStatus = underTest.getPluginStatuses(connectionId).stream()
+      .filter(status -> status.language() == SonarLanguage.APEX)
+      .findFirst();
+
+    assertThat(apexStatus).contains(PluginStatus.forLanguage(SonarLanguage.APEX, ArtifactState.ACTIVE,
+      ArtifactOrigin.SONARQUBE_SERVER, null, null, ossPath, null));
+  }
+
+  @Test
   void unloadPlugins_should_not_publish_event_when_no_plugins_were_loaded() {
     var connectionId = "connection1";
 

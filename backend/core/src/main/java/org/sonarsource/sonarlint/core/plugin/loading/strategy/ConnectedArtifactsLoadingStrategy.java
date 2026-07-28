@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.sonarsource.sonarlint.core.commons.plugins.PluginFallback;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
@@ -53,6 +54,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  *
  * <p>Connected-mode-specific passes (applied before the shared passes):
  * <ol>
+ *   <li><b>Fallback deduplication</b>: when a preferred plugin and its fallback are both
+ *       available, the fallback plugin is removed.</li>
  *   <li><b>Enterprise-variant deduplication</b>: when a different-key enterprise variant
  *       ({@code csharpenterprise}, {@code vbnetenterprise}) is present, the base key is removed
  *       so both are not loaded simultaneously.</li>
@@ -102,12 +105,20 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
       }
     }
 
-    // Pass 1 (connected-specific): remove base keys superseded by a different-key enterprise variant
+    // Pass 1 (connected-specific): remove fallbacks when their preferred plugin is available
+    enabledLanguages.stream()
+      .filter(language -> candidates.containsKey(language.getPlugin().getKey()))
+      .flatMap(language -> language.getPluginFallback().stream())
+      .map(PluginFallback::plugin)
+      .map(SonarPlugin::getKey)
+      .forEach(candidates::remove);
+
+    // Pass 2 (connected-specific): remove base keys superseded by a different-key enterprise variant
     new ArrayList<>(candidates.keySet()).stream()
       .filter(SonarPlugin::isEnterpriseVariant)
       .forEach(entKey -> SonarPlugin.baseKeyFor(entKey).ifPresent(candidates::remove));
 
-    // Pass 2 (connected-specific): enterprise server plugins override even embedded
+    // Pass 3 (connected-specific): enterprise server plugins override even embedded
     serverArtifacts.stream()
       .filter(AvailableArtifact::isEnterprise)
       .forEach(a -> candidates.computeIfPresent(a.key(), (k, existing) -> new ArtifactCandidate(existing.available(), serverSource)));

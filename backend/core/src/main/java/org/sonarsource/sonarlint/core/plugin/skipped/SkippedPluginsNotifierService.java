@@ -26,6 +26,8 @@ import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.plugins.PluginFallback;
+import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -58,7 +60,7 @@ public class SkippedPluginsNotifierService {
 
   private void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> detectedLanguages, List<SkippedPlugin> skippedPlugins) {
     detectedLanguages.stream().filter(Objects::nonNull)
-      .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> p.getKey().equals(sonarLanguage.getPlugin().getKey()))
+      .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> isAnalyzerForLanguage(p.getKey(), sonarLanguage))
         .findFirst()
         .ifPresent(skippedPlugin -> {
           var skipReason = skippedPlugin.getReason();
@@ -72,6 +74,14 @@ public class SkippedPluginsNotifierService {
               new DidSkipLoadingPluginParams(configurationScopeId, rpcLanguage, rpcSkipReason, runtimeRequirement.getMinVersion(), runtimeRequirement.getCurrentVersion()));
           }
         }));
+  }
+
+  private static boolean isAnalyzerForLanguage(String pluginKey, SonarLanguage language) {
+    var plugin = language.getPlugin();
+    return plugin.getKey().equals(pluginKey)
+      || language.getPluginFallback().map(PluginFallback::plugin).map(SonarPlugin::getKey)
+        .filter(pluginKey::equals)
+        .isPresent();
   }
 
   private List<SkippedPlugin> getSkippedPluginsToNotify(String configurationScopeId) {

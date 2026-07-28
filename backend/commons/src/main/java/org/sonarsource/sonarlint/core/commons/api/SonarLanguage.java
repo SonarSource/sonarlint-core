@@ -26,12 +26,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.plugins.PluginFallback;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 
 public enum SonarLanguage {
 
   ABAP("abap", SonarPlugin.ABAP, "Abap", new String[]{".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
-  APEX("apex", SonarPlugin.DRE, "Apex", new String[]{".cls", ".trigger", ".apex"}, "sonar.apex.file.suffixes"),
+  APEX("apex", SonarPlugin.APEX, new PluginFallback(SonarPlugin.DRE), "Apex", new String[]{".cls", ".trigger", ".apex"},
+    "sonar.apex.file.suffixes"),
   C("c", SonarPlugin.C_FAMILY, "C", new String[]{".c", ".h"}, "sonar.c.file.suffixes"),
   CPP("cpp", SonarPlugin.C_FAMILY, "C++", new String[]{".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
   CS("cs", SonarPlugin.CS_OSS, "C#", new String[]{".cs", ".razor"}, "sonar.cs.file.suffixes"),
@@ -80,6 +83,8 @@ public enum SonarLanguage {
    * The Sonar Plugin declaring this language
    */
   private final SonarPlugin plugin;
+  @Nullable
+  private final PluginFallback pluginFallback;
   private final String name;
   private final String[] defaultFileSuffixes;
   private final String fileSuffixesPropKey;
@@ -95,8 +100,14 @@ public enum SonarLanguage {
   }
 
   SonarLanguage(String sonarLanguageKey, SonarPlugin plugin, String name, String[] defaultFileSuffixes, String fileSuffixesPropKey) {
+    this(sonarLanguageKey, plugin, null, name, defaultFileSuffixes, fileSuffixesPropKey);
+  }
+
+  SonarLanguage(String sonarLanguageKey, SonarPlugin plugin, @Nullable PluginFallback pluginFallback, String name,
+    String[] defaultFileSuffixes, String fileSuffixesPropKey) {
     this.sonarLanguageKey = sonarLanguageKey;
     this.plugin = plugin;
+    this.pluginFallback = pluginFallback;
     this.name = name;
     this.defaultFileSuffixes = defaultFileSuffixes;
     this.fileSuffixesPropKey = fileSuffixesPropKey;
@@ -108,6 +119,10 @@ public enum SonarLanguage {
 
   public SonarPlugin getPlugin() {
     return plugin;
+  }
+
+  public Optional<PluginFallback> getPluginFallback() {
+    return Optional.ofNullable(pluginFallback);
   }
 
   public String getName() {

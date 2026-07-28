@@ -116,6 +116,46 @@ class ConnectedArtifactsLoadingStrategyTest {
     assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPlugin.COBOL.getKey());
   }
 
+  @Test
+  void resolvePlugins_should_use_legacy_apex_when_it_is_available() {
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(EnumSet.of(SonarLanguage.APEX));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.APEX.getKey(), null, false, Optional.of(SonarPlugin.APEX))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey().keySet())
+      .containsExactly(SonarPlugin.APEX.getKey());
+  }
+
+  @Test
+  void resolvePlugins_should_use_dre_when_legacy_apex_is_not_available() {
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(EnumSet.of(SonarLanguage.APEX));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.DRE.getKey(), null, false, Optional.of(SonarPlugin.DRE))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey().keySet())
+      .containsExactly(SonarPlugin.DRE.getKey());
+  }
+
+  @Test
+  void resolvePlugins_should_prefer_legacy_apex_over_dre_when_both_are_available() {
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(EnumSet.of(SonarLanguage.APEX));
+    when(serverSource.listAvailableArtifacts(any())).thenReturn(List.of(
+      new AvailableArtifact(SonarPlugin.DRE.getKey(), null, false, Optional.of(SonarPlugin.DRE)),
+      new AvailableArtifact(SonarPlugin.APEX.getKey(), null, false, Optional.of(SonarPlugin.APEX))));
+    var strategy = createStrategy();
+
+    var result = strategy.resolveArtifacts();
+
+    assertThat(result.resolvedArtifactsByKey().keySet())
+      .containsExactly(SonarPlugin.APEX.getKey());
+  }
+
   // --- Enterprise deduplication (different-key variants: CS, VBNET) ---
 
   @Test

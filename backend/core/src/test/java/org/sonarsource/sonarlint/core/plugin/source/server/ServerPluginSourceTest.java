@@ -268,7 +268,7 @@ class ServerPluginSourceTest {
   }
 
   @Test
-  void listAvailableArtifacts_should_use_dre_instead_of_legacy_apex_when_apex_is_enabled() {
+  void listAvailableArtifacts_should_include_dre_and_legacy_apex_when_apex_is_enabled() {
     mockServerPlugins("conn", List.of(
       mockServerPlugin(SonarPlugin.DRE.getKey()),
       mockServerPlugin(SonarPlugin.APEX.getKey())));
@@ -277,7 +277,7 @@ class ServerPluginSourceTest {
     var result = source.listAvailableArtifacts(Set.of(SonarLanguage.APEX));
 
     assertThat(result).extracting(AvailableArtifact::key)
-      .containsExactly(SonarPlugin.DRE.getKey());
+      .containsExactly(SonarPlugin.DRE.getKey(), SonarPlugin.APEX.getKey());
   }
 
   @Test

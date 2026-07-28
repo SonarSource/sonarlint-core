@@ -176,8 +176,10 @@ public enum SonarPlugin implements SonarArtifact {
 
   @Override
   public Set<SonarLanguage> getLanguages() {
-    var sonarLanguages = EnumSet.noneOf(SonarLanguage.class);
-    sonarLanguages.addAll(Arrays.stream(SonarLanguage.values()).filter(l -> l.getPlugin().getKey().equals(key)).collect(Collectors.toSet()));
+    var sonarLanguages = Arrays.stream(SonarLanguage.values())
+      .filter(language -> language.getPlugin() == this
+        || language.getPluginFallback().map(PluginFallback::plugin).filter(this::equals).isPresent())
+      .collect(Collectors.toCollection(() -> EnumSet.noneOf(SonarLanguage.class)));
     basePluginFor(key).ifPresent(sonarPlugin -> sonarLanguages.addAll(sonarPlugin.getLanguages()));
     return sonarLanguages;
   }
