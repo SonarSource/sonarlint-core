@@ -51,6 +51,8 @@ public class TelemetryLocalStorage implements LocalStorage {
   private LocalDate lastUseDate;
   private LocalDateTime lastUploadDateTime;
   private OffsetDateTime installTime;
+  @Nullable
+  private String ideInstallationId;
   private long numUseDays;
   private boolean enabled;
   private final Map<String, TelemetryAnalyzerPerformance> analyzers;
@@ -174,6 +176,18 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   public void setInstallTime(OffsetDateTime installTime) {
     this.installTime = installTime;
+  }
+
+  @CheckForNull
+  public String ideInstallationId() {
+    return ideInstallationId;
+  }
+
+  String ensureIdeInstallationId() {
+    if (ideInstallationId == null) {
+      ideInstallationId = UUID.randomUUID().toString();
+    }
+    return ideInstallationId;
   }
 
   void setLastUseDate(@Nullable LocalDate date) {

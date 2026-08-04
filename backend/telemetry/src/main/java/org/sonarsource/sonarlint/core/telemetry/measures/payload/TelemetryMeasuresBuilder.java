@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLiveAttributes;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 
@@ -42,12 +43,19 @@ public class TelemetryMeasuresBuilder {
   private final String product;
   private final TelemetryLocalStorage storage;
   private final TelemetryLiveAttributes liveAttributes;
+  @Nullable
+  private final String machineId;
+  @Nullable
+  private final String ideInstallationId;
 
-  public TelemetryMeasuresBuilder(String platform, String product, TelemetryLocalStorage storage, TelemetryLiveAttributes liveAttributes) {
+  public TelemetryMeasuresBuilder(String platform, String product, TelemetryLocalStorage storage, TelemetryLiveAttributes liveAttributes,
+    @Nullable String machineId, @Nullable String ideInstallationId) {
     this.platform = platform;
     this.product = product;
     this.storage = storage;
     this.liveAttributes = liveAttributes;
+    this.machineId = machineId;
+    this.ideInstallationId = ideInstallationId;
   }
 
   public TelemetryMeasuresPayload build() {
@@ -87,7 +95,8 @@ public class TelemetryMeasuresBuilder {
 
     addSupportedLanguagesPanelMeasures(values);
 
-    return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
+    return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), machineId, ideInstallationId, platform, storage.installTime(), product,
+      TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
   private void addPerformanceMeasures(ArrayList<TelemetryMeasuresValue> values) {

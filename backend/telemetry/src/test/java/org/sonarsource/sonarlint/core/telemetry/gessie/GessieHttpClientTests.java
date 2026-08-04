@@ -31,24 +31,31 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.telemetry.MachineIdProvider;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata.GessieSource;
 import static org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata.SonarLintDomain;
 
 class GessieHttpClientTests {
 
   private static final String IDE_ENDPOINT = "/ide";
+  private static final String MACHINE_ID = "97323cbb-914c-49e2-b603-9260861dbb7b";
+  private static final String INSTALLATION_ID = "1b4ab807-d005-42b8-8ddd-ba5ab68a1770";
 
   private GessieHttpClient tested;
 
@@ -62,7 +69,11 @@ class GessieHttpClientTests {
 
   @BeforeEach
   void setUp() {
-    tested = new GessieHttpClient(HttpClientProvider.forTesting(), mockGessie.baseUrl(), "value");
+    var machineIdProvider = mock(MachineIdProvider.class);
+    when(machineIdProvider.getMachineId()).thenReturn(MACHINE_ID);
+    var telemetryLocalStorageManager = mock(TelemetryLocalStorageManager.class);
+    when(telemetryLocalStorageManager.ideInstallationId()).thenReturn(INSTALLATION_ID);
+    tested = new GessieHttpClient(HttpClientProvider.forTesting(), mockGessie.baseUrl(), "value", machineIdProvider, telemetryLocalStorageManager);
   }
 
   @Test
@@ -102,6 +113,21 @@ class GessieHttpClientTests {
     await().untilAsserted(() -> mockGessie.verify(postRequestedFor(urlEqualTo(IDE_ENDPOINT))
       .withHeader("x-api-key", new EqualToPattern("value"))
       .withRequestBody(equalToJson(fileContent))));
+  }
+
+  @Test
+  void should_serialize_a_null_machine_id_as_explicit_null() {
+    var machineIdProvider = mock(MachineIdProvider.class);
+    when(machineIdProvider.getMachineId()).thenReturn(null);
+    var telemetryLocalStorageManager = mock(TelemetryLocalStorageManager.class);
+    when(telemetryLocalStorageManager.ideInstallationId()).thenReturn(INSTALLATION_ID);
+    tested = new GessieHttpClient(HttpClientProvider.forTesting(), mockGessie.baseUrl(), "value", machineIdProvider, telemetryLocalStorageManager);
+    mockGessie.stubFor(post(IDE_ENDPOINT).willReturn(aResponse().withStatus(202)));
+
+    tested.postEvent(getPayload());
+
+    await().untilAsserted(() -> mockGessie.verify(postRequestedFor(urlEqualTo(IDE_ENDPOINT))
+      .withRequestBody(containing("\"machine_id\":null"))));
   }
 
   private String getTestJson(String fileName) throws URISyntaxException, IOException {

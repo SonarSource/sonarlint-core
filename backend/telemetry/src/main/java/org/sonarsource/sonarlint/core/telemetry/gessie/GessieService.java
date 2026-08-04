@@ -54,7 +54,7 @@ public class GessieService {
           new GessieMetadata.GessieSource(SonarLintDomain.fromProductKey(telemetryConstantAttributes.getProductKey())),
           "Analytics.Editor.PluginActivated",
           Long.toString(Instant.now().toEpochMilli()),
-          "0"),
+          "1"),
         new MessagePayload("Gessie integration test event", "slcore_start")
       ));
     }

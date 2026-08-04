@@ -32,7 +32,8 @@ import org.springframework.context.annotation.Import;
   TelemetryManager.class,
   TelemetryLocalStorageManager.class,
   TelemetryHttpClient.class,
-  TelemetryServerAttributesProvider.class
+  TelemetryServerAttributesProvider.class,
+  MachineIdProvider.class
 })
 public class TelemetrySpringConfig {
 

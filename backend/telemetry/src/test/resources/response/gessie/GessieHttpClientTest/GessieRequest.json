@@ -10,6 +10,8 @@
   },
   "event_payload": {
     "message": "Test event",
-    "trigger": "test"
+    "trigger": "test",
+    "machine_id": "97323cbb-914c-49e2-b603-9260861dbb7b",
+    "ide_installation_id": "1b4ab807-d005-42b8-8ddd-ba5ab68a1770"
   }
 }

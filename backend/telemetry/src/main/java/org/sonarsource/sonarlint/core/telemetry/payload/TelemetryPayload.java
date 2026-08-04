@@ -116,6 +116,14 @@ public class TelemetryPayload {
   @SerializedName("shared_connected_mode")
   private final ShareConnectedModePayload shareConnectedModePayload;
 
+  @SerializedName("machine_id")
+  @Nullable
+  private final String machineId;
+
+  @SerializedName("ide_installation_id")
+  @Nullable
+  private final String ideInstallationId;
+
   private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
@@ -124,7 +132,7 @@ public class TelemetryPayload {
     ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
     IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, TelemetryFixSuggestionPayload[] aiFixSuggestionsPayload,
     int countIssuesWithPossibleAiFixFromIde, CleanAsYouCodePayload cleanAsYouCodePayload, ShareConnectedModePayload shareConnectedModePayload,
-    Map<String, Object> additionalAttributes) {
+    @Nullable String machineId, @Nullable String ideInstallationId, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -152,6 +160,8 @@ public class TelemetryPayload {
     this.countIssuesWithPossibleAiFixFromIde = countIssuesWithPossibleAiFixFromIde;
     this.cleanAsYouCodePayload = cleanAsYouCodePayload;
     this.shareConnectedModePayload = shareConnectedModePayload;
+    this.machineId = machineId;
+    this.ideInstallationId = ideInstallationId;
     this.additionalAttributes = additionalAttributes;
   }
 
@@ -265,6 +275,16 @@ public class TelemetryPayload {
 
   public int getCountIssuesWithPossibleAiFixFromIde() {
     return countIssuesWithPossibleAiFixFromIde;
+  }
+
+  @Nullable
+  public String getMachineId() {
+    return machineId;
+  }
+
+  @Nullable
+  public String getIdeInstallationId() {
+    return ideInstallationId;
   }
 
   public String toJson() {

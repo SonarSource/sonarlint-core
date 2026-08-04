@@ -48,6 +48,8 @@ class TelemetryMeasuresPayloadTests {
 
     var m = new TelemetryMeasuresPayload(
       messageUuid,
+      "97323cbb-914c-49e2-b603-9260861dbb7b",
+      "1b4ab807-d005-42b8-8ddd-ba5ab68a1770",
       "Linux Ubuntu 24.04",
       installTime,
       "SonarQube for IDE",
@@ -59,6 +61,8 @@ class TelemetryMeasuresPayloadTests {
 
     assertThat(s).isEqualTo("{" +
       "\"message_uuid\":\"25318599-9aec-4e1d-a535-1bfa4f7fcf39\"," +
+      "\"machine_id\":\"97323cbb-914c-49e2-b603-9260861dbb7b\"," +
+      "\"ide_installation_id\":\"1b4ab807-d005-42b8-8ddd-ba5ab68a1770\"," +
       "\"os\":\"Linux Ubuntu 24.04\"," +
       "\"install_time\":\"2017-11-10T12:01:14.984+02:00\"," +
       "\"sonarlint_product\":\"SonarQube for IDE\"," +
@@ -105,11 +109,21 @@ class TelemetryMeasuresPayloadTests {
       "]}");
 
     assertThat(m.messageUuid()).isEqualTo(messageUuid);
+    assertThat(m.machineId()).isEqualTo("97323cbb-914c-49e2-b603-9260861dbb7b");
+    assertThat(m.ideInstallationId()).isEqualTo("1b4ab807-d005-42b8-8ddd-ba5ab68a1770");
     assertThat(m.os()).isEqualTo("Linux Ubuntu 24.04");
     assertThat(m.installTime()).isEqualTo(installTime);
     assertThat(m.product()).isEqualTo("SonarQube for IDE");
     assertThat(m.dimension()).isEqualTo(TelemetryMeasuresDimension.INSTALLATION);
     assertValues(m.values());
+  }
+
+  @Test
+  void machineIdAndIdeInstallationId_should_serialize_as_explicit_null_when_absent() {
+    var m = new TelemetryMeasuresPayload("25318599-9aec-4e1d-a535-1bfa4f7fcf39", null, null,
+      "Linux Ubuntu 24.04", OffsetDateTime.now(), "SonarQube for IDE", TelemetryMeasuresDimension.INSTALLATION, List.of());
+
+    assertThat(m.toJson()).contains("\"machine_id\":null", "\"ide_installation_id\":null");
   }
 
   private List<TelemetryMeasuresValue> generateMeasures() {

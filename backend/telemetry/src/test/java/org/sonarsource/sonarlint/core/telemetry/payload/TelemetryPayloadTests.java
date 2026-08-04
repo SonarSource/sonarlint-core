@@ -78,7 +78,8 @@ class TelemetryPayloadTests {
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
       notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
-      aiFixSuggestionsPayload, 1, cleanAsYouCodePayload, sharedConnectedModePayload, additionalProps);
+      aiFixSuggestionsPayload, 1, cleanAsYouCodePayload, sharedConnectedModePayload,
+      "97323cbb-914c-49e2-b603-9260861dbb7b", "1b4ab807-d005-42b8-8ddd-ba5ab68a1770", additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -108,6 +109,8 @@ class TelemetryPayloadTests {
       + "\"count_issues_with_possible_ai_fix_from_ide\":1,"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
+      + "\"machine_id\":\"97323cbb-914c-49e2-b603-9260861dbb7b\","
+      + "\"ide_installation_id\":\"1b4ab807-d005-42b8-8ddd-ba5ab68a1770\","
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"
@@ -143,6 +146,8 @@ class TelemetryPayloadTests {
     assertThat(m.getIdeVersion()).isEqualTo("Pycharm 3.2");
     assertThat(m.getPlatform()).isEqualTo("platform");
     assertThat(m.getArchitecture()).isEqualTo("architecture");
+    assertThat(m.getMachineId()).isEqualTo("97323cbb-914c-49e2-b603-9260861dbb7b");
+    assertThat(m.getIdeInstallationId()).isEqualTo("1b4ab807-d005-42b8-8ddd-ba5ab68a1770");
     assertThat(m.getInstallTime()).hasToString("2017-11-10T12:01:14.984123123+02:00");
     assertThat(m.os()).isEqualTo("Windows 10");
     assertThat(m.jre()).isEqualTo("1.8.0");
