@@ -32,6 +32,7 @@ public enum BackendCapability {
   MONITORING,
   ISSUE_STREAMING,
   SCA_SYNCHRONIZATION,
+  @Deprecated(since = "11.9", forRemoval = true)
   CONTEXT_GENERATION,
   PROMOTIONAL_CAMPAIGNS
 }

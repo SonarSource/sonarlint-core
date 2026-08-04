@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.MCPServerConfigurationProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.SonarCodeContextService;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
@@ -201,7 +200,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   IssueSynchronizationService.class,
   HotspotSynchronizationService.class,
   ClientFileSystemService.class,
-  SonarCodeContextService.class,
   PathTranslationService.class,
   ServerFilePathsProvider.class,
   FileExclusionService.class,
