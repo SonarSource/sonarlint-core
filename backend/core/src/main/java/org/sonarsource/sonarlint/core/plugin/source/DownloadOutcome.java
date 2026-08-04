@@ -17,13 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.plugin.source;
 
-import java.util.Collection;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
+public sealed interface DownloadOutcome {
 
-public record PluginStatusUpdateEvent(
-  @Nullable String connectionId,
-  Collection<PluginStatus> newStatuses) {
+  ArtifactDownload download();
+
+  record Success(ArtifactDownload download, ArtifactLocation.Local location) implements DownloadOutcome {
+  }
+
+  record Failure(ArtifactDownload download, Throwable cause) implements DownloadOutcome {
+  }
 }

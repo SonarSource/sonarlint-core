@@ -17,14 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.source;
+package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
-import java.nio.file.Path;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.Map;
+import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
-  }
+/**
+ * The artifacts selected for a plugin context before remote artifacts are downloaded.
+ */
+public record ArtifactPlan(Set<SonarLanguage> enabledLanguages, Map<String, AvailableArtifact> selectedArtifacts,
+  Map<String, ArtifactState> unavailableArtifacts) {
 }

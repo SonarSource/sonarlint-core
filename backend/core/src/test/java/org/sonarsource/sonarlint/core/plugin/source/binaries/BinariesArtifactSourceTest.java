@@ -21,17 +21,9 @@ package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
@@ -43,22 +35,16 @@ import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.plugin.PluginStatus;
-import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
-import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -72,215 +58,124 @@ class BinariesArtifactSourceTest {
   Path tempDir;
 
   private HttpClientProvider httpClientProvider;
-  private ApplicationEventPublisher eventPublisher;
-  private List<PluginStatus> capturedStatuses;
   private BinariesSignatureVerifier signatureVerifier;
   private BinariesLocalCacheManager cacheManager;
 
   @BeforeEach
   void setUp() {
     httpClientProvider = mock(HttpClientProvider.class);
-    eventPublisher = mock(ApplicationEventPublisher.class);
     signatureVerifier = mock(BinariesSignatureVerifier.class);
     cacheManager = mock(BinariesLocalCacheManager.class);
-    capturedStatuses = new CopyOnWriteArrayList<>();
-    doAnswer(inv -> {
-      capturedStatuses.addAll(inv.getArgument(0, PluginStatusUpdateEvent.class).newStatuses());
-      return null;
-    }).when(eventPublisher).publishEvent(any(PluginStatusUpdateEvent.class));
   }
 
   @Test
-  void load_should_return_empty_when_plugin_key_not_handled() {
+  void should_return_empty_when_no_artifact_handles_the_enabled_language() {
     var source = buildSource();
 
-    var result = source.load(Set.of("java"));
-
-    assertThat(result.resolvedArtifactsByKey()).doesNotContainKey("java");
+    assertThat(source.listAvailableArtifacts(EnumSet.of(SonarLanguage.JAVA))).isEmpty();
   }
 
   @Test
-  void load_should_return_downloading_on_first_async_call_for_cfamily() {
-    var proceedLatch = new CountDownLatch(1);
-    mockBlockingHttpClient(proceedLatch);
-    var source = buildSource();
-    try {
-      var result = source.load(Set.of("cpp"));
-
-      assertThat(result.resolvedArtifactsByKey().get("cpp"))
-        .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
-        .isEqualTo(downloading());
-    } finally {
-      proceedLatch.countDown();
-      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
-    }
-  }
-
-  @Test
-  void load_should_return_downloading_while_same_artifact_is_in_progress() {
-    var proceedLatch = new CountDownLatch(1);
-    mockBlockingHttpClient(proceedLatch);
-    var source = buildSource();
-    try {
-      source.load(Set.of("cpp"));
-
-      var result = source.load(Set.of("cpp"));
-
-      assertThat(result.resolvedArtifactsByKey().get("cpp"))
-        .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
-        .isEqualTo(downloading());
-    } finally {
-      proceedLatch.countDown();
-      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
-    }
-  }
-
-  @Test
-  void load_should_fire_failed_event_on_async_download_error() {
-    var httpClient = mock(HttpClient.class);
-    when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
+  void should_describe_missing_artifact_as_remote_with_url_as_deduplication_key() {
     var source = buildSource();
 
-    var result = source.load(Set.of("cpp"));
-    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
+    var artifact = findArtifact(source, "cpp");
+    var download = ((ArtifactLocation.Remote) artifact.location()).download();
 
-    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
-    assertThat(capturedStatuses).containsExactlyInAnyOrder(
-      failedStatus(SonarLanguage.C),
-      failedStatus(SonarLanguage.CPP),
-      failedStatus(SonarLanguage.OBJC));
-    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
+    assertThat(download.deduplicationKey())
+      .isEqualTo(String.format(BinariesArtifact.CFAMILY_PLUGIN.urlPattern(), BinariesArtifact.CFAMILY_PLUGIN.version()));
   }
 
   @Test
-  void load_should_fire_failed_event_when_signature_verification_fails() throws Exception {
-    mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
-    var source = buildSource();
-
-    var result = source.load(Set.of("cpp"));
-    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
-
-    await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
-    assertThat(capturedStatuses).containsExactlyInAnyOrder(
-      failedStatus(SonarLanguage.C),
-      failedStatus(SonarLanguage.CPP),
-      failedStatus(SonarLanguage.OBJC));
-    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
-  }
-
-  /**
-   * Regression test for the infinite plugin reload loop triggered by a failed on-demand download.
-   *
-   * The bug: downloadAndFireEvent() swallowed exceptions, completing the download future normally.
-   * whenAllArtifactsDownloaded therefore always published PluginsSynchronizedEvent, which
-   * triggered ResetPluginsCommand -> cache clear -> new download -> infinite loop.
-   *
-   * The fix: rethrow the exception so the future completes exceptionally, preventing
-   * PluginsSynchronizedEvent from being published and stopping the loop.
-   */
-  @Test
-  void failed_download_future_completes_exceptionally_preventing_plugin_reload_loop() {
-    var httpClient = mock(HttpClient.class);
-    when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    var source = buildSource();
-
-    var loadResult = source.load(Set.of("cpp"));
-    var downloadFuture = loadResult.resolvedArtifactsByKey().get("cpp").downloadFuture();
-
-    var reloadTriggered = new AtomicBoolean(false);
-    new ArtifactsLoadingResult(EnumSet.of(SonarLanguage.CPP), loadResult.resolvedArtifactsByKey())
-      .whenAllArtifactsDownloaded(() -> reloadTriggered.set(true));
-
-    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isDone);
-    assertThat(downloadFuture).isCompletedExceptionally();
-    await().during(200, TimeUnit.MILLISECONDS).atMost(1, TimeUnit.SECONDS)
-      .until(() -> !reloadTriggered.get());
-  }
-
-  @Test
-  void load_should_fire_active_event_covering_all_languages_on_successful_async_download() throws Exception {
+  void should_download_remote_artifact_synchronously() throws Exception {
     mockSuccessfulHttpClient();
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
     var source = buildSource();
 
-    source.load(Set.of("cpp"));
+    var local = remoteDownload(findArtifact(source, "cpp")).download();
 
-    await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     var artifactVersion = BinariesArtifact.CFAMILY_PLUGIN.version();
-    var pluginPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
+    var expectedPath = tempDir.resolve("ondemand-plugins").resolve("cpp").resolve(artifactVersion)
       .resolve("sonar-cpp-plugin-" + artifactVersion + ".jar");
-    assertThat(capturedStatuses).containsExactlyInAnyOrder(
-      activeStatus(SonarLanguage.C, pluginPath),
-      activeStatus(SonarLanguage.CPP, pluginPath),
-      activeStatus(SonarLanguage.OBJC, pluginPath));
-    // cleanupOldVersions must receive the artifact-key directory (.../ondemand-plugins/cpp/),
-    // not the version directory or the JAR's parent
-    verify(cacheManager).cleanupOldVersions(
-      tempDir.resolve("ondemand-plugins").resolve("cpp"),
-      artifactVersion);
+    assertThat(local).isEqualTo(new ArtifactLocation.Local(expectedPath, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion)));
+    assertThat(expectedPath).exists();
+    verify(cacheManager).cleanupOldVersions(tempDir.resolve("ondemand-plugins").resolve("cpp"), artifactVersion);
   }
 
   @Test
-  void load_should_return_active_on_warm_startup_when_omnisharp_directory_exists_and_is_non_empty() throws Exception {
+  void should_propagate_download_errors() {
+    var httpClient = mock(HttpClient.class);
+    when(httpClient.get(anyString())).thenThrow(new RuntimeException("Connection refused"));
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
+    var source = buildSource();
+
+    assertThatThrownBy(() -> remoteDownload(findArtifact(source, "cpp")).download())
+      .isInstanceOf(RuntimeException.class)
+      .hasMessage("Connection refused");
+  }
+
+  @Test
+  void should_fail_download_when_signature_verification_fails() throws Exception {
+    mockSuccessfulHttpClient();
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
+    var source = buildSource();
+
+    assertThatThrownBy(() -> remoteDownload(findArtifact(source, "cpp")).download())
+      .isInstanceOf(IOException.class)
+      .hasMessage("Signature verification failed for cpp");
+  }
+
+  @Test
+  void should_describe_non_empty_cached_archive_as_local() throws Exception {
     var source = buildSource();
     var artifactVersion = BinariesArtifact.OMNISHARP_MONO.version();
     var omnisharpDir = tempDir.resolve("ondemand-plugins").resolve("omnisharp-mono").resolve(artifactVersion);
     Files.createDirectories(omnisharpDir);
     Files.createFile(omnisharpDir.resolve("OmniSharp.exe"));
 
-    var result = source.load(Set.of("omnisharp-mono"));
+    var artifact = findArtifact(source, "omnisharp-mono");
 
-    assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
-      .usingRecursiveComparison()
-      .ignoringFields("downloadFuture")
-      .isEqualTo(new ResolvedArtifact(ArtifactState.ACTIVE, omnisharpDir, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion), null));
+    assertThat(artifact.location())
+      .isEqualTo(new ArtifactLocation.Local(omnisharpDir, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion)));
+    assertThat(source.getOmnisharpExtraProperties())
+      .containsEntry("sonar.cs.internal.omnisharpMonoLocation", omnisharpDir.toString());
   }
 
   @Test
-  void load_should_re_download_when_omnisharp_directory_is_empty() throws Exception {
-    var proceedLatch = new CountDownLatch(1);
-    mockBlockingHttpClient(proceedLatch);
+  void should_describe_empty_cached_archive_as_remote() throws Exception {
     var source = buildSource();
     var artifactVersion = BinariesArtifact.OMNISHARP_MONO.version();
-    var omnisharpDir = tempDir.resolve("ondemand-plugins").resolve("omnisharp-mono").resolve(artifactVersion);
-    Files.createDirectories(omnisharpDir);
+    Files.createDirectories(tempDir.resolve("ondemand-plugins").resolve("omnisharp-mono").resolve(artifactVersion));
 
-    try {
-      var result = source.load(Set.of("omnisharp-mono"));
-
-      assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
-        .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
-        .isEqualTo(downloading());
-    } finally {
-      proceedLatch.countDown();
-      await().atMost(5, TimeUnit.SECONDS).until(() -> !capturedStatuses.isEmpty());
-    }
+    assertThat(findArtifact(source, "omnisharp-mono").location()).isInstanceOf(ArtifactLocation.Remote.class);
   }
 
   @Test
-  void list_AvailablePlugins_should_return_entries_for_all_plugins() throws Exception {
-    mockSuccessfulHttpClient();
-    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
+  void should_return_entries_for_all_supported_artifacts() {
     var source = buildSource();
 
     var listed = source.listAvailableArtifacts(EnumSet.allOf(SonarLanguage.class));
-    // Only one unique plugin key for C-family: "cpp"
+
     assertThat(listed).hasSize(5);
-    assertThat(listed)
-      .extracting(AvailableArtifact::key)
+    assertThat(listed).extracting(AvailableArtifact::key)
       .containsOnly("cpp", "csharp", "omnisharp-mono", "omnisharp-net472", "omnisharp-net6");
   }
 
   private BinariesArtifactSource buildSource() {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, Executors.newCachedThreadPool(), signatureVerifier, cacheManager);
+    return new BinariesArtifactSource(userPaths, httpClientProvider, signatureVerifier, cacheManager);
+  }
+
+  private AvailableArtifact findArtifact(BinariesArtifactSource source, String key) {
+    return source.listAvailableArtifacts(EnumSet.allOf(SonarLanguage.class)).stream()
+      .filter(artifact -> artifact.key().equals(key))
+      .findFirst()
+      .orElseThrow();
+  }
+
+  private static org.sonarsource.sonarlint.core.plugin.source.ArtifactDownload remoteDownload(AvailableArtifact artifact) {
+    return ((ArtifactLocation.Remote) artifact.location()).download();
   }
 
   private void mockSuccessfulHttpClient() throws Exception {
@@ -294,21 +189,6 @@ class BinariesArtifactSourceTest {
     when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
   }
 
-  private void mockBlockingHttpClient(CountDownLatch proceedLatch) {
-    var httpClient = mock(HttpClient.class);
-    var response = mock(HttpClient.Response.class);
-    when(response.isSuccessful()).thenReturn(true);
-    when(response.code()).thenReturn(200);
-    when(response.bodyAsStream()).thenAnswer(inv -> awaitAndReturnEmpty(proceedLatch));
-    when(httpClient.get(anyString())).thenReturn(response);
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-  }
-
-  private static InputStream awaitAndReturnEmpty(CountDownLatch latch) throws InterruptedException {
-    latch.await();
-    return InputStream.nullInputStream();
-  }
-
   private static byte[] createMinimalPluginJarBytes(String pluginKey, String pluginVersion) throws IOException {
     var tempJar = Files.createTempFile("test-plugin", ".jar");
     try {
@@ -316,25 +196,12 @@ class BinariesArtifactSourceTest {
       manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
       manifest.getMainAttributes().putValue("Plugin-Key", pluginKey);
       manifest.getMainAttributes().putValue("Plugin-Version", pluginVersion);
-      try (var jos = new JarOutputStream(Files.newOutputStream(tempJar), manifest)) {
-        // minimal JAR with only the manifest
+      try (var ignored = new JarOutputStream(Files.newOutputStream(tempJar), manifest)) {
+        // Minimal JAR with only the manifest
       }
       return Files.readAllBytes(tempJar);
     } finally {
       Files.deleteIfExists(tempJar);
     }
-  }
-
-  private static ResolvedArtifact downloading() {
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null);
-  }
-
-  private static PluginStatus activeStatus(SonarLanguage lang, Path path) {
-    return PluginStatus.forLanguage(lang, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND,
-      Version.create(BinariesArtifact.CFAMILY_PLUGIN.version()), null, path, null);
-  }
-
-  private static PluginStatus failedStatus(SonarLanguage lang) {
-    return PluginStatus.forLanguage(lang, ArtifactState.FAILED, null, null, null, null, null);
   }
 }

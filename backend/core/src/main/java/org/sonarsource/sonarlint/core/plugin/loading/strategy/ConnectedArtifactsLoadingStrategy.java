@@ -20,15 +20,16 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
 import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
@@ -48,7 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  *       priority in normal circumstances).</li>
  * </ol>
  *
- * <p>{@link #resolveArtifacts()} uses a winner-map pattern: iterate sources in ascending
+ * <p>{@link #planArtifacts()} uses a winner-map pattern: iterate sources in ascending
  * priority, last writer wins per key, then apply passes to correct the map before loading.
  *
  * <p>Connected-mode-specific passes (applied before the shared passes):
@@ -65,12 +66,20 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
  */
 public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrategy {
   private final ServerPluginSource serverSource;
+  private final ArtifactStorageCleaner storageCleaner;
   private final LanguageSupportRepository languageSupportRepository;
   private final List<ArtifactSource> artifactSourcesSortedByAscendingPriority;
 
   ConnectedArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource,
     ServerPluginSource serverSource, LanguageSupportRepository languageSupportRepository) {
+    this(params, binariesSource, serverSource, languageSupportRepository, selectedArtifactKeys -> {
+    });
+  }
+
+  ConnectedArtifactsLoadingStrategy(InitializeParams params, BinariesArtifactSource binariesSource,
+    ServerPluginSource serverSource, LanguageSupportRepository languageSupportRepository, ArtifactStorageCleaner storageCleaner) {
     this.serverSource = serverSource;
+    this.storageCleaner = storageCleaner;
     this.languageSupportRepository = languageSupportRepository;
     // Ascending priority: binaries (fallback) → server → embedded (highest)
     this.artifactSourcesSortedByAscendingPriority = List.of(
@@ -80,15 +89,21 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
   }
 
   /**
-   * Resolves all artifacts from all sources using a winner-map pattern. May schedule background
-   * downloads.
+   * Plans all artifacts from all sources using a winner-map pattern without starting downloads.
    *
    * <p>Priority (highest wins in normal cases): embedded &gt; server &gt; binaries.
    * Exception: enterprise server plugins beat embedded (see class Javadoc).</p>
    */
   @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
+  public ArtifactPlan planArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    var candidates = selectArtifacts(enabledLanguages);
+    cleanStorage(candidates);
+    return new ArtifactPlan(enabledLanguages, candidates.entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().available(), (left, right) -> right, LinkedHashMap::new)), Map.of());
+  }
+
+  private LinkedHashMap<String, ArtifactCandidate> selectArtifacts(Set<SonarLanguage> enabledLanguages) {
 
     // Query server artifacts once; reused in normal pass and enterprise-override pass
     var serverArtifacts = serverSource.listAvailableArtifacts(enabledLanguages);
@@ -110,22 +125,19 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     // Pass 2 (connected-specific): enterprise server plugins override even embedded
     serverArtifacts.stream()
       .filter(AvailableArtifact::isEnterprise)
-      .forEach(a -> candidates.computeIfPresent(a.key(), (k, existing) -> new ArtifactCandidate(existing.available(), serverSource)));
+      .forEach(artifact -> candidates.computeIfPresent(artifact.key(), (key, existing) -> new ArtifactCandidate(artifact, serverSource)));
 
     // Shared passes
     removeOrphanDependencies(candidates);
     removeMissingRequiredDeps(candidates);
 
-    // Group winning keys by source, then load once per source.
-    // Pre-populate all sources with empty sets so every source is always called (e.g. ServerPluginSource
-    // needs to be called even with an empty set to initialize its storage when nothing is downloaded).
-    var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
-    for (var source : artifactSourcesSortedByAscendingPriority) {
-      keysBySource.put(source, new HashSet<>());
-    }
-    candidates.forEach((key, candidate) -> keysBySource.get(candidate.source()).add(key));
-    var result = new LinkedHashMap<String, ResolvedArtifact>();
-    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
-    return new ArtifactsLoadingResult(enabledLanguages, result);
+    return candidates;
+  }
+
+  private void cleanStorage(Map<String, ArtifactCandidate> candidates) {
+    storageCleaner.clean(candidates.entrySet().stream()
+      .filter(entry -> entry.getValue().source() == serverSource)
+      .map(Map.Entry::getKey)
+      .collect(Collectors.toSet()));
   }
 }

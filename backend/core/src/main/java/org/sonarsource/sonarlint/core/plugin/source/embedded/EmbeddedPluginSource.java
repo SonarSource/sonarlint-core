@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin.source.embedded;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,11 +31,9 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.plugin.PluginJarUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactLocation;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
-import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
-import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 /**
@@ -81,21 +78,11 @@ public class EmbeddedPluginSource implements ArtifactSource {
     return result;
   }
 
-  @Override
-  public LoadResult load(Set<String> artifactKeys) {
-    var resolved = new HashMap<String, ResolvedArtifact>();
-    for (var key : artifactKeys) {
-      var path = embeddedPathsByKey.get(key);
-      if (path != null) {
-        resolved.put(key, new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
-      }
-    }
-    return new LoadResult(resolved);
-  }
-
   private static AvailableArtifact toAvailableArtifact(String key, Path path) {
     var sonarPlugin = SonarPlugin.findByKey(key);
-    return new AvailableArtifact(key, PluginJarUtils.readVersion(path), SonarPlugin.isEnterpriseVariant(key), sonarPlugin);
+    var version = PluginJarUtils.readVersion(path);
+    return new AvailableArtifact(key, version, SonarPlugin.isEnterpriseVariant(key), sonarPlugin,
+      new ArtifactLocation.Local(path, ArtifactOrigin.EMBEDDED, version));
   }
 
   private static Map<String, Path> buildPluginKeyToPathMap(Set<Path> embeddedPaths) {

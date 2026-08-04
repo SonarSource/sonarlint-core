@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
-import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
@@ -75,7 +74,6 @@ import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
-import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.MultivalueProperty;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -329,22 +327,6 @@ public class AnalysisService {
   @EventListener
   public void onConfigurationScopesSynchronized(ConfigurationScopesSynchronizedEvent event) {
     checkIfReadyForAnalysis(event.getConfigScopeIds());
-  }
-
-  @EventListener
-  public void onPluginStatusUpdateEvent(PluginStatusUpdateEvent event) {
-    if (event.newStatuses().stream().anyMatch(s -> s.state() == ArtifactState.ACTIVE || s.state() == ArtifactState.SYNCED || s.state() == ArtifactState.FAILED)) {
-      var connectionId = event.connectionId();
-      Set<String> configScopeIds;
-      if (connectionId == null) {
-        // On-demand plugins are application-wide and used as fallback in connected mode, so re-check all scopes
-        configScopeIds = new HashSet<>(analysisReadinessByConfigScopeId.keySet());
-      } else {
-        configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
-          .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
-      }
-      checkIfReadyForAnalysis(configScopeIds);
-    }
   }
 
   @EventListener

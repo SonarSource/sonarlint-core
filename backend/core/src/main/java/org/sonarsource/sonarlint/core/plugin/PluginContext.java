@@ -17,14 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.source;
+package org.sonarsource.sonarlint.core.plugin;
 
-import java.nio.file.Path;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
+public sealed interface PluginContext {
+
+  static PluginContext from(@Nullable String connectionId) {
+    return connectionId == null ? new Standalone() : new Connected(connectionId);
+  }
+
+  @Nullable
+  String connectionId();
+
+  record Standalone() implements PluginContext {
+    @Override
+    public String connectionId() {
+      return null;
+    }
+  }
+
+  record Connected(String connectionId) implements PluginContext {
   }
 }

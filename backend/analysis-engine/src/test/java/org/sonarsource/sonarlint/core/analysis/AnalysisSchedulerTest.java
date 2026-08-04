@@ -36,11 +36,16 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguratio
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AnalysisSchedulerTest {
   @RegisterExtension
@@ -102,18 +107,88 @@ class AnalysisSchedulerTest {
     }
   }
 
+  @Test
+  void should_close_loaded_plugins_exactly_once_on_shutdown(@TempDir Path workDir) throws Exception {
+    var loadedPlugins = mockLoadedPlugins();
+    analysisScheduler = new AnalysisScheduler(configuration(workDir), loadedPlugins, logTester.getLogOutput());
+
+    analysisScheduler.stop();
+    analysisScheduler.stop();
+
+    verify(loadedPlugins, times(1)).close();
+  }
+
+  @Test
+  void should_close_each_set_of_loaded_plugins_exactly_once_across_reset_and_shutdown(@TempDir Path workDir) throws Exception {
+    var initialPlugins = mockLoadedPlugins();
+    var replacementPlugins = mockLoadedPlugins();
+    var replacementStarted = new CountDownLatch(1);
+    when(replacementPlugins.getAnalysisPluginInstancesByKeys()).thenAnswer(ignored -> {
+      replacementStarted.countDown();
+      return java.util.Map.of();
+    });
+    var configuration = configuration(workDir);
+    analysisScheduler = new AnalysisScheduler(configuration, initialPlugins, logTester.getLogOutput());
+
+    analysisScheduler.reset(() -> new SchedulerResetConfiguration(configuration, replacementPlugins));
+    assertThat(replacementStarted.await(5, TimeUnit.SECONDS)).isTrue();
+    analysisScheduler.stop();
+
+    verify(initialPlugins, times(1)).close();
+    verify(replacementPlugins, times(1)).close();
+  }
+
+  @Test
+  void should_close_loaded_plugins_when_the_global_container_fails_to_start(@TempDir Path workDir) throws Exception {
+    var loadedPlugins = mock(LoadedPlugins.class);
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenThrow(new IllegalStateException("start failure"));
+
+    assertThatThrownBy(() -> new AnalysisScheduler(configuration(workDir), loadedPlugins, logTester.getLogOutput()))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("start failure");
+
+    verify(loadedPlugins).close();
+  }
+
+  @Test
+  void should_close_loaded_plugins_when_scheduler_initialization_fails_before_container_creation(@TempDir Path workDir) throws Exception {
+    var loadedPlugins = mockLoadedPlugins();
+    var logger = SonarLintLogger.get();
+    var previousLogOutput = logger.getTargetForCopy();
+    try {
+      logger.setTarget(null);
+
+      assertThatThrownBy(() -> new AnalysisScheduler(configuration(workDir), loadedPlugins, logTester.getLogOutput()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("No log output configured");
+    } finally {
+      logger.setTarget(previousLogOutput);
+    }
+
+    verify(loadedPlugins).close();
+  }
+
   private static AnalysisScheduler newScheduler(Path workDir) {
     return newScheduler(workDir, command -> {
     });
   }
 
   private static AnalysisScheduler newScheduler(Path workDir, Consumer<Command> commandDequeuedHook) {
-    var analysisGlobalConfig = AnalysisSchedulerConfiguration.builder()
+    var loadedPlugins = new LoadedPlugins(new HashMap<>(), mock(PluginInstancesLoader.class), Set.of(), Set.of());
+    return new AnalysisScheduler(configuration(workDir), loadedPlugins, logTester.getLogOutput(), commandDequeuedHook);
+  }
+
+  private static AnalysisSchedulerConfiguration configuration(Path workDir) {
+    return AnalysisSchedulerConfiguration.builder()
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
-    var loadedPlugins = new LoadedPlugins(new HashMap<>(), mock(PluginInstancesLoader.class), Set.of(), Set.of());
-    return new AnalysisScheduler(analysisGlobalConfig, loadedPlugins, logTester.getLogOutput(), commandDequeuedHook);
+  }
+
+  private static LoadedPlugins mockLoadedPlugins() {
+    var loadedPlugins = mock(LoadedPlugins.class);
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(java.util.Map.of());
+    return loadedPlugins;
   }
 
   private static class TestCommand extends Command {

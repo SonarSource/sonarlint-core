@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -35,8 +36,8 @@ public class AnalysisScheduler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final AtomicReference<GlobalAnalysisContainer> globalAnalysisContainer = new AtomicReference<>();
-  private final AnalysisQueue analysisQueue = new AnalysisQueue();
-  private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-scheduler");
+  private final AnalysisQueue analysisQueue;
+  private final Thread analysisThread;
   private final LogOutput logOutput;
   private final Consumer<Command> commandDequeuedHook;
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
@@ -51,11 +52,35 @@ public class AnalysisScheduler {
   AnalysisScheduler(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput, Consumer<Command> commandDequeuedHook) {
     this.logOutput = logOutput;
     this.commandDequeuedHook = commandDequeuedHook;
+    try {
+      this.analysisQueue = new AnalysisQueue();
+      this.analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-scheduler");
+    } catch (RuntimeException | Error initializationFailure) {
+      closePluginsAfterInitializationFailure(loadedPlugins, initializationFailure);
+      throw initializationFailure;
+    }
     // if the container cannot be started, the thread won't be started
     var analysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
     analysisContainer.startComponents();
     globalAnalysisContainer.set(analysisContainer);
-    analysisThread.start();
+    try {
+      analysisThread.start();
+    } catch (RuntimeException | Error startFailure) {
+      try {
+        analysisContainer.stopComponents();
+      } catch (RuntimeException | Error stopFailure) {
+        startFailure.addSuppressed(stopFailure);
+      }
+      throw startFailure;
+    }
+  }
+
+  private static void closePluginsAfterInitializationFailure(LoadedPlugins loadedPlugins, Throwable initializationFailure) {
+    try {
+      loadedPlugins.close();
+    } catch (IOException closeFailure) {
+      initializationFailure.addSuppressed(closeFailure);
+    }
   }
 
   public void reset(Supplier<SchedulerResetConfiguration> pluginsWithConfigSupplier) {

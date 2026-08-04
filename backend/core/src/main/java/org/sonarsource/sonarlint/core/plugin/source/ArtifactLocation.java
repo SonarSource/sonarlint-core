@@ -23,8 +23,14 @@ import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 
-public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null);
+/**
+ * The current location of an artifact offered by an {@link ArtifactSource}.
+ */
+public sealed interface ArtifactLocation {
+
+  record Local(Path path, ArtifactOrigin origin, @Nullable Version version) implements ArtifactLocation {
+  }
+
+  record Remote(ArtifactDownload download) implements ArtifactLocation {
   }
 }

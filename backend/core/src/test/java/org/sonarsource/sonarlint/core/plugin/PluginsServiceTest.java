@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,10 +82,15 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
+  private ArtifactProvisioningService artifactProvisioningService;
 
   @BeforeEach
   void prepare() {
     pluginsRepository = mock(PluginsRepository.class);
+    when(pluginsRepository.getOrLoad(any(), any())).thenAnswer(invocation -> {
+      Supplier<PluginsConfiguration> loader = invocation.getArgument(1);
+      return new PluginsRepository.CacheLookup(loader.get(), true);
+    });
     storageService = mock(StorageService.class);
     connectionConfigurationStorage = mock(ConnectionConfigurationRepository.class);
     connectionStorage = mock(ConnectionStorage.class);
@@ -100,17 +106,20 @@ class PluginsServiceTest {
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
     var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
 
-    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
-    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
-    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
+    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
+    var artifactsLoadingResult = new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact));
+    var provisioningState = mock(ArtifactProvisioningState.class);
+    when(provisioningState.asLoadingResult()).thenReturn(artifactsLoadingResult);
+    artifactProvisioningService = mock(ArtifactProvisioningService.class);
+    when(artifactProvisioningService.getOrProvision(any(), any())).thenReturn(provisioningState);
     when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
     var binariesArtifactSource = mock(BinariesArtifactSource.class);
     when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
-      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource);
+      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class),
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, artifactProvisioningService);
   }
 
   @Test

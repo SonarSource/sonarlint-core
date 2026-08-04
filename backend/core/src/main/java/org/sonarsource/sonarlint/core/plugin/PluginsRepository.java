@@ -20,71 +20,88 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.CheckForNull;
+import java.util.function.Supplier;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 public class PluginsRepository {
-  private final AtomicReference<PluginsConfiguration> embeddedPlugins = new AtomicReference<>();
-  private final Map<String, PluginsConfiguration> pluginsByConnectionId = new HashMap<>();
+  private final Map<PluginContext, CachedPluginsConfiguration> configurationsByContext = new ConcurrentHashMap<>();
 
-  public void setEmbeddedPlugins(PluginsConfiguration config) {
-    this.embeddedPlugins.set(config);
+  public record CacheLookup(PluginsConfiguration configuration, boolean created) {
   }
 
-  @CheckForNull
-  public PluginsConfiguration getEmbeddedPlugins() {
-    return embeddedPlugins.get();
+  public CacheLookup getOrLoad(PluginContext context, Supplier<PluginsConfiguration> loader) {
+    var created = new AtomicBoolean();
+    var cachedConfiguration = configurationsByContext.computeIfAbsent(context, ignored -> {
+      created.set(true);
+      return new CachedPluginsConfiguration(loader.get());
+    });
+    return new CacheLookup(cachedConfiguration.configuration(), created.get());
   }
 
-  @CheckForNull
-  public PluginsConfiguration getPlugins(String connectionId) {
-    return pluginsByConnectionId.get(connectionId);
-  }
-
-  public void setPlugins(String connectionId, PluginsConfiguration config) {
-    pluginsByConnectionId.put(connectionId, config);
+  public void transferOwnership(PluginContext context, PluginsConfiguration configuration) {
+    configurationsByContext.compute(context, (ignored, cachedConfiguration) -> {
+      if (cachedConfiguration == null || cachedConfiguration.configuration() != configuration) {
+        throw new IllegalStateException("Cannot transfer ownership of a plugin configuration that is no longer cached");
+      }
+      cachedConfiguration.transferOwnership();
+      return cachedConfiguration;
+    });
   }
 
   void unloadAllPlugins() throws IOException {
     Queue<IOException> exceptions = new LinkedList<>();
-    var embedded = embeddedPlugins.get();
-    if (embedded != null) {
-      tryAndCollectIOException(embedded.plugins()::close, exceptions);
-      embeddedPlugins.set(null);
-    }
-    synchronized (pluginsByConnectionId) {
-      pluginsByConnectionId.values().forEach(config -> tryAndCollectIOException(config.plugins()::close, exceptions));
-      pluginsByConnectionId.clear();
-    }
+    configurationsByContext.values().stream()
+      .filter(CachedPluginsConfiguration::isOwnedByRepository)
+      .forEach(config -> tryAndCollectIOException(config.configuration().plugins()::close, exceptions));
+    configurationsByContext.clear();
     throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(String connectionId) {
-    var config = pluginsByConnectionId.remove(connectionId);
-    if (config != null) {
+  public void evict(PluginContext context) {
+    var removed = new AtomicReference<CachedPluginsConfiguration>();
+    configurationsByContext.compute(context, (ignored, current) -> {
+      removed.set(current);
+      return null;
+    });
+    var cachedConfiguration = removed.get();
+    if (cachedConfiguration != null && cachedConfiguration.isOwnedByRepository()) {
       try {
-        config.plugins().close();
+        cachedConfiguration.configuration().plugins().close();
       } catch (IOException e) {
         throw new IllegalStateException("Unable to unload plugins", e);
       }
     }
   }
 
-  public void unloadEmbedded() {
-    var config = embeddedPlugins.getAndSet(null);
-    if (config != null) {
-      try {
-        config.plugins().close();
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to unload embedded plugins", e);
+  private static class CachedPluginsConfiguration {
+    private final PluginsConfiguration configuration;
+    private volatile boolean ownedByRepository = true;
+
+    private CachedPluginsConfiguration(PluginsConfiguration configuration) {
+      this.configuration = configuration;
+    }
+
+    private PluginsConfiguration configuration() {
+      return configuration;
+    }
+
+    private boolean isOwnedByRepository() {
+      return ownedByRepository;
+    }
+
+    private void transferOwnership() {
+      if (!ownedByRepository) {
+        throw new IllegalStateException("Plugin configuration ownership was already transferred");
       }
+      ownedByRepository = false;
     }
   }
 
