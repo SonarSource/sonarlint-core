@@ -1,3 +1,9 @@
+# 11.9
+
+## Deprecation
+
+* Deprecate the `CONTEXT_GENERATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability` for removal.
+
 # 11.6
 
 ## New features
