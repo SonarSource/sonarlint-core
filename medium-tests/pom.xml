@@ -97,6 +97,10 @@
           <configuration>
             <forkCount>0.25C</forkCount>
             <reuseForks>true</reuseForks>
+            <environmentVariables>
+              <!-- Isolate MachineIdProvider from the real ~/.sonar/user during medium tests -->
+              <SONAR_USER_HOME>${project.build.directory}/sonar-user-home-test</SONAR_USER_HOME>
+            </environmentVariables>
           </configuration>
         </plugin>
       <plugin>

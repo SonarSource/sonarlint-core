@@ -216,4 +216,25 @@ class TelemetryLocalStorageManagerTests {
     assertThat(numUseDays).isEqualTo(42);
     assertThat(actualInstallTime).isEqualTo(expectedInstallTime);
   }
+
+  @Test
+  void ideInstallationId_should_mint_and_persist_on_first_access() {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+
+    var ideInstallationId = storage.ideInstallationId();
+
+    assertThat(ideInstallationId).isNotBlank();
+    assertThat(UUID.fromString(ideInstallationId)).isNotNull();
+    assertThat(storage.tryRead().ideInstallationId()).isEqualTo(ideInstallationId);
+  }
+
+  @Test
+  void ideInstallationId_should_be_stable_across_calls() {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+
+    var first = storage.ideInstallationId();
+    var second = storage.ideInstallationId();
+
+    assertThat(second).isEqualTo(first);
+  }
 }

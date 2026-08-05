@@ -25,7 +25,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.storage.local.FileStorageManager;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -87,5 +89,16 @@ public class TelemetryLocalStorageManager {
 
   public OffsetDateTime installTime() {
     return getStorage().installTime();
+  }
+
+  @CheckForNull
+  public String ideInstallationId() {
+    var existing = getStorage().ideInstallationId();
+    if (existing != null) {
+      return existing;
+    }
+    var minted = new AtomicReference<String>();
+    tryUpdateAtomically(storage -> minted.set(storage.ensureIdeInstallationId()));
+    return minted.get();
   }
 }

@@ -23,9 +23,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import java.time.OffsetDateTime;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.storage.adapter.OffsetDateTimeAdapter;
 
 public record TelemetryMeasuresPayload(@SerializedName("message_uuid") String messageUuid,
+                                       @SerializedName("machine_id") @Nullable String machineId,
+                                       @SerializedName("ide_installation_id") @Nullable String ideInstallationId,
                                        @SerializedName("os") String os,
                                        @SerializedName("install_time") OffsetDateTime installTime,
                                        @SerializedName("sonarlint_product") String product,

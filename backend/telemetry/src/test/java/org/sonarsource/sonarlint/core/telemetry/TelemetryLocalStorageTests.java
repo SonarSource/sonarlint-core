@@ -437,4 +437,32 @@ class TelemetryLocalStorageTests {
     assertThat(data.getSupportedLanguagesPanelCtaClickedCount()).isZero();
   }
 
+  @Test
+  void ideInstallationId_should_be_absent_until_first_accessed() {
+    var data = new TelemetryLocalStorage();
+    assertThat(data.ideInstallationId()).isNull();
+  }
+
+  @Test
+  void ensureIdeInstallationId_should_mint_once_and_reuse_afterwards() {
+    var data = new TelemetryLocalStorage();
+
+    var minted = data.ensureIdeInstallationId();
+
+    assertThat(minted).isNotBlank();
+    assertThat(UUID.fromString(minted)).isNotNull();
+    assertThat(data.ideInstallationId()).isEqualTo(minted);
+    assertThat(data.ensureIdeInstallationId()).isEqualTo(minted);
+  }
+
+  @Test
+  void ideInstallationId_should_survive_clear_after_ping() {
+    var data = new TelemetryLocalStorage();
+    var ideInstallationId = data.ensureIdeInstallationId();
+
+    data.clearAfterPing();
+
+    assertThat(data.ideInstallationId()).isEqualTo(ideInstallationId);
+  }
+
 }

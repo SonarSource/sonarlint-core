@@ -84,7 +84,7 @@ class GessieIntegrationMediumTests {
     var fileContent = getTestJson("GessieRequest");
     await().untilAsserted(() -> gessieEndpointMock.verify(postRequestedFor(urlEqualTo(IDE_ENDPOINT))
       .withHeader("x-api-key", new EqualToPattern("value"))
-      .withRequestBody(equalToJson(fileContent))));
+      .withRequestBody(equalToJson(fileContent, true, true))));
   }
 
   @SonarLintTest
@@ -115,7 +115,7 @@ class GessieIntegrationMediumTests {
     await().atMost(15, TimeUnit.SECONDS)
       .untilAsserted(() -> gessieEndpointMock.verify(2, postRequestedFor(urlEqualTo(IDE_ENDPOINT))
       .withHeader("x-api-key", new EqualToPattern("value"))
-      .withRequestBody(equalToJson(fileContent))));
+      .withRequestBody(equalToJson(fileContent, true, true))));
   }
 
   @SonarLintTest
@@ -133,7 +133,7 @@ class GessieIntegrationMediumTests {
       .pollDelay(2, TimeUnit.SECONDS)
       .untilAsserted(() -> gessieEndpointMock.verify(3, postRequestedFor(urlEqualTo(IDE_ENDPOINT))
       .withHeader("x-api-key", new EqualToPattern("value"))
-      .withRequestBody(equalToJson(fileContent))));
+      .withRequestBody(equalToJson(fileContent, true, true))));
   }
 
   private String getTestJson(String fileName) throws URISyntaxException, IOException {

@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransport
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -49,16 +50,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TelemetryHttpClientTests {
+  private static final String STUBBED_MACHINE_ID = "97323cbb-914c-49e2-b603-9260861dbb7b";
+
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String PLATFORM = SystemUtils.OS_NAME;
   private static final String ARCHITECTURE = SystemUtils.OS_ARCH;
 
   private TelemetryHttpClient underTest;
+  private MachineIdProvider machineIdProvider;
 
   @RegisterExtension
   static WireMockExtension telemetryMock = WireMockExtension.newInstance()
@@ -71,7 +77,9 @@ class TelemetryHttpClientTests {
     when(initializeParams.getTelemetryConstantAttributes())
       .thenReturn(new TelemetryClientConstantAttributesDto(null, "product", "version", "ideversion", Map.of("additionalKey", "additionalValue")));
 
-    underTest = new TelemetryHttpClient(initializeParams, HttpClientProvider.forTesting(), telemetryMock.baseUrl());
+    machineIdProvider = mock(MachineIdProvider.class);
+    when(machineIdProvider.getMachineId()).thenReturn(STUBBED_MACHINE_ID);
+    underTest = new TelemetryHttpClient(initializeParams, HttpClientProvider.forTesting(), telemetryMock.baseUrl(), machineIdProvider);
   }
 
   @Test
@@ -86,6 +94,21 @@ class TelemetryHttpClientTests {
         equalToJson(
           "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + PLATFORM + "\",\"architecture\":\"" + ARCHITECTURE + "\"}",
           true, true))));
+  }
+
+  @Test
+  void opt_out_should_never_include_or_mint_an_identifier() {
+    telemetryMock.stubFor(delete("/")
+      .willReturn(aResponse()));
+    var telemetryLocalStorage = new TelemetryLocalStorage();
+
+    underTest.optOut(telemetryLocalStorage, getTelemetryLiveAttributesDto());
+
+    await().untilAsserted(() -> telemetryMock.verify(deleteRequestedFor(urlEqualTo("/"))
+      .withRequestBody(containing("\"machine_id\":null"))
+      .withRequestBody(containing("\"ide_installation_id\":null"))));
+    verify(machineIdProvider, never()).getMachineId();
+    assertThat(telemetryLocalStorage.ideInstallationId()).isNull();
   }
 
   @Test

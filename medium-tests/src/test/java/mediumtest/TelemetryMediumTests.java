@@ -70,7 +70,13 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -183,6 +189,44 @@ class TelemetryMediumTests {
         "}", true, true))));
 
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
+  }
+
+  @SonarLintTest
+  void it_should_send_machine_id_and_ide_installation_id_on_upload(SonarLintTestHarness harness) {
+    System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
+
+    var backend = harness.newBackend()
+      .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .withEnabledLanguageInStandaloneMode(Language.JS)
+      .start(fakeClient);
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().ideInstallationId()).isNotBlank());
+    var ideInstallationId = backend.telemetryFileContent().ideInstallationId();
+
+    await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
+      .withRequestBody(matchingJsonPath("$.machine_id", matching("[0-9a-f-]{36}")))
+      .withRequestBody(matchingJsonPath("$.ide_installation_id", equalTo(ideInstallationId)))));
+    System.clearProperty("sonarlint.internal.telemetry.initialDelay");
+  }
+
+  @SonarLintTest
+  void it_should_omit_machine_id_and_ide_installation_id_on_opt_out(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    telemetryEndpointMock.stubFor(delete("/sonarlint-telemetry").willReturn(aResponse().withStatus(200)));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId")
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .start();
+    assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
+
+    backend.getTelemetryService().disableTelemetry();
+
+    assertThat(backend.telemetryFileContent().ideInstallationId()).isNull();
+    await().untilAsserted(() -> telemetryEndpointMock.verify(deleteRequestedFor(urlEqualTo("/sonarlint-telemetry"))
+      .withRequestBody(containing("\"machine_id\":null"))
+      .withRequestBody(containing("\"ide_installation_id\":null"))));
   }
 
   @SonarLintTest

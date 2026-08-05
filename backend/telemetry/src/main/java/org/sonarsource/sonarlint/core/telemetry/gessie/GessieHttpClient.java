@@ -23,34 +23,70 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
+import org.sonarsource.sonarlint.core.telemetry.MachineIdProvider;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieIdentity;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class GessieHttpClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String EVENT_PAYLOAD_KEY = "event_payload";
 
   private final Gson gson = configureGson();
   private final HttpClient client;
   private final String endpoint;
+  private final MachineIdProvider machineIdProvider;
+  private final TelemetryLocalStorageManager telemetryLocalStorageManager;
 
   public GessieHttpClient(HttpClientProvider httpClientProvider,
     @Qualifier("gessieEndpoint") String gessieEndpoint,
-    @Qualifier("gessieApiKey") String gessieApiKey) {
+    @Qualifier("gessieApiKey") String gessieApiKey,
+    MachineIdProvider machineIdProvider,
+    TelemetryLocalStorageManager telemetryLocalStorageManager) {
     this.client = httpClientProvider.getHttpClientWithXApiKeyAndRetries(gessieApiKey);
     this.endpoint = gessieEndpoint;
+    this.machineIdProvider = machineIdProvider;
+    this.telemetryLocalStorageManager = telemetryLocalStorageManager;
   }
 
   public void postEvent(GessieEvent event) {
-    var json = gson.toJson(event);
+    var json = gson.toJson(mergeIdentity(event));
     logGessiePayload(json);
     var futureResponse = client.postAsync(endpoint + "/ide", HttpClient.JSON_CONTENT_TYPE, json);
     handleGessieResponse(futureResponse);
+  }
+
+  private JsonObject mergeIdentity(GessieEvent event) {
+    var eventJson = gson.toJsonTree(event).getAsJsonObject();
+    var eventPayloadElement = eventJson.get(EVENT_PAYLOAD_KEY);
+    if (eventPayloadElement != null && eventPayloadElement.isJsonObject()) {
+      var identity = new GessieIdentity(machineIdProvider.getMachineId(), telemetryLocalStorageManager.ideInstallationId());
+      var identityJson = gson.toJsonTree(identity).getAsJsonObject();
+      mergeObjects(identityJson, eventPayloadElement.getAsJsonObject());
+    }
+    return eventJson;
+  }
+
+  private static JsonObject mergeObjects(JsonObject source, JsonObject target) {
+    for (Entry<String, JsonElement> entry : source.entrySet()) {
+      var value = entry.getValue();
+      if (!target.has(entry.getKey())) {
+        target.add(entry.getKey(), value);
+      } else if (value.isJsonObject()) {
+        mergeObjects((JsonObject) value, target.getAsJsonObject(entry.getKey()));
+      }
+    }
+    return target;
   }
 
   private void logGessiePayload(String json) {

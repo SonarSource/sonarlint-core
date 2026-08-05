@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -59,8 +60,10 @@ public class TelemetryHttpClient {
   private final HttpClient client;
   private final String endpoint;
   private final Map<String, Object> additionalAttributes;
+  private final MachineIdProvider machineIdProvider;
 
-  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, @Qualifier("telemetryEndpoint") String telemetryEndpoint) {
+  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, @Qualifier("telemetryEndpoint") String telemetryEndpoint,
+    MachineIdProvider machineIdProvider) {
     TelemetryClientConstantAttributesDto attributes = initializeParams.getTelemetryConstantAttributes();
     this.product = attributes.getProductName();
     this.version = attributes.getProductVersion();
@@ -70,18 +73,21 @@ public class TelemetryHttpClient {
     this.client = httpClientProvider.getHttpClientWithoutAuth();
     this.endpoint = telemetryEndpoint;
     this.additionalAttributes = attributes.getAdditionalAttributes();
+    this.machineIdProvider = machineIdProvider;
   }
 
   void upload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
+    var machineId = machineIdProvider.getMachineId();
+    var ideInstallationId = data.ensureIdeInstallationId();
     try {
-      sendPost(createPayload(data, telemetryLiveAttributes));
+      sendPost(createPayload(data, telemetryLiveAttributes, machineId, ideInstallationId));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
       }
     }
     try {
-      sendMetricsPostIfNeeded(new TelemetryMeasuresBuilder(platform, product, data, telemetryLiveAttributes).build());
+      sendMetricsPostIfNeeded(new TelemetryMeasuresBuilder(platform, product, data, telemetryLiveAttributes, machineId, ideInstallationId).build());
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry metrics data", catchEmAll);
@@ -91,7 +97,7 @@ public class TelemetryHttpClient {
 
   void optOut(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
     try {
-      sendDelete(createPayload(data, telemetryLiveAttributes));
+      sendDelete(createPayload(data, telemetryLiveAttributes, null, null));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry opt-out", catchEmAll);
@@ -99,7 +105,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
+  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs, @Nullable String machineId, @Nullable String ideInstallationId) {
     var systemTime = OffsetDateTime.now(ZoneId.systemDefault());
     var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
@@ -136,7 +142,8 @@ public class TelemetryHttpClient {
       telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload, showIssuePayload,
       taintVulnerabilitiesPayload, telemetryRulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
-      fixSuggestionPayload, countIssuesWithPossibleAiFixFromIde, cleanAsYouCodePayload, shareConnectedModePayload, mergedAdditionalAttributes);
+      fixSuggestionPayload, countIssuesWithPossibleAiFixFromIde, cleanAsYouCodePayload, shareConnectedModePayload,
+      machineId, ideInstallationId, mergedAdditionalAttributes);
   }
 
   private void sendPost(TelemetryPayload payload) {
