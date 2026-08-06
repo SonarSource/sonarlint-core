@@ -28,6 +28,21 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
+    <!-- Force the Jackson version pinned in the root pom's dependencyManagement to be a direct dependency here,
+         otherwise the pin never propagates to consumers of sonarlint-commons: dependencyManagement isn't visible
+         outside this reactor, so downstream builds would still resolve the older version transitively pulled by flyway-core. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
     <dependency>
         <groupId>org.sonarsource.git.blame</groupId>
         <artifactId>git-files-blame</artifactId>
