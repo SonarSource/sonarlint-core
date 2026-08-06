@@ -54,7 +54,15 @@ class PluginsApiTests {
     var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/download?plugin=pluginKey", "content");
 
-    underTest.getPlugin("pluginKey", stream -> assertThat(stream).hasContent("content"), new SonarLintCancelMonitor());
+    underTest.getPlugin("pluginKey", "hash", stream -> assertThat(stream).hasContent("content"), new SonarLintCancelMonitor());
+  }
+
+  @Test
+  void should_build_sonarcloud_plugin_download_urls() {
+    assertThat(PluginsApi.buildSonarCloudPluginDownloadUrl("https://sonarcloud.io", "java", "de5308f43260d357acc97712ce4c5475"))
+      .isEqualTo("https://scanner.sonarcloud.io/plugins/java/versions/de5308f43260d357acc97712ce4c5475.jar");
+    assertThat(PluginsApi.buildSonarCloudPluginDownloadUrl("https://sonarqube.us/", "java", "de5308f43260d357acc97712ce4c5475"))
+      .isEqualTo("https://scanner.sonarqube.us/plugins/java/versions/de5308f43260d357acc97712ce4c5475.jar");
   }
 
 }

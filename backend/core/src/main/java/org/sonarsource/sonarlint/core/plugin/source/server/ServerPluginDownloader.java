@@ -122,7 +122,7 @@ public class ServerPluginDownloader {
     LOG.info("[SYNC] Downloading plugin '{}'", serverPlugin.getFilename());
     var cancelMonitor = new SonarLintCancelMonitor();
     sonarQubeClientManager.withActiveClient(connectionId,
-      api -> api.plugins().getPlugin(pluginKey,
+      api -> api.plugins().getPlugin(pluginKey, serverPlugin.getHash(),
         binary -> storageService.connection(connectionId).plugins().store(serverPlugin, binary),
         cancelMonitor));
   }

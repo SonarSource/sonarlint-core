@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -27,6 +29,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class PluginsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -53,8 +57,10 @@ public class PluginsApi {
     return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported());
   }
 
-  public void getPlugin(String key, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
-    var url = "api/plugins/download?plugin=" + key;
+  public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
+    var url = helper.isSonarCloud()
+      ? buildSonarCloudPluginDownloadUrl(helper.getBaseUrl(), key, hash)
+      : "api/plugins/download?plugin=" + urlEncode(key);
     var start = System.currentTimeMillis();
     try (var response = get(url, cancelMonitor)) {
       pluginFileConsumer.accept(response.bodyAsStream());
@@ -63,8 +69,22 @@ public class PluginsApi {
     }
   }
 
-  private HttpClient.Response get(String path, SonarLintCancelMonitor cancelMonitor) {
-    return helper.isSonarCloud() ? helper.getAnonymous(path, cancelMonitor) : helper.get(path, cancelMonitor);
+  private HttpClient.Response get(String url, SonarLintCancelMonitor cancelMonitor) {
+    return helper.isSonarCloud() ? helper.getAnonymousUrl(url, cancelMonitor) : helper.get(url, cancelMonitor);
+  }
+
+  static String buildSonarCloudPluginDownloadUrl(String baseUrl, String key, String hash) {
+    var baseUri = URI.create(baseUrl);
+    var host = baseUri.getHost();
+    if (host == null) {
+      throw new IllegalArgumentException("SonarQube Cloud URL must contain a host: " + baseUrl);
+    }
+    try {
+      var scannerUri = new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), null, null, null);
+      return scannerUri + "/plugins/" + urlEncode(key) + "/versions/" + urlEncode(hash) + ".jar";
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException("Unable to build the SonarQube Cloud plugin download URL", e);
+    }
   }
 
 }

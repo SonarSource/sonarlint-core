@@ -38,7 +38,7 @@ class ServerPluginDownloadMediumTests {
   private static final String CONNECTION_ID = "connectionId";
   private static final String ORGANIZATION_KEY = "org";
   private static final String PROJECT_KEY = "projectKey";
-  private static final String PLUGIN_DOWNLOAD_URL = "/api/plugins/download?plugin=java";
+  private static final String PLUGIN_DOWNLOAD_URL = "/plugins/java/versions/" + TestPlugin.JAVA.getHash() + ".jar";
 
   @SonarLintTest
   void failed_server_plugin_download_should_not_trigger_infinite_reload_loop_for_sonarqube_cloud_us_region(SonarLintTestHarness harness) {
