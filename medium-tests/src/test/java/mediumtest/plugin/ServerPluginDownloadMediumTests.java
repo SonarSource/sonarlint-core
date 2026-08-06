@@ -19,17 +19,25 @@
  */
 package mediumtest.plugin;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.Proxy;
+import java.net.URI;
+import java.util.List;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class ServerPluginDownloadMediumTests {
@@ -40,6 +48,11 @@ class ServerPluginDownloadMediumTests {
   private static final String PROJECT_KEY = "projectKey";
   private static final String PLUGIN_DOWNLOAD_URL = "/plugins/java/versions/" + TestPlugin.JAVA.getHash() + ".jar";
 
+  @RegisterExtension
+  static WireMockExtension fakeCdn = WireMockExtension.newInstance()
+    .options(wireMockConfig().dynamicPort())
+    .build();
+
   @SonarLintTest
   void failed_server_plugin_download_should_not_trigger_infinite_reload_loop_for_sonarqube_cloud_us_region(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer()
@@ -48,9 +61,15 @@ class ServerPluginDownloadMediumTests {
       .start();
     // Keep the failing response in flight briefly so a regression would have time to rearm
     // another download attempt while the first one is still completing.
-    server.getMockServer().stubFor(get(urlEqualTo(PLUGIN_DOWNLOAD_URL))
-      .atPriority(1)
+    fakeCdn.stubFor(get(urlEqualTo(PLUGIN_DOWNLOAD_URL))
       .willReturn(aResponse().withStatus(404).withFixedDelay(200)));
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.selectProxies(any())).thenAnswer(invocation -> {
+      var uri = invocation.getArgument(0, URI.class);
+      return "scanner.localhost".equals(uri.getHost())
+        ? List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", fakeCdn.getPort()))
+        : List.of(ProxyDto.NO_PROXY);
+    });
 
     var backend = harness.newBackend()
       .withSonarQubeCloudUsRegionUri(server.baseUrl())
@@ -61,20 +80,20 @@ class ServerPluginDownloadMediumTests {
           .withMainBranch("main")))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .start();
+      .start(fakeClient);
 
     try {
       // We expect exactly one failed download attempt. The `during` window proves the count stays
       // stable for a while instead of entering the old reload/download loop.
       await().during(2, SECONDS).atMost(15, SECONDS)
-        .untilAsserted(() -> assertThat(countPluginDownloadRequests(server)).isEqualTo(1));
+        .untilAsserted(() -> assertThat(countPluginDownloadRequests()).isEqualTo(1));
     } finally {
       harness.shutdown(backend);
     }
   }
 
-  private static long countPluginDownloadRequests(ServerFixture.Server server) {
-    return server.getMockServer().getAllServeEvents().stream()
+  private static long countPluginDownloadRequests() {
+    return fakeCdn.getAllServeEvents().stream()
       .filter(event -> PLUGIN_DOWNLOAD_URL.equals(event.getRequest().getUrl()))
       .count();
   }

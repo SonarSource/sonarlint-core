@@ -80,8 +80,8 @@ public class PluginsApi {
       throw new IllegalArgumentException("SonarQube Cloud URL must contain a host: " + baseUrl);
     }
     try {
-      var scannerUri = new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), null, null, null);
-      return scannerUri + "/plugins/" + urlEncode(key) + "/versions/" + urlEncode(hash) + ".jar";
+      var path = "/plugins/" + key + "/versions/" + hash + ".jar";
+      return new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), path, null, null).toASCIIString();
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException("Unable to build the SonarQube Cloud plugin download URL", e);
     }
