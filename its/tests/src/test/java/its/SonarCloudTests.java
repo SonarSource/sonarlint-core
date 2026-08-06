@@ -602,7 +602,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
       assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().getFirst()).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
-        ImpactSeverity.BLOCKER);
+        ImpactSeverity.MEDIUM);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
       // the feature is not enabled for our org
