@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -646,19 +647,32 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
   }
 
+  private static final int ANALYSIS_MAX_ATTEMPTS = 3;
+
   private static void analyzeMavenProject(String projectKey, String projectDirName) throws IOException {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     // The file-sources Lambda backing batch/project can be cold on the under-used staging environment; its first call
     // may time out server-side and surface as a transient 500 on batch/project that crashes the scanner. Issuing a
-    // blocking warmup request right before the scan keeps the analysis deterministic.
+    // blocking warmup request right before the scan keeps the analysis deterministic. As a safety net for the same
+    // kind of transient staging 500, the analysis itself is retried a few times before giving up.
     warmUpFileSourcesLambda();
-    runMaven(projectDir, "clean", "package", "sonar:sonar",
-      "-Dsonar.projectKey=" + projectKey,
-      "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
-      "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
-      "-Dsonar.token=" + SONARCLOUD_TOKEN,
-      "-Dsonar.scm.disabled=true",
-      "-Dsonar.branch.autoconfig.disabled=true");
+    for (var attempt = 1; attempt <= ANALYSIS_MAX_ATTEMPTS; attempt++) {
+      try {
+        runMaven(projectDir, "clean", "package", "sonar:sonar",
+          "-Dsonar.projectKey=" + projectKey,
+          "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
+          "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
+          "-Dsonar.token=" + SONARCLOUD_TOKEN,
+          "-Dsonar.scm.disabled=true",
+          "-Dsonar.branch.autoconfig.disabled=true");
+        break;
+      } catch (ExecuteException e) {
+        if (attempt == ANALYSIS_MAX_ATTEMPTS) {
+          throw e;
+        }
+        System.out.println("Analysis of " + projectKey + " failed on attempt " + attempt + "/" + ANALYSIS_MAX_ATTEMPTS + ", retrying: " + e.getMessage());
+      }
+    }
 
     waitAtMost(1, TimeUnit.MINUTES).until(() -> {
       var request = new GetRequest("api/analysis_reports/is_queue_empty");
