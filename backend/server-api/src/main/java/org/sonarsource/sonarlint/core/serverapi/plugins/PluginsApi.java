@@ -60,7 +60,7 @@ public class PluginsApi {
   public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
     var url = helper.isSonarCloud()
       ? buildSonarCloudPluginDownloadUrl(helper.getBaseUrl(), key, hash)
-      : "api/plugins/download?plugin=" + urlEncode(key);
+      : ("api/plugins/download?plugin=" + urlEncode(key));
     var start = System.currentTimeMillis();
     try (var response = get(url, cancelMonitor)) {
       pluginFileConsumer.accept(response.bodyAsStream());

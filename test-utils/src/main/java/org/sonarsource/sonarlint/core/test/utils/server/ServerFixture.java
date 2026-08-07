@@ -929,8 +929,8 @@ public class ServerFixture {
         try {
           var pluginContent = Files.exists(plugin.jarPath) ? Files.readAllBytes(plugin.jarPath) : new byte[0];
           var pluginDownloadPath = serverKind == ServerKind.SONARCLOUD
-            ? "/plugins/" + pluginKey + "/versions/" + plugin.hash + ".jar"
-            : "/api/plugins/download?plugin=" + pluginKey;
+            ? ("/plugins/" + pluginKey + "/versions/" + plugin.hash + ".jar")
+            : ("/api/plugins/download?plugin=" + pluginKey);
           mockServer.stubFor(get(pluginDownloadPath)
             .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody(pluginContent)));
         } catch (IOException e) {
