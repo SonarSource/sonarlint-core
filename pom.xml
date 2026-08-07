@@ -87,7 +87,7 @@
     <!-- Override the Jackson transitively pulled by flyway-core (2.19.1): 11.20.3 is the last Flyway release
          on Jackson 2.x, later versions move flyway-core itself to Jackson 3.x (tools.jackson.core) -->
     <jackson.version>2.22.1</jackson.version>
-    <bouncycastle.version>1.84</bouncycastle.version>
+    <bouncycastle.version>1.85</bouncycastle.version>
     <!-- Override the Jetty transitively pulled by wiremock-jetty12:3.13.2 (test scope, 12.0.30):
          fixes CVE-2026-10050 (jetty-security/jetty-client Digest auth bypass), wiremock-jetty12 has no newer release yet -->
     <jetty.version>12.0.38</jetty.version>
