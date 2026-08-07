@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -135,16 +136,33 @@ class MachineIdProviderTests {
   void concurrent_creation_should_converge_on_the_same_value(@TempDir Path tempDir) throws InterruptedException {
     environmentVariables.set(SonarUserHome.SONAR_USER_HOME_ENV, tempDir.toString());
     var userSetting = telemetryEnabled(true);
-    var results = new String[10];
-    ExecutorService pool = Executors.newFixedThreadPool(10);
+    var threadCount = 20;
+    var results = new String[threadCount];
+    var ready = new CountDownLatch(threadCount);
+    var start = new CountDownLatch(1);
+    ExecutorService pool = Executors.newFixedThreadPool(threadCount);
     for (var i = 0; i < results.length; i++) {
       var index = i;
-      pool.submit(() -> results[index] = new MachineIdProvider(userSetting).getMachineId());
+      pool.submit(() -> {
+        ready.countDown();
+        try {
+          start.await();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+        results[index] = new MachineIdProvider(userSetting).getMachineId();
+      });
     }
+    assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+    start.countDown();
     pool.shutdown();
-    pool.awaitTermination(10, TimeUnit.SECONDS);
+    assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
-    assertThat(results).isNotNull().allSatisfy(id -> assertThat(id).isEqualTo(results[0]));
+    var expected = results[0];
+    assertThat(expected).isNotBlank();
+    assertThat(results).containsOnly(expected);
+    assertThat(tempDir.resolve("user")).hasContent(expected);
   }
 
   private static TelemetryUserSetting telemetryEnabled(boolean enabled) {

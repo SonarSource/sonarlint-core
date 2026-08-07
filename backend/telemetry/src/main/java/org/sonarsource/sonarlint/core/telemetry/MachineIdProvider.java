@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -35,6 +37,8 @@ public class MachineIdProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String USER_FILE_NAME = "user";
+  // File locks are JVM-wide; serialize in-process callers before locking the shared file.
+  private static final Object CREATE_LOCK = new Object();
 
   private final TelemetryUserSetting userSetting;
   private boolean resolved;
@@ -73,22 +77,37 @@ public class MachineIdProvider {
   }
 
   private static String createOrReadWinner(Path userFile) throws IOException {
-    var candidate = UUID.randomUUID().toString();
-    try {
-      return writeExclusively(userFile, candidate);
-    } catch (FileAlreadyExistsException e) {
-      var winner = tryRead(userFile);
-      if (winner != null) {
-        return winner;
+    synchronized (CREATE_LOCK) {
+      try (var channel = FileChannel.open(userFile, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        var lock = channel.lock()) {
+        var existing = readAll(channel).trim();
+        if (!existing.isEmpty()) {
+          return existing;
+        }
+        var candidate = UUID.randomUUID().toString();
+        var bytes = candidate.getBytes(StandardCharsets.UTF_8);
+        channel.truncate(0);
+        channel.position(0);
+        channel.write(ByteBuffer.wrap(bytes));
+        channel.force(true);
+        return candidate;
       }
-      Files.deleteIfExists(userFile);
-      return writeExclusively(userFile, candidate);
     }
   }
 
-  private static String writeExclusively(Path userFile, String id) throws IOException {
-    Files.writeString(userFile, id, StandardOpenOption.CREATE_NEW);
-    return id;
+  private static String readAll(FileChannel channel) throws IOException {
+    var size = channel.size();
+    if (size == 0) {
+      return "";
+    }
+    var buffer = ByteBuffer.allocate((int) size);
+    channel.position(0);
+    while (buffer.hasRemaining()) {
+      if (channel.read(buffer) < 0) {
+        break;
+      }
+    }
+    return new String(buffer.array(), 0, buffer.position(), StandardCharsets.UTF_8);
   }
 
   @CheckForNull
