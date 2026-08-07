@@ -55,7 +55,7 @@ public class WebSocketManager {
   private final ConfigurationRepository configurationRepository;
   private final URI websocketEndpointUri;
   private final AtomicReference<ScheduledFuture<?>> pendingRetry = new AtomicReference<>();
-  private Attempt currentAttempt = new Attempt();
+  private volatile Attempt currentAttempt = new Attempt();
 
   public WebSocketManager(ApplicationEventPublisher eventPublisher, SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository,
     URI websocketEndpointUri) {
@@ -115,9 +115,9 @@ public class WebSocketManager {
       return sonarQubeClientManager.getValidWebSocketClient(connectionId)
         .map(webSocketClient -> {
           closeSocketIfPresent("Creating a new WebSocket connection");
-          this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri, webSocketClient, this::handleSonarServerEvent, this::reopenConnectionOnClose,
-            this::onConnectionSucceeded, this::onConnectionFailed);
           this.connectionIdUsedToCreateConnection = connectionId;
+          this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri, webSocketClient, this::handleSonarServerEvent, this::reopenConnectionOnClose,
+            this::onConnectionSucceeded, () -> onConnectionFailed(connectionId));
           return sonarCloudWebSocket;
         });
     } catch (Exception e) {
@@ -152,8 +152,7 @@ public class WebSocketManager {
     });
   }
 
-  private void onConnectionFailed() {
-    var connectionId = connectionIdUsedToCreateConnection;
+  private void onConnectionFailed(String connectionId) {
     executorService.execute(() -> scheduleRetryAfterFailure(connectionId));
   }
 

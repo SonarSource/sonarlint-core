@@ -93,6 +93,20 @@ class WebSocketManagerTests {
   }
 
   @Test
+  void should_schedule_retry_when_connection_fails_synchronously() {
+    var wsFuture = new CompletableFuture<WebSocket>();
+    wsFuture.completeExceptionally(new RuntimeException("connection failed"));
+    when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
+    var scheduledFuture = mock(ScheduledFuture.class);
+    when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
+
+    webSocketManager.createConnectionIfNeeded("connectionId");
+
+    verify(executor).schedule(any(Runnable.class), eq(60L), eq(TimeUnit.SECONDS));
+    assertThat(logTester.logs()).contains("Cannot connect to SonarCloud WebSocket, retrying in 60s");
+  }
+
+  @Test
   void should_use_exponential_backoff_between_retries() {
     var scheduledFuture = mock(ScheduledFuture.class);
     when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
