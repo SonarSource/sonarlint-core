@@ -35,6 +35,9 @@ public class MachineIdProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String USER_FILE_NAME = "user";
+  private static final int MAX_CREATE_ATTEMPTS = 2;
+  // Prevents same-JVM callers from racing each other; cross-process races are still possible.
+  private static final Object CREATE_LOCK = new Object();
 
   private final TelemetryUserSetting userSetting;
   private boolean resolved;
@@ -72,17 +75,23 @@ public class MachineIdProvider {
     }
   }
 
+  @CheckForNull
   private static String createOrReadWinner(Path userFile) throws IOException {
-    var candidate = UUID.randomUUID().toString();
-    try {
-      return writeExclusively(userFile, candidate);
-    } catch (FileAlreadyExistsException e) {
-      var winner = tryRead(userFile);
-      if (winner != null) {
-        return winner;
+    synchronized (CREATE_LOCK) {
+      var candidate = UUID.randomUUID().toString();
+      for (var attempt = 1; attempt <= MAX_CREATE_ATTEMPTS; attempt++) {
+        try {
+          return writeExclusively(userFile, candidate);
+        } catch (FileAlreadyExistsException e) {
+          var winner = tryRead(userFile);
+          if (winner != null) {
+            return winner;
+          }
+          Files.deleteIfExists(userFile);
+        }
       }
-      Files.deleteIfExists(userFile);
-      return writeExclusively(userFile, candidate);
+      // All attempts lost the race; read the winner instead of returning null or an unpersisted candidate.
+      return tryRead(userFile);
     }
   }
 
