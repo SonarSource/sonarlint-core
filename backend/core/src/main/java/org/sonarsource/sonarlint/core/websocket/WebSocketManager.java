@@ -55,7 +55,7 @@ public class WebSocketManager {
   private final ConfigurationRepository configurationRepository;
   private final URI websocketEndpointUri;
   private final AtomicReference<ScheduledFuture<?>> pendingRetry = new AtomicReference<>();
-  private volatile Attempt currentAttempt = new Attempt();
+  private final AtomicReference<Attempt> currentAttempt = new AtomicReference<>(new Attempt());
 
   public WebSocketManager(ApplicationEventPublisher eventPublisher, SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository,
     URI websocketEndpointUri) {
@@ -129,7 +129,7 @@ public class WebSocketManager {
 
   public void reopenConnection(String connectionId, String reason) {
     cancelPendingRetry();
-    currentAttempt = new Attempt();
+    currentAttempt.set(new Attempt());
     closeSocketIfPresent(reason);
     createConnectionIfNeeded(connectionId)
       .ifPresent(connection -> resubscribeAll());
@@ -148,7 +148,7 @@ public class WebSocketManager {
   private void onConnectionSucceeded() {
     executorService.execute(() -> {
       cancelPendingRetry();
-      currentAttempt = new Attempt();
+      currentAttempt.set(new Attempt());
     });
   }
 
@@ -157,18 +157,19 @@ public class WebSocketManager {
   }
 
   private void scheduleRetryAfterFailure(String connectionId) {
-    if (connectionId == null || !connectionIdsInterestedInNotifications.contains(connectionId)) {
+    if (!connectionIdsInterestedInNotifications.contains(connectionId)) {
       return;
     }
-    if (currentAttempt.isMax()) {
+    var attempt = currentAttempt.get();
+    if (attempt.isMax()) {
       LOG.debug("Cannot connect to SonarCloud WebSocket, stop retrying");
       return;
     }
-    var retryDelay = currentAttempt.delay;
+    var retryDelay = attempt.delay;
     LOG.debug("Cannot connect to SonarCloud WebSocket, retrying in " + retryDelay + "s");
-    var nextAttempt = currentAttempt.next();
+    var nextAttempt = attempt.next();
     scheduleRetry(() -> {
-      currentAttempt = nextAttempt;
+      currentAttempt.set(nextAttempt);
       reopenConnectionWithoutResettingAttempt(connectionId, "Retrying after connection failure");
     }, retryDelay);
   }
@@ -221,7 +222,7 @@ public class WebSocketManager {
 
   public void closeSocket(String reason) {
     cancelPendingRetry();
-    currentAttempt = new Attempt();
+    currentAttempt.set(new Attempt());
     closeSocketIfPresent(reason);
   }
 
