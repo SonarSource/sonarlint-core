@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketConnection;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketServer;
+import org.sonarsource.sonarlint.core.websocket.WebSocketManager;
 
 import static java.util.Collections.emptyList;
 import static mediumtest.websockets.WebSocketMediumTests.WebSocketPayloadBuilder.webSocketPayloadBuilder;
@@ -518,26 +519,32 @@ class WebSocketMediumTests {
 
     @SonarLintTest
     void should_log_failure_and_reconnect_later_if_server_unavailable(SonarLintTestHarness harness) {
-      var client = harness.newFakeClient()
-        .withToken("connectionId", "token")
-        .build();
-      webSocketServerEU.stop();
-      var backend = newBackendWithWebSockets(harness)
-        .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .start(client);
+      System.setProperty(WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY, "1");
+      try {
+        var client = harness.newFakeClient()
+          .withToken("connectionId", "token")
+          .build();
+        webSocketServerEU.stop();
+        var backend = newBackendWithWebSockets(harness)
+          .withBoundConfigScope("configScope", "connectionId", "projectKey")
+          .start(client);
 
-      backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
+        backend.getConnectionService()
+          .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
-      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create WebSocket connection for " + webSocketServerEU.getUri()));
+        await().untilAsserted(() -> assertThat(client.getLogMessages())
+          .contains(
+            "Error while trying to create WebSocket connection for " + webSocketServerEU.getUri(),
+            "Cannot connect to SonarCloud WebSocket, retrying in 1s"));
 
-      webSocketServerEU.restart();
-      // Emulate a change on the connection to force WebSocket service to reconnect
-      backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
+        webSocketServerEU.restart();
 
-      await().untilAsserted(() -> assertThat(webSocketServerEU.getConnections())
-        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+        await().untilAsserted(() -> assertThat(webSocketServerEU.getConnections())
+          .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+          .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+      } finally {
+        System.clearProperty(WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY);
+      }
     }
   }
 
