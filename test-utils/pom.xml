@@ -75,6 +75,14 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
     </dependency>
+    <!-- Force the Handlebars artifact affected by CVE-2026-55760 and pinned in the root pom's
+         dependencyManagement to be a direct dependency here, otherwise the pin never propagates to consumers
+         of sonarlint-core-test-utils: wiremock-jetty12 is a direct dependency here and transitively pulls its
+         own older, vulnerable Handlebars version for response templating. -->
+    <dependency>
+      <groupId>com.github.jknack</groupId>
+      <artifactId>handlebars</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver3</artifactId>

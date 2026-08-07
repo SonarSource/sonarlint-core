@@ -91,6 +91,9 @@
     <!-- Override the Jetty transitively pulled by wiremock-jetty12:3.13.2 (test scope, 12.0.30):
          fixes CVE-2026-10050 (jetty-security/jetty-client Digest auth bypass), wiremock-jetty12 has no newer release yet -->
     <jetty.version>12.0.38</jetty.version>
+    <!-- Override the Handlebars transitively pulled by wiremock-jetty12:3.13.2 (response templating, 4.3.1):
+         fixes CVE-2026-55760 (path traversal via FileTemplateLoader/ClassPathTemplateLoader), wiremock-jetty12 has no newer release yet -->
+    <handlebars.version>4.5.3</handlebars.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.83.0.100813</cfamily.version>
     <csharp.version>10.31.0.145097</csharp.version>
@@ -126,6 +129,11 @@
         <version>${jetty.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jknack</groupId>
+        <artifactId>handlebars</artifactId>
+        <version>${handlebars.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
