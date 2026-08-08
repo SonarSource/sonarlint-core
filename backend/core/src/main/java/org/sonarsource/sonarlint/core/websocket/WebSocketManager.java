@@ -106,11 +106,18 @@ public class WebSocketManager {
    * @return the connection if it was or has been opened, else empty
    */
   public Optional<SonarCloudWebSocket> createConnectionIfNeeded(String connectionId) {
+    return createConnectionIfNeeded(connectionId, true);
+  }
+
+  private Optional<SonarCloudWebSocket> createConnectionIfNeeded(String connectionId, boolean resetAttempt) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (hasOpenConnection() || isConnectionPending()) {
       return Optional.of(sonarCloudWebSocket);
     }
     cancelPendingRetry();
+    if (resetAttempt) {
+      currentAttempt.set(new Attempt());
+    }
     try {
       return sonarQubeClientManager.getValidWebSocketClient(connectionId)
         .map(webSocketClient -> {
@@ -129,7 +136,6 @@ public class WebSocketManager {
 
   public void reopenConnection(String connectionId, String reason) {
     cancelPendingRetry();
-    currentAttempt.set(new Attempt());
     closeSocketIfPresent(reason);
     createConnectionIfNeeded(connectionId)
       .ifPresent(connection -> resubscribeAll());
@@ -177,7 +183,7 @@ public class WebSocketManager {
   private void reopenConnectionWithoutResettingAttempt(String connectionId, String reason) {
     cancelPendingRetry();
     closeSocketIfPresent(reason);
-    createConnectionIfNeeded(connectionId)
+    createConnectionIfNeeded(connectionId, false)
       .ifPresent(connection -> resubscribeAll());
   }
 

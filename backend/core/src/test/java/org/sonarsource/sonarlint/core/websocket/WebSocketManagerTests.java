@@ -151,6 +151,37 @@ class WebSocketManagerTests {
   }
 
   @Test
+  void should_reset_attempt_counter_on_new_independent_connection_attempt_after_exhaustion() {
+    var scheduledFuture = mock(ScheduledFuture.class);
+    when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
+
+    var firstFuture = failingConnection();
+    webSocketManager.createConnectionIfNeeded("connectionId");
+    firstFuture.completeExceptionally(new RuntimeException("connection failed"));
+
+    for (int attemptNumber = 0; attemptNumber < 8; attemptNumber++) {
+      runScheduledRetry(scheduledFuture);
+    }
+
+    ArgumentCaptor<Runnable> lastRetryCaptor = ArgumentCaptor.forClass(Runnable.class);
+    verify(executor).schedule(lastRetryCaptor.capture(), anyLong(), any());
+    clearInvocations(executor);
+    var lastWsFuture = failingConnection();
+    lastRetryCaptor.getValue().run();
+    lastWsFuture.completeExceptionally(new RuntimeException("connection failed"));
+    verify(executor, never()).schedule(any(Runnable.class), anyLong(), any());
+
+    clearInvocations(executor);
+    var newAttemptFuture = failingConnection();
+    when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
+    webSocketManager.createConnectionIfNeeded("connectionId");
+    newAttemptFuture.completeExceptionally(new RuntimeException("connection failed again"));
+
+    verify(executor).schedule(any(Runnable.class), eq(60L), eq(TimeUnit.SECONDS));
+    assertThat(logTester.logs()).contains("Cannot connect to SonarCloud WebSocket, retrying in 60s");
+  }
+
+  @Test
   void should_cancel_pending_retry_when_shutting_down() {
     var wsFuture = failingConnection();
     var scheduledFuture = mock(ScheduledFuture.class);
