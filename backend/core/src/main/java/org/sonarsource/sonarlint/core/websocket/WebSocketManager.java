@@ -103,7 +103,7 @@ public class WebSocketManager {
   }
 
   /**
-   * @return the connection if it was or has been opened, else empty
+   * @return the open or pending connection, a newly created one, or empty if creation is not possible
    */
   public Optional<SonarCloudWebSocket> createConnectionIfNeeded(String connectionId) {
     return createConnectionIfNeeded(connectionId, true);

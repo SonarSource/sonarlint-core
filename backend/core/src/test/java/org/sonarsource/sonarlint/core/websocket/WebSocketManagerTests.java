@@ -27,9 +27,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -37,6 +37,9 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,10 +53,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.websocket.WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY;
 
+@ExtendWith(SystemStubsExtension.class)
 class WebSocketManagerTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+
+  @SystemStub
+  private SystemProperties systemProperties;
 
   private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
@@ -65,18 +72,13 @@ class WebSocketManagerTests {
 
   @BeforeEach
   void setUp() {
-    System.setProperty(RETRY_INITIAL_DELAY_PROPERTY, "60");
+    systemProperties.set(RETRY_INITIAL_DELAY_PROPERTY, "60");
     doAnswer(invocation -> {
       ((Runnable) invocation.getArgument(0)).run();
       return null;
     }).when(executor).execute(any(Runnable.class));
     when(sonarQubeClientManager.getValidWebSocketClient("connectionId")).thenReturn(Optional.of(webSocketClient));
     webSocketManager = new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, websocketEndpointUri, executor);
-  }
-
-  @AfterEach
-  void tearDown() {
-    System.clearProperty(RETRY_INITIAL_DELAY_PROPERTY);
   }
 
   @Test

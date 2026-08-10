@@ -61,6 +61,7 @@ import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
+import static uk.org.webcompere.systemstubs.SystemStubs.restoreSystemProperties;
 
 class WebSocketMediumTests {
 
@@ -518,9 +519,9 @@ class WebSocketMediumTests {
     }
 
     @SonarLintTest
-    void should_log_failure_and_reconnect_later_if_server_unavailable(SonarLintTestHarness harness) {
-      System.setProperty(WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY, "1");
-      try {
+    void should_log_failure_and_reconnect_later_if_server_unavailable(SonarLintTestHarness harness) throws Exception {
+      restoreSystemProperties(() -> {
+        System.setProperty(WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY, "1");
         var client = harness.newFakeClient()
           .withToken("connectionId", "token")
           .build();
@@ -542,9 +543,7 @@ class WebSocketMediumTests {
         await().untilAsserted(() -> assertThat(webSocketServerEU.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
           .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
-      } finally {
-        System.clearProperty(WebSocketManager.RETRY_INITIAL_DELAY_PROPERTY);
-      }
+      });
     }
   }
 
