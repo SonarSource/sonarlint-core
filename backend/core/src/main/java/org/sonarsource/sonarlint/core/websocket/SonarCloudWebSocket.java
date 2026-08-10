@@ -81,7 +81,7 @@ public class SonarCloudWebSocket {
   private final CompletableFuture<?> webSocketInputClosed = new CompletableFuture<>();
 
   public static SonarCloudWebSocket create(URI webSocketsEndpointUri, WebSocketClient webSocketClient, Consumer<SonarServerEvent> serverEventConsumer,
-    Runnable connectionEndedRunnable) {
+    Runnable connectionEndedRunnable, Runnable onConnectionSucceeded, Runnable onConnectionFailed) {
     var webSocket = new SonarCloudWebSocket();
     var currentThreadOutput = SonarLintLogger.get().getTargetForCopy();
     LOG.info("Creating WebSocket connection to " + webSocketsEndpointUri);
@@ -97,10 +97,16 @@ public class SonarCloudWebSocket {
       webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
       webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
       webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(() -> keepAlive(ws), 9, 9, TimeUnit.MINUTES);
+      if (!webSocket.closingInitiated.get()) {
+        onConnectionSucceeded.run();
+      }
     });
     webSocket.wsFuture.exceptionally(t -> {
       SonarLintLogger.get().setTarget(currentThreadOutput);
       LOG.error("Error while trying to create WebSocket connection for " + webSocketsEndpointUri, t);
+      if (!webSocket.closingInitiated.get()) {
+        onConnectionFailed.run();
+      }
       return null;
     });
     return webSocket;
@@ -255,6 +261,10 @@ public class SonarCloudWebSocket {
     }
     var ws = wsFuture.getNow(null);
     return ws != null && !ws.isInputClosed() && !ws.isOutputClosed();
+  }
+
+  public boolean isConnecting() {
+    return wsFuture != null && !wsFuture.isDone();
   }
 
   private static class WebSocketEvent {

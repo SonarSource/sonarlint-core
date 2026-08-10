@@ -54,6 +54,8 @@ class SonarCloudWebSocketTests {
   private CompletableFuture<WebSocket> wsFuture;
   private Consumer<SonarServerEvent> serverEventConsumer;
   private Runnable connectionEndedRunnable;
+  private Runnable onConnectionSucceeded;
+  private Runnable onConnectionFailed;
   private SonarCloudWebSocket sonarCloudWebSocket;
   private URI testUri;
 
@@ -64,7 +66,13 @@ class SonarCloudWebSocketTests {
     wsFuture = new CompletableFuture<>();
     serverEventConsumer = mock(Consumer.class);
     connectionEndedRunnable = mock(Runnable.class);
+    onConnectionSucceeded = mock(Runnable.class);
+    onConnectionFailed = mock(Runnable.class);
     testUri = URI.create("wss://test.example.com/websocket");
+  }
+
+  private SonarCloudWebSocket createWebSocket() {
+    return SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable, onConnectionSucceeded, onConnectionFailed);
   }
 
   @Test
@@ -72,23 +80,27 @@ class SonarCloudWebSocketTests {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
     when(mockWebSocket.sendText(anyString(), eq(true))).thenReturn(CompletableFuture.completedFuture(null));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     assertThat(sonarCloudWebSocket).isNotNull();
     verify(webSocketClient).createWebSocketConnection(eq(testUri), any(Consumer.class), any(Runnable.class));
     assertThat(logTester.logs()).anyMatch(log -> log.contains("Creating WebSocket connection to " + testUri));
+    verify(onConnectionSucceeded).run();
+    verify(onConnectionFailed, never()).run();
   }
 
   @Test
   void should_handle_connection_failure_with_generic_exception() {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.completeExceptionally(new RuntimeException("Generic error"));
 
     assertThat(sonarCloudWebSocket).isNotNull();
     assertThat(logTester.logs(LogOutput.Level.ERROR)).anyMatch(log -> log.contains("Error while trying to create WebSocket connection for " + testUri));
+    verify(onConnectionFailed).run();
+    verify(onConnectionSucceeded, never()).run();
   }
 
   @Test
@@ -97,7 +109,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.sendText(anyString(), eq(true))).thenReturn(CompletableFuture.completedFuture(null));
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.completedFuture(null));
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
     var onClosedCaptor = ArgumentCaptor.forClass(Runnable.class);
     verify(webSocketClient).createWebSocketConnection(any(URI.class), any(Consumer.class), onClosedCaptor.capture());
@@ -120,7 +132,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.failedFuture(new RuntimeException("Close failed")));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     sonarCloudWebSocket.close("Test reason");
@@ -136,7 +148,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.failedFuture(new UnresolvedAddressException()));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     // Capture the onClosedRunnable callback and complete it to avoid timeout
@@ -157,7 +169,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.failedFuture(new IOException("Output closed")));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     // Capture the onClosedRunnable callback and complete it to avoid timeout
@@ -178,7 +190,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.failedFuture(new IOException("closed output")));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     // Capture the onClosedRunnable callback and complete it to avoid timeout
@@ -199,7 +211,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
     when(mockWebSocket.sendClose(anyInt(), anyString())).thenReturn(CompletableFuture.failedFuture(new IOException("Connection reset")));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     // Capture the onClosedRunnable callback and complete it to avoid timeout
@@ -219,7 +231,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.sendText(anyString(), eq(true))).thenReturn(CompletableFuture.completedFuture(null));
     when(mockWebSocket.isOutputClosed()).thenReturn(true);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     sonarCloudWebSocket.close("Test reason");
@@ -231,7 +243,7 @@ class SonarCloudWebSocketTests {
   void should_handle_failed_websocket_future() {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.completeExceptionally(new RuntimeException("Connection failed"));
 
     sonarCloudWebSocket.close("Test reason");
@@ -244,7 +256,7 @@ class SonarCloudWebSocketTests {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class)))
       .thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
 
     sonarCloudWebSocket.close("Test reason");
 
@@ -258,7 +270,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isInputClosed()).thenReturn(false);
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     assertThat(sonarCloudWebSocket.isOpen()).isTrue();
@@ -271,7 +283,7 @@ class SonarCloudWebSocketTests {
     when(mockWebSocket.isInputClosed()).thenReturn(true);
     when(mockWebSocket.isOutputClosed()).thenReturn(false);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     assertThat(sonarCloudWebSocket.isOpen()).isFalse();
@@ -281,16 +293,28 @@ class SonarCloudWebSocketTests {
   void should_return_false_when_websocket_future_is_not_done() {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
 
     assertThat(sonarCloudWebSocket.isOpen()).isFalse();
+    assertThat(sonarCloudWebSocket.isConnecting()).isTrue();
+  }
+
+  @Test
+  void should_not_call_failure_callback_when_closing_initiated_before_failure() {
+    when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
+
+    sonarCloudWebSocket = createWebSocket();
+    sonarCloudWebSocket.close("Test reason");
+    wsFuture.completeExceptionally(new RuntimeException("Connection failed"));
+
+    verify(onConnectionFailed, never()).run();
   }
 
   @Test
   void should_return_false_when_websocket_future_failed() {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.completeExceptionally(new RuntimeException("Connection failed"));
 
     assertThat(sonarCloudWebSocket.isOpen()).isFalse();
@@ -300,7 +324,7 @@ class SonarCloudWebSocketTests {
   void should_return_false_when_websocket_future_is_cancelled() {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.cancel(true);
 
     assertThat(sonarCloudWebSocket.isOpen()).isFalse();
@@ -311,7 +335,7 @@ class SonarCloudWebSocketTests {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
     when(mockWebSocket.sendText(anyString(), eq(true))).thenReturn(CompletableFuture.completedFuture(null));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     var onClosedCaptor = ArgumentCaptor.forClass(Runnable.class);
@@ -328,7 +352,7 @@ class SonarCloudWebSocketTests {
     when(webSocketClient.createWebSocketConnection(any(URI.class), any(Consumer.class), any(Runnable.class))).thenReturn(wsFuture);
     when(mockWebSocket.sendText(anyString(), eq(true))).thenReturn(CompletableFuture.completedFuture(null));
 
-    sonarCloudWebSocket = SonarCloudWebSocket.create(testUri, webSocketClient, serverEventConsumer, connectionEndedRunnable);
+    sonarCloudWebSocket = createWebSocket();
     wsFuture.complete(mockWebSocket);
 
     // Close the connection first
