@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source.server;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -35,6 +37,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverapi.plugins.SonarCloudCdnPlugins;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -121,10 +124,14 @@ public class ServerPluginDownloader {
     var pluginKey = serverPlugin.getKey();
     LOG.info("[SYNC] Downloading plugin '{}'", serverPlugin.getFilename());
     var cancelMonitor = new SonarLintCancelMonitor();
-    sonarQubeClientManager.withActiveClient(connectionId,
-      api -> api.plugins().getPlugin(pluginKey, serverPlugin.getHash(),
-        binary -> storageService.connection(connectionId).plugins().store(serverPlugin, binary),
-        cancelMonitor));
+    sonarQubeClientManager.withActiveClient(connectionId, api -> {
+      Consumer<InputStream> store = binary -> storageService.connection(connectionId).plugins().store(serverPlugin, binary);
+      if (api.isSonarCloud()) {
+        new SonarCloudCdnPlugins(api.getHelper()).getPlugin(pluginKey, serverPlugin.getHash(), store, cancelMonitor);
+      } else {
+        api.plugins().getPlugin(pluginKey, store, cancelMonitor);
+      }
+    });
   }
 
   private void fireFailedEvent(String connectionId, SonarPlugin sonarPlugin) {

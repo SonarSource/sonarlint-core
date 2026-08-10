@@ -20,51 +20,47 @@
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
-import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
-
 /**
- * Client for SonarQube Server/Cloud {@code /api/plugins/*} endpoints.
- * SonarQube Cloud plugin jar downloads go through {@link SonarCloudCdnPlugins} instead.
+ * Downloads SonarQube Cloud analyzer jars from the CloudFront CDN ({@code scanner.<host>}),
+ * which is not part of the SonarQube Web API.
  */
-public class PluginsApi {
+public class SonarCloudCdnPlugins {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  public static final String API_PLUGINS_INSTALLED_PATH = "/api/plugins/installed";
 
   private final ServerApiHelper helper;
 
-  public PluginsApi(ServerApiHelper helper) {
+  public SonarCloudCdnPlugins(ServerApiHelper helper) {
     this.helper = helper;
   }
 
-  public List<ServerPlugin> getInstalled(SonarLintCancelMonitor cancelMonitor) {
+  public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
+    var url = buildDownloadUrl(helper.getBaseUrl(), key, hash);
     var start = System.currentTimeMillis();
-    var plugins = helper.isSonarCloud()
-      ? helper.getAnonymousJson(API_PLUGINS_INSTALLED_PATH, InstalledPluginsPayloadDto.class, cancelMonitor)
-      : helper.getJson(API_PLUGINS_INSTALLED_PATH, InstalledPluginsPayloadDto.class, cancelMonitor);
-    var result = Arrays.stream(plugins.plugins()).map(PluginsApi::toInstalledPlugin).toList();
-    var duration = System.currentTimeMillis() - start;
-    LOG.info("Downloaded plugin list in {}ms", duration);
-    return result;
-  }
-
-  private static ServerPlugin toInstalledPlugin(InstalledPluginsPayloadDto.InstalledPluginPayloadDto payload) {
-    return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported());
-  }
-
-  public void getPlugin(String key, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
-    var path = "api/plugins/download?plugin=" + urlEncode(key);
-    var start = System.currentTimeMillis();
-    try (var response = helper.get(path, cancelMonitor)) {
+    try (var response = helper.getAnonymousUrl(url, cancelMonitor)) {
       pluginFileConsumer.accept(response.bodyAsStream());
       var duration = System.currentTimeMillis() - start;
       LOG.info("Downloaded '{}' in {}ms", key, duration);
+    }
+  }
+
+  static String buildDownloadUrl(String baseUrl, String key, String hash) {
+    var baseUri = URI.create(baseUrl);
+    var host = baseUri.getHost();
+    if (host == null) {
+      throw new IllegalArgumentException("SonarQube Cloud URL must contain a host: " + baseUrl);
+    }
+    try {
+      var path = "/plugins/" + key + "/versions/" + hash + ".jar";
+      return new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), path, null, null).toASCIIString();
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException("Unable to build the SonarQube Cloud plugin download URL", e);
     }
   }
 
