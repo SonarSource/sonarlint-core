@@ -93,7 +93,11 @@ public class ServerApiHelper {
   }
 
   public HttpClient.Response getAnonymous(String path, SonarLintCancelMonitor cancelMonitor) {
-    var response = rawGetUrlAnonymous(buildEndpointUrl(path), cancelMonitor);
+    return getAnonymousUrl(buildEndpointUrl(path), cancelMonitor);
+  }
+
+  public HttpClient.Response getAnonymousUrl(String url, SonarLintCancelMonitor cancelMonitor) {
+    var response = rawGetUrlAnonymous(url, cancelMonitor);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
@@ -281,6 +285,10 @@ public class ServerApiHelper {
 
   public Optional<String> getOrganizationKey() {
     return endpointParams.getOrganization();
+  }
+
+  public String getBaseUrl() {
+    return endpointParams.getBaseUrl();
   }
 
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
