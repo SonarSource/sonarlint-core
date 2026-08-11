@@ -33,13 +33,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.serverconnection.aicodefix.AiCodeFixRepository;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_BRANCHES;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_DEPENDENCY_RISKS;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
-@Component
+@Service
 @Lazy(false)
 public class SonarLintDatabaseService {
 
