@@ -21,12 +21,18 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
  class NoOpNewSignificantCodeTests {
   @Test
    void visit_all_builder_fields() {
-    new NoOpNewSignificantCode()
+    var originalSignificantCode = new NoOpNewSignificantCode();
+    var significantCode = originalSignificantCode
       .onFile(null)
-      .addRange(null)
-      .save();
+      .addRange(null);
+
+    assertThat(significantCode).isEqualTo(originalSignificantCode);
+
+    significantCode.save();
   }
 }

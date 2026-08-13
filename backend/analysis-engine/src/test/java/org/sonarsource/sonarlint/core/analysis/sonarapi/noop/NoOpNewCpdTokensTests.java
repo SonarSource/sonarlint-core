@@ -21,15 +21,19 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
  class NoOpNewCpdTokensTests {
 
   @Test
    void improve_coverage() {
-    new NoOpNewCpdTokens()
+    var noOpNewCpdTokens = new NoOpNewCpdTokens();
+    var result = noOpNewCpdTokens
       .onFile(null)
       .addToken(null, null)
-      .addToken(0, 0, 0, 0, null)
-      .save();
+      .addToken(0, 0, 0, 0, null);
+
+    assertThat(result).isSameAs(noOpNewCpdTokens);
   }
 
 }

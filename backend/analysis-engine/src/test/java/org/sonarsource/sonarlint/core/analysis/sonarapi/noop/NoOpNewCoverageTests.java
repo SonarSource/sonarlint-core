@@ -21,14 +21,18 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class NoOpNewCoverageTests {
 
   @Test
   void test() {
-    new NoOpNewCoverage()
+    var noOpNewCoverage = new NoOpNewCoverage();
+    var result = noOpNewCoverage
       .onFile(null)
       .conditions(0, 0, 0)
-      .lineHits(0, 0)
-      .save();
+      .lineHits(0, 0);
+
+    assertThat(result).isEqualTo(noOpNewCoverage);
   }
 }
