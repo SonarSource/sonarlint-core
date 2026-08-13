@@ -29,10 +29,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.Collections.reverseOrder;
 
 public class FileTreeMatcher {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public Result match(List<Path> serverRelativePaths, List<Path> ideRelativePaths) {
     var reversePathTree = new ReversePathTree();
@@ -41,12 +44,16 @@ public class FileTreeMatcher {
 
     // No need to index server files if no ide path ends with the same filename
     Set<Path> ideFilenames = ideRelativePaths.stream().map(Path::getFileName).collect(Collectors.toSet());
-    serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).forEach(reversePathTree::index);
+    LOG.debug("IDE filenames used for filtering: {}", ideFilenames);
+    var filteredServerPaths = serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).toList();
+    LOG.debug("Server paths surviving filename filter: {} out of {}", filteredServerPaths.size(), serverRelativePaths.size());
+    filteredServerPaths.forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
       var match = reversePathTree.findLongestSuffixMatches(ide);
       if (match.matchLen() > 0) {
         var idePrefix = getIdePrefix(ide, match);
+        LOG.debug("IDE path '{}' matched: matchLen={}, idePrefix='{}', serverPrefixes={}", ide, match.matchLen(), idePrefix, match.matchPrefixes());
 
         for (Path sqPrefix : match.matchPrefixes()) {
           var r = new Result(idePrefix, sqPrefix);
@@ -55,7 +62,13 @@ public class FileTreeMatcher {
       }
     }
 
-    return higherScoreResult(resultScores);
+    if (resultScores.isEmpty()) {
+      LOG.debug("No file matches found between IDE and server paths — returning empty prefixes");
+    }
+
+    var result = higherScoreResult(resultScores);
+    LOG.debug("Final winning result: idePrefix='{}', serverPrefix='{}' (from {} candidates)", result.idePrefix(), result.sqPrefix(), resultScores.size());
+    return result;
   }
 
   private static double computeScore(@Nullable Double currentScore, ReversePathTree.Match match) {
