@@ -97,7 +97,7 @@
     <!-- On-demand plugin versions -->
     <cfamily.version>6.84.0.101652</cfamily.version>
     <csharp.version>10.31.0.145097</csharp.version>
-    <omnisharp.version>1.39.15</omnisharp.version>
+    <omnisharp.version>1.39.15.1-sonar</omnisharp.version>
   </properties>
 
   <dependencyManagement>
