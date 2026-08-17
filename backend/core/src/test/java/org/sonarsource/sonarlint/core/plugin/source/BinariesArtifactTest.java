@@ -93,9 +93,9 @@ class BinariesArtifactTest {
 
   @Test
   void should_return_omnisharp_version_from_properties() {
-    assertThat(BinariesArtifact.OMNISHARP_MONO.version()).isEqualTo("1.39.15");
-    assertThat(BinariesArtifact.OMNISHARP_NET472.version()).isEqualTo("1.39.15");
-    assertThat(BinariesArtifact.OMNISHARP_NET6.version()).isEqualTo("1.39.15");
+    assertThat(BinariesArtifact.OMNISHARP_MONO.version()).isEqualTo("1.39.15.1-sonar");
+    assertThat(BinariesArtifact.OMNISHARP_NET472.version()).isEqualTo("1.39.15.1-sonar");
+    assertThat(BinariesArtifact.OMNISHARP_NET6.version()).isEqualTo("1.39.15.1-sonar");
   }
 
   @Test
