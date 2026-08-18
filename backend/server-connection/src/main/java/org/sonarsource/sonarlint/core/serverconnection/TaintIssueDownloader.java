@@ -81,7 +81,14 @@ public class TaintIssueDownloader {
     var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, cancelMonitor);
     downloadVulnerabilitiesForRules.getIssues()
       .stream()
-      .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey, cancelMonitor))
+      .map(i -> {
+        try {
+          return convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey, cancelMonitor);
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping taint issue '{}': {}", i.getKey(), e.getMessage());
+          return null;
+        }
+      })
       .filter(Objects::nonNull)
       .forEach(result::add);
 
@@ -104,7 +111,15 @@ public class TaintIssueDownloader {
       // Ignore project level issues
       .filter(i -> i.getMainLocation().hasFilePath())
       .filter(not(TaintVulnerabilityLite::getClosed))
-      .map(TaintIssueDownloader::convertLiteTaintIssue)
+      .<ServerTaintIssue>map(i -> {
+        try {
+          return convertLiteTaintIssue(i);
+        } catch (Exception e) {
+          LOG.warn("[SYNC] Skipping taint issue '{}': {}", i.getKey(), e.getMessage());
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
       .toList();
     var closedIssueKeys = apiResult.getTaintIssues()
       .stream()

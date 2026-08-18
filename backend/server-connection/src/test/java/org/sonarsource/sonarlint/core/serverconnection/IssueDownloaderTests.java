@@ -387,4 +387,57 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
   }
 
+  @Test
+  void should_skip_batch_issue_with_unknown_type_and_continue() {
+    var badIssue = ScannerInput.ServerIssue.newBuilder()
+      .setKey("bad-uuid")
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S999")
+      .setPath("foo/bar/Bad.java")
+      .setType("BRAND_NEW_TYPE")
+      .build();
+    var goodIssue = ScannerInput.ServerIssue.newBuilder()
+      .setKey("good-uuid")
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setPath("foo/bar/Hello.java")
+      .setType("BUG")
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, badIssue, goodIssue);
+
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
+
+    assertThat(issues).hasSize(1);
+    assertThat(issues.get(0).getKey()).isEqualTo("good-uuid");
+    assertThat(logTester.logs()).anyMatch(log -> log.contains("Skipping issue") && log.contains("bad-uuid"));
+  }
+
+  @Test
+  void should_skip_pull_issue_with_unknown_type_and_continue() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var badIssue = IssueLite.newBuilder()
+      .setKey("bad-uuid")
+      .setRuleKey("sonarjava:S999")
+      // type not set -> UNSPECIFIED_RULE_TYPE -> RuleType.valueOf throws
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Bad.java").setMessage("Bad"))
+      .setCreationDate(123456789L)
+      .build();
+    var goodIssue = IssueLite.newBuilder()
+      .setKey("good-uuid")
+      .setRuleKey("sonarjava:S123")
+      .setType(Common.RuleType.BUG)
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Good"))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, badIssue, goodIssue);
+
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
+
+    assertThat(result.getChangedIssues()).hasSize(1);
+    assertThat(result.getChangedIssues().get(0).getKey()).isEqualTo("good-uuid");
+    assertThat(logTester.logs()).anyMatch(log -> log.contains("Skipping issue") && log.contains("bad-uuid"));
+  }
+
 }

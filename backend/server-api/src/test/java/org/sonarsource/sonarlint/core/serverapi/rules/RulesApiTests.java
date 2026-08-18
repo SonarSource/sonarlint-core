@@ -190,6 +190,31 @@ class RulesApiTests {
   }
 
   @Test
+  void should_skip_active_rule_with_unknown_severity_and_continue() {
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?qprofile=QPKEY&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
+      Rules.SearchResponse.newBuilder()
+        .setPaging(Common.Paging.newBuilder().setTotal(2).build())
+        .addRules(Rules.Rule.newBuilder().setKey("repo:bad_rule").build())
+        .addRules(Rules.Rule.newBuilder().setKey("repo:good_rule").build())
+        .setActives(Rules.Actives.newBuilder()
+          .putActives("repo:bad_rule", Rules.ActiveList.newBuilder().addActiveList(
+            Rules.Active.newBuilder().setSeverity("BRAND_NEW_SEVERITY").build()).build())
+          .putActives("repo:good_rule", Rules.ActiveList.newBuilder().addActiveList(
+            Rules.Active.newBuilder().setSeverity("MINOR").build()).build())
+          .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+
+    var activeRules = rulesApi.getAllActiveRules("QPKEY", new SonarLintCancelMonitor());
+
+    assertThat(activeRules).hasSize(1);
+    assertThat(activeRules.iterator().next().getRuleKey()).isEqualTo("repo:good_rule");
+    assertThat(logTester.logs()).anyMatch(log -> log.contains("Skipping active rule") && log.contains("repo:bad_rule"));
+  }
+
+  @Test
   void should_fallback_on_deprecated_pagination_for_sonarqube_older_than_9_8() {
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
