@@ -243,12 +243,12 @@ class SloopLauncherTests {
 
     @Override
     public void reportProgress(ReportProgressParams params) {
-
+      // not needed in tests
     }
 
     @Override
     public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-
+      // not needed in tests
     }
 
     @Override
@@ -273,7 +273,7 @@ class SloopLauncherTests {
 
     @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-
+      // not needed in tests
     }
 
     @Override
@@ -283,7 +283,7 @@ class SloopLauncherTests {
 
     @Override
     public void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName) {
-
+      // not needed in tests
     }
 
     @Override
@@ -295,6 +295,7 @@ class SloopLauncherTests {
     @Override
     public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
       List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
+      // not needed in tests
     }
 
     @Override
