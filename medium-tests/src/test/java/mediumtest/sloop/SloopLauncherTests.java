@@ -243,12 +243,12 @@ class SloopLauncherTests {
 
     @Override
     public void reportProgress(ReportProgressParams params) {
-      // Not needed in tests
+      // not needed in tests
     }
 
     @Override
     public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-      // No-op, not needed for tests
+      // not needed in tests
     }
 
     @Override
@@ -273,7 +273,7 @@ class SloopLauncherTests {
 
     @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-      // no-op
+      // not needed in tests
     }
 
     @Override
@@ -283,7 +283,7 @@ class SloopLauncherTests {
 
     @Override
     public void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName) {
-      // Not needed in dummy test client
+      // not needed in tests
     }
 
     @Override
@@ -295,7 +295,7 @@ class SloopLauncherTests {
     @Override
     public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
       List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
-      // Not needed for this test stub
+      // not needed in tests
     }
 
     @Override
