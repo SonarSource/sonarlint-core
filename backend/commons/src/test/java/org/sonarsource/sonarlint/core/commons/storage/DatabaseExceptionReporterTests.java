@@ -51,7 +51,8 @@ class DatabaseExceptionReporterTests {
   void setUp() {
     DatabaseExceptionReporter.clearRecentExceptions();
     sentryMock = mockStatic(Sentry.class);
-    sentryMock.when(Sentry::logger).thenReturn(mock(ILoggerApi.class));
+    ILoggerApi loggerApi = mock(ILoggerApi.class);
+    sentryMock.when(Sentry::logger).thenReturn(loggerApi);
   }
 
   @AfterEach

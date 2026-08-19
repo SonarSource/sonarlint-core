@@ -310,7 +310,7 @@ class SloopLauncherTests {
 
     @Override
     public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
-
+      // not needed in tests
     }
   }
 }
