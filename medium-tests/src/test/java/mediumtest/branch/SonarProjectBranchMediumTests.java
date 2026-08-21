@@ -35,10 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
@@ -46,7 +46,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
 class SonarProjectBranchMediumTests {
 
   @SonarLintTest
-  void it_should_not_request_client_to_match_branch_when_vcs_repo_change_occurs_on_unbound_project(SonarLintTestHarness harness) throws InterruptedException {
+  void it_should_not_request_client_to_match_branch_when_vcs_repo_change_occurs_on_unbound_project(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().build();
 
     var backend = harness.newBackend()
@@ -55,9 +55,10 @@ class SonarProjectBranchMediumTests {
 
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
-    Thread.sleep(200);
-    verify(client, never()).matchSonarProjectBranch(any(), any(), any(), any());
-    verify(client, never()).didChangeMatchedSonarProjectBranch(any(), any());
+    await().during(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+      verify(client, never()).matchSonarProjectBranch(any(), any(), any(), any());
+      verify(client, never()).didChangeMatchedSonarProjectBranch(any(), any());
+    });
   }
 
   @SonarLintTest
@@ -78,7 +79,7 @@ class SonarProjectBranchMediumTests {
   }
 
   @SonarLintTest
-  void it_should_not_notify_client_if_matched_branch_did_not_change(SonarLintTestHarness harness) throws InterruptedException {
+  void it_should_not_notify_client_if_matched_branch_did_not_change(SonarLintTestHarness harness) {
     var client = harness.newFakeClient()
       .build();
     when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("myBranch");
@@ -97,8 +98,7 @@ class SonarProjectBranchMediumTests {
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
     verify(client, timeout(5000).times(2)).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
-    Thread.sleep(200);
-    verify(client, times(1)).didChangeMatchedSonarProjectBranch(any(), any());
+    verify(client, after(200).times(1)).didChangeMatchedSonarProjectBranch(any(), any());
   }
 
   @SonarLintTest

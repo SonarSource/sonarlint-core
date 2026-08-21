@@ -21,6 +21,7 @@ package mediumtest.hotspots;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.Duration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -51,7 +52,7 @@ class OpenHotspotInBrowserMediumTests {
   }
 
   @SonarLintTest
-  void it_should_not_open_hotspot_if_unbound(SonarLintTestHarness harness) throws InterruptedException {
+  void it_should_not_open_hotspot_if_unbound(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
@@ -59,9 +60,7 @@ class OpenHotspotInBrowserMediumTests {
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
-    Thread.sleep(100);
-
-    verify(fakeClient, never()).openUrlInBrowser(any());
+    await().during(Duration.ofMillis(100)).untilAsserted(() -> verify(fakeClient, never()).openUrlInBrowser(any()));
   }
 
 }
