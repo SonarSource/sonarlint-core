@@ -134,7 +134,7 @@ public class AnalysisQueue {
       }
       LOG.debug("Batching {} analyses", removedCommands.size() + 1);
       return Stream.concat(Stream.of(analyzeCommand), removedCommands.stream())
-        .sorted((c1, c2) -> (int) (c1.getSequenceNumber() - c2.getSequenceNumber()))
+        .sorted((c1, c2) -> Long.compare(c1.getSequenceNumber(), c2.getSequenceNumber()))
         .reduce(AnalyzeCommand::mergeWith)
         // this last clause should never occur
         .orElse(analyzeCommand);
@@ -195,9 +195,9 @@ public class AnalysisQueue {
       var otherCommand = otherQueuedCommand.command;
       var commandRank = COMMAND_TYPES_ORDERED.get(command.getClass());
       var otherCommandRank = COMMAND_TYPES_ORDERED.get(otherCommand.getClass());
-      return !Objects.equals(commandRank, otherCommandRank) ? (commandRank - otherCommandRank) :
+      return !Objects.equals(commandRank, otherCommandRank) ? Integer.compare(commandRank, otherCommandRank) :
       // for same command types, respect insertion order
-        (int) (command.getSequenceNumber() - otherCommand.getSequenceNumber());
+        Long.compare(command.getSequenceNumber(), otherCommand.getSequenceNumber());
     }
   }
 
