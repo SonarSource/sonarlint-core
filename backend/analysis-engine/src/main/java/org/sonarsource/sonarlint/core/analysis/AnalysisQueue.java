@@ -195,9 +195,9 @@ public class AnalysisQueue {
       var otherCommand = otherQueuedCommand.command;
       var commandRank = COMMAND_TYPES_ORDERED.get(command.getClass());
       var otherCommandRank = COMMAND_TYPES_ORDERED.get(otherCommand.getClass());
-      return !Objects.equals(commandRank, otherCommandRank) ? (commandRank - otherCommandRank) :
+      return !Objects.equals(commandRank, otherCommandRank) ? Integer.compare(commandRank, otherCommandRank) :
       // for same command types, respect insertion order
-        (int) (command.getSequenceNumber() - otherCommand.getSequenceNumber());
+        Long.compare(command.getSequenceNumber(), otherCommand.getSequenceNumber());
     }
   }
 
