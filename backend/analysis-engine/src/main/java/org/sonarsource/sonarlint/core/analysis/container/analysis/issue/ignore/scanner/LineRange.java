@@ -23,7 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class LineRange {
+public final class LineRange {
   private final int from;
   private final int to;
 

@@ -47,7 +47,7 @@ import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
-public class XodusKnownFindingsStore {
+public final class XodusKnownFindingsStore {
 
   static final String KNOWN_FINDINGS_STORE = "known-findings-store";
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
