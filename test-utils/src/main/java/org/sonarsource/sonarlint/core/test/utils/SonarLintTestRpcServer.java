@@ -69,7 +69,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
 
 import static java.util.Objects.requireNonNull;
 
-public class SonarLintTestRpcServer implements SonarLintRpcServer {
+public final class SonarLintTestRpcServer implements SonarLintRpcServer {
   private final SonarLintRpcServer serverUsingRpc;
   private final SonarLintRpcServerImpl serverUsingJava;
   private final BackendJsonRpcLauncher serverLauncher;
@@ -299,7 +299,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     return serverUsingJava.getEmbeddedServerPort();
   }
 
-  private static class JsonRpcSpyInputStream extends PipedInputStream {
+  private static final class JsonRpcSpyInputStream extends PipedInputStream {
 
     public JsonRpcSpyInputStream(PipedOutputStream outputStream) throws IOException {
       super(outputStream);
@@ -315,7 +315,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     }
   }
 
-  private static class JsonRpcSpyOutputStream extends PipedOutputStream {
+  private static final class JsonRpcSpyOutputStream extends PipedOutputStream {
     private final StringBuilder mem = new StringBuilder();
     private int nextContentSize = -1;
 

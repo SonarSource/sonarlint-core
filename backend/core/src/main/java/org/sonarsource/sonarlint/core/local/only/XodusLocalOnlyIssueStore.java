@@ -48,7 +48,7 @@ import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
-public class XodusLocalOnlyIssueStore {
+public final class XodusLocalOnlyIssueStore {
 
   static final String LOCAL_ONLY_ISSUE = "xodus-local-only-issue-store";
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
