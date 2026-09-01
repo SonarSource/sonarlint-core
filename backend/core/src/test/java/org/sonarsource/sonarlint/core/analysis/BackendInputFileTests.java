@@ -51,4 +51,15 @@ class BackendInputFileTests {
     assertThat(inputFile.getPath().replace(File.separatorChar, '/')).endsWith(pathAsString);
   }
 
+  @Test
+  void uri_encoded_plus_signs_in_path_segments_should_be_decoded() {
+    var path = Path.of("/test/src/c++/main.cpp");
+    var pathAsString = path.toString().replace(File.separatorChar, '/');
+    var clientFile = new ClientFile(URI.create("file:///test/src/c%2B%2B/main.cpp"), "configScopeId", path, false, null, null, null, true);
+
+    var inputFile = new BackendInputFile(clientFile);
+
+    assertThat(inputFile.getPath().replace(File.separatorChar, '/')).endsWith(pathAsString);
+  }
+
 }

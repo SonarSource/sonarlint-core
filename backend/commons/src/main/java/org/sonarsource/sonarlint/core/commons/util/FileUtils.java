@@ -19,17 +19,38 @@
  */
 package org.sonarsource.sonarlint.core.commons.util;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Path;
 
 public class FileUtils {
 
+  /**
+   * Converts a file URI (e.g. as sent by an IDE client) to a local {@link Path}, decoding any percent-encoded
+   * characters in the process (so a directory literally named {@code c%2B%2B} always means {@code c++}, never a
+   * raw {@code %2B%2B}, per the URI spec).
+   *
+   * @throws IllegalArgumentException if {@code uri} is not a valid, absolute, hierarchical {@code file} URI
+   *                                   without a query or fragment component (e.g. a URI with a non-empty
+   *                                   authority/host, such as a UNC path), or contains raw non-ASCII characters
+   *                                   that are not percent-encoded (works around JDK-8162518)
+   * @throws java.nio.file.FileSystemNotFoundException if {@code uri}'s scheme is not {@code file} and has no
+   *                                                     installed {@link java.nio.file.spi.FileSystemProvider}
+   *                                                     (e.g. the {@code temp} scheme used by IntelliJ or the
+   *                                                     {@code rse} scheme used by Eclipse Remote System Explorer)
+   */
   public static Path getFilePathFromUri(URI uri) {
     try {
-      // In case the path contains non-ASCII characters, Path.of() will fail, we should first try to encode the path via toURL()
-      return Path.of(uri.toURL().getPath());
-    } catch (Exception e) {
+      // Path.of(URI) correctly decodes percent-encoded sequences (e.g. "%2B" -> "+"), unlike URL.getPath() below
       return Path.of(uri);
+    } catch (IllegalArgumentException e) {
+      // Works around JDK-8162518: Path.of(URI) throws "Bad escape" for raw non-ASCII characters in the URI.
+      // URL.getPath() does not decode percent-encoded sequences, so it must only be used as a last resort.
+      try {
+        return Path.of(uri.toURL().getPath());
+      } catch (MalformedURLException ex) {
+        throw new IllegalArgumentException(ex);
+      }
     }
   }
 
