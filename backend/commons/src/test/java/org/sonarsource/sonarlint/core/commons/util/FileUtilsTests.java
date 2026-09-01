@@ -21,38 +21,29 @@ package org.sonarsource.sonarlint.core.commons.util;
 
 import java.net.URI;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FileUtilsTests {
 
-  @Test
-  void shouldDecodePercentEncodedPlusSignsInUri() {
-    var uri = URI.create("file:///home/user/src/c%2B%2B/main.cpp");
+  @ParameterizedTest
+  @MethodSource("uris")
+  void shouldDecodeUriToFilePath(String uri, String expectedPath) {
+    var path = FileUtils.getFilePathFromUri(URI.create(uri));
 
-    var path = FileUtils.getFilePathFromUri(uri);
-
-    assertThat(path).isEqualTo(Path.of("/home/user/src/c++/main.cpp"));
+    assertThat(path).isEqualTo(Path.of(expectedPath));
   }
 
-  @Test
-  void shouldDecodePercentEncodedSpacesInUri() {
-    var uri = URI.create("file:///home/user/my%20project/main.cpp");
-
-    var path = FileUtils.getFilePathFromUri(uri);
-
-    assertThat(path).isEqualTo(Path.of("/home/user/my project/main.cpp"));
-  }
-
-  @Test
-  void shouldFallBackToUrlPathForUriWithRawNonAsciiCharacters() {
-    // JDK-8162518: Path.of(URI) throws "Bad escape" for a hierarchical URI with an empty authority
-    // component (e.g. "file:///...") containing raw, non-percent-encoded non-ASCII characters
-    var uri = URI.create("file:///home/user/src/español/main.cpp");
-
-    var path = FileUtils.getFilePathFromUri(uri);
-
-    assertThat(path).isEqualTo(Path.of("/home/user/src/español/main.cpp"));
+  private static Stream<Arguments> uris() {
+    return Stream.of(
+      Arguments.of("file:///home/user/src/c%2B%2B/main.cpp", "/home/user/src/c++/main.cpp"),
+      Arguments.of("file:///home/user/my%20project/main.cpp", "/home/user/my project/main.cpp"),
+      // JDK-8162518: Path.of(URI) throws "Bad escape" for a hierarchical URI with an empty authority component
+      // (e.g. "file:///...") containing raw, non-percent-encoded non-ASCII characters; falls back to URL.getPath()
+      Arguments.of("file:///home/user/src/español/main.cpp", "/home/user/src/español/main.cpp"));
   }
 }
