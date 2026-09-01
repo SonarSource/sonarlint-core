@@ -43,7 +43,10 @@ class FileUtilsTests {
       Arguments.of("file:///home/user/src/c%2B%2B/main.cpp", "/home/user/src/c++/main.cpp"),
       Arguments.of("file:///home/user/my%20project/main.cpp", "/home/user/my project/main.cpp"),
       // JDK-8162518: Path.of(URI) throws "Bad escape" for a hierarchical URI with an empty authority component
-      // (e.g. "file:///...") containing raw, non-percent-encoded non-ASCII characters; falls back to URL.getPath()
-      Arguments.of("file:///home/user/src/español/main.cpp", "/home/user/src/español/main.cpp"));
+      // (e.g. "file:///...") containing raw, non-percent-encoded non-ASCII characters; falls back to URI.getPath()
+      Arguments.of("file:///home/user/src/español/main.cpp", "/home/user/src/español/main.cpp"),
+      // Same JDK-8162518 fallback, but the path also contains a percent-encoded segment: URI.getPath() must
+      // decode "%2B" while leaving the raw "é" alone
+      Arguments.of("file:///home/user/josé/c%2B%2B/main.cpp", "/home/user/josé/c++/main.cpp"));
   }
 }
