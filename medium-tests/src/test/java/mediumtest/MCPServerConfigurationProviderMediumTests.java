@@ -58,6 +58,8 @@ class MCPServerConfigurationProviderMediumTests {
         "command": "docker",
         "args": [
           "run",
+          "--init",
+          "--pull=always",
           "-i",
           "--rm",
           "-e",
@@ -65,14 +67,14 @@ class MCPServerConfigurationProviderMediumTests {
           "-e",
           "SONARQUBE_ORG",
           "-e",
-          "SONARQUBE_CLOUD_URL",
+          "SONARQUBE_URL",
           "-e",
           "SONARQUBE_IDE_PORT",
-          "mcp/sonarqube"
+          "sonarsource/sonarqube-mcp"
         ],
         "env": {
           "SONARQUBE_ORG": "%s",
-          "SONARQUBE_CLOUD_URL": "%s",
+          "SONARQUBE_URL": "%s",
           "SONARQUBE_TOKEN": "%s",
           "SONARQUBE_IDE_PORT": "%s"
         }
@@ -107,6 +109,8 @@ class MCPServerConfigurationProviderMediumTests {
         "command": "docker",
         "args": [
           "run",
+          "--init",
+          "--pull=always",
           "-i",
           "--rm",
           "-e",
@@ -114,14 +118,14 @@ class MCPServerConfigurationProviderMediumTests {
           "-e",
           "SONARQUBE_ORG",
           "-e",
-          "SONARQUBE_CLOUD_URL",
+          "SONARQUBE_URL",
           "-e",
           "SONARQUBE_IDE_PORT",
-          "mcp/sonarqube"
+          "sonarsource/sonarqube-mcp"
         ],
         "env": {
           "SONARQUBE_ORG": "%s",
-          "SONARQUBE_CLOUD_URL": "%s",
+          "SONARQUBE_URL": "%s",
           "SONARQUBE_TOKEN": "%s",
           "SONARQUBE_IDE_PORT": "%s"
         }
@@ -155,6 +159,8 @@ class MCPServerConfigurationProviderMediumTests {
         "command": "docker",
         "args": [
           "run",
+          "--init",
+          "--pull=always",
           "-i",
           "--rm",
           "-e",
@@ -163,7 +169,7 @@ class MCPServerConfigurationProviderMediumTests {
           "SONARQUBE_URL",
           "-e",
           "SONARQUBE_IDE_PORT",
-          "mcp/sonarqube"
+          "sonarsource/sonarqube-mcp"
         ],
         "env": {
           "SONARQUBE_URL": "%s",

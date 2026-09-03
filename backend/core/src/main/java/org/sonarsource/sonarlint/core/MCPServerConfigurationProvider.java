@@ -36,6 +36,8 @@ public class MCPServerConfigurationProvider {
       "command": "docker",
       "args": [
         "run",
+        "--init",
+        "--pull=always",
         "-i",
         "--rm",
         "-e",
@@ -43,14 +45,14 @@ public class MCPServerConfigurationProvider {
         "-e",
         "SONARQUBE_ORG",
         "-e",
-        "SONARQUBE_CLOUD_URL",
+        "SONARQUBE_URL",
         "-e",
         "SONARQUBE_IDE_PORT",
-        "mcp/sonarqube"
+        "sonarsource/sonarqube-mcp"
       ],
       "env": {
         "SONARQUBE_ORG": "%s",
-        "SONARQUBE_CLOUD_URL": "%s",
+        "SONARQUBE_URL": "%s",
         "SONARQUBE_TOKEN": "%s",
         "SONARQUBE_IDE_PORT": "%s"
       }
@@ -61,6 +63,8 @@ public class MCPServerConfigurationProvider {
       "command": "docker",
       "args": [
         "run",
+        "--init",
+        "--pull=always",
         "-i",
         "--rm",
         "-e",
@@ -69,7 +73,7 @@ public class MCPServerConfigurationProvider {
         "SONARQUBE_URL",
         "-e",
         "SONARQUBE_IDE_PORT",
-        "mcp/sonarqube"
+        "sonarsource/sonarqube-mcp"
       ],
       "env": {
         "SONARQUBE_URL": "%s",
