@@ -38,7 +38,7 @@ public class PluginLocator {
   }
 
   public static Path getJavascriptPluginPath() {
-    return getPluginPath("sonar-javascript-plugin-13.8.0.44569.jar");
+    return getPluginPath("sonar-javascript-plugin-11.8.0.37897.jar");
   }
 
   public static Map<String, Path> getEmbeddedPluginsByKeyForTests() {
