@@ -252,10 +252,6 @@ public class WebSocketService {
     return false;
   }
 
-  public boolean hasOpenConnection(SonarCloudRegion region) {
-    return webSocketsByRegion.get(region).hasOpenConnection();
-  }
-
   @PreDestroy
   public void shutdown() {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {

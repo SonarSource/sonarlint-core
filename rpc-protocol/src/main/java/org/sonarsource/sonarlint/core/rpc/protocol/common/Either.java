@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-/*
+/**
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.messages.Either} to stop depending on lsp4j types in API
  * and services.
  * See SLCORE-663 for details.

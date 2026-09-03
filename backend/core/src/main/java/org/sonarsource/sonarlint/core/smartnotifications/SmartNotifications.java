@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -51,7 +50,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.SearchEventsResponseDto;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 import org.springframework.context.event.EventListener;
 
@@ -68,20 +66,18 @@ public class SmartNotifications {
   private final SonarQubeClientManager sonarQubeClientManager;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
-  private final WebSocketService webSocketService;
   private final InitializeParams params;
   private final LastEventPolling lastEventPollingService;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
   @Inject
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager,
-    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
+    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.client = client;
     this.telemetryService = telemetryService;
-    this.webSocketService = webSocketService;
     this.params = params;
     lastEventPollingService = new LastEventPolling(storageService);
   }
@@ -136,12 +132,9 @@ public class SmartNotifications {
       .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(ZoneId.systemDefault()), connectionId, projectKey));
   }
 
-  private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
-    if (connection.getKind() == ConnectionKind.SONARCLOUD) {
-      var region = ((SonarCloudConnectionConfiguration) connection).getRegion();
-      return webSocketService.hasOpenConnection(region);
-    }
-    return false;
+  private static boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
+    // SonarCloud events are delivered via WebSocket only; HTTP polling is SonarQube Server only
+    return connection.getKind() == ConnectionKind.SONARCLOUD;
   }
 
   private static long getPollPeriod() {

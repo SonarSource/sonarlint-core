@@ -49,7 +49,7 @@ public abstract class AbstractFilePredicate implements OptimizedFilePredicate {
 
   @Override
   public final int compareTo(OptimizedFilePredicate o) {
-    return o.priority() - priority();
+    return Integer.compare(o.priority(), priority());
   }
 
 }

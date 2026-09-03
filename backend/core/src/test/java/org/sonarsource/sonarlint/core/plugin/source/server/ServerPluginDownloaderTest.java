@@ -148,6 +148,7 @@ class ServerPluginDownloaderTest {
   private static ServerPlugin mockServerPlugin(String pluginKey) {
     var plugin = mock(ServerPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
+    when(plugin.getHash()).thenReturn("hash");
     return plugin;
   }
 }

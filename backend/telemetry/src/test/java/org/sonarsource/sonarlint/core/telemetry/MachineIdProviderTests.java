@@ -20,9 +20,12 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Answers;
 import org.sonarsource.sonarlint.core.commons.SonarUserHome;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
@@ -38,7 +42,10 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SystemStubsExtension.class)
@@ -98,6 +105,30 @@ class MachineIdProviderTests {
   }
 
   @Test
+  void should_read_the_winner_id_when_every_create_attempt_loses_the_race(@TempDir Path tempDir) {
+    environmentVariables.set(SonarUserHome.SONAR_USER_HOME_ENV, tempDir.toString());
+    var userFile = tempDir.resolve("user");
+    var winnerId = UUID.randomUUID().toString();
+    var userSetting = telemetryEnabled(true);
+
+    try (var filesMock = mockStatic(Files.class, Answers.CALLS_REAL_METHODS)) {
+      filesMock.when(() -> Files.writeString(eq(userFile), any(), eq(StandardOpenOption.CREATE_NEW)))
+        .thenThrow(new FileAlreadyExistsException(userFile.toString()));
+      filesMock.when(() -> Files.deleteIfExists(userFile))
+        .thenReturn(false)
+        .thenAnswer(invocation -> {
+          // Simulate the winner's write becoming visible on disk right after our last losing attempt.
+          Files.writeString(userFile, winnerId);
+          return false;
+        });
+
+      var machineId = new MachineIdProvider(userSetting).getMachineId();
+
+      assertThat(machineId).isEqualTo(winnerId);
+    }
+  }
+
+  @Test
   void should_return_null_when_the_shared_home_cannot_be_created(@TempDir Path tempDir) {
     var unwritableParent = tempDir.resolve("not-a-directory");
     unwritableParent.toFile().getParentFile().mkdirs();
@@ -135,16 +166,33 @@ class MachineIdProviderTests {
   void concurrent_creation_should_converge_on_the_same_value(@TempDir Path tempDir) throws InterruptedException {
     environmentVariables.set(SonarUserHome.SONAR_USER_HOME_ENV, tempDir.toString());
     var userSetting = telemetryEnabled(true);
-    var results = new String[10];
-    ExecutorService pool = Executors.newFixedThreadPool(10);
+    var threadCount = 30;
+    var results = new String[threadCount];
+    var ready = new CountDownLatch(threadCount);
+    var start = new CountDownLatch(1);
+    ExecutorService pool = Executors.newFixedThreadPool(threadCount);
     for (var i = 0; i < results.length; i++) {
       var index = i;
-      pool.submit(() -> results[index] = new MachineIdProvider(userSetting).getMachineId());
+      pool.submit(() -> {
+        ready.countDown();
+        try {
+          start.await();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+        results[index] = new MachineIdProvider(userSetting).getMachineId();
+      });
     }
+    assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+    start.countDown();
     pool.shutdown();
-    pool.awaitTermination(10, TimeUnit.SECONDS);
+    assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
-    assertThat(results).isNotNull().allSatisfy(id -> assertThat(id).isEqualTo(results[0]));
+    var expected = results[0];
+    assertThat(expected).isNotBlank();
+    assertThat(results).containsOnly(expected);
+    assertThat(tempDir.resolve("user")).hasContent(expected);
   }
 
   private static TelemetryUserSetting telemetryEnabled(boolean enabled) {

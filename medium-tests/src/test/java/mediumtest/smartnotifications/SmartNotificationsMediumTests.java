@@ -19,6 +19,7 @@
  */
 package mediumtest.smartnotifications;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -274,7 +275,7 @@ class SmartNotificationsMediumTests {
   }
 
   @SonarLintTest
-  void it_should_send_notification_handled_by_sonarcloud_websocket_as_fallback(SonarLintTestHarness harness) {
+  void it_should_not_poll_notifications_for_sonarcloud_connections(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse.Builder().code(200).build());
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
@@ -287,15 +288,11 @@ class SmartNotificationsMediumTests {
       .withBackendCapability(SMART_NOTIFICATIONS)
       .start(fakeClient);
 
-    await().until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
-
-    var notificationsResult = fakeClient.getSmartNotificationsToShow();
-    assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
+    await().during(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).isEmpty());
   }
 
   @SonarLintTest
-  void it_should_skip_polling_notifications_when_sonarcloud_websocket_opened(SonarLintTestHarness harness) {
+  void it_should_receive_sonarcloud_notifications_via_websocket(SonarLintTestHarness harness) {
     webSocketServer = new WebSocketServer();
     webSocketServer.start();
     var fakeClient = harness.newFakeClient().withToken(CONNECTION_ID, "token")
@@ -314,14 +311,13 @@ class SmartNotificationsMediumTests {
 
     await().until(() -> webSocketServer.getConnections().size() == 1);
 
-    var notificationsResult = fakeClient.getSmartNotificationsToShow();
-    assertThat(notificationsResult).isEmpty();
+    assertThat(fakeClient.getSmartNotificationsToShow()).isEmpty();
 
     webSocketServer.getConnections().get(0).sendMessage(NEW_ISSUES_EVENT);
 
     await().untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).isNotEmpty());
 
-    notificationsResult = fakeClient.getSmartNotificationsToShow();
+    var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }

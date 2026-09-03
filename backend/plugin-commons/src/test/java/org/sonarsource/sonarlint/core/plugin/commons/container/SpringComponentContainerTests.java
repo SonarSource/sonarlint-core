@@ -292,6 +292,7 @@ class SpringComponentContainerTests {
     }
 
     public ClassWithMultipleConstructorsIncNoArg(A a) {
+      // intentionally empty, used to test multiple constructors
     }
   }
 
@@ -299,6 +300,7 @@ class SpringComponentContainerTests {
     private boolean gotBothArgs = false;
 
     public ExtensionWithMultipleConstructorsAndNoAnnotations(A a) {
+      // intentionally empty, used to test multiple constructors
     }
 
     public ExtensionWithMultipleConstructorsAndNoAnnotations(A a, B b) {
@@ -311,6 +313,7 @@ class SpringComponentContainerTests {
 
     @Override
     public void start() {
+      // intentionally empty, only stop() is overridden to throw an error
     }
 
     @Override

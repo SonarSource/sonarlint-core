@@ -50,7 +50,7 @@ class PluginsApiTests {
   }
 
   @Test
-  void should_return_plugin_content() {
+  void should_return_sonarqube_server_plugin_content() {
     var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/download?plugin=pluginKey", "content");
 

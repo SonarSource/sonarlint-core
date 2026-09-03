@@ -26,8 +26,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -37,25 +39,37 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class WebSocketManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final String RETRY_INITIAL_DELAY_PROPERTY = "sonarlint.internal.websocket.retry.initialDelay";
 
   private SonarCloudWebSocket sonarCloudWebSocket;
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private String connectionIdUsedToCreateConnection;
   private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
-  private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-websocket-subscriber");
+  private final ScheduledExecutorService executorService;
   private final ApplicationEventPublisher eventPublisher;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final ConfigurationRepository configurationRepository;
   private final URI websocketEndpointUri;
+  private final AtomicReference<ScheduledFuture<?>> pendingRetry = new AtomicReference<>();
+  private final AtomicReference<Attempt> currentAttempt = new AtomicReference<>(new Attempt());
 
   public WebSocketManager(ApplicationEventPublisher eventPublisher, SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository,
     URI websocketEndpointUri) {
+    this(eventPublisher, sonarQubeClientManager, configurationRepository, websocketEndpointUri,
+      FailSafeExecutors.newSingleThreadScheduledExecutor("sonarlint-websocket-subscriber"));
+  }
+
+  WebSocketManager(ApplicationEventPublisher eventPublisher, SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository,
+    URI websocketEndpointUri, ScheduledExecutorService executorService) {
     this.eventPublisher = eventPublisher;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.configurationRepository = configurationRepository;
     this.websocketEndpointUri = websocketEndpointUri;
+    this.executorService = executorService;
   }
 
   private void handleSonarServerEvent(SonarServerEvent event) {
@@ -89,28 +103,40 @@ public class WebSocketManager {
   }
 
   /**
-   * @return the connection if it was or has been opened, else empty
+   * @return the open or pending connection, a newly created one, or empty if creation is not possible
    */
   public Optional<SonarCloudWebSocket> createConnectionIfNeeded(String connectionId) {
+    return createConnectionIfNeeded(connectionId, true);
+  }
+
+  private Optional<SonarCloudWebSocket> createConnectionIfNeeded(String connectionId, boolean resetAttempt) {
     connectionIdsInterestedInNotifications.add(connectionId);
-    if (hasOpenConnection()) {
+    if (hasOpenConnection() || isConnectionPending()) {
       return Optional.of(sonarCloudWebSocket);
+    }
+    cancelPendingRetry();
+    if (resetAttempt) {
+      currentAttempt.set(new Attempt());
     }
     try {
       return sonarQubeClientManager.getValidWebSocketClient(connectionId)
         .map(webSocketClient -> {
-          this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri, webSocketClient, this::handleSonarServerEvent, this::reopenConnectionOnClose);
+          closeSocketIfPresent("Creating a new WebSocket connection");
           this.connectionIdUsedToCreateConnection = connectionId;
+          this.sonarCloudWebSocket = SonarCloudWebSocket.create(this.websocketEndpointUri, webSocketClient, this::handleSonarServerEvent, this::reopenConnectionOnClose,
+            this::onConnectionSucceeded, () -> onConnectionFailed(connectionId));
           return sonarCloudWebSocket;
         });
     } catch (Exception e) {
       LOG.error("Error while creating WebSocket connection", e);
+      scheduleRetryAfterFailure(connectionId);
       return Optional.empty();
     }
   }
 
   public void reopenConnection(String connectionId, String reason) {
-    closeSocket(reason);
+    cancelPendingRetry();
+    closeSocketIfPresent(reason);
     createConnectionIfNeeded(connectionId)
       .ifPresent(connection -> resubscribeAll());
   }
@@ -123,6 +149,56 @@ public class WebSocketManager {
         this.reopenConnection(connectionId, "WebSocket was closed by server or reached EOL");
       }
     });
+  }
+
+  private void onConnectionSucceeded() {
+    executorService.execute(() -> {
+      cancelPendingRetry();
+      currentAttempt.set(new Attempt());
+    });
+  }
+
+  private void onConnectionFailed(String connectionId) {
+    executorService.execute(() -> scheduleRetryAfterFailure(connectionId));
+  }
+
+  private void scheduleRetryAfterFailure(String connectionId) {
+    if (!connectionIdsInterestedInNotifications.contains(connectionId)) {
+      return;
+    }
+    var attempt = currentAttempt.get();
+    if (attempt.isMax()) {
+      LOG.debug("Cannot connect to SonarCloud WebSocket, stop retrying");
+      return;
+    }
+    var retryDelay = attempt.delay;
+    LOG.debug("Cannot connect to SonarCloud WebSocket, retrying in " + retryDelay + "s");
+    var nextAttempt = attempt.next();
+    scheduleRetry(() -> {
+      currentAttempt.set(nextAttempt);
+      reopenConnectionWithoutResettingAttempt(connectionId, "Retrying after connection failure");
+    }, retryDelay);
+  }
+
+  private void reopenConnectionWithoutResettingAttempt(String connectionId, String reason) {
+    cancelPendingRetry();
+    closeSocketIfPresent(reason);
+    createConnectionIfNeeded(connectionId, false)
+      .ifPresent(connection -> resubscribeAll());
+  }
+
+  private void scheduleRetry(Runnable task, long delayInSeconds) {
+    if (!executorService.isShutdown()) {
+      cancelPendingRetry();
+      pendingRetry.set(executorService.schedule(task, delayInSeconds, SECONDS));
+    }
+  }
+
+  private void cancelPendingRetry() {
+    var pendingRetryOrNull = pendingRetry.getAndSet(null);
+    if (pendingRetryOrNull != null) {
+      pendingRetryOrNull.cancel(true);
+    }
   }
 
   public void closeSocketIfNoMoreNeeded() {
@@ -151,6 +227,12 @@ public class WebSocketManager {
   }
 
   public void closeSocket(String reason) {
+    cancelPendingRetry();
+    currentAttempt.set(new Attempt());
+    closeSocketIfPresent(reason);
+  }
+
+  private void closeSocketIfPresent(String reason) {
     if (this.sonarCloudWebSocket != null) {
       var socket = this.sonarCloudWebSocket;
       this.sonarCloudWebSocket = null;
@@ -161,6 +243,10 @@ public class WebSocketManager {
 
   public boolean hasOpenConnection() {
     return sonarCloudWebSocket != null && sonarCloudWebSocket.isOpen();
+  }
+
+  private boolean isConnectionPending() {
+    return sonarCloudWebSocket != null && sonarCloudWebSocket.isConnecting();
   }
 
   public void forget(String configScopeId) {
@@ -184,6 +270,35 @@ public class WebSocketManager {
     connectionIdsInterestedInNotifications.clear();
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop websocket manager executor service in a timely manner");
+    }
+  }
+
+  static class Attempt {
+    private static final int BACK_OFF_MULTIPLIER = 2;
+    private static final int MAX_ATTEMPTS = 10;
+
+    private final long delay;
+    private final int attemptNumber;
+
+    public Attempt() {
+      this(initialDelaySeconds(), 1);
+    }
+
+    public Attempt(long delay, int attemptNumber) {
+      this.delay = delay;
+      this.attemptNumber = attemptNumber;
+    }
+
+    public Attempt next() {
+      return new Attempt(delay * BACK_OFF_MULTIPLIER, attemptNumber + 1);
+    }
+
+    public boolean isMax() {
+      return attemptNumber == MAX_ATTEMPTS;
+    }
+
+    private static long initialDelaySeconds() {
+      return Long.parseLong(System.getProperty(RETRY_INITIAL_DELAY_PROPERTY, "60"));
     }
   }
 }

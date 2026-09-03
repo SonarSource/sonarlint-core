@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>11.9-SNAPSHOT</version>
+    <version>11.10-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-core-test-utils</artifactId>
   <name>SonarLint Core - Test Utils</name>
@@ -74,6 +74,12 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
+    </dependency>
+    <!-- Force the Handlebars version pinned in the root pom to be a direct dependency here, otherwise the
+         pin never propagates to consumers of sonarlint-core-test-utils. -->
+    <dependency>
+      <groupId>com.github.jknack</groupId>
+      <artifactId>handlebars</artifactId>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>

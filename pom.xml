@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
   <artifactId>sonarlint-core-parent</artifactId>
-  <version>11.9-SNAPSHOT</version>
+  <version>11.10-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
@@ -58,7 +58,7 @@
     <kotlin.version>1.9.25</kotlin.version>
     <lsp4j.version>0.24.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <logback.version>1.5.32</logback.version>
+    <logback.version>1.5.35</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.8</system.stubs.version>
 
@@ -86,15 +86,18 @@
     <flyway.version>11.20.3</flyway.version>
     <!-- Override the Jackson transitively pulled by flyway-core (2.19.1): 11.20.3 is the last Flyway release
          on Jackson 2.x, later versions move flyway-core itself to Jackson 3.x (tools.jackson.core) -->
-    <jackson.version>2.22.1</jackson.version>
-    <bouncycastle.version>1.84</bouncycastle.version>
+    <jackson.version>2.22.2</jackson.version>
+    <bouncycastle.version>1.85</bouncycastle.version>
     <!-- Override the Jetty transitively pulled by wiremock-jetty12:3.13.2 (test scope, 12.0.30):
          fixes CVE-2026-10050 (jetty-security/jetty-client Digest auth bypass), wiremock-jetty12 has no newer release yet -->
     <jetty.version>12.0.38</jetty.version>
+    <!-- Override the Handlebars transitively pulled by wiremock-jetty12:3.13.2 (4.3.1):
+         wiremock-jetty12 has no newer release yet -->
+    <handlebars.version>4.5.3</handlebars.version>
     <!-- On-demand plugin versions -->
-    <cfamily.version>6.83.0.100813</cfamily.version>
+    <cfamily.version>6.84.0.101652</cfamily.version>
     <csharp.version>10.31.0.145097</csharp.version>
-    <omnisharp.version>1.39.15</omnisharp.version>
+    <omnisharp.version>1.39.15.1-sonar</omnisharp.version>
   </properties>
 
   <dependencyManagement>
@@ -126,6 +129,11 @@
         <version>${jetty.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jknack</groupId>
+        <artifactId>handlebars</artifactId>
+        <version>${handlebars.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
@@ -253,7 +261,7 @@
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
-        <version>5.6.2</version>
+        <version>5.6.3</version>
       </dependency>
       <dependency>
         <groupId>io.github.hakky54</groupId>
