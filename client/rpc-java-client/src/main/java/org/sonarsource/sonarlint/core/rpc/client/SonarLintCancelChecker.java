@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.util.concurrent.CancellationException;
 
-/*
+/**
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.CancelChecker} to stop depending on lsp4j types in API
  * and services.
  * See SLCORE-663 for details.
