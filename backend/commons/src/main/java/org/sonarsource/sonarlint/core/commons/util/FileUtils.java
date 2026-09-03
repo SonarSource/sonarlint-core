@@ -45,7 +45,6 @@ public class FileUtils {
    */
   public static Path getFilePathFromUri(URI uri) {
     try {
-      // Path.of(URI) correctly decodes percent-encoded sequences (e.g. "%2B" -> "+"), unlike URI.getPath() below
       return Path.of(uri);
     } catch (IllegalArgumentException e) {
       // Works around JDK-8162518: Path.of(URI) throws "Bad escape" for raw non-ASCII characters in the URI.
