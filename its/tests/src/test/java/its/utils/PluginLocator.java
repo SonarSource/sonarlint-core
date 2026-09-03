@@ -26,19 +26,19 @@ import java.util.Map;
 public class PluginLocator {
 
   public static Path getCppPluginPath() {
-    return getPluginPath("sonar-cfamily-plugin-6.75.1.93101.jar");
+    return getPluginPath("sonar-cfamily-plugin-6.84.0.101652.jar");
   }
 
   public static Path getGoPluginPath() {
-    return getPluginPath("sonar-go-plugin-1.31.0.4938.jar");
+    return getPluginPath("sonar-go-plugin-1.43.0.7704.jar");
   }
 
   public static Path getIacPluginPath() {
-    return getPluginPath("sonar-iac-plugin-2.2.0.18377.jar");
+    return getPluginPath("sonar-iac-plugin-2.15.0.22475.jar");
   }
 
   public static Path getJavascriptPluginPath() {
-    return getPluginPath("sonar-javascript-plugin-11.7.1.36988.jar");
+    return getPluginPath("sonar-javascript-plugin-13.8.0.44569.jar");
   }
 
   public static Map<String, Path> getEmbeddedPluginsByKeyForTests() {
