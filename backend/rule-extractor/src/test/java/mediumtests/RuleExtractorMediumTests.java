@@ -87,7 +87,6 @@ class RuleExtractorMediumTests {
 
     var pythonRule = allRules.stream().filter(r -> r.getKey().equals("python:S139")).findFirst();
     assertThat(pythonRule).hasValueSatisfying(rule -> {
-      assertThat(rule.getKey()).isEqualTo("python:S139");
       assertThat(rule.getType()).isEqualTo(RuleType.CODE_SMELL);
       assertThat(rule.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
       assertThat(rule.getLanguage()).isEqualTo(SonarLanguage.PYTHON);
@@ -99,7 +98,6 @@ class RuleExtractorMediumTests {
           assertThat(param.defaultValue()).isEqualTo("^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$");
           assertThat(param.description())
             .isEqualTo("Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.");
-          assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
           assertThat(param.multiple()).isFalse();
           assertThat(param.name()).isEqualTo("legalTrailingCommentPattern");
           assertThat(param.possibleValues()).isEmpty();
