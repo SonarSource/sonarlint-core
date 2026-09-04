@@ -27,6 +27,7 @@ jobs:
     name: Get build number
     permissions:
       id-token: write
+      contents: write
     steps:
       - uses: SonarSource/ci-github-actions/get-build-number@d41706a4180f70b6c0d0479795309a6c99726022 # 2.0.0
         id: build-number
