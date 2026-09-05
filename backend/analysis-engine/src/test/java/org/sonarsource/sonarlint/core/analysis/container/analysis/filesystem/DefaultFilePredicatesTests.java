@@ -41,7 +41,6 @@ import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class DefaultFilePredicatesTests {
   @RegisterExtension
@@ -171,12 +170,8 @@ class DefaultFilePredicatesTests {
   @Test
   void has_status() {
     assertThat(predicates.hasAnyStatus().apply(javaFile)).isTrue();
-    try {
-      predicates.hasStatus(InputFile.Status.SAME).apply(javaFile);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isInstanceOf(UnsupportedOperationException.class);
-    }
+    var predicate = predicates.hasStatus(InputFile.Status.SAME);
+    assertThrows(UnsupportedOperationException.class, () -> predicate.apply(javaFile));
   }
 
   @Test

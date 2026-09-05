@@ -31,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -50,7 +49,9 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -164,8 +165,8 @@ class FileExclusionServiceTests {
     when(largeClientFile.isLargerThan(anyLong())).thenReturn(true);
 
     // Avoid interference from server-side exclusions
-    var spy = Mockito.spy(underTest);
-    Mockito.doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
+    var spy = spy(underTest);
+    doReturn(false).when(spy).isExcludedFromServer(any(URI.class));
 
     var result = spy.filterOutExcludedFiles(configScopeId, baseDir, Set.of(smallUri, largeUri));
 

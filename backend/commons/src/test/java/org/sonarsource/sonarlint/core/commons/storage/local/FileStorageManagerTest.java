@@ -33,7 +33,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -97,15 +96,7 @@ class FileStorageManagerTest {
       }));
     });
     latch.countDown();
-    futures.forEach(f -> {
-      try {
-        f.get();
-      } catch (ExecutionException e) {
-        fail(e.getCause());
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-    });
+    futures.forEach(f -> assertDoesNotThrow(f::get));
     assertThat(storage.getStorage().counter).isEqualTo(nThreads);
   }
 
