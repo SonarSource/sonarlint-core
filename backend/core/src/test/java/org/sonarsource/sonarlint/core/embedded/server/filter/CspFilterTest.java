@@ -32,12 +32,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class CspFilterTest {
@@ -51,9 +50,9 @@ class CspFilterTest {
   @BeforeEach
   void setUp() {
     cspFilter = new CspFilter();
-    mockResponseTrigger = Mockito.mock(HttpFilterChain.ResponseTrigger.class);
-    mockFilterChain = Mockito.mock(HttpFilterChain.class);
-    mockContext = Mockito.mock(HttpContext.class);
+    mockResponseTrigger = mock(HttpFilterChain.ResponseTrigger.class);
+    mockFilterChain = mock(HttpFilterChain.class);
+    mockContext = mock(HttpContext.class);
     mockRequest = new BasicClassicHttpRequest("GET", "http://localhost:64120/sonarlint/api/endpoint");
   }
 
