@@ -66,9 +66,9 @@ class ServerPluginDownloadMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.selectProxies(any())).thenAnswer(invocation -> {
       var uri = invocation.getArgument(0, URI.class);
-      return "scanner.localhost".equals(uri.getHost())
-        ? List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", fakeCdn.getPort()))
-        : List.of(ProxyDto.NO_PROXY);
+      return List.of("scanner.localhost".equals(uri.getHost())
+        ? new ProxyDto(Proxy.Type.HTTP, "localhost", fakeCdn.getPort())
+        : ProxyDto.NO_PROXY);
     });
 
     var backend = harness.newBackend()
