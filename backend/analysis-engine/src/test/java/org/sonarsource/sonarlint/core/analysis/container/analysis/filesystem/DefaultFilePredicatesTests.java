@@ -170,8 +170,7 @@ class DefaultFilePredicatesTests {
   @Test
   void has_status() {
     assertThat(predicates.hasAnyStatus().apply(javaFile)).isTrue();
-    var predicate = predicates.hasStatus(InputFile.Status.SAME);
-    assertThrows(UnsupportedOperationException.class, () -> predicate.apply(javaFile));
+    assertThrows(UnsupportedOperationException.class, () -> predicates.hasStatus(InputFile.Status.SAME).apply(javaFile));
   }
 
   @Test
