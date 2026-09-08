@@ -96,7 +96,7 @@ class FileStorageManagerTest {
       }));
     });
     latch.countDown();
-    futures.forEach(f -> assertDoesNotThrow(f::get));
+    futures.forEach(f -> assertDoesNotThrow(() -> f.get()));
     assertThat(storage.getStorage().counter).isEqualTo(nThreads);
   }
 
