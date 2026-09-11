@@ -773,6 +773,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var request = new PostRequest("api/projects/bulk_delete");
       request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
       try (var response = adminWsClient.wsConnector().call(request)) {
+        assertThat(response.code())
+          .withFailMessage(() -> "Failed to delete project '" + PROJECT_KEY_JAVA_TAINT + "', got HTTP " + response.code()
+            + ". Leftover taint issues on the server can cause the next run of this test to see duplicated/stale vulnerabilities.")
+          .isBetween(200, 399);
       }
     }
 
@@ -845,7 +849,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
+        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "SQL Injection via unsanitized user input in DbHelper.executeQuery()",
           Paths.get("src/main/java/foo/DbHelper.java"), true));
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .flatExtracting("flows")
@@ -866,7 +870,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(taintIssues)
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
+        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "SQL Injection via unsanitized user input in DbHelper.executeQuery()",
           Paths.get("src/main/java/foo/DbHelper.java"), true));
       assertThat(taintIssues)
         .flatExtracting("flows")
