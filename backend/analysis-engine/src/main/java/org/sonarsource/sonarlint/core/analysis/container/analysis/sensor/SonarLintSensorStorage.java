@@ -35,6 +35,7 @@ import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
+import org.sonar.api.batch.sensor.issue.IssueResolution;
 import org.sonar.api.batch.sensor.issue.fix.QuickFix;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
@@ -170,6 +171,11 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   @Override
   public void store(AdHocRule adHocRule) {
+    // NO-OP
+  }
+
+  @Override
+  public void store(IssueResolution issueResolution) {
     // NO-OP
   }
 
