@@ -32,6 +32,7 @@ import org.sonar.api.batch.sensor.error.AnalysisError;
 import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
+import org.sonar.api.batch.sensor.issue.IssueResolution;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
@@ -124,6 +125,13 @@ class SonarLintSensorStorageTests {
     var adHocRule = mock(AdHocRule.class);
     underTest.store(adHocRule);
     verifyNoInteractions(adHocRule);
+  }
+
+  @Test
+  void store_IssueResolution_doesnt_interact_with_its_param() {
+    var issueResolution = mock(IssueResolution.class);
+    underTest.store(issueResolution);
+    verifyNoInteractions(issueResolution);
   }
 
   @Test

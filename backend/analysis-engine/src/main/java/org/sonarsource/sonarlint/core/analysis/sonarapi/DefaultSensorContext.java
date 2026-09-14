@@ -37,6 +37,7 @@ import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewIssue;
+import org.sonar.api.batch.sensor.issue.NewIssueResolution;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.rule.NewAdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
@@ -48,6 +49,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewHighlighting;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewIssueResolution;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSymbolTable;
@@ -60,6 +62,7 @@ public class DefaultSensorContext implements SensorContext {
   private static final NoOpNewCpdTokens NO_OP_NEW_CPD_TOKENS = new NoOpNewCpdTokens();
   private static final NoOpNewCoverage NO_OP_NEW_COVERAGE = new NoOpNewCoverage();
   private static final NoOpNewSignificantCode NO_OP_NEW_SIGNIFICANT_CODE = new NoOpNewSignificantCode();
+  private static final NoOpNewIssueResolution NO_OP_NEW_ISSUE_RESOLUTION = new NoOpNewIssueResolution();
 
   private final Settings settings;
   private final FileSystem fs;
@@ -230,5 +233,10 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public boolean isFeatureAvailable(String s) {
     return false;
+  }
+
+  @Override
+  public NewIssueResolution newIssueResolution() {
+    return NO_OP_NEW_ISSUE_RESOLUTION;
   }
 }
