@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewCoverage;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewCpdTokens;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewHighlighting;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewIssueResolution;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSymbolTable;
@@ -108,7 +107,7 @@ class DefaultSensorContextTests {
     assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
     assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
     assertThat(ctx.newSignificantCode()).isInstanceOf(NoOpNewSignificantCode.class);
-    assertThat(ctx.newIssueResolution()).isInstanceOf(NoOpNewIssueResolution.class);
+    assertThat(ctx.newIssueResolution()).isInstanceOf(DefaultSonarLintIssueResolution.class);
     ctx.addContextProperty(null, null);
     ctx.markForPublishing(null);
     assertThat(ctx.canSkipUnchangedFiles()).isFalse();
