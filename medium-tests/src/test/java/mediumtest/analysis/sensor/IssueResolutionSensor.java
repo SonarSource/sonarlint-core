@@ -52,16 +52,7 @@ public class IssueResolutionSensor implements Sensor {
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
-    for (var i = 0; i < lines.size(); i++) {
-      if (SONAR_RESOLVE.matcher(lines.get(i)).find()) {
-        context.newIssueResolution()
-          .on(inputFile)
-          .at(inputFile.selectLine(i + 1))
-          .forRules(List.of(RULE_KEY))
-          .comment("resolved by sonar-resolve")
-          .save();
-      }
-    }
+    // Save issues before resolutions to match analyzer order (e.g. SonarJS).
     for (var i = 0; i < lines.size(); i++) {
       if (lines.get(i).contains("int unused")) {
         var issue = context.newIssue();
@@ -71,6 +62,16 @@ public class IssueResolutionSensor implements Sensor {
             .at(inputFile.selectLine(i + 1))
             .message("Remove this unused variable"))
           .forRule(RULE_KEY)
+          .save();
+      }
+    }
+    for (var i = 0; i < lines.size(); i++) {
+      if (SONAR_RESOLVE.matcher(lines.get(i)).find()) {
+        context.newIssueResolution()
+          .on(inputFile)
+          .at(inputFile.selectLine(i + 1))
+          .forRules(List.of(RULE_KEY))
+          .comment("resolved by sonar-resolve")
           .save();
       }
     }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.sonar.api.batch.fs.InputFile;
@@ -97,7 +98,7 @@ public class DefaultSonarLintIssueResolution extends DefaultStorable implements 
 
   @Override
   public Set<RuleKey> ruleKeys() {
-    return Set.copyOf(ruleKeys);
+    return Collections.unmodifiableSet(ruleKeys);
   }
 
   @Override

@@ -65,6 +65,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   private final IssueListenerHolder issueListener;
   private final AnalysisResults analysisResult;
   private final List<IssueResolution> issueResolutions = new ArrayList<>();
+  private final List<DefaultSonarLintIssue> pendingIssues = new ArrayList<>();
 
   public SonarLintSensorStorage(ActiveRules activeRules, IssueFilters filters, IssueListenerHolder issueListener, AnalysisResults analysisResult) {
     this.activeRules = activeRules;
@@ -83,6 +84,16 @@ public class SonarLintSensorStorage implements SensorStorage {
     if (!(issue instanceof DefaultSonarLintIssue sonarLintIssue)) {
       throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
     }
+    pendingIssues.add(sonarLintIssue);
+  }
+
+  /** Reports buffered issues after all sensors have run, so late resolutions still apply. */
+  public void flushIssues() {
+    pendingIssues.forEach(this::reportIfNotFiltered);
+    pendingIssues.clear();
+  }
+
+  private void reportIfNotFiltered(DefaultSonarLintIssue sonarLintIssue) {
     var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
     var activeRule = activeRules.find(sonarLintIssue.ruleKey());
@@ -95,7 +106,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     var quickFixes = transform(sonarLintIssue.quickFixes());
     var overriddenImpacts = transform(sonarLintIssue.overridenImpacts());
 
-    var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage, overriddenImpacts, issue.primaryLocation().textRange(),
+    var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage, overriddenImpacts, sonarLintIssue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes, sonarLintIssue.ruleDescriptionContextKey());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
@@ -138,7 +149,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     var inputFile = (InputFile) inputComponent;
     var matched = issueResolutions.stream().anyMatch(resolution -> matches(resolution, inputFile, textRange.start().line(), issue.ruleKey()));
     if (matched) {
-      LOG.debug("Issue {} ignored because it was resolved by a sensor", issue);
+      LOG.debug("Issue {} on {}:{} ignored because it was resolved by a sensor", issue.ruleKey(), inputFile, textRange.start().line());
     }
     return matched;
   }

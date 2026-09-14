@@ -60,7 +60,7 @@ class DefaultSonarLintIssueResolutionTests {
     assertThat(resolution.inputFile()).isEqualTo(inputFile);
     assertThat(resolution.textRange()).isEqualTo(range);
     assertThat(resolution.status()).isEqualTo(IssueResolution.Status.FALSE_POSITIVE);
-    assertThat(resolution.ruleKeys()).containsExactly(ruleKey);
+    assertThat(resolution.ruleKeys()).containsExactly(ruleKey).isUnmodifiable();
     assertThat(resolution.comment()).isEqualTo("justified");
 
     resolution.save();

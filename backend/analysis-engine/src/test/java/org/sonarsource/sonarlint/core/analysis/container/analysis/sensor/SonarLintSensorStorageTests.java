@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -48,6 +49,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.IssueFil
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssue;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssueLocation;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssueResolution;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,6 +62,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SonarLintSensorStorageTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Mock
   private ActiveRules activeRules;
@@ -146,11 +151,35 @@ class SonarLintSensorStorageTests {
   }
 
   @Test
+  void store_Issue_does_not_report_until_flush() {
+    when(activeRules.find(ruleKey)).thenReturn(activeRule);
+    when(filters.accept(any(), any())).thenReturn(true);
+    storeIssue(analyzedFile, 1, ruleKey);
+
+    verify(issueListener, never()).handle(any());
+
+    underTest.flushIssues();
+
+    verify(issueListener).handle(any());
+  }
+
+  @Test
   void store_IssueResolution_skips_matching_issues() {
     when(activeRules.find(ruleKey)).thenReturn(activeRule);
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 1, ruleKey);
+    underTest.flushIssues();
+
+    verify(issueListener, never()).handle(any());
+  }
+
+  @Test
+  void store_IssueResolution_skips_matching_issues_even_when_saved_after_the_issue() {
+    when(activeRules.find(ruleKey)).thenReturn(activeRule);
+    storeIssue(analyzedFile, 1, ruleKey);
+    storeResolution(analyzedFile, 1, ruleKey);
+    underTest.flushIssues();
 
     verify(issueListener, never()).handle(any());
   }
@@ -163,6 +192,7 @@ class SonarLintSensorStorageTests {
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 1, otherRule);
+    underTest.flushIssues();
 
     verify(issueListener).handle(any());
   }
@@ -174,6 +204,7 @@ class SonarLintSensorStorageTests {
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 2, ruleKey);
+    underTest.flushIssues();
 
     verify(issueListener).handle(any());
   }

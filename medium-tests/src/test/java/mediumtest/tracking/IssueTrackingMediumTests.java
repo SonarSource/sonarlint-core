@@ -82,10 +82,10 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
@@ -868,24 +868,15 @@ class IssueTrackingMediumTests {
 
     analyzeFileAndGetAllIssues(backend, client, fileUri);
 
-    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
-    var allRaisedIntermediateIssuesByFile = intermediateIssuesByFileArgumentCaptor.getAllValues();
-    var firstRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(0);
-    assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
-      .containsExactly(tuple("Issue 1", introductionDate, true, true));
-    var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
-    assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
-      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", commitDate, true, true));
+    // Issues are flushed after all sensors, so intra-sensor incremental streaming is not guaranteed.
+    verify(client, atMost(1)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
-    assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
-    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
+    assertThat(finalIssuesByFile).containsOnlyKeys(fileUri);
+    assertThat(finalIssuesByFile.get(fileUri))
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
+      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", commitDate, true, true));
   }
 
   @SonarLintTest
@@ -913,24 +904,14 @@ class IssueTrackingMediumTests {
 
     analyzeFileAndGetAllIssues(backend, client, fileUri);
 
-    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
-    var allRaisedIntermediateIssuesByFile = intermediateIssuesByFileArgumentCaptor.getAllValues();
-    var firstRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(0);
-    assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
-      .containsExactly(tuple("Issue 1", introductionDate, true, true));
-    var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
-    assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
-      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", introductionDate, true, true));
+    verify(client, atMost(1)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
-    assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
-    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
+    assertThat(finalIssuesByFile).containsOnlyKeys(fileUri);
+    assertThat(finalIssuesByFile.get(fileUri))
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
+      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", introductionDate, true, true));
   }
 
   @SonarLintTest
