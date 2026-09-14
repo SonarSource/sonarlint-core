@@ -120,7 +120,6 @@ public class AnalysisContainer extends SpringComponentContainer {
     // Don't initialize Sensors before the FS is indexed
     getComponentByType(FileIndexer.class).index();
     getComponentByType(SensorsExecutor.class).execute();
-    getComponentByType(SonarLintSensorStorage.class).flushIssues();
   }
 
 }

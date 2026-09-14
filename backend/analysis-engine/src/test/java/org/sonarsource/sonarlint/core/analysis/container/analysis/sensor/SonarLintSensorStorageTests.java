@@ -151,35 +151,11 @@ class SonarLintSensorStorageTests {
   }
 
   @Test
-  void store_Issue_does_not_report_until_flush() {
-    when(activeRules.find(ruleKey)).thenReturn(activeRule);
-    when(filters.accept(any(), any())).thenReturn(true);
-    storeIssue(analyzedFile, 1, ruleKey);
-
-    verify(issueListener, never()).handle(any());
-
-    underTest.flushIssues();
-
-    verify(issueListener).handle(any());
-  }
-
-  @Test
   void store_IssueResolution_skips_matching_issues() {
     when(activeRules.find(ruleKey)).thenReturn(activeRule);
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 1, ruleKey);
-    underTest.flushIssues();
-
-    verify(issueListener, never()).handle(any());
-  }
-
-  @Test
-  void store_IssueResolution_skips_matching_issues_even_when_saved_after_the_issue() {
-    when(activeRules.find(ruleKey)).thenReturn(activeRule);
-    storeIssue(analyzedFile, 1, ruleKey);
-    storeResolution(analyzedFile, 1, ruleKey);
-    underTest.flushIssues();
 
     verify(issueListener, never()).handle(any());
   }
@@ -192,7 +168,6 @@ class SonarLintSensorStorageTests {
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 1, otherRule);
-    underTest.flushIssues();
 
     verify(issueListener).handle(any());
   }
@@ -204,7 +179,6 @@ class SonarLintSensorStorageTests {
     storeResolution(analyzedFile, 1, ruleKey);
 
     storeIssue(analyzedFile, 2, ruleKey);
-    underTest.flushIssues();
 
     verify(issueListener).handle(any());
   }

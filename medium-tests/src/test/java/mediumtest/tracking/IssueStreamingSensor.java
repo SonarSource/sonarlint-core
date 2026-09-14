@@ -34,7 +34,9 @@ public class IssueStreamingSensor implements Sensor {
   @Override
   public void execute(SensorContext context) {
     raiseIssue(context, 1);
+    pause(500);
     raiseIssue(context, 2);
+    pause(500);
   }
 
   private void raiseIssue(SensorContext context, int issueNumber) {
@@ -47,5 +49,13 @@ public class IssueStreamingSensor implements Sensor {
         .at(firstFile.newRange(1, 0, 1, 1))
         .on(firstFile))
       .forRule(RuleKey.of("repo", "rule")).save();
+  }
+
+  private void pause(long millis) {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
