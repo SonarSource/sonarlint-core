@@ -759,6 +759,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
     private static final String CONFIG_SCOPE_ID = "sample-java-taint-in-ide";
+    // SONARSEC-8714 reworked taint messages from generic templated text to a dynamic "vulnerability name via vector in sink" sentence;
+    // both the legacy and reworked wording can be observed in CI depending on which SonarSecurity build the target server ships, e.g. SQDogfood vs a released version
+    private static final String TAINT_MESSAGE_LEGACY = "Change this code to not construct SQL queries directly from user-controlled data.";
+    private static final String TAINT_MESSAGE_REWORKED = "SQL Injection via unsanitized user input in DbHelper.executeQuery()";
 
     @BeforeEach
     void prepare() {
@@ -773,6 +777,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var request = new PostRequest("api/projects/bulk_delete");
       request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
       try (var response = adminWsClient.wsConnector().call(request)) {
+        var code = response.code();
+        assertThat(code)
+          .withFailMessage(() -> "Failed to delete project '" + PROJECT_KEY_JAVA_TAINT + "', got HTTP " + code
+            + ". Leftover taint issues on the server can cause the next run of this test to see duplicated/stale vulnerabilities.")
+          .isBetween(200, 399);
       }
     }
 
@@ -843,10 +852,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           DidChangeTaintVulnerabilitiesParams::getUpdatedTaintVulnerabilities)
         .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
-        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
+        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
-          Paths.get("src/main/java/foo/DbHelper.java"), true));
+        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
+      assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
+        .extracting(TaintVulnerabilityDto::getMessage)
+        .singleElement()
+        .isIn(TAINT_MESSAGE_LEGACY, TAINT_MESSAGE_REWORKED);
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .flatExtracting("flows")
         .flatExtracting("locations")
@@ -864,10 +876,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var taintIssues = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities();
       assertThat(taintIssues)
-        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
+        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
-          Paths.get("src/main/java/foo/DbHelper.java"), true));
+        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
+      assertThat(taintIssues)
+        .extracting(TaintVulnerabilityDto::getMessage)
+        .singleElement()
+        .isIn(TAINT_MESSAGE_LEGACY, TAINT_MESSAGE_REWORKED);
       assertThat(taintIssues)
         .flatExtracting("flows")
         .flatExtracting("locations")
