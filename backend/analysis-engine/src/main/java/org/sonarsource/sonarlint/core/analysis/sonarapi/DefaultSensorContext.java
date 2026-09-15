@@ -37,6 +37,7 @@ import org.sonar.api.batch.sensor.highlighting.NewHighlighting;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.NewExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewIssue;
+import org.sonar.api.batch.sensor.issue.NewIssueResolution;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
 import org.sonar.api.batch.sensor.rule.NewAdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
@@ -230,5 +231,10 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public boolean isFeatureAvailable(String s) {
     return false;
+  }
+
+  @Override
+  public NewIssueResolution newIssueResolution() {
+    return new DefaultSonarLintIssueResolution(sensorStorage);
   }
 }
