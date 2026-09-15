@@ -29,7 +29,7 @@ import org.sonar.api.rule.RuleKey;
 import testutils.TestInputFileBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -81,23 +81,32 @@ class DefaultSonarLintIssueResolutionTests {
 
   @Test
   void fails_when_mandatory_fields_are_missing() {
-    assertThrows(NullPointerException.class, () -> new DefaultSonarLintIssueResolution(storage).save());
-    assertThrows(NullPointerException.class, () -> new DefaultSonarLintIssueResolution(storage).on(inputFile).save());
-    assertThrows(NullPointerException.class, () -> new DefaultSonarLintIssueResolution(storage)
+    var missingFile = new DefaultSonarLintIssueResolution(storage);
+    assertThatExceptionOfType(NullPointerException.class).isThrownBy(missingFile::save);
+
+    var missingRange = new DefaultSonarLintIssueResolution(storage).on(inputFile);
+    assertThatExceptionOfType(NullPointerException.class).isThrownBy(missingRange::save);
+
+    var missingComment = new DefaultSonarLintIssueResolution(storage)
+      .on(inputFile)
+      .at(inputFile.selectLine(1));
+    assertThatExceptionOfType(NullPointerException.class).isThrownBy(missingComment::save);
+
+    var missingRuleKeys = new DefaultSonarLintIssueResolution(storage)
       .on(inputFile)
       .at(inputFile.selectLine(1))
-      .save());
-    assertThrows(IllegalStateException.class, () -> new DefaultSonarLintIssueResolution(storage)
-      .on(inputFile)
-      .at(inputFile.selectLine(1))
-      .comment("justified")
-      .save());
+      .comment("justified");
+    assertThatExceptionOfType(IllegalStateException.class).isThrownBy(missingRuleKeys::save);
   }
 
   @Test
   void fails_when_on_or_at_called_twice() {
     var range = inputFile.selectLine(1);
-    assertThrows(IllegalStateException.class, () -> new DefaultSonarLintIssueResolution(storage).on(inputFile).on(inputFile));
-    assertThrows(IllegalStateException.class, () -> new DefaultSonarLintIssueResolution(storage).at(range).at(range));
+
+    var alreadyOnFile = new DefaultSonarLintIssueResolution(storage).on(inputFile);
+    assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> alreadyOnFile.on(inputFile));
+
+    var alreadyAtRange = new DefaultSonarLintIssueResolution(storage).at(range);
+    assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> alreadyAtRange.at(range));
   }
 }
