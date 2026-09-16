@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -224,6 +225,7 @@ public class HotspotApi {
 
   private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, Path filePath) {
     return new ServerHotspot(
+      UUID.randomUUID(),
       hotspot.getKey(),
       hotspot.getRuleKey(),
       hotspot.getMessage(),

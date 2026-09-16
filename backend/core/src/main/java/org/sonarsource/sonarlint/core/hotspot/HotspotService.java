@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.hotspot;
 
 import java.util.List;
+import java.util.UUID;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -188,6 +189,7 @@ public class HotspotService {
 
   private void updateStorage(String connectionId, SecurityHotspotRaisedEvent event) {
     var hotspot = new ServerHotspot(
+      UUID.randomUUID(),
       event.getHotspotKey(),
       event.getRuleKey(),
       event.getMainLocation().getMessage(),

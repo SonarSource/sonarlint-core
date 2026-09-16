@@ -31,7 +31,7 @@ public interface IssueRpcService {
    * <ul>
    *   <li>Changes the status of an issue (identified by {@link ChangeIssueStatusParams#getIssueKey()} )}</li>
    *   <li>Updates the issue status in the local storage</li>
-   *   <li>In case of a local-only issue, it stores the issue in the xodus database for local-only issues</li>
+   *   <li>In case of a local-only issue, it stores the issue in the local storage for local-only issues</li>
    *   <li>Increments the 'issue.status_changed_count' counter for telemetry when issue exists in the server</li>
    * </ul>
    *</p>
