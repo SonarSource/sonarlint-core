@@ -4,6 +4,7 @@
 
 * Add `getIntegrationState` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared SonarQube CLI discovery, authentication state, and agent capabilities.
 * Add `prepareInstallCommand`, `prepareAuthenticateCommand`, and `prepareIntegrateCommand` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for interactive terminal command preparation. Credentials are never included in the response. `prepareAuthenticateCommand` and `prepareIntegrateCommand` fail if no usable CLI installation is found; `prepareIntegrateCommand` also fails if the agent is missing or not supported by the CLI. Clients should check `getIntegrationState` first.
+* Add `inspectMcpConfiguration` and `planMcpConfigurationUpdate` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared MCP configuration inspection and full-document update planning across supported AI agents. These requests fail if the agent is not supported by standalone JSON MCP configuration (see `isStandaloneMcpSupported`); clients should check `getIntegrationState` first.
 * Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
 
 # 11.9

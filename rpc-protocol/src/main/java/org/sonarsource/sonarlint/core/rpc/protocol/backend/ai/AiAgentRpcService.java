@@ -72,4 +72,23 @@ public interface AiAgentRpcService {
   @JsonRequest
   CompletableFuture<PrepareCliCommandResponse> prepareIntegrateCommand(PrepareIntegrateCliCommandParams params);
 
+  /**
+   * Inspects the client-provided MCP configuration and reports its SonarQube entry state.
+   * The client provides {@code null} content when the configuration file is absent.
+   * The request fails if the agent is not supported (see
+   * {@link AiIntegrationAgentCapability#isStandaloneMcpSupported()}).
+   */
+  @JsonRequest
+  CompletableFuture<McpConfigurationInspectionResponse> inspectMcpConfiguration(McpConfigurationInspectionParams params);
+
+  /**
+   * Builds a complete replacement for the client-provided MCP configuration.
+   * The client must write {@code updatedContent} only after validating the returned state and diagnostics.
+   * CLI-managed configurations are reported without replacement content so the client can continue through the CLI flow.
+   * The request fails if the agent is not supported (see
+   * {@link AiIntegrationAgentCapability#isStandaloneMcpSupported()}).
+   */
+  @JsonRequest
+  CompletableFuture<McpConfigurationUpdatePlanResponse> planMcpConfigurationUpdate(McpConfigurationUpdateParams params);
+
 }
