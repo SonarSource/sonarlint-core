@@ -26,10 +26,18 @@ public class PrepareAuthenticateCliCommandParams {
   private final String serverUrl;
   @Nullable
   private final String organization;
+  @Nullable
+  private final String connectionId;
 
   public PrepareAuthenticateCliCommandParams(@Nullable String serverUrl, @Nullable String organization) {
+    this(serverUrl, organization, null);
+  }
+
+  public PrepareAuthenticateCliCommandParams(@Nullable String serverUrl, @Nullable String organization,
+    @Nullable String connectionId) {
     this.serverUrl = serverUrl;
     this.organization = organization;
+    this.connectionId = connectionId;
   }
 
   @Nullable
@@ -40,5 +48,14 @@ public class PrepareAuthenticateCliCommandParams {
   @Nullable
   public String getOrganization() {
     return organization;
+  }
+
+  /**
+   * IDE connection id from {@link GetAiIntegrationStateResponse#getConnectionChoices()}.
+   * When set, it takes precedence over {@link #getServerUrl()} and {@link #getOrganization()}.
+   */
+  @Nullable
+  public String getConnectionId() {
+    return connectionId;
   }
 }
