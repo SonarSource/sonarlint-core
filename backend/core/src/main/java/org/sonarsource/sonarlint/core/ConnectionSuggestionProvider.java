@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.Strings;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
@@ -118,7 +117,7 @@ public class ConnectionSuggestionProvider {
     computeBindingSuggestionIfAny(connectionAndBindingSuggestions.bindingSuggestionsForConfigScopeIds());
   }
 
-  private @Nonnull ConnectionAndBindingSuggestions computeConnectionAndBindingSuggestions(Set<String> configScopeIds, SonarLintCancelMonitor cancelMonitor) {
+  private ConnectionAndBindingSuggestions computeConnectionAndBindingSuggestions(Set<String> configScopeIds, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing connection suggestions");
     var connectionSuggestionsByConfigScopeIds = new HashMap<String, List<ConnectionSuggestionDto>>();
     var bindingSuggestionsForConfigScopeIds = new HashSet<String>();

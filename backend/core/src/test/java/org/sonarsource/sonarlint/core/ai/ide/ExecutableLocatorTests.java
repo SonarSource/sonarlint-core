@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import javax.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -81,7 +80,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         if (command.toCommandLine().contains("python3")) {
           return "/usr/bin/python3";
         }
@@ -109,7 +108,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         return null; // Python not found
       }
     };
@@ -134,7 +133,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         return null; // Neither Python nor Bash found on Windows
       }
     };
@@ -180,7 +179,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         if (command.toCommandLine().contains("python3")) {
           return null; // python3 not found
         }
@@ -211,7 +210,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         if (command.toCommandLine().contains("bash.exe")) {
           return "C:\\Program Files\\Git\\bin\\bash.exe";
         }
@@ -238,7 +237,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         if (command.toCommandLine().contains("python3")) {
           return "/usr/bin/python3";
         }
@@ -364,7 +363,7 @@ class ExecutableLocatorTests {
 
     var locator = new ExecutableLocator(system2, pathHelper, commandExecutor, nodeJsHelper) {
       @Override
-      String runSimpleCommand(@Nonnull Command command) {
+      String runSimpleCommand(Command command) {
         // Simulate no executable found for any command
         return null;
       }

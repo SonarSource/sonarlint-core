@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -42,7 +41,6 @@ public class LanguageSupportRepository {
     this.enabledLanguagesInConnectedMode.addAll(extraEnabledLanguagesInConnectedMode);
   }
 
-  @Nonnull
   private static List<SonarLanguage> adaptLanguage(Set<Language> languagesDto) {
     return languagesDto.stream().map(e -> SonarLanguage.valueOf(e.name())).toList();
   }

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.annotation.Nonnull;
 import net.bytebuddy.ByteBuddy;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.server.rule.RulesDefinition;
@@ -82,7 +81,6 @@ public class SonarPluginBuilder {
     return pluginPath;
   }
 
-  @Nonnull
   private Manifest generateManifest() {
     var manifest = new Manifest();
     manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");

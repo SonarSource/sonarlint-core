@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.BooleanUtils;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
@@ -156,7 +155,6 @@ public class AnalysisService {
       : null;
   }
 
-  @Nonnull
   private static List<String> getPatterns(Set<SonarLanguage> enabledLanguages, Map<String, String> analysisSettings) {
     List<String> patterns = new ArrayList<>();
 

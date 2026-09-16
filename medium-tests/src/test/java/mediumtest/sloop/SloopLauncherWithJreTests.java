@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -90,7 +89,6 @@ class SloopLauncherWithJreTests {
     assertThat(client.getLogs()).extracting(LogParams::getMessage).contains(expectedJreLog);
   }
 
-  @Nonnull
   private static Path unarchiveSloop(Path sloopDistPath) {
     var sloopOutDirPath = unarchiveTmpDir.resolve("sloopDistOut");
     unarchiveDistribution(sloopDistPath.toString(), sloopOutDirPath);

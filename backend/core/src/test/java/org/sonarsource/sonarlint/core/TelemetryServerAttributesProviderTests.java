@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -155,7 +154,6 @@ class TelemetryServerAttributesProviderTests {
     assertThat(underTest.getTelemetryServerLiveAttributes().nodeVersion()).isEqualTo(version);
   }
 
-  @Nonnull
   private static Optional<SonarLintRuleDefinition> getSonarLintRuleDefinition(boolean isActiveByDefault) {
     var sonarLintRuleDefinition = mock(SonarLintRuleDefinition.class);
     when(sonarLintRuleDefinition.isActiveByDefault()).thenReturn(isActiveByDefault);

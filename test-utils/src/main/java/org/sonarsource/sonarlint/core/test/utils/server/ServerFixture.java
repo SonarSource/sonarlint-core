@@ -47,7 +47,6 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.scanner.protocol.Constants;
@@ -1168,7 +1167,6 @@ public class ServerFixture {
       });
     }
 
-    @Nonnull
     private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey,
       AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
       return Stream.concat(pullRequestOrBranch.issues.stream(), pullRequestOrBranch.taintIssues.stream())

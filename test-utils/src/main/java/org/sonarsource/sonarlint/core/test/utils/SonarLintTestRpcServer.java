@@ -32,7 +32,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
-import javax.annotation.Nonnull;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
@@ -320,7 +319,7 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
     private int nextContentSize = -1;
 
     @Override
-    public void write(@Nonnull byte[] b) throws IOException {
+    public void write(byte[] b) throws IOException {
       var content = new String(b, StandardCharsets.UTF_8);
       mem.append(content);
       flushIfNeeded(content);
