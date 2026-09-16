@@ -31,11 +31,14 @@ class AiAgentCapabilitiesTests {
   void should_report_cli_and_mcp_capabilities() {
     var cursor = AiAgentCapabilities.of(AiAgent.CURSOR);
     var copilot = AiAgentCapabilities.of(AiAgent.GITHUB_COPILOT);
+    var codex = AiAgentCapabilities.of(AiAgent.CODEX);
 
     assertThat(cursor.isCliIntegrationSupported()).isTrue();
     assertThat(cursor.isStandaloneMcpSupported()).isTrue();
     assertThat(copilot.isCliIntegrationSupported()).isFalse();
     assertThat(copilot.isStandaloneMcpSupported()).isTrue();
+    assertThat(codex.isCliIntegrationSupported()).isTrue();
+    assertThat(codex.isStandaloneMcpSupported()).isFalse();
   }
 
   @Test
