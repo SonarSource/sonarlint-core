@@ -88,15 +88,15 @@ final class SonarQubeCliLocator {
 
   CliStatus readStatus(Path executable) {
     var result = execute(executable, List.of("system", "status", "--json"));
-    if (result.output.isEmpty()) {
-      return CliStatus.unknown();
+    if (result.exitCode != 0 || result.output.isEmpty()) {
+      return CliStatus.unavailable();
     }
 
     try {
       return SonarQubeCliStatusDecoder.decode(String.join("\n", result.output));
     } catch (IOException | RuntimeException e) {
       LOG.debug("Unable to parse the SonarQube CLI status", e);
-      return CliStatus.unknown();
+      return CliStatus.unavailable();
     }
   }
 
