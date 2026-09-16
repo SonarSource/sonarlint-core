@@ -21,26 +21,23 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 import javax.annotation.Nullable;
 
-public class PrepareAuthenticateCliCommandParams {
-  @Nullable
+/** A connection that can provide server details for interactive CLI login. */
+public class AiIntegrationConnection {
+  private final String connectionId;
   private final String serverUrl;
   @Nullable
   private final String organization;
-  @Nullable
-  private final String connectionId;
 
-  public PrepareAuthenticateCliCommandParams(@Nullable String serverUrl, @Nullable String organization) {
-    this(serverUrl, organization, null);
-  }
-
-  public PrepareAuthenticateCliCommandParams(@Nullable String serverUrl, @Nullable String organization,
-    @Nullable String connectionId) {
+  public AiIntegrationConnection(String connectionId, String serverUrl, @Nullable String organization) {
+    this.connectionId = connectionId;
     this.serverUrl = serverUrl;
     this.organization = organization;
-    this.connectionId = connectionId;
   }
 
-  @Nullable
+  public String getConnectionId() {
+    return connectionId;
+  }
+
   public String getServerUrl() {
     return serverUrl;
   }
@@ -48,14 +45,5 @@ public class PrepareAuthenticateCliCommandParams {
   @Nullable
   public String getOrganization() {
     return organization;
-  }
-
-  /**
-   * IDE connection id from {@link GetAiIntegrationStateResponse#getConnectionChoices()}.
-   * When set, it takes precedence over {@link #getServerUrl()} and {@link #getOrganization()}.
-   */
-  @Nullable
-  public String getConnectionId() {
-    return connectionId;
   }
 }
