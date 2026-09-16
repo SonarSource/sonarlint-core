@@ -133,6 +133,18 @@ class McpConfigurationServiceTests {
   }
 
   @Test
+  void should_reject_trailing_json_content_without_an_update_plan() {
+    var source = "{\"mcpServers\":{}} {}";
+
+    var inspection = service.inspect(inspectionParams(AiAgent.CURSOR, source));
+    var update = service.planUpdate(params(source));
+
+    assertThat(inspection.getState()).isEqualTo(McpConfigurationState.MALFORMED);
+    assertThat(update.getState()).isEqualTo(McpConfigurationState.MALFORMED);
+    assertThat(update.getUpdatedContent()).isNull();
+  }
+
+  @Test
   void should_reject_a_malformed_desired_entry_without_changing_the_document() {
     var params = new McpConfigurationUpdateParams(AiAgent.CURSOR, "{}", "not JSON");
 

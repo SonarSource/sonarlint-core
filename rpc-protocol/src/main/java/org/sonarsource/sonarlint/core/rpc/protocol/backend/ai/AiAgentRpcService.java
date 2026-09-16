@@ -65,6 +65,7 @@ public interface AiAgentRpcService {
    * Builds a complete replacement for the client-provided MCP configuration.
    * The client must write {@code updatedContent} only after validating the returned state and diagnostics.
    * CLI-managed configurations are reported without replacement content so the client can continue through the CLI flow.
+   * JSONC input is accepted, but comments and formatting are not retained in the replacement.
    */
   @JsonRequest
   CompletableFuture<McpConfigurationUpdatePlanResponse> planMcpConfigurationUpdate(McpConfigurationUpdateParams params);
