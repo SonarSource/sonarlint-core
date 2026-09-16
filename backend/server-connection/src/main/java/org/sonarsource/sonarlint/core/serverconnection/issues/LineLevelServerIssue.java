@@ -37,7 +37,7 @@ public class LineLevelServerIssue extends ServerIssue<LineLevelServerIssue> {
   private int line;
   private String lineHash;
 
-  public LineLevelServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+  public LineLevelServerIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, String lineHash, Path filePath, Instant creationDate,
     @Nullable IssueSeverity userSeverity, RuleType type, int line, Map<SoftwareQuality, ImpactSeverity> impacts) {
     super(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);

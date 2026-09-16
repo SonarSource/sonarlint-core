@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRangeWithHash textRange;
 
-  public RangeLevelServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+  public RangeLevelServerIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate,
     @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
     super(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);

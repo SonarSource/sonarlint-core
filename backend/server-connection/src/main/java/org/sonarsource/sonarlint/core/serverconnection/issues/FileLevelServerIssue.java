@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
  */
 public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
 
-  public FileLevelServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+  public FileLevelServerIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
     RuleType type, Map<SoftwareQuality, ImpactSeverity> impacts) {
     super(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);

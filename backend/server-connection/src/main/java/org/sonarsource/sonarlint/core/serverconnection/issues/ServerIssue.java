@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFinding {
 
-  private UUID id;
+  private final UUID id;
   private String key;
   private boolean resolved;
   private IssueStatus resolutionStatus;
@@ -45,7 +45,7 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
   private RuleType type;
   private Map<SoftwareQuality, ImpactSeverity> impacts;
 
-  protected ServerIssue(@Nullable UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
+  protected ServerIssue(UUID id, String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
     Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.id = id;
@@ -61,7 +61,6 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     this.impacts = impacts;
   }
 
-  @CheckForNull
   public UUID getId() {
     return id;
   }
@@ -107,11 +106,6 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
 
   public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
     return impacts;
-  }
-
-  public G setId(@Nullable UUID id) {
-    this.id = id;
-    return (G) this;
   }
 
   public G setKey(String key) {

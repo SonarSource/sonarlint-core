@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -41,7 +40,7 @@ public class ServerHotspot {
   @Nullable
   private String assignee;
 
-  public ServerHotspot(@Nullable UUID id, String key,
+  public ServerHotspot(UUID id, String key,
     String ruleKey,
     String message,
     Path filePath,
@@ -62,7 +61,6 @@ public class ServerHotspot {
     this.assignee = assignee;
   }
 
-  @CheckForNull
   public UUID getId() {
     return id;
   }
