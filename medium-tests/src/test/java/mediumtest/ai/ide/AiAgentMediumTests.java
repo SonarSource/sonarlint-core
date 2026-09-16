@@ -22,6 +22,8 @@ package mediumtest.ai.ide;
 import java.util.List;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
@@ -93,7 +95,8 @@ class AiAgentMediumTests {
       .start();
 
     var state = backend.getAiAgentService().getIntegrationState(
-      new GetAiIntegrationStateParams(List.of(AiAgent.CLAUDE_CODE, AiAgent.GITHUB_COPILOT))).join();
+      new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(AiAgent.CLAUDE_CODE, AiAgent.GITHUB_COPILOT),
+        AiIntegrationScope.GLOBAL, null)).join();
 
     assertThat(state.getCli()).isNotNull();
     assertThat(state.getCli().getInstallationStatus()).isNotNull();
