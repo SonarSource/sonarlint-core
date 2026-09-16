@@ -22,7 +22,6 @@ package mediumtest.synchronization;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
@@ -254,17 +253,14 @@ class PluginSynchronizationMediumTests {
       .containsOnlyKeys("php");
   }
 
-  @NotNull
   private Map<String, PluginReference> readPluginReferences(Path filePath) {
     return ProtobufFileUtil.readFile(filePath, Sonarlint.PluginReferences.parser()).getPluginsByKeyMap();
   }
 
-  @NotNull
   private Path getPluginsStorageFolder(SonarLintTestRpcServer backend) {
     return backend.getStorageRoot().resolve(encodeForFs("connectionId")).resolve("plugins");
   }
 
-  @NotNull
   private Path getPluginReferencesFilePath(SonarLintTestRpcServer backend) {
     return getPluginsStorageFolder(backend).resolve("plugin_references.pb");
   }

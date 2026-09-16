@@ -38,17 +38,15 @@ public class ThreadLeakDetector implements BeforeAllCallback, AfterAllCallback {
   public void afterAll(ExtensionContext context) {
     var afterThreadSet = Thread.getAllStackTraces().keySet();
     afterThreadSet.removeAll(beforeThreadSet);
-    // There is no way to stop the Xodus threadJobProcessorPoolSpawner, but this is a deamon thread, so we can ignore it
-    removeThread(afterThreadSet, "threadJobProcessorPoolSpawner");
     // This seems to be a JVM thread https://stackoverflow.com/questions/8224844/understanding-jvms-attach-listener-thread
     removeThread(afterThreadSet, "Attach Listener");
     assertThat(afterThreadSet).isEmpty();
   }
 
   private static void removeThread(Set<Thread> afterThreadSet, String name) {
-    var xodusThreadJobProcessorPoolSpawner = afterThreadSet.stream()
+    var matchingThread = afterThreadSet.stream()
       .filter(thread -> thread.getName().contains(name))
       .findFirst();
-    xodusThreadJobProcessorPoolSpawner.ifPresent(afterThreadSet::remove);
+    matchingThread.ifPresent(afterThreadSet::remove);
   }
 }

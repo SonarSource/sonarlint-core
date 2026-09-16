@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -36,7 +37,8 @@ class ServerHotspotMatchingAttributesMapperTests {
   void should_delegate_fields_to_server_issue() {
     var creationDate = Instant.now();
     var textRange = new TextRangeWithHash(1, 2, 3, 4, "realHash");
-    var serverHotspot = new ServerHotspot("key", "ruleKey", "message", Path.of("filePath"), textRange, creationDate, HotspotReviewStatus.SAFE, VulnerabilityProbability.LOW, null);
+    var serverHotspot = new ServerHotspot(UUID.randomUUID(), "key", "ruleKey", "message", Path.of("filePath"), textRange, creationDate, HotspotReviewStatus.SAFE,
+      VulnerabilityProbability.LOW, null);
 
     var underTest = new ServerHotspotMatchingAttributesMapper();
 
