@@ -44,16 +44,6 @@ public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
     this.textRange = textRange;
   }
 
-  /**
-   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
-   * when using with H2 UUID should always be set
-   */
-  public RangeLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, Path filePath, Instant creationDate,
-    @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, textRange, impacts);
-  }
-
   public TextRangeWithHash getTextRange() {
     return textRange;
   }

@@ -45,16 +45,6 @@ public class LineLevelServerIssue extends ServerIssue<LineLevelServerIssue> {
     this.line = line;
   }
 
-  /**
-   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
-   * when using with H2 UUID should always be set
-   */
-  public LineLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, String lineHash, Path filePath, Instant creationDate,
-    @Nullable IssueSeverity userSeverity, RuleType type, int line, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, lineHash, filePath, creationDate, userSeverity, type, line, impacts);
-  }
-
   public String getLineHash() {
     return lineHash;
   }

@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -70,6 +71,7 @@ public class HotspotDownloader {
   private static ServerHotspot convertLiteHotspot(Hotspots.HotspotLite liteHotspotFromWs) {
     var creationDate = Instant.ofEpochMilli(liteHotspotFromWs.getCreationDate());
     return new ServerHotspot(
+      UUID.randomUUID(),
       liteHotspotFromWs.getKey(),
       liteHotspotFromWs.getRuleKey(),
       liteHotspotFromWs.getMessage(),
