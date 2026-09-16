@@ -19,12 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
@@ -38,11 +37,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUp
 public class McpConfigurationService {
 
   private static final String SONARQUBE_ENTRY = "sonarqube";
-  private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+  private static final JsonMapper JSONC_MAPPER = JsonMapper.builder()
+    .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+    .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
+    .build();
 
   public McpConfigurationInspectionResponse inspect(McpConfigurationInspectionParams params) {
     var content = params.getContent();
-    if (content == null) {
+    if (content == null || content.isBlank()) {
       return new McpConfigurationInspectionResponse(McpConfigurationState.NOT_CONFIGURED, List.of());
     }
     var parsed = parse(content, sectionName(params.getAgent()));
@@ -56,14 +58,15 @@ public class McpConfigurationService {
 
   public McpConfigurationUpdatePlanResponse planUpdate(McpConfigurationUpdateParams params) {
     var content = params.getContent();
-    var desiredError = validateDesiredConfiguration(params.getSonarMcpConfiguration());
-    if (desiredError != null) {
-      return plan(McpConfigurationState.MALFORMED, null, List.of(desiredError));
+    var desiredConfiguration = parseDesiredConfiguration(params.getSonarMcpConfiguration());
+    if (desiredConfiguration == null) {
+      return plan(McpConfigurationState.MALFORMED, null,
+        List.of("The SonarQube MCP configuration must be a JSON object and cannot be applied."));
     }
     var sectionName = sectionName(params.getAgent());
-    if (content == null) {
+    if (content == null || content.isBlank()) {
       return plan(McpConfigurationState.NOT_CONFIGURED,
-        canonicalDocument(sectionName, params.getSonarMcpConfiguration()), List.of());
+        canonicalDocument(sectionName, desiredConfiguration), List.of());
     }
     var parsed = parse(content, sectionName);
     if (parsed.error != null) {
@@ -74,36 +77,41 @@ public class McpConfigurationService {
       return plan(state, null, diagnosticsFor(state));
     }
     return plan(state,
-      updatedDocument(updateRoot(parsed.root, sectionName, params.getSonarMcpConfiguration())), List.of());
+      updatedDocument(updateRoot(parsed.root, sectionName, desiredConfiguration)), List.of());
   }
 
   private static String sectionName(AiAgent agent) {
-    return agent == AiAgent.GITHUB_COPILOT ? "servers" : "mcpServers";
+    return switch (agent) {
+      case GITHUB_COPILOT -> "servers";
+      case CURSOR, WINDSURF, KIRO, CLAUDE_CODE -> "mcpServers";
+      case CODEX -> throw new IllegalArgumentException("Codex uses a TOML MCP configuration and is not supported here");
+    };
   }
 
-  private static String updatedDocument(JsonObject root) {
-    return GSON.toJson(root) + "\n";
+  private static String updatedDocument(ObjectNode root) {
+    try {
+      return JSONC_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root) + "\n";
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Unable to serialize the MCP configuration", e);
+    }
   }
 
-  private static String canonicalDocument(String sectionName, String entry) {
-    var root = new JsonObject();
-    root.add(sectionName, sectionWithEntry(entry));
-    return GSON.toJson(root) + "\n";
+  private static String canonicalDocument(String sectionName, ObjectNode entry) {
+    var root = JSONC_MAPPER.createObjectNode();
+    root.set(sectionName, sectionWithEntry(entry));
+    return updatedDocument(root);
   }
 
-  private static JsonObject updateRoot(JsonObject original, String sectionName, String entry) {
+  private static ObjectNode updateRoot(ObjectNode original, String sectionName, ObjectNode entry) {
     var root = original.deepCopy();
-    var section = root.has(sectionName) && root.get(sectionName).isJsonObject()
-      ? root.getAsJsonObject(sectionName)
-      : new JsonObject();
-    section.add(SONARQUBE_ENTRY, JsonParser.parseString(entry));
-    root.add(sectionName, section);
+    var section = root.withObject(sectionName);
+    section.set(SONARQUBE_ENTRY, entry);
     return root;
   }
 
-  private static JsonObject sectionWithEntry(String entry) {
-    var section = new JsonObject();
-    section.add(SONARQUBE_ENTRY, JsonParser.parseString(entry));
+  private static ObjectNode sectionWithEntry(ObjectNode entry) {
+    var section = JSONC_MAPPER.createObjectNode();
+    section.set(SONARQUBE_ENTRY, entry);
     return section;
   }
 
@@ -112,7 +120,7 @@ public class McpConfigurationService {
     return new McpConfigurationUpdatePlanResponse(state, updatedContent, diagnostics);
   }
 
-  private static McpConfigurationState classify(@Nullable JsonObject section) {
+  private static McpConfigurationState classify(@Nullable ObjectNode section) {
     if (section == null || !section.has(SONARQUBE_ENTRY)) {
       return McpConfigurationState.NOT_CONFIGURED;
     }
@@ -123,30 +131,29 @@ public class McpConfigurationService {
     return isStandaloneEntry(entry) ? McpConfigurationState.STANDALONE : McpConfigurationState.UNKNOWN;
   }
 
-  private static boolean isStandaloneEntry(JsonElement entry) {
-    return entry.isJsonObject() && entry.toString().contains("sonarsource/sonarqube-mcp");
+  private static boolean isStandaloneEntry(JsonNode entry) {
+    return entry.isObject() && entry.toString().contains("sonarsource/sonarqube-mcp");
   }
 
-  private static boolean isCliManagedEntry(JsonElement entry) {
-    if (!entry.isJsonObject()) {
+  private static boolean isCliManagedEntry(JsonNode entry) {
+    if (!entry.isObject()) {
       return false;
     }
-    var object = entry.getAsJsonObject();
+    var object = (ObjectNode) entry;
     var command = object.get("command");
-    if (command == null || !command.isJsonPrimitive() || !command.getAsJsonPrimitive().isString()
-      || !"sonar".equals(command.getAsString())) {
+    if (command == null || !command.isTextual() || !"sonar".equals(command.asText())) {
       return false;
     }
     var argsElement = object.get("args");
-    if (argsElement == null || !argsElement.isJsonArray()) {
+    if (argsElement == null || !argsElement.isArray()) {
       return false;
     }
-    var args = argsElement.getAsJsonArray();
+    var args = argsElement;
     return args.size() >= 2
-      && args.get(0).isJsonPrimitive()
-      && args.get(1).isJsonPrimitive()
-      && "run".equals(args.get(0).getAsString())
-      && "mcp".equals(args.get(1).getAsString());
+      && args.get(0).isTextual()
+      && args.get(1).isTextual()
+      && "run".equals(args.get(0).asText())
+      && "mcp".equals(args.get(1).asText());
   }
 
   private static List<String> diagnosticsFor(McpConfigurationState state) {
@@ -157,27 +164,35 @@ public class McpConfigurationService {
     };
   }
 
-  private static String validateDesiredConfiguration(String configuration) {
+  @Nullable
+  private static ObjectNode parseDesiredConfiguration(String configuration) {
     try {
-      if (!JsonParser.parseString(configuration).isJsonObject()) return "The SonarQube MCP configuration must be a JSON object.";
+      return parseJsonObject(configuration);
+    } catch (JsonProcessingException | IllegalStateException e) {
       return null;
-    } catch (RuntimeException e) {
-      return "The SonarQube MCP configuration is malformed and cannot be applied.";
     }
   }
 
   private static Parsed parse(String source, String sectionName) {
     try {
-      var root = JsonParser.parseString(source).getAsJsonObject();
+      var root = parseJsonObject(source);
       var section = root.has(sectionName) ? root.get(sectionName) : null;
-      if (section != null && !section.isJsonObject()) {
+      if (section != null && !section.isObject()) {
         return new Parsed(root, null, "The " + sectionName + " section must be an object.");
       }
-      return new Parsed(root, section == null ? null : section.getAsJsonObject(), null);
-    } catch (JsonSyntaxException | IllegalStateException e) {
+      return new Parsed(root, section == null ? null : (ObjectNode) section, null);
+    } catch (JsonProcessingException | IllegalStateException e) {
       return new Parsed(null, null, "Malformed MCP configuration: " + e.getMessage());
     }
   }
 
-  private record Parsed(@Nullable JsonObject root, @Nullable JsonObject section, @Nullable String error) { }
+  private static ObjectNode parseJsonObject(String source) throws JsonProcessingException {
+    var json = JSONC_MAPPER.readTree(source);
+    if (json == null || !json.isObject()) {
+      throw new IllegalStateException("Expected a JSON object");
+    }
+    return (ObjectNode) json;
+  }
+
+  private record Parsed(@Nullable ObjectNode root, @Nullable ObjectNode section, @Nullable String error) { }
 }
