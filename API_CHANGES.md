@@ -3,6 +3,7 @@
 ## New features
 
 * Add `getIntegrationState` and `prepareCliCommand` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared SonarQube CLI discovery, authentication state, agent capabilities, and interactive terminal command preparation.
+* Add `inspectMcpConfiguration` and `planMcpConfigurationUpdate` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared MCP configuration inspection and full-document update planning across supported AI agents.
 * Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
 
 # 11.9
