@@ -21,6 +21,9 @@ package mediumtest.ai.ide;
 
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationState;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdateParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
@@ -79,6 +82,24 @@ class AiAgentMediumTests {
     assertThat(response.getContent()).contains("IMPORTANT");
     assertThat(response.getContent()).contains("analyze_file_list");
     assertThat(response.getContent()).contains("Important Tool Guidelines");
+  }
+
+  @SonarLintTest
+  void it_should_inspect_and_plan_an_mcp_configuration_update(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .start();
+
+    var inspection = backend.getAiAgentService()
+      .inspectMcpConfiguration(new McpConfigurationInspectionParams(AiAgent.CURSOR, null))
+      .join();
+    var update = backend.getAiAgentService()
+      .planMcpConfigurationUpdate(new McpConfigurationUpdateParams(AiAgent.CURSOR, null,
+        "{\"command\":\"docker\",\"args\":[\"sonarsource/sonarqube-mcp\"]}"))
+      .join();
+
+    assertThat(inspection.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(update.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(update.getUpdatedContent()).contains("mcpServers", "sonarqube");
   }
 
 }
