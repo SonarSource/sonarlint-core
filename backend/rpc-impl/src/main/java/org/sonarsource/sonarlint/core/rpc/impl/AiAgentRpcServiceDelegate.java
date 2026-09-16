@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
 import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
+import org.sonarsource.sonarlint.core.ai.ide.McpConfigurationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse;
@@ -32,6 +33,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContent
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdateParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdatePlanResponse;
 
 public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAgentRpcService {
   public AiAgentRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
@@ -57,4 +62,15 @@ public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implem
   public CompletableFuture<PrepareCliCommandResponse> prepareCliCommand(PrepareCliCommandParams params) {
     return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).prepareCliCommand(params));
   }
+
+  @Override
+  public CompletableFuture<McpConfigurationInspectionResponse> inspectMcpConfiguration(McpConfigurationInspectionParams params) {
+    return requestAsync(cancelMonitor -> getBean(McpConfigurationService.class).inspect(params));
+  }
+
+  @Override
+  public CompletableFuture<McpConfigurationUpdatePlanResponse> planMcpConfigurationUpdate(McpConfigurationUpdateParams params) {
+    return requestAsync(cancelMonitor -> getBean(McpConfigurationService.class).planUpdate(params));
+  }
+
 }
