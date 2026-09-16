@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+public enum CliAuthenticationStatus {
+  AUTHENTICATED,
+  UNAUTHENTICATED,
+  INVALID,
+  UNVERIFIED,
+  UNKNOWN
 }
