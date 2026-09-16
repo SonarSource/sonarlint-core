@@ -29,11 +29,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -492,7 +492,7 @@ public class ActiveRulesService {
     return new ResponseErrorException(error);
   }
 
-  @NotNull
+  @Nonnull
   private static ResponseErrorException ruleNotFoundInPlugins(String ruleKey, String connectionId) {
     var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
       new Object[] {connectionId, ruleKey});

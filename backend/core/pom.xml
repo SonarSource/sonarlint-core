@@ -166,7 +166,6 @@
       <artifactId>system-stubs-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- For Xodus -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
