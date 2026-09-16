@@ -19,6 +19,41 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+import javax.annotation.Nullable;
+
+public class PrepareCliCommandParams {
+  private final CliCommandAction action;
+  @Nullable
+  private final AiAgent agent;
+  @Nullable
+  private final String serverUrl;
+  @Nullable
+  private final String organization;
+
+  public PrepareCliCommandParams(CliCommandAction action, @Nullable AiAgent agent,
+    @Nullable String serverUrl, @Nullable String organization) {
+    this.action = action;
+    this.agent = agent;
+    this.serverUrl = serverUrl;
+    this.organization = organization;
+  }
+
+  public CliCommandAction getAction() {
+    return action;
+  }
+
+  @Nullable
+  public AiAgent getAgent() {
+    return agent;
+  }
+
+  @Nullable
+  public String getServerUrl() {
+    return serverUrl;
+  }
+
+  @Nullable
+  public String getOrganization() {
+    return organization;
+  }
 }
