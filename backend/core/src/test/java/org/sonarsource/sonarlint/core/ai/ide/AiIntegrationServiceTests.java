@@ -1,0 +1,215 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.ai.ide;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonar.api.utils.System2;
+import org.sonar.api.utils.command.Command;
+import org.sonar.api.utils.command.CommandExecutor;
+import org.sonar.api.utils.command.StreamConsumer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+class AiIntegrationServiceTests {
+
+  @TempDir
+  private Path tempDir;
+
+  @Test
+  void should_report_missing_cli_and_capabilities_for_detected_agents() {
+    var service = newService(false, Map.of(), commandReturning(1));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(List.of(
+      AiAgent.CLAUDE_CODE,
+      AiAgent.GITHUB_COPILOT,
+      AiAgent.CLAUDE_CODE)));
+
+    assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.NOT_INSTALLED);
+    assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNKNOWN);
+    assertThat(response.getAgents()).hasSize(2);
+    assertThat(response.getAgents().get(0).isCliIntegrationSupported()).isTrue();
+    assertThat(response.getAgents().get(0).isStandaloneMcpSupported()).isTrue();
+    assertThat(response.getAgents().get(1).isCliIntegrationSupported()).isFalse();
+    assertThat(response.getAgents().get(1).isStandaloneMcpSupported()).isTrue();
+  }
+
+  @Test
+  void should_report_cli_authentication_from_json_status() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().endsWith("--version")) {
+        stdout.consumeLine("SonarQube CLI 1.4.2");
+      } else {
+        stdout.consumeLine("{\"version\":\"1.4.2\",\"auth\":{\"status\":\"authenticated\",\"server\":\"https://sonar.example\",\"org\":\"acme\",\"token\":\"active\"}}");
+      }
+      return 0;
+    });
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), executor);
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.AUTHENTICATED);
+    assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(cli.getVersion()).isEqualTo("1.4.2");
+    assertThat(cli.getServerUrl()).isEqualTo("https://sonar.example");
+    assertThat(cli.getOrganization()).isEqualTo("acme");
+  }
+
+  @Test
+  void should_distinguish_invalid_and_unverified_authentication() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var tokenStatus = new String[] {"invalid"};
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().endsWith("--version")) {
+        stdout.consumeLine("1.0.0");
+      } else {
+        stdout.consumeLine("{\"version\":\"1.0.0\",\"auth\":{\"status\":\"authenticated\",\"token\":\"" + tokenStatus[0] + "\"}}");
+      }
+      return 0;
+    });
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), executor);
+
+    assertThat(service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli().getAuthenticationStatus())
+      .isEqualTo(CliAuthenticationStatus.INVALID);
+    tokenStatus[0] = "set_unverified";
+    assertThat(service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli().getAuthenticationStatus())
+      .isEqualTo(CliAuthenticationStatus.UNVERIFIED);
+  }
+
+  @Test
+  void should_report_unusable_executable_when_version_cannot_be_read() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), commandReturning(1));
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.UNUSABLE);
+    assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+  }
+
+  @Test
+  void should_prepare_login_with_ide_connection_details_but_without_credentials() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var command = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.AUTHENTICATE, null, " https://sonar.example ", " acme "));
+
+    assertThat(command.getExecutable()).isEqualTo(executable.toString());
+    assertThat(command.getArguments()).containsExactly("auth", "login", "--server", "https://sonar.example", "--org", "acme");
+    assertThat(command.getArguments()).noneMatch(argument -> argument.toLowerCase().contains("token"));
+    assertThat(command.isInteractive()).isTrue();
+  }
+
+  @Test
+  void should_prepare_supported_global_integration() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var command = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null));
+
+    assertThat(command.getExecutable()).isEqualTo(executable.toString());
+    assertThat(command.getArguments()).containsExactly("integrate", "claude", "--global");
+  }
+
+  @Test
+  void should_reject_cli_integration_for_copilot_in_vscode() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newService(false, Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var params = new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.GITHUB_COPILOT, null, null);
+
+    assertThatThrownBy(() -> service.prepareCliCommand(params))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("not supported");
+  }
+
+  @Test
+  void should_prepare_official_installers_for_the_current_operating_system() {
+    var unixCommand = newService(false, Map.of(), commandReturning(1)).prepareCliCommand(
+      new PrepareCliCommandParams(CliCommandAction.INSTALL, null, null, null));
+    var windowsCommand = newService(true, Map.of(), commandReturning(1)).prepareCliCommand(
+      new PrepareCliCommandParams(CliCommandAction.INSTALL, null, null, null));
+
+    assertThat(unixCommand.getExecutable()).isEqualTo("/bin/sh");
+    assertThat(unixCommand.getArguments()).containsExactly("-c",
+      "curl -o- https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash");
+    assertThat(windowsCommand.getExecutable()).isEqualTo("powershell.exe");
+    assertThat(windowsCommand.getArguments()).containsExactly("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+      "irm https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.ps1 | iex");
+  }
+
+  private AiIntegrationService newService(boolean windows, Map<String, String> environment, CommandExecutor executor) {
+    var system2 = mock(System2.class);
+    when(system2.isOsWindows()).thenReturn(windows);
+    return new AiIntegrationService(system2, executor, tempDir, environment);
+  }
+
+  private Path createExecutable(String relativePath) throws IOException {
+    var executable = tempDir.resolve(relativePath);
+    Files.createDirectories(executable.getParent());
+    Files.createFile(executable);
+    assertThat(executable.toFile().setExecutable(true)).isTrue();
+    return executable;
+  }
+
+  private static CommandExecutor versionCommandExecutor() {
+    return commandReturning((command, stdout) -> {
+      stdout.consumeLine("SonarQube CLI 1.0.0");
+      return 0;
+    });
+  }
+
+  private static CommandExecutor commandReturning(int exitCode) {
+    return commandReturning((command, stdout) -> exitCode);
+  }
+
+  private static CommandExecutor commandReturning(CommandAnswer answer) {
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(Command.class), any(), any(), anyLong())).thenAnswer(invocation ->
+      answer.execute(invocation.getArgument(0), invocation.getArgument(1)));
+    return executor;
+  }
+
+  @FunctionalInterface
+  private interface CommandAnswer {
+    int execute(Command command, StreamConsumer stdout);
+  }
+}

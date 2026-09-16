@@ -1,0 +1,40 @@
+name: SonarQube CLI compatibility
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    # Check the latest production CLI once per night.
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: sonarQube-cli-compatibility
+  cancel-in-progress: true
+
+env:
+  CACHE_BACKEND: s3
+
+jobs:
+  latest-cli:
+    name: Latest production CLI
+    runs-on: sonar-xs
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          version: 2026.4.11
+      - uses: SonarSource/ci-github-actions/config-maven@4a867fcddd1ef3a125fefe57b412837bf047cd27 # 1.8.2
+        with:
+          artifactory-reader-role: private-reader
+      - name: Test SLCORE against the latest SonarQube CLI
+        run: >-
+          mvn -B -Pits -pl its/tests -am
+          -DskipFrontendBuild
+          -Dtest=LatestSonarQubeCliCompatibilityTests
+          -Dsurefire.failIfNoSpecifiedTests=false
+          test

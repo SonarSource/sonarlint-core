@@ -84,7 +84,7 @@ public class AiHookService {
     return switch (agent) {
       case WINDSURF -> WINDSURF_HOOK_CONFIG;
       case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
-      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
+      case GITHUB_COPILOT, CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " hook configuration is not supported");
     };
   }
 
@@ -92,7 +92,7 @@ public class AiHookService {
     return switch (agent) {
       case WINDSURF -> "hooks.json";
       case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
-      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
+      case GITHUB_COPILOT, CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " hook configuration is not supported");
     };
   }
 
@@ -118,8 +118,8 @@ public class AiHookService {
       case CURSOR -> "Cursor";
       case KIRO -> "Kiro";
       case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
+      case CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " does not support legacy IDE hooks");
     };
   }
 
 }
-
