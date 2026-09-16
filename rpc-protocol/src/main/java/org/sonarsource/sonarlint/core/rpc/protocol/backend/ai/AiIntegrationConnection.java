@@ -19,38 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-import java.util.List;
 import javax.annotation.Nullable;
 
-public class GetAiIntegrationStateParams {
-  private final AiIntegrationHost ideHost;
-  private final List<AiAgent> detectedAgents;
-  private final AiIntegrationScope scope;
+/** A connection that can provide server details for interactive CLI login. */
+public class AiIntegrationConnection {
+  private final String connectionId;
+  private final String serverUrl;
   @Nullable
-  private final String configurationScopeId;
+  private final String organization;
 
-  public GetAiIntegrationStateParams(AiIntegrationHost ideHost, List<AiAgent> detectedAgents, AiIntegrationScope scope,
-    @Nullable String configurationScopeId) {
-    this.ideHost = ideHost;
-    this.detectedAgents = List.copyOf(detectedAgents);
-    this.scope = scope;
-    this.configurationScopeId = configurationScopeId;
+  public AiIntegrationConnection(String connectionId, String serverUrl, @Nullable String organization) {
+    this.connectionId = connectionId;
+    this.serverUrl = serverUrl;
+    this.organization = organization;
   }
 
-  public AiIntegrationHost getIdeHost() {
-    return ideHost;
+  public String getConnectionId() {
+    return connectionId;
   }
 
-  public List<AiAgent> getDetectedAgents() {
-    return detectedAgents;
-  }
-
-  public AiIntegrationScope getScope() {
-    return scope;
+  public String getServerUrl() {
+    return serverUrl;
   }
 
   @Nullable
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
+  public String getOrganization() {
+    return organization;
   }
 }
