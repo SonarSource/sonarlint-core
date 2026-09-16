@@ -19,6 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+import java.util.List;
+
+public class PrepareCliCommandResponse {
+  private final String executable;
+  private final List<String> arguments;
+  private final boolean interactive;
+
+  public PrepareCliCommandResponse(String executable, List<String> arguments, boolean interactive) {
+    this.executable = executable;
+    this.arguments = List.copyOf(arguments);
+    this.interactive = interactive;
+  }
+
+  public String getExecutable() {
+    return executable;
+  }
+
+  public List<String> getArguments() {
+    return arguments;
+  }
+
+  public boolean isInteractive() {
+    return interactive;
+  }
 }
