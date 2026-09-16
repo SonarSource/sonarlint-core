@@ -62,21 +62,6 @@ public class ServerHotspot {
     this.assignee = assignee;
   }
 
-  /**
-   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
-   */
-  public ServerHotspot(String key,
-    String ruleKey,
-    String message,
-    Path filePath,
-    TextRange textRange,
-    Instant creationDate,
-    HotspotReviewStatus status,
-    VulnerabilityProbability vulnerabilityProbability,
-    @Nullable String assignee) {
-    this(null, key, ruleKey, message, filePath, textRange, creationDate, status, vulnerabilityProbability, assignee);
-  }
-
   @CheckForNull
   public UUID getId() {
     return id;
@@ -115,7 +100,7 @@ public class ServerHotspot {
   }
 
   public ServerHotspot withStatus(HotspotReviewStatus newStatus) {
-    return new ServerHotspot(key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability, assignee);
+    return new ServerHotspot(id, key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability, assignee);
   }
 
   public VulnerabilityProbability getVulnerabilityProbability() {

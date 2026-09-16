@@ -45,15 +45,6 @@ public class LineLevelServerIssue extends ServerIssue<LineLevelServerIssue> {
     this.line = line;
   }
 
-  /**
-   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
-   */
-  public LineLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, String lineHash, Path filePath, Instant creationDate,
-    @Nullable IssueSeverity userSeverity, RuleType type, int line, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, lineHash, filePath, creationDate, userSeverity, type, line, impacts);
-  }
-
   public String getLineHash() {
     return lineHash;
   }

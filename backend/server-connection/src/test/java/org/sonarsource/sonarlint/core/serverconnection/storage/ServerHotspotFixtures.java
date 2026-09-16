@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -38,6 +39,7 @@ public class ServerHotspotFixtures {
 
   public static ServerHotspot aServerHotspot(String key, Path filePath) {
     return new ServerHotspot(
+      UUID.randomUUID(),
       key,
       "repo:key",
       "message",

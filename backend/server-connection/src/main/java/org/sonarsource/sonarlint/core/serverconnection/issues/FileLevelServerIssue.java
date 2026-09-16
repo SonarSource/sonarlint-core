@@ -40,13 +40,4 @@ public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
     RuleType type, Map<SoftwareQuality, ImpactSeverity> impacts) {
     super(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
   }
-
-  /**
-   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
-   */
-  public FileLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
-    RuleType type, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
-  }
 }

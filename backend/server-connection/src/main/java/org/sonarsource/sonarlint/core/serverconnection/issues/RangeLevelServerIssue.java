@@ -44,15 +44,6 @@ public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
     this.textRange = textRange;
   }
 
-  /**
-   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
-   */
-  public RangeLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
-    String message, Path filePath, Instant creationDate,
-    @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    this(null, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate, userSeverity, type, textRange, impacts);
-  }
-
   public TextRangeWithHash getTextRange() {
     return textRange;
   }
