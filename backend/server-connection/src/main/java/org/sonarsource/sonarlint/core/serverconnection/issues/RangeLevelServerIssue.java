@@ -45,8 +45,7 @@ public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   }
 
   /**
-   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
-   * when using with H2 UUID should always be set
+   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
    */
   public RangeLevelServerIssue(String key, boolean resolved, @Nullable IssueStatus resolutionStatus, String ruleKey,
     String message, Path filePath, Instant creationDate,

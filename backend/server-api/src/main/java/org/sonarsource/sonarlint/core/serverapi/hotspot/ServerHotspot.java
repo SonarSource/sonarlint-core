@@ -63,8 +63,7 @@ public class ServerHotspot {
   }
 
   /**
-   * constructor for backward compatibility, after finalization of migration from Xodus to H2 should not be used
-   * when using with H2 UUID should always be set
+   * Used when creating findings from the server before they are persisted; UUID is assigned on insert.
    */
   public ServerHotspot(String key,
     String ruleKey,

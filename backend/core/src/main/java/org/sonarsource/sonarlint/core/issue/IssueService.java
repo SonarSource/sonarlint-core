@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
-import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -42,12 +41,10 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
-import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixService;
@@ -82,8 +79,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 public class IssueService {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube Server 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
@@ -102,7 +97,6 @@ public class IssueService {
   private final ConfigurationRepository configurationRepository;
   private final SonarQubeClientManager sonarQubeClientManager;
   private final StorageService storageService;
-  private final XodusLocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
@@ -114,13 +108,12 @@ public class IssueService {
   private final LocalOnlyIssuesRepository localOnlyIssuesRepository;
 
   public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
-    XodusLocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository, ApplicationEventPublisher eventPublisher,
+    LocalOnlyIssueRepository localOnlyIssueRepository, ApplicationEventPublisher eventPublisher,
     FindingReportingService findingReportingService, SeverityModeService severityModeService, NewCodeService newCodeService, ActiveRulesService activeRulesService,
     TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService, LocalOnlyIssuesRepository localOnlyIssuesRepository) {
     this.configurationRepository = configurationRepository;
     this.sonarQubeClientManager = sonarQubeClientManager;
     this.storageService = storageService;
-    this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
@@ -130,24 +123,6 @@ public class IssueService {
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
     this.aiCodeFixService = aiCodeFixService;
     this.localOnlyIssuesRepository = localOnlyIssuesRepository;
-  }
-
-  @PostConstruct
-  public void migrateData() {
-    if (localOnlyIssueStorageService.exists()) {
-      try {
-        LOG.info("Migrating the Xodus local-only issues to H2");
-        var migrationStart = System.currentTimeMillis();
-        var xodusLocalOnlyIssueStore = localOnlyIssueStorageService.get();
-        var issuesPerConfigScope = xodusLocalOnlyIssueStore.loadAll();
-        localOnlyIssuesRepository.storeIssues(issuesPerConfigScope);
-        LOG.info("Migrated Xodus local-only issues to H2, took {}ms", System.currentTimeMillis() - migrationStart);
-      } catch (Exception e) {
-        LOG.error("Unable to migrate local-only findings, will use fresh DB", e);
-      }
-    }
-    // always call to remove lingering temporary files
-    localOnlyIssueStorageService.delete();
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
