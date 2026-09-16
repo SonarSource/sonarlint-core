@@ -94,7 +94,7 @@ class AiIntegrationServiceTests {
     assertThat(response.getAgents()).extracting(capability -> capability.isCliIntegrationSupported())
       .containsExactly(true, true, true, false, false, false);
     assertThat(response.getAgents()).extracting(capability -> capability.isStandaloneMcpSupported())
-      .containsOnly(true);
+      .containsExactly(true, true, false, true, true, true);
   }
 
   @Test
