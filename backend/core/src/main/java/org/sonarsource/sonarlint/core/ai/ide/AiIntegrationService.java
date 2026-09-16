@@ -40,7 +40,15 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
+import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationConnection;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
@@ -70,17 +78,22 @@ public class AiIntegrationService {
   private final CommandExecutor commandExecutor;
   private final Path userHome;
   private final Map<String, String> environment;
+  private final ConnectionConfigurationRepository connectionRepository;
+  private final ConfigurationRepository configurationRepository;
 
   @Inject
-  public AiIntegrationService() {
-    this(System2.INSTANCE, CommandExecutor.create(), Paths.get(System.getProperty("user.home")), System.getenv());
+  public AiIntegrationService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
+    this(System2.INSTANCE, CommandExecutor.create(), Paths.get(System.getProperty("user.home")), System.getenv(), connectionRepository, configurationRepository);
   }
 
-  AiIntegrationService(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment) {
+  AiIntegrationService(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment,
+    ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
     this.system2 = system2;
     this.commandExecutor = commandExecutor;
     this.userHome = userHome;
     this.environment = environment;
+    this.connectionRepository = connectionRepository;
+    this.configurationRepository = configurationRepository;
   }
 
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
@@ -88,9 +101,13 @@ public class AiIntegrationService {
     var cliState = toCliState(cli);
     var agentCapabilities = params.getDetectedAgents().stream()
       .distinct()
-      .map(AiIntegrationService::capabilityFor)
+      .map(agent -> capabilityFor(params.getIdeHost(), agent, params.getScope()))
       .toList();
-    return new GetAiIntegrationStateResponse(cliState, agentCapabilities);
+    var connectionChoices = cliState.getAuthenticationStatus() == CliAuthenticationStatus.UNAUTHENTICATED
+      ? availableConnections()
+      : List.<AiIntegrationConnection>of();
+    return new GetAiIntegrationStateResponse(cliState, agentCapabilities, connectionChoices,
+      recommendedConnectionId(params, connectionChoices));
   }
 
   public PrepareCliCommandResponse prepareCliCommand(PrepareCliCommandParams params) {
@@ -122,8 +139,8 @@ public class AiIntegrationService {
 
   private CliStatus readCliStatus(Path executable) {
     var result = execute(executable, List.of("system", "status", "--json"));
-    if (result.output.isEmpty()) {
-      return CliStatus.unknown();
+    if (result.exitCode != 0 || result.output.isEmpty()) {
+      return CliStatus.unavailable();
     }
 
     try {
@@ -145,7 +162,7 @@ public class AiIntegrationService {
       return new CliStatus(authenticationStatus, version,
         stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null));
     } catch (IOException | RuntimeException e) {
-      return CliStatus.unknown();
+      return CliStatus.unavailable();
     }
   }
 
@@ -235,10 +252,11 @@ public class AiIntegrationService {
       "curl --fail --silent --show-error --location " + UNIX_INSTALL_SCRIPT_URL + " | bash"), true);
   }
 
-  private static PrepareCliCommandResponse prepareAuthenticationCommand(Path executable, PrepareCliCommandParams params) {
+  private PrepareCliCommandResponse prepareAuthenticationCommand(Path executable, PrepareCliCommandParams params) {
     var arguments = new ArrayList<>(List.of("auth", "login"));
-    addOption(arguments, "--server", params.getServerUrl());
-    addOption(arguments, "--org", params.getOrganization());
+    var connection = selectedConnection(params);
+    addOption(arguments, "--server", connection == null ? params.getServerUrl() : connection.getServerUrl());
+    addOption(arguments, "--org", connection == null ? params.getOrganization() : connection.getOrganization());
     return new PrepareCliCommandResponse(executable.toString(), arguments, true);
   }
 
@@ -258,8 +276,63 @@ public class AiIntegrationService {
     }
   }
 
-  private static AiIntegrationAgentCapability capabilityFor(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, cliTarget(agent).isPresent(), true);
+  @Nullable
+  private AiIntegrationConnection selectedConnection(PrepareCliCommandParams params) {
+    var connectionId = params.getConnectionId();
+    if (connectionId == null || connectionId.isBlank()) {
+      return null;
+    }
+    var connection = connectionRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      throw new IllegalArgumentException("Unknown SonarQube connection: " + connectionId);
+    }
+    return asConnection(connection);
+  }
+
+  private List<AiIntegrationConnection> availableConnections() {
+    return connectionRepository.getConnectionsById().values().stream()
+      .map(AiIntegrationService::asConnection)
+      .sorted(java.util.Comparator.comparing(AiIntegrationConnection::getConnectionId))
+      .toList();
+  }
+
+  @Nullable
+  private String recommendedConnectionId(GetAiIntegrationStateParams params, List<AiIntegrationConnection> connectionChoices) {
+    if (connectionChoices.isEmpty()) {
+      return null;
+    }
+    var scopeId = params.getConfigurationScopeId();
+    if (scopeId != null) {
+      var connectionId = configurationRepository.getEffectiveBinding(scopeId).map(Binding::connectionId).orElse(null);
+      if (connectionId != null && connectionChoices.stream().anyMatch(connection -> connection.getConnectionId().equals(connectionId))) {
+        return connectionId;
+      }
+    }
+    return connectionChoices.size() == 1 ? connectionChoices.get(0).getConnectionId() : null;
+  }
+
+  private static AiIntegrationConnection asConnection(AbstractConnectionConfiguration connection) {
+    var organization = connection instanceof SonarCloudConnectionConfiguration sonarCloudConnection
+      ? sonarCloudConnection.getOrganization()
+      : null;
+    return new AiIntegrationConnection(connection.getConnectionId(), connection.getUrl(), organization);
+  }
+
+  private static AiIntegrationAgentCapability capabilityFor(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    var cliIntegrationSupported = scope == AiIntegrationScope.GLOBAL && cliTarget(agent, host).isPresent();
+    var standaloneMcpSupported = scope == AiIntegrationScope.GLOBAL && supportsStandaloneMcp(host, agent);
+    var hookSupported = scope == AiIntegrationScope.GLOBAL && host == AiIntegrationHost.WINDSURF && agent == AiAgent.WINDSURF;
+    return new AiIntegrationAgentCapability(agent, cliIntegrationSupported, standaloneMcpSupported, hookSupported, cliIntegrationSupported);
+  }
+
+  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent) {
+    return switch (agent) {
+      case CURSOR -> host == AiIntegrationHost.CURSOR || host == AiIntegrationHost.OTHER;
+      case GITHUB_COPILOT -> host == AiIntegrationHost.VSCODE || host == AiIntegrationHost.OTHER;
+      case KIRO -> host == AiIntegrationHost.KIRO || host == AiIntegrationHost.OTHER;
+      case WINDSURF -> host == AiIntegrationHost.WINDSURF || host == AiIntegrationHost.OTHER;
+      case CLAUDE_CODE, CODEX -> host == AiIntegrationHost.OTHER;
+    };
   }
 
   private static Optional<String> cliTarget(AiAgent agent) {
@@ -269,6 +342,13 @@ public class AiIntegrationService {
       case CODEX -> Optional.of("codex");
       case WINDSURF, KIRO, GITHUB_COPILOT -> Optional.empty();
     };
+  }
+
+  private static Optional<String> cliTarget(AiAgent agent, AiIntegrationHost host) {
+    if (agent == AiAgent.CURSOR && host != AiIntegrationHost.CURSOR && host != AiIntegrationHost.OTHER) {
+      return Optional.empty();
+    }
+    return cliTarget(agent);
   }
 
   private static Optional<String> stringValue(JsonNode object, String property) {
@@ -281,8 +361,8 @@ public class AiIntegrationService {
 
   private record CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version,
                            @Nullable String serverUrl, @Nullable String organization) {
-    private static CliStatus unknown() {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
+    private static CliStatus unavailable() {
+      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null);
     }
   }
 

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUp
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdatePlanResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class McpConfigurationServiceTests {
   private static final String ENTRY = "{\"command\":\"docker\",\"args\":[\"sonarsource/sonarqube-mcp\"]}";
@@ -41,6 +43,16 @@ class McpConfigurationServiceTests {
     assertThat(response.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
     assertThat(updatedRoot(response).getAsJsonObject("mcpServers").has("sonarqube")).isTrue();
     assertThat(response.getDiagnostics()).isEmpty();
+  }
+
+  @Test
+  void should_treat_blank_content_as_not_configured() {
+    var inspection = service.inspect(inspectionParams(AiAgent.CURSOR, " \n\t"));
+    var update = service.planUpdate(params(" \n\t"));
+
+    assertThat(inspection.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(update.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(updatedRoot(update).getAsJsonObject("mcpServers").has("sonarqube")).isTrue();
   }
 
   @Test
@@ -83,6 +95,26 @@ class McpConfigurationServiceTests {
 
     assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
     assertThat(response.getDiagnostics()).isEmpty();
+  }
+
+  @Test
+  void should_normalize_jsonc_without_changing_unrelated_server_arguments() {
+    var source = """
+      {
+        // comment intentionally discarded when rewriting
+        "mcpServers": {
+          "other": {
+            "command": "docker",
+            "args": ["run", "--pull=always",],
+          },
+        },
+      }""";
+
+    var response = service.planUpdate(params(source));
+
+    assertThat(response.getUpdatedContent()).contains("--pull=always").doesNotContain("\\u003d");
+    var args = updatedRoot(response).getAsJsonObject("mcpServers").getAsJsonObject("other").getAsJsonArray("args");
+    assertThat(args).extracting(JsonElement::getAsString).containsExactly("run", "--pull=always");
   }
 
   @Test
@@ -153,6 +185,13 @@ class McpConfigurationServiceTests {
     var response = service.inspect(inspectionParams(AiAgent.GITHUB_COPILOT, source));
 
     assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+  }
+
+  @Test
+  void should_reject_codex_toml_configuration() {
+    assertThatThrownBy(() -> service.inspect(inspectionParams(AiAgent.CODEX, "{}")))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Codex uses a TOML MCP configuration and is not supported here");
   }
 
   private static JsonObject updatedRoot(McpConfigurationUpdatePlanResponse response) {
