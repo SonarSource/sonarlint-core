@@ -20,14 +20,21 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 import java.util.List;
+import javax.annotation.Nullable;
 
 public class GetAiIntegrationStateResponse {
   private final SonarQubeCliState cli;
   private final List<AiIntegrationAgentCapability> agents;
+  private final List<AiIntegrationConnection> connectionChoices;
+  @Nullable
+  private final String recommendedConnectionId;
 
-  public GetAiIntegrationStateResponse(SonarQubeCliState cli, List<AiIntegrationAgentCapability> agents) {
+  public GetAiIntegrationStateResponse(SonarQubeCliState cli, List<AiIntegrationAgentCapability> agents,
+    List<AiIntegrationConnection> connectionChoices, @Nullable String recommendedConnectionId) {
     this.cli = cli;
     this.agents = List.copyOf(agents);
+    this.connectionChoices = List.copyOf(connectionChoices);
+    this.recommendedConnectionId = recommendedConnectionId;
   }
 
   public SonarQubeCliState getCli() {
@@ -36,5 +43,16 @@ public class GetAiIntegrationStateResponse {
 
   public List<AiIntegrationAgentCapability> getAgents() {
     return agents;
+  }
+
+  /** Connections the client may use to prefill an interactive CLI login. */
+  public List<AiIntegrationConnection> getConnectionChoices() {
+    return connectionChoices;
+  }
+
+  /** The connection selected from the current configuration scope, when one is available. */
+  @Nullable
+  public String getRecommendedConnectionId() {
+    return recommendedConnectionId;
   }
 }
