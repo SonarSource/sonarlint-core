@@ -28,13 +28,20 @@ public class GetAiIntegrationStateParams {
   private final AiIntegrationScope scope;
   @Nullable
   private final String configurationScopeId;
+  private final boolean discoverLocalAgentClis;
 
   public GetAiIntegrationStateParams(AiIntegrationHost ideHost, List<AiAgent> detectedAgents, AiIntegrationScope scope,
     @Nullable String configurationScopeId) {
+    this(ideHost, detectedAgents, scope, configurationScopeId, false);
+  }
+
+  public GetAiIntegrationStateParams(AiIntegrationHost ideHost, List<AiAgent> detectedAgents, AiIntegrationScope scope,
+    @Nullable String configurationScopeId, boolean discoverLocalAgentClis) {
     this.ideHost = ideHost;
     this.detectedAgents = List.copyOf(detectedAgents);
     this.scope = scope;
     this.configurationScopeId = configurationScopeId;
+    this.discoverLocalAgentClis = discoverLocalAgentClis;
   }
 
   public AiIntegrationHost getIdeHost() {
@@ -52,5 +59,9 @@ public class GetAiIntegrationStateParams {
   @Nullable
   public String getConfigurationScopeId() {
     return configurationScopeId;
+  }
+
+  public boolean isDiscoverLocalAgentClis() {
+    return discoverLocalAgentClis;
   }
 }
