@@ -299,7 +299,7 @@ class AnalysisForcedByClientMediumTests {
       .start(client);
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, false));
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).doesNotContainKey(barUri);
   }
 
@@ -328,7 +328,7 @@ class AnalysisForcedByClientMediumTests {
       .start(client);
 
     backend.getAnalysisService().analyzeVCSChangedFiles(new AnalyzeVCSChangedFilesParams(CONFIG_SCOPE_ID));
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fooUri));
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).doesNotContainKey(barUri);
   }
 
