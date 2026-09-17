@@ -47,4 +47,25 @@ public interface AiAgentRpcService {
   @JsonRequest
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
 
+  /**
+   * Prepares the OS-specific SonarQube CLI installation command for the client's native interactive terminal.
+   * Credentials are never included in the response.
+   */
+  @JsonRequest
+  CompletableFuture<PrepareCliCommandResponse> prepareInstallCommand();
+
+  /**
+   * Prepares {@code sonar auth login} for the client's native interactive terminal.
+   * Credentials are never included in the response.
+   */
+  @JsonRequest
+  CompletableFuture<PrepareCliCommandResponse> prepareAuthenticateCommand(PrepareAuthenticateCliCommandParams params);
+
+  /**
+   * Prepares {@code sonar integrate <agent> --global} for the client's native interactive terminal.
+   * Credentials are never included in the response.
+   */
+  @JsonRequest
+  CompletableFuture<PrepareCliCommandResponse> prepareIntegrateCommand(PrepareIntegrateCliCommandParams params);
+
 }
