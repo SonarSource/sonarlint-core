@@ -43,6 +43,7 @@ public interface AiAgentRpcService {
   /**
    * Returns host- and scope-aware capabilities of the agents detected by the client together with
    * the current SonarQube CLI installation, authentication state, and connection choices for login.
+   * Clients may opt in to local AI agent CLI discovery via {@link GetAiIntegrationStateParams}.
    */
   @JsonRequest
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
