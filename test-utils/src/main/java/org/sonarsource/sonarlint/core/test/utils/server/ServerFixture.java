@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -698,7 +697,7 @@ public class ServerFixture {
 
   public static class SonarQubeServerBuilder extends AbstractServerBuilder<SonarQubeServerBuilder> {
 
-    public SonarQubeServerBuilder(@org.jetbrains.annotations.Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
+    public SonarQubeServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       super(onStart, serverKind, version);
     }
 
@@ -735,7 +734,7 @@ public class ServerFixture {
 
   public static class SonarQubeCloudBuilder extends AbstractServerBuilder<SonarQubeCloudBuilder> {
 
-    public SonarQubeCloudBuilder(@org.jetbrains.annotations.Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
+    public SonarQubeCloudBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       super(onStart, serverKind, version);
     }
 
@@ -1168,7 +1167,6 @@ public class ServerFixture {
       });
     }
 
-    @NotNull
     private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey,
       AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
       return Stream.concat(pullRequestOrBranch.issues.stream(), pullRequestOrBranch.taintIssues.stream())

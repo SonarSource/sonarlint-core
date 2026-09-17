@@ -23,8 +23,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 import org.jooq.Configuration;
 import org.jooq.Record;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
@@ -32,8 +30,6 @@ import org.sonarsource.sonarlint.core.commons.KnownFindingType;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
-import org.sonarsource.sonarlint.core.commons.storage.model.Tables;
-import org.sonarsource.sonarlint.core.commons.storage.model.tables.records.KnownFindingsRecord;
 
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.KNOWN_FINDINGS;
 
@@ -43,54 +39,6 @@ public class KnownFindingsRepository {
 
   public KnownFindingsRepository(SonarLintDatabase database) {
     this.database = database;
-  }
-
-  public void storeFindings(Map<String, Map<Path, Findings>> findingsPerFilePerConfigScopeId) {
-    var records = findingsPerFilePerConfigScopeId.entrySet().stream()
-      .flatMap(KnownFindingsRepository::expandConfigScope)
-      .toList();
-    database.dsl().deleteFrom(Tables.KNOWN_FINDINGS).execute();
-    database.dsl().batchInsert(records).execute();
-  }
-
-  private static Stream<KnownFindingsRecord> expandConfigScope(Map.Entry<String, Map<Path, Findings>> configScopeEntry) {
-    var configScopeId = configScopeEntry.getKey();
-    return configScopeEntry.getValue().entrySet().stream()
-      .flatMap(fileEntry -> expandFileFindings(configScopeId, fileEntry));
-  }
-
-  private static Stream<KnownFindingsRecord> expandFileFindings(String configScopeId, Map.Entry<Path, Findings> fileEntry) {
-    var filePath = fileEntry.getKey();
-    var findings = fileEntry.getValue();
-
-    return Stream.concat(
-      findings.issues().stream()
-        .map(f -> createRecord(f, configScopeId, filePath, KnownFindingType.ISSUE)),
-      findings.hotspots().stream()
-        .map(f -> createRecord(f, configScopeId, filePath, KnownFindingType.HOTSPOT))
-    );
-  }
-
-  private static KnownFindingsRecord createRecord(KnownFinding finding, String configScopeId, Path filePath, KnownFindingType type) {
-    var textRangeWithHash = finding.getTextRangeWithHash();
-    var lineWithHash = finding.getLineWithHash();
-    var introductionDate = LocalDateTime.ofInstant(finding.getIntroductionDate(), ZoneOffset.UTC);
-    return new KnownFindingsRecord(
-      finding.getId(),
-      configScopeId,
-      filePath.toString(),
-      finding.getServerKey(),
-      finding.getRuleKey(),
-      finding.getMessage(),
-      introductionDate,
-      type.name(),
-      textRangeWithHash == null ? null : textRangeWithHash.getStartLine(),
-      textRangeWithHash == null ? null : textRangeWithHash.getStartLineOffset(),
-      textRangeWithHash == null ? null : textRangeWithHash.getEndLine(),
-      textRangeWithHash == null ? null : textRangeWithHash.getEndLineOffset(),
-      textRangeWithHash == null ? null : textRangeWithHash.getHash(),
-      lineWithHash == null ? null : lineWithHash.getNumber(),
-      lineWithHash == null ? null : lineWithHash.getHash());
   }
 
   public void storeKnownIssues(String configurationScopeId, Path clientRelativePath, List<KnownFinding> newKnownIssues) {
