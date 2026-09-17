@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.jooq.JSON;
@@ -313,7 +312,7 @@ public class EntityMapper {
   }
 
   public ServerIssue<?> adaptIssue(ServerFindingsRecord rec) {
-    var id = idOrRandom(rec.getId());
+    var id = rec.getId();
     var serverKey = rec.getServerKey();
     var ruleKey = rec.getRuleKey();
     var message = rec.getMessage();
@@ -338,7 +337,7 @@ public class EntityMapper {
   }
 
   public ServerHotspot adaptHotspot(ServerFindingsRecord rec) {
-    var id = idOrRandom(rec.getId());
+    var id = rec.getId();
     var key = rec.getServerKey();
     var ruleKey = rec.getRuleKey();
     var message = rec.getMessage();
@@ -352,7 +351,7 @@ public class EntityMapper {
   }
 
   public ServerTaintIssue adaptTaint(ServerFindingsRecord rec) {
-    var id = idOrRandom(rec.getId());
+    var id = rec.getId();
     var key = rec.getServerKey();
     var resolved = Boolean.TRUE.equals(rec.getResolved());
     var resolutionStatus = rec.getIssueResolutionStatus() != null ? IssueStatus.valueOf(rec.getIssueResolutionStatus()) : null;
@@ -374,10 +373,6 @@ public class EntityMapper {
     var flows = deserializeTaintFlows(rec.getFlows());
     return new ServerTaintIssue(id, key, resolved, resolutionStatus, ruleKey, message, filePath, creationDate,
       severity, type, textRangeWithHash, ruleDescCtx, cleanCodeAttr, impacts, flows);
-  }
-
-  private static UUID idOrRandom(@Nullable UUID id) {
-    return id != null ? id : UUID.randomUUID();
   }
 
   private static Instant toInstant(LocalDateTime ldt) {

@@ -69,10 +69,8 @@ class EntityMapperTests {
     flows.add(new ServerTaintIssue.Flow(List.of(
       new ServerTaintIssue.ServerIssueLocation(path,
         new TextRangeWithHash(1, 2, 3, 4, "hash1"), "Message 1"))));
-    var taint = new ServerTaintIssue(null, null, true, null, null, null, null,
-      null, null, null, null, null, null, null, flows);
 
-    var json = underTest.serializeFlows(taint.getFlows());
+    var json = underTest.serializeFlows(flows);
 
     assertThat(json.data())
       .isEqualTo("[{\"locations\":[{\"filePath\":\"" + stringPath + "\"," +
