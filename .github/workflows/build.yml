@@ -203,13 +203,14 @@ jobs:
             region: US
           - name: SQDogfood
             sq_version: DEV
+            # Run the latest CLI compatibility test once in normal QA.
             category: "-DexcludedGroups=SonarCloud"
           - name: SQLatest
             sq_version: LATEST_RELEASE
-            category: "-DexcludedGroups=SonarCloud"
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility"
           - name: SQLts99
             sq_version: "LATEST_RELEASE[9.9]"
-            category: "-DexcludedGroups=SonarCloud"
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility"
             customOrchestratorJavaVersion: 17
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
