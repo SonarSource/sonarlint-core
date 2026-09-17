@@ -19,6 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+import java.util.List;
+
+public class GetAiIntegrationStateParams {
+  private final List<AiAgent> detectedAgents;
+
+  public GetAiIntegrationStateParams(List<AiAgent> detectedAgents) {
+    this.detectedAgents = List.copyOf(detectedAgents);
+  }
+
+  public List<AiAgent> getDetectedAgents() {
+    return detectedAgents;
+  }
 }

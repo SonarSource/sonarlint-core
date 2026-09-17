@@ -55,6 +55,7 @@ public class AiAgentService {
         ---
 
         """;
+      case CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " rule file generation is not supported");
     };
     var response = new GetRuleFileContentResponse(header
       + """

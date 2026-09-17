@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
@@ -139,11 +138,8 @@ public class ExecutableLocator {
       var pathHelperCommand = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       var pathHelperOutput = runSimpleCommand(pathHelperCommand);
       if (pathHelperOutput != null) {
-        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
-        var matchResult = regex.matcher(pathHelperOutput);
-        if (matchResult.matches()) {
-          command.setEnvironmentVariable("PATH", matchResult.group(1));
-        }
+        OsPathHelpers.pathFromPathHelperOutput(pathHelperOutput)
+          .ifPresent(path -> command.setEnvironmentVariable("PATH", path));
       }
     }
   }
