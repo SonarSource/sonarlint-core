@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.BooleanUtils;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRuleDetails;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.active.rules.ServerActiveRulesChanged;
@@ -156,7 +155,6 @@ public class AnalysisService {
       : null;
   }
 
-  @NotNull
   private static List<String> getPatterns(Set<SonarLanguage> enabledLanguages, Map<String, String> analysisSettings) {
     List<String> patterns = new ArrayList<>();
 

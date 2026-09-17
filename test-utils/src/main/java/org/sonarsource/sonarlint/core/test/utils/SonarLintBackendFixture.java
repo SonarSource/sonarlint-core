@@ -521,7 +521,7 @@ public class SonarLintBackendFixture {
         var database = new TestDatabase(storageRoot);
         serverStorages.forEach(storage -> storage.populate(storageParentPath, database));
         if (!configurationScopeStorages.isEmpty()) {
-          configurationScopeStorages.forEach(storage -> storage.populate(storageRoot, database));
+          configurationScopeStorages.forEach(storage -> storage.populate(database));
         }
         database.shutdown();
         var sonarLintBackend = new SonarLintTestRpcServer(client);
@@ -864,7 +864,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication,
-      @org.jetbrains.annotations.Nullable UUID analysisId) {
+      @Nullable UUID analysisId) {
       raisedHotspotsByScopeId.put(configurationScopeId, hotspotsByFileUri);
     }
 

@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -233,7 +232,6 @@ public class BindingSuggestionProvider {
     }
   }
 
-  @NotNull
   private static Optional<BindingSuggestionDto> getBindingSuggestionByRemoteUrl(SonarLintCancelMonitor cancelMonitor, String connectionId, ServerApi api, String remoteUrl) {
     if (api.isSonarCloud()) {
       var sqcResponse = api.projectBindings().getSQCProjectBindings(remoteUrl, cancelMonitor);

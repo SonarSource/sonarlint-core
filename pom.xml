@@ -55,7 +55,6 @@
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.13.2</gson.version>
     <mockito.version>5.23.0</mockito.version>
-    <kotlin.version>1.9.25</kotlin.version>
     <lsp4j.version>0.24.0</lsp4j.version>
     <slf4j.version>2.0.17</slf4j.version>
     <logback.version>1.5.35</logback.version>
@@ -102,13 +101,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-bom</artifactId>
-        <version>${kotlin.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
          <artifactId>spring-framework-bom</artifactId>
