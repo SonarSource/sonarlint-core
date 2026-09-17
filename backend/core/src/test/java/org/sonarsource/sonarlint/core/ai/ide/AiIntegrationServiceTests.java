@@ -37,10 +37,13 @@ import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -234,6 +237,89 @@ class AiIntegrationServiceTests {
 
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+  }
+
+  @Test
+  void should_prepare_login_with_ide_connection_details_but_without_credentials() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var command = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.AUTHENTICATE, null, " https://sonar.example ", " acme "));
+
+    assertThat(command.getExecutable()).isEqualTo(executable.toString());
+    assertThat(command.getArguments()).containsExactly("auth", "login", "--server", "https://sonar.example", "--org", "acme");
+    assertThat(command.getArguments()).noneMatch(argument -> argument.toLowerCase().contains("token"));
+    assertThat(command.isInteractive()).isTrue();
+  }
+
+  @Test
+  void should_prepare_supported_global_integration() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var command = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null));
+
+    assertThat(command.getExecutable()).isEqualTo(executable.toString());
+    assertThat(command.getArguments()).containsExactly("integrate", "claude", "--global");
+  }
+
+  @Test
+  void should_prepare_cursor_and_codex_global_integration() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var cursorCommand = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CURSOR, null, null));
+    var codexCommand = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CODEX, null, null));
+
+    assertThat(cursorCommand.getArguments()).containsExactly("integrate", "cursor", "--global");
+    assertThat(codexCommand.getArguments()).containsExactly("integrate", "codex", "--global");
+  }
+
+  @Test
+  void should_reject_authenticate_and_integrate_when_cli_is_missing() {
+    var service = newService(false, Map.of(), commandReturning(1));
+    var authenticate = new PrepareCliCommandParams(CliCommandAction.AUTHENTICATE, null, null, null);
+    var integrate = new PrepareCliCommandParams(CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null);
+
+    assertThatThrownBy(() -> service.prepareCliCommand(authenticate))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("A working SonarQube CLI installation is required");
+    assertThatThrownBy(() -> service.prepareCliCommand(integrate))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("A working SonarQube CLI installation is required");
+  }
+
+  @Test
+  void should_reject_cli_integration_for_copilot_in_vscode() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var params = new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.GITHUB_COPILOT, null, null);
+
+    assertThatThrownBy(() -> service.prepareCliCommand(params))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("not supported");
+  }
+
+  @Test
+  void should_prepare_official_installers_for_the_current_operating_system() {
+    var unixCommand = newService(false, Map.of(), commandReturning(1)).prepareCliCommand(
+      new PrepareCliCommandParams(CliCommandAction.INSTALL, null, null, null));
+    var windowsCommand = newService(true, Map.of(), commandReturning(1)).prepareCliCommand(
+      new PrepareCliCommandParams(CliCommandAction.INSTALL, null, null, null));
+
+    assertThat(unixCommand.getExecutable()).isEqualTo("/bin/bash");
+    assertThat(unixCommand.getArguments()).containsExactly("-o", "pipefail", "-c",
+      "curl --fail --silent --show-error --location " +
+        "https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash");
+    assertThat(windowsCommand.getExecutable()).isEqualTo("powershell.exe");
+    assertThat(windowsCommand.getArguments()).containsExactly("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+      "irm https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.ps1 | iex");
   }
 
   @Test
