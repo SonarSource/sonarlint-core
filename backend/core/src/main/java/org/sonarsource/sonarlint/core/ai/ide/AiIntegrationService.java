@@ -242,7 +242,8 @@ public class AiIntegrationService {
   }
 
   private static AiIntegrationAgentCapability capabilityFor(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, CliCommandFactory.cliTarget(agent).isPresent(), true);
+    return new AiIntegrationAgentCapability(agent, AiAgentSupport.cliTarget(agent).isPresent(),
+      AiAgentSupport.jsonSectionName(agent).isPresent());
   }
 
   private record CliLookup(CliInstallationStatus installationStatus, @Nullable Path path, @Nullable String version) {
