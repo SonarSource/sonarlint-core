@@ -24,6 +24,8 @@ import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -35,6 +37,8 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationConnection;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
@@ -53,13 +57,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
 public class AiIntegrationService {
 
   private final SonarQubeCliLocator locator;
+  private final AgentCliLocator agentCliLocator;
   private final ConnectionConfigurationRepository connectionRepository;
   private final ConfigurationRepository configurationRepository;
 
   @Inject
   public AiIntegrationService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
-    this(new SonarQubeCliLocator(System2.INSTANCE, CommandExecutor.create(),
-        Paths.get(System.getProperty("user.home")), System.getenv(), OsSearchPath.MAC_OS_PATH_HELPER),
+    this(System2.INSTANCE, CommandExecutor.create(), Paths.get(System.getProperty("user.home")), System.getenv(),
       connectionRepository, configurationRepository);
   }
 
@@ -67,28 +71,39 @@ public class AiIntegrationService {
   public AiIntegrationService(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment,
     ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
     this(new SonarQubeCliLocator(system2, commandExecutor, userHome, environment, OsSearchPath.MAC_OS_PATH_HELPER),
+      new AgentCliLocator(system2, commandExecutor, userHome, environment, OsSearchPath.MAC_OS_PATH_HELPER),
       connectionRepository, configurationRepository);
   }
 
   @VisibleForTesting
-  AiIntegrationService(SonarQubeCliLocator locator, ConnectionConfigurationRepository connectionRepository,
-    ConfigurationRepository configurationRepository) {
+  AiIntegrationService(SonarQubeCliLocator locator, AgentCliLocator agentCliLocator,
+    ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
     this.locator = locator;
+    this.agentCliLocator = agentCliLocator;
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
   }
 
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
     var cliState = toCliState(locator.find());
-    var agentCapabilities = params.getDetectedAgents().stream()
-      .distinct()
-      .map(agent -> AiAgentCapabilities.of(params.getIdeHost(), agent, params.getScope()))
+    var agentsBySource = new LinkedHashMap<AiAgent, LinkedHashSet<AiAgentDetectionSource>>();
+    params.getDetectedAgents().forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.IDE));
+    if (params.isDiscoverLocalAgentClis()) {
+      agentCliLocator.discover().forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.CLI));
+    }
+    var agentCapabilities = agentsBySource.entrySet().stream()
+      .map(entry -> AiAgentCapabilities.of(params.getIdeHost(), entry.getKey(), params.getScope(), List.copyOf(entry.getValue())))
       .toList();
     var connectionChoices = cliState.getAuthenticationStatus().offersConnectionPrefill()
       ? availableConnections()
       : List.<AiIntegrationConnection>of();
     return new GetAiIntegrationStateResponse(cliState, agentCapabilities, connectionChoices,
       recommendedConnectionId(params, connectionChoices));
+  }
+
+  private static void addDetectionSource(Map<AiAgent, LinkedHashSet<AiAgentDetectionSource>> agentsBySource,
+    AiAgent agent, AiAgentDetectionSource source) {
+    agentsBySource.computeIfAbsent(agent, ignored -> new LinkedHashSet<>()).add(source);
   }
 
   public PrepareCliCommandResponse prepareInstallCommand() {

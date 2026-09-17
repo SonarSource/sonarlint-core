@@ -68,6 +68,8 @@ final class CliCommandFactory {
       case CURSOR -> Optional.of("cursor");
       case CLAUDE_CODE -> Optional.of("claude");
       case CODEX -> Optional.of("codex");
+      case GITHUB_COPILOT_CLI -> Optional.of("copilot");
+      case ANTIGRAVITY -> Optional.of("antigravity");
       case WINDSURF, KIRO, GITHUB_COPILOT -> Optional.empty();
     };
   }
