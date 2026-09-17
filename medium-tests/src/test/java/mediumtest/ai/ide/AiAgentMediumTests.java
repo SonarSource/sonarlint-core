@@ -22,8 +22,10 @@ package mediumtest.ai.ide;
 import java.util.List;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
@@ -96,6 +98,18 @@ class AiAgentMediumTests {
     assertThat(state.getCli().getInstallationStatus()).isNotNull();
     assertThat(state.getAgents()).extracting(AiIntegrationAgentCapability::getAgent)
       .containsExactly(AiAgent.CLAUDE_CODE, AiAgent.GITHUB_COPILOT);
+  }
+
+  @SonarLintTest
+  void it_should_prepare_cli_install_command_through_rpc(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .start();
+
+    var installCommand = backend.getAiAgentService().prepareCliCommand(
+      new PrepareCliCommandParams(CliCommandAction.INSTALL, null, null, null)).join();
+
+    assertThat(installCommand.getExecutable()).isIn("/bin/bash", "powershell.exe");
+    assertThat(installCommand.isInteractive()).isTrue();
   }
 
 }

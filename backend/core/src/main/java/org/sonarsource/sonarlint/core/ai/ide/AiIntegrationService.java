@@ -42,15 +42,18 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
 
 /**
- * Shared CLI discovery and integration state for IDE-hosted AI agents.
- * Clients remain responsible for detecting agents in their own IDE.
- * This service never transports credentials to the CLI.
+ * Shared policy and command preparation for integrating IDE-hosted AI agents with SonarQube.
+ * Clients remain responsible for detecting agents in their own IDE and running commands in a
+ * native terminal. This service never transports credentials to the CLI.
  */
 public class AiIntegrationService {
 
@@ -84,6 +87,26 @@ public class AiIntegrationService {
       .map(AiIntegrationService::capabilityFor)
       .toList();
     return new GetAiIntegrationStateResponse(cliState, agentCapabilities);
+  }
+
+  public PrepareCliCommandResponse prepareCliCommand(PrepareCliCommandParams params) {
+    var action = params.getAction();
+    if (action == null) {
+      throw new IllegalArgumentException("A supported CLI command action is required");
+    }
+    if (action == CliCommandAction.INSTALL) {
+      return CliCommandFactory.prepareInstallCommand(system2.isOsWindows());
+    }
+
+    var cli = findCli();
+    if (cli.installationStatus != CliInstallationStatus.INSTALLED || cli.path == null) {
+      throw new IllegalStateException("A working SonarQube CLI installation is required");
+    }
+    return switch (action) {
+      case AUTHENTICATE -> CliCommandFactory.prepareAuthenticationCommand(cli.path, params);
+      case INTEGRATE -> CliCommandFactory.prepareIntegrationCommand(cli.path, params.getAgent());
+      case INSTALL -> throw new IllegalStateException("Installation command should already have been prepared");
+    };
   }
 
   private SonarQubeCliState toCliState(CliLookup cli) {
@@ -218,16 +241,7 @@ public class AiIntegrationService {
   }
 
   private static AiIntegrationAgentCapability capabilityFor(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, cliTarget(agent).isPresent(), true);
-  }
-
-  static Optional<String> cliTarget(AiAgent agent) {
-    return switch (agent) {
-      case CURSOR -> Optional.of("cursor");
-      case CLAUDE_CODE -> Optional.of("claude");
-      case CODEX -> Optional.of("codex");
-      case WINDSURF, KIRO, GITHUB_COPILOT -> Optional.empty();
-    };
+    return new AiIntegrationAgentCapability(agent, CliCommandFactory.cliTarget(agent).isPresent(), true);
   }
 
   private record CliLookup(CliInstallationStatus installationStatus, @Nullable Path path, @Nullable String version) {
