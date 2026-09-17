@@ -84,7 +84,7 @@ class LatestSonarQubeCliCompatibilityTests {
     assertThat(commandResult.output()).contains("Not authenticated", "sonar auth login");
   }
 
-  private void installLatestCli(Path isolatedHome) throws IOException, InterruptedException, ReflectiveOperationException {
+  private void installLatestCli(Path isolatedHome) throws IOException, InterruptedException {
     var installLog = tempDir.resolve("cli-install.log");
     var installerEnvironment = isolatedEnvironment(isolatedHome, null);
     installerEnvironment.put("PATH", "/usr/bin:/bin");
@@ -111,14 +111,8 @@ class LatestSonarQubeCliCompatibilityTests {
       .isExecutable();
   }
 
-  @SuppressWarnings("java:S3011")
-  private static AiIntegrationService newIsolatedService(Path isolatedHome, Map<String, String> environment)
-    throws ReflectiveOperationException {
-    // Keep the production constructor surface unchanged while allowing this IT to isolate HOME, PATH and credentials.
-    var constructor = AiIntegrationService.class.getDeclaredConstructor(
-      System2.class, CommandExecutor.class, Path.class, Map.class);
-    constructor.setAccessible(true);
-    return constructor.newInstance(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment);
+  private static AiIntegrationService newIsolatedService(Path isolatedHome, Map<String, String> environment) {
+    return new AiIntegrationService(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment);
   }
 
   private CommandResult runPreparedCommand(String executable, List<String> arguments,

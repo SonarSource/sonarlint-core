@@ -69,10 +69,32 @@ class AiIntegrationServiceTests {
     assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.NOT_INSTALLED);
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNKNOWN);
     assertThat(response.getAgents()).hasSize(2);
+    assertThat(response.getAgents().get(0).getAgent()).isEqualTo(AiAgent.CLAUDE_CODE);
     assertThat(response.getAgents().get(0).isCliIntegrationSupported()).isTrue();
     assertThat(response.getAgents().get(0).isStandaloneMcpSupported()).isTrue();
+    assertThat(response.getAgents().get(1).getAgent()).isEqualTo(AiAgent.GITHUB_COPILOT);
     assertThat(response.getAgents().get(1).isCliIntegrationSupported()).isFalse();
     assertThat(response.getAgents().get(1).isStandaloneMcpSupported()).isTrue();
+  }
+
+  @Test
+  void should_report_cli_and_mcp_capabilities_for_each_detected_agent() {
+    var service = newService(false, Map.of(), commandReturning(1));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(List.of(
+      AiAgent.CURSOR,
+      AiAgent.CLAUDE_CODE,
+      AiAgent.CODEX,
+      AiAgent.GITHUB_COPILOT,
+      AiAgent.WINDSURF,
+      AiAgent.KIRO)));
+
+    assertThat(response.getAgents()).extracting(capability -> capability.getAgent())
+      .containsExactly(AiAgent.CURSOR, AiAgent.CLAUDE_CODE, AiAgent.CODEX, AiAgent.GITHUB_COPILOT, AiAgent.WINDSURF, AiAgent.KIRO);
+    assertThat(response.getAgents()).extracting(capability -> capability.isCliIntegrationSupported())
+      .containsExactly(true, true, true, false, false, false);
+    assertThat(response.getAgents()).extracting(capability -> capability.isStandaloneMcpSupported())
+      .containsOnly(true);
   }
 
   @Test
@@ -188,6 +210,34 @@ class AiIntegrationServiceTests {
   }
 
   @Test
+  void should_prepare_cursor_and_codex_global_integration() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var cursorCommand = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CURSOR, null, null));
+    var codexCommand = service.prepareCliCommand(new PrepareCliCommandParams(
+      CliCommandAction.INTEGRATE, AiAgent.CODEX, null, null));
+
+    assertThat(cursorCommand.getArguments()).containsExactly("integrate", "cursor", "--global");
+    assertThat(codexCommand.getArguments()).containsExactly("integrate", "codex", "--global");
+  }
+
+  @Test
+  void should_reject_authenticate_and_integrate_when_cli_is_missing() {
+    var service = newService(false, Map.of(), commandReturning(1));
+    var authenticate = new PrepareCliCommandParams(CliCommandAction.AUTHENTICATE, null, null, null);
+    var integrate = new PrepareCliCommandParams(CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null);
+
+    assertThatThrownBy(() -> service.prepareCliCommand(authenticate))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("A working SonarQube CLI installation is required");
+    assertThatThrownBy(() -> service.prepareCliCommand(integrate))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("A working SonarQube CLI installation is required");
+  }
+
+  @Test
   void should_reject_cli_integration_for_copilot_in_vscode() throws IOException {
     var executable = createExecutable("bin/sonar");
     var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
@@ -214,6 +264,59 @@ class AiIntegrationServiceTests {
     assertThat(windowsCommand.getExecutable()).isEqualTo("powershell.exe");
     assertThat(windowsCommand.getArguments()).containsExactly("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
       "irm https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.ps1 | iex");
+  }
+
+  @Test
+  void should_find_cli_in_standard_unix_location_when_path_does_not_contain_it() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var service = newService(false, Map.of("PATH", "/usr/bin"), versionCommandExecutor());
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+  }
+
+  @Test
+  void should_find_cli_in_standard_windows_location_when_path_does_not_contain_it() throws IOException {
+    var executable = createExecutable("sonarqube-cli/bin/sonar.exe");
+    var service = newService(true, Map.of("LOCALAPPDATA", tempDir.toString()), versionCommandExecutor());
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+  }
+
+  @Test
+  void should_prefer_path_candidate_over_standard_install_location() throws IOException {
+    var pathExecutable = createExecutable("path-bin/sonar");
+    createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var service = newService(false, Map.of("PATH", pathExecutable.getParent().toString()), versionCommandExecutor());
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(pathExecutable.toString());
+  }
+
+  @Test
+  void should_use_standard_install_location_when_path_candidate_is_unusable() throws IOException {
+    var pathExecutable = createExecutable("path-bin/sonar");
+    var standardExecutable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().contains("path-bin")) {
+        return 1;
+      }
+      stdout.consumeLine("SonarQube CLI 1.0.0");
+      return 0;
+    });
+    var service = newService(false, Map.of("PATH", pathExecutable.getParent().toString()), executor);
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(standardExecutable.toString());
   }
 
   @Test

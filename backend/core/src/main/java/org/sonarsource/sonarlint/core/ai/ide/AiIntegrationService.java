@@ -19,8 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -40,8 +39,8 @@ import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
@@ -60,14 +59,8 @@ public class AiIntegrationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final long COMMAND_TIMEOUT_MILLIS = 30_000L;
-  private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
   private static final Path MAC_OS_PATH_HELPER = Paths.get("/usr/libexec/path_helper");
-  private static final Pattern PATH_HELPER_OUTPUT_PATTERN = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
   private static final Pattern VERSION_PATTERN = Pattern.compile("\\b\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?\\b");
-  private static final String UNIX_INSTALL_SCRIPT_URL =
-    "https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh";
-  private static final String WINDOWS_INSTALL_SCRIPT_URL =
-    "https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.ps1";
 
   private final System2 system2;
   private final CommandExecutor commandExecutor;
@@ -78,7 +71,8 @@ public class AiIntegrationService {
     this(System2.INSTANCE, CommandExecutor.create(), Paths.get(System.getProperty("user.home")), System.getenv());
   }
 
-  AiIntegrationService(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment) {
+  @VisibleForTesting
+  public AiIntegrationService(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment) {
     this.system2 = system2;
     this.commandExecutor = commandExecutor;
     this.userHome = userHome;
@@ -97,7 +91,7 @@ public class AiIntegrationService {
 
   public PrepareCliCommandResponse prepareCliCommand(PrepareCliCommandParams params) {
     if (params.getAction() == CliCommandAction.INSTALL) {
-      return prepareInstallCommand();
+      return CliCommandFactory.prepareInstallCommand(system2.isOsWindows());
     }
 
     var cli = findCli();
@@ -105,8 +99,8 @@ public class AiIntegrationService {
       throw new IllegalStateException("A working SonarQube CLI installation is required");
     }
     return switch (params.getAction()) {
-      case AUTHENTICATE -> prepareAuthenticationCommand(cli.path, params);
-      case INTEGRATE -> prepareIntegrationCommand(cli.path, params.getAgent());
+      case AUTHENTICATE -> CliCommandFactory.prepareAuthenticationCommand(cli.path, params);
+      case INTEGRATE -> CliCommandFactory.prepareIntegrationCommand(cli.path, params.getAgent());
       case INSTALL -> throw new IllegalStateException("Installation command should already have been prepared");
     };
   }
@@ -118,37 +112,21 @@ public class AiIntegrationService {
     }
 
     var status = readCliStatus(cli.path);
-    return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus,
-      cli.path.toString(), status.version.orElse(cli.version), status.serverUrl, status.organization);
+    return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
+      cli.path.toString(), status.version().orElse(cli.version), status.serverUrl(), status.organization());
   }
 
-  private CliStatus readCliStatus(Path executable) {
+  private SonarQubeCliStatusDecoder.CliStatus readCliStatus(Path executable) {
     var result = execute(executable, List.of("system", "status", "--json"));
     if (result.output.isEmpty()) {
-      return CliStatus.unknown();
+      return SonarQubeCliStatusDecoder.CliStatus.unknown();
     }
 
     try {
-      var json = JSON_MAPPER.readTree(String.join("\n", result.output));
-      var auth = json.get("auth");
-      var version = stringValue(json, "version");
-      if (auth == null || "unauthenticated".equals(stringValue(auth, "status").orElse(null))) {
-        return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null);
-      }
-
-      var tokenStatus = stringValue(auth, "token").orElse(null);
-      var authenticationStatus = switch (tokenStatus == null ? "" : tokenStatus) {
-        case "active" -> CliAuthenticationStatus.AUTHENTICATED;
-        case "invalid" -> CliAuthenticationStatus.INVALID;
-        case "set_unverified" -> CliAuthenticationStatus.UNVERIFIED;
-        case "not_set" -> CliAuthenticationStatus.UNAUTHENTICATED;
-        default -> CliAuthenticationStatus.UNKNOWN;
-      };
-      return new CliStatus(authenticationStatus, version,
-        stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null));
+      return SonarQubeCliStatusDecoder.decode(String.join("\n", result.output));
     } catch (IOException | RuntimeException e) {
       LOG.debug("Unable to parse the SonarQube CLI status", e);
-      return CliStatus.unknown();
+      return SonarQubeCliStatusDecoder.CliStatus.unknown();
     }
   }
 
@@ -176,8 +154,7 @@ public class AiIntegrationService {
     var executableNames = system2.isOsWindows() ? List.of("sonar.exe", "sonar.cmd", "sonar") : List.of("sonar");
     var path = searchPath();
     if (path != null) {
-      var separator = system2.isOsWindows() ? ";" : ":";
-      for (var directory : path.split(Pattern.quote(separator))) {
+      for (var directory : OsPathHelpers.splitPathEntries(path, system2.isOsWindows())) {
         if (!directory.isBlank()) {
           try {
             executableNames.forEach(name -> candidates.add(Paths.get(directory, name)));
@@ -243,9 +220,8 @@ public class AiIntegrationService {
     var pathHelperResult = execute(MAC_OS_PATH_HELPER, List.of("-s"));
     if (pathHelperResult.exitCode == 0) {
       var path = pathHelperResult.output.stream()
-        .map(PATH_HELPER_OUTPUT_PATTERN::matcher)
-        .filter(Matcher::matches)
-        .map(matcher -> matcher.group(1))
+        .map(OsPathHelpers::pathFromPathHelperOutput)
+        .flatMap(Optional::stream)
         .findFirst();
       if (path.isPresent()) {
         return path.get();
@@ -257,75 +233,14 @@ public class AiIntegrationService {
 
   @Nullable
   private String environmentVariable(String name) {
-    var value = environment.get(name);
-    if (value != null || !system2.isOsWindows()) {
-      return value;
-    }
-    return environment.entrySet().stream()
-      .filter(entry -> entry.getKey().equalsIgnoreCase(name))
-      .map(Map.Entry::getValue)
-      .findFirst()
-      .orElse(null);
-  }
-
-  private PrepareCliCommandResponse prepareInstallCommand() {
-    if (system2.isOsWindows()) {
-      return new PrepareCliCommandResponse("powershell.exe",
-        List.of("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "irm " + WINDOWS_INSTALL_SCRIPT_URL + " | iex"), true);
-    }
-    return new PrepareCliCommandResponse("/bin/bash", List.of("-o", "pipefail", "-c",
-      "curl --fail --silent --show-error --location " + UNIX_INSTALL_SCRIPT_URL + " | bash"), true);
-  }
-
-  private static PrepareCliCommandResponse prepareAuthenticationCommand(Path executable, PrepareCliCommandParams params) {
-    var arguments = new ArrayList<>(List.of("auth", "login"));
-    addOption(arguments, "--server", params.getServerUrl());
-    addOption(arguments, "--org", params.getOrganization());
-    return new PrepareCliCommandResponse(executable.toString(), arguments, true);
-  }
-
-  private static PrepareCliCommandResponse prepareIntegrationCommand(Path executable, @Nullable AiAgent agent) {
-    if (agent == null) {
-      throw new IllegalArgumentException("An AI agent is required");
-    }
-    var cliTarget = cliTarget(agent)
-      .orElseThrow(() -> new IllegalArgumentException(agent + " is not supported by the SonarQube CLI"));
-    return new PrepareCliCommandResponse(executable.toString(), List.of("integrate", cliTarget, "--global"), true);
-  }
-
-  private static void addOption(List<String> arguments, String option, @Nullable String value) {
-    if (value != null && !value.isBlank()) {
-      arguments.add(option);
-      arguments.add(value.trim());
-    }
+    return OsPathHelpers.environmentVariable(environment, name, system2.isOsWindows());
   }
 
   private static AiIntegrationAgentCapability capabilityFor(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, cliTarget(agent).isPresent(), true);
-  }
-
-  private static Optional<String> cliTarget(AiAgent agent) {
-    return switch (agent) {
-      case CURSOR -> Optional.of("cursor");
-      case CLAUDE_CODE -> Optional.of("claude");
-      case CODEX -> Optional.of("codex");
-      case WINDSURF, KIRO, GITHUB_COPILOT -> Optional.empty();
-    };
-  }
-
-  private static Optional<String> stringValue(JsonNode object, String property) {
-    var value = object.get(property);
-    return value == null || value.isNull() || !value.isValueNode() ? Optional.empty() : Optional.of(value.asText());
+    return new AiIntegrationAgentCapability(agent, CliCommandFactory.cliTarget(agent).isPresent(), true);
   }
 
   private record CliLookup(CliInstallationStatus installationStatus, @Nullable Path path, @Nullable String version) {
-  }
-
-  private record CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version,
-                           @Nullable String serverUrl, @Nullable String organization) {
-    private static CliStatus unknown() {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
-    }
   }
 
   private record CommandResult(int exitCode, List<String> output) {
