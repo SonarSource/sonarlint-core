@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
@@ -58,18 +57,9 @@ final class CliCommandFactory {
     if (agent == null) {
       throw new IllegalArgumentException("An AI agent is required");
     }
-    var cliTarget = cliTarget(agent)
+    var cliTarget = AiAgentSupport.cliTarget(agent)
       .orElseThrow(() -> new IllegalArgumentException(agent + " is not supported by the SonarQube CLI"));
     return new PrepareCliCommandResponse(executable.toString(), List.of("integrate", cliTarget, "--global"));
-  }
-
-  static Optional<String> cliTarget(AiAgent agent) {
-    return switch (agent) {
-      case CURSOR -> Optional.of("cursor");
-      case CLAUDE_CODE -> Optional.of("claude");
-      case CODEX -> Optional.of("codex");
-      case WINDSURF, KIRO, GITHUB_COPILOT -> Optional.empty();
-    };
   }
 
   private static void addOption(List<String> arguments, String option, @Nullable String value) {
