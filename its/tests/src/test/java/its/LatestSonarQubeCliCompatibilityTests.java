@@ -37,7 +37,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliCommandAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
@@ -65,7 +69,8 @@ class LatestSonarQubeCliCompatibilityTests {
     var environment = isolatedEnvironment(isolatedHome, cliPath.getParent());
     var service = newIsolatedService(isolatedHome, environment);
 
-    var response = service.getIntegrationState(new GetAiIntegrationStateParams(List.of(AiAgent.CLAUDE_CODE)));
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER,
+      List.of(AiAgent.CLAUDE_CODE), AiIntegrationScope.GLOBAL, null));
 
     assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAUTHENTICATED);
@@ -75,7 +80,7 @@ class LatestSonarQubeCliCompatibilityTests {
       .satisfies(capability -> assertThat(capability.isCliIntegrationSupported()).isTrue());
 
     var integrateCommand = service.prepareCliCommand(new PrepareCliCommandParams(
-      CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null));
+      CliCommandAction.INTEGRATE, AiAgent.CLAUDE_CODE, null, null, null));
     assertThat(integrateCommand.getExecutable()).isEqualTo(cliPath.toString());
     assertThat(integrateCommand.getArguments()).containsExactly("integrate", "claude", "--global");
     var commandResult = runPreparedCommand(
@@ -90,7 +95,7 @@ class LatestSonarQubeCliCompatibilityTests {
     installerEnvironment.put("PATH", "/usr/bin:/bin");
     var service = newIsolatedService(isolatedHome, installerEnvironment);
     var installCommand = service.prepareCliCommand(new PrepareCliCommandParams(
-      CliCommandAction.INSTALL, null, null, null));
+      CliCommandAction.INSTALL, null, null, null, null));
     var processBuilder = new ProcessBuilder(toCommand(installCommand.getExecutable(), installCommand.getArguments()))
       .directory(isolatedHome.toFile())
       .redirectErrorStream(true)
@@ -114,11 +119,13 @@ class LatestSonarQubeCliCompatibilityTests {
   @SuppressWarnings("java:S3011")
   private static AiIntegrationService newIsolatedService(Path isolatedHome, Map<String, String> environment)
     throws ReflectiveOperationException {
-    // Keep the production constructor surface unchanged while allowing this IT to isolate HOME, PATH and credentials.
+    // Supply isolated CLI inputs without adding a production constructor just for this test.
     var constructor = AiIntegrationService.class.getDeclaredConstructor(
-      System2.class, CommandExecutor.class, Path.class, Map.class);
+      System2.class, CommandExecutor.class, Path.class, Map.class,
+      ConnectionConfigurationRepository.class, ConfigurationRepository.class);
     constructor.setAccessible(true);
-    return constructor.newInstance(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment);
+    return constructor.newInstance(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment,
+      new ConnectionConfigurationRepository(), new ConfigurationRepository());
   }
 
   private CommandResult runPreparedCommand(String executable, List<String> arguments,

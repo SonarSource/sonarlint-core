@@ -24,5 +24,6 @@ public enum CliAuthenticationStatus {
   UNAUTHENTICATED,
   INVALID,
   UNVERIFIED,
+  UNAVAILABLE,
   UNKNOWN
 }
