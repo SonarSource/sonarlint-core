@@ -22,7 +22,6 @@ package mediumtest.sloop;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,7 +37,6 @@ public class JreLocator {
     return getJrePath(JRE_LINUX_PATH);
   }
 
-  @NotNull
   private static Path getJrePath(String jreLinuxPath) {
     var jreDir = Paths.get(jreLinuxPath).toAbsolutePath().normalize().toFile();
     return Arrays.stream(requireNonNull(jreDir.listFiles())).findFirst().get().toPath();

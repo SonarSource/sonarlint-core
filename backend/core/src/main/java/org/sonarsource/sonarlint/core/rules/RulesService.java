@@ -23,7 +23,6 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
@@ -57,7 +56,6 @@ public class RulesService {
       .collect(Collectors.toMap(RuleDefinitionDto::getKey, r -> r));
   }
 
-  @NotNull
   public static RuleDefinitionDto convert(SonarLintRuleDefinition r) {
     var cleanCodeAttribute = r.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(CleanCodeAttribute.CONVENTIONAL);
     return new RuleDefinitionDto(r.getKey(), r.getName(), cleanCodeAttribute, toDto(r.getDefaultImpacts()),

@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 public class ServerIssueFixtures {
   public static LineLevelServerIssue aBatchServerIssue() {
     return new LineLevelServerIssue(
+      UUID.randomUUID(),
       "key",
       true,
       IssueStatus.WONT_FIX,
@@ -56,6 +57,7 @@ public class ServerIssueFixtures {
 
   public static FileLevelServerIssue aFileLevelServerIssue() {
     return new FileLevelServerIssue(
+      UUID.randomUUID(),
       "key",
       true,
       IssueStatus.WONT_FIX,
@@ -70,6 +72,7 @@ public class ServerIssueFixtures {
 
   public static RangeLevelServerIssue aServerIssue() {
     return new RangeLevelServerIssue(
+      UUID.randomUUID(),
       "key",
       true,
       IssueStatus.WONT_FIX,

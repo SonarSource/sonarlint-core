@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;

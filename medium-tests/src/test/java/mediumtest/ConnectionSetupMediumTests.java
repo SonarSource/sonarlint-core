@@ -29,7 +29,6 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
@@ -123,7 +122,6 @@ class ConnectionSetupMediumTests {
       .containsOnly(EXPECTED_MESSAGE, ResponseErrorCode.InvalidParams.getValue(), utmArray());
   }
 
-  @NotNull
   private static JsonArray utmArray() {
     JsonArray arrayOfInvalidParameters = new JsonArray();
     arrayOfInvalidParameters.add("utm_term");
