@@ -47,4 +47,11 @@ public interface AiAgentRpcService {
   @JsonRequest
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
 
+  /**
+   * Prepares a command that the client can run in its native interactive terminal.
+   * Credentials are never included in the response.
+   */
+  @JsonRequest
+  CompletableFuture<PrepareCliCommandResponse> prepareCliCommand(PrepareCliCommandParams params);
+
 }

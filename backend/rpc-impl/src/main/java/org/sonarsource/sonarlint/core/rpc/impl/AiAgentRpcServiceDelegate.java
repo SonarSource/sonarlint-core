@@ -30,6 +30,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationSt
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 
 public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAgentRpcService {
   public AiAgentRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
@@ -49,5 +51,10 @@ public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implem
   @Override
   public CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params) {
     return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).getIntegrationState(params));
+  }
+
+  @Override
+  public CompletableFuture<PrepareCliCommandResponse> prepareCliCommand(PrepareCliCommandParams params) {
+    return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).prepareCliCommand(params));
   }
 }
