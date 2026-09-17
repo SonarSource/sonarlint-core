@@ -1,3 +1,10 @@
+# 11.11
+
+## New features
+
+* Add `getIntegrationState` and `prepareCliCommand` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared SonarQube CLI discovery, authentication state, agent capabilities, and interactive terminal command preparation.
+* Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
+
 # 11.9
 
 ## Deprecation

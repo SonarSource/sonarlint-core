@@ -19,6 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+public class AiIntegrationAgentCapability {
+  private final AiAgent agent;
+  private final boolean cliIntegrationSupported;
+  private final boolean standaloneMcpSupported;
+
+  public AiIntegrationAgentCapability(AiAgent agent, boolean cliIntegrationSupported, boolean standaloneMcpSupported) {
+    this.agent = agent;
+    this.cliIntegrationSupported = cliIntegrationSupported;
+    this.standaloneMcpSupported = standaloneMcpSupported;
+  }
+
+  public AiAgent getAgent() {
+    return agent;
+  }
+
+  public boolean isCliIntegrationSupported() {
+    return cliIntegrationSupported;
+  }
+
+  public boolean isStandaloneMcpSupported() {
+    return standaloneMcpSupported;
+  }
 }
