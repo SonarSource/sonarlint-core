@@ -22,14 +22,21 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 
 final class AiAgentCapabilities {
 
   private AiAgentCapabilities() {
   }
 
-  static AiIntegrationAgentCapability of(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, supportsCliIntegration(agent), jsonSectionName(agent).isPresent());
+  static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return new AiIntegrationAgentCapability(
+      agent,
+      supportsCliIntegration(host, agent, scope),
+      supportsStandaloneMcp(host, agent),
+      supportsHook(host, agent, scope),
+      supportsSkills(host, agent, scope));
   }
 
   static Optional<String> jsonSectionName(AiAgent agent) {
@@ -44,6 +51,39 @@ final class AiAgentCapabilities {
     return switch (agent) {
       case CURSOR, CLAUDE_CODE, CODEX -> true;
       case WINDSURF, KIRO, GITHUB_COPILOT -> false;
+    };
+  }
+
+  private static boolean supportsCliIntegration(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return scope == AiIntegrationScope.GLOBAL && compatibleWith(host, agent) && supportsCliIntegration(agent);
+  }
+
+  private static boolean supportsSkills(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return supportsCliIntegration(host, agent, scope);
+  }
+
+  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent) {
+    return jsonSectionName(agent).isPresent() && compatibleWith(host, agent);
+  }
+
+  private static boolean supportsHook(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return scope == AiIntegrationScope.GLOBAL
+      && onNativeHost(host, agent)
+      && hookSupport(agent) == HookSupport.CONFIGURED;
+  }
+
+  private static boolean compatibleWith(AiIntegrationHost host, AiAgent agent) {
+    return host == AiIntegrationHost.OTHER || onNativeHost(host, agent);
+  }
+
+  private static boolean onNativeHost(AiIntegrationHost host, AiAgent agent) {
+    return switch (agent) {
+      case CURSOR -> host == AiIntegrationHost.CURSOR;
+      case GITHUB_COPILOT -> host == AiIntegrationHost.VSCODE || host == AiIntegrationHost.INTELLIJ
+        || host == AiIntegrationHost.VISUAL_STUDIO;
+      case KIRO -> host == AiIntegrationHost.KIRO;
+      case WINDSURF -> host == AiIntegrationHost.WINDSURF;
+      case CLAUDE_CODE, CODEX -> true;
     };
   }
 
