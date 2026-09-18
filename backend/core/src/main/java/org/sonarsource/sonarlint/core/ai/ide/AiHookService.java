@@ -81,20 +81,16 @@ public class AiHookService {
   }
 
   private static String generateHookConfiguration(AiAgent agent) {
-    return switch (agent) {
-      case WINDSURF -> WINDSURF_HOOK_CONFIG;
-      case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
-      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
-      case CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " hook configuration is not supported");
+    return switch (AiAgentCapabilities.hookSupport(agent)) {
+      case CONFIGURED -> WINDSURF_HOOK_CONFIG;
+      case NOT_YET_IMPLEMENTED, UNSUPPORTED_COPILOT, UNSUPPORTED_CLI -> throw AiAgentCapabilities.unsupportedHook(agent);
     };
   }
 
   private static String getConfigFileName(AiAgent agent) {
-    return switch (agent) {
-      case WINDSURF -> "hooks.json";
-      case CURSOR, KIRO -> throw new UnsupportedOperationException(agent + " hook configuration not yet implemented");
-      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
-      case CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " hook configuration is not supported");
+    return switch (AiAgentCapabilities.hookSupport(agent)) {
+      case CONFIGURED -> "hooks.json";
+      case NOT_YET_IMPLEMENTED, UNSUPPORTED_COPILOT, UNSUPPORTED_CLI -> throw AiAgentCapabilities.unsupportedHook(agent);
     };
   }
 

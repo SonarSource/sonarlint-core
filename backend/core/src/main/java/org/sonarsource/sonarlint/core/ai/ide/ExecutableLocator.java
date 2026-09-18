@@ -31,6 +31,7 @@ import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
+import org.sonarsource.sonarlint.core.nodejs.OsSearchPath;
 
 public class ExecutableLocator {
 
@@ -134,13 +135,12 @@ public class ExecutableLocator {
   }
 
   void computePathEnvForMacOs(Command command) {
-    if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      var pathHelperCommand = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
-      var pathHelperOutput = runSimpleCommand(pathHelperCommand);
-      if (pathHelperOutput != null) {
-        OsPathHelpers.pathFromPathHelperOutput(pathHelperOutput)
-          .ifPresent(path -> command.setEnvironmentVariable("PATH", path));
-      }
+    if (!system2.isOsMac()) {
+      return;
+    }
+    var path = OsSearchPath.readMacOsPath(pathHelperLocationOnMac, commandExecutor, 10_000);
+    if (path != null) {
+      command.setEnvironmentVariable("PATH", path);
     }
   }
 

@@ -35,6 +35,7 @@ import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.nodejs.OsSearchPath;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
@@ -220,6 +221,7 @@ class AiIntegrationServiceTests {
   @DisabledOnOs(OS.WINDOWS)
   void should_find_cli_using_mac_os_path_helper() throws IOException {
     var executable = createExecutable("homebrew/bin/sonar");
+    var pathHelper = createPathHelper();
     var executor = commandReturning((command, stdout) -> {
       if (command.toCommandLine().contains("path_helper")) {
         stdout.consumeLine("PATH=\"" + executable.getParent() + "\"; export PATH;");
@@ -228,7 +230,7 @@ class AiIntegrationServiceTests {
       }
       return 0;
     });
-    var service = newMacOsService(Map.of("PATH", "/usr/bin"), executor);
+    var service = newMacOsService(Map.of("PATH", "/usr/bin"), executor, pathHelper);
 
     var cli = service.getIntegrationState(new GetAiIntegrationStateParams(List.of())).getCli();
 
@@ -310,13 +312,24 @@ class AiIntegrationServiceTests {
   private AiIntegrationService newService(boolean windows, Map<String, String> environment, CommandExecutor executor) {
     var system2 = mock(System2.class);
     when(system2.isOsWindows()).thenReturn(windows);
-    return new AiIntegrationService(system2, executor, tempDir, environment);
+    return newService(system2, environment, executor, OsSearchPath.MAC_OS_PATH_HELPER);
   }
 
-  private AiIntegrationService newMacOsService(Map<String, String> environment, CommandExecutor executor) {
+  private AiIntegrationService newMacOsService(Map<String, String> environment, CommandExecutor executor, Path pathHelper) {
     var system2 = mock(System2.class);
     when(system2.isOsMac()).thenReturn(true);
-    return new AiIntegrationService(system2, executor, tempDir, environment);
+    return newService(system2, environment, executor, pathHelper);
+  }
+
+  private AiIntegrationService newService(System2 system2, Map<String, String> environment, CommandExecutor executor,
+    Path pathHelper) {
+    return new AiIntegrationService(new SonarQubeCliLocator(system2, executor, tempDir, environment, pathHelper));
+  }
+
+  private Path createPathHelper() throws IOException {
+    var pathHelper = tempDir.resolve("path_helper");
+    Files.createFile(pathHelper);
+    return pathHelper;
   }
 
   private Path createExecutable(String relativePath) throws IOException {

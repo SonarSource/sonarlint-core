@@ -132,11 +132,8 @@ public class NodeJsHelper {
       var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       var pathHelperOutput = runSimpleCommand(command);
       if (pathHelperOutput != null) {
-        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
-        var matchResult = regex.matcher(pathHelperOutput);
-        if (matchResult.matches()) {
-          which.setEnvironmentVariable("PATH", matchResult.group(1));
-        }
+        OsSearchPath.parsePathHelperOutput(pathHelperOutput)
+          .ifPresent(path -> which.setEnvironmentVariable("PATH", path));
       }
     }
   }
