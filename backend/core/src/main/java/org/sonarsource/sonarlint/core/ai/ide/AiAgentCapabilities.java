@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 
 final class AiAgentCapabilities {
 
@@ -29,7 +31,15 @@ final class AiAgentCapabilities {
   }
 
   static AiIntegrationAgentCapability of(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, supportsCliIntegration(agent), jsonSectionName(agent).isPresent());
+    return of(AiIntegrationHost.OTHER, agent, AiIntegrationScope.GLOBAL);
+  }
+
+  static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    var cliIntegrationSupported = scope == AiIntegrationScope.GLOBAL && supportsCliIntegration(agent, host);
+    var standaloneMcpSupported = supportsStandaloneMcp(host, agent);
+    var hookSupported = scope == AiIntegrationScope.GLOBAL && host == AiIntegrationHost.WINDSURF && agent == AiAgent.WINDSURF;
+    return new AiIntegrationAgentCapability(agent, cliIntegrationSupported, standaloneMcpSupported, hookSupported,
+      cliIntegrationSupported);
   }
 
   static Optional<String> jsonSectionName(AiAgent agent) {
@@ -44,6 +54,28 @@ final class AiAgentCapabilities {
     return switch (agent) {
       case CURSOR, CLAUDE_CODE, CODEX -> true;
       case WINDSURF, KIRO, GITHUB_COPILOT -> false;
+    };
+  }
+
+  private static boolean supportsCliIntegration(AiAgent agent, AiIntegrationHost host) {
+    if (agent == AiAgent.CURSOR && host != AiIntegrationHost.CURSOR && host != AiIntegrationHost.OTHER) {
+      return false;
+    }
+    return supportsCliIntegration(agent);
+  }
+
+  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent) {
+    if (jsonSectionName(agent).isEmpty()) {
+      return false;
+    }
+    return switch (agent) {
+      case CURSOR -> host == AiIntegrationHost.CURSOR || host == AiIntegrationHost.OTHER;
+      case GITHUB_COPILOT -> host == AiIntegrationHost.VSCODE || host == AiIntegrationHost.INTELLIJ
+        || host == AiIntegrationHost.VISUAL_STUDIO || host == AiIntegrationHost.OTHER;
+      case KIRO -> host == AiIntegrationHost.KIRO || host == AiIntegrationHost.OTHER;
+      case WINDSURF -> host == AiIntegrationHost.WINDSURF || host == AiIntegrationHost.OTHER;
+      case CLAUDE_CODE -> true;
+      case CODEX -> false;
     };
   }
 
