@@ -62,6 +62,10 @@ final class SonarQubeCliLocator {
     this.pathHelperLocation = pathHelperLocation;
   }
 
+  boolean isWindows() {
+    return system2.isOsWindows();
+  }
+
   CliLookup find() {
     Path firstUnusable = null;
     for (var candidate : cliCandidates()) {
