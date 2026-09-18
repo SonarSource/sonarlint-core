@@ -34,6 +34,9 @@ public class AiAgentService {
   }
 
   public GetRuleFileContentResponse getRuleFileContent(AiAgent agent) {
+    if (!AiAgentCapabilities.supportsRuleFile(agent)) {
+      throw AiAgentCapabilities.unsupportedRuleFile(agent);
+    }
     var header = switch (agent) {
       case CURSOR, WINDSURF -> """
         ---
@@ -55,6 +58,7 @@ public class AiAgentService {
         ---
 
         """;
+      case CLAUDE_CODE, CODEX -> throw AiAgentCapabilities.unsupportedRuleFile(agent);
     };
     var response = new GetRuleFileContentResponse(header
       + """

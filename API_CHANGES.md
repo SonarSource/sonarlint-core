@@ -1,3 +1,9 @@
+# 11.11
+
+## New features
+
+* Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
+
 # 11.9
 
 ## Deprecation
