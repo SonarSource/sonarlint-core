@@ -3,6 +3,7 @@
 ## New features
 
 * Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability`, describing per-agent CLI integration and standalone MCP support.
 
 # 11.9
 

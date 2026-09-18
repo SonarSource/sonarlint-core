@@ -115,8 +115,7 @@ public class AiHookService {
       case WINDSURF -> "Windsurf";
       case CURSOR -> "Cursor";
       case KIRO -> "Kiro";
-      case GITHUB_COPILOT -> throw new UnsupportedOperationException("GitHub Copilot does not support hooks");
-      case CLAUDE_CODE, CODEX -> throw new UnsupportedOperationException(agent + " does not support legacy IDE hooks");
+      case GITHUB_COPILOT, CLAUDE_CODE, CODEX -> throw AiAgentCapabilities.unsupportedHook(agent);
     };
   }
 
