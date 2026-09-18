@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import java.util.List;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
@@ -31,39 +33,54 @@ final class AiAgentCapabilities {
   }
 
   static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return of(host, agent, scope, List.of(AiAgentDetectionSource.IDE));
+  }
+
+  static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope,
+    List<AiAgentDetectionSource> detectionSources) {
     return new AiIntegrationAgentCapability(
       agent,
-      supportsCliIntegration(host, agent, scope),
-      supportsStandaloneMcp(host, agent),
+      detectionSources,
+      supportsCliIntegration(host, agent, scope, detectionSources),
+      supportsStandaloneMcp(host, agent, detectionSources),
       supportsHook(host, agent, scope),
-      supportsSkills(host, agent, scope));
+      supportsSkills(host, agent, scope, detectionSources));
   }
 
   static Optional<String> jsonSectionName(AiAgent agent) {
     return switch (agent) {
       case GITHUB_COPILOT -> Optional.of("servers");
       case CURSOR, WINDSURF, KIRO, CLAUDE_CODE -> Optional.of("mcpServers");
-      case CODEX -> Optional.empty();
+      case CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> Optional.empty();
     };
   }
 
   static boolean supportsCliIntegration(AiAgent agent) {
     return switch (agent) {
-      case CURSOR, CLAUDE_CODE, CODEX -> true;
+      case CURSOR, CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> true;
       case WINDSURF, KIRO, GITHUB_COPILOT -> false;
     };
   }
 
-  private static boolean supportsCliIntegration(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
-    return scope == AiIntegrationScope.GLOBAL && compatibleWith(host, agent) && supportsCliIntegration(agent);
+  private static boolean supportsCliIntegration(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope,
+    List<AiAgentDetectionSource> detectionSources) {
+    return scope == AiIntegrationScope.GLOBAL && supportsCliIntegration(agent)
+      && (compatibleWith(host, agent) || detectedViaCli(detectionSources));
   }
 
-  private static boolean supportsSkills(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
-    return supportsCliIntegration(host, agent, scope);
+  private static boolean supportsSkills(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope,
+    List<AiAgentDetectionSource> detectionSources) {
+    return supportsCliIntegration(host, agent, scope, detectionSources);
   }
 
-  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent) {
-    return jsonSectionName(agent).isPresent() && compatibleWith(host, agent);
+  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent,
+    List<AiAgentDetectionSource> detectionSources) {
+    return jsonSectionName(agent).isPresent()
+      && (compatibleWith(host, agent) || detectedViaCli(detectionSources));
+  }
+
+  private static boolean detectedViaCli(List<AiAgentDetectionSource> detectionSources) {
+    return detectionSources.contains(AiAgentDetectionSource.CLI);
   }
 
   private static boolean supportsHook(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
@@ -83,14 +100,14 @@ final class AiAgentCapabilities {
         || host == AiIntegrationHost.VISUAL_STUDIO;
       case KIRO -> host == AiIntegrationHost.KIRO;
       case WINDSURF -> host == AiIntegrationHost.WINDSURF;
-      case CLAUDE_CODE, CODEX -> true;
+      case CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> true;
     };
   }
 
   static boolean supportsRuleFile(AiAgent agent) {
     return switch (agent) {
       case CURSOR, WINDSURF, KIRO, GITHUB_COPILOT -> true;
-      case CLAUDE_CODE, CODEX -> false;
+      case CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> false;
     };
   }
 
@@ -99,7 +116,7 @@ final class AiAgentCapabilities {
       case WINDSURF -> HookSupport.CONFIGURED;
       case CURSOR, KIRO -> HookSupport.NOT_YET_IMPLEMENTED;
       case GITHUB_COPILOT -> HookSupport.UNSUPPORTED_COPILOT;
-      case CLAUDE_CODE, CODEX -> HookSupport.UNSUPPORTED_CLI;
+      case CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> HookSupport.UNSUPPORTED_CLI;
     };
   }
 

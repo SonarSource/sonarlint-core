@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
+import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
@@ -45,6 +47,8 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
@@ -84,6 +88,7 @@ class AiIntegrationServiceTests {
     assertThat(response.getAgents()).hasSize(2);
     assertThat(response.getAgents().get(0).getAgent()).isEqualTo(AiAgent.CLAUDE_CODE);
     assertThat(response.getAgents().get(0).isCliIntegrationSupported()).isTrue();
+    assertThat(response.getAgents().get(0).getDetectionSources()).containsExactly(AiAgentDetectionSource.IDE);
     assertThat(response.getAgents().get(0).isStandaloneMcpSupported()).isTrue();
     assertThat(response.getAgents().get(1).getAgent()).isEqualTo(AiAgent.GITHUB_COPILOT);
     assertThat(response.getAgents().get(1).isCliIntegrationSupported()).isFalse();
@@ -108,6 +113,199 @@ class AiIntegrationServiceTests {
       .containsExactly(true, true, true, false, false, false);
     assertThat(response.getAgents()).extracting(capability -> capability.isStandaloneMcpSupported())
       .containsExactly(true, true, false, true, true, true);
+  }
+
+  @Test
+  void should_default_capability_detection_source_to_ide() {
+    var capability = new AiIntegrationAgentCapability(AiAgent.CLAUDE_CODE, true, true, false, true);
+
+    assertThat(capability.getDetectionSources()).containsExactly(AiAgentDetectionSource.IDE);
+  }
+
+  @Test
+  void should_keep_local_agent_cli_discovery_opt_in() throws IOException {
+    var claude = createExecutable("agents/claude");
+    var service = newService(false, Map.of("PATH", claude.getParent().toString()), commandReturning((command, stdout) -> {
+      throw new AssertionError("Agent CLI should not be probed unless discovery is requested");
+    }));
+
+    var params = new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(AiAgent.GITHUB_COPILOT), AiIntegrationScope.GLOBAL, null);
+    var response = service.getIntegrationState(params);
+
+    assertThat(params.isDiscoverLocalAgentClis()).isFalse();
+    assertThat(response.getAgents()).extracting(AiIntegrationAgentCapability::getAgent)
+      .containsExactly(AiAgent.GITHUB_COPILOT);
+  }
+
+  @Test
+  void should_merge_verified_agent_clis_with_ide_agents_in_stable_order() throws IOException {
+    var claude = createExecutable("agents/claude");
+    var codex = createExecutable("agents/codex");
+    var copilot = createExecutable("agents/copilot");
+    var cursorAgent = createExecutable("agents/cursor-agent");
+    var antigravity = createExecutable("agents/agy");
+    var executor = commandReturningWithStreams((command, stdout, stderr) -> {
+      var commandLine = command.toCommandLine();
+      if (commandLine.contains(claude.toString())) {
+        stdout.consumeLine("Claude Code 2.1.0");
+      } else if (commandLine.contains(codex.toString())) {
+        stdout.consumeLine("codex-cli 0.87.0");
+      } else if (commandLine.contains(copilot.toString())) {
+        stdout.consumeLine("GitHub Copilot CLI 0.0.350");
+      } else if (commandLine.contains(cursorAgent.toString())) {
+        stdout.consumeLine("Usage: agent [options] [command] [prompt...]");
+        stdout.consumeLine("Start the Cursor Agent");
+      } else if (commandLine.contains(antigravity.toString())) {
+        stderr.consumeLine("Usage of agy:");
+      }
+      return 0;
+    });
+    var service = newService(false, Map.of("PATH", claude.getParent().toString()), executor);
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(AiAgent.CURSOR, AiAgent.GITHUB_COPILOT, AiAgent.CLAUDE_CODE, AiAgent.CURSOR),
+      AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).extracting(AiIntegrationAgentCapability::getAgent).containsExactly(
+      AiAgent.CURSOR, AiAgent.GITHUB_COPILOT, AiAgent.CLAUDE_CODE, AiAgent.CODEX,
+      AiAgent.GITHUB_COPILOT_CLI, AiAgent.ANTIGRAVITY);
+    assertThat(response.getAgents().get(0).getDetectionSources())
+      .containsExactly(AiAgentDetectionSource.IDE, AiAgentDetectionSource.CLI);
+    assertThat(response.getAgents().get(0).isCliIntegrationSupported()).isTrue();
+    assertThat(response.getAgents().get(0).isStandaloneMcpSupported()).isTrue();
+    assertThat(response.getAgents().get(1).getDetectionSources()).containsExactly(AiAgentDetectionSource.IDE);
+    assertThat(response.getAgents().get(2).getDetectionSources())
+      .containsExactly(AiAgentDetectionSource.IDE, AiAgentDetectionSource.CLI);
+    assertThat(response.getAgents().get(4).getDetectionSources()).containsExactly(AiAgentDetectionSource.CLI);
+  }
+
+  @Test
+  void should_reject_unverified_executable_names_and_never_invoke_antigravity_desktop() throws IOException {
+    var claude = createExecutable("agents/claude");
+    var codex = createExecutable("agents/codex");
+    var copilot = createExecutable("agents/copilot");
+    var agent = createExecutable("agents/agent");
+    var agy = createExecutable("agents/agy");
+    var antigravityDesktop = createExecutable("agents/antigravity");
+    var commands = new ArrayList<String>();
+    var service = newService(false, Map.of("PATH", claude.getParent().toString()), commandReturning((command, stdout) -> {
+      commands.add(command.toCommandLine());
+      if (command.toCommandLine().contains(codex.toString())) {
+        stdout.consumeLine("Codex companion tool");
+      } else if (command.toCommandLine().contains(copilot.toString())) {
+        stdout.consumeLine("Copilot helper");
+      } else {
+        stdout.consumeLine("Unrelated command");
+      }
+      return 0;
+    }));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).isEmpty();
+    assertThat(commands)
+      .noneMatch(command -> command.contains(antigravityDesktop.toString()))
+      .anyMatch(command -> command.contains(codex.toString()))
+      .anyMatch(command -> command.contains(copilot.toString()))
+      .anyMatch(command -> command.contains(agent.toString()))
+      .anyMatch(command -> command.contains(agy.toString()));
+  }
+
+  @Test
+  void should_ignore_nonzero_and_throwing_agent_probes() throws IOException {
+    var claude = createExecutable("agents/claude");
+    createExecutable("agents/codex");
+    var service = newService(false, Map.of("PATH", claude.getParent().toString()), commandReturning((command, stdout) -> {
+      if (command.toCommandLine().contains(claude.toString())) {
+        return 1;
+      }
+      throw new CommandException(command, "Probe failed", null);
+    }));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).isEmpty();
+  }
+
+  @Test
+  void should_only_probe_the_first_executable_for_each_command_name() throws IOException {
+    var shadowingClaude = createExecutable("first/claude");
+    var hiddenClaude = createExecutable("second/claude");
+    var commands = new ArrayList<String>();
+    var path = shadowingClaude.getParent() + File.pathSeparator + hiddenClaude.getParent();
+    var service = newService(false, Map.of("PATH", path), commandReturning((command, stdout) -> {
+      commands.add(command.toCommandLine());
+      if (command.toCommandLine().contains(hiddenClaude.toString())) {
+        stdout.consumeLine("Claude Code 2.1.0");
+      } else {
+        stdout.consumeLine("Unrelated command");
+      }
+      return 0;
+    }));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).isEmpty();
+    assertThat(commands)
+      .anyMatch(command -> command.contains(shadowingClaude.toString()))
+      .noneMatch(command -> command.contains(hiddenClaude.toString()));
+  }
+
+  @Test
+  void should_discover_agent_cli_from_local_bin() throws IOException {
+    createExecutable(".local/bin/codex");
+    var service = newService(false, Map.of(), commandReturning((command, stdout) -> {
+      stdout.consumeLine("codex-cli 0.87.0");
+      return 0;
+    }));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).extracting(AiIntegrationAgentCapability::getAgent).containsExactly(AiAgent.CODEX);
+    assertThat(response.getAgents().get(0).getDetectionSources()).containsExactly(AiAgentDetectionSource.CLI);
+  }
+
+  @Test
+  void should_discover_windows_agent_cli_executable_suffixes() throws IOException {
+    var copilot = createExecutable("agents/copilot.cmd");
+    var service = newService(true, Map.of("Path", copilot.getParent().toString()), commandReturning((command, stdout) -> {
+      stdout.consumeLine("GitHub Copilot CLI 0.0.350");
+      return 0;
+    }));
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).extracting(AiIntegrationAgentCapability::getAgent)
+      .containsExactly(AiAgent.GITHUB_COPILOT_CLI);
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_discover_agent_cli_using_mac_os_path_helper() throws IOException {
+    var claude = createExecutable("homebrew/bin/claude");
+    var pathHelper = createPathHelper();
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().contains("path_helper")) {
+        stdout.consumeLine("PATH=\"" + claude.getParent() + "\"; export PATH;");
+      } else {
+        assertThat(command.getEnvironmentVariables()).containsEntry("PATH", claude.getParent().toString());
+        stdout.consumeLine("Claude Code 2.1.0");
+      }
+      return 0;
+    });
+    var service = newMacOsService(Map.of("PATH", "/usr/bin"), executor, pathHelper);
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(), AiIntegrationScope.GLOBAL, null, true));
+
+    assertThat(response.getAgents()).extracting(AiIntegrationAgentCapability::getAgent)
+      .containsExactly(AiAgent.CLAUDE_CODE);
   }
 
   @Test
@@ -432,6 +630,18 @@ class AiIntegrationServiceTests {
   }
 
   @Test
+  void should_prepare_integration_for_discovered_copilot_and_antigravity_clis() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
+
+    var copilot = service.prepareIntegrateCommand(new PrepareIntegrateCliCommandParams(AiAgent.GITHUB_COPILOT_CLI));
+    var antigravity = service.prepareIntegrateCommand(new PrepareIntegrateCliCommandParams(AiAgent.ANTIGRAVITY));
+
+    assertThat(copilot.getArguments()).containsExactly("integrate", "copilot", "--global");
+    assertThat(antigravity.getArguments()).containsExactly("integrate", "antigravity", "--global");
+  }
+
+  @Test
   void should_reject_integrate_when_agent_is_missing() throws IOException {
     var executable = createExecutable("bin/sonar");
     var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
@@ -568,6 +778,7 @@ class AiIntegrationServiceTests {
   private AiIntegrationService newService(System2 system2, Map<String, String> environment, CommandExecutor executor,
     Path pathHelper) {
     return new AiIntegrationService(new SonarQubeCliLocator(system2, executor, tempDir, environment, pathHelper),
+      new AgentCliLocator(system2, executor, tempDir, environment, pathHelper),
       connectionRepository, configurationRepository);
   }
 
@@ -603,8 +814,20 @@ class AiIntegrationServiceTests {
     return executor;
   }
 
+  private static CommandExecutor commandReturningWithStreams(CommandStreamsAnswer answer) {
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(Command.class), any(), any(), anyLong())).thenAnswer(invocation ->
+      answer.execute(invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2)));
+    return executor;
+  }
+
   @FunctionalInterface
   private interface CommandAnswer {
     int execute(Command command, StreamConsumer stdout);
+  }
+
+  @FunctionalInterface
+  private interface CommandStreamsAnswer {
+    int execute(Command command, StreamConsumer stdout, StreamConsumer stderr);
   }
 }
