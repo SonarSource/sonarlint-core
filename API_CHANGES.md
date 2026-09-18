@@ -2,6 +2,7 @@
 
 ## New features
 
+* Add `getIntegrationState` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared SonarQube CLI discovery, authentication state, and agent capabilities.
 * Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
 * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability`, describing per-agent CLI integration and standalone MCP support.
 
