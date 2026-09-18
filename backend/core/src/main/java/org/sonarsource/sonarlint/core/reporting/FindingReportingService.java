@@ -167,6 +167,20 @@ public class FindingReportingService {
     }
   }
 
+  public void retractIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
+    var fileUri = trackedIssue.getFileUri();
+    if (fileUri == null) {
+      return;
+    }
+    var map = trackedIssue.isSecurityHotspot() ? securityHotspotsPerFileUri : issuesPerFileUri;
+    map.computeIfPresent(fileUri, (uri, fileFindings) -> fileFindings.stream()
+      .filter(issue -> !issue.getId().equals(trackedIssue.getId()))
+      .toList());
+    if (isStreamingEnabled) {
+      getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
+    }
+  }
+
   private static void insertTrackedIssue(Map<URI, Collection<TrackedIssue>> map, TrackedIssue trackedIssue) {
     map.compute(trackedIssue.getFileUri(), (fileUri, fileFindings) -> {
       // make sure to return an immutable list as it might be iterated over in parallel

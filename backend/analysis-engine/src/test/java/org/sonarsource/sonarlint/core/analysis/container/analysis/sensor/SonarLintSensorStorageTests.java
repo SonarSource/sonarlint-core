@@ -158,6 +158,7 @@ class SonarLintSensorStorageTests {
     storeIssue(analyzedFile, 1, ruleKey);
 
     verify(issueListener, never()).handle(any());
+    verify(issueListener, never()).retract(any());
   }
 
   @Test
@@ -170,6 +171,7 @@ class SonarLintSensorStorageTests {
     storeIssue(analyzedFile, 1, otherRule);
 
     verify(issueListener).handle(any());
+    verify(issueListener, never()).retract(any());
   }
 
   @Test
@@ -181,6 +183,33 @@ class SonarLintSensorStorageTests {
     storeIssue(analyzedFile, 2, ruleKey);
 
     verify(issueListener).handle(any());
+    verify(issueListener, never()).retract(any());
+  }
+
+  @Test
+  void store_IssueResolution_retracts_already_forwarded_issues() {
+    when(activeRules.find(ruleKey)).thenReturn(activeRule);
+    when(activeRule.ruleKey()).thenReturn(ruleKey);
+    when(filters.accept(any(), any())).thenReturn(true);
+
+    storeIssue(analyzedFile, 1, ruleKey);
+    storeResolution(analyzedFile, 1, ruleKey);
+
+    verify(issueListener).handle(any());
+    verify(issueListener).retract(any());
+  }
+
+  @Test
+  void store_IssueResolution_does_not_retract_issues_on_other_lines() {
+    when(activeRules.find(ruleKey)).thenReturn(activeRule);
+    when(activeRule.ruleKey()).thenReturn(ruleKey);
+    when(filters.accept(any(), any())).thenReturn(true);
+
+    storeIssue(analyzedFile, 2, ruleKey);
+    storeResolution(analyzedFile, 1, ruleKey);
+
+    verify(issueListener).handle(any());
+    verify(issueListener, never()).retract(any());
   }
 
   @Test

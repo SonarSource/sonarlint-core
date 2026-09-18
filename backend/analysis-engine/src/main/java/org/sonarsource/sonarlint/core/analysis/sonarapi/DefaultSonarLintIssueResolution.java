@@ -38,7 +38,6 @@ public class DefaultSonarLintIssueResolution extends DefaultStorable implements 
 
   private InputFile inputFile;
   private TextRange textRange;
-  private Status status = Status.DEFAULT;
   private final Set<RuleKey> ruleKeys = new LinkedHashSet<>();
   private String comment;
 
@@ -64,7 +63,8 @@ public class DefaultSonarLintIssueResolution extends DefaultStorable implements 
 
   @Override
   public DefaultSonarLintIssueResolution status(Status status) {
-    this.status = requireNonNull(status, "status is mandatory on issue resolution");
+    // SonarQube for IDE always hides matching issues. SonarQube Server keeps FALSE_POSITIVE
+    // issues visible and marks them instead. Status is therefore not persisted.
     return this;
   }
 
@@ -93,7 +93,7 @@ public class DefaultSonarLintIssueResolution extends DefaultStorable implements 
 
   @Override
   public Status status() {
-    return status;
+    return Status.DEFAULT;
   }
 
   @Override

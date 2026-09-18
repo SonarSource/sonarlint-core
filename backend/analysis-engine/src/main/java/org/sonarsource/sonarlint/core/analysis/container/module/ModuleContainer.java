@@ -64,9 +64,15 @@ public class ModuleContainer extends SpringComponentContainer {
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressIndicator progressIndicator, @Nullable Trace trace) {
+    return analyze(configuration, issueListener, issue -> {
+    }, progressIndicator, trace);
+  }
+
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, Consumer<Issue> issueRetractListener, ProgressIndicator progressIndicator,
+    @Nullable Trace trace) {
     var analysisContainer = startChild(trace, "newAnalysisContainer", "analyze", () -> new AnalysisContainer(this, progressIndicator));
     analysisContainer.add(configuration);
-    analysisContainer.add(new IssueListenerHolder(issueListener));
+    analysisContainer.add(new IssueListenerHolder(issueListener, issueRetractListener));
     analysisContainer.add(startChild(trace, "newActiveRulesAdapter", "analyze", () ->
       new ActiveRulesAdapter(configuration.activeRules())));
     var defaultAnalysisResult = new AnalysisResults();

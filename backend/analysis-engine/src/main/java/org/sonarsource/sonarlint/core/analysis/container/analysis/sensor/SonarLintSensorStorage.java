@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   private final IssueListenerHolder issueListener;
   private final AnalysisResults analysisResult;
   private final List<IssueResolution> issueResolutions = new ArrayList<>();
+  private final List<org.sonarsource.sonarlint.core.analysis.api.Issue> forwardedIssues = new ArrayList<>();
 
   public SonarLintSensorStorage(ActiveRules activeRules, IssueFilters filters, IssueListenerHolder issueListener, AnalysisResults analysisResult) {
     this.activeRules = activeRules;
@@ -99,6 +101,7 @@ public class SonarLintSensorStorage implements SensorStorage {
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes, sonarLintIssue.ruleDescriptionContextKey());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
+      forwardedIssues.add(newIssue);
     }
   }
 
@@ -136,15 +139,25 @@ public class SonarLintSensorStorage implements SensorStorage {
       return false;
     }
     var inputFile = (InputFile) inputComponent;
-    var matched = issueResolutions.stream().anyMatch(resolution -> matches(resolution, inputFile, textRange.start().line(), issue.ruleKey()));
+    var matched = issueResolutions.stream().anyMatch(resolution -> matches(resolution, inputFile.uri(), textRange.start().line(), issue.ruleKey()));
     if (matched) {
       LOG.debug("Issue {} on {}:{} ignored because it was resolved by a sensor", issue.ruleKey(), inputFile, textRange.start().line());
     }
     return matched;
   }
 
-  private static boolean matches(IssueResolution resolution, InputFile inputFile, int issueLine, RuleKey ruleKey) {
-    return resolution.inputFile().uri().equals(inputFile.uri())
+  private static boolean matches(IssueResolution resolution, org.sonarsource.sonarlint.core.analysis.api.Issue issue) {
+    var inputFile = issue.getInputFile();
+    var textRange = issue.getTextRange();
+    if (inputFile == null || textRange == null) {
+      return false;
+    }
+    return matches(resolution, inputFile.uri(), textRange.getStartLine(), issue.getRuleKey());
+  }
+
+  private static boolean matches(IssueResolution resolution, URI fileUri, int issueLine, RuleKey ruleKey) {
+    // Status is ignored: matching issues are always hidden in the IDE.
+    return resolution.inputFile().uri().equals(fileUri)
       && resolution.ruleKeys().contains(ruleKey)
       && coversLine(resolution.textRange(), issueLine);
   }
@@ -209,6 +222,16 @@ public class SonarLintSensorStorage implements SensorStorage {
   @Override
   public void store(IssueResolution issueResolution) {
     issueResolutions.add(issueResolution);
+    var iterator = forwardedIssues.iterator();
+    while (iterator.hasNext()) {
+      var issue = iterator.next();
+      if (matches(issueResolution, issue)) {
+        LOG.debug("Issue {} on {}:{} retracted because it was resolved by a sensor", issue.getRuleKey(), issue.getInputFile(),
+          issue.getTextRange().getStartLine());
+        issueListener.retract(issue);
+        iterator.remove();
+      }
+    }
   }
 
 }

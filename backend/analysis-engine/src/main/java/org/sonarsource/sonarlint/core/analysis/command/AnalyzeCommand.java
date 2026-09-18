@@ -61,6 +61,7 @@ public class AnalyzeCommand extends Command {
   private final TriggerType triggerType;
   private final Supplier<AnalysisConfiguration> configurationSupplier;
   private final Consumer<Issue> issueListener;
+  private final Consumer<Issue> issueRetractListener;
   @Nullable
   private final Trace trace;
   private final CompletableFuture<AnalysisResults> futureResult;
@@ -75,17 +76,34 @@ public class AnalyzeCommand extends Command {
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
     Set<URI> files, Map<String, String> extraProperties) {
     this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
-      new CompletableFuture<>());
+      issue -> {
+      }, new CompletableFuture<>());
+  }
+
+  public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
+    Set<URI> files, Map<String, String> extraProperties, Consumer<Issue> issueRetractListener) {
+    this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
+      issueRetractListener, new CompletableFuture<>());
   }
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
     Set<URI> files, Map<String, String> extraProperties, CompletableFuture<AnalysisResults> futureResult) {
+    this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
+      issue -> {
+      }, futureResult);
+  }
+
+  public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
+    Set<URI> files, Map<String, String> extraProperties, Consumer<Issue> issueRetractListener, CompletableFuture<AnalysisResults> futureResult) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
     this.triggerType = triggerType;
     this.configurationSupplier = configurationSupplier;
     this.issueListener = issueListener;
+    this.issueRetractListener = issueRetractListener;
     this.trace = trace;
     this.cancelMonitor = cancelMonitor;
     this.taskManager = taskManager;
@@ -195,7 +213,11 @@ public class AnalyzeCommand extends Command {
         issueCounter.incrementAndGet();
         issueListener.accept(issue);
       };
-      var result = moduleContainer.analyze(configuration, issueCountingListener, progressIndicator, trace);
+      Consumer<Issue> retractCountingListener = issue -> {
+        issueCounter.decrementAndGet();
+        issueRetractListener.accept(issue);
+      };
+      var result = moduleContainer.analyze(configuration, issueCountingListener, retractCountingListener, progressIndicator, trace);
       doIfTraceIsSet(t -> {
         t.setData("failedFilesCount", result.failedAnalysisFiles().size());
         t.setData("foundIssuesCount", issueCounter.get());
@@ -245,7 +267,7 @@ public class AnalyzeCommand extends Command {
       .build();
     return new AnalyzeCommand(moduleKey, analysisId, triggerType, () -> mergedAnalysisConfiguration, issueListener, trace, new SonarLintCancelMonitor(), taskManager,
       analysisStarted, isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).collect(Collectors.toSet()), newerAnalysisConfiguration.extraProperties(),
-      futureResult);
+      issueRetractListener, futureResult);
   }
 
   @Override

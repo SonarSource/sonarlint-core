@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisFailedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisStartedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
+import org.sonarsource.sonarlint.core.analysis.RawIssueRetractedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
@@ -154,6 +155,20 @@ public class TrackingService {
       var trackedIssue = matchingSession.matchWithKnownFinding(requireNonNull(detectedIssue.getIdeRelativePath()), detectedIssue);
       reportingService.streamIssue(event.configurationScopeId(), analysisId, trackedIssue);
     }
+  }
+
+  @EventListener
+  public void onIssueRetracted(RawIssueRetractedEvent event) {
+    var matchingSession = matchingSessionByAnalysisId.get(event.analysisId());
+    if (matchingSession == null) {
+      return;
+    }
+    var retractedIssue = event.retractedIssue();
+    if (!retractedIssue.isInFile()) {
+      return;
+    }
+    matchingSession.removeMatching(retractedIssue)
+      .forEach(trackedIssue -> reportingService.retractIssue(event.configurationScopeId(), event.analysisId(), trackedIssue));
   }
 
   @EventListener

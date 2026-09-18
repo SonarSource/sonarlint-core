@@ -59,7 +59,7 @@ class DefaultSonarLintIssueResolutionTests {
 
     assertThat(resolution.inputFile()).isEqualTo(inputFile);
     assertThat(resolution.textRange()).isEqualTo(range);
-    assertThat(resolution.status()).isEqualTo(IssueResolution.Status.FALSE_POSITIVE);
+    assertThat(resolution.status()).isEqualTo(IssueResolution.Status.DEFAULT);
     assertThat(resolution.ruleKeys()).containsExactly(ruleKey).isUnmodifiable();
     assertThat(resolution.comment()).isEqualTo("justified");
 
@@ -69,10 +69,11 @@ class DefaultSonarLintIssueResolutionTests {
   }
 
   @Test
-  void defaults_status_to_default() {
+  void ignores_status() {
     var resolution = new DefaultSonarLintIssueResolution(storage)
       .on(inputFile)
       .at(inputFile.selectLine(1))
+      .status(IssueResolution.Status.FALSE_POSITIVE)
       .forRules(List.of(RuleKey.of("repo", "rule")))
       .comment("justified");
 
