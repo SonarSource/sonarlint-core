@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
 import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
+import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -227,6 +228,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   AnalyzeFileListRequestHandler.class,
   AiAgentService.class,
   AiHookService.class,
+  AiIntegrationService.class,
   LogService.class,
   ActiveRulesService.class,
   AiCodeFixRepository.class,
