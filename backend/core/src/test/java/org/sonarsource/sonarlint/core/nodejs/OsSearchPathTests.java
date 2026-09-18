@@ -94,4 +94,42 @@ class OsSearchPathTests {
     assertThat(path).isEqualTo("/usr/bin");
     verify(executor, never()).execute(any(Command.class), any(), any(), anyLong());
   }
+
+  @Test
+  void should_read_macos_path_when_not_on_the_first_line(@TempDir Path tempDir) throws Exception {
+    var pathHelper = tempDir.resolve("path_helper");
+    Files.createFile(pathHelper);
+    var system2 = mock(System2.class);
+    when(system2.isOsMac()).thenReturn(true);
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(Command.class), any(), any(), anyLong())).thenAnswer(invocation -> {
+      StreamConsumer stdout = invocation.getArgument(1);
+      stdout.consumeLine("MANPATH=\"/usr/share/man\"; export MANPATH;");
+      stdout.consumeLine("PATH=\"/opt/homebrew/bin\"; export PATH;");
+      return 0;
+    });
+
+    var path = OsSearchPath.resolve(system2, Map.of("PATH", "/usr/bin"), pathHelper, executor, 1_000);
+
+    assertThat(path).isEqualTo("/opt/homebrew/bin");
+  }
+
+  @Test
+  void should_log_when_path_helper_exits_non_zero(@TempDir Path tempDir) throws Exception {
+    var pathHelper = tempDir.resolve("path_helper");
+    Files.createFile(pathHelper);
+    var system2 = mock(System2.class);
+    when(system2.isOsMac()).thenReturn(true);
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(Command.class), any(), any(), anyLong())).thenAnswer(invocation -> {
+      StreamConsumer stderr = invocation.getArgument(2);
+      stderr.consumeLine("permission denied");
+      return 1;
+    });
+
+    var path = OsSearchPath.resolve(system2, Map.of("PATH", "/usr/bin"), pathHelper, executor, 1_000);
+
+    assertThat(path).isEqualTo("/usr/bin");
+    assertThat(logTester.logs()).anyMatch(log -> log.contains("exited with 1") && log.contains("permission denied"));
+  }
 }

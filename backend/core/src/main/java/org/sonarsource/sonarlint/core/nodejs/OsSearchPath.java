@@ -68,6 +68,7 @@ public final class OsSearchPath {
     try {
       var exitCode = commandExecutor.execute(command, stdout::add, stderr::add, timeoutMillis);
       if (exitCode != 0) {
+        LOG.debug("Command '{}' exited with {}, stderr: {}", command, exitCode, String.join("\n", stderr));
         return null;
       }
       var path = stdout.stream()

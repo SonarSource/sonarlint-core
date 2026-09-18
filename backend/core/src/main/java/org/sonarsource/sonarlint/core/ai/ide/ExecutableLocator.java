@@ -46,7 +46,7 @@ public class ExecutableLocator {
   private HookScriptType detectedExecutable = null;
 
   public ExecutableLocator() {
-    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create(), new NodeJsHelper());
+    this(System2.INSTANCE, OsSearchPath.MAC_OS_PATH_HELPER, CommandExecutor.create(), new NodeJsHelper());
   }
 
   // For testing

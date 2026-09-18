@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.nodejs;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ public class NodeJsHelper {
   private final CommandExecutor commandExecutor;
 
   public NodeJsHelper() {
-    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
+    this(System2.INSTANCE, OsSearchPath.MAC_OS_PATH_HELPER, CommandExecutor.create());
   }
 
   // For testing
@@ -128,13 +127,12 @@ public class NodeJsHelper {
   }
 
   private void computePathEnvForMacOs(Command which) {
-    if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
-      var pathHelperOutput = runSimpleCommand(command);
-      if (pathHelperOutput != null) {
-        OsSearchPath.parsePathHelperOutput(pathHelperOutput)
-          .ifPresent(path -> which.setEnvironmentVariable("PATH", path));
-      }
+    if (!system2.isOsMac()) {
+      return;
+    }
+    var path = OsSearchPath.readMacOsPath(pathHelperLocationOnMac, commandExecutor, 10_000);
+    if (path != null) {
+      which.setEnvironmentVariable("PATH", path);
     }
   }
 
