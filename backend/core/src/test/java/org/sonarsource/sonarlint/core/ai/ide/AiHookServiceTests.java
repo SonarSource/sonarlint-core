@@ -217,5 +217,21 @@ class AiHookServiceTests {
       .hasMessageContaining("GitHub Copilot does not support hooks");
   }
 
+  @Test
+  void it_should_throw_centralized_hook_message_for_claude_code() {
+    var embeddedServer = mock(EmbeddedServer.class);
+    var telemetryService = mock(TelemetryService.class);
+    var executableLocator = mock(ExecutableLocator.class);
+
+    when(embeddedServer.getPort()).thenReturn(64120);
+    when(executableLocator.detectBestExecutable()).thenReturn(Optional.of(HookScriptType.BASH));
+
+    var service = new AiHookService(embeddedServer, telemetryService, executableLocator);
+
+    assertThatThrownBy(() -> service.getHookScriptContent(AiAgent.CLAUDE_CODE))
+      .isInstanceOf(UnsupportedOperationException.class)
+      .hasMessage("CLAUDE_CODE hook configuration is not supported");
+  }
+
 }
 
