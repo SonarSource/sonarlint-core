@@ -84,7 +84,7 @@ class OsSearchPathTests {
   }
 
   @Test
-  void should_skip_missing_path_helper_and_use_environment(@TempDir Path tempDir) throws Exception {
+  void should_skip_missing_path_helper_and_use_environment(@TempDir Path tempDir) {
     var system2 = mock(System2.class);
     when(system2.isOsMac()).thenReturn(true);
     var executor = mock(CommandExecutor.class);
