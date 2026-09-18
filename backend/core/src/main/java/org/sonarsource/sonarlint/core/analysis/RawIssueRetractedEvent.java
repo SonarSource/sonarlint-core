@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Implementation
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis;
+package org.sonarsource.sonarlint.core.analysis;
 
-import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import java.util.UUID;
 
-/**
- * We need a dedicated class for dependency injection
- *
- */
-public class IssueListenerHolder {
-  private final Consumer<Issue> wrapped;
-  private final Consumer<Issue> retractListener;
-
-  public IssueListenerHolder(Consumer<Issue> issueListener) {
-    this(issueListener, issue -> {
-    });
-  }
-
-  public IssueListenerHolder(Consumer<Issue> issueListener, Consumer<Issue> retractListener) {
-    this.wrapped = issueListener;
-    this.retractListener = retractListener;
-  }
-
-  public void handle(Issue issue) {
-    wrapped.accept(issue);
-  }
-
-  public void retract(Issue issue) {
-    retractListener.accept(issue);
-  }
+public record RawIssueRetractedEvent(String configurationScopeId, UUID analysisId, RawIssue retractedIssue) {
 }

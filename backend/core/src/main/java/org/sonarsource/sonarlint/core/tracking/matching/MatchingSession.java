@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -62,6 +63,38 @@ public class MatchingSession {
     } else {
       return matchWithKnownIssue(relativePath, rawIssue);
     }
+  }
+
+  public List<TrackedIssue> removeMatching(RawIssue rawIssue) {
+    var findingsPerFile = rawIssue.isSecurityHotspot() ? securityHotspotsPerFile : issuesPerFile;
+    var relativePath = rawIssue.getIdeRelativePath();
+    if (relativePath == null) {
+      return List.of();
+    }
+    var removed = new ArrayList<TrackedIssue>();
+    findingsPerFile.computeIfPresent(relativePath, (path, issues) -> {
+      var remaining = new ArrayList<TrackedIssue>();
+      for (var trackedIssue : issues) {
+        if (sameFinding(trackedIssue, rawIssue)) {
+          removed.add(trackedIssue);
+        } else {
+          remaining.add(trackedIssue);
+        }
+      }
+      return remaining;
+    });
+    return removed;
+  }
+
+  private static boolean sameFinding(TrackedIssue trackedIssue, RawIssue rawIssue) {
+    if (!trackedIssue.getRuleKey().equals(rawIssue.getRuleKey())) {
+      return false;
+    }
+    if (!Objects.equals(trackedIssue.getFileUri(), rawIssue.getFileUri())) {
+      return false;
+    }
+    var trackedLine = trackedIssue.getLineWithHash() == null ? null : trackedIssue.getLineWithHash().getNumber();
+    return Objects.equals(trackedLine, rawIssue.getLine().orElse(null));
   }
 
   public TrackedIssue matchWithKnownSecurityHotspot(Path relativePath, RawIssue newSecurityHotspot) {
