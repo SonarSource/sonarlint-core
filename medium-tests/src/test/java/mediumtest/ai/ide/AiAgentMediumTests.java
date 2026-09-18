@@ -98,4 +98,15 @@ class AiAgentMediumTests {
       .containsExactly(AiAgent.CLAUDE_CODE, AiAgent.GITHUB_COPILOT);
   }
 
+  @SonarLintTest
+  void it_should_prepare_cli_install_command_through_rpc(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .start();
+
+    var installCommand = backend.getAiAgentService().prepareInstallCommand().join();
+
+    assertThat(installCommand.getExecutable()).isIn("/bin/bash", "powershell.exe");
+    assertThat(installCommand.isInteractive()).isTrue();
+  }
+
 }
