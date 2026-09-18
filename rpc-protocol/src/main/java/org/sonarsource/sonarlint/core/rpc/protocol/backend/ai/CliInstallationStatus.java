@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX
+public enum CliInstallationStatus {
+  NOT_INSTALLED,
+  INSTALLED,
+  UNUSABLE
 }
