@@ -19,27 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum CliAuthenticationStatus {
-  AUTHENTICATED,
-  UNAUTHENTICATED,
-  INVALID,
-  UNVERIFIED,
-  UNAVAILABLE,
-  UNKNOWN;
-
-  /** Whether IDE connections should be offered to prefill an interactive CLI login. */
-  public boolean offersConnectionPrefill() {
-    switch (this) {
-      case UNAUTHENTICATED:
-      case INVALID:
-      case UNVERIFIED:
-        return true;
-      case AUTHENTICATED:
-      case UNAVAILABLE:
-      case UNKNOWN:
-        return false;
-      default:
-        throw new IllegalStateException("Unexpected authentication status: " + this);
-    }
-  }
+/** The IDE application hosting the AI agent. */
+public enum AiIntegrationHost {
+  VSCODE,
+  CURSOR,
+  WINDSURF,
+  KIRO,
+  INTELLIJ,
+  VISUAL_STUDIO,
+  OTHER
 }
