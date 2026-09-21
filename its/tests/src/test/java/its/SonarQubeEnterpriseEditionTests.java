@@ -23,7 +23,7 @@ import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.version.Version;
+import com.sonar.orchestrator.util.Version;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
