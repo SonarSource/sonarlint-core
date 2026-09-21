@@ -20,15 +20,37 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 import java.util.List;
+import javax.annotation.Nullable;
 
 public class GetAiIntegrationStateParams {
+  private final AiIntegrationHost ideHost;
   private final List<AiAgent> detectedAgents;
+  private final AiIntegrationScope scope;
+  @Nullable
+  private final String configurationScopeId;
 
-  public GetAiIntegrationStateParams(List<AiAgent> detectedAgents) {
+  public GetAiIntegrationStateParams(AiIntegrationHost ideHost, List<AiAgent> detectedAgents, AiIntegrationScope scope,
+    @Nullable String configurationScopeId) {
+    this.ideHost = ideHost;
     this.detectedAgents = List.copyOf(detectedAgents);
+    this.scope = scope;
+    this.configurationScopeId = configurationScopeId;
+  }
+
+  public AiIntegrationHost getIdeHost() {
+    return ideHost;
   }
 
   public List<AiAgent> getDetectedAgents() {
     return detectedAgents;
+  }
+
+  public AiIntegrationScope getScope() {
+    return scope;
+  }
+
+  @Nullable
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 }
