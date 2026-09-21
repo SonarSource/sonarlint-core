@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.nodejs;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.os.OsSearchPath;
 
 public class NodeJsHelper {
 
@@ -44,7 +44,7 @@ public class NodeJsHelper {
   private final CommandExecutor commandExecutor;
 
   public NodeJsHelper() {
-    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
+    this(System2.INSTANCE, OsSearchPath.MAC_OS_PATH_HELPER, CommandExecutor.create());
   }
 
   // For testing
@@ -128,16 +128,12 @@ public class NodeJsHelper {
   }
 
   private void computePathEnvForMacOs(Command which) {
-    if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
-      var pathHelperOutput = runSimpleCommand(command);
-      if (pathHelperOutput != null) {
-        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
-        var matchResult = regex.matcher(pathHelperOutput);
-        if (matchResult.matches()) {
-          which.setEnvironmentVariable("PATH", matchResult.group(1));
-        }
-      }
+    if (!system2.isOsMac()) {
+      return;
+    }
+    var path = OsSearchPath.readMacOsPath(pathHelperLocationOnMac, commandExecutor, 10_000);
+    if (path != null) {
+      which.setEnvironmentVariable("PATH", path);
     }
   }
 

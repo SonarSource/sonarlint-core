@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
@@ -32,6 +31,7 @@ import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
+import org.sonarsource.sonarlint.core.os.OsSearchPath;
 
 public class ExecutableLocator {
 
@@ -46,7 +46,7 @@ public class ExecutableLocator {
   private HookScriptType detectedExecutable = null;
 
   public ExecutableLocator() {
-    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create(), new NodeJsHelper());
+    this(System2.INSTANCE, OsSearchPath.MAC_OS_PATH_HELPER, CommandExecutor.create(), new NodeJsHelper());
   }
 
   // For testing
@@ -135,16 +135,12 @@ public class ExecutableLocator {
   }
 
   void computePathEnvForMacOs(Command command) {
-    if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      var pathHelperCommand = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
-      var pathHelperOutput = runSimpleCommand(pathHelperCommand);
-      if (pathHelperOutput != null) {
-        var regex = Pattern.compile("^\\s*PATH=\"([^\"]+)\"; export PATH;?\\s*$");
-        var matchResult = regex.matcher(pathHelperOutput);
-        if (matchResult.matches()) {
-          command.setEnvironmentVariable("PATH", matchResult.group(1));
-        }
-      }
+    if (!system2.isOsMac()) {
+      return;
+    }
+    var path = OsSearchPath.readMacOsPath(pathHelperLocationOnMac, commandExecutor, 10_000);
+    if (path != null) {
+      command.setEnvironmentVariable("PATH", path);
     }
   }
 

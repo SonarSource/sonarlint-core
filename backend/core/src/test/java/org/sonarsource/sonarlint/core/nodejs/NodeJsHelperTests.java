@@ -278,8 +278,6 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command '" + fakePathHelper + " -s'...",
-      "Command '" + fakePathHelper + " -s' exited with 0\nstdout: PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
       "Found node at " + FAKE_NODE_PATH,
@@ -307,8 +305,7 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command '" + fakePathHelper + " -s'...",
-      "Command '" + fakePathHelper + " -s' exited with 0\nstdout: wrong \n output",
+      "Unable to read PATH from macOS path_helper output",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
       "Found node at " + FAKE_NODE_PATH,
@@ -316,6 +313,26 @@ class NodeJsHelperTests {
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
       "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
+  }
+
+  @Test
+  void usePathHelperOnMacWhenPathIsNotFirstLine(@TempDir Path tempDir) throws IOException {
+    when(system2.isOsMac()).thenReturn(true);
+
+    registerPathHelperAnswer(
+      "MANPATH=\"/usr/share/man\"; export MANPATH;",
+      "PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;");
+    registerWhichAnswerIfPathIsSet(FAKE_NODE_PATH.toString(), "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node");
+    registerNodeVersionAnswer("v10.5.4");
+
+    var fakePathHelper = tempDir.resolve("path_helper.sh");
+    Files.createFile(fakePathHelper);
+    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    var result = underTest.detect(null);
+
     assertThat(result).isNotNull();
     assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
     assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
@@ -383,9 +400,9 @@ class NodeJsHelperTests {
     });
   }
 
-  private void registerPathHelperAnswer(String output) {
+  private void registerPathHelperAnswer(String... output) {
     registeredCommandAnswers.put(c -> c.toString().endsWith("path_helper.sh -s"), (stdOut, stdErr) -> {
-      stdOut.consumeLine(output);
+      Stream.of(output).forEach(stdOut::consumeLine);
       return 0;
     });
   }
