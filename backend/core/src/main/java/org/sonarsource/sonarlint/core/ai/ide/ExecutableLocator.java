@@ -31,7 +31,7 @@ import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
-import org.sonarsource.sonarlint.core.nodejs.OsSearchPath;
+import org.sonarsource.sonarlint.core.os.OsSearchPath;
 
 public class ExecutableLocator {
 
