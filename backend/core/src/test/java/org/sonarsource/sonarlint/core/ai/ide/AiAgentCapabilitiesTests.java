@@ -19,21 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.ai.ide.AiAgentCapabilities.HookSupport;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.ANTIGRAVITY;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CLAUDE_CODE;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CODEX;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CURSOR;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.GITHUB_COPILOT;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.GITHUB_COPILOT_CLI;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.KIRO;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.WINDSURF;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost.INTELLIJ;
@@ -66,7 +70,9 @@ class AiAgentCapabilitiesTests {
       Arguments.of(VSCODE, CLAUDE_CODE, GLOBAL, true, true, false, true),
       Arguments.of(VSCODE, CLAUDE_CODE, PROJECT, false, true, false, false),
       Arguments.of(AiIntegrationHost.KIRO, KIRO, GLOBAL, false, true, false, false),
-      Arguments.of(VSCODE, KIRO, GLOBAL, false, false, false, false)
+      Arguments.of(VSCODE, KIRO, GLOBAL, false, false, false, false),
+      Arguments.of(OTHER, GITHUB_COPILOT_CLI, GLOBAL, true, false, false, true),
+      Arguments.of(OTHER, ANTIGRAVITY, GLOBAL, true, false, false, true)
     );
   }
 
@@ -80,6 +86,15 @@ class AiAgentCapabilitiesTests {
     assertThat(capability.isStandaloneMcpSupported()).isEqualTo(mcp);
     assertThat(capability.isHookSupported()).isEqualTo(hook);
     assertThat(capability.isSkillSupported()).isEqualTo(skill);
+  }
+
+  @Test
+  void should_enable_cursor_cli_and_mcp_when_the_agent_cli_was_discovered() {
+    var capability = AiAgentCapabilities.of(VSCODE, CURSOR, GLOBAL, List.of(AiAgentDetectionSource.CLI));
+
+    assertThat(capability.isCliIntegrationSupported()).isTrue();
+    assertThat(capability.isStandaloneMcpSupported()).isTrue();
+    assertThat(capability.isSkillSupported()).isTrue();
   }
 
   @Test

@@ -19,16 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
+import java.util.List;
+
 public class AiIntegrationAgentCapability {
   private final AiAgent agent;
+  private final List<AiAgentDetectionSource> detectionSources;
   private final boolean cliIntegrationSupported;
   private final boolean standaloneMcpSupported;
   private final boolean hookSupported;
   private final boolean skillSupported;
 
-  public AiIntegrationAgentCapability(AiAgent agent, boolean cliIntegrationSupported, boolean standaloneMcpSupported,
-    boolean hookSupported, boolean skillSupported) {
+  public AiIntegrationAgentCapability(AiAgent agent, List<AiAgentDetectionSource> detectionSources,
+    boolean cliIntegrationSupported, boolean standaloneMcpSupported, boolean hookSupported, boolean skillSupported) {
     this.agent = agent;
+    this.detectionSources = List.copyOf(detectionSources);
     this.cliIntegrationSupported = cliIntegrationSupported;
     this.standaloneMcpSupported = standaloneMcpSupported;
     this.hookSupported = hookSupported;
@@ -37,6 +41,10 @@ public class AiIntegrationAgentCapability {
 
   public AiAgent getAgent() {
     return agent;
+  }
+
+  public List<AiAgentDetectionSource> getDetectionSources() {
+    return detectionSources;
   }
 
   public boolean isCliIntegrationSupported() {
