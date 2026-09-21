@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.os;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -66,7 +67,7 @@ class OsSearchPathTests {
   }
 
   @Test
-  void should_resolve_macos_path_from_path_helper(@TempDir Path tempDir) throws Exception {
+  void should_resolve_macos_path_from_path_helper(@TempDir Path tempDir) throws IOException {
     var pathHelper = tempDir.resolve("path_helper");
     Files.createFile(pathHelper);
     var system2 = mock(System2.class);
@@ -84,7 +85,7 @@ class OsSearchPathTests {
   }
 
   @Test
-  void should_skip_missing_path_helper_and_use_environment(@TempDir Path tempDir) throws Exception {
+  void should_skip_missing_path_helper_and_use_environment(@TempDir Path tempDir) {
     var system2 = mock(System2.class);
     when(system2.isOsMac()).thenReturn(true);
     var executor = mock(CommandExecutor.class);
@@ -96,7 +97,7 @@ class OsSearchPathTests {
   }
 
   @Test
-  void should_read_macos_path_when_not_on_the_first_line(@TempDir Path tempDir) throws Exception {
+  void should_read_macos_path_when_not_on_the_first_line(@TempDir Path tempDir) throws IOException {
     var pathHelper = tempDir.resolve("path_helper");
     Files.createFile(pathHelper);
     var system2 = mock(System2.class);
@@ -115,7 +116,7 @@ class OsSearchPathTests {
   }
 
   @Test
-  void should_log_when_path_helper_exits_non_zero(@TempDir Path tempDir) throws Exception {
+  void should_log_when_path_helper_exits_non_zero(@TempDir Path tempDir) throws IOException {
     var pathHelper = tempDir.resolve("path_helper");
     Files.createFile(pathHelper);
     var system2 = mock(System2.class);
