@@ -296,17 +296,8 @@ jobs:
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
-          ORCHESTRATOR_ARTIFACTORY_URL: ${{ matrix.sc != true && 'https://repox-internal.dev.sonar.build/artifactory' || '' }}
         run: |
-          extra=()
-          if [[ -n "${ORCHESTRATOR_ARTIFACTORY_URL:-}" && -n "${ARTIFACTORY_ACCESS_TOKEN:-}" ]]; then
-            extra+=(
-              "-Dorchestrator.artifactory.url=${ORCHESTRATOR_ARTIFACTORY_URL}"
-              "-Dorchestrator.artifactory.accessToken=${ARTIFACTORY_ACCESS_TOKEN}"
-            )
-          fi
-          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} \
-            "${extra[@]}" verify surefire-report:report
+          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a

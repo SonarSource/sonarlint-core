@@ -24,7 +24,7 @@ runs:
         : "${ARTIFACTORY_ACCESS_TOKEN:?ARTIFACTORY_ACCESS_TOKEN must be configured before waiting for token federation}"
 
         for attempt in {1..12}; do
-          status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+          status=$(curl --silent --connect-timeout 5 --max-time 15 --output /dev/null --write-out "%{http_code}" \
             --header "Authorization: Bearer ${ARTIFACTORY_ACCESS_TOKEN}" \
             "${ARTIFACTORY_URL}/${PROBE_PATH}" || true)
           if [[ "${status}" == "200" ]]; then
