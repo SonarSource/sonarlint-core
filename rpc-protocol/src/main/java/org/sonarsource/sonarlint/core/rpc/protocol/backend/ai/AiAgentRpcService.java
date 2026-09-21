@@ -40,4 +40,11 @@ public interface AiAgentRpcService {
   @JsonRequest
   CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params);
 
+  /**
+   * Returns the capabilities of the agents detected by the client together with the current
+   * SonarQube CLI installation and authentication state.
+   */
+  @JsonRequest
+  CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
+
 }
