@@ -47,13 +47,12 @@ final class SonarQubeCliStatusDecoder {
       return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null);
     }
 
-    var tokenStatus = stringValue(auth, "token").orElse(null);
-    var authenticationStatus = switch (tokenStatus == null ? "" : tokenStatus) {
+    var authenticationStatus = switch (stringValue(auth, "token").orElse(null)) {
       case "active" -> CliAuthenticationStatus.AUTHENTICATED;
       case "invalid" -> CliAuthenticationStatus.INVALID;
       case "set_unverified" -> CliAuthenticationStatus.UNVERIFIED;
       case "not_set" -> CliAuthenticationStatus.UNAUTHENTICATED;
-      default -> CliAuthenticationStatus.UNKNOWN;
+      case null, default -> CliAuthenticationStatus.UNKNOWN;
     };
     return new CliStatus(authenticationStatus, version,
       stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null));

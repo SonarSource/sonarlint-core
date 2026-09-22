@@ -37,6 +37,7 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
+import org.sonarsource.sonarlint.core.ai.ide.SonarQubeCliStatusDecoder.CliStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.os.OsSearchPath;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
@@ -81,17 +82,17 @@ final class SonarQubeCliLocator {
       : new CliLookup(CliInstallationStatus.UNUSABLE, firstUnusable, null);
   }
 
-  SonarQubeCliStatusDecoder.CliStatus readStatus(Path executable) {
+  CliStatus readStatus(Path executable) {
     var result = execute(executable, List.of("system", "status", "--json"));
     if (result.output.isEmpty()) {
-      return SonarQubeCliStatusDecoder.CliStatus.unknown();
+      return CliStatus.unknown();
     }
 
     try {
       return SonarQubeCliStatusDecoder.decode(String.join("\n", result.output));
     } catch (IOException | RuntimeException e) {
       LOG.debug("Unable to parse the SonarQube CLI status", e);
-      return SonarQubeCliStatusDecoder.CliStatus.unknown();
+      return CliStatus.unknown();
     }
   }
 
