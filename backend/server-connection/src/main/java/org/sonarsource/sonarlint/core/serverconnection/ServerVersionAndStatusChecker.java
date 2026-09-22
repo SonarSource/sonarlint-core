@@ -30,7 +30,6 @@ public class ServerVersionAndStatusChecker {
 
   private static final String MIN_SQ_VERSION = VersionUtils.MINIMAL_SUPPORTED_VERSION.getName();
   private static final String MIN_SQ_COMMUNITY_BUILD_VERSION = VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName();
-  private static final String MIN_SQ_VERSION_SUPPORTING_BEARER = "10.4";
   private final SystemApi systemApi;
   private final boolean isSonarCloud;
 
@@ -56,12 +55,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   public boolean isSupportingBearer(ServerStatusInfo serverStatus) {
-    if (isSonarCloud) {
-      return true;
-    } else {
-      var serverVersion = Version.create(serverStatus.version());
-      return serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION_SUPPORTING_BEARER)) >= 0;
-    }
+    return true;
   }
 
   private static void checkServerUp(ServerStatusInfo serverStatus) {

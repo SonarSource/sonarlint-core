@@ -55,8 +55,6 @@ import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSon
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("10.1");
-
   private static final String HOTSPOTS_SEARCH_API_URL = "/api/hotspots/search.protobuf";
   private static final String HOTSPOTS_SHOW_API_URL = "/api/hotspots/show.protobuf";
   private static final String HOTSPOTS_PULL_API_URL = "/api/hotspots/pull";
@@ -134,11 +132,15 @@ public class HotspotApi {
   }
 
   public boolean supportHotspotsPull(Supplier<Version> serverVersion) {
-    return supportHotspotsPull(helper.isSonarCloud(), serverVersion.get());
+    return supportHotspotsPull(helper.isSonarCloud());
+  }
+
+  public static boolean supportHotspotsPull(boolean isSonarCloud) {
+    return !isSonarCloud;
   }
 
   public static boolean supportHotspotsPull(boolean isSonarCloud, Version serverVersion) {
-    return !isSonarCloud && serverVersion.compareToIgnoreQualifier(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
+    return supportHotspotsPull(isSonarCloud);
   }
 
   private Collection<ServerHotspot> searchHotspots(String searchUrl, SonarLintCancelMonitor cancelMonitor) {

@@ -37,7 +37,6 @@ public class NewCodeApi {
   private static final String GET_NEW_CODE_DEFINITION_URL = "/api/measures/component.protobuf";
   private static final String OLD_SQ_OR_SC_PERIOD = "periods";
   private static final String NEW_SQ_PERIOD = "period";
-  private static final Version NEW_SQ_VERSION = Version.create("8.1");
   private final ServerApiHelper helper;
 
   public NewCodeApi(ServerApiHelper helper) {
@@ -93,9 +92,6 @@ public class NewCodeApi {
 
   static String getPeriodForServer(ServerApiHelper helper, Version serverVersion) {
     if (helper.isSonarCloud()) {
-      return OLD_SQ_OR_SC_PERIOD;
-    }
-    if (serverVersion.compareToIgnoreQualifier(NEW_SQ_VERSION) < 0) {
       return OLD_SQ_OR_SC_PERIOD;
     }
     return NEW_SQ_PERIOD;
