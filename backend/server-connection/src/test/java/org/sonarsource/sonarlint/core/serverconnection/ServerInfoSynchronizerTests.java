@@ -78,7 +78,7 @@ class ServerInfoSynchronizerTests {
 
   @Test
   void it_should_synchronize_version_and_settings() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/features/list", "[\"sca\"]");
     mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
@@ -94,7 +94,7 @@ class ServerInfoSynchronizerTests {
 
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::version, StoredServerInfo::features, StoredServerInfo::globalSettings)
-      .containsExactly(Version.create("9.9"), Set.of(Feature.SCA),
+      .containsExactly(Version.create("2025.1"), Set.of(Feature.SCA),
         new ServerSettings(Map.of(
           "sonar.multi-quality-mode.enabled", "true",
           "sonar.earlyAccess.misra.enabled", "true",
@@ -103,7 +103,7 @@ class ServerInfoSynchronizerTests {
 
   @Test
   void it_should_fail_when_server_is_down() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"DOWN\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"DOWN\"}");
 
     var throwable = catchThrowable(
       () -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithoutAuth()), new SonarLintCancelMonitor()));

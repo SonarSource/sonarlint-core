@@ -241,7 +241,7 @@ class SonarQubeClientManagerTests {
   private void setupSuccessfulStatusResponse(HttpClient httpClient, String statusPath) {
     var httpResponse = mock(HttpClient.Response.class);
     when(httpResponse.isSuccessful()).thenReturn(true);
-    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}");
     when(httpClient.getAsyncAnonymous(statusPath)).thenReturn(CompletableFuture.completedFuture(httpResponse));
   }
 }
