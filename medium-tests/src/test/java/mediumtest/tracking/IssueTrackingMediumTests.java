@@ -155,7 +155,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -210,7 +210,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -342,7 +342,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1192", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -416,7 +416,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -464,7 +464,7 @@ class IssueTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,

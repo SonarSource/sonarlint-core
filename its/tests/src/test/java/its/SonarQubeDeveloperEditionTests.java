@@ -339,7 +339,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnACloudFormationProject() {
       var configScopeId = "shouldRaiseIssuesOnACloudFormationProject";
       var projectKey = "sample-cloudformation";
@@ -356,7 +356,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnADockerProject() {
       var configScopeId = "shouldRaiseIssuesOnADockerProject";
       var projectKey = "sample-docker";
@@ -373,7 +373,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "10.0")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnAKubernetesProject() {
       var configScopeId = "shouldRaiseIssuesOnAKubernetesProject";
       var projectKey = "sample-kubernetes";
@@ -392,7 +392,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnATerraformProject() {
       var configScopeId = "shouldRaiseIssuesOnATerraformProject";
       var projectKey = "sample-terraform";
@@ -627,7 +627,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   class ServerSentEvents {
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() {
       var configScopeId = "shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer";
       var projectKey = "projectKey-sse";
@@ -687,7 +687,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, projectKey, "Sample Branch");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xml-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xml", "SonarLint IT XML");
-      // Use the pattern of long living branches in SQ 9.9, else we only have issues on changed files
+      // Use the pattern of long living branches in older SQ versions, else we only have issues on changed files
 
       // main branch
       analyzeProject("sample-xml", projectKey);
@@ -832,7 +832,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() throws ExecutionException, InterruptedException {
       openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
       waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
