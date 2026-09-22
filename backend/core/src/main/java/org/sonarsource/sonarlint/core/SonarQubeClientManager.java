@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import org.springframework.context.event.EventListener;
 
 public class SonarQubeClientManager {
@@ -150,15 +149,8 @@ public class SonarQubeClientManager {
       });
   }
 
-  private boolean checkIfBearerIsSupported(EndpointParams params) {
-    if (params.isSonarCloud()) {
-      return true;
-    }
-    var cancelMonitor = new SonarLintCancelMonitor();
-    var serverApi = new ServerApi(params, httpClientProvider.getHttpClientWithoutAuth());
-    var status = serverApi.system().getStatus(cancelMonitor);
-    var serverChecker = new ServerVersionAndStatusChecker(serverApi);
-    return serverChecker.isSupportingBearer(status);
+  private static boolean checkIfBearerIsSupported(EndpointParams params) {
+    return true;
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> getValidCredentialsFromClient(String connectionId) {

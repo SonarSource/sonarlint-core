@@ -160,21 +160,12 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)) {
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-secrets-sonarlint.xml"));
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_CUSTOM_SECRETS, "Sample Custom Secrets");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CUSTOM_SECRETS, "secrets", "SonarLint IT Custom Secrets");
-    }
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 5)) {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JCL, "Sample JCL");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JCL, "jcl", "SonarLint IT JCL");
-    }
-
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
-      singlePointOfExitRuleKey = "c:S1005";
-    } else {
-      singlePointOfExitRuleKey = "c:FunctionSinglePointOfExit";
-    }
+    ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-secrets-sonarlint.xml"));
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_CUSTOM_SECRETS, "Sample Custom Secrets");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CUSTOM_SECRETS, "secrets", "SonarLint IT Custom Secrets");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JCL, "Sample JCL");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JCL, "jcl", "SonarLint IT JCL");
+    singlePointOfExitRuleKey = "c:S1005";
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 4)) {
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/cpp-misra-sonarlint.xml"));
       provisionProject(ORCHESTRATOR, PROJECT_KEY_MISRA, "Sample MISRA");
@@ -237,7 +228,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
-    @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() {
       String configScopeId = "analysisC_new_prop";
       start(configScopeId, PROJECT_KEY_C);
@@ -305,7 +295,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "10.5")
     void analysisJCL() {
       String configScopeId = "analysisJCL";
       start(configScopeId, PROJECT_KEY_JCL);
@@ -336,7 +325,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "10.4")
     void analysisCustomSecrets() {
       var configScopeId = "analysisCustomSecrets";
       start(configScopeId, PROJECT_KEY_CUSTOM_SECRETS);

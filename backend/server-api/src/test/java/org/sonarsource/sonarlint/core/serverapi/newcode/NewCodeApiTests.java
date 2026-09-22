@@ -92,12 +92,10 @@ class NewCodeApiTests {
 
     var sonarCloud = getPeriodForServer(serverApiHelper, Version.create("9.2"));
     when(serverApiHelper.isSonarCloud()).thenReturn(false);
-    var sonarQubeOld = getPeriodForServer(serverApiHelper, Version.create("8.0"));
-    var sonarQubeNew = getPeriodForServer(serverApiHelper, Version.create("8.1"));
+    var sonarQube = getPeriodForServer(serverApiHelper, Version.create("2025.1"));
 
     assertThat(sonarCloud).isEqualTo("periods");
-    assertThat(sonarQubeOld).isEqualTo("periods");
-    assertThat(sonarQubeNew).isEqualTo("period");
+    assertThat(sonarQube).isEqualTo("period");
   }
 
   @Test

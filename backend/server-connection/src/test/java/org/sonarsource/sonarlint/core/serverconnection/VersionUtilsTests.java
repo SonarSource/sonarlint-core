@@ -43,16 +43,27 @@ class VersionUtilsTests {
   }
 
   @Test
-  void grace_period_should_be_false_if_connected_outdated_version() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("5.9"))).isFalse();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("9.8"))).isFalse();
+  void minimal_supported_version_should_accept_both_numbering_systems() {
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("2025.1"))).isTrue();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("25.1"))).isTrue();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("2025.2"))).isTrue();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("25.2"))).isTrue();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("9.9"))).isFalse();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("24.12"))).isFalse();
   }
 
   @Test
-  void grace_period_should_be_true_if_connected_during_grace_period() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT)).isTrue();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".1"))).isTrue();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("24.12"))).isTrue();
+  void grace_period_should_be_false_if_connected_outdated_version() {
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("5.9"))).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("9.8"))).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("9.9"))).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("24.12"))).isFalse();
+  }
+
+  @Test
+  void grace_period_should_be_false_when_minimal_supported_equals_current_lts() {
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT)).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".1"))).isFalse();
   }
 
   @Test
