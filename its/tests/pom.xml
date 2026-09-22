@@ -105,7 +105,8 @@
     <dependency>
       <groupId>org.sonarsource.orchestrator</groupId>
       <artifactId>sonar-orchestrator-junit5</artifactId>
-      <version>6.0.3.3907</version>
+      <!-- 6.4+ searches version aliases with remote=1 so Edge Smart Remotes are included. -->
+      <version>6.4.3.4676</version>
       <scope>test</scope>
     </dependency>
     <dependency>
