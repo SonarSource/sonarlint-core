@@ -167,6 +167,20 @@ public class FindingReportingService {
     }
   }
 
+  public void retractIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
+    var fileUri = trackedIssue.getFileUri();
+    if (fileUri == null) {
+      return;
+    }
+    var map = trackedIssue.isSecurityHotspot() ? securityHotspotsPerFileUri : issuesPerFileUri;
+    map.computeIfPresent(fileUri, (uri, fileFindings) -> fileFindings.stream()
+      .filter(issue -> !issue.getId().equals(trackedIssue.getId()))
+      .toList());
+    if (isStreamingEnabled) {
+      getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
+    }
+  }
+
   private static void insertTrackedIssue(Map<URI, Collection<TrackedIssue>> map, TrackedIssue trackedIssue) {
     map.compute(trackedIssue.getFileUri(), (fileUri, fileFindings) -> {
       // make sure to return an immutable list as it might be iterated over in parallel
@@ -207,9 +221,15 @@ public class FindingReportingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
-    var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
+    var issuesToRaise = new HashMap<>(getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature));
+    var hotspotsToRaise = new HashMap<>(getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode));
+    // Files whose findings were all retracted are missing from the grouped maps. Seed empty lists so
+    // previously streamed findings are cleared instead of being re-sent in the final publication.
+    filesPerAnalysis.getOrDefault(analysisId, Set.of()).forEach(fileUri -> {
+      issuesToRaise.putIfAbsent(fileUri, List.of());
+      hotspotsToRaise.putIfAbsent(fileUri, List.of());
+    });
     this.eventPublisher.publishEvent(new IssuesRaisedEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
-    var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
     filesPerAnalysis.remove(analysisId);
   }

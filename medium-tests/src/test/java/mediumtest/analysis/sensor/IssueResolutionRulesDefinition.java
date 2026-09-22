@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Medium Tests
  * Copyright (C) SonarSource Sàrl
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis;
+package mediumtest.analysis.sensor;
 
-import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonar.api.rules.RuleType;
+import org.sonar.api.server.rule.RulesDefinition;
 
-/**
- * We need a dedicated class for dependency injection
- *
- */
-public class IssueListenerHolder {
-  private final Consumer<Issue> wrapped;
-  private final Consumer<Issue> retractListener;
+public class IssueResolutionRulesDefinition implements RulesDefinition {
 
-  public IssueListenerHolder(Consumer<Issue> issueListener) {
-    this(issueListener, issue -> {
-    });
-  }
-
-  public IssueListenerHolder(Consumer<Issue> issueListener, Consumer<Issue> retractListener) {
-    this.wrapped = issueListener;
-    this.retractListener = retractListener;
-  }
-
-  public void handle(Issue issue) {
-    wrapped.accept(issue);
-  }
-
-  public void retract(Issue issue) {
-    retractListener.accept(issue);
+  @Override
+  public void define(Context context) {
+    var repository = context.createRepository("repo", "java");
+    repository.createRule("rule")
+      .setType(RuleType.CODE_SMELL)
+      .setName("Unused local variable")
+      .setActivatedByDefault(true)
+      .setHtmlDescription("Remove unused local variables");
+    repository.done();
   }
 }

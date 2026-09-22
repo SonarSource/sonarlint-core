@@ -107,6 +107,7 @@ class DefaultSensorContextTests {
     assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
     assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
     assertThat(ctx.newSignificantCode()).isInstanceOf(NoOpNewSignificantCode.class);
+    assertThat(ctx.newIssueResolution()).isInstanceOf(DefaultSonarLintIssueResolution.class);
     ctx.addContextProperty(null, null);
     ctx.markForPublishing(null);
     assertThat(ctx.canSkipUnchangedFiles()).isFalse();
