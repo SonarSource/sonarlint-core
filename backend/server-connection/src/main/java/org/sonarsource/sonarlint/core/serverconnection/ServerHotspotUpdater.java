@@ -50,7 +50,7 @@ public class ServerHotspotUpdater {
   public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,
     SonarLintCancelMonitor cancelMonitor) {
     if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
-      LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
+      LOG.debug("Skip downloading file hotspots on SonarQube Server");
       return;
     }
     var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);

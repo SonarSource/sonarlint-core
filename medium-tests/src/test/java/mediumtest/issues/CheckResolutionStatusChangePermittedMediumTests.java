@@ -94,26 +94,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @SonarLintTest
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103(SonarLintTestHarness harness) {
-    fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
-    var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .start();
-
-    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
-
-    assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
-      .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
-      .containsExactly(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
-  }
-
-  @SonarLintTest
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104(SonarLintTestHarness harness) {
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
@@ -147,7 +131,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var issueKey = UUID.randomUUID().toString();
     fakeServerWithIssue(issueKey, List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, issueKey);
@@ -163,7 +147,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_when_issue_misses_required_transitions(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
@@ -179,7 +163,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_no_issue_is_returned_by_web_api(SonarLintTestHarness harness) {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
@@ -196,7 +180,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @SonarLintTest
   void it_should_fail_if_web_api_returns_an_error(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
@@ -212,7 +196,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_web_api_returns_unexpected_body(SonarLintTestHarness harness) {
     fakeServerWithWrongBody("issueKey");
     var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
@@ -275,7 +259,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
+      .containsExactly(false, "Marking a local-only issue as resolved requires a SonarQube Server connection", List.of());
   }
 
   @Disabled("SLCORE-966")
@@ -332,7 +316,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
+      .containsExactly(false, "Marking a local-only issue as resolved requires a SonarQube Server connection", List.of());
   }
 
   @Disabled("SLCORE-966")

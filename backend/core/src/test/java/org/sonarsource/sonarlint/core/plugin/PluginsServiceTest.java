@@ -146,13 +146,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseCSharpAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -210,13 +210,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseVbAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -289,10 +289,11 @@ class PluginsServiceTest {
   }
 
   @Test
-  void getPlugins_extraProperties_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
+  void getPlugins_extraProperties_connectionIsToServerWithEnterprisePlugins_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
     mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID, enterprisePath);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
