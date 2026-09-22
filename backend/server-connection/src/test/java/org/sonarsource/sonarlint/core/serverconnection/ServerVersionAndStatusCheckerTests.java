@@ -59,7 +59,25 @@ class ServerVersionAndStatusCheckerTests {
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
-    assertThat(throwable).hasMessage("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 9.9");
+    assertThat(throwable).hasMessage("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 2025.1 (SonarQube Server) or 25.1 (SonarQube Community Build)");
+  }
+
+  @Test
+  void shouldAcceptCommunityBuildVersion() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"25.1\",\"status\": \"UP\"}");
+
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
+
+    assertThat(throwable).isNull();
+  }
+
+  @Test
+  void shouldRejectPreviousLtsVersion() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
+
+    assertThat(throwable).hasMessage("Your SonarQube Server instance has version 9.9. Version should be greater or equal to 2025.1 (SonarQube Server) or 25.1 (SonarQube Community Build)");
   }
 
   @Test

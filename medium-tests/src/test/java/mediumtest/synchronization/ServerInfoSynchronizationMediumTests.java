@@ -44,7 +44,7 @@ class ServerInfoSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_pull_server_info_when_bound_configuration_scope_is_added(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
     var backend = harness.newBackend()
@@ -58,26 +58,7 @@ class ServerInfoSynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
       .exists()
       .extracting(this::readServerVersion, this::readServerMode)
-      .containsExactly("10.3", null));
-  }
-
-  @SonarLintTest
-  void it_should_pull_old_server_info_and_mode_should_be_missing(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.1")
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .start();
-    var backend = harness.newBackend()
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
-      .withSonarQubeConnection("connectionId", server)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
-      .start();
-
-    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
-
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
-      .exists()
-      .extracting(this::readServerVersion, this::readServerMode)
-      .containsExactly("10.1", null));
+      .containsExactly("2025.1", true));
   }
 
   @SonarLintTest
@@ -104,7 +85,7 @@ class ServerInfoSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_synchronize_with_recent_sonarqube_and_return_mode(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.8")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
     var backend = harness.newBackend()
