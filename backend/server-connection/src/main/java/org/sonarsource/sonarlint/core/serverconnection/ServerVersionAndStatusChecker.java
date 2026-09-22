@@ -54,10 +54,6 @@ public class ServerVersionAndStatusChecker {
     }
   }
 
-  public boolean isSupportingBearer(ServerStatusInfo serverStatus) {
-    return true;
-  }
-
   private static void checkServerUp(ServerStatusInfo serverStatus) {
     if (!serverStatus.isUp()) {
       throw new IllegalStateException(serverNotReady(serverStatus));
