@@ -19,27 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum CliAuthenticationStatus {
-  AUTHENTICATED,
-  UNAUTHENTICATED,
-  INVALID,
-  UNVERIFIED,
-  UNAVAILABLE,
-  UNKNOWN;
+import javax.annotation.Nullable;
 
-  /** Whether IDE connections should be offered to prefill an interactive CLI login. */
-  public boolean offersConnectionPrefill() {
-    switch (this) {
-      case UNAUTHENTICATED:
-      case INVALID:
-      case UNVERIFIED:
-        return true;
-      case AUTHENTICATED:
-      case UNAVAILABLE:
-      case UNKNOWN:
-        return false;
-      default:
-        throw new IllegalStateException("Unexpected authentication status: " + this);
-    }
+/** A connection that can provide server details for interactive CLI login. */
+public class AiIntegrationConnection {
+  private final String connectionId;
+  private final String serverUrl;
+  @Nullable
+  private final String organization;
+
+  public AiIntegrationConnection(String connectionId, String serverUrl, @Nullable String organization) {
+    this.connectionId = connectionId;
+    this.serverUrl = serverUrl;
+    this.organization = organization;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getServerUrl() {
+    return serverUrl;
+  }
+
+  @Nullable
+  public String getOrganization() {
+    return organization;
   }
 }

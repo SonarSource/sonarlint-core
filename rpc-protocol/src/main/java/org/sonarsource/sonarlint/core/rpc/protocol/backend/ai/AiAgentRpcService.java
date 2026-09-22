@@ -41,8 +41,8 @@ public interface AiAgentRpcService {
   CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params);
 
   /**
-   * Returns the capabilities of the agents detected by the client together with the current
-   * SonarQube CLI installation and authentication state.
+   * Returns host- and scope-aware capabilities of the agents detected by the client together with
+   * the current SonarQube CLI installation, authentication state, and connection choices for login.
    */
   @JsonRequest
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
@@ -57,8 +57,10 @@ public interface AiAgentRpcService {
   /**
    * Prepares {@code sonar auth login} for the client's native interactive terminal.
    * Credentials are never included in the response.
-   * The request fails if no usable SonarQube CLI installation is found; clients should check
-   * {@link #getIntegrationState(GetAiIntegrationStateParams)} first.
+   * An optional {@code connectionId} from {@link GetAiIntegrationStateResponse#getConnectionChoices()}
+   * takes precedence over {@code serverUrl}/{@code organization} and the request fails if the
+   * connection is unknown. The request also fails if no usable SonarQube CLI installation is found;
+   * clients should check {@link #getIntegrationState(GetAiIntegrationStateParams)} first.
    */
   @JsonRequest
   CompletableFuture<PrepareCliCommandResponse> prepareAuthenticateCommand(PrepareAuthenticateCliCommandParams params);
@@ -85,6 +87,7 @@ public interface AiAgentRpcService {
    * Builds a complete replacement for the client-provided MCP configuration.
    * The client must write {@code updatedContent} only after validating the returned state and diagnostics.
    * CLI-managed configurations are reported without replacement content so the client can continue through the CLI flow.
+   * JSONC input is accepted, but comments and formatting are not retained in the replacement.
    * The request fails if the agent is not supported (see
    * {@link AiIntegrationAgentCapability#isStandaloneMcpSupported()}).
    */
