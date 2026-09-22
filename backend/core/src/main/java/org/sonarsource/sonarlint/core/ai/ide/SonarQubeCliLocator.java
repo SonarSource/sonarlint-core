@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.ai.ide.SonarQubeCliStatusDecoder.CliStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 
@@ -73,19 +74,19 @@ final class SonarQubeCliLocator {
       : new CliLookup(CliInstallationStatus.UNUSABLE, firstUnusable, null);
   }
 
-  SonarQubeCliStatusDecoder.CliStatus readStatus(Path executable) {
+  CliStatus readStatus(Path executable) {
     var stdout = new ArrayList<String>();
     var result = search.execute(executable, List.of("system", "status", "--json"), null, COMMAND_TIMEOUT_MILLIS,
       stdout::add);
     if (result.exitCode() != 0 || stdout.isEmpty()) {
-      return SonarQubeCliStatusDecoder.CliStatus.unavailable();
+      return CliStatus.unavailable();
     }
 
     try {
       return SonarQubeCliStatusDecoder.decode(String.join("\n", stdout));
     } catch (IOException | RuntimeException e) {
       LOG.debug("Unable to parse the SonarQube CLI status", e);
-      return SonarQubeCliStatusDecoder.CliStatus.unavailable();
+      return CliStatus.unavailable();
     }
   }
 
