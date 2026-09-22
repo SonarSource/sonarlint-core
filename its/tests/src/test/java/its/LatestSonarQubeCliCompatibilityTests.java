@@ -38,7 +38,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
@@ -65,7 +69,8 @@ class LatestSonarQubeCliCompatibilityTests {
     var environment = isolatedEnvironment(isolatedHome, cliPath.getParent());
     var service = newIsolatedService(isolatedHome, environment);
 
-    var response = service.getIntegrationState(new GetAiIntegrationStateParams(List.of(AiAgent.CLAUDE_CODE)));
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER,
+      List.of(AiAgent.CLAUDE_CODE), AiIntegrationScope.GLOBAL, null));
 
     assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAUTHENTICATED);
@@ -106,7 +111,8 @@ class LatestSonarQubeCliCompatibilityTests {
   }
 
   private static AiIntegrationService newIsolatedService(Path isolatedHome, Map<String, String> environment) {
-    return new AiIntegrationService(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment);
+    return new AiIntegrationService(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment,
+      new ConnectionConfigurationRepository(), new ConfigurationRepository());
   }
 
   private CommandResult run(List<String> command, Map<String, String> environment, Path workDir, Path log,
