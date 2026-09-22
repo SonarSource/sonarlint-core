@@ -104,9 +104,8 @@ public class SonarQubeClientManager {
       return Optional.empty();
     }
     var endpointParams = connection.getEndpointParams();
-    var isBearerSupported = checkIfBearerIsSupported(endpointParams);
     var httpClient = credentials.get().map(
-      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), isBearerSupported),
+      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken()),
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
     return Optional.of(new SonarQubeClient(connectionId, new ServerApi(endpointParams, httpClient), credentials.get(), client));
   }
@@ -129,10 +128,7 @@ public class SonarQubeClientManager {
     var httpClient = transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials)
       .map(
-        tokenDto -> {
-          var isBearerSupported = checkIfBearerIsSupported(endpointParams);
-          return httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), isBearerSupported);
-        },
+        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken()),
         userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
   }
@@ -147,10 +143,6 @@ public class SonarQubeClientManager {
         }
         return httpClientProvider.getWebSocketClient(credentials.getLeft().getToken());
       });
-  }
-
-  private static boolean checkIfBearerIsSupported(EndpointParams params) {
-    return true;
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> getValidCredentialsFromClient(String connectionId) {

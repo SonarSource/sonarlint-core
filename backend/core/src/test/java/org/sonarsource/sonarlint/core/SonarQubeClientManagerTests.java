@@ -49,8 +49,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SonarQubeClientManagerTests {
-  private static final String API_SYSTEM_STATUS = "/api/system/status";
-
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -147,7 +145,7 @@ class SonarQubeClientManagerTests {
     underTest.withActiveClient("sqs1", api -> executionCount.incrementAndGet());
 
     assertThat(executionCount.get()).isEqualTo(3);
-    verify(httpClientProvider, times(1)).getHttpClientWithPreemptiveAuth("token", false);
+    verify(httpClientProvider, times(1)).getHttpClientWithPreemptiveAuth("token");
   }
 
   @Test
@@ -205,9 +203,6 @@ class SonarQubeClientManagerTests {
 
   @Test
   void withActiveClient_should_not_execute_consumer_when_invalid_credentials() {
-    var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    setupSuccessfulStatusResponse(httpClient, "serverUrl" + API_SYSTEM_STATUS);
     when(connectionRepository.getConnectionById("connectionId"))
       .thenReturn(new SonarQubeConnectionConfiguration("connectionId", "serverUrl", true));
     when(client.getCredentials(any())).thenReturn(CompletableFuture.completedFuture(new GetCredentialsResponse(new TokenDto(null))));
@@ -224,24 +219,13 @@ class SonarQubeClientManagerTests {
     when(connectionRepository.getConnectionById(connectionId))
       .thenReturn(new SonarQubeConnectionConfiguration(connectionId, serverUrl, true));
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", false)).thenReturn(httpClient);
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    setupSuccessfulStatusResponse(httpClient, serverUrl + API_SYSTEM_STATUS);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
   }
 
   private void setupCloudConnection(String connectionId, URI prodUri, URI apiUri) {
     when(connectionRepository.getConnectionById(connectionId))
       .thenReturn(new SonarCloudConnectionConfiguration(prodUri, apiUri, connectionId, "organizationKey", SonarCloudRegion.EU, false));
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", true)).thenReturn(httpClient);
-    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
-    setupSuccessfulStatusResponse(httpClient, API_SYSTEM_STATUS);
-  }
-
-  private void setupSuccessfulStatusResponse(HttpClient httpClient, String statusPath) {
-    var httpResponse = mock(HttpClient.Response.class);
-    when(httpResponse.isSuccessful()).thenReturn(true);
-    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}");
-    when(httpClient.getAsyncAnonymous(statusPath)).thenReturn(CompletableFuture.completedFuture(httpResponse));
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
   }
 }
