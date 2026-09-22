@@ -29,11 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -131,16 +129,8 @@ public class HotspotApi {
     return url.toString();
   }
 
-  public boolean supportHotspotsPull(Supplier<Version> serverVersion) {
-    return supportHotspotsPull(helper.isSonarCloud());
-  }
-
-  public static boolean supportHotspotsPull(boolean isSonarCloud) {
-    return !isSonarCloud;
-  }
-
-  public static boolean supportHotspotsPull(boolean isSonarCloud, Version serverVersion) {
-    return supportHotspotsPull(isSonarCloud);
+  public boolean supportHotspotsPull() {
+    return !helper.isSonarCloud();
   }
 
   private Collection<ServerHotspot> searchHotspots(String searchUrl, SonarLintCancelMonitor cancelMonitor) {

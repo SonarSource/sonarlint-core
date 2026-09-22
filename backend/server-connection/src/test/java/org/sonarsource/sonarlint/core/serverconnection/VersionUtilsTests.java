@@ -61,8 +61,7 @@ class VersionUtilsTests {
   }
 
   @Test
-  void grace_period_should_be_false_if_connected_during_grace_period() {
-    // read isVersionSupportedDuringGracePeriod javadoc
+  void grace_period_should_be_false_when_minimal_supported_equals_current_lts() {
     assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT)).isFalse();
     assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".1"))).isFalse();
   }

@@ -38,8 +38,8 @@ public class VersionUtils {
   }
 
   /**
-   * Right now since minimal supported version is equal to current LTS (2025.1) this method will always return false.
-   * But it's important to keep it for the future when next LTS will be released, and we will have a grace period again.
+   * Returns whether the given server version is in the grace period between the minimal supported version and the current LTS.
+   * Versions below the minimal supported version or at/above the current LTS are excluded.
    */
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
     return (currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION_SHORT) >= 0 && currentVersion.compareTo(CURRENT_LTS_SHORT) < 0)
