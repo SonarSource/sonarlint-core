@@ -19,27 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum CliAuthenticationStatus {
-  AUTHENTICATED,
-  UNAUTHENTICATED,
-  INVALID,
-  UNVERIFIED,
-  UNAVAILABLE,
-  UNKNOWN;
+import org.junit.jupiter.api.Test;
 
-  /** Whether IDE connections should be offered to prefill an interactive CLI login. */
-  public boolean offersConnectionPrefill() {
-    switch (this) {
-      case UNAUTHENTICATED:
-      case INVALID:
-      case UNVERIFIED:
-        return true;
-      case AUTHENTICATED:
-      case UNAVAILABLE:
-      case UNKNOWN:
-        return false;
-      default:
-        throw new IllegalStateException("Unexpected authentication status: " + this);
-    }
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+class CliAuthenticationStatusTests {
+
+  @Test
+  void should_offer_connection_prefill_only_when_cli_login_is_required() {
+    assertThat(CliAuthenticationStatus.values()).extracting(status -> status, CliAuthenticationStatus::offersConnectionPrefill)
+      .containsExactly(
+        tuple(CliAuthenticationStatus.AUTHENTICATED, false),
+        tuple(CliAuthenticationStatus.UNAUTHENTICATED, true),
+        tuple(CliAuthenticationStatus.INVALID, true),
+        tuple(CliAuthenticationStatus.UNVERIFIED, true),
+        tuple(CliAuthenticationStatus.UNAVAILABLE, false),
+        tuple(CliAuthenticationStatus.UNKNOWN, false));
   }
 }
