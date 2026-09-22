@@ -3,9 +3,10 @@
 ## New features
 
 * Add `getIntegrationState` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared SonarQube CLI discovery, host- and scope-aware integration capabilities, authentication state, connection selection, and agent capabilities.
+* Add opt-in local discovery of supported AI agent CLIs to `getIntegrationState`, including dedicated GitHub Copilot CLI and Antigravity targets. Set the new `discoverLocalAgentClis` flag on `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams` to enable it (defaults to `false`). Each `AiIntegrationAgentCapability` now reports `detectionSources` (`IDE`, `CLI`, or both) so clients can tell IDE-detected agents from locally discovered CLIs.
 * Add `prepareInstallCommand`, `prepareAuthenticateCommand`, and `prepareIntegrateCommand` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for interactive terminal command preparation. Credentials are never included in the response. `prepareAuthenticateCommand` accepts an optional `connectionId` taken from `getIntegrationState` connection choices, which takes precedence over `serverUrl`/`organization` and fails if the connection is unknown. `prepareAuthenticateCommand` and `prepareIntegrateCommand` fail if no usable CLI installation is found; `prepareIntegrateCommand` also fails if the agent is missing or not supported by the CLI. Clients should check `getIntegrationState` first.
 * Add `inspectMcpConfiguration` and `planMcpConfigurationUpdate` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService` for shared MCP configuration inspection and full-document update planning across supported AI agents. These requests fail if the agent is not supported by standalone JSON MCP configuration (see `isStandaloneMcpSupported`); clients should check `getIntegrationState` first.
-* Add `CLAUDE_CODE` and `CODEX` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
+* Add `CLAUDE_CODE`, `CODEX`, `GITHUB_COPILOT_CLI`, and `ANTIGRAVITY` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
 * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability`, describing per-agent CLI integration and standalone MCP support.
 
 # 11.9
