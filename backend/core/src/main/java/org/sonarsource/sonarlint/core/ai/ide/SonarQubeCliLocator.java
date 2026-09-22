@@ -20,25 +20,16 @@
 package org.sonarsource.sonarlint.core.ai.ide;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.System2;
-import org.sonar.api.utils.command.Command;
-import org.sonar.api.utils.command.CommandException;
-import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.os.OsSearchPath;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
 
 final class SonarQubeCliLocator {
@@ -47,29 +38,26 @@ final class SonarQubeCliLocator {
   private static final long COMMAND_TIMEOUT_MILLIS = 30_000L;
   private static final Pattern VERSION_PATTERN = Pattern.compile("\\b\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?\\b");
 
-  private final System2 system2;
-  private final CommandExecutor commandExecutor;
+  private final OsExecutableSearch search;
   private final Path userHome;
-  private final Map<String, String> environment;
-  private final Path pathHelperLocation;
 
-  SonarQubeCliLocator(System2 system2, CommandExecutor commandExecutor, Path userHome, Map<String, String> environment,
-    Path pathHelperLocation) {
-    this.system2 = system2;
-    this.commandExecutor = commandExecutor;
+  SonarQubeCliLocator(OsExecutableSearch search, Path userHome) {
+    this.search = search;
     this.userHome = userHome;
-    this.environment = environment;
-    this.pathHelperLocation = pathHelperLocation;
   }
 
   boolean isWindows() {
-    return system2.isOsWindows();
+    return search.isWindows();
   }
 
   CliLookup find() {
+    return find(search.resolvePath());
+  }
+
+  CliLookup find(@Nullable String resolvedPath) {
     Path firstUnusable = null;
-    for (var candidate : cliCandidates()) {
-      if (!isExecutable(candidate)) {
+    for (var candidate : cliCandidates(resolvedPath)) {
+      if (!search.isExecutable(candidate)) {
         continue;
       }
       var version = readCliVersion(candidate);
@@ -86,73 +74,48 @@ final class SonarQubeCliLocator {
   }
 
   SonarQubeCliStatusDecoder.CliStatus readStatus(Path executable) {
-    var result = execute(executable, List.of("system", "status", "--json"));
-    if (result.exitCode != 0 || result.output.isEmpty()) {
+    var stdout = new ArrayList<String>();
+    var result = search.execute(executable, List.of("system", "status", "--json"), null, COMMAND_TIMEOUT_MILLIS,
+      stdout::add);
+    if (result.exitCode() != 0 || stdout.isEmpty()) {
       return SonarQubeCliStatusDecoder.CliStatus.unavailable();
     }
 
     try {
-      return SonarQubeCliStatusDecoder.decode(String.join("\n", result.output));
+      return SonarQubeCliStatusDecoder.decode(String.join("\n", stdout));
     } catch (IOException | RuntimeException e) {
       LOG.debug("Unable to parse the SonarQube CLI status", e);
       return SonarQubeCliStatusDecoder.CliStatus.unavailable();
     }
   }
 
-  private Set<Path> cliCandidates() {
+  private Set<Path> cliCandidates(@Nullable String resolvedPath) {
     var candidates = new LinkedHashSet<Path>();
-    addPathCandidates(candidates);
+    for (var directory : search.pathDirectories(resolvedPath, false)) {
+      search.executableNames("sonar").forEach(name -> candidates.add(directory.resolve(name)));
+    }
     addStandardInstallCandidates(candidates);
     return candidates;
   }
 
-  private void addPathCandidates(Set<Path> candidates) {
-    var path = OsSearchPath.resolve(system2, environment, pathHelperLocation, commandExecutor, COMMAND_TIMEOUT_MILLIS);
-    if (path == null) {
-      return;
-    }
-    var separator = system2.isOsWindows() ? ";" : ":";
-    for (var directory : OsSearchPath.splitEntries(path, separator)) {
-      addExecutablesFromDirectory(candidates, directory);
-    }
-  }
-
-  private void addExecutablesFromDirectory(Set<Path> candidates, String directory) {
-    if (directory.isBlank()) {
-      return;
-    }
-    try {
-      executableNames().forEach(name -> candidates.add(Paths.get(directory, name)));
-    } catch (InvalidPathException e) {
-      LOG.debug("Ignoring an invalid PATH entry while locating the SonarQube CLI", e);
-    }
-  }
-
   private void addStandardInstallCandidates(Set<Path> candidates) {
-    if (system2.isOsWindows()) {
-      var localAppData = OsSearchPath.environmentVariableIgnoreCase(environment, "LOCALAPPDATA");
+    if (search.isWindows()) {
+      var localAppData = search.environmentVariableIgnoreCase("LOCALAPPDATA");
       if (localAppData != null && !localAppData.isBlank()) {
-        executableNames().forEach(name -> candidates.add(Paths.get(localAppData, "sonarqube-cli", "bin", name)));
+        search.executableNames("sonar").forEach(name -> candidates.add(Path.of(localAppData, "sonarqube-cli", "bin", name)));
       }
       return;
     }
     candidates.add(userHome.resolve(".local/share/sonarqube-cli/bin/sonar"));
   }
 
-  private List<String> executableNames() {
-    return system2.isOsWindows() ? List.of("sonar.exe", "sonar.cmd", "sonar") : List.of("sonar");
-  }
-
-  private boolean isExecutable(Path path) {
-    return Files.isRegularFile(path) && (system2.isOsWindows() || Files.isExecutable(path));
-  }
-
   private Optional<String> readCliVersion(Path executable) {
-    var result = execute(executable, List.of("--version"));
-    if (result.exitCode != 0) {
+    var stdout = new ArrayList<String>();
+    var result = search.execute(executable, List.of("--version"), null, COMMAND_TIMEOUT_MILLIS, stdout::add);
+    if (result.exitCode() != 0) {
       return Optional.empty();
     }
-    var version = result.output.stream()
+    var version = stdout.stream()
       .map(VERSION_PATTERN::matcher)
       .filter(Matcher::find)
       .map(Matcher::group)
@@ -163,24 +126,6 @@ final class SonarQubeCliLocator {
     return version;
   }
 
-  private CommandResult execute(Path executable, List<String> arguments) {
-    var stdout = new ArrayList<String>();
-    var stderr = new ArrayList<String>();
-    var command = Command.create(executable.toString());
-    environment.forEach(command::setEnvironmentVariable);
-    arguments.forEach(command::addArgument);
-    try {
-      var exitCode = commandExecutor.execute(command, stdout::add, stderr::add, COMMAND_TIMEOUT_MILLIS);
-      return new CommandResult(exitCode, stdout);
-    } catch (CommandException e) {
-      LOG.debug("Unable to execute command at {}", executable, e);
-      return new CommandResult(-1, List.of());
-    }
-  }
-
   record CliLookup(CliInstallationStatus installationStatus, @Nullable Path path, @Nullable String version) {
-  }
-
-  private record CommandResult(int exitCode, List<String> output) {
   }
 }
