@@ -28,8 +28,8 @@ import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
 
-  private static final String MIN_SQ_VERSION = "9.9";
-  private static final String MIN_SQ_VERSION_SUPPORTING_BEARER = "10.4";
+  private static final String MIN_SQ_VERSION = VersionUtils.MINIMAL_SUPPORTED_VERSION.getName();
+  private static final String MIN_SQ_COMMUNITY_BUILD_VERSION = VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName();
   private final SystemApi systemApi;
   private final boolean isSonarCloud;
 
@@ -55,12 +55,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   public boolean isSupportingBearer(ServerStatusInfo serverStatus) {
-    if (isSonarCloud) {
-      return true;
-    } else {
-      var serverVersion = Version.create(serverStatus.version());
-      return serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION_SUPPORTING_BEARER)) >= 0;
-    }
+    return true;
   }
 
   private static void checkServerUp(ServerStatusInfo serverStatus) {
@@ -72,13 +67,14 @@ public class ServerVersionAndStatusChecker {
   private static void checkServerUpAndSupported(ServerStatusInfo serverStatus) {
     checkServerUp(serverStatus);
     var serverVersion = Version.create(serverStatus.version());
-    if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
+    if (!VersionUtils.satisfiesMinimalSupportedVersion(serverVersion)) {
       throw new UnsupportedServerException(unsupportedVersion(serverStatus));
     }
   }
 
   private static String unsupportedVersion(ServerStatusInfo serverStatus) {
-    return "Your SonarQube Server instance has version " + serverStatus.version() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
+    return "Your SonarQube Server instance has version " + serverStatus.version() + ". Version should be greater or equal to " + MIN_SQ_VERSION
+      + " (SonarQube Server) or " + MIN_SQ_COMMUNITY_BUILD_VERSION + " (SonarQube Community Build)";
   }
 
   private static String serverNotReady(ServerStatusInfo serverStatus) {
