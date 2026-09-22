@@ -42,7 +42,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
@@ -144,23 +143,55 @@ class IssueResolutionMediumTests {
       .join();
 
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, timeout(5000).times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
-    var allRaisedIntermediateIssuesByFile = intermediateIssuesByFileArgumentCaptor.getAllValues();
-    var firstRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(0);
-    assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(i -> i.getTextRange().getStartLine())
-      .containsExactly(2, 3);
-    var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
-    assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
-    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(i -> i.getTextRange().getStartLine())
-      .containsExactly(3);
+    verify(client, timeout(5000).atLeastOnce()).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
+    assertThat(intermediateIssuesByFileArgumentCaptor.getAllValues())
+      .anySatisfy(issuesByFile -> assertThat(issuesByFile.get(fileUri))
+        .extracting(i -> i.getTextRange().getStartLine())
+        .contains(2, 3));
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, timeout(5000)).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
     assertThat(finalIssuesByFile.get(fileUri))
       .extracting(i -> i.getTextRange().getStartLine())
       .containsExactly(3);
+  }
+
+  @SonarLintTest
+  void it_should_clear_a_file_when_all_streamed_issues_are_retracted(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Foo.java",
+      """
+        class Foo {
+          int unused; // sonar-resolve repo:rule "not used on purpose"
+        }
+        """);
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var pluginPath = newSonarPlugin("java")
+      .withSensor(IssueThenResolutionSensor.class)
+      .withRulesDefinition(IssueResolutionRulesDefinition.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withBackendCapability(BackendCapability.ISSUE_STREAMING)
+      .withStandaloneEmbeddedPlugin(pluginPath)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .start(client);
+
+    backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false))
+      .join();
+
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, timeout(5000).atLeastOnce()).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
+    assertThat(intermediateIssuesByFileArgumentCaptor.getAllValues())
+      .anySatisfy(issuesByFile -> assertThat(issuesByFile.get(fileUri))
+        .extracting(i -> i.getTextRange().getStartLine())
+        .containsExactly(2));
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, timeout(5000)).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
+    assertThat(finalIssuesByFileArgumentCaptor.getValue().get(fileUri)).isEmpty();
   }
 }

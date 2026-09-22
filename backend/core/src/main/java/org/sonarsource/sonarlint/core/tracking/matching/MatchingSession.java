@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
@@ -45,6 +46,7 @@ public class MatchingSession {
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
+  private final Set<UUID> newlyFoundIssueIds = ConcurrentHashMap.newKeySet();
   private long newIssuesFound = 0;
 
   public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
@@ -82,6 +84,11 @@ public class MatchingSession {
         }
       }
       return remaining;
+    });
+    removed.forEach(trackedIssue -> {
+      if (newlyFoundIssueIds.remove(trackedIssue.getId())) {
+        newIssuesFound--;
+      }
     });
     return removed;
   }
@@ -137,9 +144,11 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
-    newIssuesFound++;
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
-    return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
+    var trackedIssue = IssueMapper.toTrackedIssue(rawFinding, introductionDate);
+    newlyFoundIssueIds.add(trackedIssue.getId());
+    newIssuesFound++;
+    return trackedIssue;
   }
 
   public Map<Path, List<TrackedIssue>> getIssuesPerFile() {

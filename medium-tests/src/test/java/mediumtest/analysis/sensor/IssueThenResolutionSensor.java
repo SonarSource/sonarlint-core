@@ -75,12 +75,11 @@ public class IssueThenResolutionSensor implements Sensor {
           .save();
       }
     }
-    pause();
   }
 
   private static void pause() {
     try {
-      Thread.sleep(500);
+      Thread.sleep(500); // NOSONAR java:S2925 -- wait for the 300ms streaming debounce, same as IssueStreamingSensor
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException(e);

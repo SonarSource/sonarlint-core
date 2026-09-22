@@ -221,9 +221,15 @@ public class FindingReportingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
-    var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
+    var issuesToRaise = new HashMap<>(getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature));
+    var hotspotsToRaise = new HashMap<>(getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode));
+    // Files whose findings were all retracted are missing from the grouped maps. Seed empty lists so
+    // previously streamed findings are cleared instead of being re-sent in the final publication.
+    filesPerAnalysis.getOrDefault(analysisId, Set.of()).forEach(fileUri -> {
+      issuesToRaise.putIfAbsent(fileUri, List.of());
+      hotspotsToRaise.putIfAbsent(fileUri, List.of());
+    });
     this.eventPublisher.publishEvent(new IssuesRaisedEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
-    var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
     filesPerAnalysis.remove(analysisId);
   }
