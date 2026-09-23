@@ -19,6 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum AiAgent {
-  CURSOR, GITHUB_COPILOT, KIRO, WINDSURF, CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY
+public enum AiAgentDetectionSource {
+  IDE, CLI
 }
