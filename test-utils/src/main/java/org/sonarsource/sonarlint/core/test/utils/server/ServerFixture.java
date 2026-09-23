@@ -99,7 +99,7 @@ public class ServerFixture {
   }
 
   public static SonarQubeServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart) {
-    return newSonarQubeServer(onStart, "99.9");
+    return newSonarQubeServer(onStart, "2025.1");
   }
 
   public static SonarQubeServerBuilder newSonarQubeServer(String version) {

@@ -282,7 +282,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("10.1")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
           .withSeverity(IssueSeverity.BLOCKER)))
@@ -341,7 +341,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build();
     when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any()))
       .thenReturn(branchName);
-    var server = harness.newFakeSonarQubeServer("10.2")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))
@@ -397,7 +397,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("10.4")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))

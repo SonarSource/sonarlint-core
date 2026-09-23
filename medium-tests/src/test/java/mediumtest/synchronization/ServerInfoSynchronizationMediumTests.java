@@ -104,7 +104,7 @@ class ServerInfoSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_stop_synchronization_if_server_is_down(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withStatus(DOWN)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();

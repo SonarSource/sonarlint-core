@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,9 +83,13 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
+  private final List<StoredPlugin> storedPlugins = new ArrayList<>();
+  private final Map<String, StoredPlugin> storedPluginsByKey = new HashMap<>();
 
   @BeforeEach
   void prepare() {
+    storedPlugins.clear();
+    storedPluginsByKey.clear();
     pluginsRepository = mock(PluginsRepository.class);
     storageService = mock(StorageService.class);
     connectionConfigurationStorage = mock(ConnectionConfigurationRepository.class);
@@ -94,7 +100,8 @@ class PluginsServiceTest {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+    when(pluginStorage.getStoredPlugins()).thenReturn(storedPlugins);
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
 
     var standaloneArtifactsLoadingStrategy = mock(StandaloneArtifactsLoadingStrategy.class);
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
@@ -402,8 +409,8 @@ class PluginsServiceTest {
     var plugin = mock(StoredPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
     when(plugin.getJarPath()).thenReturn(jarPath);
-    when(pluginStorage.getStoredPlugins()).thenReturn(List.of(plugin));
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of(pluginKey, plugin));
+    storedPlugins.add(plugin);
+    storedPluginsByKey.put(pluginKey, plugin);
   }
 
   private void mockConnectionVersion(Version version) {
