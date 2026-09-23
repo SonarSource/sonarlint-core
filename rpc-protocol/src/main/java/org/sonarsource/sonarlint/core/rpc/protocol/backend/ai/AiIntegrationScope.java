@@ -19,27 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-public enum CliAuthenticationStatus {
-  AUTHENTICATED,
-  UNAUTHENTICATED,
-  INVALID,
-  UNVERIFIED,
-  UNAVAILABLE,
-  UNKNOWN;
-
-  /** Whether IDE connections should be offered to prefill an interactive CLI login. */
-  public boolean offersConnectionPrefill() {
-    switch (this) {
-      case UNAUTHENTICATED:
-      case INVALID:
-      case UNVERIFIED:
-        return true;
-      case AUTHENTICATED:
-      case UNAVAILABLE:
-      case UNKNOWN:
-        return false;
-      default:
-        throw new IllegalStateException("Unexpected authentication status: " + this);
-    }
-  }
+/** The location where an AI integration will be configured. */
+public enum AiIntegrationScope {
+  GLOBAL,
+  PROJECT
 }
