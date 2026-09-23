@@ -38,9 +38,9 @@ public class PluginLocator {
   public static final String SONAR_DBD_JAVA_PLUGIN_JAR = "sonar-dbd-java-frontend-plugin-" + SONAR_DBD_JAVA_PLUGIN_VERSION + ".jar";
   public static final String SONAR_DBD_JAVA_PLUGIN_JAR_HASH = "unused";
 
-  public static final String SONAR_JAVASCRIPT_PLUGIN_VERSION = "11.8.0.37897";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_VERSION = "13.9.0.44793";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-" + SONAR_JAVASCRIPT_PLUGIN_VERSION + ".jar";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "c1203ca98a903fac6d2e030efb8e187d";
 
   public static final String SONAR_PHP_PLUGIN_VERSION = "3.55.0.15704";
   public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-" + SONAR_PHP_PLUGIN_VERSION + ".jar";
