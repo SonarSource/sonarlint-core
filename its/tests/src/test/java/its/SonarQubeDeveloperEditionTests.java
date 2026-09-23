@@ -339,7 +339,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnACloudFormationProject() {
       var configScopeId = "shouldRaiseIssuesOnACloudFormationProject";
       var projectKey = "sample-cloudformation";
@@ -356,7 +356,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnADockerProject() {
       var configScopeId = "shouldRaiseIssuesOnADockerProject";
       var projectKey = "sample-docker";
@@ -373,7 +373,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "10.0")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnAKubernetesProject() {
       var configScopeId = "shouldRaiseIssuesOnAKubernetesProject";
       var projectKey = "sample-kubernetes";
@@ -392,7 +392,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldRaiseIssuesOnATerraformProject() {
       var configScopeId = "shouldRaiseIssuesOnATerraformProject";
       var projectKey = "sample-terraform";
@@ -409,7 +409,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "10.4")
     void shouldRaiseDataflowIssuesOnAPythonProject() {
       var configScopeId = "shouldRaiseDataflowIssuesOnAPythonProject";
       var projectKey = "sample-dbd";
@@ -476,16 +475,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
         .setParam("name", "myrule")
         .setParam("severity", "MAJOR");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 0)) {
-        request.setParam("customKey", "myrule")
-          .setParam("markdownDescription", "my_rule_description")
-          .setParam("templateKey", javaRuleKey("S2253"));
-      } else {
-        request.setParam("custom_key", "myrule")
-          .setParam("markdown_description", "my_rule_description")
-          .setParam("template_key", javaRuleKey("S2253"))
-          .setParam("type", "VULNERABILITY");
-      }
+      request.setParam("customKey", "myrule")
+        .setParam("markdownDescription", "my_rule_description")
+        .setParam("templateKey", javaRuleKey("S2253"));
 
       try (var response = adminWsClient.wsConnector().call(request)) {
         assertTrue(response.isSuccessful());
@@ -509,10 +501,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         var details = ruleDetails.details();
         assertThat(details.getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
         assertThat(details.getName()).isEqualTo("myrule");
-
-        if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 0)) {
-          assertThat(details.getType()).isEqualTo(RuleType.VULNERABILITY);
-        }
 
       } finally {
 
@@ -627,7 +615,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   class ServerSentEvents {
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() {
       var configScopeId = "shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer";
       var projectKey = "projectKey-sse";
@@ -687,7 +675,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, projectKey, "Sample Branch");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xml-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xml", "SonarLint IT XML");
-      // Use the pattern of long living branches in SQ 9.9, else we only have issues on changed files
+      // Use the pattern of long living branches in older SQ versions, else we only have issues on changed files
 
       // main branch
       analyzeProject("sample-xml", projectKey);
@@ -805,23 +793,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var serverVersion = ORCHESTRATOR.getServer().version();
       var ruleDescriptionContextKey = serverVersion.isGreaterThanOrEquals(2025, 3) ? "java_jdbc_api" : "java_se";
       assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo(ruleDescriptionContextKey);
-      if (serverVersion.isGreaterThanOrEquals(10, 8)) {
-        assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
-        // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
-        assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
-          ImpactSeverity.MEDIUM);
-        assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      } else if (serverVersion.isGreaterThanOrEquals(10, 2)) {
-        // In 10.2 <= SQ < 10.8, the impact severity is not overridden
-        assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
-        assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
-          ImpactSeverity.HIGH);
-        assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      } else {
-        assertThat(taintVulnerability.getSeverityMode().isLeft()).isTrue();
-        assertThat(taintVulnerability.getSeverityMode().getLeft().getSeverity()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR);
-        assertThat(taintVulnerability.getSeverityMode().getLeft().getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
-      }
+      assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
+      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
+        ImpactSeverity.MEDIUM);
+      assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
       var flow = taintVulnerability.getFlows().get(0);
@@ -832,7 +807,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "2025.1")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() throws ExecutionException, InterruptedException {
       openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
       waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
@@ -1194,12 +1169,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       .setSourceDirs("src")
       .setProperties(properties);
 
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
-      scanner.setProperty("sonar.token", ORCHESTRATOR.getDefaultAdminToken());
-    } else {
-      scanner.setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD);
-    }
+    scanner.setProperty("sonar.token", ORCHESTRATOR.getDefaultAdminToken());
     ORCHESTRATOR.executeBuild(scanner);
   }
 

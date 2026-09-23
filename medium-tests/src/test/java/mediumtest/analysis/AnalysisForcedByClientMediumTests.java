@@ -159,7 +159,7 @@ class AnalysisForcedByClientMediumTests {
     var connectionId = "connectionId";
     var branchName = "branchName";
     var projectKey = "projectKey";
-    var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+    var serverWithHotspots = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
@@ -213,7 +213,7 @@ class AnalysisForcedByClientMediumTests {
     var connectionId = "connectionId";
     var branchName = "branchName";
     var projectKey = "projectKey";
-    var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+    var serverWithHotspots = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
         .withActiveRule("java:S1220", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))

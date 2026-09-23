@@ -71,22 +71,9 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   }
 
   @SonarLintTest
-  void it_should_not_be_available_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness) {
+  void it_should_be_available_for_sonarqube_server(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.1"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .start();
-
-    assertThat(checkAnticipatedStatusChangeSupported(backend, "configScopeId"))
-      .succeedsWithin(Duration.ofSeconds(2))
-      .extracting(CheckAnticipatedStatusChangeSupportedResponse::isSupported)
-      .isEqualTo(false);
-  }
-
-  @SonarLintTest
-  void it_should_be_available_for_sonarqube_10_2_plus(SonarLintTestHarness harness) {
-    var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(),  storage -> storage.withServerVersion("10.2"))
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("2025.1"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start();
 
