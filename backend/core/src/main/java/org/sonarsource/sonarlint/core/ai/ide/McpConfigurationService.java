@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.ai.ide;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -40,6 +41,7 @@ public class McpConfigurationService {
   private static final JsonMapper JSONC_MAPPER = JsonMapper.builder()
     .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
     .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
+    .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
     .build();
 
   public McpConfigurationInspectionResponse inspect(McpConfigurationInspectionParams params) {
