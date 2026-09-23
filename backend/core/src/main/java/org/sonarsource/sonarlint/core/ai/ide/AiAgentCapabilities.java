@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import java.util.List;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
@@ -31,77 +33,33 @@ final class AiAgentCapabilities {
   }
 
   static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
+    return of(host, agent, scope, List.of(AiAgentDetectionSource.IDE));
+  }
+
+  static AiIntegrationAgentCapability of(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope,
+    List<AiAgentDetectionSource> detectionSources) {
+    var profile = AgentProfiles.of(agent);
+    var available = profile.compatibleWith(host) || detectionSources.contains(AiAgentDetectionSource.CLI);
+    var cliIntegrationSupported = scope == AiIntegrationScope.GLOBAL && profile.cliIntegrationSupported() && available;
     return new AiIntegrationAgentCapability(
       agent,
-      supportsCliIntegration(host, agent, scope),
-      supportsStandaloneMcp(host, agent),
-      supportsHook(host, agent, scope),
-      supportsSkills(host, agent, scope));
+      detectionSources,
+      cliIntegrationSupported,
+      profile.mcpJsonSection().isPresent() && available,
+      supportsHook(host, profile, scope),
+      cliIntegrationSupported);
   }
 
   static Optional<String> jsonSectionName(AiAgent agent) {
-    return switch (agent) {
-      case GITHUB_COPILOT -> Optional.of("servers");
-      case CURSOR, WINDSURF, KIRO, CLAUDE_CODE -> Optional.of("mcpServers");
-      // Codex stores MCP servers in config.toml ([mcp_servers.sonarqube]), so there is no JSON section to edit.
-      case CODEX -> Optional.empty();
-    };
-  }
-
-  static boolean supportsCliIntegration(AiAgent agent) {
-    return switch (agent) {
-      case CURSOR, CLAUDE_CODE, CODEX -> true;
-      case WINDSURF, KIRO, GITHUB_COPILOT -> false;
-    };
-  }
-
-  private static boolean supportsCliIntegration(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
-    return scope == AiIntegrationScope.GLOBAL && compatibleWith(host, agent) && supportsCliIntegration(agent);
-  }
-
-  private static boolean supportsSkills(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
-    return supportsCliIntegration(host, agent, scope);
-  }
-
-  private static boolean supportsStandaloneMcp(AiIntegrationHost host, AiAgent agent) {
-    return jsonSectionName(agent).isPresent() && compatibleWith(host, agent);
-  }
-
-  private static boolean supportsHook(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope) {
-    return scope == AiIntegrationScope.GLOBAL
-      && onNativeHost(host, agent)
-      && hookSupport(agent) == HookSupport.CONFIGURED;
-  }
-
-  private static boolean compatibleWith(AiIntegrationHost host, AiAgent agent) {
-    return host == AiIntegrationHost.OTHER || onNativeHost(host, agent);
-  }
-
-  private static boolean onNativeHost(AiIntegrationHost host, AiAgent agent) {
-    return switch (agent) {
-      case CURSOR -> host == AiIntegrationHost.CURSOR;
-      case GITHUB_COPILOT -> host == AiIntegrationHost.VSCODE || host == AiIntegrationHost.INTELLIJ
-        || host == AiIntegrationHost.VISUAL_STUDIO;
-      case KIRO -> host == AiIntegrationHost.KIRO;
-      case WINDSURF -> host == AiIntegrationHost.WINDSURF;
-      case CLAUDE_CODE, CODEX -> true;
-    };
+    return AgentProfiles.of(agent).mcpJsonSection();
   }
 
   static boolean supportsRuleFile(AiAgent agent) {
-    return switch (agent) {
-      case CURSOR, WINDSURF, KIRO, GITHUB_COPILOT -> true;
-      case CLAUDE_CODE, CODEX -> false;
-    };
+    return AgentProfiles.of(agent).ruleFileSupported();
   }
 
   static HookSupport hookSupport(AiAgent agent) {
-    return switch (agent) {
-      case WINDSURF -> HookSupport.CONFIGURED;
-      case CURSOR, KIRO -> HookSupport.NOT_YET_IMPLEMENTED;
-      case GITHUB_COPILOT -> HookSupport.UNSUPPORTED_COPILOT;
-      case CLAUDE_CODE, CODEX -> HookSupport.UNSUPPORTED_CLI;
-    };
+    return AgentProfiles.of(agent).hookSupport();
   }
 
   static UnsupportedOperationException unsupportedRuleFile(AiAgent agent) {
@@ -115,6 +73,12 @@ final class AiAgentCapabilities {
       case UNSUPPORTED_CLI -> new UnsupportedOperationException(agent + " hook configuration is not supported");
       case CONFIGURED -> throw new IllegalStateException(agent + " supports hook configuration");
     };
+  }
+
+  private static boolean supportsHook(AiIntegrationHost host, AgentProfile profile, AiIntegrationScope scope) {
+    return scope == AiIntegrationScope.GLOBAL
+      && profile.onNativeHost(host)
+      && profile.hookSupport() == HookSupport.CONFIGURED;
   }
 
   enum HookSupport {
