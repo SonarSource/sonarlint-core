@@ -19,18 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 
 final class AiAgentCapabilities {
 
-  static final boolean STANDALONE_MCP_SUPPORTED = true;
-
   private AiAgentCapabilities() {
   }
 
   static AiIntegrationAgentCapability of(AiAgent agent) {
-    return new AiIntegrationAgentCapability(agent, supportsCliIntegration(agent), STANDALONE_MCP_SUPPORTED);
+    return new AiIntegrationAgentCapability(agent, supportsCliIntegration(agent), jsonSectionName(agent).isPresent());
+  }
+
+  static Optional<String> jsonSectionName(AiAgent agent) {
+    return switch (agent) {
+      case GITHUB_COPILOT -> Optional.of("servers");
+      case CURSOR, WINDSURF, KIRO, CLAUDE_CODE -> Optional.of("mcpServers");
+      // Codex stores MCP servers in config.toml ([mcp_servers.sonarqube]), so there is no JSON section to edit.
+      case CODEX -> Optional.empty();
+    };
   }
 
   static boolean supportsCliIntegration(AiAgent agent) {
