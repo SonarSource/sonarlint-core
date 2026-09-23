@@ -64,7 +64,7 @@ class ConnectionValidatorMediumTests {
       .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
 

@@ -1521,7 +1521,8 @@ public class ServerFixture {
         .addSettings(Settings.Setting.newBuilder()
           .setKey("sonar.earlyAccess.misra.enabled")
           .setValue("false"));
-      if (version != null) {
+      var mqrModeAvailable = version != null && version.compareToIgnoreQualifier(Version.create("10.8")) >= 0;
+      if (mqrModeAvailable) {
         settingsBuilder
           .addSettings(Settings.Setting.newBuilder()
             .setKey("sonar.multi-quality-mode.enabled")
