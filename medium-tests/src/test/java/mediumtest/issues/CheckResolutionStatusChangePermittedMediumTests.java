@@ -20,15 +20,10 @@
 package mediumtest.issues;
 
 import com.google.protobuf.Message;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -40,9 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.scanner.protocol.Constants;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
@@ -58,9 +50,6 @@ import utils.MockWebServerExtensionWithProtobuf;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static utils.AnalysisUtils.createFile;
 import static utils.AnalysisUtils.waitForAnalysisReady;
@@ -264,124 +253,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
   @Disabled("SLCORE-966")
   @SonarLintTest
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
-    var baseDir = testDir.resolve("it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2");
-    Files.createDirectory(baseDir);
-    var filePath = createFile(baseDir, "pom.xml", """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <project>
-        <modelVersion>4.0.0</modelVersion>
-        <groupId>com.foo</groupId>
-        <artifactId>bar</artifactId>
-        <version>${pom.version}</version>
-      </project>""");
-    var fileUri = filePath.toUri();
-    var branchName = "main";
-    var projectKey = "projectKey";
-    var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
-        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
-      .build();
-    var server = harness.newFakeSonarQubeServer("2025.1")
-      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
-        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-          .withSeverity(IssueSeverity.BLOCKER)))
-      .withProject(projectKey,
-        project -> project
-          .withQualityProfile("qpKey")
-          .withBranch(branchName))
-      .withPlugin(TestPlugin.XML)
-      .start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, server)
-      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
-      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
-      .start(client);
-    client.waitForSynchronization();
-    waitForAnalysisReady(client, CONFIG_SCOPE_ID);
-
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
-
-    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
-    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
-    assertThat(localOnlyIssue.getSeverityMode().isLeft()).isTrue();
-    assertThat(localOnlyIssue.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(localOnlyIssue.getRuleKey()).isEqualTo("xml:S3421");
-
-    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
-
-    assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
-      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
-        CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires a SonarQube Server connection", List.of());
-  }
-
-  @Disabled("SLCORE-966")
-  @SonarLintTest
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <project>
-        <modelVersion>4.0.0</modelVersion>
-        <groupId>com.foo</groupId>
-        <artifactId>bar</artifactId>
-        <version>${pom.version}</version>
-      </project>""");
-    var fileUri = filePath.toUri();
-    var branchName = "branchName";
-    var projectKey = "projectKey";
-    var serverIssueKey = "myIssueKey";
-    var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-    var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
-        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
-      .build();
-    when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any()))
-      .thenReturn(branchName);
-    var server = harness.newFakeSonarQubeServer("2025.1")
-      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
-        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-          .withSeverity(IssueSeverity.MAJOR)))
-      .withProject(projectKey,
-        project -> project
-          .withQualityProfile("qpKey")
-          .withBranch(branchName,
-            branch -> branch.withIssue(serverIssueKey, "xml:S3421", "message",
-              "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
-              "OPEN", null, introductionDate, new TextRange(1, 1, 1, 1))))
-      .withPlugin(TestPlugin.XML)
-      .start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, server)
-      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
-      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
-      .start(client);
-    client.waitForSynchronization();
-
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(fileUri), Map.of(), false, 0)).join();
-
-    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
-    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
-
-    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
-
-    assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
-      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
-        CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(true, null, List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
-  }
-
-  @Disabled("SLCORE-966")
-  @SonarLintTest
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
-    var baseDir = testDir.resolve("it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus");
-    Files.createDirectory(baseDir);
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
     var filePath = createFile(baseDir, "pom.xml", """
       <?xml version="1.0" encoding="UTF-8"?>
       <project>
