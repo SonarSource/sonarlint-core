@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -83,13 +82,9 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
-  private final List<StoredPlugin> storedPlugins = new ArrayList<>();
-  private final Map<String, StoredPlugin> storedPluginsByKey = new HashMap<>();
 
   @BeforeEach
   void prepare() {
-    storedPlugins.clear();
-    storedPluginsByKey.clear();
     pluginsRepository = mock(PluginsRepository.class);
     storageService = mock(StorageService.class);
     connectionConfigurationStorage = mock(ConnectionConfigurationRepository.class);
@@ -100,8 +95,7 @@ class PluginsServiceTest {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
-    when(pluginStorage.getStoredPlugins()).thenReturn(storedPlugins);
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of());
 
     var standaloneArtifactsLoadingStrategy = mock(StandaloneArtifactsLoadingStrategy.class);
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
@@ -299,8 +293,9 @@ class PluginsServiceTest {
   void getPlugins_extraProperties_connectionIsToServerWithEnterprisePlugins_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
     mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
-    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
-    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugins(Map.of(
+      PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath,
+      PluginsService.VBNET_ENTERPRISE_PLUGIN_ID, enterprisePath));
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -406,11 +401,23 @@ class PluginsServiceTest {
   }
 
   private void mockPlugin(String pluginKey, @Nullable Path jarPath) {
-    var plugin = mock(StoredPlugin.class);
-    when(plugin.getKey()).thenReturn(pluginKey);
-    when(plugin.getJarPath()).thenReturn(jarPath);
-    storedPlugins.add(plugin);
-    storedPluginsByKey.put(pluginKey, plugin);
+    var plugins = new HashMap<String, Path>();
+    plugins.put(pluginKey, jarPath);
+    mockPlugins(plugins);
+  }
+
+  private void mockPlugins(Map<String, Path> plugins) {
+    var storedPlugins = new ArrayList<StoredPlugin>();
+    var storedPluginsByKey = new HashMap<String, StoredPlugin>();
+    plugins.forEach((pluginKey, jarPath) -> {
+      var plugin = mock(StoredPlugin.class);
+      when(plugin.getKey()).thenReturn(pluginKey);
+      when(plugin.getJarPath()).thenReturn(jarPath);
+      storedPlugins.add(plugin);
+      storedPluginsByKey.put(pluginKey, plugin);
+    });
+    when(pluginStorage.getStoredPlugins()).thenReturn(storedPlugins);
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
   }
 
   private void mockConnectionVersion(Version version) {
