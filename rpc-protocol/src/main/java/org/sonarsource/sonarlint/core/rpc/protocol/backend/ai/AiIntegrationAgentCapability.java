@@ -23,11 +23,16 @@ public class AiIntegrationAgentCapability {
   private final AiAgent agent;
   private final boolean cliIntegrationSupported;
   private final boolean standaloneMcpSupported;
+  private final boolean hookSupported;
+  private final boolean skillSupported;
 
-  public AiIntegrationAgentCapability(AiAgent agent, boolean cliIntegrationSupported, boolean standaloneMcpSupported) {
+  public AiIntegrationAgentCapability(AiAgent agent, boolean cliIntegrationSupported, boolean standaloneMcpSupported,
+    boolean hookSupported, boolean skillSupported) {
     this.agent = agent;
     this.cliIntegrationSupported = cliIntegrationSupported;
     this.standaloneMcpSupported = standaloneMcpSupported;
+    this.hookSupported = hookSupported;
+    this.skillSupported = skillSupported;
   }
 
   public AiAgent getAgent() {
@@ -40,5 +45,13 @@ public class AiIntegrationAgentCapability {
 
   public boolean isStandaloneMcpSupported() {
     return standaloneMcpSupported;
+  }
+
+  public boolean isHookSupported() {
+    return hookSupported;
+  }
+
+  public boolean isSkillSupported() {
+    return skillSupported;
   }
 }

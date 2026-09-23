@@ -68,5 +68,9 @@ final class SonarQubeCliStatusDecoder {
     static CliStatus unknown() {
       return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
     }
+
+    static CliStatus unavailable() {
+      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null);
+    }
   }
 }
