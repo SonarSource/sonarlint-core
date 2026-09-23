@@ -78,7 +78,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
-        .withServerVersion("9.8"))
+        .withServerVersion("2025.1"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .start();
 
@@ -196,7 +196,7 @@ class IssuesStatusChangeMediumTests {
                 .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
                 .withIntroductionDate(Instant.EPOCH.plusSeconds(1))
                 .withType(RuleType.BUG))))
-        .withServerVersion("9.8"))
+        .withServerVersion("2025.1"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withTelemetryEnabled()
       .start();
@@ -215,7 +215,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
-        .withServerVersion("9.8"))
+        .withServerVersion("2025.1"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .start();
 
@@ -641,7 +641,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
-        .withServerVersion("9.8"))
+        .withServerVersion("2025.1"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .start();
 
