@@ -89,14 +89,6 @@ public class AnalyzeCommand extends Command {
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
-    Set<URI> files, Map<String, String> extraProperties, CompletableFuture<AnalysisResults> futureResult) {
-    this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
-      issue -> {
-      }, futureResult);
-  }
-
-  public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
-    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
     Set<URI> files, Map<String, String> extraProperties, Consumer<Issue> issueRetractListener, CompletableFuture<AnalysisResults> futureResult) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
