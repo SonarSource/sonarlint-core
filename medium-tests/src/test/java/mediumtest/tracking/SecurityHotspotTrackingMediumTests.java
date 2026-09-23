@@ -81,7 +81,7 @@ class SecurityHotspotTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("10.0")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject(projectKey, project -> project.withBranch(branchName, branch -> branch
         .withHotspot("uuid", hotspot -> hotspot.withAuthor("author")
           .withCreationDate(Instant.ofEpochSecond(123456789L))
@@ -137,7 +137,7 @@ class SecurityHotspotTrackingMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer("10.0")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject(projectKey, project -> project.withBranch(branchName, branch -> branch
         .withHotspot("uuid", hotspot -> hotspot.withAuthor("author")
           .withCreationDate(Instant.ofEpochSecond(123456789L))

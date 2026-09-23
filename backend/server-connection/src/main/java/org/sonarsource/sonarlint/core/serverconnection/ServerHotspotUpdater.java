@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -47,10 +45,9 @@ public class ServerHotspotUpdater {
     storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots, enabledLanguages);
   }
 
-  public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,
-    SonarLintCancelMonitor cancelMonitor) {
-    if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
-      LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
+  public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    if (hotspotApi.supportHotspotsPull()) {
+      LOG.debug("Skip downloading file hotspots on SonarQube Server");
       return;
     }
     var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);

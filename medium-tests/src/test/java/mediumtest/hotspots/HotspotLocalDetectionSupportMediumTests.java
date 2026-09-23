@@ -93,7 +93,7 @@ class HotspotLocalDetectionSupportMediumTests {
   void it_should_support_local_detection_when_connected_to_sonarqube(SonarLintTestHarness harness) {
     var configScopeId = "configScopeId";
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("9.9")
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("2025.1")
         .withProject("projectKey"))
       .withBoundConfigScope(configScopeId, "connectionId", "projectKey")
       .start();

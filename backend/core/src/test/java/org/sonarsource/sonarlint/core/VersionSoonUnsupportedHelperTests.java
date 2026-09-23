@@ -21,11 +21,8 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -43,24 +40,19 @@ import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Disabled("SLCORE-685 Some tests fail depending on the current date")
 class VersionSoonUnsupportedHelperTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String CONFIG_SCOPE_ID = "configScopeId";
-  private static final String CONFIG_SCOPE_ID_2 = "configScopeId2";
   private static final String SQ_CONNECTION_ID = "sqConnectionId";
-  private static final String SQ_CONNECTION_ID_2 = "sqConnectionId2";
   private static final String SC_CONNECTION_ID = "scConnectionId";
   private static final SonarQubeConnectionConfiguration SQ_CONNECTION = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID, "https://mysonarqube.com", true);
-  private static final SonarQubeConnectionConfiguration SQ_CONNECTION_2 = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "https://mysonarqube2.com", true);
   private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(),
     SonarCloudRegion.EU.getApiProductionUri(), SC_CONNECTION_ID, "https://sonarcloud.com", SonarCloudRegion.EU, true);
 
@@ -79,56 +71,6 @@ class VersionSoonUnsupportedHelperTests {
   }
 
   @Test
-  void should_trigger_notification_when_new_binding_to_previous_lts_detected_on_config_scope_event() {
-    var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, ""), bindingConfiguration);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration);
-    connectionRepository.addOrReplace(SQ_CONNECTION);
-    when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), any(), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
-
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
-      new ConfigurationScopeWithBinding(
-        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope1"),
-        BindingConfiguration.noBinding()),
-      new ConfigurationScopeWithBinding(
-        new ConfigurationScope(CONFIG_SCOPE_ID_2, null, true, "scope2"),
-        BindingConfiguration.noBinding()))));
-
-    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
-  }
-
-  @Test
-  void should_trigger_multiple_notification_when_new_bindings_to_previous_lts_detected_on_config_scope_event() {
-    var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
-    var bindingConfiguration2 = new BindingConfiguration(SQ_CONNECTION_ID_2, "", true);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, ""), bindingConfiguration);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration2);
-    connectionRepository.addOrReplace(SQ_CONNECTION);
-    connectionRepository.addOrReplace(SQ_CONNECTION_2);
-    var serverApi = mock(ServerApi.class);
-    var serverApi2 = mock(ServerApi.class);
-    when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
-    when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID_2), eq(serverApi2), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT + ".9"));
-
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
-      new ConfigurationScopeWithBinding(
-        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope1"),
-        BindingConfiguration.noBinding()),
-      new ConfigurationScopeWithBinding(
-        new ConfigurationScope(CONFIG_SCOPE_ID_2, null, true, "scope2"),
-        BindingConfiguration.noBinding()))));
-
-    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly(
-        "Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported",
-        "Connection '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT + ".9' is detected to be soon unsupported"));
-  }
-
-  @Test
   void should_not_trigger_notification_when_config_scope_has_no_effective_binding() {
     underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
       new ConfigurationScopeWithBinding(
@@ -139,7 +81,7 @@ class VersionSoonUnsupportedHelperTests {
   }
 
   @Test
-  void should_trigger_notification_when_new_binding_to_previous_lts_detected() {
+  void should_not_trigger_notification_when_new_binding_to_minimal_supported_version_detected() {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
@@ -148,38 +90,7 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
-  }
-
-  @Test
-  void should_trigger_once_when_same_binding_to_previous_lts_detected_twice() {
-    connectionRepository.addOrReplace(SQ_CONNECTION);
-    var serverApi = mock(ServerApi.class);
-    when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT);
-
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
-
-    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + "' is detected to be soon unsupported"));
-  }
-
-  @Test
-  void should_trigger_notification_when_new_binding_to_in_between_lts_detected() {
-    connectionRepository.addOrReplace(SQ_CONNECTION);
-    var serverApi = mock(ServerApi.class);
-    when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Version.create(VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".9"));
-
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
-
-    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + ".9' is detected to be soon unsupported"));
+    assertThat(logTester.logs()).isEmpty();
   }
 
   @Test

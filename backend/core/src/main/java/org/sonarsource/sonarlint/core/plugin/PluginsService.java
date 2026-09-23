@@ -57,7 +57,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 
 public class PluginsService {
-  private static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
   public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
   public static final String VBNET_ENTERPRISE_PLUGIN_ID = "vbnetenterprise";
 
@@ -207,12 +206,8 @@ public class PluginsService {
       var serverInfo = connectionStorage.serverInfo().read();
       if (serverInfo.isEmpty()) {
         return false;
-      } else {
-        var serverVersion = serverInfo.get().version();
-        var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
-        var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch(analyzerName::equals);
-        return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
       }
+      return connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch(analyzerName::equals);
     }
   }
 
