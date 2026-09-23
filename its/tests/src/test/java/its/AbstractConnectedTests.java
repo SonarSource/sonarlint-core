@@ -99,16 +99,9 @@ public abstract class AbstractConnectedTests {
       .setCleanPackageSonarGoals()
       .setProperties(extraProperties);
 
-    if (orchestrator.getServer().version().isGreaterThanOrEquals(10, 2)) {
-      mavenBuild
-        .setProperty("sonar.token", orchestrator.getDefaultAdminToken())
-        .setProperties(extraProperties);
-    } else {
-      // sonar.token is not supported for 9.9
-      mavenBuild
-        .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD);
-    }
+    mavenBuild
+      .setProperty("sonar.token", orchestrator.getDefaultAdminToken())
+      .setProperties(extraProperties);
 
     orchestrator.executeBuild(mavenBuild);
   }

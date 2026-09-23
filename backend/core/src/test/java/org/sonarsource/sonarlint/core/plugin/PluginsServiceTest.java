@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,9 +83,13 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
+  private final List<StoredPlugin> storedPlugins = new ArrayList<>();
+  private final Map<String, StoredPlugin> storedPluginsByKey = new HashMap<>();
 
   @BeforeEach
   void prepare() {
+    storedPlugins.clear();
+    storedPluginsByKey.clear();
     pluginsRepository = mock(PluginsRepository.class);
     storageService = mock(StorageService.class);
     connectionConfigurationStorage = mock(ConnectionConfigurationRepository.class);
@@ -94,7 +100,8 @@ class PluginsServiceTest {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getDisabledPluginKeysForAnalysis()).thenReturn(Set.of());
     eventPublisher = mock(ApplicationEventPublisher.class);
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+    when(pluginStorage.getStoredPlugins()).thenReturn(storedPlugins);
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
 
     var standaloneArtifactsLoadingStrategy = mock(StandaloneArtifactsLoadingStrategy.class);
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
@@ -146,13 +153,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseCSharpAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -210,13 +217,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseVbAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -289,10 +296,11 @@ class PluginsServiceTest {
   }
 
   @Test
-  void getPlugins_extraProperties_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
+  void getPlugins_extraProperties_connectionIsToServerWithEnterprisePlugins_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
     mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockPlugin(PluginsService.VBNET_ENTERPRISE_PLUGIN_ID, enterprisePath);
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -401,8 +409,8 @@ class PluginsServiceTest {
     var plugin = mock(StoredPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
     when(plugin.getJarPath()).thenReturn(jarPath);
-    when(pluginStorage.getStoredPlugins()).thenReturn(List.of(plugin));
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of(pluginKey, plugin));
+    storedPlugins.add(plugin);
+    storedPluginsByKey.put(pluginKey, plugin);
   }
 
   private void mockConnectionVersion(Version version) {

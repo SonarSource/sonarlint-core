@@ -168,11 +168,10 @@ public class HttpClientProvider {
       .build();
   }
 
-  public HttpClient getHttpClientWithPreemptiveAuth(String token, boolean shouldUseBearer) {
+  public HttpClient getHttpClientWithPreemptiveAuth(String token) {
     return ApacheHttpClientAdapter.builder()
       .withInnerClient(sharedClient)
       .withToken(token)
-      .useBearer(shouldUseBearer)
       .build();
   }
 

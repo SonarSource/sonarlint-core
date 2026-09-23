@@ -50,7 +50,7 @@ class BranchSpecificSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
@@ -71,7 +71,7 @@ class BranchSpecificSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_honor_binding_inheritance(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey",
         project -> project
           .withBranch("branchNameParent",
@@ -119,7 +119,7 @@ class BranchSpecificSynchronizationMediumTests {
   void it_should_report_progress_to_the_client_when_synchronizing(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient()
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
@@ -150,7 +150,7 @@ class BranchSpecificSynchronizationMediumTests {
       .when(fakeClient)
       .startProgress(any());
 
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
@@ -172,7 +172,7 @@ class BranchSpecificSynchronizationMediumTests {
   void it_should_skip_second_consecutive_synchronization_for_the_same_server_project(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient()
       .build();
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
