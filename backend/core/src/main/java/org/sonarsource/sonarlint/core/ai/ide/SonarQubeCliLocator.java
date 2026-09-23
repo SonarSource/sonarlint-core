@@ -52,10 +52,7 @@ final class SonarQubeCliLocator {
   }
 
   CliLookup find() {
-    return find(search.resolvePath());
-  }
-
-  CliLookup find(@Nullable String resolvedPath) {
+    var resolvedPath = search.resolvePath();
     Path firstUnusable = null;
     for (var candidate : cliCandidates(resolvedPath)) {
       if (!search.isExecutable(candidate)) {

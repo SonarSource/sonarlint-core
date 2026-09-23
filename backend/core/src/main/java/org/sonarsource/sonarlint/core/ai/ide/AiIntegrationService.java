@@ -56,7 +56,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
  */
 public class AiIntegrationService {
 
-  private final OsExecutableSearch search;
   private final SonarQubeCliLocator locator;
   private final AgentCliLocator agentCliLocator;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -77,14 +76,13 @@ public class AiIntegrationService {
 
   private AiIntegrationService(OsExecutableSearch search, Path userHome,
     ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
-    this(search, new SonarQubeCliLocator(search, userHome), new AgentCliLocator(search, userHome),
+    this(new SonarQubeCliLocator(search, userHome), new AgentCliLocator(search, userHome),
       connectionRepository, configurationRepository);
   }
 
   @VisibleForTesting
-  AiIntegrationService(OsExecutableSearch search, SonarQubeCliLocator locator, AgentCliLocator agentCliLocator,
+  AiIntegrationService(SonarQubeCliLocator locator, AgentCliLocator agentCliLocator,
     ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository) {
-    this.search = search;
     this.locator = locator;
     this.agentCliLocator = agentCliLocator;
     this.connectionRepository = connectionRepository;
@@ -92,12 +90,11 @@ public class AiIntegrationService {
   }
 
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
-    var resolvedPath = search.resolvePath();
-    var cliState = toCliState(locator.find(resolvedPath));
+    var cliState = toCliState(locator.find());
     var agentsBySource = new LinkedHashMap<AiAgent, LinkedHashSet<AiAgentDetectionSource>>();
     params.getDetectedAgents().forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.IDE));
     if (params.isDiscoverLocalAgentClis()) {
-      agentCliLocator.discover(resolvedPath)
+      agentCliLocator.discover()
         .forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.CLI));
     }
     var agentCapabilities = agentsBySource.entrySet().stream()
@@ -131,7 +128,7 @@ public class AiIntegrationService {
   }
 
   private Path requireInstalledCli() {
-    var cli = locator.find(search.resolvePath());
+    var cli = locator.find();
     if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
       throw new IllegalStateException("A working SonarQube CLI installation is required");
     }

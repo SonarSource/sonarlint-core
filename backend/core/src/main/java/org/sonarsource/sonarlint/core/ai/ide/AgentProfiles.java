@@ -20,11 +20,9 @@
 package org.sonarsource.sonarlint.core.ai.ide;
 
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.ai.ide.AiAgentCapabilities.HookSupport;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
@@ -35,8 +33,14 @@ final class AgentProfiles {
   private static final List<String> VERSION_PROBE = List.of("--version");
   private static final List<String> HELP_PROBE = List.of("--help");
   private static final String MCP_SERVERS_SECTION = "mcpServers";
-  private static final List<AiAgent> CLI_DISCOVERY_ORDER = List.of(AiAgent.CLAUDE_CODE, AiAgent.CODEX,
-    AiAgent.GITHUB_COPILOT_CLI, AiAgent.CURSOR, AiAgent.ANTIGRAVITY);
+  private static final List<DiscoveredCli> CLI_DISCOVERY = List.of(
+    discovered(AiAgent.CLAUDE_CODE, List.of("claude"), VERSION_PROBE, List.of("claude code")),
+    discovered(AiAgent.CODEX, List.of("codex"), VERSION_PROBE, List.of("codex-cli")),
+    discovered(AiAgent.GITHUB_COPILOT_CLI, List.of("copilot"), VERSION_PROBE, List.of("github copilot cli")),
+    discovered(AiAgent.CURSOR, List.of("cursor-agent"), HELP_PROBE, List.of("cursor agent", "cursor-agent")),
+    discovered(AiAgent.ANTIGRAVITY, List.of("agy"), HELP_PROBE, List.of("usage of agy:")));
+  private static final Map<AiAgent, CliProbe> PROBES_BY_AGENT = CLI_DISCOVERY.stream()
+    .collect(Collectors.toUnmodifiableMap(DiscoveredCli::agent, DiscoveredCli::probe));
   private static final Map<AiAgent, AgentProfile> BY_AGENT = createAll();
 
   private AgentProfiles() {
@@ -47,7 +51,12 @@ final class AgentProfiles {
   }
 
   static List<AgentProfile> cliDiscoverable() {
-    return CLI_DISCOVERY_ORDER.stream().map(AgentProfiles::of).toList();
+    return CLI_DISCOVERY.stream().map(discovered -> of(discovered.agent())).toList();
+  }
+
+  private static DiscoveredCli discovered(AiAgent agent, List<String> executableNames, List<String> arguments,
+    List<String> outputMarkers) {
+    return new DiscoveredCli(agent, new CliProbe(executableNames, arguments, outputMarkers));
   }
 
   private static Map<AiAgent, AgentProfile> createAll() {
@@ -55,38 +64,37 @@ final class AgentProfiles {
     for (var agent : AiAgent.values()) {
       profiles.put(agent, create(agent));
     }
-    var discoverable = profiles.values().stream()
-      .filter(AgentProfile::cliDiscoverable)
-      .map(AgentProfile::agent)
-      .collect(Collectors.toCollection(() -> EnumSet.noneOf(AiAgent.class)));
-    if (!discoverable.equals(EnumSet.copyOf(CLI_DISCOVERY_ORDER))) {
-      throw new IllegalStateException("CLI discovery order must list every discoverable agent");
-    }
     return Map.copyOf(profiles);
   }
 
   private static AgentProfile create(AiAgent agent) {
     return switch (agent) {
-      case CURSOR -> new AgentProfile(agent, List.of("cursor-agent"), HELP_PROBE,
-        List.of("cursor agent", "cursor-agent"), Optional.of("cursor"), Optional.of(MCP_SERVERS_SECTION), false,
-        Set.of(AiIntegrationHost.CURSOR), true, true, HookSupport.NOT_YET_IMPLEMENTED);
-      case GITHUB_COPILOT -> new AgentProfile(agent, List.of(), List.of(), List.of(), Optional.empty(),
-        Optional.of("servers"), false,
-        Set.of(AiIntegrationHost.VSCODE, AiIntegrationHost.INTELLIJ, AiIntegrationHost.VISUAL_STUDIO), false, true,
-        HookSupport.UNSUPPORTED_COPILOT);
-      case KIRO -> new AgentProfile(agent, List.of(), List.of(), List.of(), Optional.empty(), Optional.of(MCP_SERVERS_SECTION),
-        false, Set.of(AiIntegrationHost.KIRO), false, true, HookSupport.NOT_YET_IMPLEMENTED);
-      case WINDSURF -> new AgentProfile(agent, List.of(), List.of(), List.of(), Optional.empty(),
-        Optional.of(MCP_SERVERS_SECTION), false, Set.of(AiIntegrationHost.WINDSURF), false, true, HookSupport.CONFIGURED);
-      case CLAUDE_CODE -> new AgentProfile(agent, List.of("claude"), VERSION_PROBE, List.of("claude code"),
-        Optional.of("claude"), Optional.of(MCP_SERVERS_SECTION), true, Set.of(), true, false, HookSupport.UNSUPPORTED_CLI);
-      case CODEX -> new AgentProfile(agent, List.of("codex"), VERSION_PROBE, List.of("codex-cli"), Optional.of("codex"),
-        Optional.empty(), true, Set.of(), true, false, HookSupport.UNSUPPORTED_CLI);
-      case GITHUB_COPILOT_CLI -> new AgentProfile(agent, List.of("copilot"), VERSION_PROBE,
-        List.of("github copilot cli"), Optional.of("copilot"), Optional.empty(), true, Set.of(), true, false,
-        HookSupport.UNSUPPORTED_CLI);
-      case ANTIGRAVITY -> new AgentProfile(agent, List.of("agy"), HELP_PROBE, List.of("usage of agy:"),
-        Optional.of("antigravity"), Optional.empty(), true, Set.of(), true, false, HookSupport.UNSUPPORTED_CLI);
+      case CURSOR -> profile(agent, Optional.of("cursor"), Optional.of(MCP_SERVERS_SECTION),
+        NativeHosts.only(AiIntegrationHost.CURSOR), true, true, HookSupport.NOT_YET_IMPLEMENTED);
+      case GITHUB_COPILOT -> profile(agent, Optional.empty(), Optional.of("servers"),
+        NativeHosts.only(AiIntegrationHost.VSCODE, AiIntegrationHost.INTELLIJ, AiIntegrationHost.VISUAL_STUDIO),
+        false, true, HookSupport.UNSUPPORTED_COPILOT);
+      case KIRO -> profile(agent, Optional.empty(), Optional.of(MCP_SERVERS_SECTION),
+        NativeHosts.only(AiIntegrationHost.KIRO), false, true, HookSupport.NOT_YET_IMPLEMENTED);
+      case WINDSURF -> profile(agent, Optional.empty(), Optional.of(MCP_SERVERS_SECTION),
+        NativeHosts.only(AiIntegrationHost.WINDSURF), false, true, HookSupport.CONFIGURED);
+      case CLAUDE_CODE -> profile(agent, Optional.of("claude"), Optional.of(MCP_SERVERS_SECTION),
+        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+      case CODEX -> profile(agent, Optional.of("codex"), Optional.empty(),
+        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+      case GITHUB_COPILOT_CLI -> profile(agent, Optional.of("copilot"), Optional.empty(),
+        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+      case ANTIGRAVITY -> profile(agent, Optional.of("antigravity"), Optional.empty(),
+        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
     };
+  }
+
+  private static AgentProfile profile(AiAgent agent, Optional<String> cliTarget, Optional<String> mcpJsonSection,
+    NativeHosts nativeHosts, boolean cliIntegrationSupported, boolean ruleFileSupported, HookSupport hookSupport) {
+    return new AgentProfile(agent, PROBES_BY_AGENT.get(agent), cliTarget, mcpJsonSection, nativeHosts,
+      cliIntegrationSupported, ruleFileSupported, hookSupport);
+  }
+
+  private record DiscoveredCli(AiAgent agent, CliProbe probe) {
   }
 }

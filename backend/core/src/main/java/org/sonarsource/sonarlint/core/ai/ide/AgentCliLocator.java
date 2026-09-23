@@ -45,13 +45,9 @@ final class AgentCliLocator {
     this.userHome = userHome;
   }
 
-  List<AiAgent> discover() {
-    return discover(search.resolvePath());
-  }
-
-  synchronized List<AiAgent> discover(@Nullable String resolvedPath) {
+  synchronized List<AiAgent> discover() {
     if (cachedDiscovery == null) {
-      cachedDiscovery = List.copyOf(doDiscover(resolvedPath));
+      cachedDiscovery = List.copyOf(doDiscover(search.resolvePath()));
     }
     return cachedDiscovery;
   }
@@ -65,10 +61,11 @@ final class AgentCliLocator {
   }
 
   private boolean isAgentCliInstalled(AgentProfile profile, Set<Path> directories, @Nullable String resolvedPath) {
-    return profile.executableNames().stream()
+    var probe = Objects.requireNonNull(profile.cliProbe());
+    return probe.executableNames().stream()
       .map(baseName -> firstExistingExecutable(baseName, directories))
       .filter(Objects::nonNull)
-      .anyMatch(candidate -> probeMatches(candidate, profile, resolvedPath));
+      .anyMatch(candidate -> probeMatches(candidate, probe, resolvedPath));
   }
 
   @Nullable
@@ -84,17 +81,17 @@ final class AgentCliLocator {
     return null;
   }
 
-  private boolean probeMatches(Path executable, AgentProfile profile, @Nullable String resolvedPath) {
+  private boolean probeMatches(Path executable, CliProbe probe, @Nullable String resolvedPath) {
     var stdout = new ArrayList<String>();
     var stderr = new ArrayList<String>();
     var pathOverride = search.isMac() ? resolvedPath : null;
-    var result = search.execute(executable, profile.probeArguments(), pathOverride, AGENT_PROBE_TIMEOUT_MILLIS,
+    var result = search.execute(executable, probe.arguments(), pathOverride, AGENT_PROBE_TIMEOUT_MILLIS,
       line -> addProbeLine(stdout, line), line -> addProbeLine(stderr, line));
     if (result.exitCode() != 0) {
       return false;
     }
     var output = (String.join("\n", stdout) + "\n" + String.join("\n", stderr)).toLowerCase(Locale.ROOT);
-    return profile.outputMarkers().stream().anyMatch(output::contains);
+    return probe.outputMarkers().stream().anyMatch(output::contains);
   }
 
   private Set<Path> executableSearchDirectories(@Nullable String path) {
