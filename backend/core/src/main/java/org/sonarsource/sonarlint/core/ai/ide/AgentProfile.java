@@ -22,35 +22,50 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 
+record CliProbe(List<String> executableNames, List<String> arguments, List<String> outputMarkers) {
+
+  CliProbe {
+    executableNames = List.copyOf(executableNames);
+    arguments = List.copyOf(arguments);
+    outputMarkers = List.copyOf(outputMarkers);
+  }
+}
+
+record NativeHosts(boolean anyHost, Set<AiIntegrationHost> hosts) {
+
+  NativeHosts {
+    hosts = Set.copyOf(hosts);
+  }
+
+  static NativeHosts any() {
+    return new NativeHosts(true, Set.of());
+  }
+
+  static NativeHosts only(AiIntegrationHost... hosts) {
+    return new NativeHosts(false, Set.of(hosts));
+  }
+
+  boolean matches(AiIntegrationHost host) {
+    return anyHost || hosts.contains(host);
+  }
+}
+
 record AgentProfile(
   AiAgent agent,
-  List<String> executableNames,
-  List<String> probeArguments,
-  List<String> outputMarkers,
+  @Nullable CliProbe cliProbe,
   Optional<String> cliTarget,
   Optional<String> mcpJsonSection,
-  boolean nativeOnAnyHost,
-  Set<AiIntegrationHost> nativeHosts,
+  NativeHosts nativeHosts,
   boolean cliIntegrationSupported,
   boolean ruleFileSupported,
   AiAgentCapabilities.HookSupport hookSupport) {
 
-  AgentProfile {
-    executableNames = List.copyOf(executableNames);
-    probeArguments = List.copyOf(probeArguments);
-    outputMarkers = List.copyOf(outputMarkers);
-    nativeHosts = Set.copyOf(nativeHosts);
-  }
-
-  boolean cliDiscoverable() {
-    return !executableNames.isEmpty();
-  }
-
   boolean onNativeHost(AiIntegrationHost host) {
-    return nativeOnAnyHost || nativeHosts.contains(host);
+    return nativeHosts.matches(host);
   }
 
   boolean compatibleWith(AiIntegrationHost host) {

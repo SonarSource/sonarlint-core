@@ -665,7 +665,7 @@ class AiIntegrationServiceTests {
   private AiIntegrationService newService(System2 system2, Map<String, String> environment, CommandExecutor executor,
     Path pathHelper) {
     var search = new OsExecutableSearch(system2, executor, environment, pathHelper);
-    return new AiIntegrationService(search, new SonarQubeCliLocator(search, tempDir),
+    return new AiIntegrationService(new SonarQubeCliLocator(search, tempDir),
       new AgentCliLocator(search, tempDir), connectionRepository, configurationRepository);
   }
 
