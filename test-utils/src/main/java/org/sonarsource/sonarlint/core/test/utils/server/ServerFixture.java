@@ -94,6 +94,8 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
 
 public class ServerFixture {
+
+  private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1522,11 +1524,11 @@ public class ServerFixture {
           .setKey("sonar.earlyAccess.misra.enabled")
           .setValue("false"));
       var mqrModeAvailable = version != null && version.compareToIgnoreQualifier(Version.create("10.8")) >= 0
-        && !globalSettings.containsKey("sonar.multi-quality-mode.enabled");
+        && !globalSettings.containsKey(MQR_MODE_SETTING);
       if (mqrModeAvailable) {
         settingsBuilder
           .addSettings(Settings.Setting.newBuilder()
-            .setKey("sonar.multi-quality-mode.enabled")
+            .setKey(MQR_MODE_SETTING)
             .setValue("true"));
       }
       settingsBuilder.addAllSettings(globalSettings.entrySet().stream().map(entry -> Settings.Setting.newBuilder()
