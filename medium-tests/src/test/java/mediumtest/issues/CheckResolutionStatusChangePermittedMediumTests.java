@@ -253,7 +253,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
   @Disabled("SLCORE-966")
   @SonarLintTest
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", """
       <?xml version="1.0" encoding="UTF-8"?>
       <project>
