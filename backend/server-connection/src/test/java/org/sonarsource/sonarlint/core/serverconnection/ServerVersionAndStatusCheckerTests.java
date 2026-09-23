@@ -19,9 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -53,31 +57,28 @@ class ServerVersionAndStatusCheckerTests {
     assertThat(throwable).hasMessage("Server not ready (DOWN)");
   }
 
-  @Test
-  void failWhenIncompatibleVersion() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
+  @ParameterizedTest
+  @MethodSource("serverVersions")
+  void shouldValidateServerVersion(String version, boolean supported) {
+    mockServer.addStringResponse("/api/system/status",
+      "{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": \"UP\"}");
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
-    assertThat(throwable).hasMessage("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 2025.1 (SonarQube Server) or 25.1 (SonarQube Community Build)");
+    if (supported) {
+      assertThat(throwable).isNull();
+    } else {
+      assertThat(throwable).hasMessage("Your SonarQube Server instance has version " + version
+        + ". Version should be greater or equal to " + VersionUtils.MINIMAL_SUPPORTED_VERSION.getName()
+        + " (SonarQube Server) or " + VersionUtils.MINIMAL_SUPPORTED_VERSION_SHORT.getName() + " (SonarQube Community Build)");
+    }
   }
 
-  @Test
-  void shouldAcceptCommunityBuildVersion() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"25.1\",\"status\": \"UP\"}");
-
-    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
-
-    assertThat(throwable).isNull();
-  }
-
-  @Test
-  void shouldRejectPreviousLtsVersion() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
-
-    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
-
-    assertThat(throwable).hasMessage("Your SonarQube Server instance has version 9.9. Version should be greater or equal to 2025.1 (SonarQube Server) or 25.1 (SonarQube Community Build)");
+  private static Stream<Arguments> serverVersions() {
+    return Stream.of(
+      Arguments.of("6.7", false),
+      Arguments.of("25.1", true),
+      Arguments.of("9.9", false));
   }
 
   @Test
