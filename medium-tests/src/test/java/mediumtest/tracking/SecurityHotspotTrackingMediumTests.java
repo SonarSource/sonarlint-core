@@ -88,7 +88,7 @@ class SecurityHotspotTrackingMediumTests {
           .withFilePath(ideFilePath)
           .withMessage(message)
           .withRuleKey(ruleKey)
-          .withTextRange(new TextRange(3, 51, 3, 62))
+          .withTextRange(new TextRange(3, 65, 3, 76))
           .withStatus(HotspotReviewStatus.TO_REVIEW)
           .withVulnerabilityProbability(VulnerabilityProbability.HIGH))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -99,7 +99,7 @@ class SecurityHotspotTrackingMediumTests {
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
-            .withMainBranch(branchName, branch -> branch.withHotspot(aStoredHotspot(ideFilePath, ruleKey, message, 3, 51, 3, 62)))))
+            .withMainBranch(branchName, branch -> branch.withHotspot(aStoredHotspot(ideFilePath, ruleKey, message, 3, 65, 3, 76)))))
       .withBackendCapability(SECURITY_HOTSPOTS)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
@@ -140,7 +140,7 @@ class SecurityHotspotTrackingMediumTests {
           .withFilePath(ideFilePath)
           .withMessage(message)
           .withRuleKey(ruleKey)
-          .withTextRange(new TextRange(3, 51, 3, 62))
+          .withTextRange(new TextRange(3, 65, 3, 76))
           .withStatus(HotspotReviewStatus.TO_REVIEW)
           .withVulnerabilityProbability(VulnerabilityProbability.HIGH))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -151,7 +151,7 @@ class SecurityHotspotTrackingMediumTests {
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
-            .withMainBranch(branchName, branch -> branch.withHotspot(aStoredHotspot(ideFilePath, ruleKey, message, 3, 51, 3, 62)))))
+            .withMainBranch(branchName, branch -> branch.withHotspot(aStoredHotspot(ideFilePath, ruleKey, message, 3, 65, 3, 76)))))
       .withBackendCapability(SECURITY_HOTSPOTS)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
