@@ -36,6 +36,7 @@ final class AiAgentCapabilities {
     return switch (agent) {
       case GITHUB_COPILOT -> Optional.of("servers");
       case CURSOR, WINDSURF, KIRO, CLAUDE_CODE -> Optional.of("mcpServers");
+      // Codex stores MCP servers in config.toml ([mcp_servers.sonarqube]), so there is no JSON section to edit.
       case CODEX -> Optional.empty();
     };
   }

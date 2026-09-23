@@ -84,12 +84,12 @@ public class McpConfigurationService {
       .orElseThrow(() -> new IllegalArgumentException(agent + " is not supported by standalone MCP configuration"));
   }
 
-  private static ClassifiedDocument parseAndClassify(String content, String sectionName) {
+  private static McpDocument parseAndClassify(String content, String sectionName) {
     var parsed = parse(content, sectionName);
     if (parsed.error != null) {
-      return new ClassifiedDocument(McpConfigurationState.MALFORMED, null, parsed.error);
+      return new McpDocument(McpConfigurationState.MALFORMED, null, parsed.error);
     }
-    return new ClassifiedDocument(classify(parsed.section), parsed.root, null);
+    return new McpDocument(classify(parsed.section), parsed.root, null);
   }
 
   private static String updatedDocument(ObjectNode root) {
@@ -182,5 +182,5 @@ public class McpConfigurationService {
 
   private record Parsed(@Nullable ObjectNode root, @Nullable ObjectNode section, @Nullable String error) { }
 
-  private record ClassifiedDocument(McpConfigurationState state, @Nullable ObjectNode root, @Nullable String error) { }
+  private record McpDocument(McpConfigurationState state, @Nullable ObjectNode root, @Nullable String error) { }
 }
