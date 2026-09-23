@@ -57,7 +57,7 @@ class ConnectedHotspotMediumTests {
       .build();
     var projectKey = "projectKey";
     var branchName = "main";
-    var server = harness.newFakeSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("java")
         .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER))
