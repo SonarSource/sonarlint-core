@@ -60,7 +60,7 @@ class RuleEventsMediumTests {
     // write a test just like this one without the impacts
     @SonarLintTest
     void it_should_create_the_ruleset_storage_if_does_not_exist_without_impacts(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -101,7 +101,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_create_the_ruleset_storage_if_does_not_exist(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -154,7 +154,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_update_existing_rule_in_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -196,7 +196,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_add_rule_to_existing_ruleset_in_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -264,7 +264,7 @@ class RuleEventsMediumTests {
         .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
         .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection(connectionId, server, storage -> storage
-          .withServerVersion("99.9")
+          .withServerVersion("2025.1")
           .withProject(projectKey, project -> project
             .withMainBranch("main")
             .withRuleSet("java", ruleSet -> ruleSet
@@ -301,7 +301,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_add_rule_to_new_ruleset_in_existing_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -343,7 +343,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_remove_deactivated_rule_from_existing_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -376,7 +376,7 @@ class RuleEventsMediumTests {
 
     @SonarLintTest
     void it_should_remove_ruleset_from_storage_when_deactivating_last_rule(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))

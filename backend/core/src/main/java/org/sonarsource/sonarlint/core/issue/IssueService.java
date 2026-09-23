@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
@@ -69,7 +68,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -80,15 +78,10 @@ import org.springframework.context.event.EventListener;
 
 public class IssueService {
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
-  private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube Server 10.2+";
-  private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
-
-  /**
-   * With SQ 10.4 the transitions changed from "Won't fix" to "Accept"
-   */
-  private static final Version SQ_ACCEPTED_TRANSITION_MIN_VERSION = Version.create("10.4");
-  private static final List<ResolutionStatus> NEW_RESOLUTION_STATUSES = List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
-  private static final List<ResolutionStatus> OLD_RESOLUTION_STATUSES = List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
+  private static final String UNSUPPORTED_LOCAL_ONLY_STATUS_CHANGE_REASON = "Marking a local-only issue as resolved requires a SonarQube Server connection";
+  private static final List<ResolutionStatus> LOCAL_ONLY_RESOLUTION_STATUSES = List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
+  private static final List<ResolutionStatus> SERVER_ACCEPTED_RESOLUTION_STATUSES = List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
+  private static final List<ResolutionStatus> SERVER_WONT_FIX_RESOLUTION_STATUSES = List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
     ResolutionStatus.ACCEPT, Transition.ACCEPT,
     ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
@@ -175,17 +168,8 @@ public class IssueService {
       .withClientApiAndReturn(serverApi -> checkAnticipatedStatusChangeSupported(serverApi, connectionId));
   }
 
-  /**
-   * Check if the anticipated transitions are supported on the server side (requires SonarQube 10.2+)
-   *
-   * @param api          used for checking if server is a SonarQube instance
-   * @param connectionId required to get the version information from the server
-   * @return whether server is SonarQube instance and matches version requirement
-   */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
-    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
-      .map(version -> version.version().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
-      .orElse(false);
+    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String issueKey, SonarLintCancelMonitor cancelMonitor) {
@@ -193,29 +177,18 @@ public class IssueService {
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
         // For anticipated issues we currently don't get the information from SonarQube (as there is no web API
-        // endpoint) regarding the available transitions. SonarCloud doesn't provide it currently anyway. That's why we
-        // have to rely on the version check for SonarQube (>= 10.2 / >=10.4)
+        // endpoint) regarding the available transitions. SonarCloud doesn't provide it currently anyway.
         List<ResolutionStatus> statuses = List.of();
         if (checkAnticipatedStatusChangeSupported(serverApi, connectionId)) {
-          var is104orNewer = !serverApi.isSonarCloud() && is104orNewer(connectionId, serverApi, cancelMonitor);
-          statuses = is104orNewer ? NEW_RESOLUTION_STATUSES : OLD_RESOLUTION_STATUSES;
+          statuses = LOCAL_ONLY_RESOLUTION_STATUSES;
         }
 
-        return toResponse(statuses, UNSUPPORTED_SQ_VERSION_REASON);
+        return toResponse(statuses, UNSUPPORTED_LOCAL_ONLY_STATUS_CHANGE_REASON);
       })
       .orElseGet(() -> {
         var issue = serverApi.issue().searchByKey(issueKey, cancelMonitor);
         return toResponse(getAdministerIssueTransitions(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON);
       }));
-  }
-
-  /**
-   * For checking whether SonarQube is already on 10.4 or not. NEVER apply to SonarCloud as their version differs!
-   */
-  private boolean is104orNewer(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    var serverVersionSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
-    var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor);
-    return serverVersion.version().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
   }
 
   private static CheckStatusChangePermittedResponse toResponse(List<ResolutionStatus> statuses, String reason) {
@@ -230,13 +203,13 @@ public class IssueService {
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
     var possibleTransitions = new HashSet<>(issue.getTransitions().getTransitionsList());
 
-    if (possibleTransitions.containsAll(toTransitionStatus(NEW_RESOLUTION_STATUSES))) {
-      return NEW_RESOLUTION_STATUSES;
+    if (possibleTransitions.containsAll(toTransitionStatus(SERVER_ACCEPTED_RESOLUTION_STATUSES))) {
+      return SERVER_ACCEPTED_RESOLUTION_STATUSES;
     }
 
     // No transitions meaning you're not allowed. That's it.
-    return possibleTransitions.containsAll(toTransitionStatus(OLD_RESOLUTION_STATUSES))
-      ? OLD_RESOLUTION_STATUSES
+    return possibleTransitions.containsAll(toTransitionStatus(SERVER_WONT_FIX_RESOLUTION_STATUSES))
+      ? SERVER_WONT_FIX_RESOLUTION_STATUSES
       : List.of();
   }
 
