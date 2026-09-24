@@ -59,7 +59,7 @@ class UserSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_store_user_id_on_sonarqube_server(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
 

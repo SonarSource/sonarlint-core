@@ -1132,7 +1132,7 @@ class AnalysisMediumTests {
 
   @SonarLintTest
   void it_should_not_use_enterprise_csharp_analyzer_when_connected_to_community(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.8").start();
+    var server = harness.newFakeSonarQubeServer("2025.1").start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId",
         server,
@@ -1145,26 +1145,6 @@ class AnalysisMediumTests {
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
 
     assertThat(result.shouldUseEnterpriseAnalyzer()).isFalse();
-  }
-
-  @SonarLintTest
-  void it_should_use_enterprise_csharp_analyzer_when_connected_to_community_non_repackaged(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.7").start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId",
-        server,
-        storage -> storage
-          .withPlugin(TestPlugin.XML)
-          .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER")))
-          .withServerVersion("10.7"))
-      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
-      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(FULL_SYNCHRONIZATION)
-      .start();
-
-    var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
-
-    assertThat(result.shouldUseEnterpriseAnalyzer()).isTrue();
   }
 
   @SonarLintTest

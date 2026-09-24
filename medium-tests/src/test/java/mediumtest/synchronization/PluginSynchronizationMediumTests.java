@@ -48,7 +48,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_pull_plugins_at_startup_from_the_server(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withStatus(UP)
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
@@ -74,7 +74,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_plugins_if_server_is_down(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withStatus(DOWN)
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
@@ -95,7 +95,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_already_pulled_plugin(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -122,7 +122,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_pull_a_plugin_if_already_pulled_but_hash_is_different(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -144,7 +144,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_plugins_that_do_not_support_sonarlint(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin("pluginKey", plugin -> plugin.withJarPath(TestPlugin.JAVA.getPath()).withHash(TestPlugin.JAVA.getHash()).withSonarLintSupported(false))
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -165,7 +165,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_embedded_plugins(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -186,7 +186,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_plugins_for_not_enabled_languages(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin(TestPlugin.JAVA)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -206,7 +206,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_pull_third_party_plugins_for_custom_rules(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin("java-custom", plugin -> plugin.withJarPath(Path.of("java-custom-plugin-4.3.0.1456.jar")).withHash("de5308f43260d357acc97712ce4c5475"))
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -230,7 +230,7 @@ class PluginSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_clean_up_plugins_that_are_no_longer_relevant(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withPlugin(TestPlugin.PHP)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
