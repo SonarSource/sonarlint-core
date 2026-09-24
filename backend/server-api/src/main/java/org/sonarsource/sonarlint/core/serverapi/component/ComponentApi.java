@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,9 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
+import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
 public class ComponentApi {
@@ -74,6 +78,42 @@ public class ComponentApi {
       true,
       cancelMonitor);
     return serverProjects;
+  }
+
+  public List<ServerProject> searchProjectsByNameOrKey(String searchText, SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
+    var searchUrl = new StringBuilder("api/components/search.protobuf?qualifiers=TRK");
+    helper.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
+    searchUrl.append("&q=").append(UrlUtils.urlEncode(searchText));
+    searchUrl.append("&p=1&ps=10");
+
+    try (var response = helper.get(searchUrl.toString(), cancelMonitor)) {
+      var wsResponse = Components.SearchWsResponse.parseFrom(response.bodyAsStream());
+      return wsResponse.getComponentsList().stream()
+        .map(project -> new ServerProject(project.getKey(), project.getName(), project.getIsAiCodeFixEnabled()))
+        .toList();
+    } catch (IOException e) {
+      throw new UnexpectedBodyException(e);
+    }
+  }
+
+  public Optional<ServerProject> getProjectByExactKey(String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
+    try {
+      var response = helper.getJson("api/components/show?component=" + UrlUtils.urlEncode(projectKey), ShowComponentResponse.class, cancelMonitor);
+      var component = response.component();
+      if (component == null || !projectKey.equals(component.key()) || !"TRK".equals(component.qualifier())) {
+        return Optional.empty();
+      }
+      var organization = helper.getOrganizationKey();
+      if (organization.isPresent() && !organization.get().equals(component.organization())) {
+        return Optional.empty();
+      }
+      return Optional.of(new ServerProject(component.key(), component.name(), false));
+    } catch (ForbiddenException | NotFoundException e) {
+      return Optional.empty();
+    }
   }
 
   private String getAllProjectsUrl() {
@@ -124,5 +164,11 @@ public class ComponentApi {
         return Optional.empty();
       },
       duration -> LOG.debug("Downloaded project details in {}ms", duration));
+  }
+
+  private record ShowComponentResponse(ShowComponent component) {
+  }
+
+  private record ShowComponent(String key, String name, String qualifier, String organization) {
   }
 }
