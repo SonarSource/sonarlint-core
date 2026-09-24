@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -78,7 +79,7 @@ class TelemetryServiceTests {
   @ParameterizedTest
   @CsvSource({"false,false", "false,true", "true,false", "true,true"})
   void status_and_enable_should_recognize_either_capability(boolean legacy, boolean gessie) {
-    var capabilities = new java.util.HashSet<BackendCapability>();
+    var capabilities = new HashSet<BackendCapability>();
     if (legacy) {
       capabilities.add(BackendCapability.TELEMETRY);
     }
