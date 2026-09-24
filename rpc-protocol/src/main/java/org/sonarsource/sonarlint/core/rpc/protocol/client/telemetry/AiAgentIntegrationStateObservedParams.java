@@ -26,29 +26,19 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationState;
 
 public class AiAgentIntegrationStateObservedParams {
-  private final AiIntegrationObservationTrigger trigger;
   private final AiAgent agent;
   private final List<AiAgentDetectionSource> detectionSources;
   private final McpConfigurationState standaloneMcpState;
   private final AiIntegrationHost host;
-  private final AiIntegrationEnvironment environment;
 
-  public AiAgentIntegrationStateObservedParams(AiIntegrationObservationTrigger trigger,
-    AiAgent agent,
+  public AiAgentIntegrationStateObservedParams(AiAgent agent,
     List<AiAgentDetectionSource> detectionSources,
     McpConfigurationState standaloneMcpState,
-    AiIntegrationHost host,
-    AiIntegrationEnvironment environment) {
-    this.trigger = trigger;
+    AiIntegrationHost host) {
     this.agent = agent;
     this.detectionSources = detectionSources;
     this.standaloneMcpState = standaloneMcpState;
     this.host = host;
-    this.environment = environment;
-  }
-
-  public AiIntegrationObservationTrigger getTrigger() {
-    return trigger;
   }
 
   public AiAgent getAgent() {
@@ -65,9 +55,5 @@ public class AiAgentIntegrationStateObservedParams {
 
   public AiIntegrationHost getHost() {
     return host;
-  }
-
-  public AiIntegrationEnvironment getEnvironment() {
-    return environment;
   }
 }

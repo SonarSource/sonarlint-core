@@ -64,19 +64,18 @@ public interface TelemetryRpcService {
   void aiIntegrationAction(AiIntegrationActionParams params);
 
   /**
-   * Report the single CLI installation once per eligible observation, independently of MCP inspection.
-   * INITIAL_LOAD applies once per opening of the integration experience, MANUAL_REFRESH to explicit user refresh,
-   * and POST_ACTION to a fresh observation after a setup attempt finishes. Do not report intermediate renders or
-   * background refreshes. Existing discovery and setup operations do not emit these events automatically.
+   * Report the single CLI installation once when the integration experience opens, independently of MCP inspection.
+   * Do not report intermediate renders or background refreshes. Existing discovery and setup operations do not
+   * emit this event automatically.
    */
   @JsonNotification
   void aiIntegrationCliStateObserved(AiIntegrationCliStateObservedParams params);
 
   /**
-   * Report each detected agent once per eligible observation (using the same triggers as CLI observations).
-   * Combine IDE and CLI detection sources in one report. The MCP state describes global configuration only:
-   * uninspected or unreadable configuration is UNKNOWN; NOT_CONFIGURED requires an inspection establishing absence.
-   * SLCORE emits each valid notification independently, including repeated observations.
+   * Report each detected agent once when the integration experience opens. Combine IDE and CLI detection sources
+   * in one report. The MCP state describes global configuration only: uninspected or unreadable configuration is
+   * UNKNOWN; NOT_CONFIGURED requires an inspection establishing absence. SLCORE emits each valid notification
+   * independently, including reports from later openings.
    */
   @JsonNotification
   void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params);
