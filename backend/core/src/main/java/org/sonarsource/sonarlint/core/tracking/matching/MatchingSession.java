@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
@@ -44,6 +46,7 @@ public class MatchingSession {
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
+  private final Set<UUID> newlyFoundIssueIds = ConcurrentHashMap.newKeySet();
   private long newIssuesFound = 0;
 
   public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
@@ -62,6 +65,43 @@ public class MatchingSession {
     } else {
       return matchWithKnownIssue(relativePath, rawIssue);
     }
+  }
+
+  public List<TrackedIssue> removeMatching(RawIssue rawIssue) {
+    var findingsPerFile = rawIssue.isSecurityHotspot() ? securityHotspotsPerFile : issuesPerFile;
+    var relativePath = rawIssue.getIdeRelativePath();
+    if (relativePath == null) {
+      return List.of();
+    }
+    var removed = new ArrayList<TrackedIssue>();
+    findingsPerFile.computeIfPresent(relativePath, (path, issues) -> {
+      var remaining = new ArrayList<TrackedIssue>();
+      for (var trackedIssue : issues) {
+        if (sameFinding(trackedIssue, rawIssue)) {
+          removed.add(trackedIssue);
+        } else {
+          remaining.add(trackedIssue);
+        }
+      }
+      return remaining;
+    });
+    removed.forEach(trackedIssue -> {
+      if (newlyFoundIssueIds.remove(trackedIssue.getId())) {
+        newIssuesFound--;
+      }
+    });
+    return removed;
+  }
+
+  private static boolean sameFinding(TrackedIssue trackedIssue, RawIssue rawIssue) {
+    if (!trackedIssue.getRuleKey().equals(rawIssue.getRuleKey())) {
+      return false;
+    }
+    if (!Objects.equals(trackedIssue.getFileUri(), rawIssue.getFileUri())) {
+      return false;
+    }
+    var trackedLine = trackedIssue.getLineWithHash() == null ? null : trackedIssue.getLineWithHash().getNumber();
+    return Objects.equals(trackedLine, rawIssue.getLine().orElse(null));
   }
 
   public TrackedIssue matchWithKnownSecurityHotspot(Path relativePath, RawIssue newSecurityHotspot) {
@@ -104,9 +144,11 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
-    newIssuesFound++;
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
-    return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
+    var trackedIssue = IssueMapper.toTrackedIssue(rawFinding, introductionDate);
+    newlyFoundIssueIds.add(trackedIssue.getId());
+    newIssuesFound++;
+    return trackedIssue;
   }
 
   public Map<Path, List<TrackedIssue>> getIssuesPerFile() {

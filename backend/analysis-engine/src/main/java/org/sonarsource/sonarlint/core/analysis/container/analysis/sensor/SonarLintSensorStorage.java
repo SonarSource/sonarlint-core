@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.Strings;
 import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.code.NewSignificantCode;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
@@ -35,11 +38,13 @@ import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
+import org.sonar.api.batch.sensor.issue.IssueResolution;
 import org.sonar.api.batch.sensor.issue.fix.QuickFix;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonar.api.issue.impact.Severity;
+import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
@@ -50,13 +55,18 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.TextRang
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssue;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintSensorStorage implements SensorStorage {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ActiveRules activeRules;
   private final IssueFilters filters;
   private final IssueListenerHolder issueListener;
   private final AnalysisResults analysisResult;
+  private final List<IssueResolution> issueResolutions = new ArrayList<>();
+  private final List<org.sonarsource.sonarlint.core.analysis.api.Issue> forwardedIssues = new ArrayList<>();
 
   public SonarLintSensorStorage(ActiveRules activeRules, IssueFilters filters, IssueListenerHolder issueListener, AnalysisResults analysisResult) {
     this.activeRules = activeRules;
@@ -78,7 +88,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
     var activeRule = activeRules.find(sonarLintIssue.ruleKey());
-    if ((activeRule == null) || noSonar(inputComponent, sonarLintIssue)) {
+    if ((activeRule == null) || noSonar(inputComponent, sonarLintIssue) || isResolved(sonarLintIssue)) {
       return;
     }
 
@@ -91,6 +101,7 @@ public class SonarLintSensorStorage implements SensorStorage {
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes, sonarLintIssue.ruleDescriptionContextKey());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
+      forwardedIssues.add(newIssue);
     }
   }
 
@@ -118,6 +129,41 @@ public class SonarLintSensorStorage implements SensorStorage {
       && textRange != null
       && ((SonarLintInputFile) inputComponent).hasNoSonarAt(textRange.start().line())
       && !Strings.CI.contains(issue.ruleKey().rule(), "nosonar");
+  }
+
+  private boolean isResolved(Issue issue) {
+    var location = issue.primaryLocation();
+    var inputComponent = location.inputComponent();
+    var textRange = location.textRange();
+    if (!inputComponent.isFile() || textRange == null) {
+      return false;
+    }
+    var inputFile = (InputFile) inputComponent;
+    var matched = issueResolutions.stream().anyMatch(resolution -> matches(resolution, inputFile.uri(), textRange.start().line(), issue.ruleKey()));
+    if (matched) {
+      LOG.debug("Issue {} on {}:{} ignored because it was resolved by a sensor", issue.ruleKey(), inputFile, textRange.start().line());
+    }
+    return matched;
+  }
+
+  private static boolean matches(IssueResolution resolution, org.sonarsource.sonarlint.core.analysis.api.Issue issue) {
+    var inputFile = issue.getInputFile();
+    var textRange = issue.getTextRange();
+    if (inputFile == null || textRange == null) {
+      return false;
+    }
+    return matches(resolution, inputFile.uri(), textRange.getStartLine(), issue.getRuleKey());
+  }
+
+  private static boolean matches(IssueResolution resolution, URI fileUri, int issueLine, RuleKey ruleKey) {
+    // Status is ignored: matching issues are always hidden in the IDE.
+    return resolution.inputFile().uri().equals(fileUri)
+      && resolution.ruleKeys().contains(ruleKey)
+      && coversLine(resolution.textRange(), issueLine);
+  }
+
+  private static boolean coversLine(TextRange resolutionRange, int issueLine) {
+    return issueLine >= resolutionRange.start().line() && issueLine <= resolutionRange.end().line();
   }
 
   private static List<org.sonarsource.sonarlint.core.analysis.api.Flow> mapFlows(List<Flow> flows) {
@@ -171,6 +217,21 @@ public class SonarLintSensorStorage implements SensorStorage {
   @Override
   public void store(AdHocRule adHocRule) {
     // NO-OP
+  }
+
+  @Override
+  public void store(IssueResolution issueResolution) {
+    issueResolutions.add(issueResolution);
+    var iterator = forwardedIssues.iterator();
+    while (iterator.hasNext()) {
+      var issue = iterator.next();
+      if (matches(issueResolution, issue)) {
+        LOG.debug("Issue {} on {}:{} retracted because it was resolved by a sensor", issue.getRuleKey(), issue.getInputFile(),
+          issue.getTextRange().getStartLine());
+        issueListener.retract(issue);
+        iterator.remove();
+      }
+    }
   }
 
 }
