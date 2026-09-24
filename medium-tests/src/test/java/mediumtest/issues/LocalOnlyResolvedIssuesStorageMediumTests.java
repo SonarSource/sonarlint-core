@@ -39,7 +39,7 @@ class LocalOnlyResolvedIssuesStorageMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
-        .withServerVersion("9.8"))
+        .withServerVersion("2025.1"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
         storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(Instant.now().minus(1, ChronoUnit.MINUTES).minus(7, ChronoUnit.DAYS))))
       .start();

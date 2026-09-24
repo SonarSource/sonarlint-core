@@ -99,7 +99,7 @@ class RulesInConnectedModeMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
       .withStorage(CONNECTION_ID,
         s -> s
-          .withServerVersion("9.7")
+          .withServerVersion("2025.1")
           .withPlugin("php", activeRulesDumpingPlugin, TestPlugin.PHP.getHash())
           .withProject(JAVA_MODULE_KEY, project -> project
             .withMainBranch("main")
