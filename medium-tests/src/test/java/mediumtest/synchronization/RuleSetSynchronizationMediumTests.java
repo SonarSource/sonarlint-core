@@ -47,7 +47,7 @@ class RuleSetSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_pull_active_ruleset_from_server(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("ruleKey", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject("projectKey", project -> project.withQualityProfile("qpKey").withBranch("main"))
       .start();
@@ -70,7 +70,7 @@ class RuleSetSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_not_pull_when_server_is_down(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer("10.3")
+    var server = harness.newFakeSonarQubeServer("2025.1")
       .withStatus(ServerFixture.ServerStatus.DOWN)
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("ruleKey", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject("projectKey", project -> project.withQualityProfile("qpKey").withBranch("main"))
