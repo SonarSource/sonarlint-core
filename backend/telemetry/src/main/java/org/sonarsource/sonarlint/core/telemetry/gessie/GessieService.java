@@ -23,6 +23,7 @@ import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -35,9 +36,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegratio
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
-import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiAgentIntegrationStateObservedPayload;
-import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiIntegrationActionPayload;
-import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiIntegrationCliStateObservedPayload;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
@@ -75,7 +73,7 @@ public class GessieService {
     } else if (failureCategory == null) {
       failureCategory = AiIntegrationFailureCategory.UNKNOWN;
     }
-    emit("Analytics.Editor.IdeAiIntegrationAction", new AiIntegrationActionPayload(params.getAction(), params.getStatus(), failureCategory,
+    emit("Analytics.Editor.IdeAiIntegrationAction", new AiIntegrationActionParams(params.getAction(), params.getStatus(), failureCategory,
       params.getAgent(), params.getScope(), params.getHost(), params.getEnvironment()));
   }
 
@@ -84,18 +82,18 @@ public class GessieService {
       || params.getVortexAvailable() == null || params.getHost() == null || params.getEnvironment() == null) {
       return;
     }
-    emit("Analytics.Editor.IdeAiIntegrationCliStateObserved", new AiIntegrationCliStateObservedPayload(params.getTrigger(), params.getInstallationStatus(),
-      params.getAuthenticationStatus(), params.getVortexAvailable(), params.getHost(), params.getEnvironment()));
+    emit("Analytics.Editor.IdeAiIntegrationCliStateObserved", params);
   }
 
   public void aiAgentIntegrationStateObserved(@Nullable AiAgentIntegrationStateObservedParams params) {
     if (params == null || params.getTrigger() == null || params.getAgent() == null || params.getStandaloneMcpState() == null
       || params.getHost() == null || params.getEnvironment() == null || params.getDetectionSources() == null || params.getDetectionSources().isEmpty()
-      || params.getDetectionSources().stream().anyMatch(java.util.Objects::isNull)) {
+      || params.getDetectionSources().stream().anyMatch(Objects::isNull)) {
       return;
     }
+    // EnumSet iterates in AiAgentDetectionSource declaration order, not the order reported by the client.
     var sources = List.copyOf(EnumSet.copyOf(params.getDetectionSources()));
-    emit("Analytics.Editor.IdeAiAgentIntegrationStateObserved", new AiAgentIntegrationStateObservedPayload(params.getTrigger(), params.getAgent(), sources,
+    emit("Analytics.Editor.IdeAiAgentIntegrationStateObserved", new AiAgentIntegrationStateObservedParams(params.getTrigger(), params.getAgent(), sources,
       params.getStandaloneMcpState(), params.getHost(), params.getEnvironment()));
   }
 
