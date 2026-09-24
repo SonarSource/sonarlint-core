@@ -24,7 +24,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -40,15 +39,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationSt
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationState;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdateParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiAgentIntegrationStateObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationAction;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationEnvironment;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationObservationTrigger;
 import org.sonarsource.sonarlint.core.telemetry.gessie.GessieSpringConfig;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -58,8 +54,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 class AiIntegrationTelemetryMediumTests {
   @RegisterExtension
@@ -103,50 +97,19 @@ class AiIntegrationTelemetryMediumTests {
       payload.remove("ide_installation_id");
     }
     assertThat(action.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"action":"INSTALL_CLI","status":"STARTED","failure_category":null,"agent":null,"scope":null,"host":"VSCODE","environment":"LOCAL"}
+      {"action":"INSTALL_CLI","status":"STARTED","failure_category":null,"agent":null,"host":"VSCODE"}
       """));
     assertThat(cli.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"trigger":"INITIAL_LOAD","installation_status":"INSTALLED","authentication_status":"AUTHENTICATED",
-      "vortex_available":true,"host":"VSCODE","environment":"LOCAL"}
+      {"installation_status":"INSTALLED","authentication_status":"AUTHENTICATED",
+      "host":"VSCODE"}
       """));
     assertThat(agent.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"trigger":"POST_ACTION","agent":"CURSOR","detection_sources":["IDE","CLI"],"standalone_mcp_state":"UNKNOWN","host":"VSCODE","environment":"LOCAL"}
+      {"agent":"CURSOR","detection_sources":["IDE","CLI"],"standalone_mcp_state":"UNKNOWN","host":"VSCODE"}
       """));
   }
 
   @SonarLintTest
-  void gessie_only_should_obey_runtime_consent_without_fetching_legacy_attributes(SonarLintTestHarness harness) {
-    var client = harness.newFakeClient().build();
-    var backend = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl())
-      .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now().minusDays(2), 1, false)).start(client);
-    var telemetry = backend.getTelemetryService();
-    assertThat(telemetry.getStatus().join().isEnabled()).isFalse();
-    reportAll(telemetry);
-    assertNoAiEvents();
-
-    telemetry.enableTelemetry();
-    await().untilAsserted(() -> assertThat(telemetry.getStatus().join().isEnabled()).isTrue());
-    reportAll(telemetry);
-    await().untilAsserted(() -> assertThat(aiEvents()).hasSize(3));
-
-    telemetry.disableTelemetry();
-    await().untilAsserted(() -> assertThat(telemetry.getStatus().join().isEnabled()).isFalse());
-    reportAll(telemetry);
-    await().during(Duration.ofMillis(200)).untilAsserted(() -> assertThat(aiEvents()).hasSize(3));
-    assertThat(backend.telemetryFileContent().enabled()).isFalse();
-    verify(client, never()).getTelemetryLiveAttributes();
-  }
-
-  @SonarLintTest
-  void should_drop_reports_without_gessie_capability(SonarLintTestHarness harness) {
-    System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_ENDPOINT, endpoint.baseUrl());
-    var backend = harness.newBackend().start();
-    reportAll(backend.getTelemetryService());
-    await().during(Duration.ofMillis(200)).untilAsserted(() -> assertThat(endpoint.getAllServeEvents()).isEmpty());
-  }
-
-  @SonarLintTest
-  void should_emit_repeated_reports_independently_of_functional_operations(SonarLintTestHarness harness) {
+  void should_emit_each_load_report_independently_of_functional_operations(SonarLintTestHarness harness) {
     var backend = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl()).start();
     var ai = backend.getAiAgentService();
     ai.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE, List.of(AiAgent.CURSOR), AiIntegrationScope.GLOBAL, null)).join();
@@ -165,36 +128,34 @@ class AiIntegrationTelemetryMediumTests {
   }
 
   @SonarLintTest
-  void should_drop_malformed_deserialized_reports_and_accept_explicit_false(SonarLintTestHarness harness) {
+  void should_drop_malformed_deserialized_reports_and_accept_valid_cli_observation(SonarLintTestHarness harness) {
     var backend = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl()).start();
     var telemetry = backend.getTelemetryService();
     var gson = new Gson();
     telemetry.aiIntegrationAction(gson.fromJson("{}", AiIntegrationActionParams.class));
     telemetry.aiIntegrationCliStateObserved(gson.fromJson("""
-      {"trigger":"INITIAL_LOAD","installationStatus":"INSTALLED","authenticationStatus":"AUTHENTICATED","host":"VSCODE","environment":"LOCAL"}
+      {"installationStatus":"INSTALLED","host":"VSCODE"}
       """, AiIntegrationCliStateObservedParams.class));
     telemetry.aiAgentIntegrationStateObserved(gson.fromJson("""
-      {"trigger":"INITIAL_LOAD","agent":"CURSOR","detectionSources":[null],"standaloneMcpState":"UNKNOWN","host":"VSCODE","environment":"LOCAL"}
+      {"agent":"CURSOR","detectionSources":[null],"standaloneMcpState":"UNKNOWN","host":"VSCODE"}
       """, AiAgentIntegrationStateObservedParams.class));
     assertNoAiEvents();
-    telemetry.aiIntegrationCliStateObserved(new AiIntegrationCliStateObservedParams(AiIntegrationObservationTrigger.MANUAL_REFRESH,
-      CliInstallationStatus.NOT_INSTALLED, CliAuthenticationStatus.UNKNOWN, false, AiIntegrationHost.VSCODE, AiIntegrationEnvironment.LOCAL));
+    telemetry.aiIntegrationCliStateObserved(new AiIntegrationCliStateObservedParams(
+      CliInstallationStatus.NOT_INSTALLED, CliAuthenticationStatus.UNKNOWN, AiIntegrationHost.VSCODE));
     await().untilAsserted(() -> assertThat(aiEvents()).hasSize(1));
-    assertThat(event("IdeAiIntegrationCliStateObserved").getAsJsonObject("event_payload").get("vortex_available").getAsBoolean()).isFalse();
   }
 
   private static void reportAll(TelemetryRpcService telemetry) {
-    telemetry.aiIntegrationAction(new AiIntegrationActionParams(AiIntegrationAction.INSTALL_CLI, AiIntegrationActionStatus.STARTED, null, null, null,
-      AiIntegrationHost.VSCODE, AiIntegrationEnvironment.LOCAL));
+    telemetry.aiIntegrationAction(new AiIntegrationActionParams(AiIntegrationAction.INSTALL_CLI, AiIntegrationActionStatus.STARTED, null, null, AiIntegrationHost.VSCODE));
     telemetry.aiIntegrationCliStateObserved(cliObservation());
-    telemetry.aiAgentIntegrationStateObserved(new AiAgentIntegrationStateObservedParams(AiIntegrationObservationTrigger.POST_ACTION, AiAgent.CURSOR,
+    telemetry.aiAgentIntegrationStateObserved(new AiAgentIntegrationStateObservedParams(AiAgent.CURSOR,
       List.of(AiAgentDetectionSource.CLI, AiAgentDetectionSource.IDE, AiAgentDetectionSource.CLI), McpConfigurationState.UNKNOWN,
-      AiIntegrationHost.VSCODE, AiIntegrationEnvironment.LOCAL));
+      AiIntegrationHost.VSCODE));
   }
 
   private static AiIntegrationCliStateObservedParams cliObservation() {
-    return new AiIntegrationCliStateObservedParams(AiIntegrationObservationTrigger.INITIAL_LOAD, CliInstallationStatus.INSTALLED,
-      CliAuthenticationStatus.AUTHENTICATED, true, AiIntegrationHost.VSCODE, AiIntegrationEnvironment.LOCAL);
+    return new AiIntegrationCliStateObservedParams(CliInstallationStatus.INSTALLED,
+      CliAuthenticationStatus.AUTHENTICATED, AiIntegrationHost.VSCODE);
   }
 
   private static void assertNoAiEvents() {

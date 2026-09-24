@@ -38,14 +38,13 @@ final class SonarQubeCliStatusDecoder {
     if (tree == null || !tree.isObject()) {
       return CliStatus.unknown();
     }
-    var vortexAvailable = isVortexAvailable(tree.get("vortex"));
     var auth = tree.get("auth");
     var version = stringValue(tree, "version");
     if (auth == null || !auth.isObject()) {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, version, null, null, vortexAvailable);
+      return new CliStatus(CliAuthenticationStatus.UNKNOWN, version, null, null);
     }
     if ("unauthenticated".equals(stringValue(auth, "status").orElse(null))) {
-      return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null, vortexAvailable);
+      return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null);
     }
 
     var authenticationStatus = switch (stringValue(auth, "token").orElse(null)) {
@@ -56,17 +55,7 @@ final class SonarQubeCliStatusDecoder {
       case null, default -> CliAuthenticationStatus.UNKNOWN;
     };
     return new CliStatus(authenticationStatus, version,
-      stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null), vortexAvailable);
-  }
-
-  private static boolean isVortexAvailable(@Nullable JsonNode vortex) {
-    if (vortex == null || !vortex.isObject()) {
-      return false;
-    }
-    var applicable = vortex.get("applicable");
-    var status = vortex.get("status");
-    return applicable != null && applicable.isBoolean() && applicable.booleanValue()
-      && status != null && status.isTextual() && ("enabled".equals(status.textValue()) || "over_consumption".equals(status.textValue()));
+      stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null));
   }
 
   private static Optional<String> stringValue(JsonNode object, String property) {
@@ -75,13 +64,13 @@ final class SonarQubeCliStatusDecoder {
   }
 
   record CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version,
-                   @Nullable String serverUrl, @Nullable String organization, boolean vortexAvailable) {
+                   @Nullable String serverUrl, @Nullable String organization) {
     static CliStatus unknown() {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null, false);
+      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
     }
 
     static CliStatus unavailable() {
-      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null, false);
+      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null);
     }
   }
 }
