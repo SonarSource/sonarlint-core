@@ -25,6 +25,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiAgentIntegrationStateObservedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
@@ -36,6 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.telemetry.gessie.GessieService;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
@@ -56,6 +60,21 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void disableTelemetry() {
     notify(() -> getBean(TelemetryService.class).disableTelemetry());
+  }
+
+  @Override
+  public void aiIntegrationAction(AiIntegrationActionParams params) {
+    notify(() -> getBean(GessieService.class).aiIntegrationAction(params));
+  }
+
+  @Override
+  public void aiIntegrationCliStateObserved(AiIntegrationCliStateObservedParams params) {
+    notify(() -> getBean(GessieService.class).aiIntegrationCliStateObserved(params));
+  }
+
+  @Override
+  public void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params) {
+    notify(() -> getBean(GessieService.class).aiAgentIntegrationStateObserved(params));
   }
 
   @Override
