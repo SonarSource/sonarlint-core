@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 import com.google.gson.annotations.JsonAdapter;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.StrictBooleanTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
@@ -29,6 +30,7 @@ public class AiIntegrationCliStateObservedParams {
   private final AiIntegrationObservationTrigger trigger;
   private final CliInstallationStatus installationStatus;
   private final CliAuthenticationStatus authenticationStatus;
+  @Nullable
   @JsonAdapter(StrictBooleanTypeAdapter.class)
   private final Boolean vortexAvailable;
   private final AiIntegrationHost host;
@@ -37,7 +39,7 @@ public class AiIntegrationCliStateObservedParams {
   public AiIntegrationCliStateObservedParams(AiIntegrationObservationTrigger trigger,
     CliInstallationStatus installationStatus,
     CliAuthenticationStatus authenticationStatus,
-    Boolean vortexAvailable,
+    @Nullable Boolean vortexAvailable,
     AiIntegrationHost host,
     AiIntegrationEnvironment environment) {
     this.trigger = trigger;
@@ -60,6 +62,7 @@ public class AiIntegrationCliStateObservedParams {
     return authenticationStatus;
   }
 
+  @Nullable
   public Boolean getVortexAvailable() {
     return vortexAvailable;
   }

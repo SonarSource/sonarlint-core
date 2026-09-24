@@ -76,16 +76,12 @@ final class SonarQubeCliStatusDecoder {
 
   record CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version,
                    @Nullable String serverUrl, @Nullable String organization, boolean vortexAvailable) {
-    CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version, @Nullable String serverUrl, @Nullable String organization) {
-      this(authenticationStatus, version, serverUrl, organization, false);
-    }
-
     static CliStatus unknown() {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
+      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null, false);
     }
 
     static CliStatus unavailable() {
-      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null);
+      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null, false);
     }
   }
 }
