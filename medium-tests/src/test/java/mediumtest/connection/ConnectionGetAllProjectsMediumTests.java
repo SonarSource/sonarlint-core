@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.S
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class ConnectionGetAllProjectsMediumTests {
 
@@ -90,6 +92,21 @@ class ConnectionGetAllProjectsMediumTests {
       .withProject("mycompany:project-foo2", project -> project.withName("My Company Project Foo 2"))
       .withProject("mycompany:project-bar", project -> project.withName("My Company Project Bar"))
       .start();
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&q=My&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-bar").setName("My Company Project Bar"))
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-foo1").setName("My Company Project Foo 1"))
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-foo2").setName("My Company Project Foo 2"))
+        .build()))));
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&q=Foo&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-foo1").setName("My Company Project Foo 1"))
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-foo2").setName("My Company Project Foo 2"))
+        .build()))));
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&q=project-bar&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-bar").setName("My Company Project Bar"))
+        .build()))));
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .start();
@@ -118,6 +135,69 @@ class ConnectionGetAllProjectsMediumTests {
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsExactly(
         tuple("mycompany:project-bar", "My Company Project Bar"));
+  }
+
+  @SonarLintTest
+  void it_should_find_an_exact_project_key_without_loading_the_project_catalog(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
+      .withProject("outside:catalog", project -> project.withName("Outside catalog"))
+      .start();
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&q=outside%3Acatalog&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder().build()))));
+    server.getMockServer().stubFor(get("/api/components/show?component=outside%3Acatalog")
+      .willReturn(aResponse().withHeader("Content-Type", "application/json")
+        .withBody("{\"component\":{\"key\":\"outside:catalog\",\"name\":\"Outside catalog\",\"qualifier\":\"TRK\"}}")));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .start();
+
+    var response = backend.getConnectionService()
+      .fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "outside:catalog"))
+      .join();
+
+    assertThat(response.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(tuple("outside:catalog", "Outside catalog"));
+    server.getMockServer().verify(0, getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")));
+  }
+
+  @SonarLintTest
+  void it_should_find_projects_outside_the_catalog_on_sonarcloud_by_name_and_exact_key(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("myOrg", organization -> organization
+        .withProject("outside:cloud", project -> project.withName("Outside Cloud Catalog")))
+      .start();
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&q=Outside&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder().setKey("outside:cloud").setName("Outside Cloud Catalog"))
+        .build()))));
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&q=outside%3Acloud&p=1&ps=10")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder().build()))));
+    server.getMockServer().stubFor(get("/api/components/show?component=outside%3Acloud")
+      .willReturn(aResponse().withHeader("Content-Type", "application/json")
+        .withBody("{\"component\":{\"key\":\"outside:cloud\",\"name\":\"Outside Cloud Catalog\",\"qualifier\":\"TRK\",\"organization\":\"myOrg\"}}")));
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "myOrg")
+      .start();
+
+    var byName = backend.getConnectionService()
+      .fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "Outside"))
+      .join();
+    var byExactKey = backend.getConnectionService()
+      .fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "outside:cloud"))
+      .join();
+
+    assertThat(byName.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(tuple("outside:cloud", "Outside Cloud Catalog"));
+    assertThat(byExactKey.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(tuple("outside:cloud", "Outside Cloud Catalog"));
+    server.getMockServer().verify(0, getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1")));
+    server.getMockServer().verify(1, getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&q=Outside&p=1&ps=10")));
+    server.getMockServer().verify(1, getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&q=outside%3Acloud&p=1&ps=10")));
+    server.getMockServer().verify(1, getRequestedFor(urlEqualTo("/api/components/show?component=outside%3Acloud")));
   }
 
   @SonarLintTest

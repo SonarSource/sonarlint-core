@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.SonarQubeClient;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
@@ -35,11 +36,14 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SonarProjectsCacheTests {
@@ -56,12 +60,16 @@ class SonarProjectsCacheTests {
   public static final ServerProject PROJECT_2 = new ServerProject(PROJECT_KEY_2, PROJECT_NAME_2, false);
   private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
+  private final SonarQubeClient sonarQubeClient = mock(SonarQubeClient.class);
   private final SonarProjectsCache underTest = new SonarProjectsCache(sonarQubeClientManager);
 
   @BeforeEach
   void setup() {
     when(sonarQubeClientManager.withActiveClientAndReturn(any(), any())).thenAnswer(
       invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi)));
+    when(sonarQubeClientManager.getValidClientOrThrow(any())).thenReturn(sonarQubeClient);
+    when(sonarQubeClient.withClientApiAndReturnThrowing(any())).thenAnswer(
+      invocation -> ((Function<ServerApi, Object>) invocation.getArguments()[0]).apply(serverApi));
   }
 
   @Test
@@ -192,19 +200,93 @@ class SonarProjectsCacheTests {
   }
 
   @Test
-  void fuzzySearchProjects_should_search_by_both_key_and_name_splitting_by_underscore() {
-    var project1 = new ServerProject("mySearchTerm", "project", false);
-    var project2 = new ServerProject("key", "searchTerm__00", false);
-    var projectNotFound = new ServerProject("SonarSource_peachee-dotnet", "DriAutomation.NET", false);
-    var projectFound = new ServerProject("SonarSource_sonarsource-infra-peach", "sonarsource-infra-peach", false);
-    when(serverApi.component().getAllProjects(any()))
-      .thenReturn(List.of(project1, project2, projectNotFound, projectFound));
+  void fuzzySearchProjects_should_not_query_server_for_blank_search() {
+    assertThat(underTest.fuzzySearchProjects(SQ_1, "  ", new SonarLintCancelMonitor())).isEmpty();
 
-    var actual = underTest.fuzzySearchProjects(SQ_1, "peach", new SonarLintCancelMonitor());
+    verifyNoInteractions(sonarQubeClientManager);
+  }
 
-    assertThat(actual).containsExactlyInAnyOrder(
-      new SonarProjectDto("SonarSource_peachee-dotnet", "DriAutomation.NET"),
-      new SonarProjectDto("SonarSource_sonarsource-infra-peach", "sonarsource-infra-peach")
-    );
+  @Test
+  void fuzzySearchProjects_should_preserve_server_order_promote_exact_key_deduplicate_and_limit_results() {
+    var serverResults = new java.util.ArrayList<ServerProject>();
+    for (var i = 0; i < 10; i++) {
+      serverResults.add(new ServerProject("key" + i, "Project " + i, false));
+    }
+    var exactProject = new ServerProject("needle", "Exact project", false);
+    serverResults.set(4, exactProject);
+    serverResults.set(8, exactProject);
+    when(serverApi.component().searchProjectsByNameOrKey(eq("needle"), any())).thenReturn(serverResults);
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, " needle ", new SonarLintCancelMonitor());
+
+    assertThat(actual).extracting(SonarProjectDto::getKey)
+      .containsExactly("needle", "key0", "key1", "key2", "key3", "key5", "key6", "key7", "key9");
+    verify(serverApi.component(), never()).getProjectByExactKey(any(), any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_prepend_exact_key_lookup_and_cap_results() {
+    var serverResults = java.util.stream.IntStream.range(0, 10)
+      .mapToObj(i -> new ServerProject("key" + i, "Project " + i, false))
+      .toList();
+    when(serverApi.component().searchProjectsByNameOrKey(eq("needle"), any())).thenReturn(serverResults);
+    when(serverApi.component().getProjectByExactKey(eq("needle"), any())).thenReturn(Optional.of(new ServerProject("needle", "Exact project", false)));
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor());
+
+    assertThat(actual).extracting(SonarProjectDto::getKey)
+      .containsExactly("needle", "key0", "key1", "key2", "key3", "key4", "key5", "key6", "key7", "key8");
+  }
+
+  @Test
+  void fuzzySearchProjects_should_search_by_one_unicode_code_point() {
+    when(serverApi.component().searchProjectsByNameOrKey(eq("😀"), any()))
+      .thenReturn(List.of(new ServerProject("emoji-project", "😀 project", false)));
+    when(serverApi.component().getProjectByExactKey(eq("😀"), any())).thenReturn(Optional.empty());
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "😀", new SonarLintCancelMonitor());
+
+    assertThat(actual).containsExactly(new SonarProjectDto("emoji-project", "😀 project"));
+    verify(serverApi.component()).searchProjectsByNameOrKey(eq("😀"), any());
+    verify(serverApi.component()).getProjectByExactKey(eq("😀"), any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_not_cache_failures() {
+    when(serverApi.component().searchProjectsByNameOrKey(eq("needle"), any()))
+      .thenThrow(new RuntimeException("temporary failure"))
+      .thenReturn(List.of(new ServerProject("needle", "Project", false)));
+
+    assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor()))
+      .isInstanceOf(RuntimeException.class)
+      .hasMessage("temporary failure");
+
+    assertThat(underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor()))
+      .containsExactly(new SonarProjectDto("needle", "Project"));
+    verify(serverApi.component(), times(2)).searchProjectsByNameOrKey(eq("needle"), any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_translate_authentication_failure() {
+    org.mockito.Mockito.doThrow(new org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException("401"))
+      .when(sonarQubeClient).withClientApiAndReturnThrowing(any());
+
+    assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor()))
+      .isInstanceOf(org.eclipse.lsp4j.jsonrpc.ResponseErrorException.class)
+      .satisfies(error -> assertThat(((org.eclipse.lsp4j.jsonrpc.ResponseErrorException) error).getResponseError().getCode())
+        .isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.UNAUTHORIZED));
+  }
+
+  @Test
+  void fuzzySearchProjects_should_stop_before_exact_lookup_when_cancelled() {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    when(serverApi.component().searchProjectsByNameOrKey(eq("needle"), any())).thenAnswer(invocation -> {
+      cancelMonitor.cancel();
+      return List.of();
+    });
+
+    assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", cancelMonitor))
+      .isInstanceOf(java.util.concurrent.CancellationException.class);
+    verify(serverApi.component(), never()).getProjectByExactKey(any(), any());
   }
 }
