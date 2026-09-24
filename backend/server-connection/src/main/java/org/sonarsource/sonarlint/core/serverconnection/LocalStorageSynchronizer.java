@@ -75,8 +75,7 @@ public class LocalStorageSynchronizer {
     }
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
-    var version = storage.serverInfo().read().orElseThrow().version();
-    serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
+    serverApi.newCodeApi().getNewCodeDefinition(projectKey, cancelMonitor)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;
   }

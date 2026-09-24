@@ -89,7 +89,7 @@ class ServerSentEventsMediumTests {
   @BeforeEach
   void init() {
     sonarServerMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": " +
         "\"UP\"}")));
   }
 
@@ -557,7 +557,7 @@ class ServerSentEventsMediumTests {
       when(fakeClient.matchSonarProjectBranch(eq("configScope"), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var projectKey = "projectKey";
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithTaintIssues = harness.newFakeSonarQubeServer("10.0")
+      var serverWithTaintIssues = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch(branchName,

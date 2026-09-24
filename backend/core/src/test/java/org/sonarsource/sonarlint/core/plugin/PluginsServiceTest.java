@@ -21,7 +21,8 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -146,13 +147,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseCSharpAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseCSharpAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -210,13 +211,13 @@ class PluginsServiceTest {
   }
 
   @Test
-  void shouldUseEnterpriseVbAnalyzer_connectionIsToServer_Older_Than_10_8_returnsTrue() {
+  void shouldUseEnterpriseVbAnalyzer_connectionIsToServerWithoutEnterprisePlugin_returnsFalse() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
 
     var result = underTest.shouldUseEnterpriseVbAnalyzer(connectionId);
 
-    assertThat(result).isTrue();
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -289,10 +290,12 @@ class PluginsServiceTest {
   }
 
   @Test
-  void getPlugins_extraProperties_connectionIsToServer_Older_Than_10_8_ReturnsEnterpriseProperties() {
+  void getPlugins_extraProperties_connectionIsToServerWithEnterprisePlugins_ReturnsEnterpriseProperties() {
     var connectionId = "SQS";
-    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("10.7"));
-    mockPlugin(PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath);
+    mockConnection(connectionId, ConnectionKind.SONARQUBE, Version.create("2025.1"));
+    mockPlugins(Map.of(
+      PluginsService.CSHARP_ENTERPRISE_PLUGIN_ID, enterprisePath,
+      PluginsService.VBNET_ENTERPRISE_PLUGIN_ID, enterprisePath));
     mockEnabledLanguages(Language.CS, Language.VBNET);
 
     var props = underTest.getPlugins(connectionId).extraProperties();
@@ -398,11 +401,23 @@ class PluginsServiceTest {
   }
 
   private void mockPlugin(String pluginKey, @Nullable Path jarPath) {
-    var plugin = mock(StoredPlugin.class);
-    when(plugin.getKey()).thenReturn(pluginKey);
-    when(plugin.getJarPath()).thenReturn(jarPath);
-    when(pluginStorage.getStoredPlugins()).thenReturn(List.of(plugin));
-    when(pluginStorage.getStoredPluginsByKey()).thenReturn(Map.of(pluginKey, plugin));
+    var plugins = new HashMap<String, Path>();
+    plugins.put(pluginKey, jarPath);
+    mockPlugins(plugins);
+  }
+
+  private void mockPlugins(Map<String, Path> plugins) {
+    var storedPlugins = new ArrayList<StoredPlugin>();
+    var storedPluginsByKey = new HashMap<String, StoredPlugin>();
+    plugins.forEach((pluginKey, jarPath) -> {
+      var plugin = mock(StoredPlugin.class);
+      when(plugin.getKey()).thenReturn(pluginKey);
+      when(plugin.getJarPath()).thenReturn(jarPath);
+      storedPlugins.add(plugin);
+      storedPluginsByKey.put(pluginKey, plugin);
+    });
+    when(pluginStorage.getStoredPlugins()).thenReturn(storedPlugins);
+    when(pluginStorage.getStoredPluginsByKey()).thenReturn(storedPluginsByKey);
   }
 
   private void mockConnectionVersion(Version version) {

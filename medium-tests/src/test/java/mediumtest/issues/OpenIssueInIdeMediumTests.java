@@ -486,7 +486,7 @@ class OpenIssueInIdeMediumTests {
   }
 
   private static ServerFixture.AbstractServerBuilder fakeServerWithIssue(SonarLintTestHarness harness) {
-    return harness.newFakeSonarQubeServer("10.2")
+    return harness.newFakeSonarQubeServer("2025.1")
       .withProject(PROJECT_KEY,
         project -> {
           project.withProjectName(SONAR_PROJECT_NAME).withPullRequest("1234",

@@ -70,7 +70,7 @@ class IssueEventsMediumTests {
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_resolution(SonarLintTestHarness harness) {
       var projectKey = "projectKey";
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch("branchName"))
@@ -104,7 +104,7 @@ class IssueEventsMediumTests {
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_impacts(SonarLintTestHarness harness) {
       var projectKey = "projectKey";
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch("branchName"))
@@ -141,7 +141,7 @@ class IssueEventsMediumTests {
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_impacts_when_it_does_not_exist_in_storage(SonarLintTestHarness harness) {
       var projectKey = "projectKey";
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch("branchName"))
@@ -176,7 +176,7 @@ class IssueEventsMediumTests {
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_impacts_on_different_software_quality(SonarLintTestHarness harness) {
       var projectKey = "projectKey";
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch("branchName"))
@@ -212,7 +212,7 @@ class IssueEventsMediumTests {
 
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_severity(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -246,7 +246,7 @@ class IssueEventsMediumTests {
 
     @SonarLintTest
     void it_should_update_issue_in_storage_with_new_type(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -293,7 +293,7 @@ class IssueEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithIssues = harness.newFakeSonarQubeServer("10.4")
+      var serverWithIssues = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2094", activeRule -> activeRule
           .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
@@ -356,7 +356,7 @@ class IssueEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithIssues = harness.newFakeSonarQubeServer("10.4")
+      var serverWithIssues = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2094", activeRule -> activeRule
           .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
@@ -415,7 +415,7 @@ class IssueEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithIssues = harness.newFakeSonarQubeServer("10.4")
+      var serverWithIssues = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2094", activeRule -> activeRule
           .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
@@ -480,7 +480,7 @@ class IssueEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithIssues = harness.newFakeSonarQubeServer("10.4")
+      var serverWithIssues = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2094", activeRule -> activeRule
           .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
