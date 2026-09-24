@@ -577,7 +577,6 @@ class MonitoringMediumTests {
 
   private static void awaitTelemetryStatus(SonarLintTestRpcServer backend, boolean enabled) {
     await().atMost(10, TimeUnit.SECONDS)
-      .pollInterval(100, TimeUnit.MILLISECONDS)
       .untilAsserted(() -> {
         assertThat(backend.getTelemetryService().getStatus().join().isEnabled()).isEqualTo(enabled);
         assertThat(Sentry.isEnabled()).isEqualTo(enabled);
