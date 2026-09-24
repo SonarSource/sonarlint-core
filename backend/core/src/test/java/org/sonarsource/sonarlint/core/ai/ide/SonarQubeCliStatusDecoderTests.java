@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.ai.ide;
 
 import java.io.IOException;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -74,8 +73,7 @@ class SonarQubeCliStatusDecoderTests {
   }
 
   @Test
-  void should_preserve_constructor_compatibility_and_unavailable_defaults() {
-    assertThat(new SonarQubeCliStatusDecoder.CliStatus(CliAuthenticationStatus.AUTHENTICATED, Optional.of("1"), null, null).vortexAvailable()).isFalse();
+  void should_default_unavailable_vortex_to_false() {
     assertThat(SonarQubeCliStatusDecoder.CliStatus.unavailable().vortexAvailable()).isFalse();
     assertThat(SonarQubeCliStatusDecoder.CliStatus.unknown().vortexAvailable()).isFalse();
     assertThat(new SonarQubeCliState(CliInstallationStatus.INSTALLED, CliAuthenticationStatus.AUTHENTICATED, null, null, null, null).isVortexAvailable()).isFalse();
