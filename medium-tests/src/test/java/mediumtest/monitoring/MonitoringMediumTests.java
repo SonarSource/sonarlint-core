@@ -287,14 +287,10 @@ class MonitoringMediumTests {
     assertThat(Sentry.isEnabled()).isTrue();
 
     backend.getTelemetryService().disableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isFalse());
+    awaitTelemetryStatus(backend, false);
 
     backend.getTelemetryService().enableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isTrue());
-
-    assertThat(Sentry.isEnabled()).isTrue();
+    awaitTelemetryStatus(backend, true);
   }
 
   @SonarLintTest
@@ -312,16 +308,10 @@ class MonitoringMediumTests {
     assertThat(Sentry.isEnabled()).isTrue();
 
     backend.getTelemetryService().disableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isFalse());
-
-    assertThat(Sentry.isEnabled()).isFalse();
+    awaitTelemetryStatus(backend, false);
 
     backend.getTelemetryService().enableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isTrue());
-
-    assertThat(Sentry.isEnabled()).isTrue();
+    awaitTelemetryStatus(backend, true);
   }
 
   @SonarLintTest
@@ -586,10 +576,9 @@ class MonitoringMediumTests {
   }
 
   private static void awaitTelemetryStatus(SonarLintTestRpcServer backend, boolean enabled) {
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> {
-        assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isEqualTo(enabled);
-        assertThat(Sentry.isEnabled()).isEqualTo(enabled);
-      });
+    await().untilAsserted(() -> {
+      assertThat(backend.getTelemetryService().getStatus().join().isEnabled()).isEqualTo(enabled);
+      assertThat(Sentry.isEnabled()).isEqualTo(enabled);
+    });
   }
 }
