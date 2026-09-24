@@ -53,6 +53,17 @@ class VersionUtilsTests {
   }
 
   @Test
+  void minimal_supported_version_should_use_matching_numbering_system_when_minimum_is_raised() {
+    var minimalShort = Version.create("26.1");
+    var minimalFull = Version.create("2026.1");
+
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("2025.1"), minimalShort, minimalFull)).isFalse();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("25.1"), minimalShort, minimalFull)).isFalse();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("2026.1"), minimalShort, minimalFull)).isTrue();
+    assertThat(VersionUtils.satisfiesMinimalSupportedVersion(Version.create("26.1"), minimalShort, minimalFull)).isTrue();
+  }
+
+  @Test
   void grace_period_should_be_false_if_connected_outdated_version() {
     assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("5.9"))).isFalse();
     assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("9.8"))).isFalse();

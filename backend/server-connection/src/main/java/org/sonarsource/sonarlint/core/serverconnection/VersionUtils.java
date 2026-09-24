@@ -33,8 +33,18 @@ public class VersionUtils {
   }
 
   public static boolean satisfiesMinimalSupportedVersion(Version currentVersion) {
-    return currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION_SHORT) >= 0
-      || currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION) >= 0;
+    return satisfiesMinimalSupportedVersion(currentVersion, MINIMAL_SUPPORTED_VERSION_SHORT, MINIMAL_SUPPORTED_VERSION);
+  }
+
+  static boolean satisfiesMinimalSupportedVersion(Version currentVersion, Version minimalShort, Version minimalFull) {
+    if (usesFullYearNumbering(currentVersion)) {
+      return currentVersion.compareToIgnoreQualifier(minimalFull) >= 0;
+    }
+    return currentVersion.compareToIgnoreQualifier(minimalShort) >= 0;
+  }
+
+  private static boolean usesFullYearNumbering(Version version) {
+    return version.getMajor() >= 2000;
   }
 
   /**
