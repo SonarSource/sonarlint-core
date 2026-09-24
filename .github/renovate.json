@@ -2,5 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>SonarSource/renovate-config:ide-xp-team"
+  ],
+  "packageRules": [
+    {
+      "description": "One PR per dependency. ide-xp-team sets groupName to null, but the inherited groupSlug maven-dependencies is left in place and still buckets every Maven update onto two branches.",
+      "matchManagers": [
+        "maven",
+        "gradle",
+        "gradle-wrapper",
+        "gradle-version-catalog",
+        "npm",
+        "nuget"
+      ],
+      "groupName": null,
+      "groupSlug": null
+    }
   ]
 }
