@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
@@ -64,7 +65,7 @@ public class GessieService {
     emit("Analytics.Editor.PluginActivated", new MessagePayload("Gessie integration test event", "slcore_start"));
   }
 
-  public void aiIntegrationAction(AiIntegrationActionParams params) {
+  public void aiIntegrationAction(@Nullable AiIntegrationActionParams params) {
     if (params == null || params.getAction() == null || params.getStatus() == null || params.getHost() == null || params.getEnvironment() == null) {
       return;
     }
@@ -78,7 +79,7 @@ public class GessieService {
       params.getAgent(), params.getScope(), params.getHost(), params.getEnvironment()));
   }
 
-  public void aiIntegrationCliStateObserved(AiIntegrationCliStateObservedParams params) {
+  public void aiIntegrationCliStateObserved(@Nullable AiIntegrationCliStateObservedParams params) {
     if (params == null || params.getTrigger() == null || params.getInstallationStatus() == null || params.getAuthenticationStatus() == null
       || params.getVortexAvailable() == null || params.getHost() == null || params.getEnvironment() == null) {
       return;
@@ -87,7 +88,7 @@ public class GessieService {
       params.getAuthenticationStatus(), params.getVortexAvailable(), params.getHost(), params.getEnvironment()));
   }
 
-  public void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params) {
+  public void aiAgentIntegrationStateObserved(@Nullable AiAgentIntegrationStateObservedParams params) {
     if (params == null || params.getTrigger() == null || params.getAgent() == null || params.getStandaloneMcpState() == null
       || params.getHost() == null || params.getEnvironment() == null || params.getDetectionSources() == null || params.getDetectionSources().isEmpty()
       || params.getDetectionSources().stream().anyMatch(java.util.Objects::isNull)) {

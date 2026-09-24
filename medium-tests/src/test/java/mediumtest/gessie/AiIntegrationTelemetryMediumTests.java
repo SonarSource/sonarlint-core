@@ -139,9 +139,10 @@ class AiIntegrationTelemetryMediumTests {
 
   @SonarLintTest
   void should_drop_reports_without_gessie_capability(SonarLintTestHarness harness) {
+    System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_ENDPOINT, endpoint.baseUrl());
     var backend = harness.newBackend().start();
     reportAll(backend.getTelemetryService());
-    assertNoAiEvents();
+    await().during(Duration.ofMillis(200)).untilAsserted(() -> assertThat(endpoint.getAllServeEvents()).isEmpty());
   }
 
   @SonarLintTest
