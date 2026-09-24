@@ -28,6 +28,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AcceptedBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiAgentIntegrationStateObservedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
@@ -50,6 +53,33 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void disableTelemetry();
+
+  /**
+   * Report STARTED once an attempt is accepted, then one observed terminal outcome. Preparing commands or edits,
+   * or launching a terminal, does not establish success; use UNKNOWN when completion cannot be observed.
+   * Each valid report is emitted independently, without action pairing or deduplication. Host identifies the IDE
+   * application, never a machine hostname. Emission requires GESSIE_TELEMETRY and current user consent.
+   */
+  @JsonNotification
+  void aiIntegrationAction(AiIntegrationActionParams params);
+
+  /**
+   * Report the single CLI installation once per eligible observation, independently of MCP inspection.
+   * INITIAL_LOAD applies once per opening of the integration experience, MANUAL_REFRESH to explicit user refresh,
+   * and POST_ACTION to a fresh observation after a setup attempt finishes. Do not report intermediate renders or
+   * background refreshes. Existing discovery and setup operations do not emit these events automatically.
+   */
+  @JsonNotification
+  void aiIntegrationCliStateObserved(AiIntegrationCliStateObservedParams params);
+
+  /**
+   * Report each detected agent once per eligible observation (using the same triggers as CLI observations).
+   * Combine IDE and CLI detection sources in one report. The MCP state describes global configuration only:
+   * uninspected or unreadable configuration is UNKNOWN; NOT_CONFIGURED requires an inspection establishing absence.
+   * SLCORE emits each valid notification independently, including repeated observations.
+   */
+  @JsonNotification
+  void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params);
 
   /**
    * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
