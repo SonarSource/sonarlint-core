@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>11.11-SNAPSHOT</version>
+    <version>12.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -21,7 +21,7 @@
     <sonarjava.version>7.16.0.30901</sonarjava.version>
     <analyzer.commons.version>2.1.0.1111</analyzer.commons.version>
     <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
-    <!-- Always force Java 17 while SQ 9.9 is supported -->
+    <!-- Always force Java 17 for orchestrator compatibility -->
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
 

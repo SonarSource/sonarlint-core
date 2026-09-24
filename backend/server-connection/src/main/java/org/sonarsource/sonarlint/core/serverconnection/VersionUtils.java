@@ -25,20 +25,31 @@ public class VersionUtils {
 
   private static final Version CURRENT_LTS_SHORT = Version.create("25.1");
   private static final Version CURRENT_LTS = Version.create("20" + CURRENT_LTS_SHORT);
-  public static final Version MINIMAL_SUPPORTED_VERSION_SHORT = Version.create("9.9");
-  // temporarily force a higher version to keep the check below correct
-  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("2025.1");
+  public static final Version MINIMAL_SUPPORTED_VERSION_SHORT = Version.create("25.1");
+  public static final Version MINIMAL_SUPPORTED_VERSION = Version.create("2025.1");
 
   private VersionUtils() {
     // utility class
   }
 
+  public static boolean satisfiesMinimalSupportedVersion(Version currentVersion) {
+    return satisfiesMinimalSupportedVersion(currentVersion, MINIMAL_SUPPORTED_VERSION_SHORT, MINIMAL_SUPPORTED_VERSION);
+  }
+
+  static boolean satisfiesMinimalSupportedVersion(Version currentVersion, Version minimalShort, Version minimalFull) {
+    if (usesFullYearNumbering(currentVersion)) {
+      return currentVersion.compareToIgnoreQualifier(minimalFull) >= 0;
+    }
+    return currentVersion.compareToIgnoreQualifier(minimalShort) >= 0;
+  }
+
+  private static boolean usesFullYearNumbering(Version version) {
+    return version.getMajor() >= 2000;
+  }
+
   /**
-   * Versions in the grace-period window should trigger the soon-unsupported warning.
-   *
-   * The check currently uses two version ranges: the legacy or Community Build short numbering from the minimal
-   * supported short version (included) to the current Community Build LTS (excluded), and the SonarQube Server
-   * full-year numbering from the temporary full-year lower bound (included) to the current Server LTS (excluded).
+   * Returns whether the given server version is in the grace period between the minimal supported version and the current LTS.
+   * Versions below the minimal supported version or at/above the current LTS are excluded.
    */
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
     return (currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION_SHORT) >= 0 && currentVersion.compareTo(CURRENT_LTS_SHORT) < 0)

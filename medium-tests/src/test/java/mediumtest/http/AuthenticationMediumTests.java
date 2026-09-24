@@ -69,7 +69,7 @@ class AuthenticationMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
     sonarqubeMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": " +
         "\"UP\"}")));
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
@@ -83,7 +83,7 @@ class AuthenticationMediumTests {
   }
 
   @SonarLintTest
-  void it_should_authenticate_preemptively_on_sonarqube_9_9_with_token_and_basic_scheme(SonarLintTestHarness harness) {
+  void it_should_authenticate_preemptively_on_sonarqube_with_token_and_bearer_scheme(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient()
       .withToken("connectionId", "myToken")
       .build();
@@ -98,36 +98,6 @@ class AuthenticationMediumTests {
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
-    sonarqubeMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": " +
-        "\"UP\"}")));
-
-    getEffectiveRuleDetails(backend, "scopeId", "python:S139");
-
-    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
-      .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myToken:".getBytes(StandardCharsets.UTF_8)))));
-  }
-
-  @SonarLintTest
-  void it_should_authenticate_preemptively_on_sonarqube_10_4_with_token_and_bearer_scheme(SonarLintTestHarness harness) {
-    var fakeClient = harness.newFakeClient()
-      .withToken("connectionId", "myToken")
-      .build();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
-      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
-        .build()))));
-    sonarqubeMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.4\",\"status\": " +
-        "\"UP\"}")));
-
     getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
@@ -145,7 +115,7 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}")));
+    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
 
     var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
 
@@ -167,7 +137,7 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}")));
+    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
 
     var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
 
@@ -189,7 +159,7 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}")));
+    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
 
     var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
 
@@ -211,7 +181,7 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}")));
+    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
 
     var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
 
@@ -233,7 +203,7 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start(fakeClient);
-    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}")));
+    sonarqubeMock.stubFor(get("/api/system/status").willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"2025.1\",\"status\": \"UP\"}")));
 
     var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
 

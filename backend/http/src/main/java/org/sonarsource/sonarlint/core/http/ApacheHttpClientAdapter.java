@@ -58,18 +58,18 @@ class ApacheHttpClientAdapter implements HttpClient {
   private final String usernameOrToken;
   @Nullable
   private final String password;
-  private final boolean shouldUseBearer;
+  private final boolean tokenAuth;
   @Nullable
   private final String xApiKey;
   private final boolean withRetries;
   private boolean connected = false;
 
-  private ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password, boolean shouldUseBearer,
+  private ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password, boolean tokenAuth,
     @Nullable String xApiKey, boolean withRetries) {
     this.apacheClient = apacheClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;
-    this.shouldUseBearer = shouldUseBearer;
+    this.tokenAuth = tokenAuth;
     this.xApiKey = xApiKey;
     this.withRetries = withRetries;
   }
@@ -208,7 +208,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
   private void setAuthHeader(SimpleHttpRequest request) {
     if (usernameOrToken != null) {
-      if (shouldUseBearer) {
+      if (tokenAuth) {
         request.setHeader(AUTHORIZATION_HEADER, bearer(usernameOrToken));
       } else {
         request.setHeader(AUTHORIZATION_HEADER, basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
@@ -326,7 +326,7 @@ class ApacheHttpClientAdapter implements HttpClient {
     private String usernameOrToken;
     @Nullable
     private String password;
-    private boolean shouldUseBearer = false;
+    private boolean tokenAuth = false;
     @Nullable
     private String xApiKey;
     private boolean withRetries = false;
@@ -339,16 +339,14 @@ class ApacheHttpClientAdapter implements HttpClient {
     public Builder withUserNamePassword(String username, @Nullable String password) {
       this.usernameOrToken = username;
       this.password = password;
+      this.tokenAuth = false;
       return this;
     }
 
     public Builder withToken(String token) {
       this.usernameOrToken = token;
-      return this;
-    }
-
-    public Builder useBearer(boolean shouldUseBearer) {
-      this.shouldUseBearer = shouldUseBearer;
+      this.password = null;
+      this.tokenAuth = true;
       return this;
     }
 
@@ -367,7 +365,7 @@ class ApacheHttpClientAdapter implements HttpClient {
         throw new IllegalStateException("Required an Apache HTTP client to wrap.");
       }
 
-      return new ApacheHttpClientAdapter(apacheClient, usernameOrToken, password, shouldUseBearer, xApiKey, withRetries);
+      return new ApacheHttpClientAdapter(apacheClient, usernameOrToken, password, tokenAuth, xApiKey, withRetries);
     }
   }
 }
