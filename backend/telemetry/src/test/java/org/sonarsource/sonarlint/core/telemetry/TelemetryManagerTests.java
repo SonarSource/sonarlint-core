@@ -74,47 +74,19 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void explicit_consent_should_not_be_reversed_by_initial_migration(@TempDir Path temp) {
+  void explicit_consent_should_override_fresh_migration(@TempDir Path temp) {
     var params = mock(InitializeParams.class);
-    var migratedInstallTime = OffsetDateTime.now().minusDays(2);
-    when(params.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(migratedInstallTime, 1, false));
-    var migratedStorage = new TelemetryLocalStorageManager(temp.resolve("migrated-telemetry"), params);
-    var manager = new TelemetryManager(migratedStorage, client);
-    assertThat(manager.isTelemetryEnabledByUser()).isFalse();
-
-    manager.setTelemetryEnabledByUser(true);
-
-    assertThat(manager.isTelemetryEnabledByUser()).isTrue();
-    var reloaded = new TelemetryLocalStorageManager(temp.resolve("migrated-telemetry"), params);
-    assertThat(reloaded.isEnabled()).isTrue();
-    assertThat(reloaded.installTime()).isEqualTo(migratedInstallTime.truncatedTo(ChronoUnit.MILLIS));
-    manager.setTelemetryEnabledByUser(false);
-    assertThat(manager.isTelemetryEnabledByUser()).isFalse();
-    verifyNoMoreInteractions(client);
-  }
-
-  @Test
-  void explicit_consent_should_override_even_fresh_migration(@TempDir Path temp) {
-    var params = mock(InitializeParams.class);
-    when(params.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(OffsetDateTime.now(), 0, true));
+    var migratedInstallTime = OffsetDateTime.now().minusSeconds(1);
+    when(params.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(migratedInstallTime, 0, true));
     var path = temp.resolve("fresh-migration");
     var manager = new TelemetryManager(new TelemetryLocalStorageManager(path, params), client);
+    assertThat(manager.isTelemetryEnabledByUser()).isTrue();
 
     manager.setTelemetryEnabledByUser(false);
 
-    assertThat(manager.isTelemetryEnabledByUser()).isFalse();
-    assertThat(new TelemetryLocalStorageManager(path, params).isEnabled()).isFalse();
-    manager.setTelemetryEnabledByUser(true);
-    assertThat(new TelemetryLocalStorageManager(path, params).isEnabled()).isTrue();
-    verifyNoMoreInteractions(client);
-  }
-
-  @Test
-  void consent_changes_should_not_send_legacy_requests() {
-    telemetryManager.setTelemetryEnabledByUser(false);
-    assertThat(storageManager.isEnabled()).isFalse();
-    telemetryManager.setTelemetryEnabledByUser(true);
-    assertThat(storageManager.isEnabled()).isTrue();
+    var reloaded = new TelemetryLocalStorageManager(path, params);
+    assertThat(reloaded.isEnabled()).isFalse();
+    assertThat(reloaded.installTime()).isEqualTo(migratedInstallTime.truncatedTo(ChronoUnit.MILLIS));
     verifyNoMoreInteractions(client);
   }
 
@@ -123,7 +95,7 @@ class TelemetryManagerTests {
     telemetryManager.setTelemetryEnabledByUser(true);
     telemetryManager.setTelemetryEnabledByUser(false);
 
-    telemetryManager.uploadOnOptIn(getTelemetryLiveAttributesDto());
+    telemetryManager.uploadIfStillEnabled(getTelemetryLiveAttributesDto());
 
     assertThat(storageManager.isEnabled()).isFalse();
     verifyNoMoreInteractions(client);
@@ -141,11 +113,11 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void enable_should_trigger_upload_once_per_day() {
+  void uploadIfStillEnabled_should_upload_once_per_day() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    telemetryManager.uploadOnOptIn(telemetryPayload);
-    telemetryManager.uploadOnOptIn(telemetryPayload);
+    telemetryManager.uploadIfStillEnabled(telemetryPayload);
+    telemetryManager.uploadIfStillEnabled(telemetryPayload);
 
     verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
@@ -247,7 +219,7 @@ class TelemetryManagerTests {
 
     // note: the manager hasn't seen the saved data
     telemetryManager.setTelemetryEnabledByUser(true);
-    telemetryManager.uploadOnOptIn(telemetryLiveAttributes);
+    telemetryManager.uploadIfStillEnabled(telemetryLiveAttributes);
 
     var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isTrue();

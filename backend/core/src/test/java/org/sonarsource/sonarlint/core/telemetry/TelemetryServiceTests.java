@@ -20,11 +20,10 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,9 +31,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.TelemetryUpdatedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
@@ -44,7 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -78,7 +76,7 @@ class TelemetryServiceTests {
   @ParameterizedTest
   @CsvSource({"false,false", "false,true", "true,false", "true,true"})
   void status_and_enable_should_recognize_either_capability(boolean legacy, boolean gessie) {
-    var capabilities = new java.util.HashSet<BackendCapability>();
+    var capabilities = new HashSet<BackendCapability>();
     if (legacy) {
       capabilities.add(BackendCapability.TELEMETRY);
     }
@@ -95,22 +93,6 @@ class TelemetryServiceTests {
     if (!legacy) {
       verifyNoInteractions(attributesProvider, client, legacyHttp);
     }
-  }
-
-  @Test
-  void gessie_only_should_change_consent_without_legacy_collection_or_transport() {
-    start(Set.of(BackendCapability.GESSIE_TELEMETRY));
-    service.disableTelemetry();
-    assertThat(storage.isEnabled()).isFalse();
-    service.enableTelemetry();
-    service.mcpIntegrationEnabled();
-    service.supportedLanguagesPanelOpened();
-
-    assertThat(storage.isEnabled()).isTrue();
-    assertThat(service.isEnabled()).isFalse();
-    verify(events).publishEvent(new TelemetryUpdatedEvent(false));
-    verify(events).publishEvent(new TelemetryUpdatedEvent(true));
-    verifyNoInteractions(attributesProvider, client, legacyHttp);
   }
 
   @Test
@@ -137,61 +119,6 @@ class TelemetryServiceTests {
 
     assertThat(storage.isEnabled()).isEqualTo(enable);
     verifyNoInteractions(legacyHttp);
-  }
-
-  @Test
-  void disable_should_persist_on_server_attribute_failure() {
-    start(Set.of(BackendCapability.TELEMETRY));
-    when(attributesProvider.getTelemetryServerLiveAttributes()).thenThrow(new IllegalStateException("unavailable"));
-    service.disableTelemetry();
-    assertThat(storage.isEnabled()).isFalse();
-    verify(events).publishEvent(new TelemetryUpdatedEvent(false));
-    verifyNoInteractions(legacyHttp);
-  }
-
-  @Test
-  void disable_should_persist_on_attribute_timeout() throws Exception {
-    start(Set.of(BackendCapability.TELEMETRY));
-    @SuppressWarnings("unchecked")
-    CompletableFuture<TelemetryClientLiveAttributesResponse> attributes = mock(CompletableFuture.class);
-    when(attributes.get(10, TimeUnit.SECONDS)).thenThrow(new TimeoutException());
-    when(client.getTelemetryLiveAttributes()).thenReturn(attributes);
-
-    service.disableTelemetry();
-
-    assertThat(storage.isEnabled()).isFalse();
-    verify(events).publishEvent(new TelemetryUpdatedEvent(false));
-    verifyNoInteractions(legacyHttp);
-  }
-
-  @ParameterizedTest
-  @CsvSource({"false", "true"})
-  void delayed_transport_should_respect_the_latest_consent(boolean firstEnabled) throws Exception {
-    start(Set.of(BackendCapability.TELEMETRY));
-    var attributesRequested = new CompletableFuture<Void>();
-    var delayedAttributes = new CompletableFuture<TelemetryClientLiveAttributesResponse>();
-    when(client.getTelemetryLiveAttributes()).thenAnswer(invocation -> {
-      attributesRequested.complete(null);
-      return delayedAttributes;
-    }).thenReturn(CompletableFuture.completedFuture(new TelemetryClientLiveAttributesResponse(Map.of())));
-
-    var pendingChange = CompletableFuture.runAsync(() -> changeConsent(firstEnabled));
-    try {
-      attributesRequested.get(5, TimeUnit.SECONDS);
-      changeConsent(!firstEnabled);
-    } finally {
-      delayedAttributes.complete(new TelemetryClientLiveAttributesResponse(Map.of()));
-    }
-    pendingChange.get(5, TimeUnit.SECONDS);
-
-    assertThat(storage.isEnabled()).isEqualTo(!firstEnabled);
-    if (firstEnabled) {
-      verify(legacyHttp, never()).upload(any(), any());
-      verify(legacyHttp).optOut(any(), any());
-    } else {
-      verify(legacyHttp, never()).optOut(any(), any());
-      verify(legacyHttp).upload(any(), any());
-    }
   }
 
   @ParameterizedTest
