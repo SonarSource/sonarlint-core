@@ -110,33 +110,40 @@ public class TelemetryService {
   }
 
   public GetStatusResponse getStatus() {
-    return new GetStatusResponse((isTelemetryFeatureEnabled || isGessieFeatureEnabled) && telemetryManager.isTelemetryEnabledByUser());
+    return new GetStatusResponse(isAnyTelemetryCapabilityEnabled() && telemetryManager.isTelemetryEnabledByUser());
   }
 
   public void enableTelemetry() {
-    if (!isTelemetryFeatureEnabled && !isGessieFeatureEnabled) {
-      LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
-      return;
-    }
-    telemetryManager.setTelemetryEnabledByUser(true);
-    applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(true));
-    if (isTelemetryFeatureEnabled) {
-      var telemetryLiveAttributes = getTelemetryLiveAttributes();
-      if (telemetryLiveAttributes != null) {
-        telemetryManager.uploadOnOptIn(telemetryLiveAttributes);
-      }
-    }
+    changeConsent(true);
   }
 
   public void disableTelemetry() {
-    telemetryManager.setTelemetryEnabledByUser(false);
-    applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(false));
-    if (isTelemetryFeatureEnabled) {
-      var telemetryLiveAttributes = getTelemetryLiveAttributes();
-      if (telemetryLiveAttributes != null) {
-        telemetryManager.sendOptOut(telemetryLiveAttributes);
-      }
+    changeConsent(false);
+  }
+
+  private void changeConsent(boolean enabled) {
+    if (enabled && !isAnyTelemetryCapabilityEnabled()) {
+      LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
+      return;
     }
+    telemetryManager.setTelemetryEnabledByUser(enabled);
+    applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(enabled));
+    if (!isTelemetryFeatureEnabled) {
+      return;
+    }
+    var telemetryLiveAttributes = getTelemetryLiveAttributes();
+    if (telemetryLiveAttributes == null) {
+      return;
+    }
+    if (enabled) {
+      telemetryManager.uploadIfStillEnabled(telemetryLiveAttributes);
+    } else {
+      telemetryManager.sendOptOut(telemetryLiveAttributes);
+    }
+  }
+
+  private boolean isAnyTelemetryCapabilityEnabled() {
+    return isTelemetryFeatureEnabled || isGessieFeatureEnabled;
   }
 
   @Nullable

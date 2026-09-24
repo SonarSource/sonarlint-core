@@ -45,7 +45,10 @@ public class TelemetryManager implements TelemetryUserSetting {
     storageManager.tryUpdateAtomically(localStorage -> localStorage.setEnabled(enabled));
   }
 
-  void uploadOnOptIn(TelemetryLiveAttributes telemetryLiveAttributes) {
+  /**
+   * Upload only if the user has not disabled telemetry while attributes were fetched.
+   */
+  void uploadIfStillEnabled(TelemetryLiveAttributes telemetryLiveAttributes) {
     storageManager.tryUpdateAtomically(localStorage -> {
       if (localStorage.enabled() && isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
         uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
@@ -83,7 +86,7 @@ public class TelemetryManager implements TelemetryUserSetting {
    */
   void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
     if (isTelemetryEnabledByUser() && isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
-      uploadOnOptIn(telemetryLiveAttributes);
+      uploadIfStillEnabled(telemetryLiveAttributes);
     }
   }
 
