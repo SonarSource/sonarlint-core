@@ -25,9 +25,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.dogfood.DogfoodEnvironmentDetectionService;
 import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
@@ -579,24 +576,11 @@ class MonitoringMediumTests {
   }
 
   private static void awaitTelemetryStatus(SonarLintTestRpcServer backend, boolean enabled) {
-    var pendingStatus = new AtomicReference<CompletableFuture<GetStatusResponse>>();
     await().atMost(10, TimeUnit.SECONDS)
       .pollInterval(100, TimeUnit.MILLISECONDS)
       .untilAsserted(() -> {
-        var future = pendingStatus.get();
-        if (future != null && !future.isDone()) {
-          assertThat(future.isDone()).isTrue();
-          return;
-        }
-        if (future != null) {
-          var status = future.getNow(null);
-          assertThat(status).isNotNull();
-          if (status.isEnabled() == enabled && Sentry.isEnabled() == enabled) {
-            return;
-          }
-        }
-        pendingStatus.set(backend.getTelemetryService().getStatus());
-        assertThat(pendingStatus.get().isDone()).isTrue();
+        assertThat(backend.getTelemetryService().getStatus().join().isEnabled()).isEqualTo(enabled);
+        assertThat(Sentry.isEnabled()).isEqualTo(enabled);
       });
   }
 }
