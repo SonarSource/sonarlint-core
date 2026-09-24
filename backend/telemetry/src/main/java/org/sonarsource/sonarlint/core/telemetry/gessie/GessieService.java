@@ -21,18 +21,32 @@ package org.sonarsource.sonarlint.core.telemetry.gessie;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiAgentIntegrationStateObservedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationFailureCategory;
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiAgentIntegrationStateObservedPayload;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiIntegrationActionPayload;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.AiIntegrationCliStateObservedPayload;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
+import static org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationActionStatus.FAILED;
 import static org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata.SonarLintDomain;
 
 public class GessieService {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final boolean isGessieFeatureEnabled;
   private final TelemetryClientConstantAttributesDto telemetryConstantAttributes;
@@ -48,15 +62,58 @@ public class GessieService {
 
   @PostConstruct
   public void onStartup() {
-    if (isGessieFeatureEnabled && userSetting.isTelemetryEnabledByUser()) {
+    emit("Analytics.Editor.PluginActivated", new MessagePayload("Gessie integration test event", "slcore_start"));
+  }
+
+  public void aiIntegrationAction(@Nullable AiIntegrationActionParams params) {
+    if (params == null || params.getAction() == null || params.getStatus() == null || params.getHost() == null || params.getEnvironment() == null) {
+      return;
+    }
+    var failureCategory = params.getFailureCategory();
+    if (params.getStatus() != FAILED) {
+      failureCategory = null;
+    } else if (failureCategory == null) {
+      failureCategory = AiIntegrationFailureCategory.UNKNOWN;
+    }
+    emit("Analytics.Editor.IdeAiIntegrationAction", new AiIntegrationActionPayload(params.getAction(), params.getStatus(), failureCategory,
+      params.getAgent(), params.getScope(), params.getHost(), params.getEnvironment()));
+  }
+
+  public void aiIntegrationCliStateObserved(@Nullable AiIntegrationCliStateObservedParams params) {
+    if (params == null || params.getTrigger() == null || params.getInstallationStatus() == null || params.getAuthenticationStatus() == null
+      || params.getVortexAvailable() == null || params.getHost() == null || params.getEnvironment() == null) {
+      return;
+    }
+    emit("Analytics.Editor.IdeAiIntegrationCliStateObserved", new AiIntegrationCliStateObservedPayload(params.getTrigger(), params.getInstallationStatus(),
+      params.getAuthenticationStatus(), params.getVortexAvailable(), params.getHost(), params.getEnvironment()));
+  }
+
+  public void aiAgentIntegrationStateObserved(@Nullable AiAgentIntegrationStateObservedParams params) {
+    if (params == null || params.getTrigger() == null || params.getAgent() == null || params.getStandaloneMcpState() == null
+      || params.getHost() == null || params.getEnvironment() == null || params.getDetectionSources() == null || params.getDetectionSources().isEmpty()
+      || params.getDetectionSources().stream().anyMatch(java.util.Objects::isNull)) {
+      return;
+    }
+    var sources = List.copyOf(EnumSet.copyOf(params.getDetectionSources()));
+    emit("Analytics.Editor.IdeAiAgentIntegrationStateObserved", new AiAgentIntegrationStateObservedPayload(params.getTrigger(), params.getAgent(), sources,
+      params.getStandaloneMcpState(), params.getHost(), params.getEnvironment()));
+  }
+
+  private void emit(String eventType, Object payload) {
+    if (!isGessieFeatureEnabled || !userSetting.isTelemetryEnabledByUser()) {
+      return;
+    }
+    try {
       client.postEvent(new GessieEvent(
         new GessieMetadata(UUID.randomUUID(),
           new GessieMetadata.GessieSource(SonarLintDomain.fromProductKey(telemetryConstantAttributes.getProductKey())),
-          "Analytics.Editor.PluginActivated",
+          eventType,
           Long.toString(Instant.now().toEpochMilli()),
           "1"),
-        new MessagePayload("Gessie integration test event", "slcore_start")
-      ));
+        payload));
+    } catch (RuntimeException e) {
+      // Do not log input or exception details, which may contain sensitive client data.
+      LOG.debug("Failed to submit Gessie telemetry event");
     }
   }
 }
