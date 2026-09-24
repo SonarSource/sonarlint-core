@@ -71,6 +71,19 @@ public class SonarQubeClient {
     return null;
   }
 
+  public <T> T withClientApiAndReturnThrowing(Function<ServerApi, T> serverApiConsumer) {
+    try {
+      var result = serverApiConsumer.apply(serverApi);
+      state = SonarQubeClientState.ACTIVE;
+      lastNotificationTime = null;
+      return result;
+    } catch (UnauthorizedException e) {
+      state = SonarQubeClientState.INVALID_CREDENTIALS;
+      notifyClientAboutWrongTokenIfNeeded();
+      throw e;
+    }
+  }
+
   public void withClientApi(Consumer<ServerApi> serverApiConsumer) {
     try {
       serverApiConsumer.accept(serverApi);
