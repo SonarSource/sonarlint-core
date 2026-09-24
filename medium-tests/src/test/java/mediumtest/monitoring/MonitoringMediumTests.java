@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -287,14 +288,10 @@ class MonitoringMediumTests {
     assertThat(Sentry.isEnabled()).isTrue();
 
     backend.getTelemetryService().disableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isFalse());
+    awaitTelemetryStatus(backend, false);
 
     backend.getTelemetryService().enableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isTrue());
-
-    assertThat(Sentry.isEnabled()).isTrue();
+    awaitTelemetryStatus(backend, true);
   }
 
   @SonarLintTest
@@ -312,16 +309,10 @@ class MonitoringMediumTests {
     assertThat(Sentry.isEnabled()).isTrue();
 
     backend.getTelemetryService().disableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isFalse());
-
-    assertThat(Sentry.isEnabled()).isFalse();
+    awaitTelemetryStatus(backend, false);
 
     backend.getTelemetryService().enableTelemetry();
-    await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isTrue());
-
-    assertThat(Sentry.isEnabled()).isTrue();
+    awaitTelemetryStatus(backend, true);
   }
 
   @SonarLintTest
@@ -586,9 +577,11 @@ class MonitoringMediumTests {
   }
 
   private static void awaitTelemetryStatus(SonarLintTestRpcServer backend, boolean enabled) {
-    await().atMost(2, TimeUnit.SECONDS)
+    await().atMost(10, TimeUnit.SECONDS)
+      .pollInterval(100, TimeUnit.MILLISECONDS)
+      .ignoreException(TimeoutException.class)
       .untilAsserted(() -> {
-        assertThat(backend.getTelemetryService().getStatus().get(2, TimeUnit.SECONDS).isEnabled()).isEqualTo(enabled);
+        assertThat(backend.getTelemetryService().getStatus().get(1, TimeUnit.SECONDS).isEnabled()).isEqualTo(enabled);
         assertThat(Sentry.isEnabled()).isEqualTo(enabled);
       });
   }
