@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.newcode;
 
 import java.util.Optional;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -42,7 +41,7 @@ public class NewCodeApi {
     this.helper = helper;
   }
 
-  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, @Nullable String branch, SonarLintCancelMonitor cancelMonitor) {
+  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, SonarLintCancelMonitor cancelMonitor) {
     Measures.ComponentWsResponse response;
     var period = getPeriodForServer(helper);
     var requestPath = new StringBuilder().append(GET_NEW_CODE_DEFINITION_URL)
@@ -50,9 +49,6 @@ public class NewCodeApi {
       .append(period)
       .append("&metricKeys=projects&component=")
       .append(UrlUtils.urlEncode(projectKey));
-    if (branch != null) {
-      requestPath.append("&branch=").append(UrlUtils.urlEncode(branch));
-    }
     try (
       var wsResponse = helper.get(requestPath.toString(), cancelMonitor);
       var is = wsResponse.bodyAsStream()) {
