@@ -64,7 +64,7 @@ public class GessieService {
   }
 
   public void aiIntegrationAction(@Nullable AiIntegrationActionParams params) {
-    if (params == null || params.getAction() == null || params.getStatus() == null || params.getHost() == null || params.getEnvironment() == null) {
+    if (params == null || params.getAction() == null || params.getStatus() == null || params.getHost() == null) {
       return;
     }
     var failureCategory = params.getFailureCategory();
@@ -73,28 +73,27 @@ public class GessieService {
     } else if (failureCategory == null) {
       failureCategory = AiIntegrationFailureCategory.UNKNOWN;
     }
-    emit("Analytics.Editor.IdeAiIntegrationAction", new AiIntegrationActionParams(params.getAction(), params.getStatus(), failureCategory,
-      params.getAgent(), params.getScope(), params.getHost(), params.getEnvironment()));
+    emit("Analytics.Editor.IdeAiIntegrationAction", new AiIntegrationActionParams(params.getAction(), params.getStatus(), failureCategory, params.getAgent(), params.getHost()));
   }
 
   public void aiIntegrationCliStateObserved(@Nullable AiIntegrationCliStateObservedParams params) {
-    if (params == null || params.getTrigger() == null || params.getInstallationStatus() == null || params.getAuthenticationStatus() == null
-      || params.getVortexAvailable() == null || params.getHost() == null || params.getEnvironment() == null) {
+    if (params == null || params.getInstallationStatus() == null || params.getAuthenticationStatus() == null
+      || params.getHost() == null) {
       return;
     }
     emit("Analytics.Editor.IdeAiIntegrationCliStateObserved", params);
   }
 
   public void aiAgentIntegrationStateObserved(@Nullable AiAgentIntegrationStateObservedParams params) {
-    if (params == null || params.getTrigger() == null || params.getAgent() == null || params.getStandaloneMcpState() == null
-      || params.getHost() == null || params.getEnvironment() == null || params.getDetectionSources() == null || params.getDetectionSources().isEmpty()
+    if (params == null || params.getAgent() == null || params.getStandaloneMcpState() == null
+      || params.getHost() == null || params.getDetectionSources() == null || params.getDetectionSources().isEmpty()
       || params.getDetectionSources().stream().anyMatch(Objects::isNull)) {
       return;
     }
     // EnumSet iterates in AiAgentDetectionSource declaration order, not the order reported by the client.
     var sources = List.copyOf(EnumSet.copyOf(params.getDetectionSources()));
-    emit("Analytics.Editor.IdeAiAgentIntegrationStateObserved", new AiAgentIntegrationStateObservedParams(params.getTrigger(), params.getAgent(), sources,
-      params.getStandaloneMcpState(), params.getHost(), params.getEnvironment()));
+    emit("Analytics.Editor.IdeAiAgentIntegrationStateObserved", new AiAgentIntegrationStateObservedParams(params.getAgent(), sources,
+      params.getStandaloneMcpState(), params.getHost()));
   }
 
   private void emit(String eventType, Object payload) {

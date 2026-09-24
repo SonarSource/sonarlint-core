@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 
 public class AiIntegrationActionParams {
   private final AiIntegrationAction action;
@@ -31,25 +30,18 @@ public class AiIntegrationActionParams {
   private final AiIntegrationFailureCategory failureCategory;
   @Nullable
   private final AiAgent agent;
-  @Nullable
-  private final AiIntegrationScope scope;
   private final AiIntegrationHost host;
-  private final AiIntegrationEnvironment environment;
 
   public AiIntegrationActionParams(AiIntegrationAction action,
     AiIntegrationActionStatus status,
     @Nullable AiIntegrationFailureCategory failureCategory,
     @Nullable AiAgent agent,
-    @Nullable AiIntegrationScope scope,
-    AiIntegrationHost host,
-    AiIntegrationEnvironment environment) {
+    AiIntegrationHost host) {
     this.action = action;
     this.status = status;
     this.failureCategory = failureCategory;
     this.agent = agent;
-    this.scope = scope;
     this.host = host;
-    this.environment = environment;
   }
 
   public AiIntegrationAction getAction() {
@@ -70,16 +62,7 @@ public class AiIntegrationActionParams {
     return agent;
   }
 
-  @Nullable
-  public AiIntegrationScope getScope() {
-    return scope;
-  }
-
   public AiIntegrationHost getHost() {
     return host;
-  }
-
-  public AiIntegrationEnvironment getEnvironment() {
-    return environment;
   }
 }

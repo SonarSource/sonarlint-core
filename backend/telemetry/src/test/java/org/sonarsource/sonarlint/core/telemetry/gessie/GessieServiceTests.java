@@ -61,15 +61,15 @@ class GessieServiceTests {
 
   private static final Gson RPC_GSON = new Gson();
   private static final String ACTION = """
-    {"action":"INSTALL_CLI","status":"FAILED","host":"VSCODE","environment":"REMOTE"}
+    {"action":"INSTALL_CLI","status":"FAILED","host":"VSCODE"}
     """;
   private static final String CLI = """
-    {"trigger":"INITIAL_LOAD","installationStatus":"INSTALLED","authenticationStatus":"UNVERIFIED",
-    "vortexAvailable":false,"host":"VSCODE","environment":"REMOTE"}
+    {"installationStatus":"INSTALLED","authenticationStatus":"UNVERIFIED",
+    "host":"VSCODE"}
     """;
   private static final String AGENT = """
-    {"trigger":"POST_ACTION","agent":"CURSOR","detectionSources":["CLI","IDE","CLI"],
-    "standaloneMcpState":"UNKNOWN","host":"VSCODE","environment":"REMOTE"}
+    {"agent":"CURSOR","detectionSources":["CLI","IDE","CLI"],
+    "standaloneMcpState":"UNKNOWN","host":"VSCODE"}
     """;
   private final HttpClient http = mock(HttpClient.class);
   private final TelemetryUserSetting setting = mock(TelemetryUserSetting.class);
@@ -94,18 +94,19 @@ class GessieServiceTests {
     input.addProperty("event_type", "forged");
     input.addProperty("path", "private-directory");
     input.addProperty("diagnostic", "private-content");
+    input.addProperty("scope", "PROJECT");
     service.aiIntegrationAction(RPC_GSON.fromJson(input, AiIntegrationActionParams.class));
 
     var event = uploadedEvent();
     assertMetadata(event, "IdeAiIntegrationAction");
     assertThat(event.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"action":"INSTALL_CLI","status":"FAILED","failure_category":"UNKNOWN","agent":null,"scope":null,
-      "host":"VSCODE","environment":"REMOTE","machine_id":"shared-machine","ide_installation_id":"ide-installation"}
+      {"action":"INSTALL_CLI","status":"FAILED","failure_category":"UNKNOWN","agent":null,
+      "host":"VSCODE","machine_id":"shared-machine","ide_installation_id":"ide-installation"}
       """));
   }
 
   @Test
-  void should_send_cli_observation_with_explicit_false_and_nullable_identity() {
+  void should_send_cli_observation_with_nullable_identity() {
     when(machineId.getMachineId()).thenReturn(null);
     when(storage.ideInstallationId()).thenReturn(null);
     service.aiIntegrationCliStateObserved(RPC_GSON.fromJson(CLI, AiIntegrationCliStateObservedParams.class));
@@ -113,8 +114,8 @@ class GessieServiceTests {
     var event = uploadedEvent();
     assertMetadata(event, "IdeAiIntegrationCliStateObserved");
     assertThat(event.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"trigger":"INITIAL_LOAD","installation_status":"INSTALLED","authentication_status":"UNVERIFIED",
-      "vortex_available":false,"host":"VSCODE","environment":"REMOTE","machine_id":null,"ide_installation_id":null}
+      {"installation_status":"INSTALLED","authentication_status":"UNVERIFIED",
+      "host":"VSCODE","machine_id":null,"ide_installation_id":null}
       """));
   }
 
@@ -125,8 +126,8 @@ class GessieServiceTests {
     var event = uploadedEvent();
     assertMetadata(event, "IdeAiAgentIntegrationStateObserved");
     assertThat(event.get("event_payload")).isEqualTo(JsonParser.parseString("""
-      {"trigger":"POST_ACTION","agent":"CURSOR","detection_sources":["IDE","CLI"],"standalone_mcp_state":"UNKNOWN",
-      "host":"VSCODE","environment":"REMOTE","machine_id":"shared-machine","ide_installation_id":"ide-installation"}
+      {"agent":"CURSOR","detection_sources":["IDE","CLI"],"standalone_mcp_state":"UNKNOWN",
+      "host":"VSCODE","machine_id":"shared-machine","ide_installation_id":"ide-installation"}
       """));
   }
 
@@ -137,13 +138,11 @@ class GessieServiceTests {
     input.addProperty("status", status);
     input.addProperty("failureCategory", "TERMINAL_ERROR");
     input.addProperty("agent", "CODEX");
-    input.addProperty("scope", "PROJECT");
     service.aiIntegrationAction(RPC_GSON.fromJson(input, AiIntegrationActionParams.class));
 
     var payload = uploadedEvent().getAsJsonObject("event_payload");
     assertThat(payload.get("failure_category").isJsonNull()).isTrue();
     assertThat(payload.get("agent").getAsString()).isEqualTo("CODEX");
-    assertThat(payload.get("scope").getAsString()).isEqualTo("PROJECT");
   }
 
   @Test
@@ -153,7 +152,7 @@ class GessieServiceTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"action", "status", "host", "environment"})
+  @ValueSource(strings = {"action", "status", "host"})
   void should_drop_missing_and_invalid_action_fields_after_deserialization(String field) {
     var input = JsonParser.parseString(ACTION).getAsJsonObject();
     input.remove(field);
@@ -164,20 +163,18 @@ class GessieServiceTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"trigger", "installationStatus", "authenticationStatus", "host", "environment", "vortexAvailable"})
+  @ValueSource(strings = {"installationStatus", "authenticationStatus", "host"})
   void should_drop_missing_cli_fields_after_deserialization(String field) {
     var input = JsonParser.parseString(CLI).getAsJsonObject();
     input.remove(field);
     service.aiIntegrationCliStateObserved(RPC_GSON.fromJson(input, AiIntegrationCliStateObservedParams.class));
-    if (!"vortexAvailable".equals(field)) {
-      input.addProperty(field, "NOT_AN_ENUM_VALUE");
-      service.aiIntegrationCliStateObserved(RPC_GSON.fromJson(input, AiIntegrationCliStateObservedParams.class));
-    }
+    input.addProperty(field, "NOT_AN_ENUM_VALUE");
+    service.aiIntegrationCliStateObserved(RPC_GSON.fromJson(input, AiIntegrationCliStateObservedParams.class));
     verifyNoUpload();
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"trigger", "agent", "standaloneMcpState", "host", "environment", "detectionSources"})
+  @ValueSource(strings = {"agent", "standaloneMcpState", "host", "detectionSources"})
   void should_drop_missing_agent_fields_after_deserialization(String field) {
     var input = JsonParser.parseString(AGENT).getAsJsonObject();
     input.remove(field);
@@ -215,15 +212,6 @@ class GessieServiceTests {
     when(setting.isTelemetryEnabledByUser()).thenReturn(true);
     reportAll();
     verify(http, times(8)).postAsync(anyString(), anyString(), anyString());
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"null", "\"true\"", "\"false\"", "\"invalid\"", "0", "1", "[]", "{}"})
-  void should_drop_nonboolean_vortex_values(String value) {
-    var input = JsonParser.parseString(CLI).getAsJsonObject();
-    input.add("vortexAvailable", JsonParser.parseString(value));
-    service.aiIntegrationCliStateObserved(RPC_GSON.fromJson(input, AiIntegrationCliStateObservedParams.class));
-    verifyNoUpload();
   }
 
   @Test
