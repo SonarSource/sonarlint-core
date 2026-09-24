@@ -83,6 +83,7 @@ class AiIntegrationServiceTests {
       AiAgent.CLAUDE_CODE), AiIntegrationScope.GLOBAL, null));
 
     assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.NOT_INSTALLED);
+    assertThat(response.getCli().isVortexAvailable()).isFalse();
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNKNOWN);
     assertThat(response.getAgents()).hasSize(2);
     assertThat(response.getAgents().get(0).getAgent()).isEqualTo(AiAgent.CLAUDE_CODE);
@@ -202,7 +203,7 @@ class AiIntegrationServiceTests {
       if (command.toCommandLine().endsWith("--version")) {
         stdout.consumeLine("SonarQube CLI 1.4.2");
       } else {
-        stdout.consumeLine("{\"version\":\"1.4.2\",\"auth\":{\"status\":\"authenticated\",\"server\":\"https://sonar.example\",\"org\":\"acme\",\"token\":\"active\"}}");
+        stdout.consumeLine("{\"vortex\":{\"applicable\":true,\"status\":\"enabled\"},\"version\":\"1.4.2\",\"auth\":{\"status\":\"authenticated\",\"server\":\"https://sonar.example\",\"org\":\"acme\",\"token\":\"active\"}}");
       }
       return 0;
     });
@@ -211,6 +212,7 @@ class AiIntegrationServiceTests {
     var cli = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
 
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.isVortexAvailable()).isTrue();
     assertThat(cli.getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.AUTHENTICATED);
     assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
     assertThat(cli.getVersion()).isEqualTo("1.4.2");

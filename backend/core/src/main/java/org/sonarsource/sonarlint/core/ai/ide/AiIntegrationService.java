@@ -143,7 +143,7 @@ public class AiIntegrationService {
 
     var status = locator.readStatus(cli.path());
     return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
-      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization());
+      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization(), status.vortexAvailable());
   }
 
   @Nullable
