@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 public class SonarQubeCliState {
   private final CliInstallationStatus installationStatus;
   private final CliAuthenticationStatus authenticationStatus;
+  private final boolean vortexAvailable;
   @Nullable
   private final String executablePath;
   @Nullable
@@ -35,8 +36,14 @@ public class SonarQubeCliState {
 
   public SonarQubeCliState(CliInstallationStatus installationStatus, CliAuthenticationStatus authenticationStatus,
     @Nullable String executablePath, @Nullable String version, @Nullable String serverUrl, @Nullable String organization) {
+    this(installationStatus, authenticationStatus, executablePath, version, serverUrl, organization, false);
+  }
+
+  public SonarQubeCliState(CliInstallationStatus installationStatus, CliAuthenticationStatus authenticationStatus,
+    @Nullable String executablePath, @Nullable String version, @Nullable String serverUrl, @Nullable String organization, boolean vortexAvailable) {
     this.installationStatus = installationStatus;
     this.authenticationStatus = authenticationStatus;
+    this.vortexAvailable = vortexAvailable;
     this.executablePath = executablePath;
     this.version = version;
     this.serverUrl = serverUrl;
@@ -49,6 +56,11 @@ public class SonarQubeCliState {
 
   public CliAuthenticationStatus getAuthenticationStatus() {
     return authenticationStatus;
+  }
+
+  /** Whether the CLI reports a Vortex entitlement, including over-consumption. */
+  public boolean isVortexAvailable() {
+    return vortexAvailable;
   }
 
   @Nullable
