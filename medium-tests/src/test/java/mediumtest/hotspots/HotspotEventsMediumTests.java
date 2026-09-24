@@ -69,7 +69,7 @@ class HotspotEventsMediumTests {
   class WhenReceivingSecurityHotspotRaisedEvent {
     @SonarLintTest
     void it_should_add_hotspot_in_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -114,7 +114,7 @@ class HotspotEventsMediumTests {
 
     @SonarLintTest
     void it_should_add_reviewed_hotspot_in_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -163,7 +163,7 @@ class HotspotEventsMediumTests {
   class WhenReceivingSecurityHotspotClosedEvent {
     @SonarLintTest
     void it_should_remove_hotspot_from_storage(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -213,7 +213,7 @@ class HotspotEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+      var serverWithHotspots = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S4790", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))
@@ -277,7 +277,7 @@ class HotspotEventsMediumTests {
 
     @SonarLintTest
     void it_should_update_hotspot_in_storage_when_changing_status(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -332,7 +332,7 @@ class HotspotEventsMediumTests {
         .withMatchedBranch(CONFIG_SCOPE_ID, branchName)
         .build();
 
-      var server = harness.newFakeSonarQubeServer("10.4")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withPlugin(TestPlugin.JAVA)
         .withProject(projectKey,
           project -> project
@@ -396,7 +396,7 @@ class HotspotEventsMediumTests {
 
     @SonarLintTest
     void it_should_update_hotspot_in_storage_when_changing_assignee(SonarLintTestHarness harness) {
-      var server = harness.newFakeSonarQubeServer("10.0")
+      var server = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -450,7 +450,7 @@ class HotspotEventsMediumTests {
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+      var serverWithHotspots = harness.newFakeSonarQubeServer("2025.1")
         .withServerSentEventsEnabled()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S4790", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)))

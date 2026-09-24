@@ -263,7 +263,7 @@ class ConnectedIssueMediumTests {
     var connectionId = "connectionId";
     var branchName = "branchName";
     var projectKey = "projectKey";
-    var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+    var serverWithHotspots = harness.newFakeSonarQubeServer("2025.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule("java:S4790", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)))
       .withProject(projectKey,
@@ -278,7 +278,7 @@ class ConnectedIssueMediumTests {
     var backend = harness.newBackend()
       .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots,
-        storage -> storage.withServerVersion("10.4").withProject(projectKey,
+        storage -> storage.withServerVersion("2025.1").withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4790", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)

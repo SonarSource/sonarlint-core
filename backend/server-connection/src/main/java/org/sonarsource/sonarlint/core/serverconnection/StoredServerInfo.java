@@ -26,16 +26,9 @@ import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import static org.sonarsource.sonarlint.core.serverconnection.ServerSettings.MQR_MODE_SETTING;
 
 public record StoredServerInfo(Version version, Set<Feature> features, ServerSettings globalSettings, String serverId) {
-  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
-  private static final String MQR_MODE_SETTING_MIN_VERSION = "10.8";
 
   public boolean shouldConsiderMultiQualityModeEnabled() {
-    if (version.satisfiesMinRequirement(Version.create(MQR_MODE_SETTING_MIN_VERSION))) {
-      // starting 10.8, the sonar.multi-quality-mode.enabled setting was introduced. We honor this setting in priority
-      return globalSettings.getAsBoolean(MQR_MODE_SETTING).orElse(false);
-    }
-    // if no setting is present, MQR mode should be used for 10.2+, otherwise standard mode should be used
-    return version.satisfiesMinRequirement(Version.create(MIN_MQR_MODE_SUPPORT_VERSION));
+    return globalSettings.getAsBoolean(MQR_MODE_SETTING).orElse(false);
   }
 
   public boolean hasFeature(Feature feature) {

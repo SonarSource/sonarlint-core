@@ -94,12 +94,14 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
 
 public class ServerFixture {
+
+  private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
 
   public static SonarQubeServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart) {
-    return newSonarQubeServer(onStart, "99.9");
+    return newSonarQubeServer(onStart, "2025.1");
   }
 
   public static SonarQubeServerBuilder newSonarQubeServer(String version) {
@@ -1039,7 +1041,7 @@ public class ServerFixture {
     }
 
     private void registerHotspotsApiResponses() {
-      if (version != null && version.satisfiesMinRequirement(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL)) {
+      if (version != null) {
         registerApiHotspotsPullResponses();
       } else {
         registerApiHotspotSearchResponses();
@@ -1264,7 +1266,7 @@ public class ServerFixture {
       registerIssuesStatusChangeApiResponses();
       registerAddIssueCommentApiResponses();
       registerSearchIssueApiResponses();
-      if (version != null && version.satisfiesMinRequirement(Version.create("10.2"))) {
+      if (version != null) {
         registerIssueAnticipateTransitionResponses();
       }
     }
@@ -1521,11 +1523,12 @@ public class ServerFixture {
         .addSettings(Settings.Setting.newBuilder()
           .setKey("sonar.earlyAccess.misra.enabled")
           .setValue("false"));
-      var mqrModeAvailable = this.version != null && this.version.compareToIgnoreQualifier(Version.create("10.8")) >= 0;
+      var mqrModeAvailable = version != null && version.compareToIgnoreQualifier(Version.create("10.8")) >= 0
+        && !globalSettings.containsKey(MQR_MODE_SETTING);
       if (mqrModeAvailable) {
         settingsBuilder
           .addSettings(Settings.Setting.newBuilder()
-            .setKey("sonar.multi-quality-mode.enabled")
+            .setKey(MQR_MODE_SETTING)
             .setValue("true"));
       }
       settingsBuilder.addAllSettings(globalSettings.entrySet().stream().map(entry -> Settings.Setting.newBuilder()
