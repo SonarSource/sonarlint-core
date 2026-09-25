@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -133,6 +134,24 @@ class SonarQubeClientManagerTests {
     assertThat(consumerExecuted.get()).isFalse();
     assertThat(logTester.logs()).contains("Connection 'sqs1' is invalid");
     verify(client, times(1)).invalidToken(any());
+  }
+
+  @Test
+  void throwing_client_call_should_notify_and_allow_an_explicit_retry() {
+    setupServerConnection("sqs1", "serverUrl");
+    var connection = underTest.getValidClientOrThrow("sqs1");
+
+    assertThatThrownBy(() -> connection.withClientApiAndReturnThrowing(api -> {
+      throw new UnauthorizedException("401");
+    })).isInstanceOf(UnauthorizedException.class);
+
+    assertThat(connection.isActive()).isFalse();
+    verify(client, times(1)).invalidToken(any());
+
+    var result = connection.withClientApiAndReturnThrowing(api -> "retried");
+
+    assertThat(result).isEqualTo("retried");
+    assertThat(connection.isActive()).isTrue();
   }
 
   @Test
