@@ -269,10 +269,10 @@ jobs:
       - uses: SonarSource/ci-github-actions/config-maven@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
         with:
           artifactory-reader-role: private-reader
-      - name: Point Maven resolve at Edge
-        uses: ./.github/actions/point-maven-resolve-at-edge
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
+      # QA resolves this build's own artifacts from sonarsource-qa. Edge returns
+      # 403 for that repository, so keep the SaaS resolve URL from config-maven.
+      # Build and Linux tests still resolve from Edge. The federation probes
+      # below still talk to Edge for distribution zips.
       # Local SQ zips come from sonarsource-releases (LATEST_RELEASE) or
       # sonarsource-builds (DEV). SonarCloud legs do not download a distribution.
       - name: Wait for Artifactory token federation (releases)
