@@ -60,6 +60,7 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 
 public class TelemetryService {
@@ -72,11 +73,13 @@ public class TelemetryService {
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
   private final boolean isTelemetryFeatureEnabled;
+  private final boolean isGessieFeatureEnabled;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
     TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager, ApplicationEventPublisher applicationEventPublisher) {
     this.isTelemetryFeatureEnabled = initializeParams.getBackendCapabilities().contains(TELEMETRY);
+    this.isGessieFeatureEnabled = initializeParams.getBackendCapabilities().contains(GESSIE_TELEMETRY);
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     this.telemetryManager = telemetryManager;
@@ -107,27 +110,40 @@ public class TelemetryService {
   }
 
   public GetStatusResponse getStatus() {
-    return new GetStatusResponse(isEnabled());
+    return new GetStatusResponse(isAnyTelemetryCapabilityEnabled() && telemetryManager.isTelemetryEnabledByUser());
   }
 
   public void enableTelemetry() {
-    if (!isTelemetryFeatureEnabled) {
-      LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
-      return;
-    }
-    var telemetryLiveAttributes = getTelemetryLiveAttributes();
-    if (Objects.nonNull(telemetryLiveAttributes)) {
-      telemetryManager.enable(telemetryLiveAttributes);
-      applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(true));
-    }
+    changeConsent(true);
   }
 
   public void disableTelemetry() {
-    var telemetryLiveAttributes = getTelemetryLiveAttributes();
-    if (Objects.nonNull(telemetryLiveAttributes)) {
-      telemetryManager.disable(telemetryLiveAttributes);
-      applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(false));
+    changeConsent(false);
+  }
+
+  private void changeConsent(boolean enabled) {
+    if (enabled && !isAnyTelemetryCapabilityEnabled()) {
+      LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
+      return;
     }
+    telemetryManager.setTelemetryEnabledByUser(enabled);
+    applicationEventPublisher.publishEvent(new TelemetryUpdatedEvent(enabled));
+    if (!isTelemetryFeatureEnabled) {
+      return;
+    }
+    var telemetryLiveAttributes = getTelemetryLiveAttributes();
+    if (telemetryLiveAttributes == null) {
+      return;
+    }
+    if (enabled) {
+      telemetryManager.uploadIfStillEnabled(telemetryLiveAttributes);
+    } else {
+      telemetryManager.sendOptOut(telemetryLiveAttributes);
+    }
+  }
+
+  private boolean isAnyTelemetryCapabilityEnabled() {
+    return isTelemetryFeatureEnabled || isGessieFeatureEnabled;
   }
 
   @Nullable

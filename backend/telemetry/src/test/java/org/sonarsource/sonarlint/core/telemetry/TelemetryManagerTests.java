@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportMode;
@@ -73,11 +74,50 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void enable_should_trigger_upload_once_per_day() {
+  void explicit_consent_should_override_fresh_migration(@TempDir Path temp) {
+    var params = mock(InitializeParams.class);
+    var migratedInstallTime = OffsetDateTime.now().minusSeconds(1);
+    when(params.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(migratedInstallTime, 0, true));
+    var path = temp.resolve("fresh-migration");
+    var manager = new TelemetryManager(new TelemetryLocalStorageManager(path, params), client);
+    assertThat(manager.isTelemetryEnabledByUser()).isTrue();
+
+    manager.setTelemetryEnabledByUser(false);
+
+    var reloaded = new TelemetryLocalStorageManager(path, params);
+    assertThat(reloaded.isEnabled()).isFalse();
+    assertThat(reloaded.installTime()).isEqualTo(migratedInstallTime.truncatedTo(ChronoUnit.MILLIS));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void delayed_opt_in_should_not_upload_or_reenable_after_opt_out() {
+    telemetryManager.setTelemetryEnabledByUser(true);
+    telemetryManager.setTelemetryEnabledByUser(false);
+
+    telemetryManager.uploadIfStillEnabled(getTelemetryLiveAttributesDto());
+
+    assertThat(storageManager.isEnabled()).isFalse();
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void delayed_opt_out_should_not_send_or_disable_after_opt_in() {
+    telemetryManager.setTelemetryEnabledByUser(false);
+    telemetryManager.setTelemetryEnabledByUser(true);
+
+    telemetryManager.sendOptOut(getTelemetryLiveAttributesDto());
+
+    assertThat(storageManager.isEnabled()).isTrue();
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void uploadIfStillEnabled_should_upload_once_per_day() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    telemetryManager.enable(telemetryPayload);
-    telemetryManager.enable(telemetryPayload);
+    telemetryManager.uploadIfStillEnabled(telemetryPayload);
+    telemetryManager.uploadIfStillEnabled(telemetryPayload);
 
     verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
@@ -89,7 +129,7 @@ class TelemetryManagerTests {
     var manager = new TelemetryManager(mockStorageManager, client);
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    manager.disable(telemetryPayload);
+    manager.sendOptOut(telemetryPayload);
 
     verify(client).optOut(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
@@ -178,7 +218,8 @@ class TelemetryManagerTests {
     assertThat(data.enabled()).isFalse();
 
     // note: the manager hasn't seen the saved data
-    telemetryManager.enable(telemetryLiveAttributes);
+    telemetryManager.setTelemetryEnabledByUser(true);
+    telemetryManager.uploadIfStillEnabled(telemetryLiveAttributes);
 
     var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isTrue();
@@ -198,7 +239,8 @@ class TelemetryManagerTests {
     assertThat(data.enabled()).isTrue();
 
     // note: the manager hasn't seen the saved data
-    telemetryManager.disable(telemetryPayload);
+    telemetryManager.setTelemetryEnabledByUser(false);
+    telemetryManager.sendOptOut(telemetryPayload);
 
     var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isFalse();

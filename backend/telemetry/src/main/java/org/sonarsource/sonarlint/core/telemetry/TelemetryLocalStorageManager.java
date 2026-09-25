@@ -21,10 +21,8 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
@@ -44,8 +42,8 @@ public class TelemetryLocalStorageManager {
   private final TelemetryMigrationDto telemetryMigration;
 
   public TelemetryLocalStorageManager(@Qualifier("telemetryPath") Path telemetryPath, InitializeParams initializeParams) {
-    fileStorageManager = new FileStorageManager<>(telemetryPath, TelemetryLocalStorage::new, TelemetryLocalStorage.class);
     this.telemetryMigration = initializeParams.getTelemetryMigration();
+    fileStorageManager = new FileStorageManager<>(telemetryPath, this::newStorage, TelemetryLocalStorage.class);
   }
 
   @VisibleForTesting
@@ -54,25 +52,17 @@ public class TelemetryLocalStorageManager {
   }
 
   private TelemetryLocalStorage getStorage() {
-    var inMemoryStorage = fileStorageManager.getStorage();
-    applyTelemetryMigration(inMemoryStorage);
-    return inMemoryStorage;
+    return fileStorageManager.getStorage();
   }
 
-  private void applyTelemetryMigration(TelemetryLocalStorage inMemoryStorage) {
-    if (needToMigrateTelemetry(inMemoryStorage)) {
-      inMemoryStorage.setEnabled(telemetryMigration.isEnabled());
-      inMemoryStorage.setInstallTime(telemetryMigration.getInstallTime());
-      inMemoryStorage.setNumUseDays(telemetryMigration.getNumUseDays());
+  private TelemetryLocalStorage newStorage() {
+    var storage = new TelemetryLocalStorage();
+    if (telemetryMigration != null) {
+      storage.setEnabled(telemetryMigration.isEnabled());
+      storage.setInstallTime(telemetryMigration.getInstallTime());
+      storage.setNumUseDays(telemetryMigration.getNumUseDays());
     }
-  }
-
-  private boolean needToMigrateTelemetry(TelemetryLocalStorage inMemoryStorage) {
-    if (telemetryMigration == null) {
-      return false;
-    }
-    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now(ZoneId.systemDefault()));
-    return duration.getSeconds() < 10 && inMemoryStorage.numUseDays() == 0;
+    return storage;
   }
 
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
