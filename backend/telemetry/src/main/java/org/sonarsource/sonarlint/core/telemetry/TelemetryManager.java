@@ -41,10 +41,16 @@ public class TelemetryManager implements TelemetryUserSetting {
     this.client = client;
   }
 
-  void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
+  public void setTelemetryEnabledByUser(boolean enabled) {
+    storageManager.tryUpdateAtomically(localStorage -> localStorage.setEnabled(enabled));
+  }
+
+  /**
+   * Upload only if the user has not disabled telemetry while attributes were fetched.
+   */
+  void uploadIfStillEnabled(TelemetryLiveAttributes telemetryLiveAttributes) {
     storageManager.tryUpdateAtomically(localStorage -> {
-      localStorage.setEnabled(true);
-      if (isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
+      if (localStorage.enabled() && isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
         uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
       }
     });
@@ -61,12 +67,13 @@ public class TelemetryManager implements TelemetryUserSetting {
   }
 
   /**
-   * Disable telemetry (opt-out).
+   * Send legacy opt-out only if the user has not enabled telemetry again while attributes were fetched.
    */
-  void disable(TelemetryLiveAttributes telemetryLiveAttributes) {
+  void sendOptOut(TelemetryLiveAttributes telemetryLiveAttributes) {
     storageManager.tryUpdateAtomically(data -> {
-      data.setEnabled(false);
-      client.optOut(data, telemetryLiveAttributes);
+      if (!data.enabled()) {
+        client.optOut(data, telemetryLiveAttributes);
+      }
     });
   }
 
@@ -79,7 +86,7 @@ public class TelemetryManager implements TelemetryUserSetting {
    */
   void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
     if (isTelemetryEnabledByUser() && isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
-      storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
+      uploadIfStillEnabled(telemetryLiveAttributes);
     }
   }
 
