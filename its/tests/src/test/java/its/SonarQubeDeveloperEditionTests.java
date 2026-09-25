@@ -26,12 +26,9 @@ import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
-import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -95,7 +92,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.Di
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -211,6 +207,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     analysisReadinessByConfigScopeId.clear();
     allBranchNamesForProject.clear();
     matchedBranchNameForProject = null;
+
+    // This profile is altered in a test
+    ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
   }
 
   @AfterAll
@@ -225,9 +224,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void start() {
       Map<String, String> globalProps = new HashMap<>();
       globalProps.put("sonar.global.label", "It works");
-
-      // This profile is altered in a test
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
     }
 
     @AfterEach
@@ -709,11 +705,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var featureBranch = "branch-1.x";
 
       provisionProject(ORCHESTRATOR, projectKey, projectName);
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
       analyzeProject(projectKey, projectKey);
       analyzeProject(projectKey, projectKey, "sonar.branch.name", featureBranch);
 
       var issuesBranch = adminWsClient.issues().search(new SearchRequest().setBranch(featureBranch).setComponentKeys(List.of(projectKey)));
-      var issueToMarkFP = issuesBranch.getIssuesList().stream().filter(issue -> issue.getRule().equals("java:S1172")).findFirst().orElseThrow();
+      var issueToMarkFP = issuesBranch.getIssuesList().stream().filter(issue -> issue.getRule().equals("java:S106")).findFirst().orElseThrow();
       adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(issueToMarkFP.getKey()).setTransition("falsepositive"));
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
@@ -723,7 +720,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(raisedIssues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::isResolved)
-        .contains(tuple("java:S1172", false));
+        .contains(tuple("java:S106", false));
 
       didSynchronizeConfigurationScopes.clear();
       matchedBranchNameForProject = featureBranch;
@@ -738,7 +735,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(raisedIssues)
         .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::isResolved)
-        .contains(tuple("java:S1172", true));
+        .contains(tuple("java:S106", true));
     }
   }
 
