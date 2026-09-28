@@ -70,7 +70,7 @@ class GessieServiceTests {
     service.aiIntegrationAction(action(AiIntegrationActionStatus.STARTED));
 
     var event = sentEvent();
-    assertThat(event.metadata().eventType()).isEqualTo("Analytics.Editor.IdeAiIntegrationAction");
+    assertThat(event.metadata().eventType()).isEqualTo("Analytics.Editor.IdeAiIntegrationActionObserved");
     var payload = (AiIntegrationActionParams) event.eventPayload();
     assertThat(payload.getAction()).isEqualTo(AiIntegrationAction.INSTALL_CLI);
     assertThat(payload.getStatus()).isEqualTo(AiIntegrationActionStatus.STARTED);
