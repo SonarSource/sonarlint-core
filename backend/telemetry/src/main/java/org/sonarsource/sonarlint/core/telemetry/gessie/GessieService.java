@@ -65,7 +65,7 @@ public class GessieService {
     if (params == null || params.getAction() == null || params.getStatus() == null || params.getHost() == null) {
       return;
     }
-    emit("Analytics.Editor.IdeAiIntegrationAction", params);
+    emit("Analytics.Editor.IdeAiIntegrationActionObserved", params);
   }
 
   public void aiIntegrationCliStateObserved(@Nullable AiIntegrationCliStateObservedParams params) {
