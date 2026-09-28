@@ -78,7 +78,7 @@ class AiIntegrationTelemetryMediumTests {
     reportAll(telemetry);
 
     await().untilAsserted(() -> assertThat(aiEvents()).hasSize(3));
-    var action = event("IdeAiIntegrationAction");
+    var action = event("IdeAiIntegrationActionObserved");
     var cli = event("IdeAiIntegrationCliStateObserved");
     var agent = event("IdeAiAgentIntegrationStateObserved");
     for (var event : List.of(action, cli, agent)) {
