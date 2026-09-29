@@ -60,15 +60,10 @@ public class SonarQubeClient {
 
   public <T> T withClientApiAndReturn(Function<ServerApi, T> serverApiConsumer) {
     try {
-      var result = serverApiConsumer.apply(serverApi);
-      state = SonarQubeClientState.ACTIVE;
-      lastNotificationTime = null;
-      return result;
+      return withClientApiAndReturnThrowing(serverApiConsumer);
     } catch (UnauthorizedException e) {
-      state = SonarQubeClientState.INVALID_CREDENTIALS;
-      notifyClientAboutWrongTokenIfNeeded();
+      return null;
     }
-    return null;
   }
 
   public <T> T withClientApiAndReturnThrowing(Function<ServerApi, T> serverApiConsumer) {
@@ -85,14 +80,10 @@ public class SonarQubeClient {
   }
 
   public void withClientApi(Consumer<ServerApi> serverApiConsumer) {
-    try {
-      serverApiConsumer.accept(serverApi);
-      state = SonarQubeClientState.ACTIVE;
-      lastNotificationTime = null;
-    } catch (UnauthorizedException e) {
-      state = SonarQubeClientState.INVALID_CREDENTIALS;
-      notifyClientAboutWrongTokenIfNeeded();
-    }
+    withClientApiAndReturn(api -> {
+      serverApiConsumer.accept(api);
+      return null;
+    });
   }
 
   private boolean shouldNotifyAboutWrongToken() {

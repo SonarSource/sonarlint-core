@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -72,26 +71,22 @@ public class SonarProjectsCache {
         var projects = serverApi.component().searchProjectsByNameOrKey(trimmedSearchText, cancelMonitor);
         cancelMonitor.checkCanceled();
 
-        var projectsByKey = new LinkedHashMap<String, ServerProject>();
-        projects.forEach(project -> projectsByKey.putIfAbsent(project.key(), project));
-        var exactProjectInSearch = projects.stream().filter(project -> trimmedSearchText.equals(project.key())).findFirst();
-        var exactProject = exactProjectInSearch.isPresent() ? exactProjectInSearch
-          : serverApi.component().getProjectByExactKey(trimmedSearchText, cancelMonitor);
+        var exactProject = projects.stream()
+          .filter(project -> trimmedSearchText.equals(project.key()))
+          .findFirst()
+          .or(() -> serverApi.component().getProjectByExactKey(trimmedSearchText, cancelMonitor));
         cancelMonitor.checkCanceled();
 
-        var orderedProjects = new ArrayList<ServerProject>();
-        exactProject.ifPresent(orderedProjects::add);
-        projectsByKey.values().stream()
-          .filter(project -> exactProject.isEmpty() || !exactProject.get().key().equals(project.key()))
-          .forEach(orderedProjects::add);
-        if (orderedProjects.isEmpty()) {
-          var cachedIndex = textSearchIndexCacheByConnectionId.getIfPresent(connectionId);
-          // A capped index may omit projects; only reuse a cached catalog that is known to be complete.
-          if (cachedIndex != null && cachedIndex.size() < MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH) {
-            orderedProjects.addAll(cachedIndex.search(trimmedSearchText).keySet());
-          }
+        var projectsByKey = new LinkedHashMap<String, ServerProject>();
+        exactProject.ifPresent(project -> projectsByKey.put(project.key(), project));
+        projects.forEach(project -> projectsByKey.putIfAbsent(project.key(), project));
+        var cachedIndex = textSearchIndexCacheByConnectionId.getIfPresent(connectionId);
+        // A capped index may omit projects; only reuse a cached catalog that is known to be complete.
+        if (cachedIndex != null && cachedIndex.size() < MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH && projectsByKey.size() < 10) {
+          cachedIndex.search(trimmedSearchText).keySet()
+            .forEach(project -> projectsByKey.putIfAbsent(project.key(), project));
         }
-        return orderedProjects.stream()
+        return projectsByKey.values().stream()
           .limit(10)
           .map(project -> new SonarProjectDto(project.key(), project.name()))
           .toList();

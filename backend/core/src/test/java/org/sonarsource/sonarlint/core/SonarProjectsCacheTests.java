@@ -313,17 +313,20 @@ class SonarProjectsCacheTests {
   }
 
   @Test
-  void fuzzySearchProjects_should_keep_server_results_without_cached_partial_key_matches() {
+  void fuzzySearchProjects_should_append_cached_partial_key_matches_after_server_results() {
     var cachedProject = new ServerProject("mycompany:project-bar", "Unrelated", false);
     var serverProject = new ServerProject("other-project", "Project Bar", false);
-    when(serverApi.component().getAllProjects(any())).thenReturn(List.of(cachedProject));
+    var staleServerProject = new ServerProject(serverProject.key(), "Project Bar (cached)", false);
+    when(serverApi.component().getAllProjects(any())).thenReturn(List.of(cachedProject, staleServerProject));
     underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
     when(serverApi.component().searchProjectsByNameOrKey(eq("project-bar"), any())).thenReturn(List.of(serverProject));
     when(serverApi.component().getProjectByExactKey(eq("project-bar"), any())).thenReturn(Optional.empty());
 
     var actual = underTest.fuzzySearchProjects(SQ_1, "project-bar", new SonarLintCancelMonitor());
 
-    assertThat(actual).containsExactly(new SonarProjectDto(serverProject.key(), serverProject.name()));
+    assertThat(actual).containsExactly(
+      new SonarProjectDto(serverProject.key(), serverProject.name()),
+      new SonarProjectDto(cachedProject.key(), cachedProject.name()));
   }
 
   @Test
