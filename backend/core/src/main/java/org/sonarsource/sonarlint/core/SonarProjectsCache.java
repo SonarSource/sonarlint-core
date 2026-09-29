@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -45,14 +45,15 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class SonarProjectsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final int MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH = 10_000;
   private final SonarQubeClientManager sonarQubeClientManager;
 
   private final Cache<String, TextSearchIndex<ServerProject>> textSearchIndexCacheByConnectionId = CacheBuilder.newBuilder()
-    .expireAfterWrite(1, TimeUnit.HOURS)
+    .expireAfterWrite(Duration.ofHours(1))
     .build();
 
   private final Cache<SonarProjectKey, Optional<ServerProject>> singleProjectsCache = CacheBuilder.newBuilder()
-    .expireAfterWrite(1, TimeUnit.HOURS)
+    .expireAfterWrite(Duration.ofHours(1))
     .build();
 
   public SonarProjectsCache(SonarQubeClientManager sonarQubeClientManager) {
@@ -83,6 +84,13 @@ public class SonarProjectsCache {
         projectsByKey.values().stream()
           .filter(project -> exactProject.isEmpty() || !exactProject.get().key().equals(project.key()))
           .forEach(orderedProjects::add);
+        if (orderedProjects.isEmpty()) {
+          var cachedIndex = textSearchIndexCacheByConnectionId.getIfPresent(connectionId);
+          // A capped index may omit projects; only reuse a cached catalog that is known to be complete.
+          if (cachedIndex != null && cachedIndex.size() < MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH) {
+            orderedProjects.addAll(cachedIndex.search(trimmedSearchText).keySet());
+          }
+        }
         return orderedProjects.stream()
           .limit(10)
           .map(project -> new SonarProjectDto(project.key(), project.name()))

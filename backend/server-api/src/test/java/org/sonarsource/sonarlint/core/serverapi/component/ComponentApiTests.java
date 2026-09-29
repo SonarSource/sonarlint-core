@@ -147,7 +147,8 @@ class ComponentApiTests {
   void should_propagate_search_failures() {
     mockServer.addResponse("/api/components/search.protobuf?qualifiers=TRK&q=project&p=1&ps=10", new MockResponse.Builder().code(500).build());
 
-    assertThatThrownBy(() -> underTest.searchProjectsByNameOrKey("project", new SonarLintCancelMonitor()))
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThatThrownBy(() -> underTest.searchProjectsByNameOrKey("project", cancelMonitor))
       .isInstanceOf(ServerErrorException.class);
   }
 
@@ -233,7 +234,8 @@ class ComponentApiTests {
   void should_propagate_exact_key_lookup_failures() {
     mockServer.addResponse("/api/components/show?component=project", new MockResponse.Builder().code(500).build());
 
-    assertThatThrownBy(() -> underTest.getProjectByExactKey("project", new SonarLintCancelMonitor()))
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThatThrownBy(() -> underTest.getProjectByExactKey("project", cancelMonitor))
       .isInstanceOf(ServerErrorException.class);
   }
 
