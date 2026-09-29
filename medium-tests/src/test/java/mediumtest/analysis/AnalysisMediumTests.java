@@ -22,6 +22,7 @@ package mediumtest.analysis;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 import mediumtest.analysis.sensor.ThrowingSensorConstructor;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +77,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import utils.OnDiskTestClientInputFile;
 import utils.TestPlugin;
 
@@ -774,6 +777,94 @@ class AnalysisMediumTests {
 
     await().atMost(1, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).doesNotExist());
+  }
+
+  @SonarLintTest
+  void should_pass_github_organization_to_sensors_in_connected_mode_when_remote_is_github(SonarLintTestHarness harness, @TempDir Path baseDir)
+    throws GitAPIException, URISyntaxException, IOException {
+    dumpGithubOrganizationInConnectedMode(harness, baseDir, "https://github.com/myorg/myproj.git");
+
+    await().atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(baseDir.resolve("property.dump")).hasContent("myorg"));
+  }
+
+  @SonarLintTest
+  void should_not_pass_github_organization_in_connected_mode_when_remote_is_not_github(SonarLintTestHarness harness, @TempDir Path baseDir)
+    throws GitAPIException, URISyntaxException, IOException {
+    dumpGithubOrganizationInConnectedMode(harness, baseDir, "https://gitlab.com/myorg/myproj.git");
+
+    assertThat(baseDir.resolve("property.dump")).doesNotExist();
+  }
+
+  /**
+   * Sets up a connected-mode analysis of a PHP file whose base dir has a {@code remoteUrl} origin remote, with a
+   * plugin dumping the resolved {@code sonar.iac.internal.github_organization} property to {@code property.dump},
+   * then triggers the analysis and waits for it to complete. Callers assert on the resulting dump file.
+   */
+  private void dumpGithubOrganizationInConnectedMode(SonarLintTestHarness harness, Path baseDir, String remoteUrl)
+    throws GitAPIException, URISyntaxException, IOException {
+    var filePath = createFile(baseDir, "file.php", "");
+    var fileUri = filePath.toUri();
+    var git = GitUtils.createRepository(baseDir);
+    git.remoteAdd().setName("origin").setUri(new URIish(remoteUrl)).call();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var propertyDumpingPluginPath = newSonarPlugin("php")
+      .withSensor(PropertyDumpingSensor.class)
+      .generate(baseDir);
+    var propertyDumpingPlugin = new Plugin(Language.PHP, propertyDumpingPluginPath, "1.0", "hash");
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey", project -> project.withMainBranch("main")))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(propertyDumpingPlugin)
+      .start(client);
+
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(PropertyDumpingSensor.PROPERTY_NAME_TO_DUMP, "sonar.iac.internal.github_organization"), false, System.currentTimeMillis()));
+
+    // wait for the analysis to finish, so a missing-dump-file assertion can't pass just because it hasn't run yet
+    await().atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsKey(fileUri));
+  }
+
+  @SonarLintTest
+  void should_not_corrupt_stored_user_properties_when_injecting_github_organization(SonarLintTestHarness harness, @TempDir Path baseDir)
+    throws GitAPIException, URISyntaxException, IOException {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var git = GitUtils.createRepository(baseDir);
+    git.remoteAdd().setName("origin").setUri(new URIish("https://github.com/myorg/myproj.git")).call();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.XML).start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withMainBranch("main")))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+    // Establishes a stored (live, mutable) user-properties map for this scope in UserAnalysisPropertiesRepository.
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of()));
+
+    // Triggers a connected-mode analysis that resolves and injects the github organization property; without a
+    // defensive copy, this would mutate the map stored above in place.
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    await().untilAsserted(() -> assertThat(client.getLogs()).extracting(LogParams::getMessage).anyMatch(message -> message.startsWith("Analysis detected")));
+    client.clearLogs();
+
+    // Re-setting the exact same (still empty) properties must be a no-op: if the stored map had been corrupted
+    // with the injected github organization key, this would see a spurious diff and trigger an unwanted automatic
+    // re-analysis of the open file.
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of()));
+
+    await().during(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(client.getLogs()).extracting(LogParams::getMessage).noneMatch(message -> message.startsWith("Analysis detected")));
   }
 
   @SonarLintTest
