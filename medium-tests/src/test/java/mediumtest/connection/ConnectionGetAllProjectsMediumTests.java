@@ -104,9 +104,7 @@ class ConnectionGetAllProjectsMediumTests {
         .addComponents(Components.Component.newBuilder().setKey("mycompany:project-foo2").setName("My Company Project Foo 2"))
         .build()))));
     server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&q=project-bar&p=1&ps=10")
-      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
-        .addComponents(Components.Component.newBuilder().setKey("mycompany:project-bar").setName("My Company Project Bar"))
-        .build()))));
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder().build()))));
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .start();
@@ -130,11 +128,10 @@ class ConnectionGetAllProjectsMediumTests {
         tuple("mycompany:project-foo1", "My Company Project Foo 1"),
         tuple("mycompany:project-foo2", "My Company Project Foo 2"));
 
-    var searchBarByKey = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "project-bar")).join();
-    assertThat(searchBarByKey.getTopResults())
-      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
-      .containsExactly(
-        tuple("mycompany:project-bar", "My Company Project Bar"));
+    // A real server does not match partial project keys through q, and no local catalog was loaded.
+    var searchBarByPartialKey = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "project-bar")).join();
+    assertThat(searchBarByPartialKey.getTopResults()).isEmpty();
+    server.getMockServer().verify(0, getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")));
   }
 
   @SonarLintTest

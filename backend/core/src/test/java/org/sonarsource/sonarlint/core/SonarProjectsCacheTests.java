@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -257,7 +258,8 @@ class SonarProjectsCacheTests {
       .thenThrow(new RuntimeException("temporary failure"))
       .thenReturn(List.of(new ServerProject("needle", "Project", false)));
 
-    assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor()))
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", cancelMonitor))
       .isInstanceOf(RuntimeException.class)
       .hasMessage("temporary failure");
 
@@ -267,8 +269,66 @@ class SonarProjectsCacheTests {
   }
 
   @Test
+  void fuzzySearchProjects_should_find_partial_key_in_cached_complete_catalog() {
+    var peachProject = new ServerProject("SonarSource_peachee-dotnet", "DriAutomation.NET", false);
+    var barProject = new ServerProject("mycompany:project-bar", "Unrelated", false);
+    when(serverApi.component().getAllProjects(any())).thenReturn(List.of(peachProject, barProject));
+    underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
+    when(serverApi.component().searchProjectsByNameOrKey(any(), any())).thenReturn(List.of());
+    when(serverApi.component().getProjectByExactKey(any(), any())).thenReturn(Optional.empty());
+
+    var peachResults = underTest.fuzzySearchProjects(SQ_1, "peach", new SonarLintCancelMonitor());
+    var barResults = underTest.fuzzySearchProjects(SQ_1, "project-bar", new SonarLintCancelMonitor());
+
+    assertThat(peachResults).containsExactly(new SonarProjectDto(peachProject.key(), peachProject.name()));
+    assertThat(barResults).containsExactly(new SonarProjectDto(barProject.key(), barProject.name()));
+    verify(serverApi.component(), times(1)).getAllProjects(any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_not_load_catalog_for_partial_key_without_cached_index() {
+    when(serverApi.component().searchProjectsByNameOrKey(eq("project-bar"), any())).thenReturn(List.of());
+    when(serverApi.component().getProjectByExactKey(eq("project-bar"), any())).thenReturn(Optional.empty());
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "project-bar", new SonarLintCancelMonitor());
+
+    assertThat(actual).isEmpty();
+    verify(serverApi.component(), never()).getAllProjects(any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_not_use_capped_catalog_for_partial_key() {
+    var projects = java.util.stream.IntStream.range(0, 10_000)
+      .mapToObj(i -> new ServerProject("key-" + i, "Project " + i, false))
+      .toList();
+    when(serverApi.component().getAllProjects(any())).thenReturn(projects);
+    underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
+    when(serverApi.component().searchProjectsByNameOrKey(eq("key-9999"), any())).thenReturn(List.of());
+    when(serverApi.component().getProjectByExactKey(eq("key-9999"), any())).thenReturn(Optional.empty());
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "key-9999", new SonarLintCancelMonitor());
+
+    assertThat(actual).isEmpty();
+    verify(serverApi.component(), times(1)).getAllProjects(any());
+  }
+
+  @Test
+  void fuzzySearchProjects_should_keep_server_results_without_cached_partial_key_matches() {
+    var cachedProject = new ServerProject("mycompany:project-bar", "Unrelated", false);
+    var serverProject = new ServerProject("other-project", "Project Bar", false);
+    when(serverApi.component().getAllProjects(any())).thenReturn(List.of(cachedProject));
+    underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
+    when(serverApi.component().searchProjectsByNameOrKey(eq("project-bar"), any())).thenReturn(List.of(serverProject));
+    when(serverApi.component().getProjectByExactKey(eq("project-bar"), any())).thenReturn(Optional.empty());
+
+    var actual = underTest.fuzzySearchProjects(SQ_1, "project-bar", new SonarLintCancelMonitor());
+
+    assertThat(actual).containsExactly(new SonarProjectDto(serverProject.key(), serverProject.name()));
+  }
+
+  @Test
   void fuzzySearchProjects_should_translate_authentication_failure() {
-    org.mockito.Mockito.doThrow(new org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException("401"))
+    doThrow(new org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException("401"))
       .when(sonarQubeClient).withClientApiAndReturnThrowing(any());
 
     assertThatThrownBy(() -> underTest.fuzzySearchProjects(SQ_1, "needle", new SonarLintCancelMonitor()))
