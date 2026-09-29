@@ -46,6 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -487,7 +489,7 @@ class GitServiceTests {
     var retrievedUrl = GitService.getRemoteUrl(nonGitDir);
 
     assertThat(retrievedUrl).isNull();
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.INFO))
       .anyMatch(s -> s.contains("Git repository not found for"));
   }
 
@@ -523,6 +525,49 @@ class GitServiceTests {
     assertThat(retrievedUrl).isNull();
     assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .anyMatch(s -> s.contains("Error retrieving remote URL for"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "https://github.com/myorg/myproj.git",
+    "git@github.com:myorg/myproj.git",
+    "https://github.com//myorg/myproj.git"
+  })
+  void it_should_resolve_github_organization_from_remote_url(String remoteUrl) throws GitAPIException, URISyntaxException {
+    git.remoteAdd().setName("origin").setUri(new URIish(remoteUrl)).call();
+
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, Map.of())).isEqualTo("myorg");
+  }
+
+  @Test
+  void it_should_not_fall_back_to_env_when_remote_is_configured_but_not_github() throws GitAPIException, URISyntaxException {
+    git.remoteAdd().setName("origin").setUri(new URIish("https://gitlab.com/myorg/myproj.git")).call();
+
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, Map.of("GITHUB_REPOSITORY_OWNER", "envorg"))).isNull();
+  }
+
+  @Test
+  void it_should_resolve_github_organization_from_env_when_no_remote_configured() {
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, Map.of("GITHUB_REPOSITORY_OWNER", "envorg"))).isEqualTo("envorg");
+  }
+
+  @Test
+  void it_should_resolve_github_organization_from_env_when_server_url_is_public_github() {
+    var env = Map.of("GITHUB_REPOSITORY_OWNER", "envorg", "GITHUB_SERVER_URL", "https://github.com");
+
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, env)).isEqualTo("envorg");
+  }
+
+  @Test
+  void it_should_not_resolve_github_organization_from_env_when_server_url_is_github_enterprise() {
+    var env = Map.of("GITHUB_REPOSITORY_OWNER", "envorg", "GITHUB_SERVER_URL", "https://github.acme.com");
+
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, env)).isNull();
+  }
+
+  @Test
+  void it_should_not_resolve_github_organization_when_no_remote_and_no_env() {
+    assertThat(GitService.resolveGithubOrganization(projectDirPath, Map.of())).isNull();
   }
 
 }
