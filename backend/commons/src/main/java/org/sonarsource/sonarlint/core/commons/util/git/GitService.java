@@ -138,7 +138,7 @@ public class GitService {
 
   /**
    * Resolves the GitHub organization owning the analyzed repository, following the same semantics as
-   * SonarQube Server/Cloud (SCANENGINE-639), in order:
+   * SonarQube Server/Cloud, in order:
    * <ol>
    *   <li>by parsing the {@code remote.origin.url} of {@code baseDir}, if a remote is configured. If that remote
    *   does not point to {@code github.com}, no organization applies and the env var below is not consulted;</li>
