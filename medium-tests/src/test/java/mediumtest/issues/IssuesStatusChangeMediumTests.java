@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToIgnoreCase;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -318,7 +319,7 @@ class IssuesStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(
             equalToJson(
               "[{\"filePath\":\"pom.xml\",\"line\":6,\"hash\":\"07bac3d9d23dc1b0d7156598e01d40b0\",\"ruleKey\":\"xml:S3421\",\"issueMessage\":\"Replace \\\"pom.version\\\" with \\\"project.version\\\".\",\"transition\":\"wontfix\"}]")));
