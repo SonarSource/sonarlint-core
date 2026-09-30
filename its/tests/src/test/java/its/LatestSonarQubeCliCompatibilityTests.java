@@ -40,6 +40,7 @@ import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
@@ -50,6 +51,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCl
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 @DisabledOnOs(OS.WINDOWS)
 @Tag("CliCompatibility")
@@ -112,7 +114,7 @@ class LatestSonarQubeCliCompatibilityTests {
 
   private static AiIntegrationService newIsolatedService(Path isolatedHome, Map<String, String> environment) {
     return new AiIntegrationService(System2.INSTANCE, CommandExecutor.create(), isolatedHome, environment,
-      new ConnectionConfigurationRepository(), new ConfigurationRepository());
+      new ConnectionConfigurationRepository(), new ConfigurationRepository(), mock(SonarLintRpcClient.class));
   }
 
   private CommandResult run(List<String> command, Map<String, String> environment, Path workDir, Path log,

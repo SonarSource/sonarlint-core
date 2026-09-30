@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
 import org.sonarsource.sonarlint.core.ai.ide.McpConfigurationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AuthenticateCliWithConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AuthenticateCliWithConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
@@ -51,6 +53,11 @@ public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implem
   @Override
   public CompletableFuture<PrepareCliCommandResponse> prepareAuthenticateCommand(PrepareAuthenticateCliCommandParams params) {
     return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).prepareAuthenticateCommand(params));
+  }
+
+  @Override
+  public CompletableFuture<AuthenticateCliWithConnectionResponse> authenticateCliWithConnection(AuthenticateCliWithConnectionParams params) {
+    return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).authenticateCliWithConnection(params, cancelMonitor));
   }
 
   @Override
