@@ -1152,7 +1152,7 @@ public class ServerFixture {
           });
 
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
-          var searchUrl = "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY"
+          var searchUrl = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY"
             + componentKeyParams(projectKey) + "&rules=&branch=" + branchName
             + "&ps=500&p=1";
           mockServer.stubFor(get(searchUrl)
