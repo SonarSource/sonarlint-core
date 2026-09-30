@@ -19,11 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 import org.assertj.core.api.Condition;
@@ -85,6 +89,21 @@ class TelemetryLocalStorageManagerTests {
 
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(1);
+  }
+
+  @Test
+  void should_read_storage_containing_retired_ai_metrics() throws IOException {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+    storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
+    var json = new String(Base64.getDecoder().decode(Files.readString(filePath)), StandardCharsets.UTF_8);
+    var legacyJson = json.substring(0, json.length() - 1)
+      + ",\"mcpRuleFileRequestedCount\":2,\"aiHooksInstalledCount\":{\"WINDSURF\":1}}";
+    Files.writeString(filePath, Base64.getEncoder().encodeToString(legacyJson.getBytes(StandardCharsets.UTF_8)));
+
+    var restored = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class)).tryRead();
+
+    assertThat(restored.numUseDays()).isEqualTo(1);
+    assertThat(restored.lastUseDate()).isEqualTo(today);
   }
 
   @Test
