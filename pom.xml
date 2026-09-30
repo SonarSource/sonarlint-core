@@ -46,7 +46,7 @@
 
     <sonar-plugin-api.version>14.0.0.4498</sonar-plugin-api.version>
     <sonar-markdown.version>25.3.0.104237</sonar-markdown.version>
-    <sonar-scanner-protocol.version>9.9.9.104369</sonar-scanner-protocol.version>
+    <sonar-scanner-protocol.version>26.4.0.121862</sonar-scanner-protocol.version>
     <protobuf.version>4.36.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>5.5.0</okhttp.version>
