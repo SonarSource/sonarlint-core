@@ -48,7 +48,6 @@ class MCPServerConfigurationProviderMediumTests {
     var connectionId = "scConnection";
     var organizationKey = "myOrg";
     var token = "token123";
-    var embeddedServerPort = 0;
 
     var server = harness.newFakeSonarCloudServer().start();
     var cloudUrl = server.baseUrl().replaceAll("/$", "");
@@ -75,11 +74,10 @@ class MCPServerConfigurationProviderMediumTests {
         "env": {
           "SONARQUBE_ORG": "%s",
           "SONARQUBE_URL": "%s",
-          "SONARQUBE_TOKEN": "%s",
-          "SONARQUBE_IDE_PORT": "%s"
+          "SONARQUBE_TOKEN": "%s"
         }
       }
-      """, organizationKey, cloudUrl, token, embeddedServerPort);
+      """, organizationKey, cloudUrl, token);
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
@@ -99,7 +97,6 @@ class MCPServerConfigurationProviderMediumTests {
     var connectionId = "scUsConnection";
     var organizationKey = "myOrg";
     var token = "token123";
-    var embeddedServerPort = 0;
 
     var server = harness.newFakeSonarCloudServer().start();
     var cloudUrl = server.baseUrl().replaceAll("/$", "");
@@ -126,11 +123,10 @@ class MCPServerConfigurationProviderMediumTests {
         "env": {
           "SONARQUBE_ORG": "%s",
           "SONARQUBE_URL": "%s",
-          "SONARQUBE_TOKEN": "%s",
-          "SONARQUBE_IDE_PORT": "%s"
+          "SONARQUBE_TOKEN": "%s"
         }
       }
-      """, organizationKey, cloudUrl, token, embeddedServerPort);
+      """, organizationKey, cloudUrl, token);
 
     var backend = harness.newBackend()
       .withSonarQubeCloudUsRegionUri(server.baseUrl())
@@ -152,7 +148,6 @@ class MCPServerConfigurationProviderMediumTests {
     var connectionId2 = "sqConnection";
     var serverUrl = "http://my-sonarqube";
     var token = "token123";
-    var embeddedServerPort = 0;
 
     var expectedSettings = String.format("""
       {
@@ -173,11 +168,10 @@ class MCPServerConfigurationProviderMediumTests {
         ],
         "env": {
           "SONARQUBE_URL": "%s",
-          "SONARQUBE_TOKEN": "%s",
-          "SONARQUBE_IDE_PORT": "%s"
+          "SONARQUBE_TOKEN": "%s"
         }
       }
-      """, serverUrl, token, embeddedServerPort);
+      """, serverUrl, token);
 
     var server = harness.newFakeSonarCloudServer().start();
 
