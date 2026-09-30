@@ -115,7 +115,7 @@ public class AiHookService {
       case WINDSURF -> "Windsurf";
       case CURSOR -> "Cursor";
       case KIRO -> "Kiro";
-      case GITHUB_COPILOT, CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY ->
+      case GITHUB_COPILOT, CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY, JUNIE, JETBRAINS_AI_ASSISTANT ->
         throw AiAgentCapabilities.unsupportedHook(agent);
     };
   }

@@ -87,6 +87,8 @@ final class AgentProfiles {
         NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
       case ANTIGRAVITY -> profile(agent, "antigravity", null,
         NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+      case JUNIE, JETBRAINS_AI_ASSISTANT -> profile(agent, null, MCP_SERVERS_SECTION,
+        NativeHosts.only(AiIntegrationHost.INTELLIJ), false, false, HookSupport.NOT_YET_IMPLEMENTED);
     };
   }
 
