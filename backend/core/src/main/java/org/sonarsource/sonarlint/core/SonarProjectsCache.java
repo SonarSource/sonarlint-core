@@ -21,19 +21,22 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import java.util.Comparator;
+import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
@@ -41,14 +44,15 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class SonarProjectsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final int MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH = 10_000;
   private final SonarQubeClientManager sonarQubeClientManager;
 
   private final Cache<String, TextSearchIndex<ServerProject>> textSearchIndexCacheByConnectionId = CacheBuilder.newBuilder()
-    .expireAfterWrite(1, TimeUnit.HOURS)
+    .expireAfterWrite(Duration.ofHours(1))
     .build();
 
   private final Cache<SonarProjectKey, Optional<ServerProject>> singleProjectsCache = CacheBuilder.newBuilder()
-    .expireAfterWrite(1, TimeUnit.HOURS)
+    .expireAfterWrite(Duration.ofHours(1))
     .build();
 
   public SonarProjectsCache(SonarQubeClientManager sonarQubeClientManager) {
@@ -56,14 +60,41 @@ public class SonarProjectsCache {
   }
 
   public List<SonarProjectDto> fuzzySearchProjects(String connectionId, String searchText, SonarLintCancelMonitor cancelMonitor) {
-    return getTextSearchIndex(connectionId, cancelMonitor).search(searchText)
-      .entrySet()
-      .stream()
-      .sorted(Comparator.comparing(Map.Entry<ServerProject, Double>::getValue).reversed()
-        .thenComparing(Comparator.comparing(e -> e.getKey().name(), String.CASE_INSENSITIVE_ORDER)))
-      .limit(10)
-      .map(e -> new SonarProjectDto(e.getKey().key(), e.getKey().name()))
-      .toList();
+    var trimmedSearchText = searchText.strip();
+    if (trimmedSearchText.isEmpty()) {
+      return List.of();
+    }
+
+    cancelMonitor.checkCanceled();
+    try {
+      return sonarQubeClientManager.getValidClientOrThrow(connectionId).withClientApiAndReturnThrowing(serverApi -> {
+        var projects = serverApi.component().searchProjectsByNameOrKey(trimmedSearchText, cancelMonitor);
+        cancelMonitor.checkCanceled();
+
+        var exactProject = projects.stream()
+          .filter(project -> trimmedSearchText.equals(project.key()))
+          .findFirst()
+          .or(() -> serverApi.component().getProjectByExactKey(trimmedSearchText, cancelMonitor));
+        cancelMonitor.checkCanceled();
+
+        var projectsByKey = new LinkedHashMap<String, ServerProject>();
+        exactProject.ifPresent(project -> projectsByKey.put(project.key(), project));
+        projects.forEach(project -> projectsByKey.putIfAbsent(project.key(), project));
+        var cachedIndex = textSearchIndexCacheByConnectionId.getIfPresent(connectionId);
+        // A capped index may omit projects; only reuse a cached catalog that is known to be complete.
+        if (cachedIndex != null && cachedIndex.size() < MAX_CACHED_PROJECTS_FOR_LOCAL_SEARCH && projectsByKey.size() < 10) {
+          cachedIndex.search(trimmedSearchText).keySet()
+            .forEach(project -> projectsByKey.putIfAbsent(project.key(), project));
+        }
+        return projectsByKey.values().stream()
+          .limit(10)
+          .map(project -> new SonarProjectDto(project.key(), project.name()))
+          .toList();
+      });
+    } catch (UnauthorizedException e) {
+      throw new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.UNAUTHORIZED,
+        "The authorization has failed. Please check your credentials.", null));
+    }
   }
 
   private static class SonarProjectKey {
