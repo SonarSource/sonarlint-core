@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -126,6 +127,7 @@ public class AnalysisService {
   private final ApplicationEventPublisher eventPublisher;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
+  private final Map<String, Optional<String>> githubOrganizationByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final Path esLintBridgeServerPath;
@@ -234,10 +236,8 @@ public class AnalysisService {
       var binding = bindingOpt.get();
       var analyzerConfig = storageService.binding(binding).analyzerConfiguration();
       if (analyzerConfig.isValid()) {
-        var githubOrganization = GitService.resolveGithubOrganization(baseDir);
-        if (githubOrganization != null) {
-          userAnalysisProperties.put(SONAR_INTERNAL_GITHUB_ORGANIZATION_ANALYSIS_PROP, githubOrganization);
-        }
+        var githubOrganization = githubOrganizationByConfigScopeId.computeIfAbsent(configScopeId, k -> Optional.ofNullable(GitService.resolveGithubOrganization(baseDir)));
+        githubOrganization.ifPresent(org -> userAnalysisProperties.put(SONAR_INTERNAL_GITHUB_ORGANIZATION_ANALYSIS_PROP, org));
         return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, trace);
       } else {
         // This can happen when a standalone analysis was scheduled and a synchronization happened in between.
@@ -318,6 +318,7 @@ public class AnalysisService {
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
     var removedConfigurationScopeId = event.getRemovedConfigurationScopeId();
     analysisReadinessByConfigScopeId.remove(removedConfigurationScopeId);
+    githubOrganizationByConfigScopeId.remove(removedConfigurationScopeId);
     client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(Set.of(removedConfigurationScopeId), false));
     schedulerCache.unregisterModule(removedConfigurationScopeId, event.removedBindingConfiguration().connectionId());
   }
@@ -325,6 +326,7 @@ public class AnalysisService {
   @EventListener
   public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.configScopeId();
+    githubOrganizationByConfigScopeId.remove(configScopeId);
     checkIfReadyForAnalysis(Set.of(configScopeId));
   }
 
