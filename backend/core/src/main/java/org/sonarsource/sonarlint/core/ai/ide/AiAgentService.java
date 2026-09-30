@@ -58,7 +58,8 @@ public class AiAgentService {
         ---
 
         """;
-      case CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY -> throw AiAgentCapabilities.unsupportedRuleFile(agent);
+      case CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY, JUNIE, JETBRAINS_AI_ASSISTANT ->
+        throw AiAgentCapabilities.unsupportedRuleFile(agent);
     };
     var response = new GetRuleFileContentResponse(header
       + """

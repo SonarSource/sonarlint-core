@@ -120,17 +120,19 @@ class AiAgentMediumTests {
     var backend = harness.newBackend()
       .start();
 
-    var inspection = backend.getAiAgentService()
-      .inspectMcpConfiguration(new McpConfigurationInspectionParams(AiAgent.CURSOR, null))
-      .join();
-    var update = backend.getAiAgentService()
-      .planMcpConfigurationUpdate(new McpConfigurationUpdateParams(AiAgent.CURSOR, null,
-        "{\"command\":\"docker\",\"args\":[\"sonarsource/sonarqube-mcp\"]}"))
-      .join();
+    for (var agent : new AiAgent[] {AiAgent.CURSOR, AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT}) {
+      var inspection = backend.getAiAgentService()
+        .inspectMcpConfiguration(new McpConfigurationInspectionParams(agent, null))
+        .join();
+      var update = backend.getAiAgentService()
+        .planMcpConfigurationUpdate(new McpConfigurationUpdateParams(agent, null,
+          "{\"command\":\"docker\",\"args\":[\"sonarsource/sonarqube-mcp\"]}"))
+        .join();
 
-    assertThat(inspection.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
-    assertThat(update.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
-    assertThat(update.getUpdatedContent()).contains("mcpServers", "sonarqube");
+      assertThat(inspection.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+      assertThat(update.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+      assertThat(update.getUpdatedContent()).contains("mcpServers", "sonarqube");
+    }
   }
 
 }
