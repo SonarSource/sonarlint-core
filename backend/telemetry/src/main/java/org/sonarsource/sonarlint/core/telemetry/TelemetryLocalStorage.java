@@ -26,7 +26,6 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -37,7 +36,6 @@ import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.storage.local.LocalStorage;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
@@ -102,13 +100,11 @@ public class TelemetryLocalStorage implements LocalStorage {
   private boolean isAutomaticAnalysisEnabled;
   private int automaticAnalysisToggledCount;
   private int mcpServerConfigurationRequestedCount;
-  private int mcpRuleFileRequestedCount;
   private boolean isMcpIntegrationEnabled;
   @Nullable
   private McpTransportMode mcpTransportModeUsed;
   private final Map<String, Integer> labsLinkClickedCount;
   private final Map<String, Integer> labsFeedbackLinkClickedCount;
-  private final Map<AiAgent, Integer> aiHooksInstalledCount;
   private final Map<String, Integer> campaignsShown;
   private final Map<String, String> campaignsResolutions;
   private int supportedLanguagesPanelOpenedCount;
@@ -132,7 +128,6 @@ public class TelemetryLocalStorage implements LocalStorage {
     calledToolsByName = new HashMap<>();
     labsLinkClickedCount = new HashMap<>();
     labsFeedbackLinkClickedCount = new HashMap<>();
-    aiHooksInstalledCount = new EnumMap<>(AiAgent.class);
     campaignsShown = new HashMap<>();
     campaignsResolutions = new HashMap<>();
   }
@@ -294,12 +289,10 @@ public class TelemetryLocalStorage implements LocalStorage {
     dependencyRiskInvestigatedRemotelyCount = 0;
     automaticAnalysisToggledCount = 0;
     mcpServerConfigurationRequestedCount = 0;
-    mcpRuleFileRequestedCount = 0;
     isMcpIntegrationEnabled = false;
     mcpTransportModeUsed = null;
     labsLinkClickedCount.clear();
     labsFeedbackLinkClickedCount.clear();
-    aiHooksInstalledCount.clear();
     campaignsShown.clear();
     campaignsResolutions.clear();
     supportedLanguagesPanelOpenedCount = 0;
@@ -755,15 +748,6 @@ public class TelemetryLocalStorage implements LocalStorage {
     return mcpServerConfigurationRequestedCount;
   }
 
-  public void incrementMcpRuleFileRequestedCount() {
-    markSonarLintAsUsedToday();
-    mcpRuleFileRequestedCount++;
-  }
-
-  public int getMcpRuleFileRequestedCount() {
-    return mcpRuleFileRequestedCount;
-  }
-
   public Map<String, Integer> getLabsFeedbackLinkClickedCount() {
     return labsFeedbackLinkClickedCount;
   }
@@ -778,15 +762,6 @@ public class TelemetryLocalStorage implements LocalStorage {
 
   public void ideLabsFeedbackLinkClicked(String featureId) {
     this.labsFeedbackLinkClickedCount.merge(featureId, 1, Integer::sum);
-  }
-
-  public void aiHookInstalled(AiAgent aiAgent) {
-    markSonarLintAsUsedToday();
-    this.aiHooksInstalledCount.merge(aiAgent, 1, Integer::sum);
-  }
-
-  public Map<AiAgent, Integer> getAiHooksInstalledCount() {
-    return aiHooksInstalledCount;
   }
 
   public void campaignShown(String campaignName) {

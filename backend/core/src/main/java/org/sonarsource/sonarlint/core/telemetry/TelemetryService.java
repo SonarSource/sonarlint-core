@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.event.TelemetryUpdatedEvent;
 import org.sonarsource.sonarlint.core.promotion.campaign.CampaignResolvedEvent;
 import org.sonarsource.sonarlint.core.promotion.campaign.CampaignShownEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
@@ -344,20 +343,12 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementMcpServerConfigurationRequestedCount);
   }
 
-  public void mcpRuleFileRequested() {
-    updateTelemetry(TelemetryLocalStorage::incrementMcpRuleFileRequestedCount);
-  }
-
   public void ideLabsLinkClicked(String linkId) {
     updateTelemetry(storage -> storage.ideLabsLinkClicked(linkId));
   }
 
   public void ideLabsFeedbackLinkClicked(String featureId) {
     updateTelemetry(storage -> storage.ideLabsFeedbackLinkClicked(featureId));
-  }
-
-  public void aiHookInstalled(AiAgent aiAgent) {
-    updateTelemetry(storage -> storage.aiHookInstalled(aiAgent));
   }
 
   @EventListener

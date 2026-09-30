@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.ai.ide.AiAgentCapabilities.HookSupport;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 
@@ -71,29 +70,29 @@ final class AgentProfiles {
   private static AgentProfile create(AiAgent agent) {
     return switch (agent) {
       case CURSOR -> profile(agent, "cursor", MCP_SERVERS_SECTION,
-        NativeHosts.only(AiIntegrationHost.CURSOR), true, true, HookSupport.NOT_YET_IMPLEMENTED);
+        NativeHosts.only(AiIntegrationHost.CURSOR), true);
       case GITHUB_COPILOT -> profile(agent, null, "servers",
         NativeHosts.only(AiIntegrationHost.VSCODE, AiIntegrationHost.INTELLIJ, AiIntegrationHost.VISUAL_STUDIO),
-        false, true, HookSupport.UNSUPPORTED_COPILOT);
+        false);
       case KIRO -> profile(agent, null, MCP_SERVERS_SECTION,
-        NativeHosts.only(AiIntegrationHost.KIRO), false, true, HookSupport.NOT_YET_IMPLEMENTED);
+        NativeHosts.only(AiIntegrationHost.KIRO), false);
       case WINDSURF -> profile(agent, null, MCP_SERVERS_SECTION,
-        NativeHosts.only(AiIntegrationHost.WINDSURF), false, true, HookSupport.CONFIGURED);
+        NativeHosts.only(AiIntegrationHost.WINDSURF), false);
       case CLAUDE_CODE -> profile(agent, "claude", MCP_SERVERS_SECTION,
-        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+        NativeHosts.any(), true);
       case CODEX -> profile(agent, "codex", null,
-        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+        NativeHosts.any(), true);
       case GITHUB_COPILOT_CLI -> profile(agent, "copilot", null,
-        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+        NativeHosts.any(), true);
       case ANTIGRAVITY -> profile(agent, "antigravity", null,
-        NativeHosts.any(), true, false, HookSupport.UNSUPPORTED_CLI);
+        NativeHosts.any(), true);
     };
   }
 
   private static AgentProfile profile(AiAgent agent, @Nullable String cliTarget, @Nullable String mcpJsonSection,
-    NativeHosts nativeHosts, boolean cliIntegrationSupported, boolean ruleFileSupported, HookSupport hookSupport) {
+    NativeHosts nativeHosts, boolean cliIntegrationSupported) {
     return new AgentProfile(agent, PROBES_BY_AGENT.get(agent), Optional.ofNullable(cliTarget),
-      Optional.ofNullable(mcpJsonSection), nativeHosts, cliIntegrationSupported, ruleFileSupported, hookSupport);
+      Optional.ofNullable(mcpJsonSection), nativeHosts, cliIntegrationSupported);
   }
 
   private record DiscoveredCli(AiAgent agent, CliProbe probe) {

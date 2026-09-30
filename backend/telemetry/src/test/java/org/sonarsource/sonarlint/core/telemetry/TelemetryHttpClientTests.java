@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
@@ -144,7 +143,6 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.addFixedIssues(2);
     telemetryLocalStorage.findingsFiltered("severity");
     telemetryLocalStorage.incrementMcpServerConfigurationRequestedCount();
-    telemetryLocalStorage.incrementMcpRuleFileRequestedCount();
     telemetryLocalStorage.setMcpIntegrationEnabled(true);
     telemetryLocalStorage.setMcpTransportModeUsed(McpTransportMode.STDIO);
     telemetryLocalStorage.ideLabsLinkClicked("changed_file_analysis_doc");
@@ -153,8 +151,6 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("connected_mode");
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
     telemetryLocalStorage.ideLabsFeedbackLinkClicked("manage_dependency_risk");
-    telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
-    telemetryLocalStorage.aiHookInstalled(AiAgent.WINDSURF);
     telemetryLocalStorage.campaignShown("feedback_2026_01");
     telemetryLocalStorage.campaignResolved("feedback_2026_01", "MAYBE_LATER");
     telemetryLocalStorage.campaignShown("feedback_2077_03");
@@ -186,7 +182,6 @@ class TelemetryHttpClientTests {
             {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"},
             {"key":"findings_filtered.severity","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.configuration_requested","value":"1","type":"integer","granularity":"daily"},
-            {"key":"mcp.rule_file_requested","value":"1","type":"integer","granularity":"daily"},
             {"key":"mcp.integration_enabled","value":"true","type":"boolean","granularity":"daily"},
             {"key":"mcp.transport_mode","value":"STDIO","type":"string","granularity":"daily"},
             {"key":"ide_labs.joined","value":"true","type":"boolean","granularity":"daily"},
@@ -199,7 +194,6 @@ class TelemetryHttpClientTests {
             {"key":"campaigns.feedback_2026_01_resolution", "value":"MAYBE_LATER", "type": "string", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_shown", "value":"1", "type": "integer", "granularity":"daily"},
             {"key":"campaigns.feedback_2077_03_resolution", "value":"IGNORE", "type": "string", "granularity":"daily"},
-            {"key":"ai_hooks.windsurf_installed","value":"2","type":"integer","granularity":"daily"},
             {"key":"supported_languages_panel.opened_count","value":"2","type":"integer","granularity":"daily"},
             {"key":"supported_languages_panel.cta_clicked_count","value":"1","type":"integer","granularity":"daily"}
           ]}
