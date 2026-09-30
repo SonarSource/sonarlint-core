@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -48,6 +50,7 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.MultiFileBlameResult;
@@ -62,6 +65,9 @@ import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 public class GitService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final int FILES_GIT_BLAME_TRIGGER_THRESHOLD = 10;
+  private static final String GITHUB_HOST = "github.com";
+  private static final String GITHUB_REPOSITORY_OWNER_ENV_VAR = "GITHUB_REPOSITORY_OWNER";
+  private static final String GITHUB_SERVER_URL_ENV_VAR = "GITHUB_SERVER_URL";
 
   private final NativeGitLocator nativeGitLocator;
 
@@ -122,12 +128,72 @@ public class GitService {
       var config = gitRepo.getConfig();
       return config.getString("remote", "origin", "url");
     } catch (GitRepoNotFoundException e) {
-      LOG.debug("Git repository not found for {}", baseDir);
+      LOG.info("Git repository not found for {}", baseDir);
       return null;
     } catch (Exception e) {
       LOG.debug("Error retrieving remote URL for {}: {}", baseDir, e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Resolves the GitHub organization owning the analyzed repository, following the same semantics as
+   * SonarQube Server/Cloud, in order:
+   * <ol>
+   *   <li>by parsing the {@code remote.origin.url} of {@code baseDir}, if a remote is configured. If that remote
+   *   does not point to {@code github.com}, no organization applies and the env var below is not consulted;</li>
+   *   <li>otherwise, from the {@code GITHUB_REPOSITORY_OWNER} environment variable (set by GitHub Actions), but
+   *   only when {@code GITHUB_SERVER_URL} is unset or points to public GitHub.</li>
+   * </ol>
+   */
+  @CheckForNull
+  public static String resolveGithubOrganization(@Nullable Path baseDir) {
+    return resolveGithubOrganization(baseDir, System.getenv());
+  }
+
+  @CheckForNull
+  static String resolveGithubOrganization(@Nullable Path baseDir, Map<String, String> env) {
+    var remoteUrl = getRemoteUrl(baseDir);
+    if (StringUtils.isNotBlank(remoteUrl)) {
+      return extractGithubOrganization(remoteUrl);
+    }
+    var owner = env.get(GITHUB_REPOSITORY_OWNER_ENV_VAR);
+    var serverUrl = env.get(GITHUB_SERVER_URL_ENV_VAR);
+    if (StringUtils.isNotBlank(owner) && (StringUtils.isBlank(serverUrl) || isPublicGithubServer(serverUrl))) {
+      return owner;
+    }
+    return null;
+  }
+
+  @CheckForNull
+  private static String extractGithubOrganization(String remoteUrl) {
+    try {
+      var uri = new URIish(remoteUrl);
+      var host = uri.getHost();
+      var path = uri.getPath();
+      if (host == null || path == null || !isGithubHost(host)) {
+        return null;
+      }
+      var relativePath = StringUtils.stripStart(path, "/");
+      var slashIndex = relativePath.indexOf('/');
+      var organization = slashIndex == -1 ? relativePath : relativePath.substring(0, slashIndex);
+      return organization.isEmpty() ? null : organization;
+    } catch (URISyntaxException e) {
+      return null;
+    }
+  }
+
+  private static boolean isPublicGithubServer(String serverUrl) {
+    try {
+      var host = new URI(serverUrl.trim()).getHost();
+      return host != null && isGithubHost(host);
+    } catch (URISyntaxException e) {
+      return false;
+    }
+  }
+
+  private static boolean isGithubHost(String host) {
+    return GITHUB_HOST.equalsIgnoreCase(host);
   }
 
   public static MultiFileBlameResult blameWithGitFilesBlameLibrary(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
