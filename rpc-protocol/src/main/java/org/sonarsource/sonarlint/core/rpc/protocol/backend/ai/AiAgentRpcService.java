@@ -67,6 +67,14 @@ public interface AiAgentRpcService {
   CompletableFuture<PrepareCliCommandResponse> prepareAuthenticateCommand(PrepareAuthenticateCliCommandParams params);
 
   /**
+   * Authenticates the CLI with the selected IDE connection's existing token. Credentials never
+   * appear in the request or response. Clients can use the interactive command preparation when
+   * the response is {@code INTERACTIVE_LOGIN_REQUIRED}.
+   */
+  @JsonRequest
+  CompletableFuture<AuthenticateCliWithConnectionResponse> authenticateCliWithConnection(AuthenticateCliWithConnectionParams params);
+
+  /**
    * Prepares {@code sonar integrate <agent> --global} for the client's native interactive terminal.
    * Credentials are never included in the response.
    * The request fails if no usable CLI installation is found, or if the agent is missing or not
