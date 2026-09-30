@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
@@ -38,7 +40,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUp
 public class McpConfigurationService {
 
   private static final String SONARQUBE_ENTRY = "sonarqube";
+  private static final String SONARQUBE_IDE_PORT = "SONARQUBE_IDE_PORT";
   private static final JsonMapper JSONC_MAPPER = JsonMapper.builder()
+    .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
     .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
     .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
     .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
@@ -65,8 +69,18 @@ public class McpConfigurationService {
       return plan(McpConfigurationState.MALFORMED, null,
         List.of("The SonarQube MCP configuration is malformed and cannot be applied."));
     }
+    if (hasInvalidEnvironment(desiredEntry)) {
+      return plan(McpConfigurationState.MALFORMED, null, List.of("The SonarQube MCP environment is invalid or malformed."));
+    }
+    var desiredPort = desiredEntry.path("env").path(SONARQUBE_IDE_PORT);
+    if (!desiredPort.isMissingNode() && !desiredPort.isNull() && !isValidPort(desiredPort)) {
+      return invalidPortPlan();
+    }
     var content = params.getContent();
     if (content == null || content.isBlank()) {
+      if (desiredPort.isNull()) {
+        return invalidPortPlan();
+      }
       return plan(McpConfigurationState.NOT_CONFIGURED,
         updatedDocument(updateRoot(JSONC_MAPPER.createObjectNode(), sectionName, desiredEntry)), List.of());
     }
@@ -77,8 +91,54 @@ public class McpConfigurationService {
     if (classified.state == McpConfigurationState.CLI_MANAGED || classified.state == McpConfigurationState.UNKNOWN) {
       return plan(classified.state, null, diagnosticsFor(classified.state));
     }
-    return plan(classified.state,
-      updatedDocument(updateRoot(classified.root, sectionName, desiredEntry)), List.of());
+    if (classified.state == McpConfigurationState.STANDALONE) {
+      return planStandaloneUpdate(classified.root, sectionName, desiredEntry, content);
+    }
+    if (desiredPort.isNull()) {
+      return invalidPortPlan();
+    }
+    return plan(classified.state, updatedDocument(updateRoot(classified.root, sectionName, desiredEntry)), List.of());
+  }
+
+  private static McpConfigurationUpdatePlanResponse planStandaloneUpdate(ObjectNode root, String sectionName, ObjectNode desiredEntry, String originalContent) {
+    var desiredPort = desiredEntry.path("env").path(SONARQUBE_IDE_PORT);
+    if (desiredPort.isMissingNode() || desiredPort.isNull()) {
+      return plan(McpConfigurationState.STANDALONE, originalContent, List.of());
+    }
+    var entry = (ObjectNode) root.get(sectionName).get(SONARQUBE_ENTRY);
+    if (hasInvalidEnvironment(entry)) {
+      return plan(McpConfigurationState.STANDALONE, null, List.of("The existing SonarQube MCP environment is invalid or malformed."));
+    }
+    if (desiredPort.equals(entry.path("env").path(SONARQUBE_IDE_PORT))) {
+      return plan(McpConfigurationState.STANDALONE, originalContent, List.of());
+    }
+    // Existing launch settings and credentials belong to the user; only refresh the IDE port.
+    var environment = entry.has("env") ? (ObjectNode) entry.get("env") : entry.putObject("env");
+    environment.set(SONARQUBE_IDE_PORT, desiredPort);
+    return plan(McpConfigurationState.STANDALONE, updatedDocument(root), List.of());
+  }
+
+  private static boolean isValidPort(JsonNode port) {
+    if (port.isIntegralNumber()) {
+      return port.canConvertToInt() && port.intValue() > 0 && port.intValue() <= 65535;
+    }
+    if (!port.isTextual() || !port.textValue().matches("\\d+")) {
+      return false;
+    }
+    try {
+      var number = new BigInteger(port.textValue());
+      return number.signum() > 0 && number.compareTo(BigInteger.valueOf(65535)) <= 0;
+    } catch (NumberFormatException e) {
+      return false;
+    }
+  }
+
+  private static McpConfigurationUpdatePlanResponse invalidPortPlan() {
+    return plan(McpConfigurationState.MALFORMED, null, List.of("The SonarQube IDE port must be an integer from 1 to 65535."));
+  }
+
+  private static boolean hasInvalidEnvironment(ObjectNode entry) {
+    return entry.has("env") && !entry.get("env").isObject();
   }
 
   private static String sectionName(AiAgent agent) {
@@ -156,10 +216,10 @@ public class McpConfigurationService {
   }
 
   @Nullable
-  private static JsonNode parseDesiredEntry(String configuration) {
+  private static ObjectNode parseDesiredEntry(String configuration) {
     try {
       var entry = JSONC_MAPPER.readTree(configuration);
-      return entry != null && entry.isObject() ? entry : null;
+      return entry != null && entry.isObject() ? (ObjectNode) entry : null;
     } catch (IOException | RuntimeException e) {
       return null;
     }
