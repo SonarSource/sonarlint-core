@@ -19,10 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.ai.ide;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationState;
@@ -34,6 +37,31 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class McpConfigurationServiceTests {
   private static final String ENTRY = "{\"command\":\"docker\",\"args\":[\"sonarsource/sonarqube-mcp\"]}";
+  private static final String GENERATED_ENTRY = """
+    {
+      "command": "docker",
+      "args": ["run", "--init", "--pull=always", "-i", "--rm", "-e", "SONARQUBE_TOKEN", "-e", "SONARQUBE_URL",
+        "-e", "SONARQUBE_IDE_PORT", "-e", "SONARQUBE_ORG", "sonarsource/sonarqube-mcp"],
+      "env": {"SONARQUBE_URL": "https://new.example.com", "SONARQUBE_TOKEN": "new-token", "SONARQUBE_IDE_PORT": "64120",
+        "SONARQUBE_ORG": "new-org"}
+    }
+    """;
+  private static final String CUSTOM_ENTRY = """
+    {
+      "command": "docker",
+      "args": ["run", "--init", "--pull=always", "-i", "--rm", "--user", "0:0", "-e", "SONARQUBE_TOKEN",
+        "-e", "SONARQUBE_URL", "-e", "SONARQUBE_IDE_PORT", "-v", "/example/user.p12:/etc/ssl/mcp/user.p12:ro,z",
+        "-e", "JAVA_OPTS", "sonarsource/sonarqube-mcp:custom"],
+      "env": {
+        "SONARQUBE_URL": "${input:sonarqube-url}", "SONARQUBE_TOKEN": "${input:sonarqube-token}", "SONARQUBE_IDE_PORT": "64121",
+        "SONARQUBE_ORG": "${input:sonarqube-org}",
+        "JAVA_OPTS": "-Djavax.net.ssl.keyStore=/etc/ssl/mcp/user.p12 -Djavax.net.ssl.keyStoreType=PKCS12",
+        "CUSTOM_SETTING": "keep"
+      },
+      "disabled": false,
+      "autoApprove": ["custom-tool"]
+    }
+    """;
   private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
   private final McpConfigurationService service = new McpConfigurationService();
 
@@ -47,14 +75,12 @@ class McpConfigurationServiceTests {
   }
 
   @Test
-  void should_update_only_the_standalone_sonarqube_entry() {
+  void should_preserve_standalone_arguments_when_no_environment_update_is_requested() {
     var source = "{\n  \"mcpServers\": {\n    // keep this server\n    \"other\": {\"command\": \"other\"},\n    \"sonarqube\": {\"command\": \"docker\", \"args\": [\"sonarsource/sonarqube-mcp\", \"--old\"]}\n  }\n}\n";
     var response = service.planUpdate(params(source));
 
     assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
-    var servers = mcpServers(response);
-    assertThat(servers.get("other").get("command").asText()).isEqualTo("other");
-    assertThat(servers.get("sonarqube").get("args").size()).isEqualTo(1);
+    assertThat(response.getUpdatedContent()).isEqualTo(source);
   }
 
   @Test
@@ -269,6 +295,171 @@ class McpConfigurationServiceTests {
     assertThat(response.getState()).isEqualTo(McpConfigurationState.MALFORMED);
     assertThat(response.getUpdatedContent()).isNull();
     assertThat(response.getDiagnostics()).singleElement().asString().contains("cannot be applied");
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_update_only_the_ide_port_and_preserve_the_complete_customized_document(AiAgent agent) throws IOException {
+    var sectionName = sectionName(agent);
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+    var root = JSON_MAPPER.createObjectNode().put("custom-root", "keep");
+    var section = root.putObject(sectionName);
+    section.putObject("other").put("command", "other");
+    section.set("sonarqube", original);
+    var expected = root.deepCopy();
+    ((ObjectNode) expected.path(sectionName).path("sonarqube").path("env")).put("SONARQUBE_IDE_PORT", "64120");
+    var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
+    desired.put("command", "different-launcher");
+    desired.putArray("args").add("--different").add("sonarsource/sonarqube-mcp:generated");
+    desired.put("disabled", true);
+    desired.putArray("autoApprove").add("different-tool");
+    ((ObjectNode) desired.get("env")).put("JAVA_OPTS", "-Ddifferent=true").put("CUSTOM_SETTING", "replace").put("NEW_SETTING", "add");
+
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, root.toString(), desired.toString()));
+
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+    assertThat(response.getDiagnostics()).isEmpty();
+    assertThat(updatedRoot(response)).isEqualTo(expected);
+    var repeated = service.planUpdate(new McpConfigurationUpdateParams(agent, response.getUpdatedContent(), desired.toString()));
+    assertThat(repeated.getUpdatedContent()).isEqualTo(response.getUpdatedContent());
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_use_the_complete_generated_entry_for_new_configuration(AiAgent agent) throws IOException {
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, null, GENERATED_ENTRY));
+
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(JSON_MAPPER.readTree(GENERATED_ENTRY));
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_add_only_the_port_when_the_existing_environment_is_absent(AiAgent agent) throws IOException {
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+    original.remove("env");
+    var expected = original.deepCopy();
+    expected.putObject("env").put("SONARQUBE_IDE_PORT", "64120");
+
+    var response = service.planUpdate(updateParams(agent, original, GENERATED_ENTRY));
+
+    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_not_add_connection_values_missing_from_existing_configuration(AiAgent agent) throws IOException {
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+    original.putObject("env").put("CUSTOM_SETTING", "keep");
+    var expected = original.deepCopy();
+    ((ObjectNode) expected.get("env")).put("SONARQUBE_IDE_PORT", "64120");
+
+    var response = service.planUpdate(updateParams(agent, original, GENERATED_ENTRY));
+
+    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_not_remove_connection_values_missing_from_the_desired_configuration(AiAgent agent) throws IOException {
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+    var expected = original.deepCopy();
+    ((ObjectNode) expected.get("env")).put("SONARQUBE_IDE_PORT", "64120");
+
+    var response = service.planUpdate(updateParams(agent, original, "{\"env\":{\"SONARQUBE_IDE_PORT\":\"64120\"}}"));
+
+    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_return_original_jsonc_when_the_desired_environment_is_absent(AiAgent agent) {
+    var source = customizedJsonc(agent);
+
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, source, ENTRY));
+
+    assertThat(response.getUpdatedContent()).isEqualTo(source);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_return_original_jsonc_when_the_desired_port_is_absent(AiAgent agent) throws IOException {
+    var source = customizedJsonc(agent);
+    var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
+    ((ObjectNode) desired.get("env")).remove("SONARQUBE_IDE_PORT");
+
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, source, desired.toString()));
+
+    assertThat(response.getUpdatedContent()).isEqualTo(source);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_return_original_jsonc_when_the_desired_port_is_null(AiAgent agent) throws IOException {
+    var source = customizedJsonc(agent);
+    var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
+    ((ObjectNode) desired.get("env")).putNull("SONARQUBE_IDE_PORT");
+
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, source, desired.toString()));
+
+    assertThat(response.getUpdatedContent()).isEqualTo(source);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  void should_return_original_jsonc_when_the_port_is_unchanged_despite_other_desired_changes(AiAgent agent) throws IOException {
+    var source = customizedJsonc(agent);
+    var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
+    ((ObjectNode) desired.get("env")).put("SONARQUBE_IDE_PORT", "64121");
+
+    var response = service.planUpdate(new McpConfigurationUpdateParams(agent, source, desired.toString()));
+
+    assertThat(response.getUpdatedContent()).isEqualTo(source);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "CURSOR, null", "CURSOR, []", "CURSOR, \"custom\"", "CURSOR, 42",
+    "GITHUB_COPILOT, null", "GITHUB_COPILOT, []", "GITHUB_COPILOT, \"custom\"", "GITHUB_COPILOT, 42"
+  })
+  void should_decline_updates_to_a_non_object_existing_environment(AiAgent agent, String environment) throws IOException {
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+    original.set("env", JSON_MAPPER.readTree(environment));
+
+    var response = service.planUpdate(updateParams(agent, original, GENERATED_ENTRY));
+
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+    assertThat(response.getUpdatedContent()).isNull();
+    assertThat(response.getDiagnostics()).singleElement().asString().contains("environment must be an object");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "CURSOR, null", "CURSOR, []", "CURSOR, \"custom\"", "CURSOR, 42",
+    "GITHUB_COPILOT, null", "GITHUB_COPILOT, []", "GITHUB_COPILOT, \"custom\"", "GITHUB_COPILOT, 42"
+  })
+  void should_decline_a_non_object_desired_environment(AiAgent agent, String environment) throws IOException {
+    var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
+
+    var response = service.planUpdate(updateParams(agent, original, "{\"env\":" + environment + "}"));
+
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.MALFORMED);
+    assertThat(response.getUpdatedContent()).isNull();
+    assertThat(response.getDiagnostics()).singleElement().asString().contains("environment must be an object");
+  }
+
+  private static String customizedJsonc(AiAgent agent) {
+    return "{\n  // Keep comments and formatting\n  \"" + sectionName(agent) + "\": {\n    \"sonarqube\": " + CUSTOM_ENTRY + ",\n  },\n}\n";
+  }
+
+  private static String sectionName(AiAgent agent) {
+    return agent == AiAgent.GITHUB_COPILOT ? "servers" : "mcpServers";
+  }
+
+  private static McpConfigurationUpdateParams updateParams(AiAgent agent, ObjectNode entry, String desiredEntry) {
+    var root = JSON_MAPPER.createObjectNode();
+    root.putObject(sectionName(agent)).set("sonarqube", entry);
+    return new McpConfigurationUpdateParams(agent, root.toString(), desiredEntry);
   }
 
   private static ObjectNode mcpServers(McpConfigurationUpdatePlanResponse response) {
