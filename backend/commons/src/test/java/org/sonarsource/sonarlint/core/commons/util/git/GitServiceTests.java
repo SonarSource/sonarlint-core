@@ -489,7 +489,7 @@ class GitServiceTests {
     var retrievedUrl = GitService.getRemoteUrl(nonGitDir);
 
     assertThat(retrievedUrl).isNull();
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.INFO))
       .anyMatch(s -> s.contains("Git repository not found for"));
   }
 
