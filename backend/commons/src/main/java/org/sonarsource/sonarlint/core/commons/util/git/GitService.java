@@ -128,7 +128,7 @@ public class GitService {
       var config = gitRepo.getConfig();
       return config.getString("remote", "origin", "url");
     } catch (GitRepoNotFoundException e) {
-      LOG.debug("Git repository not found for {}", baseDir);
+      LOG.info("Git repository not found for {}", baseDir);
       return null;
     } catch (Exception e) {
       LOG.debug("Error retrieving remote URL for {}: {}", baseDir, e.getMessage());
