@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -62,6 +63,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
+import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
@@ -106,6 +108,7 @@ public class AnalysisService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP = "sonar.js.internal.bundlePath";
+  private static final String SONAR_INTERNAL_GITHUB_ORGANIZATION_ANALYSIS_PROP = "sonar.iac.internal.github_organization";
   private static final String ANALYSIS_CFG_FOR_ENGINE = "getAnalysisConfigForEngine";
   private static final String GET_ANALYSIS_CFG = "getAnalysisConfig";
 
@@ -124,6 +127,7 @@ public class AnalysisService {
   private final ApplicationEventPublisher eventPublisher;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
+  private final Map<String, Optional<String>> githubOrganizationByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final Path esLintBridgeServerPath;
@@ -198,7 +202,7 @@ public class AnalysisService {
     var filesToAnalyze = startChild(trace, "refineAnalysisScope", ANALYSIS_CFG_FOR_ENGINE,
       () -> fileExclusionService.filterOutExcludedFiles(configScopeId, baseDir, filesUrisToAnalyze));
     var actualBaseDir = baseDir == null ? findCommonPrefix(filesUrisToAnalyze) : baseDir;
-    var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly, trace);
+    var analysisConfig = getAnalysisConfig(configScopeId, actualBaseDir, hotspotsOnly, trace);
     var analysisProperties = analysisConfig.analysisProperties();
     var inferredAnalysisProperties = startChild(trace, "getInferredAnalysisProperties", ANALYSIS_CFG_FOR_ENGINE,
       () -> client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(
@@ -216,9 +220,11 @@ public class AnalysisService {
       .build());
   }
 
-  private AnalysisConfig getAnalysisConfig(String configScopeId, boolean hotspotsOnly, @Nullable Trace trace) {
+  private AnalysisConfig getAnalysisConfig(String configScopeId, @Nullable Path baseDir, boolean hotspotsOnly, @Nullable Trace trace) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
-    var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
+    // defensive copy: the repository returns its live stored map once any user property has been set for this scope,
+    // and it must not be mutated by the properties injected below
+    var userAnalysisProperties = new HashMap<>(userAnalysisPropertiesRepository.getUserProperties(configScopeId));
     // If the client (IDE) has specified a bundle path, use it
     if (this.esLintBridgeServerPath != null) {
       userAnalysisProperties.put(SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP, this.esLintBridgeServerPath.toString());
@@ -230,6 +236,8 @@ public class AnalysisService {
       var binding = bindingOpt.get();
       var analyzerConfig = storageService.binding(binding).analyzerConfiguration();
       if (analyzerConfig.isValid()) {
+        var githubOrganization = githubOrganizationByConfigScopeId.computeIfAbsent(configScopeId, k -> Optional.ofNullable(GitService.resolveGithubOrganization(baseDir)));
+        githubOrganization.ifPresent(org -> userAnalysisProperties.put(SONAR_INTERNAL_GITHUB_ORGANIZATION_ANALYSIS_PROP, org));
         return getConnectedAnalysisConfig(binding, hotspotsOnly, userAnalysisProperties, trace);
       } else {
         // This can happen when a standalone analysis was scheduled and a synchronization happened in between.
@@ -310,6 +318,7 @@ public class AnalysisService {
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
     var removedConfigurationScopeId = event.getRemovedConfigurationScopeId();
     analysisReadinessByConfigScopeId.remove(removedConfigurationScopeId);
+    githubOrganizationByConfigScopeId.remove(removedConfigurationScopeId);
     client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(Set.of(removedConfigurationScopeId), false));
     schedulerCache.unregisterModule(removedConfigurationScopeId, event.removedBindingConfiguration().connectionId());
   }
@@ -317,6 +326,7 @@ public class AnalysisService {
   @EventListener
   public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.configScopeId();
+    githubOrganizationByConfigScopeId.remove(configScopeId);
     checkIfReadyForAnalysis(Set.of(configScopeId));
   }
 
