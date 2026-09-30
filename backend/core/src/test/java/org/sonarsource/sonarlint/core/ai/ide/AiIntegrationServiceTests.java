@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
@@ -666,7 +667,8 @@ class AiIntegrationServiceTests {
     Path pathHelper) {
     var search = new OsExecutableSearch(system2, executor, environment, pathHelper);
     return new AiIntegrationService(new SonarQubeCliLocator(search, tempDir),
-      new AgentCliLocator(search, tempDir), connectionRepository, configurationRepository);
+      new AgentCliLocator(search, tempDir), connectionRepository, configurationRepository,
+      mock(SonarLintRpcClient.class), new CliTokenAuthenticationRunner());
   }
 
   private Path createPathHelper() throws IOException {
