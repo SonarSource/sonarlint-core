@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRi
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToIgnoreCase;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -98,7 +98,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -148,7 +148,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -456,7 +456,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -502,7 +502,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -737,7 +737,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -787,7 +787,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -838,7 +838,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
@@ -886,7 +886,7 @@ class DependencyRiskStatusChangeMediumTests {
     waitAtMost(2, SECONDS).untilAsserted(() -> {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/v2/sca/issues-releases/change-status"))
-          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withHeader("Content-Type", equalToIgnoreCase("application/json; charset=UTF-8"))
           .withRequestBody(equalToJson(expectedJson)));
     });
   }
