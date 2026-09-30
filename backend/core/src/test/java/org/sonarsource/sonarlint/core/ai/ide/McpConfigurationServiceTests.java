@@ -273,6 +273,23 @@ class McpConfigurationServiceTests {
     assertThat(unknownInspection.getDiagnostics()).singleElement().asString().contains("will not be changed");
   }
 
+  @ParameterizedTest
+  @EnumSource(value = AiAgent.class, names = {"JUNIE", "JETBRAINS_AI_ASSISTANT"})
+  void should_not_replace_malformed_unknown_or_cli_managed_entries_for_new_agents(AiAgent agent) {
+    var malformed = "{\"mcpServers\":";
+    var unknown = "{\"mcpServers\":{\"sonarqube\":{\"command\":\"my-sonar-wrapper\"}}}";
+    var cliManaged = "{\"mcpServers\":{\"sonarqube\":{\"command\":\"sonar\",\"args\":[\"run\",\"mcp\"]}}}";
+
+    for (var content : new String[] {malformed, unknown, cliManaged}) {
+      var inspection = service.inspect(inspectionParams(agent, content));
+      var update = service.planUpdate(new McpConfigurationUpdateParams(agent, content, GENERATED_ENTRY));
+
+      assertThat(inspection.getState()).isEqualTo(update.getState());
+      assertThat(update.getUpdatedContent()).isNull();
+      assertThat(update.getDiagnostics()).isNotEmpty();
+    }
+  }
+
   @Test
   void should_plan_github_copilot_updates_under_servers() {
     var source = "{\"servers\":{\"other\":{\"command\":\"other\"}}}";
@@ -300,7 +317,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_update_only_the_ide_port_and_preserve_the_complete_customized_document(AiAgent agent) throws IOException {
     var sectionName = sectionName(agent);
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
@@ -327,7 +344,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_use_the_complete_generated_entry_for_new_configuration(AiAgent agent) throws IOException {
     var response = service.planUpdate(new McpConfigurationUpdateParams(agent, null, GENERATED_ENTRY));
 
@@ -337,7 +354,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_leave_an_existing_entry_unchanged_when_the_environment_is_absent(AiAgent agent) throws IOException {
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
     original.remove("env");
@@ -350,7 +367,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_leave_an_existing_entry_unchanged_when_its_environment_lacks_the_ide_port(AiAgent agent) throws IOException {
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
     original.putObject("env").put("CUSTOM_SETTING", "keep");
@@ -363,7 +380,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_not_remove_connection_values_missing_from_the_desired_configuration(AiAgent agent) throws IOException {
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
     var expected = original.deepCopy();
@@ -375,7 +392,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_return_original_content_when_the_desired_environment_is_absent(AiAgent agent) {
     var source = customizedConfiguration(agent);
 
@@ -385,7 +402,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_return_original_content_when_the_desired_port_is_absent(AiAgent agent) throws IOException {
     var source = customizedConfiguration(agent);
     var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
@@ -397,7 +414,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_return_original_content_when_the_desired_port_is_null(AiAgent agent) throws IOException {
     var source = customizedConfiguration(agent);
     var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
@@ -409,7 +426,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_return_original_content_when_the_port_is_unchanged_despite_other_desired_changes(AiAgent agent) throws IOException {
     var source = customizedConfiguration(agent);
     var desired = (ObjectNode) JSON_MAPPER.readTree(GENERATED_ENTRY);
@@ -452,7 +469,7 @@ class McpConfigurationServiceTests {
   }
 
   @ParameterizedTest
-  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
+  @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT", "JUNIE", "JETBRAINS_AI_ASSISTANT"})
   void should_update_jsonc_configuration_without_changing_custom_values(AiAgent agent) throws IOException {
     var source = """
       {
@@ -525,7 +542,7 @@ class McpConfigurationServiceTests {
   @ParameterizedTest
   @ValueSource(strings = {"64121", "null", "true", "[]", "{\"old\":64121}", "\"64\\u003121\""})
   void should_replace_the_existing_port_value_without_changing_other_settings(String oldPort) throws IOException {
-    for (var agent : new AiAgent[] {AiAgent.CURSOR, AiAgent.GITHUB_COPILOT}) {
+    for (var agent : new AiAgent[] {AiAgent.CURSOR, AiAgent.GITHUB_COPILOT, AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT}) {
       var source = "{\"%s\":{\"sonarqube\":{\"args\":[\"sonarsource/sonarqube-mcp\"],\"env\":{\"SONARQUBE_IDE_PORT\":%s,\"NEXT\":1}}}}"
         .formatted(sectionName(agent), oldPort);
 

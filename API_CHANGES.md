@@ -1,3 +1,9 @@
+# 12.1
+
+## New features
+
+* Add `JUNIE` and `JETBRAINS_AI_ASSISTANT` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`. When detected by an IntelliJ host, both support standalone MCP configuration using the `mcpServers` section. CLI integration, rule files, and hooks are not supported.
+
 # 12.0
 
 ## New features
