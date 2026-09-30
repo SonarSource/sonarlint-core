@@ -333,32 +333,33 @@ class McpConfigurationServiceTests {
 
     assertThat(response.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
     assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(JSON_MAPPER.readTree(GENERATED_ENTRY));
+    assertThat(updatedRoot(response).path(sectionName(agent)).path("sonarqube").path("env").path("SONARQUBE_IDE_PORT").asText()).isEqualTo("64120");
   }
 
   @ParameterizedTest
   @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
-  void should_add_only_the_port_when_the_existing_environment_is_absent(AiAgent agent) throws IOException {
+  void should_leave_an_existing_entry_unchanged_when_the_environment_is_absent(AiAgent agent) throws IOException {
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
     original.remove("env");
-    var expected = original.deepCopy();
-    expected.putObject("env").put("SONARQUBE_IDE_PORT", "64120");
-
     var response = service.planUpdate(updateParams(agent, original, GENERATED_ENTRY));
 
-    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(expected);
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+    assertThat(response.getUpdatedContent()).isNull();
+    assertThat(response.getDiagnostics()).containsExactly(
+      "The existing SonarQube MCP configuration has no SONARQUBE_IDE_PORT; the IDE port was not updated.");
   }
 
   @ParameterizedTest
   @EnumSource(value = AiAgent.class, names = {"CURSOR", "GITHUB_COPILOT"})
-  void should_not_add_connection_values_missing_from_existing_configuration(AiAgent agent) throws IOException {
+  void should_leave_an_existing_entry_unchanged_when_its_environment_lacks_the_ide_port(AiAgent agent) throws IOException {
     var original = (ObjectNode) JSON_MAPPER.readTree(CUSTOM_ENTRY);
     original.putObject("env").put("CUSTOM_SETTING", "keep");
-    var expected = original.deepCopy();
-    ((ObjectNode) expected.get("env")).put("SONARQUBE_IDE_PORT", "64120");
-
     var response = service.planUpdate(updateParams(agent, original, GENERATED_ENTRY));
 
-    assertThat(updatedRoot(response).path(sectionName(agent)).get("sonarqube")).isEqualTo(expected);
+    assertThat(response.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+    assertThat(response.getUpdatedContent()).isNull();
+    assertThat(response.getDiagnostics()).containsExactly(
+      "The existing SonarQube MCP configuration has no SONARQUBE_IDE_PORT; the IDE port was not updated.");
   }
 
   @ParameterizedTest

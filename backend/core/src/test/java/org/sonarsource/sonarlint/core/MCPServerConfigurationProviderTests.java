@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +31,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationState;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdateParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -77,19 +77,22 @@ class MCPServerConfigurationProviderTests {
 
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
-  void should_allow_creation_before_the_ide_server_starts_and_later_update_only_its_port(boolean cloud) throws IOException {
+  void should_not_add_the_ide_port_later_when_creation_precedes_server_start(boolean cloud) throws IOException {
     configureConnection(cloud);
     when(embeddedServer.getPort()).thenReturn(0);
     var generated = provider.getMCPServerConfigurationJSON("connection", "test-token");
     var service = new McpConfigurationService();
     var created = service.planUpdate(new McpConfigurationUpdateParams(AiAgent.CURSOR, null, generated));
 
+    assertThat(created.getState()).isEqualTo(McpConfigurationState.NOT_CONFIGURED);
+    assertThat(created.getUpdatedContent()).isNotNull();
+    assertThat(MAPPER.readTree(created.getUpdatedContent()).path("mcpServers").path("sonarqube")).isEqualTo(MAPPER.readTree(generated));
+
     var updated = service.planUpdate(new McpConfigurationUpdateParams(AiAgent.CURSOR, created.getUpdatedContent(), "{\"env\":{\"SONARQUBE_IDE_PORT\":\"64120\"}}"));
 
-    var entry = MAPPER.readTree(updated.getUpdatedContent()).path("mcpServers").path("sonarqube");
-    var expected = MAPPER.readTree(generated);
-    ((ObjectNode) expected.path("env")).put("SONARQUBE_IDE_PORT", "64120");
-    assertThat(entry).isEqualTo(expected);
+    assertThat(updated.getState()).isEqualTo(McpConfigurationState.STANDALONE);
+    assertThat(updated.getUpdatedContent()).isNull();
+    assertThat(updated.getDiagnostics()).singleElement().asString().contains("no SONARQUBE_IDE_PORT");
   }
 
   private void configureConnection(boolean cloud) {
