@@ -53,8 +53,7 @@ public class MCPServerConfigurationProvider {
       "env": {
         "SONARQUBE_ORG": "%s",
         "SONARQUBE_URL": "%s",
-        "SONARQUBE_TOKEN": "%s",
-        "SONARQUBE_IDE_PORT": "%s"
+        "SONARQUBE_TOKEN": "%s"%s
       }
     }
     """;
@@ -77,8 +76,7 @@ public class MCPServerConfigurationProvider {
       ],
       "env": {
         "SONARQUBE_URL": "%s",
-        "SONARQUBE_TOKEN": "%s",
-        "SONARQUBE_IDE_PORT": "%s"
+        "SONARQUBE_TOKEN": "%s"%s
       }
     }
     """;
@@ -97,16 +95,21 @@ public class MCPServerConfigurationProvider {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection != null) {
       telemetryService.mcpServerConfigurationRequested();
+      var port = embeddedServer.getPort();
+      var portEnvironment = port > 0 && port <= 65535 ? format("""
+        ,
+            "SONARQUBE_IDE_PORT": "%s"\
+        """, port) : "";
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var sonarCloudConnection = (SonarCloudConnectionConfiguration) connection;
         var organization = sonarCloudConnection.getOrganization();
         var url = connection.getUrl();
 
-        return format(SONARCLOUD_MCP_CONFIG, organization, url, token, embeddedServer.getPort());
+        return format(SONARCLOUD_MCP_CONFIG, organization, url, token, portEnvironment);
       } else {
         var url = connection.getUrl();
 
-        return format(SONARQUBE_MCP_CONFIG, url, token, embeddedServer.getPort());
+        return format(SONARQUBE_MCP_CONFIG, url, token, portEnvironment);
       }
     } else {
       LOG.warn("Request for generating MCP server settings JSON failed; Connection not found for '{}'", connectionId);
