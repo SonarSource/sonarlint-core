@@ -109,11 +109,16 @@ public class McpConfigurationService {
     if (hasInvalidEnvironment(entry)) {
       return plan(McpConfigurationState.STANDALONE, null, List.of("The existing SonarQube MCP environment is invalid or malformed."));
     }
-    if (desiredPort.equals(entry.path("env").path(SONARQUBE_IDE_PORT))) {
+    var currentPort = entry.path("env").path(SONARQUBE_IDE_PORT);
+    if (currentPort.isMissingNode()) {
+      return plan(McpConfigurationState.STANDALONE, null,
+        List.of("The existing SonarQube MCP configuration has no SONARQUBE_IDE_PORT; the IDE port was not updated."));
+    }
+    if (desiredPort.equals(currentPort)) {
       return plan(McpConfigurationState.STANDALONE, originalContent, List.of());
     }
     // Existing launch settings and credentials belong to the user; only refresh the IDE port.
-    var environment = entry.has("env") ? (ObjectNode) entry.get("env") : entry.putObject("env");
+    var environment = (ObjectNode) entry.get("env");
     environment.set(SONARQUBE_IDE_PORT, desiredPort);
     return plan(McpConfigurationState.STANDALONE, updatedDocument(root), List.of());
   }
