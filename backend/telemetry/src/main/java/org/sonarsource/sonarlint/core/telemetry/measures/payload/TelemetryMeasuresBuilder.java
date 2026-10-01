@@ -89,8 +89,6 @@ public class TelemetryMeasuresBuilder {
 
     addLabsMeasures(values);
 
-    addAiHooksMeasures(values);
-
     addCampaignsMeasures(values);
 
     addSupportedLanguagesPanelMeasures(values);
@@ -226,7 +224,6 @@ public class TelemetryMeasuresBuilder {
 
   private void addMCPMeasures(List<TelemetryMeasuresValue> values) {
     values.add(new TelemetryMeasuresValue("mcp.configuration_requested", String.valueOf(storage.getMcpServerConfigurationRequestedCount()), INTEGER, DAILY));
-    values.add(new TelemetryMeasuresValue("mcp.rule_file_requested", String.valueOf(storage.getMcpRuleFileRequestedCount()), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("mcp.integration_enabled", Boolean.toString(storage.isMcpIntegrationEnabled()), BOOLEAN, DAILY));
     var mcpTransportModeUsed = storage.getMcpTransportModeUsed();
     if (mcpTransportModeUsed != null) {
@@ -246,17 +243,6 @@ public class TelemetryMeasuresBuilder {
       .filter(entry -> entry.getValue() > 0)
       .map(entry -> new TelemetryMeasuresValue(
         "ide_labs." + baseName + entry.getKey(),
-        String.valueOf(entry.getValue()),
-        INTEGER,
-        DAILY))
-      .forEach(values::add);
-  }
-
-  private void addAiHooksMeasures(ArrayList<TelemetryMeasuresValue> values) {
-    storage.getAiHooksInstalledCount().entrySet().stream()
-      .filter(entry -> entry.getValue() > 0)
-      .map(entry -> new TelemetryMeasuresValue(
-        "ai_hooks." + entry.getKey().name().toLowerCase(Locale.ROOT) + "_installed",
         String.valueOf(entry.getValue()),
         INTEGER,
         DAILY))

@@ -45,46 +45,10 @@ final class AiAgentCapabilities {
       agent,
       detectionSources,
       cliIntegrationSupported,
-      profile.mcpJsonSection().isPresent() && available,
-      supportsHook(host, profile, scope),
-      cliIntegrationSupported);
+      profile.mcpJsonSection().isPresent() && available);
   }
 
   static Optional<String> jsonSectionName(AiAgent agent) {
     return AgentProfiles.of(agent).mcpJsonSection();
-  }
-
-  static boolean supportsRuleFile(AiAgent agent) {
-    return AgentProfiles.of(agent).ruleFileSupported();
-  }
-
-  static HookSupport hookSupport(AiAgent agent) {
-    return AgentProfiles.of(agent).hookSupport();
-  }
-
-  static UnsupportedOperationException unsupportedRuleFile(AiAgent agent) {
-    return new UnsupportedOperationException(agent + " rule file generation is not supported");
-  }
-
-  static UnsupportedOperationException unsupportedHook(AiAgent agent) {
-    return switch (hookSupport(agent)) {
-      case NOT_YET_IMPLEMENTED -> new UnsupportedOperationException(agent + " hook configuration not yet implemented");
-      case UNSUPPORTED_COPILOT -> new UnsupportedOperationException("GitHub Copilot does not support hooks");
-      case UNSUPPORTED_CLI -> new UnsupportedOperationException(agent + " hook configuration is not supported");
-      case CONFIGURED -> throw new IllegalStateException(agent + " supports hook configuration");
-    };
-  }
-
-  private static boolean supportsHook(AiIntegrationHost host, AgentProfile profile, AiIntegrationScope scope) {
-    return scope == AiIntegrationScope.GLOBAL
-      && profile.onNativeHost(host)
-      && profile.hookSupport() == HookSupport.CONFIGURED;
-  }
-
-  enum HookSupport {
-    CONFIGURED,
-    NOT_YET_IMPLEMENTED,
-    UNSUPPORTED_COPILOT,
-    UNSUPPORTED_CLI
   }
 }
