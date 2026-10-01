@@ -37,7 +37,7 @@ import org.assertj.core.internal.Failures;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
-import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.client.Http1WsConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -63,7 +63,7 @@ public abstract class AbstractConnectedTests {
 
   protected static WsClient newAdminWsClient(Orchestrator orchestrator) {
     var server = orchestrator.getServer();
-    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
+    return WsClientFactories.getDefault().newClient(Http1WsConnector.newBuilder()
       .url(server.getUrl())
       .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
       .build());
