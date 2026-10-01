@@ -714,6 +714,29 @@ class AiIntegrationServiceTests {
   }
 
   @Test
+  void should_complete_uninstall_when_canceled_during_reset() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var cancelMonitor = new SonarLintCancelMonitor();
+    var executor = commandReturningWithStreams((command, stdout, stderr) -> {
+      if (command.toCommandLine().contains("system reset")) {
+        cancelMonitor.cancel();
+        stdout.consumeLine("reset completed");
+        stderr.consumeLine("cleanup warning");
+      } else {
+        stdout.consumeLine("SonarQube CLI 1.9.0");
+      }
+      return 0;
+    });
+
+    var response = newService(false, Map.of(), executor).uninstallCli(cancelMonitor);
+
+    assertThat(response.getStatus()).isEqualTo(UninstallCliResponse.Status.UNINSTALLED);
+    assertThat(response.getStdout()).isEqualTo("reset completed");
+    assertThat(response.getStderr()).isEqualTo("cleanup warning");
+    assertThat(executable.getParent().getParent()).doesNotExist();
+  }
+
+  @Test
   void should_delete_the_documented_windows_folder() throws IOException {
     var executable = createExecutable("sonarqube-cli/bin/sonar.exe");
     var service = newService(true, Map.of("LOCALAPPDATA", tempDir.toString()), versionCommandExecutor());
