@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -59,12 +57,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareAuthenticateCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCliCommandParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiIntegrationServiceTests {
@@ -636,6 +639,8 @@ class AiIntegrationServiceTests {
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(cli.getExecutablePath()).isEqualTo(pathExecutable.toString());
     assertThat(cli.isUninstallAvailable()).isFalse();
+    assertThat(service.uninstallCli(new SonarLintCancelMonitor()).getStatus()).isEqualTo(UninstallCliResponse.Status.NOT_AVAILABLE);
+    assertThat(tempDir.resolve(".local/share/sonarqube-cli/bin/sonar")).exists();
   }
 
   @Test
@@ -676,11 +681,78 @@ class AiIntegrationServiceTests {
 
     var response = service.uninstallCli(new SonarLintCancelMonitor());
 
-    assertThat(response.getStatus()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse.Status.NOT_AVAILABLE);
-    assertThat(response.getExecutablePath()).isNull();
-    assertThat(response.getResetExitCode()).isNull();
+    assertThat(response.getStatus()).isEqualTo(UninstallCliResponse.Status.NOT_AVAILABLE);
     assertThat(response.getStdout()).isEmpty();
     assertThat(response.getStderr()).isEmpty();
+  }
+
+  @Test
+  void should_reset_then_delete_the_documented_folder_including_nested_files_and_preserve_warnings() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var directory = executable.getParent().getParent();
+    Files.createDirectories(directory.resolve("nested/config"));
+    Files.writeString(directory.resolve("nested/config/settings"), "settings");
+    var executor = commandReturningWithStreams((command, stdout, stderr) -> {
+      if (command.toCommandLine().contains("system reset")) {
+        assertThat(command.toCommandLine()).isEqualTo(Command.create(executable.toString())
+          .addArgument("system").addArgument("reset").addArgument("--force").toCommandLine());
+        stdout.consumeLine("reset warning");
+        stderr.consumeLine("cleanup warning");
+      } else {
+        stdout.consumeLine("SonarQube CLI 1.9.0");
+      }
+      return 0;
+    });
+
+    var response = newService(false, Map.of(), executor).uninstallCli(new SonarLintCancelMonitor());
+
+    assertThat(response.getStatus()).isEqualTo(UninstallCliResponse.Status.UNINSTALLED);
+    assertThat(response.getStdout()).isEqualTo("reset warning");
+    assertThat(response.getStderr()).isEqualTo("cleanup warning");
+    assertThat(directory).doesNotExist();
+    verify(executor).execute(any(Command.class), any(), any(), eq(120_000L));
+  }
+
+  @Test
+  void should_delete_the_documented_windows_folder() throws IOException {
+    var executable = createExecutable("sonarqube-cli/bin/sonar.exe");
+    var service = newService(true, Map.of("LOCALAPPDATA", tempDir.toString()), versionCommandExecutor());
+
+    assertThat(service.uninstallCli(new SonarLintCancelMonitor()).getStatus()).isEqualTo(UninstallCliResponse.Status.UNINSTALLED);
+    assertThat(executable.getParent().getParent()).doesNotExist();
+  }
+
+  @Test
+  void should_retain_the_folder_when_reset_fails() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var executor = commandReturningWithStreams((command, stdout, stderr) -> {
+      if (command.toCommandLine().contains("system reset")) {
+        stderr.consumeLine("reset failed");
+        return 1;
+      }
+      stdout.consumeLine("SonarQube CLI 1.9.0");
+      return 0;
+    });
+
+    var response = newService(false, Map.of(), executor).uninstallCli(new SonarLintCancelMonitor());
+
+    assertThat(response.getStatus()).isEqualTo(UninstallCliResponse.Status.FAILED);
+    assertThat(response.getStderr()).isEqualTo("reset failed");
+    assertThat(executable).exists();
+  }
+
+  @Test
+  void should_report_an_ordinary_folder_deletion_failure() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    try (var files = mockStatic(FileUtils.class)) {
+      files.when(() -> FileUtils.deleteRecursively(executable.getParent().getParent())).thenThrow(new IllegalStateException("deletion failed"));
+
+      var response = newService(false, Map.of(), versionCommandExecutor()).uninstallCli(new SonarLintCancelMonitor());
+
+      assertThat(response.getStatus()).isEqualTo(UninstallCliResponse.Status.FAILED);
+      assertThat(response.getMessage()).contains("delete");
+      assertThat(executable).exists();
+    }
   }
 
   @Test
@@ -718,7 +790,7 @@ class AiIntegrationServiceTests {
     var locator = new SonarQubeCliLocator(search, tempDir);
     return new AiIntegrationService(locator,
       new AgentCliLocator(search, tempDir), connectionRepository, configurationRepository,
-      mock(SonarLintRpcClient.class), new CliTokenAuthenticationRunner(), new SonarQubeCliUninstaller(locator, tempDir, environment));
+      mock(SonarLintRpcClient.class), new CliTokenAuthenticationRunner());
   }
 
   private Path createPathHelper() throws IOException {
@@ -730,18 +802,7 @@ class AiIntegrationServiceTests {
   private Path createExecutable(String relativePath) throws IOException {
     var executable = tempDir.resolve(relativePath);
     Files.createDirectories(executable.getParent());
-    var header = ByteBuffer.allocate(128);
-    if (relativePath.endsWith(".exe")) {
-      header.order(ByteOrder.LITTLE_ENDIAN).putShort(0, (short) 0x5A4D).putInt(60, 64).putInt(64, 0x00004550);
-    } else {
-      header.order(ByteOrder.LITTLE_ENDIAN).putInt(0, 0x464C457F).put(4, (byte) 2).put(5, (byte) 1).put(6, (byte) 1);
-      var machine = System.getProperty("os.arch", "").equals("aarch64") || System.getProperty("os.arch", "").equals("arm64") ? 183 : 62;
-      header.putShort(16, (short) 2).putShort(18, (short) machine).putInt(20, 1).putLong(24, 0x400078L).putLong(32, 64);
-      header.putShort(52, (short) 64).putShort(54, (short) 56).putShort(56, (short) 1);
-      header.putInt(64, 1).putInt(68, 5).putLong(72, 0).putLong(80, 0x400000L).putLong(88, 0x400000L);
-      header.putLong(96, 128).putLong(104, 128).putLong(112, 4096);
-    }
-    Files.write(executable, header.array());
+    Files.createFile(executable);
     assertThat(executable.toFile().setExecutable(true)).isTrue();
     return executable;
   }

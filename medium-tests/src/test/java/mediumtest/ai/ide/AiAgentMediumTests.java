@@ -53,14 +53,11 @@ class AiAgentMediumTests {
         var result = backend.getAiAgentService().uninstallCli().join();
 
         assertThat(result.getStatus()).isEqualTo(UninstallCliResponse.Status.NOT_AVAILABLE);
-        assertThat(result.getExecutablePath()).isNull();
-        assertThat(result.getResetExitCode()).isNull();
         assertThat(result.getStdout()).isEmpty();
         assertThat(result.getStderr()).isEmpty();
-        assertThat(result.getDiagnostics()).isNotEmpty();
+        assertThat(result.getMessage()).isNotBlank();
       }));
   }
-
 
   @SonarLintTest
   void it_should_expose_cli_integration_state_through_rpc(SonarLintTestHarness harness) {
