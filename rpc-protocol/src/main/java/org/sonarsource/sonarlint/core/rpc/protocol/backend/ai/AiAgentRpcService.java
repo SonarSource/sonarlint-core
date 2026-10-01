@@ -35,11 +35,9 @@ public interface AiAgentRpcService {
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
 
   /**
-   * Resets and uninstalls the selected official per-user CLI installation. Clients must obtain
-   * user confirmation first: the CLI is shared across IDEs, terminals and agents, and reset can
-   * remove credentials, registered integrations and revoke recorded server tokens.
-   * Exit-zero reset warnings do not prevent removal; clients must display the captured reset
-   * output and diagnostics. Success does not certify complete reset cleanup.
+   * Runs {@code system reset --force} and deletes the selected official per-user installation folder.
+   * Clients must confirm this shared CLI removal and display reset output, including warnings.
+   * Custom installations are unavailable; PATH configuration is not modified.
    */
   @JsonRequest
   CompletableFuture<UninstallCliResponse> uninstallCli();

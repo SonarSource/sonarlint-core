@@ -51,8 +51,29 @@ final class SonarQubeCliLocator {
     return search.isWindows();
   }
 
-  boolean isMac() {
-    return search.isMac();
+  @Nullable
+  Path installationDirectory(CliLookup cli) {
+    if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
+      return null;
+    }
+    Path directory;
+    if (isWindows()) {
+      var localAppData = search.environmentVariableIgnoreCase("LOCALAPPDATA");
+      if (localAppData == null || localAppData.isBlank()) {
+        return null;
+      }
+      directory = Path.of(localAppData, "sonarqube-cli");
+    } else {
+      directory = userHome.resolve(".local/share/sonarqube-cli");
+    }
+    directory = directory.toAbsolutePath().normalize();
+    var expected = directory.resolve("bin").resolve(isWindows() ? "sonar.exe" : "sonar").toString();
+    var detected = cli.path().toAbsolutePath().normalize().toString();
+    return (isWindows() ? expected.equalsIgnoreCase(detected) : expected.equals(detected)) ? directory : null;
+  }
+
+  OsExecutableSearch.CommandResult reset(Path executable, List<String> stdout, List<String> stderr) {
+    return search.execute(executable, List.of("system", "reset", "--force"), null, 120_000L, stdout::add, stderr::add);
   }
 
   CliLookup find() {

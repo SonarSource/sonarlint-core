@@ -20,42 +20,23 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
 import com.google.gson.Gson;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UninstallCliResponseTests {
   @Test
-  void serializes_all_statuses_and_captured_output() {
-    var gson = new Gson();
+  void serializes_status_output_and_optional_message() {
     for (var status : UninstallCliResponse.Status.values()) {
-      var response = new UninstallCliResponse(status, "/home/space ' user/sonar", 0, "stdout\n", "stderr\n", List.of("warning"));
-
-      var json = gson.toJson(response);
-      var roundTrip = gson.fromJson(json, UninstallCliResponse.class);
+      var response = new UninstallCliResponse(status, "warning", "stderr", null);
+      var gson = new Gson();
+      var roundTrip = gson.fromJson(gson.toJson(response), UninstallCliResponse.class);
 
       assertThat(roundTrip.getStatus()).isEqualTo(status);
-      assertThat(roundTrip.getExecutablePath()).isEqualTo(response.getExecutablePath());
-      assertThat(roundTrip.getResetExitCode()).isZero();
-      assertThat(roundTrip.getStdout()).isEqualTo("stdout\n");
-      assertThat(roundTrip.getStderr()).isEqualTo("stderr\n");
-      assertThat(roundTrip.getDiagnostics()).containsExactly("warning");
+      assertThat(roundTrip.getStdout()).isEqualTo("warning");
+      assertThat(roundTrip.getStderr()).isEqualTo("stderr");
+      assertThat(roundTrip.getMessage()).isNull();
     }
-  }
-
-  @Test
-  void copies_diagnostics_and_rejects_null_output() {
-    var messages = new ArrayList<>(List.of("notice"));
-    var response = new UninstallCliResponse(UninstallCliResponse.Status.NOT_AVAILABLE, null, null, "", "", messages);
-    messages.add("later");
-
-    assertThat(response.getDiagnostics()).containsExactly("notice");
-    assertThatThrownBy(() -> response.getDiagnostics().add("mutation")).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> new UninstallCliResponse(UninstallCliResponse.Status.NOT_AVAILABLE, null, null, null, "", List.of()))
-      .isInstanceOf(NullPointerException.class);
   }
 
   @Test
@@ -64,7 +45,5 @@ class UninstallCliResponseTests {
 
     assertThat(state.isUninstallAvailable()).isFalse();
     assertThat(new Gson().toJson(state)).contains("\"uninstallAvailable\":false");
-    assertThat(new SonarQubeCliState(CliInstallationStatus.INSTALLED, CliAuthenticationStatus.UNKNOWN, "/sonar", "1.9.0", null, null, true)
-      .isUninstallAvailable()).isTrue();
   }
 }

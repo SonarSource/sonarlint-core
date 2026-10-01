@@ -19,52 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 
-import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
-/** Success describes executable and installer cleanup, not complete CLI reset cleanup. */
 public class UninstallCliResponse {
   public enum Status {
     UNINSTALLED,
-    UNINSTALLED_WITH_REMAINING_CONFIGURATION,
     NOT_AVAILABLE,
-    RESET_FAILED,
-    EXECUTABLE_REMOVAL_FAILED,
-    IN_PROGRESS
+    FAILED
   }
 
   private final Status status;
-  @Nullable
-  private final String executablePath;
-  @Nullable
-  private final Integer resetExitCode;
   private final String stdout;
   private final String stderr;
-  private final List<String> diagnostics;
+  @Nullable
+  private final String message;
 
-  public UninstallCliResponse(Status status, @Nullable String executablePath, @Nullable Integer resetExitCode,
-    String stdout, String stderr, List<String> diagnostics) {
+  public UninstallCliResponse(Status status, String stdout, String stderr, @Nullable String message) {
     this.status = Objects.requireNonNull(status);
-    this.executablePath = executablePath;
-    this.resetExitCode = resetExitCode;
     this.stdout = Objects.requireNonNull(stdout);
     this.stderr = Objects.requireNonNull(stderr);
-    this.diagnostics = List.copyOf(diagnostics);
+    this.message = message;
   }
 
   public Status getStatus() {
     return status;
-  }
-
-  @Nullable
-  public String getExecutablePath() {
-    return executablePath;
-  }
-
-  @Nullable
-  public Integer getResetExitCode() {
-    return resetExitCode;
   }
 
   public String getStdout() {
@@ -75,7 +54,8 @@ public class UninstallCliResponse {
     return stderr;
   }
 
-  public List<String> getDiagnostics() {
-    return List.copyOf(diagnostics);
+  @Nullable
+  public String getMessage() {
+    return message;
   }
 }
