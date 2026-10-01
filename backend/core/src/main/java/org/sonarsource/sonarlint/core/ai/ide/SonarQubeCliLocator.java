@@ -68,7 +68,7 @@ final class SonarQubeCliLocator {
       directory = userHome.resolve(".local/share/sonarqube-cli");
     }
     directory = directory.toAbsolutePath().normalize();
-    var expected = directory.resolve("bin").resolve(isWindows() ? CLI_EXECUTABLE_NAME + ".exe" : CLI_EXECUTABLE_NAME).toString();
+    var expected = directory.resolve("bin").resolve(isWindows() ? (CLI_EXECUTABLE_NAME + ".exe") : CLI_EXECUTABLE_NAME).toString();
     var detected = cli.path().toAbsolutePath().normalize().toString();
     var matches = isWindows() ? expected.equalsIgnoreCase(detected) : expected.equals(detected);
     return matches ? directory : null;
