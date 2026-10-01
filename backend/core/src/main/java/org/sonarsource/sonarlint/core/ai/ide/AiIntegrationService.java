@@ -145,7 +145,6 @@ public class AiIntegrationService {
     var stdout = new ArrayList<String>();
     var stderr = new ArrayList<String>();
     var reset = locator.reset(cli.path().toAbsolutePath().normalize(), stdout, stderr);
-    cancelMonitor.checkCanceled();
     var output = String.join("\n", stdout);
     var errors = String.join("\n", stderr);
     if (reset.exitCode() != 0) {
