@@ -37,6 +37,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.COD
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CURSOR;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.GITHUB_COPILOT;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.GITHUB_COPILOT_CLI;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.JETBRAINS_AI_ASSISTANT;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.JUNIE;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.KIRO;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.WINDSURF;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost.INTELLIJ;
@@ -60,6 +62,14 @@ class AiAgentCapabilitiesTests {
       Arguments.of(AiIntegrationHost.CURSOR, CURSOR, GLOBAL, true, true),
       Arguments.of(AiIntegrationHost.CURSOR, CURSOR, PROJECT, false, true),
       Arguments.of(INTELLIJ, GITHUB_COPILOT, GLOBAL, false, true),
+      Arguments.of(INTELLIJ, JUNIE, GLOBAL, false, true),
+      Arguments.of(INTELLIJ, JUNIE, PROJECT, false, true),
+      Arguments.of(INTELLIJ, JETBRAINS_AI_ASSISTANT, GLOBAL, false, true),
+      Arguments.of(INTELLIJ, JETBRAINS_AI_ASSISTANT, PROJECT, false, true),
+      Arguments.of(VSCODE, JUNIE, GLOBAL, false, false),
+      Arguments.of(VSCODE, JETBRAINS_AI_ASSISTANT, GLOBAL, false, false),
+      Arguments.of(OTHER, JUNIE, GLOBAL, false, true),
+      Arguments.of(OTHER, JETBRAINS_AI_ASSISTANT, GLOBAL, false, true),
       Arguments.of(VISUAL_STUDIO, GITHUB_COPILOT, GLOBAL, false, true),
       Arguments.of(VSCODE, GITHUB_COPILOT, GLOBAL, false, true),
       Arguments.of(AiIntegrationHost.CURSOR, GITHUB_COPILOT, GLOBAL, false, false),
@@ -91,5 +101,13 @@ class AiAgentCapabilitiesTests {
 
     assertThat(capability.isCliIntegrationSupported()).isTrue();
     assertThat(capability.isStandaloneMcpSupported()).isTrue();
+  }
+
+  @Test
+  void should_preserve_existing_agent_ordinals_for_ide_clients() {
+    assertThat(AiAgent.values()).startsWith(CURSOR, GITHUB_COPILOT, KIRO, WINDSURF,
+      CLAUDE_CODE, CODEX, GITHUB_COPILOT_CLI, ANTIGRAVITY);
+    assertThat(JUNIE.ordinal()).isEqualTo(8);
+    assertThat(JETBRAINS_AI_ASSISTANT.ordinal()).isEqualTo(9);
   }
 }

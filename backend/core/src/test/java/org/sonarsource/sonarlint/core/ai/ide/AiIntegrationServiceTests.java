@@ -264,6 +264,29 @@ class AiIntegrationServiceTests {
   }
 
   @Test
+  void should_report_junie_and_ai_assistant_mcp_only_on_intellij() {
+    var service = newService(false, Map.of(), commandReturning(1));
+
+    var intellij = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.INTELLIJ,
+      List.of(AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT), AiIntegrationScope.GLOBAL, null));
+    var vscode = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE,
+      List.of(AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT), AiIntegrationScope.GLOBAL, null));
+
+    assertThat(intellij.getAgents()).extracting(capability -> capability.getAgent())
+      .containsExactly(AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT);
+    assertThat(intellij.getAgents()).allSatisfy(capability -> {
+      assertThat(capability.isStandaloneMcpSupported()).isTrue();
+      assertThat(capability.isCliIntegrationSupported()).isFalse();
+    });
+    assertThat(vscode.getAgents()).extracting(capability -> capability.getAgent())
+      .containsExactly(AiAgent.JUNIE, AiAgent.JETBRAINS_AI_ASSISTANT);
+    assertThat(vscode.getAgents()).allSatisfy(capability -> {
+      assertThat(capability.isStandaloneMcpSupported()).isFalse();
+      assertThat(capability.isCliIntegrationSupported()).isFalse();
+    });
+  }
+
+  @Test
   void should_recommend_the_connection_bound_to_the_requested_scope_when_cli_is_unauthenticated() throws IOException {
     connectionRepository.addOrReplace(new SonarQubeConnectionConfiguration("server", "https://sonar.example", false));
     connectionRepository.addOrReplace(new SonarCloudConnectionConfiguration(URI.create("https://sonarqube.us"), URI.create("https://api.sonarqube.us"),
