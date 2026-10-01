@@ -29,7 +29,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/get-build-number@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         id: build-number
 
   build:
@@ -48,20 +48,15 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           version: 2026.9.13
-      - uses: SonarSource/ci-github-actions/build-maven@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/build-maven@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         id: build
         with:
           sonar-platform: none
           deploy-pull-request: true
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
+          repox-url: https://repox-internal.dev.sonar.build
           maven-args: -T 1C -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
-      # build-maven already published to SaaS. Do not pass Edge as repox-url: that
-      # switches Vault to vault.dev. Mint SaaS tokens, then override resolve URLs.
-      - name: Point Maven resolve at Edge
-        uses: ./.github/actions/point-maven-resolve-at-edge
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
       - name: Config Maven (cache setup)
         run: |
           mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
@@ -94,19 +89,15 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+        uses: SonarSource/ci-github-actions/cache@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/config-maven@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         id: config
         with:
           artifactory-reader-role: private-reader
-      # Self-hosted Linux can reach Edge. GitHub-hosted Windows tests stay on SaaS.
-      - name: Point Maven resolve at Edge
-        uses: ./.github/actions/point-maven-resolve-at-edge
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
+          repox-url: https://repox-internal.dev.sonar.build
       - name: Run tests
         env:
           SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
@@ -158,7 +149,7 @@ jobs:
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
-      - uses: SonarSource/ci-github-actions/config-maven@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/config-maven@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -247,7 +238,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/cache@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -266,29 +257,10 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/config-maven@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         with:
           artifactory-reader-role: private-reader
-      - name: Point Maven resolve at Edge
-        uses: ./.github/actions/point-maven-resolve-at-edge
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
-      # Local SQ zips come from sonarsource-releases (LATEST_RELEASE) or
-      # sonarsource-builds (DEV). SonarCloud legs do not download a distribution.
-      - name: Wait for Artifactory token federation (releases)
-        if: matrix.sc != true
-        uses: ./.github/actions/wait-for-artifactory-token-federation
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
-        with:
-          probe-path: "api/search/versions?g=com.sonarsource.sonarqube&a=sonarqube-developer&remote=1&repos=sonarsource-releases&v=*"
-      - name: Wait for Artifactory token federation (builds)
-        if: matrix.sc != true
-        uses: ./.github/actions/wait-for-artifactory-token-federation
-        env:
-          ARTIFACTORY_ACCESS_TOKEN: ${{ env.ARTIFACTORY_ACCESS_TOKEN }}
-        with:
-          probe-path: "api/search/versions?g=com.sonarsource.sonarqube&a=sonarqube-developer&remote=1&repos=sonarsource-builds&v=*"
+          repox-url: https://repox-internal.dev.sonar.build
       - name: Run QA
         if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         env:
@@ -354,6 +326,6 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: SonarSource/ci-github-actions/promote@21206070b4306949454171904b8d2b4ec349b0c5 # 2.0.1
+      - uses: SonarSource/ci-github-actions/promote@4402eb038c849d74631b25f8e9d58e89e983e197 # 2.1.0
         with:
           promote-pull-request: true
