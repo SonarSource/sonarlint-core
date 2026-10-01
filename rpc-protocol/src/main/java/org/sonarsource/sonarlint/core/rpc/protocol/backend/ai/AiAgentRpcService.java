@@ -27,20 +27,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 public interface AiAgentRpcService {
 
   /**
-   * Returns the content of rule file to be written to each IDE's rule folder, based on the agent.
-   * The rule file provides good practices to the agent.
-   */
-  @JsonRequest
-  CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params);
-
-  /**
-   * Returns hook script content with auto-detected executable type.
-   * The hook script will analyze code after write events using the sonarqube_analysis_hook hook.
-   */
-  @JsonRequest
-  CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params);
-
-  /**
    * Returns host- and scope-aware capabilities of the agents detected by the client together with
    * the current SonarQube CLI installation, authentication state, and connection choices for login.
    * Clients may opt in to local AI agent CLI discovery via {@link GetAiIntegrationStateParams}.

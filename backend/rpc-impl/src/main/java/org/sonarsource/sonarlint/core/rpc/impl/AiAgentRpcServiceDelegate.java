@@ -20,17 +20,11 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
-import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
 import org.sonarsource.sonarlint.core.ai.ide.McpConfigurationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetHookScriptContentResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetRuleFileContentResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationInspectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUpdateParams;
@@ -42,16 +36,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCl
 public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAgentRpcService {
   public AiAgentRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
     super(sonarLintRpcServer);
-  }
-
-  @Override
-  public CompletableFuture<GetRuleFileContentResponse> getRuleFileContent(GetRuleFileContentParams params) {
-    return requestAsync(cancelMonitor -> getBean(AiAgentService.class).getRuleFileContent(params.getAiAgent()));
-  }
-
-  @Override
-  public CompletableFuture<GetHookScriptContentResponse> getHookScriptContent(GetHookScriptContentParams params) {
-    return requestAsync(cancelMonitor -> getBean(AiHookService.class).getHookScriptContent(params.getAiAgent()));
   }
 
   @Override

@@ -44,8 +44,6 @@ import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.active.rules.ActiveRulesService;
-import org.sonarsource.sonarlint.core.ai.ide.AiAgentService;
-import org.sonarsource.sonarlint.core.ai.ide.AiHookService;
 import org.sonarsource.sonarlint.core.ai.ide.AiIntegrationService;
 import org.sonarsource.sonarlint.core.ai.ide.McpConfigurationService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
@@ -223,8 +221,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   DependencyRiskService.class,
   ToggleAutomaticAnalysisRequestHandler.class,
   AnalyzeFileListRequestHandler.class,
-  AiAgentService.class,
-  AiHookService.class,
   AiIntegrationService.class,
   McpConfigurationService.class,
   LogService.class,

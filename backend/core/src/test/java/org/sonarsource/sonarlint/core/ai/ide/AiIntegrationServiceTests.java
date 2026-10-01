@@ -229,25 +229,19 @@ class AiIntegrationServiceTests {
       cursor -> {
         assertThat(cursor.isCliIntegrationSupported()).isFalse();
         assertThat(cursor.isStandaloneMcpSupported()).isFalse();
-        assertThat(cursor.isSkillSupported()).isFalse();
       },
       copilot -> {
         assertThat(copilot.isCliIntegrationSupported()).isFalse();
         assertThat(copilot.isStandaloneMcpSupported()).isTrue();
-        assertThat(copilot.isHookSupported()).isFalse();
       },
-      claude -> {
-        assertThat(claude.isCliIntegrationSupported()).isTrue();
-        assertThat(claude.isSkillSupported()).isTrue();
-      },
-      windsurf -> assertThat(windsurf.isHookSupported()).isFalse());
+      claude -> assertThat(claude.isCliIntegrationSupported()).isTrue(),
+      windsurf -> assertThat(windsurf.isStandaloneMcpSupported()).isFalse());
 
     var projectResponse = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.CURSOR,
       List.of(AiAgent.CURSOR), AiIntegrationScope.PROJECT, "workspace"));
     var cursorProjectCapability = projectResponse.getAgents().get(0);
     assertThat(cursorProjectCapability.isCliIntegrationSupported()).isFalse();
     assertThat(cursorProjectCapability.isStandaloneMcpSupported()).isTrue();
-    assertThat(cursorProjectCapability.isSkillSupported()).isFalse();
   }
 
   @Test
