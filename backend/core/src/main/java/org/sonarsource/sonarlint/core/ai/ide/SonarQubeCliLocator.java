@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationSta
 final class SonarQubeCliLocator {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String CLI_EXECUTABLE_NAME = "sonar";
   private static final long COMMAND_TIMEOUT_MILLIS = 30_000L;
   private static final Pattern VERSION_PATTERN = Pattern.compile("\\b\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?\\b");
 
@@ -49,6 +50,32 @@ final class SonarQubeCliLocator {
 
   boolean isWindows() {
     return search.isWindows();
+  }
+
+  @Nullable
+  Path installationDirectory(CliLookup cli) {
+    if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
+      return null;
+    }
+    Path directory;
+    if (isWindows()) {
+      var localAppData = search.environmentVariableIgnoreCase("LOCALAPPDATA");
+      if (localAppData == null || localAppData.isBlank()) {
+        return null;
+      }
+      directory = Path.of(localAppData, "sonarqube-cli");
+    } else {
+      directory = userHome.resolve(".local/share/sonarqube-cli");
+    }
+    directory = directory.toAbsolutePath().normalize();
+    var expected = directory.resolve("bin").resolve(isWindows() ? (CLI_EXECUTABLE_NAME + ".exe") : CLI_EXECUTABLE_NAME).toString();
+    var detected = cli.path().toAbsolutePath().normalize().toString();
+    var matches = isWindows() ? expected.equalsIgnoreCase(detected) : expected.equals(detected);
+    return matches ? directory : null;
+  }
+
+  OsExecutableSearch.CommandResult reset(Path executable, List<String> stdout, List<String> stderr) {
+    return search.execute(executable, List.of("system", "reset", "--force"), null, 120_000L, stdout::add, stderr::add);
   }
 
   CliLookup find() {
@@ -90,7 +117,7 @@ final class SonarQubeCliLocator {
   private Set<Path> cliCandidates(@Nullable String resolvedPath) {
     var candidates = new LinkedHashSet<Path>();
     for (var directory : search.pathDirectories(resolvedPath, false)) {
-      search.executableNames("sonar").forEach(name -> candidates.add(directory.resolve(name)));
+      search.executableNames(CLI_EXECUTABLE_NAME).forEach(name -> candidates.add(directory.resolve(name)));
     }
     addStandardInstallCandidates(candidates);
     return candidates;
@@ -100,11 +127,11 @@ final class SonarQubeCliLocator {
     if (search.isWindows()) {
       var localAppData = search.environmentVariableIgnoreCase("LOCALAPPDATA");
       if (localAppData != null && !localAppData.isBlank()) {
-        search.executableNames("sonar").forEach(name -> candidates.add(Path.of(localAppData, "sonarqube-cli", "bin", name)));
+        search.executableNames(CLI_EXECUTABLE_NAME).forEach(name -> candidates.add(Path.of(localAppData, "sonarqube-cli", "bin", name)));
       }
       return;
     }
-    candidates.add(userHome.resolve(".local/share/sonarqube-cli/bin/sonar"));
+    candidates.add(userHome.resolve(".local/share/sonarqube-cli/bin").resolve(CLI_EXECUTABLE_NAME));
   }
 
   private Optional<String> readCliVersion(Path executable) {
