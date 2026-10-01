@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.os.OsSearchPath;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -606,6 +609,7 @@ class AiIntegrationServiceTests {
 
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(cli.isUninstallAvailable()).isTrue();
   }
 
   @Test
@@ -617,6 +621,7 @@ class AiIntegrationServiceTests {
 
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(cli.isUninstallAvailable()).isTrue();
   }
 
   @Test
@@ -630,6 +635,7 @@ class AiIntegrationServiceTests {
 
     assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
     assertThat(cli.getExecutablePath()).isEqualTo(pathExecutable.toString());
+    assertThat(cli.isUninstallAvailable()).isFalse();
   }
 
   @Test
@@ -664,6 +670,32 @@ class AiIntegrationServiceTests {
     assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
   }
 
+  @Test
+  void should_safely_reject_uninstall_for_missing_cli() {
+    var service = newService(false, Map.of(), commandReturning(1));
+
+    var response = service.uninstallCli(new SonarLintCancelMonitor());
+
+    assertThat(response.getStatus()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse.Status.NOT_AVAILABLE);
+    assertThat(response.getExecutablePath()).isNull();
+    assertThat(response.getResetExitCode()).isNull();
+    assertThat(response.getStdout()).isEmpty();
+    assertThat(response.getStderr()).isEmpty();
+  }
+
+  @Test
+  void should_preserve_the_public_constructor_and_discovery_behaviour() throws IOException {
+    var executable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var system = mock(System2.class);
+    var service = new AiIntegrationService(system, versionCommandExecutor(), tempDir, Map.of(),
+      connectionRepository, configurationRepository, mock(SonarLintRpcClient.class));
+
+    var state = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.VSCODE, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
+
+    assertThat(state.getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(state.isUninstallAvailable()).isTrue();
+  }
+
   private AiIntegrationService newServiceForCurrentOs(Map<String, String> environment, CommandExecutor executor) {
     return newService(System2.INSTANCE.isOsWindows(), environment, executor);
   }
@@ -683,9 +715,10 @@ class AiIntegrationServiceTests {
   private AiIntegrationService newService(System2 system2, Map<String, String> environment, CommandExecutor executor,
     Path pathHelper) {
     var search = new OsExecutableSearch(system2, executor, environment, pathHelper);
-    return new AiIntegrationService(new SonarQubeCliLocator(search, tempDir),
+    var locator = new SonarQubeCliLocator(search, tempDir);
+    return new AiIntegrationService(locator,
       new AgentCliLocator(search, tempDir), connectionRepository, configurationRepository,
-      mock(SonarLintRpcClient.class), new CliTokenAuthenticationRunner());
+      mock(SonarLintRpcClient.class), new CliTokenAuthenticationRunner(), new SonarQubeCliUninstaller(locator, tempDir, environment));
   }
 
   private Path createPathHelper() throws IOException {
@@ -697,7 +730,18 @@ class AiIntegrationServiceTests {
   private Path createExecutable(String relativePath) throws IOException {
     var executable = tempDir.resolve(relativePath);
     Files.createDirectories(executable.getParent());
-    Files.createFile(executable);
+    var header = ByteBuffer.allocate(128);
+    if (relativePath.endsWith(".exe")) {
+      header.order(ByteOrder.LITTLE_ENDIAN).putShort(0, (short) 0x5A4D).putInt(60, 64).putInt(64, 0x00004550);
+    } else {
+      header.order(ByteOrder.LITTLE_ENDIAN).putInt(0, 0x464C457F).put(4, (byte) 2).put(5, (byte) 1).put(6, (byte) 1);
+      var machine = System.getProperty("os.arch", "").equals("aarch64") || System.getProperty("os.arch", "").equals("arm64") ? 183 : 62;
+      header.putShort(16, (short) 2).putShort(18, (short) machine).putInt(20, 1).putLong(24, 0x400078L).putLong(32, 64);
+      header.putShort(52, (short) 64).putShort(54, (short) 56).putShort(56, (short) 1);
+      header.putInt(64, 1).putInt(68, 5).putLong(72, 0).putLong(80, 0x400000L).putLong(88, 0x400000L);
+      header.putLong(96, 128).putLong(104, 128).putLong(112, 4096);
+    }
+    Files.write(executable, header.array());
     assertThat(executable.toFile().setExecutable(true)).isTrue();
     return executable;
   }

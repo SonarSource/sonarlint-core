@@ -19,7 +19,12 @@
  */
 package mediumtest.ai.ide;
 
+import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
@@ -34,6 +39,28 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AiAgentMediumTests {
+
+  @TempDir
+  Path isolatedHome;
+
+  @SonarLintTest
+  void it_should_safely_reject_uninstall_when_no_official_cli_exists_in_an_isolated_home(SonarLintTestHarness harness) throws Exception {
+    // Production discovery checks user.home and LOCALAPPDATA in addition to PATH.
+    // Isolate all three before backend construction, so the developer's installed CLI is never reset.
+    new EnvironmentVariables("LOCALAPPDATA", isolatedHome.toString(), "PATH", isolatedHome.toString()).execute(() ->
+      new SystemProperties("user.home", isolatedHome.toString()).execute(() -> {
+        var backend = harness.newBackend().start();
+        var result = backend.getAiAgentService().uninstallCli().join();
+
+        assertThat(result.getStatus()).isEqualTo(UninstallCliResponse.Status.NOT_AVAILABLE);
+        assertThat(result.getExecutablePath()).isNull();
+        assertThat(result.getResetExitCode()).isNull();
+        assertThat(result.getStdout()).isEmpty();
+        assertThat(result.getStderr()).isEmpty();
+        assertThat(result.getDiagnostics()).isNotEmpty();
+      }));
+  }
+
 
   @SonarLintTest
   void it_should_expose_cli_integration_state_through_rpc(SonarLintTestHarness harness) {

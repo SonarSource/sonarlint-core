@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.ai;
 import javax.annotation.Nullable;
 
 public class SonarQubeCliState {
+  private final boolean uninstallAvailable;
   private final CliInstallationStatus installationStatus;
   private final CliAuthenticationStatus authenticationStatus;
   @Nullable
@@ -35,12 +36,22 @@ public class SonarQubeCliState {
 
   public SonarQubeCliState(CliInstallationStatus installationStatus, CliAuthenticationStatus authenticationStatus,
     @Nullable String executablePath, @Nullable String version, @Nullable String serverUrl, @Nullable String organization) {
+    this(installationStatus, authenticationStatus, executablePath, version, serverUrl, organization, false);
+  }
+
+  public SonarQubeCliState(CliInstallationStatus installationStatus, CliAuthenticationStatus authenticationStatus,
+    @Nullable String executablePath, @Nullable String version, @Nullable String serverUrl, @Nullable String organization, boolean uninstallAvailable) {
+    this.uninstallAvailable = uninstallAvailable;
     this.installationStatus = installationStatus;
     this.authenticationStatus = authenticationStatus;
     this.executablePath = executablePath;
     this.version = version;
     this.serverUrl = serverUrl;
     this.organization = organization;
+  }
+
+  public boolean isUninstallAvailable() {
+    return uninstallAvailable;
   }
 
   public CliInstallationStatus getInstallationStatus() {
