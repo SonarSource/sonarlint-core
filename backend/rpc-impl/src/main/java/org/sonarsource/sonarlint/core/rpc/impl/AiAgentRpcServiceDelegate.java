@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.McpConfigurationUp
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareAuthenticateCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCliCommandParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
 
 public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implements AiAgentRpcService {
   public AiAgentRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
@@ -43,6 +44,11 @@ public class AiAgentRpcServiceDelegate extends AbstractRpcServiceDelegate implem
   @Override
   public CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params) {
     return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).getIntegrationState(params));
+  }
+
+  @Override
+  public CompletableFuture<UninstallCliResponse> uninstallCli() {
+    return requestAsync(cancelMonitor -> getBean(AiIntegrationService.class).uninstallCli(cancelMonitor));
   }
 
   @Override
