@@ -21,7 +21,6 @@ package org.sonarqube.ws.client;
 
 import java.io.IOException;
 import java.net.Proxy;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -37,7 +36,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.sonarqube.ws.client.RequestWithPayload.Part;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
@@ -54,8 +52,7 @@ public class Http1WsConnector implements WsConnector {
 
   public static final int DEFAULT_CONNECT_TIMEOUT_MILLISECONDS = 30_000;
   public static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = 60_000;
-  public static final int DEFAULT_RESPONSE_TIMEOUT_MILLISECONDS = 0;
-  private static final String JSON = "application/json; charset=utf-8";
+  private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
   private final HttpUrl baseUrl;
   private final String systemPassCode;
@@ -77,12 +74,10 @@ public class Http1WsConnector implements WsConnector {
     okHttpClientBuilder.setProxyLogin(builder.proxyLogin);
     okHttpClientBuilder.setProxyPassword(builder.proxyPassword);
     okHttpClientBuilder.setConnectTimeoutMs(builder.connectTimeoutMs);
-    okHttpClientBuilder.setResponseTimeoutMs(builder.responseTimeoutMs);
     okHttpClientBuilder.setReadTimeoutMs(builder.readTimeoutMs);
     okHttpClientBuilder.setSSLSocketFactory(builder.sslSocketFactory);
     okHttpClientBuilder.setTrustManager(builder.sslTrustManager);
     okHttpClientBuilder.acceptGzip(builder.acceptGzip);
-
     this.okHttpClient = okHttpClientBuilder.build();
     this.noRedirectOkHttpClient = newClientWithoutRedirect(this.okHttpClient);
   }
@@ -101,45 +96,43 @@ public class Http1WsConnector implements WsConnector {
 
   @Override
   public WsResponse call(WsRequest httpRequest) {
-    if (httpRequest instanceof RequestWithoutPayload httpRequestWithoutPayload) {
-      return executeRequest(httpRequestWithoutPayload);
+    if (httpRequest instanceof GetRequest getRequest) {
+      return get(getRequest);
     }
-    if (httpRequest instanceof RequestWithPayload httpRequestWithPayload) {
-      return executeRequest(httpRequestWithPayload);
+    if (httpRequest instanceof PostRequest postRequest) {
+      return post(postRequest);
     }
     throw new IllegalArgumentException(format("Unsupported implementation: %s", httpRequest.getClass()));
   }
 
-  private WsResponse executeRequest(RequestWithoutPayload<?> request) {
-    HttpUrl.Builder urlBuilder = prepareUrlBuilder(request);
-    completeUrlQueryParameters(request, urlBuilder);
+  private WsResponse get(GetRequest getRequest) {
+    HttpUrl.Builder urlBuilder = prepareUrlBuilder(getRequest);
+    completeUrlQueryParameters(getRequest, urlBuilder);
 
-    Request.Builder okRequestBuilder = prepareOkRequestBuilder(request, urlBuilder);
-    okRequestBuilder = request.addVerbToBuilder().apply(okRequestBuilder);
-    return new OkHttpResponse(doCall(prepareOkHttpClient(okHttpClient, request), okRequestBuilder.build()));
+    Request.Builder okRequestBuilder = prepareOkRequestBuilder(getRequest, urlBuilder).get();
+    return new OkHttpResponse(doCall(prepareOkHttpClient(okHttpClient, getRequest), okRequestBuilder.build()));
   }
 
-  private WsResponse executeRequest(RequestWithPayload<?> request) {
-    HttpUrl.Builder urlBuilder = prepareUrlBuilder(request);
+  private WsResponse post(PostRequest postRequest) {
+    HttpUrl.Builder urlBuilder = prepareUrlBuilder(postRequest);
 
     RequestBody body;
-    Map<String, Part> parts = request.getParts();
-    if (request.hasBody()) {
-      MediaType contentType = MediaType.parse(request.getContentType().orElse(JSON));
-      body = RequestBody.create(contentType, request.getBody());
+    Map<String, PostRequest.Part> parts = postRequest.getParts();
+    if (postRequest.hasBody()) {
+      body = RequestBody.create(JSON, postRequest.getBody());
     } else if (parts.isEmpty()) {
       FormBody.Builder formBody = new FormBody.Builder();
-      request.getParameters().getKeys()
-        .forEach(key -> request.getParameters().getValues(key)
+      postRequest.getParameters().getKeys()
+        .forEach(key -> postRequest.getParameters().getValues(key)
           .forEach(value -> formBody.add(key, value)));
       body = formBody.build();
 
     } else {
-      completeUrlQueryParameters(request, urlBuilder);
+      completeUrlQueryParameters(postRequest, urlBuilder);
 
       MultipartBody.Builder bodyBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
       parts.entrySet().forEach(param -> {
-        Part part = param.getValue();
+        PostRequest.Part part = param.getValue();
         bodyBuilder.addFormDataPart(
           param.getKey(),
           part.getFile().getName(),
@@ -147,10 +140,9 @@ public class Http1WsConnector implements WsConnector {
       });
       body = bodyBuilder.build();
     }
-    Request.Builder okRequestBuilder = prepareOkRequestBuilder(request, urlBuilder);
-    okRequestBuilder = request.addVerbToBuilder(body).apply(okRequestBuilder);
-    Response response = doCall(prepareOkHttpClient(noRedirectOkHttpClient, request), okRequestBuilder.build());
-    response = checkRedirect(response, request);
+    Request.Builder okRequestBuilder = prepareOkRequestBuilder(postRequest, urlBuilder).post(body);
+    Response response = doCall(prepareOkHttpClient(noRedirectOkHttpClient, postRequest), okRequestBuilder.build());
+    response = checkRedirect(response, postRequest);
     return new OkHttpResponse(response);
   }
 
@@ -203,15 +195,14 @@ public class Http1WsConnector implements WsConnector {
     }
   }
 
-  private Response checkRedirect(Response response, RequestWithPayload<?> postRequest) {
-    if (List.of(HTTP_MOVED_PERM, HTTP_MOVED_TEMP, HTTP_TEMP_REDIRECT, HTTP_PERM_REDIRECT).contains(response.code())) {
-      return followPostRedirect(response, postRequest);
-    } else {
-      return response;
-    }
+  private Response checkRedirect(Response response, PostRequest postRequest) {
+    return switch (response.code()) {
+      case HTTP_MOVED_PERM, HTTP_MOVED_TEMP, HTTP_TEMP_REDIRECT, HTTP_PERM_REDIRECT -> followPostRedirect(response, postRequest);
+      default -> response;
+    };
   }
 
-  private Response followPostRedirect(Response response, RequestWithPayload<?> postRequest) {
+  private Response followPostRedirect(Response response, PostRequest postRequest) {
     String location = response.header("Location");
     if (location == null) {
       throw new IllegalStateException(format("Missing HTTP header 'Location' in redirect of %s", response.request().url()));
@@ -243,7 +234,6 @@ public class Http1WsConnector implements WsConnector {
     private String systemPassCode;
     private int connectTimeoutMs = DEFAULT_CONNECT_TIMEOUT_MILLISECONDS;
     private int readTimeoutMs = DEFAULT_READ_TIMEOUT_MILLISECONDS;
-    private int responseTimeoutMs = DEFAULT_RESPONSE_TIMEOUT_MILLISECONDS;
     private SSLSocketFactory sslSocketFactory = null;
     private X509TrustManager sslTrustManager = null;
     private boolean acceptGzip = false;
@@ -292,11 +282,6 @@ public class Http1WsConnector implements WsConnector {
 
     public Builder readTimeoutMilliseconds(int i) {
       this.readTimeoutMs = i;
-      return this;
-    }
-
-    public Builder responseTimeoutMilliseconds(int i) {
-      this.responseTimeoutMs = i;
       return this;
     }
 

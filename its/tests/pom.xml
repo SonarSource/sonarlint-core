@@ -92,7 +92,7 @@
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-ws</artifactId>
-      <version>25.1.0.102122</version>
+      <version>9.9.9.104369</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

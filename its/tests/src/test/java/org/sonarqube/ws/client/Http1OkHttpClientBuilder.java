@@ -48,17 +48,12 @@ import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.logging.HttpLoggingInterceptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.sonarqube.ws.WsUtils.nullToEmpty;
 
 public class Http1OkHttpClientBuilder {
-
-  private static final Logger LOG = LoggerFactory.getLogger(Http1OkHttpClientBuilder.class);
 
   private static final String NONE = "NONE";
   private static final String P11KEYSTORE = "PKCS11";
@@ -72,7 +67,6 @@ public class Http1OkHttpClientBuilder {
   private Boolean followRedirects;
   private long connectTimeoutMs = -1;
   private long readTimeoutMs = -1;
-  private long responseTimeoutMs = -1;
   private SSLSocketFactory sslSocketFactory = null;
   private X509TrustManager sslTrustManager = null;
   private boolean acceptGzip = false;
@@ -133,14 +127,6 @@ public class Http1OkHttpClientBuilder {
     return this;
   }
 
-  public Http1OkHttpClientBuilder setResponseTimeoutMs(long l) {
-    if (l < 0) {
-      throw new IllegalArgumentException("Response timeout must be positive. Got " + l);
-    }
-    this.responseTimeoutMs = l;
-    return this;
-  }
-
   public Http1OkHttpClientBuilder setFollowRedirects(Boolean followRedirects) {
     this.followRedirects = followRedirects;
     return this;
@@ -148,7 +134,6 @@ public class Http1OkHttpClientBuilder {
 
   public OkHttpClient build() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
-    // hardcode only HTTP1 to avoid issues with HTTP2
     builder.protocols(List.of(Protocol.HTTP_1_1));
     builder.proxy(proxy);
     if (connectTimeoutMs >= 0) {
@@ -156,9 +141,6 @@ public class Http1OkHttpClientBuilder {
     }
     if (readTimeoutMs >= 0) {
       builder.readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS);
-    }
-    if (responseTimeoutMs >= 0) {
-      builder.callTimeout(responseTimeoutMs, TimeUnit.MILLISECONDS);
     }
     builder.addNetworkInterceptor(this::addHeaders);
     if (!acceptGzip) {
@@ -192,15 +174,7 @@ public class Http1OkHttpClientBuilder {
     SSLSocketFactory sslFactory = sslSocketFactory != null ? sslSocketFactory : systemDefaultSslSocketFactory(trustManager);
     builder.sslSocketFactory(sslFactory, trustManager);
 
-    builder.addInterceptor(buildLoggingInterceptor());
-
     return builder.build();
-  }
-
-  private static HttpLoggingInterceptor buildLoggingInterceptor() {
-    var logging = new HttpLoggingInterceptor(LOG::debug);
-    logging.setLevel(HttpLoggingInterceptor.Level.BASIC);
-    return logging;
   }
 
   private Response addHeaders(Interceptor.Chain chain) throws IOException {
