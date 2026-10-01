@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -58,6 +59,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareAuthenticat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 
@@ -130,6 +133,30 @@ public class AiIntegrationService {
   private static void addDetectionSource(Map<AiAgent, LinkedHashSet<AiAgentDetectionSource>> agentsBySource,
     AiAgent agent, AiAgentDetectionSource source) {
     agentsBySource.computeIfAbsent(agent, ignored -> new LinkedHashSet<>()).add(source);
+  }
+
+  public UninstallCliResponse uninstallCli(SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
+    var cli = locator.find();
+    var directory = locator.installationDirectory(cli);
+    if (directory == null) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.NOT_AVAILABLE, "", "", "Only an official per-user CLI installation can be uninstalled.");
+    }
+    var stdout = new ArrayList<String>();
+    var stderr = new ArrayList<String>();
+    var reset = locator.reset(cli.path().toAbsolutePath().normalize(), stdout, stderr);
+    cancelMonitor.checkCanceled();
+    var output = String.join("\n", stdout);
+    var errors = String.join("\n", stderr);
+    if (reset.exitCode() != 0) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, output, errors, "SonarQube CLI reset failed.");
+    }
+    try {
+      FileUtils.deleteRecursively(directory);
+      return new UninstallCliResponse(UninstallCliResponse.Status.UNINSTALLED, output, errors, null);
+    } catch (IllegalStateException e) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, output, errors, "Could not delete the SonarQube CLI installation folder.");
+    }
   }
 
   public PrepareCliCommandResponse prepareInstallCommand() {
@@ -229,7 +256,7 @@ public class AiIntegrationService {
 
     var status = locator.readStatus(cli.path());
     return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
-      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization());
+      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization(), locator.installationDirectory(cli) != null);
   }
 
   @Nullable
