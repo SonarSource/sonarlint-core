@@ -28,8 +28,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -44,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarqube.ws.client.Http1WsConnector;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
@@ -62,7 +61,6 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.GetRequest;
-import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -628,7 +626,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   public static WsClient newAdminWsClient() {
-    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
+    return WsClientFactories.getDefault().newClient(Http1WsConnector.newBuilder()
       .url(SONARCLOUD_STAGING_URL.toString())
       .token(SONARCLOUD_TOKEN)
       .build());
