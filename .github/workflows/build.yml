@@ -153,6 +153,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
       - name: Run tests
         env:
           MAVEN_OPTS: -Xmx4g
