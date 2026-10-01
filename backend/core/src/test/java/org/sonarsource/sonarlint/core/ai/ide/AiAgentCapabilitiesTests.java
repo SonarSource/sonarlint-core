@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.ai.ide.AiAgentCapabilities.HookSupport;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.ANTIGRAVITY;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CLAUDE_CODE;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent.CODEX;
@@ -51,41 +50,39 @@ class AiAgentCapabilitiesTests {
 
   static Stream<Arguments> hostAwareCapabilities() {
     return Stream.of(
-      Arguments.of(OTHER, CURSOR, GLOBAL, true, true, false, true),
-      Arguments.of(OTHER, GITHUB_COPILOT, GLOBAL, false, true, false, false),
-      Arguments.of(OTHER, CODEX, GLOBAL, true, false, false, true),
-      Arguments.of(OTHER, CLAUDE_CODE, GLOBAL, true, true, false, true),
-      Arguments.of(OTHER, WINDSURF, GLOBAL, false, true, false, false),
-      Arguments.of(OTHER, KIRO, GLOBAL, false, true, false, false),
-      Arguments.of(VSCODE, CURSOR, GLOBAL, false, false, false, false),
-      Arguments.of(AiIntegrationHost.CURSOR, CURSOR, GLOBAL, true, true, false, true),
-      Arguments.of(AiIntegrationHost.CURSOR, CURSOR, PROJECT, false, true, false, false),
-      Arguments.of(INTELLIJ, GITHUB_COPILOT, GLOBAL, false, true, false, false),
-      Arguments.of(VISUAL_STUDIO, GITHUB_COPILOT, GLOBAL, false, true, false, false),
-      Arguments.of(VSCODE, GITHUB_COPILOT, GLOBAL, false, true, false, false),
-      Arguments.of(AiIntegrationHost.CURSOR, GITHUB_COPILOT, GLOBAL, false, false, false, false),
-      Arguments.of(AiIntegrationHost.WINDSURF, WINDSURF, GLOBAL, false, true, true, false),
-      Arguments.of(AiIntegrationHost.WINDSURF, WINDSURF, PROJECT, false, true, false, false),
-      Arguments.of(VSCODE, WINDSURF, GLOBAL, false, false, false, false),
-      Arguments.of(VSCODE, CLAUDE_CODE, GLOBAL, true, true, false, true),
-      Arguments.of(VSCODE, CLAUDE_CODE, PROJECT, false, true, false, false),
-      Arguments.of(AiIntegrationHost.KIRO, KIRO, GLOBAL, false, true, false, false),
-      Arguments.of(VSCODE, KIRO, GLOBAL, false, false, false, false),
-      Arguments.of(OTHER, GITHUB_COPILOT_CLI, GLOBAL, true, false, false, true),
-      Arguments.of(OTHER, ANTIGRAVITY, GLOBAL, true, false, false, true)
+      Arguments.of(OTHER, CURSOR, GLOBAL, true, true),
+      Arguments.of(OTHER, GITHUB_COPILOT, GLOBAL, false, true),
+      Arguments.of(OTHER, CODEX, GLOBAL, true, false),
+      Arguments.of(OTHER, CLAUDE_CODE, GLOBAL, true, true),
+      Arguments.of(OTHER, WINDSURF, GLOBAL, false, true),
+      Arguments.of(OTHER, KIRO, GLOBAL, false, true),
+      Arguments.of(VSCODE, CURSOR, GLOBAL, false, false),
+      Arguments.of(AiIntegrationHost.CURSOR, CURSOR, GLOBAL, true, true),
+      Arguments.of(AiIntegrationHost.CURSOR, CURSOR, PROJECT, false, true),
+      Arguments.of(INTELLIJ, GITHUB_COPILOT, GLOBAL, false, true),
+      Arguments.of(VISUAL_STUDIO, GITHUB_COPILOT, GLOBAL, false, true),
+      Arguments.of(VSCODE, GITHUB_COPILOT, GLOBAL, false, true),
+      Arguments.of(AiIntegrationHost.CURSOR, GITHUB_COPILOT, GLOBAL, false, false),
+      Arguments.of(AiIntegrationHost.WINDSURF, WINDSURF, GLOBAL, false, true),
+      Arguments.of(AiIntegrationHost.WINDSURF, WINDSURF, PROJECT, false, true),
+      Arguments.of(VSCODE, WINDSURF, GLOBAL, false, false),
+      Arguments.of(VSCODE, CLAUDE_CODE, GLOBAL, true, true),
+      Arguments.of(VSCODE, CLAUDE_CODE, PROJECT, false, true),
+      Arguments.of(AiIntegrationHost.KIRO, KIRO, GLOBAL, false, true),
+      Arguments.of(VSCODE, KIRO, GLOBAL, false, false),
+      Arguments.of(OTHER, GITHUB_COPILOT_CLI, GLOBAL, true, false),
+      Arguments.of(OTHER, ANTIGRAVITY, GLOBAL, true, false)
     );
   }
 
   @ParameterizedTest
   @MethodSource("hostAwareCapabilities")
   void should_report_host_and_scope_capabilities(AiIntegrationHost host, AiAgent agent, AiIntegrationScope scope,
-    boolean cli, boolean mcp, boolean hook, boolean skill) {
+    boolean cli, boolean mcp) {
     var capability = AiAgentCapabilities.of(host, agent, scope);
 
     assertThat(capability.isCliIntegrationSupported()).isEqualTo(cli);
     assertThat(capability.isStandaloneMcpSupported()).isEqualTo(mcp);
-    assertThat(capability.isHookSupported()).isEqualTo(hook);
-    assertThat(capability.isSkillSupported()).isEqualTo(skill);
   }
 
   @Test
@@ -94,28 +91,5 @@ class AiAgentCapabilitiesTests {
 
     assertThat(capability.isCliIntegrationSupported()).isTrue();
     assertThat(capability.isStandaloneMcpSupported()).isTrue();
-    assertThat(capability.isSkillSupported()).isTrue();
-  }
-
-  @Test
-  void should_classify_rule_file_and_hook_support() {
-    assertThat(AiAgentCapabilities.supportsRuleFile(CURSOR)).isTrue();
-    assertThat(AiAgentCapabilities.supportsRuleFile(CLAUDE_CODE)).isFalse();
-    assertThat(AiAgentCapabilities.hookSupport(WINDSURF)).isEqualTo(HookSupport.CONFIGURED);
-    assertThat(AiAgentCapabilities.hookSupport(CURSOR)).isEqualTo(HookSupport.NOT_YET_IMPLEMENTED);
-    assertThat(AiAgentCapabilities.hookSupport(GITHUB_COPILOT)).isEqualTo(HookSupport.UNSUPPORTED_COPILOT);
-    assertThat(AiAgentCapabilities.hookSupport(CODEX)).isEqualTo(HookSupport.UNSUPPORTED_CLI);
-  }
-
-  @Test
-  void should_keep_existing_unsupported_messages() {
-    assertThat(AiAgentCapabilities.unsupportedRuleFile(CLAUDE_CODE))
-      .hasMessage("CLAUDE_CODE rule file generation is not supported");
-    assertThat(AiAgentCapabilities.unsupportedHook(CURSOR))
-      .hasMessage("CURSOR hook configuration not yet implemented");
-    assertThat(AiAgentCapabilities.unsupportedHook(GITHUB_COPILOT))
-      .hasMessage("GitHub Copilot does not support hooks");
-    assertThat(AiAgentCapabilities.unsupportedHook(CODEX))
-      .hasMessage("CODEX hook configuration is not supported");
   }
 }

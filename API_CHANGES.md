@@ -1,3 +1,10 @@
+# 12.1
+
+## Breaking changes
+
+* Remove `getRuleFileContent` and `getHookScriptContent` from `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService`, along with `GetRuleFileContentParams`, `GetRuleFileContentResponse`, `GetHookScriptContentParams`, and `GetHookScriptContentResponse`. Clients must remove calls to these legacy AI instruction-file and hook-generation requests before upgrading.
+* Remove `isHookSupported` and `isSkillSupported` from `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability` and the corresponding constructor parameters. Use `isCliIntegrationSupported` and `isStandaloneMcpSupported` for the remaining integration capabilities.
+
 # 12.0
 
 ## New features
