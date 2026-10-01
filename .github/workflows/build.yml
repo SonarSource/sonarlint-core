@@ -102,7 +102,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
-      # Self-hosted Linux can reach Edge. GitHub-hosted Windows tests stay on SaaS.
+      # Self-hosted runners resolve from Edge.
       - name: Point Maven resolve at Edge
         uses: ./.github/actions/point-maven-resolve-at-edge
         env:
@@ -143,7 +143,7 @@ jobs:
 
   test-windows:
     needs: [ build-number, build ]
-    runs-on: github-windows-latest-m
+    runs-on: warp-custom-windows-2022-l
     name: Test (Windows)
     permissions:
       id-token: write
@@ -162,6 +162,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
       - name: Run tests
         env:
           MAVEN_OPTS: -Xmx4g
