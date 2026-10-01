@@ -47,10 +47,21 @@ final class CliCommandFactory {
 
   static PrepareCliCommandResponse prepareAuthenticationCommand(Path executable, @Nullable String serverUrl,
     @Nullable String organization) {
+    return new PrepareCliCommandResponse(executable.toString(), authenticationArguments(serverUrl, organization));
+  }
+
+  static List<String> tokenAuthenticationCommand(Path executable, String serverUrl, @Nullable String organization) {
+    var arguments = authenticationArguments(serverUrl, organization);
+    arguments.add(2, "--with-token");
+    arguments.add(0, executable.toString());
+    return arguments;
+  }
+
+  private static ArrayList<String> authenticationArguments(@Nullable String serverUrl, @Nullable String organization) {
     var arguments = new ArrayList<>(List.of("auth", "login"));
     addOption(arguments, "--server", serverUrl);
     addOption(arguments, "--org", organization);
-    return new PrepareCliCommandResponse(executable.toString(), arguments);
+    return arguments;
   }
 
   static PrepareCliCommandResponse prepareIntegrationCommand(Path executable, @Nullable AiAgent agent) {
