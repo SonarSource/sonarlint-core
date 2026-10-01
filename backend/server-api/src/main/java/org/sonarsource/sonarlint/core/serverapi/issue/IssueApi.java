@@ -124,7 +124,7 @@ public class IssueApi {
 
   private static String getVulnerabilitiesUrl(String key, Set<String> ruleKeys) {
     var encodedKey = urlEncode(key);
-    return "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys="
+    return "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys="
       + encodedKey + "&components=" + encodedKey + "&rules=" + urlEncode(String.join(",", ruleKeys));
   }
 
