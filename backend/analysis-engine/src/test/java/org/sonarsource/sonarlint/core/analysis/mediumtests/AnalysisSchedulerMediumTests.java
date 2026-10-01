@@ -243,8 +243,7 @@ class AnalysisSchedulerMediumTests {
     analysisScheduler.post(analyzeCommand2);
 
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Analysis command failed"));
-    await().atMost(3, TimeUnit.SECONDS)
-      .until(() -> analyzeCommand2.getFutureResult().isDone());
+    await().until(analyzeCommand2.getFutureResult()::isDone);
     assertThat(issues2).hasSize(1);
   }
 
