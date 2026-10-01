@@ -51,6 +51,10 @@ final class SonarQubeCliLocator {
     return search.isWindows();
   }
 
+  boolean isMac() {
+    return search.isMac();
+  }
+
   CliLookup find() {
     var resolvedPath = search.resolvePath();
     Path firstUnusable = null;

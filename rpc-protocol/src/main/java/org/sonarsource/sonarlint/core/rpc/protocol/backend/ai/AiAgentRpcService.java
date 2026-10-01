@@ -35,6 +35,16 @@ public interface AiAgentRpcService {
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
 
   /**
+   * Resets and uninstalls the selected official per-user CLI installation. Clients must obtain
+   * user confirmation first: the CLI is shared across IDEs, terminals and agents, and reset can
+   * remove credentials, registered integrations and revoke recorded server tokens.
+   * Exit-zero reset warnings do not prevent removal; clients must display the captured reset
+   * output and diagnostics. Success does not certify complete reset cleanup.
+   */
+  @JsonRequest
+  CompletableFuture<UninstallCliResponse> uninstallCli();
+
+  /**
    * Prepares the OS-specific SonarQube CLI installation command for the client's native interactive terminal.
    * Credentials are never included in the response.
    */

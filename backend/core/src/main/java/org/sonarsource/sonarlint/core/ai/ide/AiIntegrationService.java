@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareAuthenticat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 
@@ -77,6 +78,7 @@ public class AiIntegrationService {
   private final ConfigurationRepository configurationRepository;
   private final SonarLintRpcClient client;
   private final CliTokenAuthenticationRunner tokenAuthenticationRunner;
+  private final SonarQubeCliUninstaller uninstaller;
 
   @Inject
   public AiIntegrationService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository,
@@ -95,18 +97,28 @@ public class AiIntegrationService {
     this.configurationRepository = configurationRepository;
     this.client = client;
     this.tokenAuthenticationRunner = new CliTokenAuthenticationRunner();
+    this.uninstaller = new SonarQubeCliUninstaller(locator, userHome, environment);
   }
 
   @VisibleForTesting
   AiIntegrationService(SonarQubeCliLocator locator, AgentCliLocator agentCliLocator,
     ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository,
     SonarLintRpcClient client, CliTokenAuthenticationRunner tokenAuthenticationRunner) {
+    this(locator, agentCliLocator, connectionRepository, configurationRepository, client, tokenAuthenticationRunner,
+      new SonarQubeCliUninstaller(locator, Paths.get(System.getProperty("user.home")), System.getenv()));
+  }
+
+  @VisibleForTesting
+  AiIntegrationService(SonarQubeCliLocator locator, AgentCliLocator agentCliLocator,
+    ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository,
+    SonarLintRpcClient client, CliTokenAuthenticationRunner tokenAuthenticationRunner, SonarQubeCliUninstaller uninstaller) {
     this.locator = locator;
     this.agentCliLocator = agentCliLocator;
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.client = client;
     this.tokenAuthenticationRunner = tokenAuthenticationRunner;
+    this.uninstaller = uninstaller;
   }
 
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
@@ -130,6 +142,10 @@ public class AiIntegrationService {
   private static void addDetectionSource(Map<AiAgent, LinkedHashSet<AiAgentDetectionSource>> agentsBySource,
     AiAgent agent, AiAgentDetectionSource source) {
     agentsBySource.computeIfAbsent(agent, ignored -> new LinkedHashSet<>()).add(source);
+  }
+
+  public UninstallCliResponse uninstallCli(SonarLintCancelMonitor cancelMonitor) {
+    return uninstaller.uninstall(cancelMonitor);
   }
 
   public PrepareCliCommandResponse prepareInstallCommand() {
@@ -229,7 +245,7 @@ public class AiIntegrationService {
 
     var status = locator.readStatus(cli.path());
     return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
-      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization());
+      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization(), uninstaller.isAvailable(cli));
   }
 
   @Nullable
