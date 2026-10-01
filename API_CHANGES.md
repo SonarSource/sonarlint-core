@@ -1,5 +1,9 @@
 # 12.1
 
+## New features
+
+* Add `authenticateCliWithConnection` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService`. Given a saved connection ID, it retrieves credentials through the client's `getCredentials` callback and passes a token to SonarQube CLI through standard input. The token is absent from this request, its response, and CLI arguments. Token authentication requires SonarQube CLI 1.9.0 or newer. The response status is `AUTHENTICATED`, `INTERACTIVE_LOGIN_REQUIRED` (use `prepareAuthenticateCommand`), `UPGRADE_REQUIRED`, or `FAILED`.
+
 ## Breaking changes
 
 * Remove `getRuleFileContent` and `getHookScriptContent` from `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService`, along with `GetRuleFileContentParams`, `GetRuleFileContentResponse`, `GetHookScriptContentParams`, and `GetHookScriptContentResponse`. Clients must remove calls to these legacy AI instruction-file and hook-generation requests before upgrading.
