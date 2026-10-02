@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentDetectionSo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationAgentCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliInstallationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationRecordingStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.GetAiIntegrationStateParams;
@@ -91,6 +92,10 @@ class AiIntegrationServiceTests {
 
     assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.NOT_INSTALLED);
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNKNOWN);
+    assertThat(response.getCliIntegrations()).hasSize(5).allSatisfy(state -> {
+      assertThat(state.getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.UNKNOWN);
+      assertThat(state.getConfigurations()).isEmpty();
+    });
     assertThat(response.getAgents()).hasSize(2);
     assertThat(response.getAgents().get(0).getAgent()).isEqualTo(AiAgent.CLAUDE_CODE);
     assertThat(response.getAgents().get(0).isCliIntegrationSupported()).isTrue();
@@ -223,6 +228,50 @@ class AiIntegrationServiceTests {
     assertThat(cli.getVersion()).isEqualTo("1.4.2");
     assertThat(cli.getServerUrl()).isEqualTo("https://sonar.example");
     assertThat(cli.getOrganization()).isEqualTo("acme");
+  }
+
+  @Test
+  void should_return_integrations_and_authentication_from_one_status_invocation() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var statusInvocations = new ArrayList<String>();
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().endsWith("--version")) {
+        stdout.consumeLine("1.9.0");
+      } else {
+        assertThat(command.getArguments()).containsExactly("system", "status", "--json");
+        statusInvocations.add(command.toCommandLine());
+        stdout.consumeLine("{\"auth\":{\"status\":\"unauthenticated\"},\"integrations\":[{\"id\":\"codex\"}]}");
+      }
+      return 0;
+    });
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), executor);
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null));
+
+    assertThat(statusInvocations).hasSize(1);
+    assertThat(response.getAgents()).isEmpty();
+    assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAUTHENTICATED);
+    assertThat(response.getCliIntegrations()).hasSize(5);
+    assertThat(response.getCliIntegrations().get(2).getAgent()).isEqualTo(AiAgent.CODEX);
+    assertThat(response.getCliIntegrations().get(2).getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.RECORDED);
+  }
+
+  @Test
+  void should_report_unknown_integrations_when_status_json_is_malformed() throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var executor = commandReturning((command, stdout) -> {
+      stdout.consumeLine(command.toCommandLine().endsWith("--version") ? "1.9.0" : "{");
+      return 0;
+    });
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), executor);
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null));
+
+    assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAVAILABLE);
+    assertThat(response.getCliIntegrations()).hasSize(5).allSatisfy(state -> {
+      assertThat(state.getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.UNKNOWN);
+      assertThat(state.getConfigurations()).isEmpty();
+    });
   }
 
   @Test
@@ -363,6 +412,10 @@ class AiIntegrationServiceTests {
       AiIntegrationScope.GLOBAL, null));
 
     assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAVAILABLE);
+    assertThat(response.getCliIntegrations()).hasSize(5).allSatisfy(state -> {
+      assertThat(state.getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.UNKNOWN);
+      assertThat(state.getConfigurations()).isEmpty();
+    });
     assertThat(response.getConnectionChoices()).isEmpty();
     assertThat(response.getRecommendedConnectionId()).isNull();
   }
@@ -453,10 +506,14 @@ class AiIntegrationServiceTests {
     var executable = createExecutable("bin/sonar");
     var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), commandReturning(1));
 
-    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null));
 
-    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.UNUSABLE);
-    assertThat(cli.getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.UNUSABLE);
+    assertThat(response.getCli().getExecutablePath()).isEqualTo(executable.toString());
+    assertThat(response.getCliIntegrations()).hasSize(5).allSatisfy(state -> {
+      assertThat(state.getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.UNKNOWN);
+      assertThat(state.getConfigurations()).isEmpty();
+    });
   }
 
   @Test
