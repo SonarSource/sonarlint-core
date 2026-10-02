@@ -74,8 +74,11 @@ final class SonarQubeCliLocator {
     return matches ? directory : null;
   }
 
-  OsExecutableSearch.CommandResult reset(Path executable, List<String> stdout, List<String> stderr) {
-    return search.execute(executable, List.of("system", "reset", "--force"), null, 120_000L, stdout::add, stderr::add);
+  ResetResult reset(Path executable) {
+    var stdout = new ArrayList<String>();
+    var stderr = new ArrayList<String>();
+    var result = search.execute(executable, List.of("system", "reset", "--force"), null, 120_000L, stdout::add, stderr::add);
+    return new ResetResult(result.exitCode(), String.join("\n", stdout), String.join("\n", stderr));
   }
 
   CliLookup find() {
@@ -152,5 +155,8 @@ final class SonarQubeCliLocator {
   }
 
   record CliLookup(CliInstallationStatus installationStatus, @Nullable Path path, @Nullable String version) {
+  }
+
+  record ResetResult(int exitCode, String stdout, String stderr) {
   }
 }

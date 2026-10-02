@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import jakarta.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -142,19 +141,15 @@ public class AiIntegrationService {
     if (directory == null) {
       return new UninstallCliResponse(UninstallCliResponse.Status.NOT_AVAILABLE, "", "", "Only an official per-user CLI installation can be uninstalled.");
     }
-    var stdout = new ArrayList<String>();
-    var stderr = new ArrayList<String>();
-    var reset = locator.reset(cli.path().toAbsolutePath().normalize(), stdout, stderr);
-    var output = String.join("\n", stdout);
-    var errors = String.join("\n", stderr);
+    var reset = locator.reset(cli.path().toAbsolutePath().normalize());
     if (reset.exitCode() != 0) {
-      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, output, errors, "SonarQube CLI reset failed.");
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, reset.stdout(), reset.stderr(), "SonarQube CLI reset failed.");
     }
     try {
       FileUtils.deleteRecursively(directory);
-      return new UninstallCliResponse(UninstallCliResponse.Status.UNINSTALLED, output, errors, null);
+      return new UninstallCliResponse(UninstallCliResponse.Status.UNINSTALLED, reset.stdout(), reset.stderr(), null);
     } catch (IllegalStateException e) {
-      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, output, errors, "Could not delete the SonarQube CLI installation folder.");
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, reset.stdout(), reset.stderr(), "Could not delete the SonarQube CLI installation folder.");
     }
   }
 
