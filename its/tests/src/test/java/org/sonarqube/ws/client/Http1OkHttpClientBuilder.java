@@ -53,6 +53,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.sonarqube.ws.WsUtils.nullToEmpty;
 
+/**
+ * Fork of sonar-ws {@code OkHttpClientBuilder} that forces HTTP/1 in {@link #build()}.
+ * sonar-ws does not expose a way to configure OkHttp protocols on {@code HttpConnector}, so we maintain
+ * this test-scoped copy for ITs that talk to SonarCloud/SonarQube.
+ */
 public class Http1OkHttpClientBuilder {
 
   private static final String NONE = "NONE";
@@ -134,6 +139,7 @@ public class Http1OkHttpClientBuilder {
 
   public OkHttpClient build() {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
+    // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
     builder.protocols(List.of(Protocol.HTTP_1_1));
     builder.proxy(proxy);
     if (connectTimeoutMs >= 0) {

@@ -45,6 +45,11 @@ import static org.sonarqube.ws.WsUtils.checkArgument;
 import static org.sonarqube.ws.WsUtils.isNullOrEmpty;
 import static org.sonarqube.ws.WsUtils.nullToEmpty;
 
+/**
+ * Fork of sonar-ws {@code HttpConnector} that uses {@link Http1OkHttpClientBuilder} to force HTTP/1.
+ * sonar-ws does not expose a way to configure OkHttp protocols on {@code HttpConnector}, so we maintain
+ * this test-scoped copy for ITs that talk to SonarCloud/SonarQube.
+ */
 public class Http1WsConnector implements WsConnector {
 
   private static final int HTTP_TEMP_REDIRECT = 307;
