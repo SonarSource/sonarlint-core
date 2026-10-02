@@ -134,7 +134,7 @@ jobs:
 
   test-windows:
     needs: [ build-number, build ]
-    runs-on: github-windows-latest-m
+    runs-on: warp-custom-windows-2022-l
     name: Test (Windows)
     permissions:
       id-token: write
@@ -153,6 +153,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
       - name: Run tests
         env:
           MAVEN_OPTS: -Xmx4g
