@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationStat
 final class SonarQubeCliStatusDecoder {
 
   private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
-  private static final List<AiAgent> CLI_AGENTS = List.of(AiAgent.CLAUDE_CODE, AiAgent.GITHUB_COPILOT_CLI, AiAgent.CODEX, AiAgent.CURSOR, AiAgent.ANTIGRAVITY);
 
   private SonarQubeCliStatusDecoder() {
   }
@@ -69,11 +68,12 @@ final class SonarQubeCliStatusDecoder {
   }
 
   private static List<CliIntegrationState> decodeIntegrations(@Nullable JsonNode integrations) {
+    var agents = AgentProfiles.cliIntegrations();
     if (integrations == null || !integrations.isArray()) {
-      return CLI_AGENTS.stream().map(agent -> new CliIntegrationState(agent, CliIntegrationRecordingStatus.UNKNOWN, List.of())).toList();
+      return agents.values().stream().map(agent -> new CliIntegrationState(agent, CliIntegrationRecordingStatus.UNKNOWN, List.of())).toList();
     }
     var configurations = new LinkedHashMap<AiAgent, List<CliIntegrationConfiguration>>();
-    CLI_AGENTS.forEach(agent -> configurations.put(agent, new ArrayList<>()));
+    agents.values().forEach(agent -> configurations.put(agent, new ArrayList<>()));
     var evidenceValid = true;
     for (var integration : integrations) {
       var id = integration.isObject() ? textValue(integration, "id") : null;
@@ -81,7 +81,7 @@ final class SonarQubeCliStatusDecoder {
         evidenceValid = false;
         continue;
       }
-      var agent = agentForId(id);
+      var agent = agents.get(id);
       if (agent != null) {
         configurations.get(agent).add(new CliIntegrationConfiguration(textValue(integration, "path"),
           decodeCheck(integration.get("mcp")), decodeCheck(integration.get("hooks"))));
@@ -92,18 +92,6 @@ final class SonarQubeCliStatusDecoder {
       .map(entry -> new CliIntegrationState(entry.getKey(),
         entry.getValue().isEmpty() ? absentStatus : CliIntegrationRecordingStatus.RECORDED, entry.getValue()))
       .toList();
-  }
-
-  @Nullable
-  private static AiAgent agentForId(String id) {
-    return switch (id) {
-      case "claude-code" -> AiAgent.CLAUDE_CODE;
-      case "copilot-cli" -> AiAgent.GITHUB_COPILOT_CLI;
-      case "codex" -> AiAgent.CODEX;
-      case "cursor" -> AiAgent.CURSOR;
-      case "antigravity" -> AiAgent.ANTIGRAVITY;
-      default -> null;
-    };
   }
 
   @Nullable
