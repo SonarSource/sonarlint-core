@@ -117,9 +117,9 @@ class IssueApiTests {
 
   @Test
   void should_download_all_vulnerabilities() {
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=1",
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=1",
       Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().setKey("issueKey").build()).build());
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=2",
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys=keyyy&components=keyyy&rules=ruleKey&ps=500&p=2",
       Issues.SearchWsResponse.newBuilder().addComponents(Issues.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
 
     var result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new SonarLintCancelMonitor());
