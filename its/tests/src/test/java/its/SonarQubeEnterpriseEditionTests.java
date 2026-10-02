@@ -20,6 +20,7 @@
 package its;
 
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.container.Server;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
+import org.sonarqube.ws.client.permissions.AddUserRequest;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
@@ -148,7 +150,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY).setValue("true"));
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY).setValue("true"));
 
-    removeGroupPermission("anyone", "scan");
+    // SonarQube 2026.6 migrated Anyone permissions to sonar-users.
+    var scanPermissionGroup = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2026, 6) ? "sonar-users" : "anyone";
+    removeGroupPermission(scanPermissionGroup, "scan");
+    // Server-side analyses used to prepare test data run as the administrator.
+    adminWsClient.permissions().addUser(new AddUserRequest().setLogin(Server.ADMIN_LOGIN).setPermission("scan"));
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
