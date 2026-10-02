@@ -26,15 +26,22 @@ public class GetAiIntegrationStateResponse {
   private final SonarQubeCliState cli;
   private final List<AiIntegrationAgentCapability> agents;
   private final List<AiIntegrationConnection> connectionChoices;
+  private final List<CliIntegrationState> cliIntegrations;
   @Nullable
   private final String recommendedConnectionId;
 
   public GetAiIntegrationStateResponse(SonarQubeCliState cli, List<AiIntegrationAgentCapability> agents,
     List<AiIntegrationConnection> connectionChoices, @Nullable String recommendedConnectionId) {
+    this(cli, agents, connectionChoices, recommendedConnectionId, List.of());
+  }
+
+  public GetAiIntegrationStateResponse(SonarQubeCliState cli, List<AiIntegrationAgentCapability> agents,
+    List<AiIntegrationConnection> connectionChoices, @Nullable String recommendedConnectionId, List<CliIntegrationState> cliIntegrations) {
     this.cli = cli;
     this.agents = List.copyOf(agents);
     this.connectionChoices = List.copyOf(connectionChoices);
     this.recommendedConnectionId = recommendedConnectionId;
+    this.cliIntegrations = List.copyOf(cliIntegrations);
   }
 
   public SonarQubeCliState getCli() {
@@ -43,6 +50,11 @@ public class GetAiIntegrationStateResponse {
 
   public List<AiIntegrationAgentCapability> getAgents() {
     return agents;
+  }
+
+  /** CLI-recorded integration configurations, independently of agent discovery and CLI authentication. */
+  public List<CliIntegrationState> getCliIntegrations() {
+    return cliIntegrations;
   }
 
   /** Connections the client may use to prefill an interactive CLI login. */

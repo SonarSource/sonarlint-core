@@ -22,9 +22,17 @@ package org.sonarsource.sonarlint.core.ai.ide;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationCheckStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationRecordingStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationState;
 
 final class SonarQubeCliStatusDecoder {
 
@@ -38,13 +46,14 @@ final class SonarQubeCliStatusDecoder {
     if (tree == null || !tree.isObject()) {
       return CliStatus.unknown();
     }
+    var integrations = decodeIntegrations(tree.get("integrations"));
     var auth = tree.get("auth");
     var version = stringValue(tree, "version");
     if (auth == null || !auth.isObject()) {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, version, null, null);
+      return new CliStatus(CliAuthenticationStatus.UNKNOWN, version, null, null, integrations);
     }
     if ("unauthenticated".equals(stringValue(auth, "status").orElse(null))) {
-      return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null);
+      return new CliStatus(CliAuthenticationStatus.UNAUTHENTICATED, version, null, null, integrations);
     }
 
     var authenticationStatus = switch (stringValue(auth, "token").orElse(null)) {
@@ -55,7 +64,59 @@ final class SonarQubeCliStatusDecoder {
       case null, default -> CliAuthenticationStatus.UNKNOWN;
     };
     return new CliStatus(authenticationStatus, version,
-      stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null));
+      stringValue(auth, "server").orElse(null), stringValue(auth, "org").orElse(null), integrations);
+  }
+
+  private static List<CliIntegrationState> decodeIntegrations(@Nullable JsonNode integrations) {
+    var agents = AgentProfiles.cliIntegrations();
+    if (integrations == null || !integrations.isArray()) {
+      return agents.values().stream().map(agent -> new CliIntegrationState(agent, CliIntegrationRecordingStatus.UNKNOWN, List.of())).toList();
+    }
+    var configurations = new LinkedHashMap<AiAgent, List<CliIntegrationConfiguration>>();
+    agents.values().forEach(agent -> configurations.put(agent, new ArrayList<>()));
+    var evidenceValid = true;
+    for (var integration : integrations) {
+      var id = integration.isObject() ? textValue(integration, "id") : null;
+      if (id == null || id.isBlank()) {
+        evidenceValid = false;
+        continue;
+      }
+      var agent = agents.get(id);
+      if (agent != null) {
+        configurations.get(agent).add(new CliIntegrationConfiguration(textValue(integration, "path"),
+          decodeCheck(integration.get("mcp")), decodeCheck(integration.get("hooks"))));
+      }
+    }
+    var absentStatus = evidenceValid ? CliIntegrationRecordingStatus.NOT_RECORDED : CliIntegrationRecordingStatus.UNKNOWN;
+    return configurations.entrySet().stream()
+      .map(entry -> new CliIntegrationState(entry.getKey(),
+        entry.getValue().isEmpty() ? absentStatus : CliIntegrationRecordingStatus.RECORDED, entry.getValue()))
+      .toList();
+  }
+
+  @Nullable
+  private static CliIntegrationCheckStatus decodeCheck(@Nullable JsonNode check) {
+    if (check == null) {
+      return null;
+    }
+    var configured = check.get("configured");
+    if (configured == null || !configured.isBoolean()) {
+      return CliIntegrationCheckStatus.UNKNOWN;
+    }
+    if (!configured.booleanValue()) {
+      return CliIntegrationCheckStatus.NOT_CONFIGURED;
+    }
+    var valid = check.get("valid");
+    if (valid == null || !valid.isBoolean()) {
+      return CliIntegrationCheckStatus.UNKNOWN;
+    }
+    return valid.booleanValue() ? CliIntegrationCheckStatus.CONFIGURED : CliIntegrationCheckStatus.INVALID;
+  }
+
+  @Nullable
+  private static String textValue(JsonNode object, String property) {
+    var value = object.get(property);
+    return value != null && value.isTextual() ? value.textValue() : null;
   }
 
   private static Optional<String> stringValue(JsonNode object, String property) {
@@ -64,13 +125,13 @@ final class SonarQubeCliStatusDecoder {
   }
 
   record CliStatus(CliAuthenticationStatus authenticationStatus, Optional<String> version,
-                   @Nullable String serverUrl, @Nullable String organization) {
+                   @Nullable String serverUrl, @Nullable String organization, List<CliIntegrationState> cliIntegrations) {
     static CliStatus unknown() {
-      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null);
+      return new CliStatus(CliAuthenticationStatus.UNKNOWN, Optional.empty(), null, null, decodeIntegrations(null));
     }
 
     static CliStatus unavailable() {
-      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null);
+      return new CliStatus(CliAuthenticationStatus.UNAVAILABLE, Optional.empty(), null, null, decodeIntegrations(null));
     }
   }
 }
