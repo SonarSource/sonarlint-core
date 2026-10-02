@@ -193,7 +193,7 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   @Override
   public AiAgentRpcService getAiAgentService() {
-    return serverUsingJava.getAiAgentService();
+    return serverUsingRpc.getAiAgentService();
   }
 
   @Override

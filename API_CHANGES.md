@@ -2,6 +2,8 @@
 
 ## New features
 
+* Add `uninstallCli()` to `AiAgentRpcService` and `uninstallAvailable` to `SonarQubeCliState` (the existing constructor defaults to `false`). For the selected official per-user CLI, run `system reset --force`, then delete `~/.local/share/sonarqube-cli` or `%LOCALAPPDATA%/sonarqube-cli` after exit zero, including warnings. Custom installations are unavailable. PATH configuration is unchanged. The response contains `status` (`UNINSTALLED`, `NOT_AVAILABLE`, `FAILED`), stdout, stderr, and an optional message. Clients must confirm the shared CLI removal and display reset output.
+
 * Add `authenticateCliWithConnection` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentRpcService`. Given a saved connection ID, it retrieves credentials through the client's `getCredentials` callback and passes a token to SonarQube CLI through standard input. The token is absent from this request, its response, and CLI arguments. Token authentication requires SonarQube CLI 1.9.0 or newer. The response status is `AUTHENTICATED`, `INTERACTIVE_LOGIN_REQUIRED` (use `prepareAuthenticateCommand`), `UPGRADE_REQUIRED`, or `FAILED`.
 
 ## Breaking changes
