@@ -148,7 +148,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY).setValue("true"));
     adminWsClient.settings().set(new SetRequest().setKey(SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY).setValue("true"));
 
-    removeGroupPermission("anyone", "scan");
+    // SonarQube 2026.6 migrated Anyone permissions to sonar-users (SONAR-32463).
+    var scanPermissionGroup = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2026, 6) ? "sonar-users" : "anyone";
+    removeGroupPermission(scanPermissionGroup, "scan");
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
