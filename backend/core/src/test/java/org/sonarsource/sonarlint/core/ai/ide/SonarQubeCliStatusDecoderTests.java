@@ -23,8 +23,11 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationCheckStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationRecordingStatus;
@@ -34,6 +37,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 class SonarQubeCliStatusDecoderTests {
+
+  @ParameterizedTest
+  @EnumSource(AiAgent.class)
+  void should_report_recording_state_for_every_cli_supported_agent(AiAgent agent) {
+    var capability = AiAgentCapabilities.of(AiIntegrationHost.OTHER, agent, AiIntegrationScope.GLOBAL);
+
+    assertThat(SonarQubeCliStatusDecoder.CliStatus.unknown().cliIntegrations())
+      .filteredOn(state -> state.getAgent() == agent)
+      .hasSize(capability.isCliIntegrationSupported() ? 1 : 0);
+  }
 
   @ParameterizedTest
   @CsvSource(delimiter = '|', value = {
