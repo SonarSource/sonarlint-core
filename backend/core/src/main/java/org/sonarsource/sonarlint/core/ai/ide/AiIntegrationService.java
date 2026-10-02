@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.CommandExecutor;
+import org.sonarsource.sonarlint.core.ai.ide.SonarQubeCliStatusDecoder.CliStatus;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -110,7 +111,10 @@ public class AiIntegrationService {
   }
 
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
-    var cliState = toCliState(locator.find());
+    var cli = locator.find();
+    var status = cli.installationStatus() == CliInstallationStatus.INSTALLED && cli.path() != null
+      ? locator.readStatus(cli.path()) : CliStatus.unknown();
+    var cliState = toCliState(cli, status);
     var agentsBySource = new LinkedHashMap<AiAgent, LinkedHashSet<AiAgentDetectionSource>>();
     params.getDetectedAgents().forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.IDE));
     if (params.isDiscoverLocalAgentClis()) {
@@ -124,7 +128,7 @@ public class AiIntegrationService {
       ? availableConnections()
       : List.<AiIntegrationConnection>of();
     return new GetAiIntegrationStateResponse(cliState, agentCapabilities, connectionChoices,
-      recommendedConnectionId(params, connectionChoices));
+      recommendedConnectionId(params, connectionChoices), status.cliIntegrations());
   }
 
   private static void addDetectionSource(Map<AiAgent, LinkedHashSet<AiAgentDetectionSource>> agentsBySource,
@@ -221,13 +225,12 @@ public class AiIntegrationService {
     return cli.path();
   }
 
-  private SonarQubeCliState toCliState(SonarQubeCliLocator.CliLookup cli) {
+  private static SonarQubeCliState toCliState(SonarQubeCliLocator.CliLookup cli, CliStatus status) {
     if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
       return new SonarQubeCliState(cli.installationStatus(), CliAuthenticationStatus.UNKNOWN,
         cli.path() == null ? null : cli.path().toString(), cli.version(), null, null);
     }
 
-    var status = locator.readStatus(cli.path());
     return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
       cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization());
   }
