@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationHost;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiIntegrationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliAuthenticationStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationCheckStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationRecordingStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.CliIntegrationState;
 
@@ -104,7 +105,7 @@ class SonarQubeCliStatusDecoderTests {
   void should_preserve_positive_recordings_but_not_infer_absence_from_malformed_rows(String malformedRow) throws IOException {
     var states = SonarQubeCliStatusDecoder.decode("{\"integrations\":[" + malformedRow + ",{\"id\":\"codex\"}]}").cliIntegrations();
 
-    assertThat(states).allSatisfy(state -> {
+    assertThat(states).hasSize(5).allSatisfy(state -> {
       var recorded = state.getAgent() == AiAgent.CODEX;
       assertThat(state.getRecordingStatus()).isEqualTo(recorded ? CliIntegrationRecordingStatus.RECORDED : CliIntegrationRecordingStatus.UNKNOWN);
       assertThat(state.getConfigurations()).hasSize(recorded ? 1 : 0);
@@ -124,8 +125,8 @@ class SonarQubeCliStatusDecoderTests {
       """).cliIntegrations();
 
     assertThat(states.get(0).getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.RECORDED);
-    assertThat(states.get(0).getConfigurations()).extracting(configuration -> configuration.getPath(),
-      configuration -> configuration.getMcp(), configuration -> configuration.getHooks()).containsExactly(
+    assertThat(states.get(0).getConfigurations()).extracting(CliIntegrationConfiguration::getPath,
+      CliIntegrationConfiguration::getMcp, CliIntegrationConfiguration::getHooks).containsExactly(
         tuple("/first", CliIntegrationCheckStatus.INVALID, null),
         tuple("/first", null, CliIntegrationCheckStatus.NOT_CONFIGURED),
         tuple(null, null, null), tuple(null, null, null));
