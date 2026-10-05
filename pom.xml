@@ -57,7 +57,7 @@
     <mockito.version>5.24.0</mockito.version>
     <lsp4j.version>1.0.0</lsp4j.version>
     <slf4j.version>2.0.20</slf4j.version>
-    <logback.version>1.6.4</logback.version>
+    <logback.version>1.6.5</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
     <system.stubs.version>2.1.8</system.stubs.version>
 
