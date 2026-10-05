@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 public class AiIntegrationService {
 
   private static final String CREDENTIALS_ERROR = "Could not retrieve the selected connection's credentials.";
+  private static final Version MIN_JSON_FORMAT_CLI_VERSION = Version.create("1.9.0");
   private static final Version MIN_TOKEN_AUTHENTICATION_CLI_VERSION = Version.create("1.9.0");
 
   private final SonarQubeCliLocator locator;
@@ -115,7 +116,7 @@ public class AiIntegrationService {
   public GetAiIntegrationStateResponse getIntegrationState(GetAiIntegrationStateParams params) {
     var cli = locator.find();
     var status = cli.installationStatus() == CliInstallationStatus.INSTALLED && cli.path() != null
-      ? locator.readStatus(cli.path()) : CliStatus.unknown();
+      ? locator.readStatus(cli.path(), supportsCliVersion(cli.version(), MIN_JSON_FORMAT_CLI_VERSION)) : CliStatus.unknown();
     var cliState = toCliState(cli, status);
     var agentsBySource = new LinkedHashMap<AiAgent, LinkedHashSet<AiAgentDetectionSource>>();
     params.getDetectedAgents().forEach(agent -> addDetectionSource(agentsBySource, agent, AiAgentDetectionSource.IDE));
@@ -202,7 +203,7 @@ public class AiIntegrationService {
     if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
       return new AuthenticateCliWithConnectionResponse(Status.FAILED, "A working SonarQube CLI installation is required.");
     }
-    if (!supportsTokenAuthentication(cli.version())) {
+    if (!supportsCliVersion(cli.version(), MIN_TOKEN_AUTHENTICATION_CLI_VERSION)) {
       return new AuthenticateCliWithConnectionResponse(Status.UPGRADE_REQUIRED, "Update SonarQube CLI to the latest version to reuse a saved connection token.");
     }
 
@@ -223,12 +224,12 @@ public class AiIntegrationService {
     }
   }
 
-  private static boolean supportsTokenAuthentication(@Nullable String version) {
+  private static boolean supportsCliVersion(@Nullable String version, Version minimumVersion) {
     if (version == null) {
       return false;
     }
     try {
-      return Version.create(version.split("\\+", 2)[0]).compareTo(MIN_TOKEN_AUTHENTICATION_CLI_VERSION) >= 0;
+      return Version.create(version.split("\\+", 2)[0]).compareTo(minimumVersion) >= 0;
     } catch (NumberFormatException e) {
       return false;
     }

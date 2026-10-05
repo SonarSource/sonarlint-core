@@ -101,10 +101,11 @@ final class SonarQubeCliLocator {
       : new CliLookup(CliInstallationStatus.UNUSABLE, firstUnusable, null);
   }
 
-  CliStatus readStatus(Path executable) {
+  CliStatus readStatus(Path executable, boolean supportsJsonFormat) {
     var stdout = new ArrayList<String>();
-    var result = search.execute(executable, List.of("system", "status", "--json"), null, COMMAND_TIMEOUT_MILLIS,
-      stdout::add);
+    var arguments = new ArrayList<>(List.of("system", "status"));
+    arguments.addAll(supportsJsonFormat ? List.of("--format", "json") : List.of("--json"));
+    var result = search.execute(executable, arguments, null, COMMAND_TIMEOUT_MILLIS, stdout::add);
     if (result.exitCode() != 0 || stdout.isEmpty()) {
       return CliStatus.unavailable();
     }

@@ -32,6 +32,9 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandExecutor;
@@ -230,15 +233,25 @@ class AiIntegrationServiceTests {
     assertThat(cli.getOrganization()).isEqualTo("acme");
   }
 
-  @Test
-  void should_return_integrations_and_authentication_from_one_status_invocation() throws IOException {
+  @ParameterizedTest
+  @CsvSource({
+    "1.4.2, false",
+    "1.8.9, false",
+    "1.9.0-rc, false",
+    "999999999999.9.0, false",
+    "1.9.0, true",
+    "1.9.0+build, true",
+    "1.10.0, true"
+  })
+  void should_return_integrations_and_authentication_using_the_supported_json_option(String version, boolean supportsJsonFormat) throws IOException {
     var executable = createExecutable("bin/sonar");
     var statusInvocations = new ArrayList<String>();
     var executor = commandReturning((command, stdout) -> {
       if (command.toCommandLine().endsWith("--version")) {
-        stdout.consumeLine("1.9.0");
+        stdout.consumeLine(version);
       } else {
-        assertThat(command.getArguments()).containsExactly("system", "status", "--json");
+        assertThat(command.getArguments()).containsExactlyElementsOf(
+          supportsJsonFormat ? List.of("system", "status", "--format", "json") : List.of("system", "status", "--json"));
         statusInvocations.add(command.toCommandLine());
         stdout.consumeLine("{\"auth\":{\"status\":\"unauthenticated\"},\"integrations\":[{\"id\":\"codex\"}]}");
       }
@@ -254,6 +267,29 @@ class AiIntegrationServiceTests {
     assertThat(response.getCliIntegrations()).hasSize(5);
     assertThat(response.getCliIntegrations().get(2).getAgent()).isEqualTo(AiAgent.CODEX);
     assertThat(response.getCliIntegrations().get(2).getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.RECORDED);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"1.8.9", "1.9.0"})
+  void should_report_unknown_integrations_when_status_command_fails(String version) throws IOException {
+    var executable = createExecutable("bin/sonar");
+    var executor = commandReturning((command, stdout) -> {
+      if (command.toCommandLine().endsWith("--version")) {
+        stdout.consumeLine(version);
+        return 0;
+      }
+      return 1;
+    });
+    var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), executor);
+
+    var response = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null));
+
+    assertThat(response.getCli().getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(response.getCli().getAuthenticationStatus()).isEqualTo(CliAuthenticationStatus.UNAVAILABLE);
+    assertThat(response.getCliIntegrations()).hasSize(5).allSatisfy(state -> {
+      assertThat(state.getRecordingStatus()).isEqualTo(CliIntegrationRecordingStatus.UNKNOWN);
+      assertThat(state.getConfigurations()).isEmpty();
+    });
   }
 
   @Test
