@@ -246,7 +246,7 @@ public class AiIntegrationService {
     return cli.path();
   }
 
-  private static SonarQubeCliState toCliState(SonarQubeCliLocator.CliLookup cli, CliStatus status) {
+  private SonarQubeCliState toCliState(SonarQubeCliLocator.CliLookup cli, CliStatus status) {
     if (cli.installationStatus() != CliInstallationStatus.INSTALLED || cli.path() == null) {
       return new SonarQubeCliState(cli.installationStatus(), CliAuthenticationStatus.UNKNOWN,
         cli.path() == null ? null : cli.path().toString(), cli.version(), null, null);
