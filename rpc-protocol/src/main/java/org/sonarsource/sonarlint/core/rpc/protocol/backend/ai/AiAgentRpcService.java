@@ -35,6 +35,14 @@ public interface AiAgentRpcService {
   CompletableFuture<GetAiIntegrationStateResponse> getIntegrationState(GetAiIntegrationStateParams params);
 
   /**
+   * Runs {@code system reset --force} and deletes the selected official per-user installation folder.
+   * Clients must confirm this shared CLI removal and display reset output, including warnings.
+   * Custom installations are unavailable; PATH configuration is not modified.
+   */
+  @JsonRequest
+  CompletableFuture<UninstallCliResponse> uninstallCli();
+
+  /**
    * Prepares the OS-specific SonarQube CLI installation command for the client's native interactive terminal.
    * Credentials are never included in the response.
    */

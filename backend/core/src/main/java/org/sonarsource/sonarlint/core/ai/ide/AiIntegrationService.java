@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareAuthenticat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareCliCommandResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.PrepareIntegrateCliCommandParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.SonarQubeCliState;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.UninstallCliResponse;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 
@@ -130,6 +132,25 @@ public class AiIntegrationService {
   private static void addDetectionSource(Map<AiAgent, LinkedHashSet<AiAgentDetectionSource>> agentsBySource,
     AiAgent agent, AiAgentDetectionSource source) {
     agentsBySource.computeIfAbsent(agent, ignored -> new LinkedHashSet<>()).add(source);
+  }
+
+  public UninstallCliResponse uninstallCli(SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
+    var cli = locator.find();
+    var directory = locator.installationDirectory(cli);
+    if (directory == null) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.NOT_AVAILABLE, "", "", "Only an official per-user CLI installation can be uninstalled.");
+    }
+    var reset = locator.reset(cli.path().toAbsolutePath().normalize());
+    if (reset.exitCode() != 0) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, reset.stdout(), reset.stderr(), "SonarQube CLI reset failed.");
+    }
+    try {
+      FileUtils.deleteRecursively(directory);
+      return new UninstallCliResponse(UninstallCliResponse.Status.UNINSTALLED, reset.stdout(), reset.stderr(), null);
+    } catch (IllegalStateException e) {
+      return new UninstallCliResponse(UninstallCliResponse.Status.FAILED, reset.stdout(), reset.stderr(), "Could not delete the SonarQube CLI installation folder.");
+    }
   }
 
   public PrepareCliCommandResponse prepareInstallCommand() {
@@ -229,7 +250,7 @@ public class AiIntegrationService {
 
     var status = locator.readStatus(cli.path());
     return new SonarQubeCliState(CliInstallationStatus.INSTALLED, status.authenticationStatus(),
-      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization());
+      cli.path().toString(), status.version().orElse(cli.version()), status.serverUrl(), status.organization(), locator.installationDirectory(cli) != null);
   }
 
   @Nullable
