@@ -36,7 +36,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -58,6 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
@@ -157,7 +157,7 @@ class IssueTrackingMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -212,10 +212,10 @@ class IssueTrackingMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.now().minus(1, ChronoUnit.DAYS), new TextRange(1, 0, 1, 16))
-        .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -344,7 +344,7 @@ class IssueTrackingMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1192", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1192", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(5, 12, 5, 21))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -418,7 +418,7 @@ class IssueTrackingMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(1, 0, 1, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -466,7 +466,7 @@ class IssueTrackingMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer("2025.1")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")

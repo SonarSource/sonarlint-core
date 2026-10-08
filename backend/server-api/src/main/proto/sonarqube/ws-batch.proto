@@ -1,0 +1,55 @@
+/*
+ * SonarLint Core - Server API
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+syntax = "proto2";
+
+package sonarqube.ws.batch;
+
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
+option java_outer_classname = "Batch";
+option optimize_for = SPEED;
+
+// Response of GET batch/issues (stream of delimited messages)
+message ServerIssue {
+  optional string key = 1;
+  optional string module_key = 2;
+  optional string path = 3;
+  optional string rule_repository = 4;
+  optional string rule_key = 5;
+  optional int32 line = 6;
+  optional string msg = 7;
+  optional Severity severity = 8;
+  optional bool manual_severity = 9;
+  optional string resolution = 10;
+  optional string status = 11;
+  optional string checksum = 12;
+  optional string assignee_login = 13;
+  optional int64 creation_date = 14;
+  optional string type = 15;
+}
+
+// Values must match the wire format used by the server, which differs from sonarqube.ws.commons.Severity
+enum Severity {
+  UNSET_SEVERITY = 0;
+  INFO = 1;
+  MINOR = 2;
+  MAJOR = 3;
+  CRITICAL = 4;
+  BLOCKER = 5;
+}

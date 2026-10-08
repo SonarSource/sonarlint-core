@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -36,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusPa
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.AnalysisUtils;
@@ -155,7 +155,7 @@ class ClientFileExclusionsMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
@@ -200,7 +200,7 @@ class ClientFileExclusionsMediumTests {
       .build();
     var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
-        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Batch.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
