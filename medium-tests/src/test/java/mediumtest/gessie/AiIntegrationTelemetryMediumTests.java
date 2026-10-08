@@ -109,6 +109,58 @@ class AiIntegrationTelemetryMediumTests {
   }
 
   @SonarLintTest
+  void should_round_trip_uninstall_action_with_each_status_and_host(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl()).start();
+    var telemetry = backend.getTelemetryService();
+    for (var host : AiIntegrationHost.values()) {
+      for (var status : AiIntegrationActionStatus.values()) {
+        telemetry.aiIntegrationAction(new AiIntegrationActionParams(AiIntegrationAction.UNINSTALL_CLI, status, null, host));
+      }
+    }
+
+    var expectedCount = AiIntegrationHost.values().length * AiIntegrationActionStatus.values().length;
+    await().untilAsserted(() -> assertThat(aiEvents()).hasSize(expectedCount));
+    for (var host : AiIntegrationHost.values()) {
+      for (var status : AiIntegrationActionStatus.values()) {
+        assertThat(aiEvents()).filteredOn(event -> {
+          var payload = event.getAsJsonObject("event_payload");
+          return payload.get("host").getAsString().equals(host.name()) && payload.get("status").getAsString().equals(status.name());
+        }).singleElement().satisfies(event -> {
+          assertThat(event.getAsJsonObject("metadata").get("event_type").getAsString())
+            .isEqualTo("Analytics.Editor.IdeAiIntegrationActionObserved");
+          var payload = event.getAsJsonObject("event_payload");
+          assertThat(payload.get("machine_id").getAsString()).isNotBlank();
+          assertThat(payload.get("ide_installation_id").getAsString()).isEqualTo(backend.telemetryFileContent().ideInstallationId());
+          payload.remove("machine_id");
+          payload.remove("ide_installation_id");
+          assertThat(payload).isEqualTo(JsonParser.parseString("""
+            {"action":"UNINSTALL_CLI","status":"%s","agent":null,"host":"%s"}
+            """.formatted(status, host)));
+        });
+      }
+    }
+  }
+
+  @SonarLintTest
+  void should_not_emit_uninstall_action_without_gessie_capability(SonarLintTestHarness harness) {
+    System.setProperty(GessieSpringConfig.PROPERTY_GESSIE_ENDPOINT, endpoint.baseUrl());
+    var telemetry = harness.newBackend().start().getTelemetryService();
+    telemetry.aiIntegrationAction(new AiIntegrationActionParams(AiIntegrationAction.UNINSTALL_CLI, AiIntegrationActionStatus.STARTED, null, AiIntegrationHost.VSCODE));
+
+    assertNoAiEvents();
+  }
+
+  @SonarLintTest
+  void should_not_emit_uninstall_action_without_user_consent(SonarLintTestHarness harness) {
+    var telemetry = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl()).start().getTelemetryService();
+    telemetry.disableTelemetry();
+    assertThat(telemetry.getStatus().join().isEnabled()).isFalse();
+    telemetry.aiIntegrationAction(new AiIntegrationActionParams(AiIntegrationAction.UNINSTALL_CLI, AiIntegrationActionStatus.SUCCEEDED, null, AiIntegrationHost.INTELLIJ));
+
+    assertNoAiEvents();
+  }
+
+  @SonarLintTest
   void should_emit_each_load_report_independently_of_functional_operations(SonarLintTestHarness harness) {
     var backend = harness.newBackend().withGessieTelemetryEnabled(endpoint.baseUrl()).start();
     var ai = backend.getAiAgentService();
