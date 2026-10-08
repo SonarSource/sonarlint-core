@@ -49,8 +49,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-import org.sonar.scanner.protocol.Constants;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -63,6 +61,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
@@ -440,13 +439,13 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
+          String hash, Batch.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
           this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity));
           return this;
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
+          String hash, Batch.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
           Map<SoftwareQuality, ImpactSeverity> impacts) {
           this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity, impacts));
           return this;
@@ -512,19 +511,19 @@ public class ServerFixture {
           private final TextRange textRange;
           private final RuleType ruleType;
           private String hash;
-          private Constants.Severity severity;
+          private Batch.Severity severity;
           private boolean manualSeverity = false;
           private Map<SoftwareQuality, ImpactSeverity> impacts;
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity,
+            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Batch.Severity severity,
             Map<SoftwareQuality, ImpactSeverity> impacts) {
             this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType, hash, severity);
             this.impacts = impacts;
           }
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
+            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Batch.Severity severity) {
             this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType);
             this.hash = hash;
             this.severity = severity;
@@ -544,7 +543,7 @@ public class ServerFixture {
             this.textRange = textRange;
             this.ruleType = ruleType;
             this.hash = "hash";
-            this.severity = Constants.Severity.BLOCKER;
+            this.severity = Batch.Severity.BLOCKER;
             this.impacts = Collections.emptyMap();
           }
 
@@ -1277,7 +1276,7 @@ public class ServerFixture {
         branch.issues.stream().collect(groupingBy(i -> i.filePath)).forEach((filePath, issues) -> {
           var messages = issues.stream().map(issue -> {
             var ruleKey = RuleKey.parse(issue.ruleKey);
-            var serverIssue = ScannerInput.ServerIssue.newBuilder()
+            var serverIssue = Batch.ServerIssue.newBuilder()
               .setKey(issue.issueKey)
               .setRuleRepository(ruleKey.repository())
               .setRuleKey(ruleKey.rule())

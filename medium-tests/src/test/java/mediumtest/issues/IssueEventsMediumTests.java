@@ -29,7 +29,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -39,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -302,7 +302,7 @@ class IssueEventsMediumTests {
             .withQualityProfile("qpKey")
             .withBranch(branchName,
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
-                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
+                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Batch.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
         .start();
       var backend = harness.newBackend()
@@ -365,7 +365,7 @@ class IssueEventsMediumTests {
             .withQualityProfile("qpKey")
             .withBranch(branchName,
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
-                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
+                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Batch.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
         .start();
       var backend = harness.newBackend()
@@ -424,7 +424,7 @@ class IssueEventsMediumTests {
             .withQualityProfile("qpKey")
             .withBranch(branchName,
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
-                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
+                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Batch.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW))))
         .start();
       var backend = harness.newBackend()
@@ -489,7 +489,7 @@ class IssueEventsMediumTests {
             .withQualityProfile("qpKey")
             .withBranch(branchName,
               branch -> branch.withIssue(serverIssueKey, "java:S2094", "Remove this empty class, write its code or make it an \"interface\".",
-                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
+                "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Batch.Severity.MAJOR, RuleType.CODE_SMELL,
                 "OPEN", null, introductionDate, new TextRange(1, 13, 1, 16))))
         .start();
       var backend = harness.newBackend()
