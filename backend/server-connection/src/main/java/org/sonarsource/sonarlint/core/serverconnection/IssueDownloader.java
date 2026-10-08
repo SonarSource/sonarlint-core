@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -76,18 +75,12 @@ public class IssueDownloader {
   public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
-    List<ServerIssue<?>> result = new ArrayList<>();
-
-    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor);
-
-    for (Batch.ServerIssue batchIssue : batchIssues) {
+    return issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor)
+      .stream()
       // We ignore project level issues
-      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
-        result.add(convertBatchIssue(batchIssue));
-      }
-    }
-
-    return result;
+      .filter(batchIssue -> !RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath())
+      .<ServerIssue<?>>map(IssueDownloader::convertBatchIssue)
+      .toList();
   }
 
   /**
