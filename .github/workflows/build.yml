@@ -29,7 +29,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/get-build-number@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         id: build-number
 
   build:
@@ -45,10 +45,10 @@ jobs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@94c60b39bc2d90ab2f9bab27f38d3cc4812c1834 # v5.1.0
         with:
           version: 2026.9.14
-      - uses: SonarSource/ci-github-actions/build-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/build-maven@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         id: build
         with:
           sonar-platform: none
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@94c60b39bc2d90ab2f9bab27f38d3cc4812c1834 # v5.1.0
         with:
           version: 2026.9.14
       - name: Install dotnet for Omnisharp tests
@@ -89,11 +89,11 @@ jobs:
             development/kv/data/next token | NEXT_TOKEN;
       - name: Cache Sonar Scanner artifacts
         id: sonar-scanner-cache
-        uses: SonarSource/ci-github-actions/cache@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+        uses: SonarSource/ci-github-actions/cache@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         with:
           path: ~/.sonar/cache
           key: sonar-scanner-${{ runner.os }}
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -115,7 +115,7 @@ jobs:
           mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3.2.0
         with:
           name: QA Linux Test Report
           reporter: java-junit
@@ -143,13 +143,13 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@94c60b39bc2d90ab2f9bab27f38d3cc4812c1834 # v5.1.0
         with:
           version: 2026.9.14
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         id: config
         with:
           artifactory-reader-role: private-reader
@@ -162,7 +162,7 @@ jobs:
           mvn -B -Dcommercial verify
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3.2.0
         with:
           name: QA Windows Test Report
           reporter: java-junit
@@ -219,7 +219,7 @@ jobs:
             category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=FileExclusionTests,SonarQubeCommunityEditionTests"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@94c60b39bc2d90ab2f9bab27f38d3cc4812c1834 # v5.1.0
         with:
           version: 2026.9.14
       - name: Setup Java ${{ matrix.customOrchestratorJavaVersion }} for Orchestrator
@@ -239,7 +239,7 @@ jobs:
           echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
           echo "Create dir ${ORCHESTRATOR_HOME} if needed"
           mkdir -p "${ORCHESTRATOR_HOME}"
-      - uses: SonarSource/ci-github-actions/cache@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/cache@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
@@ -258,7 +258,7 @@ jobs:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
 
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         with:
           artifactory-reader-role: private-reader
           repox-url: https://repox-internal.dev.sonar.build
@@ -327,6 +327,6 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: SonarSource/ci-github-actions/promote@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/promote@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         with:
           promote-pull-request: true

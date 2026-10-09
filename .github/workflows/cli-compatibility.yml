@@ -25,10 +25,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: jdx/mise-action@94c60b39bc2d90ab2f9bab27f38d3cc4812c1834 # v5.1.0
         with:
           version: 2026.9.14
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@62463382a24f2004ffa20adbe9985f6459e031e6 # 2.3.0
         with:
           artifactory-reader-role: private-reader
       - name: Test SLCORE against the latest SonarQube CLI
