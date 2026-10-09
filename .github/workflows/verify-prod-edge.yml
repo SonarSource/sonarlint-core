@@ -35,8 +35,8 @@ jobs:
         shell: bash
         run: mkdir -p .edge-validation
 
-      - name: Configure Maven using the CI routing PR
-        uses: SonarSource/ci-github-actions/config-maven@f335f47fa10fc0ed2252014f81ca133c2e0a5b8e
+      - name: Configure Maven using the merged CI routing commit
+        uses: SonarSource/ci-github-actions/config-maven@c60fa5ce724d1d64173d852bfb0187d952ec6638
         with:
           working-directory: .edge-validation
           repox-url: ${{ matrix.repox-url }}
