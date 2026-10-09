@@ -1,0 +1,76 @@
+name: Verify dev and production Edge readers
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/verify-prod-edge.yml
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: verify-prod-edge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  private-download:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: sonar-xs
+    timeout-minutes: 15
+    name: Private download through ${{ matrix.edge }} Edge
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - edge: dev
+            repox-url: https://repox-internal.dev.sonar.build
+          - edge: prod
+            repox-url: https://repox-internal.sonar.build
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare isolated action working directory
+        shell: bash
+        run: mkdir -p .edge-validation
+
+      - name: Configure Maven using the merged CI routing commit
+        uses: SonarSource/ci-github-actions/config-maven@c60fa5ce724d1d64173d852bfb0187d952ec6638
+        with:
+          working-directory: .edge-validation
+          repox-url: ${{ matrix.repox-url }}
+          artifactory-reader-role: private-reader
+          disable-caching: 'true'
+
+      - name: Download private distribution and repeat authenticated read
+        shell: bash
+        env:
+          EXPECTED_ARTIFACTORY_URL: ${{ matrix.repox-url }}/artifactory
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$ARTIFACTORY_ACCESS_TOKEN"
+          test -n "$ARTIFACTORY_USERNAME"
+          [[ "$ARTIFACTORY_URL" == "$EXPECTED_ARTIFACTORY_URL" ]]
+          ARTIFACT_URL="$ARTIFACTORY_URL/sonarsource-releases/com/sonarsource/sonarqube/sonarqube-developer/2026.5.2.132813/sonarqube-developer-2026.5.2.132813.zip"
+          printf 'Using config-maven credentials for %s\n' "$ARTIFACTORY_URL"
+
+          for phase in full-download repeated-read; do
+            options=(--max-time 600)
+            if [[ "$phase" == repeated-read ]]; then
+              options=(--max-time 120 --range 0-1023)
+            fi
+            result=$(
+              printf 'header = "Authorization: Bearer %s"\n' "$ARTIFACTORY_ACCESS_TOKEN" |
+                curl --config - --fail --silent --show-error \
+                  --connect-timeout 30 "${options[@]}" \
+                  --output /dev/null \
+                  --write-out '%{http_code} %{size_download}' \
+                  "$ARTIFACT_URL"
+            )
+            read -r status bytes <<< "$result"
+            [[ "$status" == 200 || ("$phase" == repeated-read && "$status" == 206) ]]
+            [[ "$bytes" =~ ^[0-9]+$ && "$bytes" -gt 0 ]]
+            printf '%s: HTTP %s; downloaded %s bytes\n' "$phase" "$status" "$bytes"
+          done
