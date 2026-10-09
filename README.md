@@ -14,7 +14,7 @@
 
 # SonarQube for IDE core library
 
-This repository contains the shared library that runs analysis for SonarQube for IDE integrations and its language server. It is intended for developers maintaining the IDE analysis engine and integrations.
+This repository contains the shared library that runs analysis for SonarQube for IDE in Eclipse, IntelliJ, and Visual Studio, as well as its language server used by SonarQube for IDE in Visual Studio Code. It is intended for developers maintaining the IDE analysis engine and integrations.
 
 To learn more about Sonar products, visit the [Sonar website](https://www.sonarsource.com/products/sonarqube/ide/).
 
