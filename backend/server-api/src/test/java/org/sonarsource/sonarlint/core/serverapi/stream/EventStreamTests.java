@@ -189,6 +189,9 @@ class EventStreamTests {
 
   @Test
   void should_reconnect_when_no_heart_beat_received_for_a_while() {
+    var firstRequest = mock(HttpClient.AsyncRequest.class);
+    var secondRequest = mock(HttpClient.AsyncRequest.class);
+    when(apiHelper.getEventStream(eq("wsPath"), any(), any())).thenReturn(firstRequest, secondRequest);
     var scheduledFuture = mock(ScheduledFuture.class);
     ArgumentCaptor<Runnable> callableCaptor = ArgumentCaptor.forClass(Runnable.class);
     when(executor.schedule(callableCaptor.capture(), anyLong(), any())).thenReturn(scheduledFuture);
@@ -200,6 +203,7 @@ class EventStreamTests {
 
     callableCaptor.getValue().run();
 
+    verify(firstRequest).cancel();
     verify(apiHelper).getEventStream(eq("wsPath"), eq(listener), any());
   }
 

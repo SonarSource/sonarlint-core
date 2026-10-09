@@ -119,6 +119,7 @@ class ApacheHttpClientAdapter implements HttpClient {
   public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
     var request = SimpleRequestBuilder.get(url).build();
     request.setConfig(RequestConfig.custom()
+      .setContentCompressionEnabled(false)
       .setConnectionRequestTimeout(STREAM_CONNECTION_REQUEST_TIMEOUT)
       .setConnectTimeout(STREAM_CONNECTION_TIMEOUT)
       .setResponseTimeout(Timeout.ZERO_MILLISECONDS)
