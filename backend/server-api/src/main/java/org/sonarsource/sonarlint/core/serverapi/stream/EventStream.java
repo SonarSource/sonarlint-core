@@ -65,6 +65,10 @@ public class EventStream {
   private EventStream connect(String wsPath, Attempt currentAttempt) {
     LOG.debug("Connecting to server event-stream at '" + wsPath + "'...");
     var eventBuffer = new EventBuffer();
+    var currentRequestOrNull = currentRequest.getAndSet(null);
+    if (currentRequestOrNull != null) {
+      currentRequestOrNull.cancel();
+    }
     currentRequest.set(helper.getEventStream(wsPath,
       new HttpConnectionListener() {
         @Override

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.hc.core5.http.ContentType;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
@@ -38,6 +40,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 class HttpClientProviderTests {
   @RegisterExtension
@@ -72,6 +76,28 @@ class HttpClientProviderTests {
     assertThat(future).isCancelled();
 
     assertThat(logTester.logs()).containsExactly("Request cancelled");
+  }
+
+  @Test
+  void it_should_disable_compression_for_event_streams() throws InterruptedException {
+    sonarqubeMock.stubFor(get("/events")
+      .willReturn(aResponse()
+        .withHeader("Content-Type", "text/event-stream")
+        .withBody("data: event\n\n")));
+
+    var connected = new CountDownLatch(1);
+    var listener = mock(HttpConnectionListener.class);
+    doAnswer(invocation -> {
+      connected.countDown();
+      return null;
+    }).when(listener).onConnected();
+    var request = HttpClientProvider.forTesting().getHttpClientWithoutAuth().getEventStream(
+      sonarqubeMock.url("/events"), listener, message -> assertThat(message).isNotEmpty());
+
+    assertThat(connected.await(5, TimeUnit.SECONDS)).isTrue();
+    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/events")).withHeader("Accept-Encoding", absent()));
+
+    request.cancel();
   }
 
   @Test
