@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
@@ -40,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
@@ -76,18 +75,12 @@ public class IssueDownloader {
   public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
-    List<ServerIssue<?>> result = new ArrayList<>();
-
-    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor);
-
-    for (ScannerInput.ServerIssue batchIssue : batchIssues) {
+    return issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor)
+      .stream()
       // We ignore project level issues
-      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
-        result.add(convertBatchIssue(batchIssue));
-      }
-    }
-
-    return result;
+      .filter(batchIssue -> !RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath())
+      .<ServerIssue<?>>map(IssueDownloader::convertBatchIssue)
+      .toList();
   }
 
   /**
@@ -120,7 +113,7 @@ public class IssueDownloader {
     return new PullResult(Instant.ofEpochMilli(apiResult.getTimestamp().getQueryTimestamp()), changedIssues, closedIssueKeys);
   }
 
-  private static ServerIssue<?> convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
+  private static ServerIssue<?> convertBatchIssue(Batch.ServerIssue batchIssueFromWs) {
     var ruleKey = batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey();
     // We have filtered out issues without file path earlier
     var filePath = Path.of(batchIssueFromWs.getPath());

@@ -43,18 +43,6 @@
       <artifactId>protobuf-java</artifactId>
       <version>${protobuf.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-scanner-protocol</artifactId>
-      <version>${sonar-scanner-protocol.version}</version>
-      <exclusions>
-        <!-- Only interested in the protobuf stubs -->
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
 
     <!-- unit tests -->
     <dependency>

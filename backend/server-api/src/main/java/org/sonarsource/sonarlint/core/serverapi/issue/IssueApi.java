@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
@@ -41,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
@@ -135,7 +135,7 @@ public class IssueApi {
     return "";
   }
 
-  public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
+  public List<Batch.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     String batchIssueUrl = getBatchIssuesUrl(key) + getUrlBranchParameter(branchName);
     return ServerApiHelper.processTimed(
       () -> serverApiHelper.rawGet(batchIssueUrl, cancelMonitor),
@@ -146,7 +146,7 @@ public class IssueApi {
           throw ServerApiHelper.handleError(response);
         }
         var input = response.bodyAsStream();
-        var parser = ScannerInput.ServerIssue.parser();
+        var parser = Batch.ServerIssue.parser();
         return readMessages(input, parser);
       },
       duration -> LOG.debug("Downloaded issues in {}ms", duration));

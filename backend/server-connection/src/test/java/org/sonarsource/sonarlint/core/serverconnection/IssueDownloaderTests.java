@@ -28,8 +28,6 @@ import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonar.scanner.protocol.Constants.Severity;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -39,6 +37,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Batch.Severity;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
@@ -71,7 +71,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_one_issue_old_batch_ws() {
-    var response = ScannerInput.ServerIssue.newBuilder()
+    var response = Batch.ServerIssue.newBuilder()
       .setKey("uuid")
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -103,7 +103,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_one_issue_old_batch_ws_with_user_severity() {
-    var response = ScannerInput.ServerIssue.newBuilder()
+    var response = Batch.ServerIssue.newBuilder()
       .setKey("uuid")
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -128,7 +128,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_one_file_level_issue_old_batch_ws() {
-    var response = ScannerInput.ServerIssue.newBuilder()
+    var response = Batch.ServerIssue.newBuilder()
       .setKey("uuid")
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -279,7 +279,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_issue_ignore_project_level() {
-    var response = ScannerInput.ServerIssue.newBuilder()
+    var response = Batch.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash")
@@ -315,7 +315,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_ignore_taint_vulnerabilities() {
-    var issue1 = ScannerInput.ServerIssue.newBuilder()
+    var issue1 = Batch.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash1")
@@ -327,7 +327,7 @@ class IssueDownloaderTests {
       .setType("BUG")
       .build();
 
-    var taint1 = ScannerInput.ServerIssue.newBuilder()
+    var taint1 = Batch.ServerIssue.newBuilder()
       .setRuleRepository("javasecurity")
       .setRuleKey("S789")
       .setChecksum("hash2")
@@ -374,7 +374,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_filter_batch_issues_by_branch_if_branch_parameter_provided() {
-    var response = ScannerInput.ServerIssue.newBuilder()
+    var response = Batch.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setPath("src/Foo.java")
