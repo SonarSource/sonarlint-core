@@ -1,4 +1,4 @@
-name: Verify production Edge reader
+name: Verify dev and production Edge readers
 
 on:
   pull_request:
@@ -18,25 +18,43 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: sonar-xs
     timeout-minutes: 15
+    name: Private download through ${{ matrix.edge }} Edge
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - edge: dev
+            repox-url: https://repox-internal.dev.sonar.build
+          - edge: prod
+            repox-url: https://repox-internal.sonar.build
     steps:
-      - name: Get production Edge reader credentials
-        id: edge
-        uses: SonarSource/vault-action-wrapper@a7fa5fd4a4e4e0f2593f6137c0812cac196cf4ce # 3.7.0
+      - name: Checkout experiment
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Prepare isolated action working directory
+        shell: bash
+        run: mkdir -p .edge-validation
+
+      - name: Configure Maven using the CI routing PR
+        uses: SonarSource/ci-github-actions/config-maven@f335f47fa10fc0ed2252014f81ca133c2e0a5b8e
         with:
-          url: https://vault.sonar.build
-          secrets: |
-            development/artifactory-edge-prod/token/SonarSource-sonarlint-core-private-reader username | EDGE_USERNAME;
-            development/artifactory-edge-prod/token/SonarSource-sonarlint-core-private-reader access_token | EDGE_TOKEN;
+          working-directory: .edge-validation
+          repox-url: ${{ matrix.repox-url }}
+          artifactory-reader-role: private-reader
+          disable-caching: 'true'
 
       - name: Download private distribution and repeat authenticated read
         shell: bash
         env:
-          EDGE_TOKEN: ${{ fromJSON(steps.edge.outputs.vault).EDGE_TOKEN }}
-          ARTIFACT_URL: https://repox-internal.sonar.build/artifactory/sonarsource-releases/com/sonarsource/sonarqube/sonarqube-developer/2026.5.2.132813/sonarqube-developer-2026.5.2.132813.zip
+          EXPECTED_ARTIFACTORY_URL: ${{ matrix.repox-url }}/artifactory
         run: |
           set -euo pipefail
           set +x
-          test -n "$EDGE_TOKEN"
+          test -n "$ARTIFACTORY_ACCESS_TOKEN"
+          test -n "$ARTIFACTORY_USERNAME"
+          [[ "$ARTIFACTORY_URL" == "$EXPECTED_ARTIFACTORY_URL" ]]
+          ARTIFACT_URL="$ARTIFACTORY_URL/sonarsource-releases/com/sonarsource/sonarqube/sonarqube-developer/2026.5.2.132813/sonarqube-developer-2026.5.2.132813.zip"
+          printf 'Using config-maven credentials for %s\n' "$ARTIFACTORY_URL"
 
           for phase in full-download repeated-read; do
             options=(--max-time 600)
@@ -44,7 +62,7 @@ jobs:
               options=(--max-time 120 --range 0-1023)
             fi
             result=$(
-              printf 'header = "Authorization: Bearer %s"\n' "$EDGE_TOKEN" |
+              printf 'header = "Authorization: Bearer %s"\n' "$ARTIFACTORY_ACCESS_TOKEN" |
                 curl --config - --fail --silent --show-error \
                   --connect-timeout 30 "${options[@]}" \
                   --output /dev/null \
