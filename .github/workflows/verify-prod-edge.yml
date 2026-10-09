@@ -1,0 +1,58 @@
+name: Verify production Edge reader
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/verify-prod-edge.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: verify-prod-edge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  private-download:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: sonar-xs
+    timeout-minutes: 15
+    steps:
+      - name: Get production Edge reader credentials
+        id: edge
+        uses: SonarSource/vault-action-wrapper@a7fa5fd4a4e4e0f2593f6137c0812cac196cf4ce # 3.7.0
+        with:
+          url: https://vault.sonar.build
+          secrets: |
+            development/artifactory-edge-prod/token/SonarSource-sonarlint-core-private-reader username | EDGE_USERNAME;
+            development/artifactory-edge-prod/token/SonarSource-sonarlint-core-private-reader access_token | EDGE_TOKEN;
+
+      - name: Download private distribution and repeat authenticated read
+        shell: bash
+        env:
+          EDGE_TOKEN: ${{ fromJSON(steps.edge.outputs.vault).EDGE_TOKEN }}
+          ARTIFACT_URL: https://repox-internal.sonar.build/artifactory/sonarsource-releases/com/sonarsource/sonarqube/sonarqube-developer/2026.5.2.132813/sonarqube-developer-2026.5.2.132813.zip
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$EDGE_TOKEN"
+
+          for phase in full-download repeated-read; do
+            options=(--max-time 600)
+            if [[ "$phase" == repeated-read ]]; then
+              options=(--max-time 120 --range 0-1023)
+            fi
+            result=$(
+              printf 'header = "Authorization: Bearer %s"\n' "$EDGE_TOKEN" |
+                curl --config - --fail --silent --show-error \
+                  --connect-timeout 30 "${options[@]}" \
+                  --output /dev/null \
+                  --write-out '%{http_code} %{size_download}' \
+                  "$ARTIFACT_URL"
+            )
+            read -r status bytes <<< "$result"
+            [[ "$status" == 200 || ("$phase" == repeated-read && "$status" == 206) ]]
+            [[ "$bytes" =~ ^[0-9]+$ && "$bytes" -gt 0 ]]
+            printf '%s: HTTP %s; downloaded %s bytes\n' "$phase" "$status" "$bytes"
+          done
