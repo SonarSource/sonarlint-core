@@ -23,3 +23,9 @@
 
 1. From the root folder of the repository, first build sonarlint-core with `mvn clean install`
 2. Run `mvn verify -f its/pom.xml -Dsonar.runtimeVersion=<SQ server version>`
+
+# Nightly integration tests
+
+The [Nightly integration tests](../.github/workflows/nightly-integration-tests.yml) workflow runs daily at 03:00 UTC against SonarQube Cloud staging (EU and US) and the latest released SonarQube Server started locally by Orchestrator. Scheduled runs use the default branch; manual runs use the selected branch.
+
+Failures produce test reports and diagnostic artifacts, with Slack notifications for `master`.
