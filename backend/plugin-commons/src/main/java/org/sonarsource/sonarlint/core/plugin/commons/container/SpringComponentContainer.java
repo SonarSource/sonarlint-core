@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin.commons.container;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -29,6 +30,8 @@ import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.commons.tracing.Step;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -151,6 +154,22 @@ public class SpringComponentContainer implements StartableContainer {
     } catch (Exception t) {
       throw new IllegalStateException("Unable to load components " + type, t);
     }
+  }
+
+  public <T> List<T> getComponentsByTypeSafely(Class<T> type, BiConsumer<String, Throwable> onFailure) {
+    var components = new ArrayList<T>();
+    for (var beanName : BeanFactoryUtils.beanNamesForTypeIncludingAncestors(context, type, true, false)) {
+      try {
+        components.add(context.getBean(beanName, type));
+      } catch (BeanCreationException e) {
+        onFailure.accept(beanName, e);
+      }
+    }
+    var dependencyComparator = context.getDefaultListableBeanFactory().getDependencyComparator();
+    if (dependencyComparator != null) {
+      components.sort(dependencyComparator);
+    }
+    return components;
   }
 
   public AnnotationConfigApplicationContext context() {
