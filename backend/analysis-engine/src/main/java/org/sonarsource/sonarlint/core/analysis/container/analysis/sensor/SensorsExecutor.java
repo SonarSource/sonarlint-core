@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.DependedUpon;
@@ -39,6 +38,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.tracing.Trace;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
@@ -55,11 +55,11 @@ public class SensorsExecutor {
   @Nullable
   private final Trace trace;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, Optional<Trace> trace, Optional<List<ProjectSensor>> sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, @Nullable Trace trace, SpringComponentContainer container) {
     this.context = context;
-    this.sensors = sensors.orElse(List.of());
+    this.sensors = container.getComponentsByTypeSafely(ProjectSensor.class, (beanName, throwable) -> LOG.error("Error creating sensor: '{}'", beanName, throwable));
     this.sensorOptimizer = sensorOptimizer;
-    this.trace = trace.orElse(null);
+    this.trace = trace;
   }
 
   public void execute() {
