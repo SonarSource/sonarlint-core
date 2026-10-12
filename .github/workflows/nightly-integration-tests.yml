@@ -1,0 +1,105 @@
+name: Nightly integration tests
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-integration-tests
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  checks: write
+
+env:
+  CACHE_BACKEND: s3
+  MAVEN_OPTS: -Xmx4g
+
+jobs:
+  integration-tests:
+    name: Nightly integration tests (${{ matrix.name }})
+    runs-on: sonar-m
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SonarCloudEU
+            sc: true
+            sc_token_path: sonarcloud-it
+            region: EU
+          - name: SonarCloudUS
+            sc: true
+            sc_token_path: sonarcloud-it-US
+            region: US
+          - name: SQLatest
+            sc: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.9.14
+      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+        env:
+          # Supply a build number without claiming repository refs.
+          BUILD_NUMBER: ${{ github.run_number }}
+        with:
+          artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
+      - name: Build core and integration test fixtures
+        run: mvn -B -Pits -DskipTests install
+      - name: Vault (SonarCloud IT token)
+        if: ${{ matrix.sc == true }}
+        id: secrets-sc
+        uses: SonarSource/vault-action-wrapper@a7fa5fd4a4e4e0f2593f6137c0812cac196cf4ce # 3.7.0
+        with:
+          secrets: |
+            development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
+      - name: Vault (GITHUB Token)
+        if: ${{ matrix.sc == false }}
+        id: secrets-gh
+        uses: SonarSource/vault-action-wrapper@a7fa5fd4a4e4e0f2593f6137c0812cac196cf4ce # 3.7.0
+        with:
+          secrets: |
+            development/github/token/licenses-ro token | GITHUB_TOKEN;
+      - name: Create fresh Orchestrator home
+        if: ${{ matrix.sc == false }}
+        env:
+          ORCHESTRATOR_HOME: ${{ runner.temp }}/orchestrator/${{ github.run_id }}/${{ github.run_attempt }}/${{ matrix.name }}
+        run: |
+          mkdir -p "$ORCHESTRATOR_HOME"
+          echo "ORCHESTRATOR_HOME=$ORCHESTRATOR_HOME" >> "$GITHUB_ENV"
+      - name: Run SonarCloud integration tests
+        if: ${{ matrix.sc == true }}
+        env:
+          SONARCLOUD_IT_TOKEN: ${{ fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN }}
+          SONARCLOUD_REGION: ${{ matrix.region }}
+        run: mvn -B -f its/pom.xml -Dgroups=SonarCloud verify
+      - name: Run SonarQube Server integration tests
+        if: ${{ matrix.sc == false }}
+        env:
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+          SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+        run: mvn -B -f its/pom.xml -Dsonar.runtimeVersion=LATEST_RELEASE -DexcludedGroups=SonarCloud,CliCompatibility verify
+      - name: Generate integration test report on failure
+        if: failure()
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        with:
+          name: Nightly ${{ matrix.name }} Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-integration-test-report-${{ matrix.name }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**

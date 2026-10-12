@@ -5,7 +5,7 @@ on:
       - master
   schedule:
     # Check the latest production CLI once per night.
-    - cron: '23 2 * * *'
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 concurrency:
