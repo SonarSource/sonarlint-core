@@ -8,6 +8,11 @@
       "description": "H2 2.5.x corrupts databases left by an unclean 2.4.x shutdown, see https://github.com/h2database/h2database/issues/4446",
       "matchPackageNames": ["com.h2database:h2"],
       "allowedVersions": "<2.5"
+    },
+    {
+      "description": "Sentry 8.59.0+ ignores 'logs.enabled=false' and sends all logs forwarded by SonarLintLogger to Sentry",
+      "matchPackageNames": ["io.sentry:sentry"],
+      "allowedVersions": "<8.59"
     }
   ]
 }
