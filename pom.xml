@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
   <artifactId>sonarlint-core-parent</artifactId>
-  <version>12.2-SNAPSHOT</version>
+  <version>12.1.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
@@ -78,7 +78,8 @@
     <!-- CI provides mvn on PATH; skip the mvnw wrapper whose distribution download is not authenticated -->
     <sonar.sca.mavenIgnoreWrapper>true</sonar.sca.mavenIgnoreWrapper>
     <sonar.organization>sonarsource</sonar.organization>
-    <h2.version>2.5.252</h2.version>
+    <!-- 2.5.x fails to open files left by an unclean 2.4.x shutdown, see https://github.com/h2database/h2database/issues/4446 -->
+    <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.21.9</jooq.version>
     <flyway.version>11.20.3</flyway.version>
