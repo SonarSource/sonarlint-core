@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>SonarSource/renovate-config:ide-xp-team"
+  ],
+  "packageRules": [
+    {
+      "description": "H2 2.5.x corrupts databases left by an unclean 2.4.x shutdown, see https://github.com/h2database/h2database/issues/4446",
+      "matchPackageNames": ["com.h2database:h2"],
+      "allowedVersions": "<2.5"
+    }
   ]
 }
