@@ -23,6 +23,7 @@ import io.sentry.Sentry;
 import io.sentry.logger.ILoggerApi;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.Random;
@@ -93,6 +94,15 @@ class SonarLintDatabaseCorruptionTests {
     assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to execute statement",
       new SQLException("General error: \"java.lang.OutOfMemoryError\"", "HY000", ErrorCode.GENERAL_ERROR_1)))).isFalse();
     assertThat(SonarLintDatabase.isCorruption(new IllegalStateException("Failed to initialize H2Database"))).isFalse();
+  }
+
+  @Test
+  void should_not_detect_read_failures_caused_by_an_interrupted_thread_as_corruption() {
+    var readFailure = new MVStoreException(0, "Reading from file sun.nio.ch.FileChannelImpl failed at 19808183");
+    readFailure.initCause(new ClosedByInterruptException());
+
+    assertThat(SonarLintDatabase.isCorruption(new SQLException("General error: \"org.h2.mvstore.MVStoreException: Reading from file failed\"", "HY000",
+      ErrorCode.GENERAL_ERROR_1, readFailure))).isFalse();
   }
 
   /**
