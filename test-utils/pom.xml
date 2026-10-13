@@ -63,10 +63,9 @@
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-jetty12</artifactId>
     </dependency>
-    <!-- Force the Jetty artifacts affected by CVE-2026-10050 and pinned in the root pom's dependencyManagement
-         (jetty-bom import) to be direct dependencies here, otherwise the pin never propagates to consumers of
-         sonarlint-core-test-utils: wiremock-jetty12 is a direct dependency here and transitively pulls its own
-         older jetty-security/jetty-client versions. -->
+    <!-- Declare WireMock's Jetty dependencies directly so the BOM-managed versions also reach consumers.
+         Overriding only jetty-client and jetty-security mixes Jetty 12.1 with WireMock's Jetty 12.0
+         dependencies: the parent BOM aligns this reactor, but is not inherited by consumers. -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
@@ -74,6 +73,46 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-proxy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-java-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlets</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <!-- Force the Handlebars version pinned in the root pom to be a direct dependency here, otherwise the
          pin never propagates to consumers of sonarlint-core-test-utils. -->
