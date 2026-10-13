@@ -44,7 +44,7 @@ public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
-  private static final Pattern MVSTORE_ERROR_CODE_PATTERN = Pattern.compile("\\[\\d+(?:\\.\\d+)+/(\\d+)]");
+  private static final Pattern MVSTORE_ERROR_CODE_PATTERN = Pattern.compile("\\[\\d++\\.\\d++\\.\\d++/(\\d++)]");
 
   private final Path dbFile;
   private final JdbcConnectionPool dataSource;
