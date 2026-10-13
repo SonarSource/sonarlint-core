@@ -19,12 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.flywaydb.core.Flyway;
+import org.h2.api.ErrorCode;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.mvstore.MVStoreException;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.conf.Settings;
@@ -38,10 +43,12 @@ public final class SonarLintDatabase {
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
 
+  private final Path dbFile;
   private final JdbcConnectionPool dataSource;
   private final DSLContext dsl;
 
   public SonarLintDatabase(Path storageRoot) {
+    this.dbFile = storageRoot.resolve("h2").resolve(SQ_IDE_DB_FILENAME + ".mv.db").toAbsolutePath();
     JdbcConnectionPool ds;
     try {
       var baseDir = storageRoot.resolve("h2");
@@ -76,6 +83,7 @@ public final class SonarLintDatabase {
     } catch (Exception e) {
       // We are catching the exception for Sentry and rethrowing here to fail starting the backend
       DatabaseExceptionReporter.capture(e, "startup", "flyway.migrate");
+      logIfCorrupted(e);
       throw e;
     }
 
@@ -88,6 +96,26 @@ public final class SonarLintDatabase {
       .set(new Settings().withExecuteLogging(false))
       .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
     this.dsl = DSL.using(jooqConfig);
+  }
+
+  /**
+   * Tell users how to recover when the failure is caused by a corrupted database file
+   */
+  public void logIfCorrupted(Throwable throwable) {
+    if (isCorruption(throwable)) {
+      LOG.error("The local database seems to be corrupted. We recommend closing all IDEs, then deleting the H2 database used by SonarQube for IDE: {}", dbFile);
+    }
+  }
+
+  static boolean isCorruption(Throwable throwable) {
+    var causes = ExceptionUtils.getThrowableList(throwable);
+    // An interrupted thread closes the file channel, which H2 reports as a read failure although the file is fine
+    if (causes.stream().anyMatch(t -> t instanceof ClosedByInterruptException || t instanceof InterruptedException)) {
+      return false;
+    }
+    return causes.stream().anyMatch(t -> t instanceof MVStoreException
+      || (t instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
+        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && StringUtils.contains(sqlException.getMessage(), MVStoreException.class.getSimpleName())))));
   }
 
   private static void deleteLegacyDatabase(Path baseDir) {

@@ -63,8 +63,13 @@ public class SonarLintDatabaseService {
 
   @PostConstruct
   public void postConstruct() {
-    cleanupNonExistingConnections();
-    localOnlyIssuesRepository.purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
+    try {
+      cleanupNonExistingConnections();
+      localOnlyIssuesRepository.purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
+    } catch (RuntimeException e) {
+      database.logIfCorrupted(e);
+      throw e;
+    }
   }
 
   private void cleanupNonExistingConnections() {
