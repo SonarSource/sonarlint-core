@@ -73,8 +73,8 @@ class SonarLintDatabaseCorruptionTests {
     assertThatThrownBy(() -> new SonarLintDatabase(storageRoot))
       .satisfies(e -> assertThat(SonarLintDatabase.isCorruption(e)).isTrue());
     assertThat(logTester.logs(LogOutput.Level.ERROR))
-      .containsExactly("The local database seems to be corrupted. We recommend closing all IDEs, then deleting the H2 database used by SonarQube for IDE: "
-        + dbFile.toAbsolutePath());
+      .containsExactly("SonarQube for IDE could not read its local database. Close all IDE instances, delete '" + dbFile.toAbsolutePath()
+        + "', and restart your IDE. This resets local issue history, resolutions and comments. Cached server data will be downloaded again when connected.");
     assertThat(dbFile).exists();
   }
 
