@@ -106,7 +106,8 @@ public final class SonarLintDatabase {
    */
   public void logIfCorrupted(Throwable throwable) {
     if (isCorruption(throwable)) {
-      LOG.error("The local database seems to be corrupted. We recommend closing all IDEs, then deleting the H2 database used by SonarQube for IDE: {}", dbFile);
+      LOG.error("SonarQube for IDE could not read its local database. Close all IDE instances, delete '{}', and restart your IDE. " +
+        "Cached server data will be downloaded again when connected.", dbFile);
     }
   }
 
