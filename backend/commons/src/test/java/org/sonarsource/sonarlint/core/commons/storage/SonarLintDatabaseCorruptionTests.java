@@ -29,7 +29,7 @@ import java.sql.SQLException;
 import java.util.Random;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.h2.api.ErrorCode;
-import org.h2.mvstore.MVStoreException;
+import org.h2.mvstore.DataUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,15 +82,35 @@ class SonarLintDatabaseCorruptionTests {
   void should_detect_corruption_errors() {
     assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to obtain connection",
       new SQLException("File corrupted while reading record", "HY000", ErrorCode.FILE_CORRUPTED_1)))).isTrue();
-    assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to check whether schema \"PUBLIC\" exists",
-      new SQLException("General error: \"org.h2.mvstore.MVStoreException: Unable to read the page\"", "HY000", ErrorCode.GENERAL_ERROR_1)))).isTrue();
-    assertThat(SonarLintDatabase.isCorruption(new IllegalStateException(new MVStoreException(0, "Unable to read the page")))).isTrue();
+    assertThat(SonarLintDatabase.isCorruption(new IllegalStateException(
+      DataUtils.newMVStoreException(DataUtils.ERROR_FILE_CORRUPT, "Unable to read the page at position {0}", 42)))).isTrue();
+    assertThat(SonarLintDatabase.isCorruption(new IllegalStateException(
+      DataUtils.newMVStoreException(DataUtils.ERROR_CHUNK_NOT_FOUND, "Chunk {0} not found", 42)))).isTrue();
   }
 
   @Test
-  void should_not_detect_other_errors_as_corruption() {
+  void should_detect_corruption_from_wrapped_message_only() {
+    // From SONARLINT-CORE-4PQ, H2 does not always keep the MVStoreException as a cause
+    assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to determine the original schema for the connection",
+      new SQLException("General error: \"General error: \"\"org.h2.mvstore.MVStoreException: Unable to read the page at position 0x23e7c00004149a, offset "
+        + "0xorg.h2.message.DbException: File corrupted while reading record: \"\"\"\"type: 161\"\"\"\". Possible solution: use the recovery tool "
+        + "[90030-252] [2.5.252/6]\"\" [50000-252]\" [50000-252]", "HY000", ErrorCode.GENERAL_ERROR_1)))).isTrue();
+  }
+
+  @Test
+  void should_not_detect_errors_on_a_healthy_file_as_corruption() {
+    var locked = DataUtils.newMVStoreException(DataUtils.ERROR_FILE_LOCKED, "The file is locked: {0}", "sq-ide.mv.db");
     assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to obtain connection",
-      new SQLException("Database may be already in use", "HY000", ErrorCode.DATABASE_ALREADY_OPEN_1)))).isFalse();
+      new SQLException("Database may be already in use", "HY000", ErrorCode.DATABASE_ALREADY_OPEN_1, locked)))).isFalse();
+
+    var closed = DataUtils.newMVStoreException(DataUtils.ERROR_CLOSED, "This map is closed");
+    assertThat(SonarLintDatabase.isCorruption(new SQLException("Database is already closed", "90121", ErrorCode.DATABASE_IS_CLOSED, closed))).isFalse();
+
+    // From SONARLINT-CORE-29G, e.g. when the disk is full
+    assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to obtain connection",
+      new SQLException("General error: \"General error: \"\"org.h2.mvstore.MVStoreException: Writing to sun.nio.ch.FileChannelImpl@75f3b225 failed; "
+        + "length 12288 at 8192 [2.5.252/2]\"\" [50000-252]\" [50000-252]", "HY000", ErrorCode.GENERAL_ERROR_1)))).isFalse();
+
     assertThat(SonarLintDatabase.isCorruption(new FlywaySqlException("Unable to execute statement",
       new SQLException("General error: \"java.lang.OutOfMemoryError\"", "HY000", ErrorCode.GENERAL_ERROR_1)))).isFalse();
     assertThat(SonarLintDatabase.isCorruption(new IllegalStateException("Failed to initialize H2Database"))).isFalse();
@@ -98,11 +118,11 @@ class SonarLintDatabaseCorruptionTests {
 
   @Test
   void should_not_detect_read_failures_caused_by_an_interrupted_thread_as_corruption() {
-    var readFailure = new MVStoreException(0, "Reading from file sun.nio.ch.FileChannelImpl failed at 19808183");
-    readFailure.initCause(new ClosedByInterruptException());
+    // From SONARLINT-CORE-28N
+    var readFailure = DataUtils.newMVStoreException(DataUtils.ERROR_READING_FAILED, "Reading from file {0} failed at {1}", "sun.nio.ch.FileChannelImpl", 19808183,
+      new ClosedByInterruptException());
 
-    assertThat(SonarLintDatabase.isCorruption(new SQLException("General error: \"org.h2.mvstore.MVStoreException: Reading from file failed\"", "HY000",
-      ErrorCode.GENERAL_ERROR_1, readFailure))).isFalse();
+    assertThat(SonarLintDatabase.isCorruption(new SQLException("General error: \"" + readFailure + "\"", "HY000", ErrorCode.GENERAL_ERROR_1, readFailure))).isFalse();
   }
 
   /**

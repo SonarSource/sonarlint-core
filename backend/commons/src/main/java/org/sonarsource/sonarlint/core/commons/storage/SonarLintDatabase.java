@@ -19,16 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.flywaydb.core.Flyway;
 import org.h2.api.ErrorCode;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.mvstore.DataUtils;
 import org.h2.mvstore.MVStoreException;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -42,6 +44,7 @@ public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
+  private static final Pattern MVSTORE_ERROR_CODE_PATTERN = Pattern.compile("\\[\\d+(?:\\.\\d+)+/(\\d+)]");
 
   private final Path dbFile;
   private final JdbcConnectionPool dataSource;
@@ -108,14 +111,35 @@ public final class SonarLintDatabase {
   }
 
   static boolean isCorruption(Throwable throwable) {
-    var causes = ExceptionUtils.getThrowableList(throwable);
-    // An interrupted thread closes the file channel, which H2 reports as a read failure although the file is fine
-    if (causes.stream().anyMatch(t -> t instanceof ClosedByInterruptException || t instanceof InterruptedException)) {
+    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(t -> (t instanceof MVStoreException mvStoreException && isCorruptionCode(mvStoreException.getErrorCode()))
+      || (t instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
+        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && hasMVStoreCorruptionCode(sqlException.getMessage())))));
+  }
+
+  /**
+   * H2 sometimes only keeps the message of the original {@link MVStoreException}, which ends with "[version/errorCode]"
+   */
+  private static boolean hasMVStoreCorruptionCode(@Nullable String message) {
+    if (!StringUtils.contains(message, MVStoreException.class.getSimpleName())) {
       return false;
     }
-    return causes.stream().anyMatch(t -> t instanceof MVStoreException
-      || (t instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
-        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && StringUtils.contains(sqlException.getMessage(), MVStoreException.class.getSimpleName())))));
+    var matcher = MVSTORE_ERROR_CODE_PATTERN.matcher(message);
+    while (matcher.find()) {
+      if (isCorruptionCode(Integer.parseInt(matcher.group(1)))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Other codes (read/write failures, closed or locked store...) can also happen with a healthy file, e.g. when the disk is full or the thread is interrupted
+   */
+  private static boolean isCorruptionCode(int mvStoreErrorCode) {
+    return mvStoreErrorCode == DataUtils.ERROR_FILE_CORRUPT
+      || mvStoreErrorCode == DataUtils.ERROR_CHUNK_NOT_FOUND
+      || mvStoreErrorCode == DataUtils.ERROR_BLOCK_NOT_FOUND
+      || mvStoreErrorCode == DataUtils.ERROR_TRANSACTION_CORRUPT;
   }
 
   private static void deleteLegacyDatabase(Path baseDir) {
