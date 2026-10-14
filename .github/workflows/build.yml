@@ -243,7 +243,7 @@ jobs:
         if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
         with:
           path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
-          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}-${{ matrix.name }} # Use matrix name to differentiate caches
+          key: cache-production-${{ runner.os }}-${{ steps.month.outputs.month }}-${{ matrix.name }} # Use matrix name to differentiate caches
       - name: Vault (SonarCloud IT token)
         if: ${{ matrix.sc == true }}
         id: secrets-sc
@@ -257,6 +257,7 @@ jobs:
         with:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
+            development/artifactory-edge-prod/token/{REPO_OWNER_NAME_DASH}-private-reader access_token | ORCHESTRATOR_ACCESS_TOKEN;
 
       - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
         with:
@@ -269,11 +270,13 @@ jobs:
           SONARCLOUD_IT_TOKEN: ${{ steps.secrets-sc.outputs.vault && fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
           SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
           GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+          ORCHESTRATOR_ACCESS_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).ORCHESTRATOR_ACCESS_TOKEN }}
+          ORCHESTRATOR_HOME: ${{ github.event_name == 'pull_request' && format('{0}/orchestrator-production', runner.temp) || env.ORCHESTRATOR_HOME || format('{0}/orchestrator-production', runner.temp) }}
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
         run: |
-          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+          mvn -Dorchestrator.artifactory.url=https://repox-internal.sonar.build/artifactory "-Dorchestrator.artifactory.accessToken=$ORCHESTRATOR_ACCESS_TOKEN" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
