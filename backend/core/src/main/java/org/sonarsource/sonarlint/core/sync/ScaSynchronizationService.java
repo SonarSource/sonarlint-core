@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.sync;
 import io.sentry.Sentry;
 import java.util.ArrayList;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
@@ -79,7 +80,7 @@ public class ScaSynchronizationService {
       try {
         serverDependencyRisks.add(convertDependencyRisk(issueRelease));
       } catch (InvalidServerItemException e) {
-        LOG.warn("[SYNC] Skipping dependency risk: " + e.getMessage(), e);
+        LOG.warn("[SYNC] Skipping dependency risk '{}': {}", issueRelease == null ? null : issueRelease.key(), e.getMessage(), e);
         Sentry.captureException(e);
       }
     }
@@ -101,8 +102,8 @@ public class ScaSynchronizationService {
     return new UpdateSummary<>(deletedDependencyRiskIds, addedDependencyRisks, updatedDependencyRisks);
   }
 
-  private static ServerDependencyRisk convertDependencyRisk(GetIssuesReleasesResponse.IssuesRelease issueRelease) {
-    required(issueRelease, "item");
+  private static ServerDependencyRisk convertDependencyRisk(@Nullable GetIssuesReleasesResponse.IssuesRelease serverItem) {
+    var issueRelease = required(serverItem, "item");
     required(issueRelease.key(), "key");
     required(issueRelease.type(), "type");
     required(issueRelease.severity(), "severity");
@@ -126,10 +127,11 @@ public class ScaSynchronizationService {
       issueRelease.transitions().stream().map(transition -> parseEnum("transition", () -> ServerDependencyRisk.Transition.valueOf(transition.name()))).toList());
   }
 
-  private static void required(Object value, String field) {
+  private static <T> T required(@Nullable T value, String field) {
     if (value == null) {
       throw new InvalidServerItemException("Missing or unknown dependency risk " + field);
     }
+    return value;
   }
 
   private static <T> T parseEnum(String field, Supplier<T> parser) {

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import com.google.common.base.Enums;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.sentry.Sentry;
 import java.util.Collection;
@@ -90,8 +91,14 @@ public class RulesApi {
       rule.getImpacts().getImpactsList().forEach(RulesApi::validateImpact);
       var impacts = rule.getImpacts().getImpactsList().stream().collect(toMap(
         impact -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()),
-        impact -> ImpactSeverity.mapSeverity(impact.getSeverity().name())));
-      var result = new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
+        impact -> ImpactSeverity.mapSeverity(impact.getSeverity().name()),
+        (first, duplicate) -> { throw new InvalidServerItemException("Duplicate rule impact quality"); }));
+      var severity = parseEnum("rule severity", () -> IssueSeverity.valueOf(rule.getSeverity()));
+      var type = parseEnum("rule type", () -> RuleType.valueOf(rule.getType().name()));
+      if (SonarLanguage.forKey(rule.getLang()).isEmpty()) {
+        throw new InvalidServerItemException("Unsupported rule language");
+      }
+      var result = new ServerRule(rule.getName(), severity, type, rule.getLang(), rule.getHtmlDesc(),
         convertDescriptionSections(rule),
         rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()), cleanCodeAttribute, impacts);
       cancelMonitor.checkCanceled();
@@ -100,7 +107,9 @@ public class RulesApi {
       rethrowCancellation(e);
       cancelMonitor.checkCanceled();
       LOG.error("Error when fetching rule '" + ruleKey + "'", e);
-      Sentry.captureException(e);
+      if (e instanceof InvalidServerItemException || (e instanceof InvalidProtocolBufferException protobuf && protobuf.unwrapIOException() == protobuf)) {
+        Sentry.captureException(e);
+      }
     }
     return Optional.empty();
   }

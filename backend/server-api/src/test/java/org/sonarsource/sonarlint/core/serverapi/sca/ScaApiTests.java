@@ -120,7 +120,8 @@ class ScaApiTests {
     scaApi = new ScaApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=project&branchKey=main&pageSize=500&pageIndex=1", body);
 
-    assertThatThrownBy(() -> scaApi.getIssuesReleases("project", "main", new SonarLintCancelMonitor())).isInstanceOf(JsonParseException.class);
+    var monitor = new SonarLintCancelMonitor();
+    assertThatThrownBy(() -> scaApi.getIssuesReleases("project", "main", monitor)).isInstanceOf(JsonParseException.class);
     sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
   }
 

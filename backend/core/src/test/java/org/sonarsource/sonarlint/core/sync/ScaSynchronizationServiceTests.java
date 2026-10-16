@@ -69,13 +69,6 @@ class ScaSynchronizationServiceTests {
 
   private MockedStatic<Sentry> sentry;
 
-  @BeforeEach
-  void mockSentry() {
-    var logger = Sentry.logger();
-    sentry = mockStatic(Sentry.class);
-    sentry.when(Sentry::logger).thenReturn(logger);
-  }
-
   @AfterEach
   void closeSentry() {
     sentry.close();
@@ -95,6 +88,10 @@ class ScaSynchronizationServiceTests {
 
   @BeforeEach
   void setUp() {
+    var logger = Sentry.logger();
+    sentry = mockStatic(Sentry.class);
+    sentry.when(Sentry::logger).thenReturn(logger);
+
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getBackendCapabilities()).thenReturn(EnumSet.of(BackendCapability.SCA_SYNCHRONIZATION));
 
@@ -144,6 +141,8 @@ class ScaSynchronizationServiceTests {
     var error = ArgumentCaptor.forClass(Throwable.class);
     sentry.verify(() -> Sentry.captureException(error.capture()));
     assertThat(error.getValue()).isInstanceOf(InvalidServerItemException.class).hasMessageContaining(field);
+    var rejectedKey = "item".equals(field) ? null : malformed.key();
+    assertThat(logTester.logs()).contains("[SYNC] Skipping dependency risk '" + rejectedKey + "': Missing or unknown dependency risk " + field);
     verify(eventPublisher).publishEvent(any(DependencyRisksSynchronizedEvent.class));
   }
 
