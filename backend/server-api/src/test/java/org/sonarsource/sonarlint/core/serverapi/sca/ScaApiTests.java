@@ -19,19 +19,45 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.sca;
 
+import com.google.gson.JsonParseException;
+import io.sentry.Sentry;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 class ScaApiTests {
+  private MockedStatic<Sentry> sentry;
+
+  @BeforeEach
+  void mockSentry() {
+    var logger = Sentry.logger();
+    sentry = mockStatic(Sentry.class);
+    sentry.when(Sentry::logger).thenReturn(logger);
+  }
+
+  @AfterEach
+  void closeSentry() {
+    sentry.close();
+  }
+
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -50,6 +76,53 @@ class ScaApiTests {
     """;
 
   private ScaApi scaApi;
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void should_recover_individual_json_failures_on_both_routes(boolean cloud) {
+    var prefix = cloud ? "" : "/api/v2";
+    scaApi = new ScaApi(cloud ? mockServer.serverApiHelper("org") : mockServer.serverApiHelper());
+    var first = UUID.randomUUID();
+    var last = UUID.randomUUID();
+    mockServer.addStringResponse(prefix + "/sca/issues-releases?projectKey=project&branchKey=main&pageSize=500&pageIndex=1",
+      "{\"issuesReleases\":[{\"key\":\"" + first + "\"},{\"key\":\"bad-uuid\"},null,42,[],{\"release\":42},{\"key\":\"" + last + "\"}],\"page\":{\"total\":7}}");
+
+    var result = scaApi.getIssuesReleases("project", "main", new SonarLintCancelMonitor());
+
+    assertThat(result.issuesReleases()).extracting(GetIssuesReleasesResponse.IssuesRelease::key).containsExactly(first, last);
+    assertThat(result.page().total()).isEqualTo(2);
+    var captor = ArgumentCaptor.forClass(Throwable.class);
+    sentry.verify(() -> Sentry.captureException(captor.capture()), times(5));
+    assertThat(captor.getAllValues()).allSatisfy(error -> assertThat(error).isInstanceOf(InvalidServerItemException.class));
+    assertThat(captor.getAllValues()).anySatisfy(error -> assertThat(error).hasCauseInstanceOf(JsonParseException.class));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void should_continue_after_rejected_page_without_total(boolean cloud) {
+    var prefix = cloud ? "" : "/api/v2";
+    scaApi = new ScaApi(cloud ? mockServer.serverApiHelper("org") : mockServer.serverApiHelper());
+    var key = UUID.randomUUID();
+    var url = prefix + "/sca/issues-releases?projectKey=project&branchKey=main&pageSize=500&pageIndex=";
+    mockServer.addStringResponse(url + "1", "{\"issuesReleases\":[{\"key\":\"bad\"}],\"page\":{}}");
+    mockServer.addStringResponse(url + "2", "{\"issuesReleases\":[{\"key\":\"" + key + "\"}],\"page\":{}}");
+    mockServer.addStringResponse(url + "3", EMPTY_ISSUES_RELEASES_JSON);
+
+    assertThat(scaApi.getIssuesReleases("project", "main", new SonarLintCancelMonitor()).issuesReleases())
+      .extracting(GetIssuesReleasesResponse.IssuesRelease::key).containsExactly(key);
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"invalid json", "null", "[]", "{}", "{\"issuesReleases\":[],\"page\":null}",
+    "{\"issuesReleases\":{},\"page\":{}}", "{\"issuesReleases\":[],\"page\":{\"total\":\"bad\"}}"})
+  void should_propagate_invalid_documents_and_envelopes(String body) {
+    scaApi = new ScaApi(mockServer.serverApiHelper());
+    mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=project&branchKey=main&pageSize=500&pageIndex=1", body);
+
+    assertThatThrownBy(() -> scaApi.getIssuesReleases("project", "main", new SonarLintCancelMonitor())).isInstanceOf(JsonParseException.class);
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
 
   @Nested
   class SonarQubeServer {
@@ -290,7 +363,7 @@ class ScaApiTests {
 
     @Test
     void should_handle_malformed_json_response() {
-      mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=test&branchName=main&pageSize=500&pageIndex=1", "invalid json");
+      mockServer.addStringResponse("/api/v2/sca/issues-releases?projectKey=test&branchKey=main&pageSize=500&pageIndex=1", "invalid json");
 
       assertThatThrownBy(() -> scaApi.getIssuesReleases("test", "main", new SonarLintCancelMonitor()))
         .isInstanceOf(Exception.class);
