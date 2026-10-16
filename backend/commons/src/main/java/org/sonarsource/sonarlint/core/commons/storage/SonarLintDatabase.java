@@ -74,6 +74,9 @@ public final class SonarLintDatabase {
 
     var flyway = Flyway.configure()
       .dataSource(this.dataSource)
+      // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
+      .connectRetries(3)
+      .connectRetriesInterval(1)
       .locations("classpath:db/migration")
       .defaultSchema("PUBLIC")
       .schemas("PUBLIC")
