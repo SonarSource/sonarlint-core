@@ -88,10 +88,9 @@ public class RulesApi {
       rejectUnknownEnum(rule, Rules.Rule.TYPE_FIELD_NUMBER);
       rejectUnknownEnum(rule, Rules.Rule.CLEANCODEATTRIBUTE_FIELD_NUMBER);
       var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
-      rule.getImpacts().getImpactsList().forEach(RulesApi::validateImpact);
-      var impacts = rule.getImpacts().getImpactsList().stream().collect(toMap(
-        impact -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()),
-        impact -> ImpactSeverity.mapSeverity(impact.getSeverity().name()),
+      var impacts = rule.getImpacts().getImpactsList().stream().map(RulesApi::convertImpact).collect(toMap(
+        Map.Entry::getKey,
+        Map.Entry::getValue,
         (first, duplicate) -> { throw new InvalidServerItemException("Duplicate rule impact quality"); }));
       var severity = parseEnum("rule severity", () -> IssueSeverity.valueOf(rule.getSeverity()));
       var type = parseEnum("rule type", () -> RuleType.valueOf(rule.getType().name()));
@@ -163,21 +162,20 @@ public class RulesApi {
         throw new InvalidServerItemException("Duplicate active rule parameter '" + param.getKey() + "'");
       }
     }
-    var impacts = active.getImpacts().getImpactsList().stream().map(impact -> {
-      validateImpact(impact);
-      return new ImpactPayload(impact.getSoftwareQuality().name(), ImpactSeverity.mapSeverity(impact.getSeverity().name()).name());
-    }).toList();
+    var impacts = active.getImpacts().getImpactsList().stream().map(RulesApi::convertImpact)
+      .map(impact -> new ImpactPayload(impact.getKey().name(), impact.getValue().name())).toList();
     return new ServerActiveRule(ruleKey, severity, params, templateKey, impacts);
   }
 
-  private static void validateImpact(Common.Impact impact) {
+  private static Map.Entry<SoftwareQuality, ImpactSeverity> convertImpact(Common.Impact impact) {
     rejectUnknownEnum(impact, Common.Impact.SOFTWAREQUALITY_FIELD_NUMBER);
     rejectUnknownEnum(impact, Common.Impact.SEVERITY_FIELD_NUMBER);
     if (!impact.hasSoftwareQuality() || !impact.hasSeverity()) {
       throw new InvalidServerItemException("Missing required rule impact quality or severity");
     }
-    parseEnum("rule impact quality", () -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()));
-    parseEnum("rule impact severity", () -> ImpactSeverity.mapSeverity(impact.getSeverity().name()));
+    return Map.entry(
+      parseEnum("rule impact quality", () -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name())),
+      parseEnum("rule impact severity", () -> ImpactSeverity.mapSeverity(impact.getSeverity().name())));
   }
 
   private static void rejectUnknownEnum(Message message, int fieldNumber) {
