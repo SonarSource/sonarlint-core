@@ -73,7 +73,7 @@ public final class SonarLintDatabase {
     }
     this.dataSource = ds;
 
-    String operation = "h2.connect";
+    var operation = "h2.connect";
     try {
       connect(ds);
       operation = null;
@@ -99,30 +99,31 @@ public final class SonarLintDatabase {
         .set(new Settings().withExecuteLogging(false))
         .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
       this.dsl = DSL.using(jooqConfig);
-    } catch (Exception | Error failure) {
+    } catch (Exception failure) {
       var cancelled = Thread.currentThread().isInterrupted() || ExceptionUtils.getThrowableList(failure).stream().anyMatch(InterruptedException.class::isInstance);
-      try {
-        ds.dispose();
-      } catch (Exception | Error cleanup) {
-        if (cleanup != failure) {
-          failure.addSuppressed(cleanup);
-        }
-      } finally {
-        // H2 may clear interruption while joining its file-lock watchdog during disposal.
-        if (cancelled) {
-          Thread.currentThread().interrupt();
-        }
-      }
+      disposeAfterFailure(ds, failure, cancelled);
       if (!cancelled) {
         if (operation != null) {
           DatabaseExceptionReporter.capture(failure, "startup", operation);
         }
         logIfCorrupted(failure);
       }
-      if (failure instanceof Error error) {
-        throw error;
-      }
       throw failure instanceof RuntimeException runtime ? runtime : new IllegalStateException("Failed to initialize H2Database", failure);
+    }
+  }
+
+  private static void disposeAfterFailure(JdbcConnectionPool pool, Exception failure, boolean cancelled) {
+    try {
+      pool.dispose();
+    } catch (Exception cleanup) {
+      if (cleanup != failure) {
+        failure.addSuppressed(cleanup);
+      }
+    } finally {
+      // H2 may clear interruption while joining its file-lock watchdog during disposal.
+      if (cancelled) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
