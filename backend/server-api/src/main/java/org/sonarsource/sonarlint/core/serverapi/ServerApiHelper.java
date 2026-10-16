@@ -26,6 +26,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import io.sentry.Sentry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -53,6 +54,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NetworkException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
@@ -346,7 +348,12 @@ public class ServerApiHelper {
 
     var items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {
-      itemConsumer.accept(item);
+      try {
+        itemConsumer.accept(item);
+      } catch (InvalidServerItemException e) {
+        LOG.warn("Skipping malformed server item", e);
+        Sentry.captureException(e);
+      }
       loaded.incrementAndGet();
     }
     var isEmpty = items.isEmpty();

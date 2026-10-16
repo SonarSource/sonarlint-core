@@ -20,16 +20,24 @@
 package org.sonarsource.sonarlint.core.serverapi.sca;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import jakarta.annotation.Nullable;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 
 public class ScaApi {
+
+  private static final Gson GSON = new Gson();
 
   private final ServerApiHelper serverApiHelper;
 
@@ -49,10 +57,10 @@ public class ScaApi {
     if (serverApiHelper.isSonarCloud()) {
       serverApiHelper.apiGetPaginated(
         url,
-        response -> new Gson().fromJson(new InputStreamReader(response, StandardCharsets.UTF_8), GetIssuesReleasesResponse.class),
+        ScaApi::parseIssuesReleasesPage,
         r -> r.page().total(),
-        GetIssuesReleasesResponse::issuesReleases,
-        allIssuesReleases::add,
+        RawIssuesReleasesPage::issuesReleases,
+        item -> allIssuesReleases.add(parseIssueRelease(item)),
         false,
         cancelMonitor,
         "pageIndex",
@@ -60,16 +68,44 @@ public class ScaApi {
     } else {
       serverApiHelper.getPaginated(
         url,
-        response -> new Gson().fromJson(new InputStreamReader(response, StandardCharsets.UTF_8), GetIssuesReleasesResponse.class),
+        ScaApi::parseIssuesReleasesPage,
         r -> r.page().total(),
-        GetIssuesReleasesResponse::issuesReleases,
-        allIssuesReleases::add,
+        RawIssuesReleasesPage::issuesReleases,
+        item -> allIssuesReleases.add(parseIssueRelease(item)),
         false,
         cancelMonitor,
         "pageIndex",
         "pageSize");
     }
     return new GetIssuesReleasesResponse(allIssuesReleases, new GetIssuesReleasesResponse.Page(allIssuesReleases.size()));
+  }
+
+  private static RawIssuesReleasesPage parseIssuesReleasesPage(InputStream response) {
+    var root = JsonParser.parseReader(new InputStreamReader(response, StandardCharsets.UTF_8));
+    if (!root.isJsonObject()) {
+      throw new JsonParseException("Expected an SCA response object");
+    }
+    var object = root.getAsJsonObject();
+    var items = object.get("issuesReleases");
+    var page = object.get("page");
+    if (items == null || !items.isJsonArray() || page == null || !page.isJsonObject()) {
+      throw new JsonParseException("Expected SCA issuesReleases array and page object");
+    }
+    return new RawIssuesReleasesPage(items.getAsJsonArray().asList(), GSON.fromJson(page, GetIssuesReleasesResponse.Page.class));
+  }
+
+  private static GetIssuesReleasesResponse.IssuesRelease parseIssueRelease(JsonElement item) {
+    if (!item.isJsonObject()) {
+      throw new InvalidServerItemException("Expected an SCA issue release object");
+    }
+    try {
+      return GSON.fromJson(item, GetIssuesReleasesResponse.IssuesRelease.class);
+    } catch (JsonParseException | IllegalArgumentException e) {
+      throw new InvalidServerItemException("Unable to decode SCA issue release", e);
+    }
+  }
+
+  private record RawIssuesReleasesPage(List<JsonElement> issuesReleases, GetIssuesReleasesResponse.Page page) {
   }
 
   public void changeStatus(UUID issueReleaseKey, String transitionKey, @Nullable String comment, SonarLintCancelMonitor cancelMonitor) {
