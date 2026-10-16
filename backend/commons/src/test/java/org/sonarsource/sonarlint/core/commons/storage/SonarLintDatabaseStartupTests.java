@@ -33,6 +33,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -43,11 +45,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.RETURNS_SELF;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -164,6 +168,10 @@ class SonarLintDatabaseStartupTests {
       Thread.currentThread().interrupt();
       return connection;
     });
+    doAnswer(invocation -> {
+      assertThat(Thread.interrupted()).isTrue();
+      return null;
+    }).when(pool).dispose();
     assertThatThrownBy(() -> new SonarLintDatabase(root)).hasCauseInstanceOf(InterruptedException.class);
     verify(connection).close();
     verify(pool).dispose();
@@ -171,6 +179,68 @@ class SonarLintDatabaseStartupTests {
     reporter.verifyNoInteractions();
     assertThat(Thread.currentThread().isInterrupted()).isTrue();
     assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void preserves_cancellation_without_an_interrupted_cause_when_disposal_clears_the_flag(boolean cleanupFails) throws SQLException {
+    var failure = new SQLException("cancelled database read", "90030", 90030);
+    var cleanup = new IllegalStateException("dispose failed");
+    when(pool.getConnection()).thenAnswer(invocation -> {
+      Thread.currentThread().interrupt();
+      throw failure;
+    });
+    doAnswer(invocation -> {
+      assertThat(Thread.interrupted()).isTrue();
+      if (cleanupFails) {
+        throw cleanup;
+      }
+      return null;
+    }).when(pool).dispose();
+
+    assertThatThrownBy(() -> new SonarLintDatabase(root)).hasCause(failure).satisfies(thrown -> {
+      if (cleanupFails) {
+        assertThat(thrown.getSuppressed()).containsExactly(cleanup);
+      } else {
+        assertThat(thrown.getSuppressed()).isEmpty();
+      }
+    });
+    verify(pool).dispose();
+    flyways.verifyNoInteractions();
+    reporter.verifyNoInteractions();
+    assertThat(Thread.currentThread().isInterrupted()).isTrue();
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+  }
+
+  @Test
+  void restores_interrupt_after_real_h2_auto_server_pool_cleanup() throws SQLException {
+    pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenCallRealMethod();
+    var realPool = spy(JdbcConnectionPool.create("jdbc:h2:" + root.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(realPool);
+    doAnswer(invocation -> {
+      var acquired = invocation.callRealMethod();
+      Thread.currentThread().interrupt();
+      return acquired;
+    }).when(realPool).getConnection();
+    doAnswer(invocation -> {
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      invocation.callRealMethod();
+      assertThat(Thread.currentThread().isInterrupted()).isFalse();
+      return null;
+    }).when(realPool).dispose();
+    try {
+      assertThatThrownBy(() -> new SonarLintDatabase(root)).hasCauseInstanceOf(InterruptedException.class)
+        .satisfies(thrown -> assertThat(thrown.getSuppressed()).isEmpty());
+      verify(realPool).dispose();
+      flyways.verifyNoInteractions();
+      reporter.verifyNoInteractions();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    } finally {
+      Thread.interrupted();
+      org.mockito.Mockito.doCallRealMethod().when(realPool).dispose();
+      realPool.dispose();
+    }
   }
 
   @Test

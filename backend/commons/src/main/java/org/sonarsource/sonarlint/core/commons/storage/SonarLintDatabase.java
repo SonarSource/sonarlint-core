@@ -94,11 +94,17 @@ public final class SonarLintDatabase {
       this.dataSource = ds;
       this.dbFile = databaseFile;
     } catch (RuntimeException | Error failure) {
+      var cancelled = SqlExceptions.isCancellation(failure);
       try {
         ds.dispose();
       } catch (RuntimeException | Error cleanup) {
         if (cleanup != failure) {
           failure.addSuppressed(cleanup);
+        }
+      } finally {
+        // H2 cleanup can swallow InterruptedException while joining its file-lock watchdog.
+        if (cancelled) {
+          Thread.currentThread().interrupt();
         }
       }
       if (!SqlExceptions.isCancellation(failure)) {
