@@ -296,47 +296,4 @@ class DatabaseExceptionReporterTests {
     // Should still deduplicate using default window (not crash)
     sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
   }
-
-  @Test
-  void should_report_original_startup_failure_with_nested_contention_tags_and_safe_diagnostics() {
-    var scope = mock(IScope.class);
-    sentryMock.when(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class))).thenAnswer(invocation -> {
-      invocation.getArgument(1, ScopeCallback.class).run(scope);
-      return null;
-    });
-    var sql = new SQLException("outer", "HY000", 50000);
-    var contention = new SQLException("locked", "90020", 90020);
-    sql.setNextException(contention);
-    contention.initCause(sql);
-    var failure = new IllegalStateException("startup failed", sql);
-    var firstLock = new H2DatabaseStartup.LockObservation("readable", true, true, "file", false, 100L);
-    var finalLock = new H2DatabaseStartup.LockObservation("readable", true, true, "file", true, 200L);
-
-    DatabaseExceptionReporter.captureStartup(failure, new H2DatabaseStartup.Diagnostics("2.3.240", 12, 10_000, firstLock, finalLock));
-
-    sentryMock.verify(() -> Sentry.captureException(org.mockito.ArgumentMatchers.same(failure), any(ScopeCallback.class)));
-    verify(scope).setTag("db.phase", "startup");
-    verify(scope).setTag("db.operation", "h2.connect");
-    verify(scope).setTag("db.sqlState", "90020");
-    verify(scope).setTag("db.errorCode", "90020");
-    verify(scope).setTag("db.h2.version", "2.3.240");
-    verify(scope).setExtra("db.startup.attempts", "12");
-    verify(scope).setExtra("db.startup.elapsedMs", "10000");
-    verify(scope).setExtra("db.startup.firstLock", firstLock.toString());
-    verify(scope).setExtra("db.startup.finalLock", finalLock.toString());
-  }
-
-  @Test
-  void should_select_first_nonzero_vendor_code_or_first_sql_exception() {
-    var first = new SQLException("first", "HY000", 0);
-    var vendor = new SQLException("vendor", "28000", 28000);
-    var last = new SQLException("last", "42000", 42000);
-    first.setNextException(vendor);
-    vendor.setNextException(last);
-    assertThat((Throwable) SqlExceptions.representative(new IllegalStateException(first))).isSameAs(vendor);
-    var noCode = new SQLException("no code");
-    noCode.setNextException(new SQLException("also no code"));
-    assertThat((Throwable) SqlExceptions.representative(noCode)).isSameAs(noCode);
-    assertThat((Throwable) SqlExceptions.representative(new IllegalStateException("no sql"))).isNull();
-  }
 }

@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import io.sentry.IScope;
 import io.sentry.Sentry;
 import io.sentry.ScopeCallback;
 import io.sentry.logger.ILoggerApi;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +39,14 @@ import org.mockito.MockedStatic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class SonarLintDatabaseExceptionTests {
 
@@ -129,6 +136,47 @@ class SonarLintDatabaseExceptionTests {
 
     assertThat(db.dsl()).isNotNull();
     sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+  }
+
+  @Test
+  void should_retry_transient_connection_contention_before_migrating(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    var contention = new SQLException("Database is already in use", "90020", 90020);
+    doThrow(contention).doThrow(contention).doCallRealMethod().when(pool).getConnection();
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      var database = new SonarLintDatabase(storageRoot);
+
+      assertThat(database.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).isEmpty();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+    } finally {
+      pool.dispose();
+    }
+  }
+
+  @Test
+  void should_report_persistent_connection_contention_after_exhausting_retries(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    var contention = new SQLException("Database is already in use", "90020", 90020);
+    doThrow(contention).when(pool).getConnection();
+    var scope = mock(IScope.class);
+    sentryMock.when(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class))).thenAnswer(invocation -> {
+      invocation.getArgument(1, ScopeCallback.class).run(scope);
+      return null;
+    });
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(contention);
+
+      verify(pool, times(4)).getConnection();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
+      verify(scope).setTag("db.phase", "startup");
+      verify(scope).setTag("db.operation", "flyway.migrate");
+    } finally {
+      pool.dispose();
+    }
   }
 
   @Test

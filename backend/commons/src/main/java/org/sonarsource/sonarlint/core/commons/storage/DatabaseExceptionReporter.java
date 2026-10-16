@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.storage;
 
 import io.sentry.Sentry;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
@@ -50,14 +51,6 @@ public final class DatabaseExceptionReporter {
    * @param sql       optional SQL statement that caused the exception
    */
   public static void capture(Throwable exception, String phase, String operation, @Nullable String sql) {
-    capture(exception, phase, operation, sql, null);
-  }
-
-  static void captureStartup(Throwable exception, H2DatabaseStartup.Diagnostics diagnostics) {
-    capture(exception, "startup", "h2.connect", null, diagnostics);
-  }
-
-  private static void capture(Throwable exception, String phase, String operation, @Nullable String sql, @Nullable H2DatabaseStartup.Diagnostics diagnostics) {
     var message = exception.getMessage();
 
     if (message != null && isDuplicate(message.hashCode())) {
@@ -72,8 +65,7 @@ public final class DatabaseExceptionReporter {
       scope.setTag("db.phase", phase);
       scope.setTag("db.operation", operation);
 
-      var sqlException = SqlExceptions.representative(exception);
-      if (sqlException != null) {
+      if (exception instanceof SQLException sqlException) {
         var sqlState = sqlException.getSQLState();
         var errorCode = sqlException.getErrorCode();
         if (sqlState != null) {
@@ -84,13 +76,6 @@ public final class DatabaseExceptionReporter {
 
       if (sql != null && !sql.isEmpty()) {
         scope.setExtra("db.sql", truncateSql(sql));
-      }
-      if (diagnostics != null) {
-        scope.setTag("db.h2.version", diagnostics.h2Version());
-        scope.setExtra("db.startup.attempts", String.valueOf(diagnostics.attempts()));
-        scope.setExtra("db.startup.elapsedMs", String.valueOf(diagnostics.elapsedMillis()));
-        scope.setExtra("db.startup.firstLock", String.valueOf(diagnostics.firstLock()));
-        scope.setExtra("db.startup.finalLock", String.valueOf(diagnostics.finalLock()));
       }
     });
 

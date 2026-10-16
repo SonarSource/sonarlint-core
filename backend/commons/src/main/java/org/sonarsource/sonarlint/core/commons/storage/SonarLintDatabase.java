@@ -51,15 +51,13 @@ public final class SonarLintDatabase {
   private final DSLContext dsl;
 
   public SonarLintDatabase(Path storageRoot) {
-    var databaseFile = storageRoot.resolve("h2").resolve(SQ_IDE_DB_FILENAME + ".mv.db").toAbsolutePath();
+    this.dbFile = storageRoot.resolve("h2").resolve(SQ_IDE_DB_FILENAME + ".mv.db").toAbsolutePath();
     JdbcConnectionPool ds;
-    Path lockFile;
     try {
       var baseDir = storageRoot.resolve("h2");
       deleteLegacyDatabase(baseDir);
       Files.createDirectories(baseDir);
       var dbBasePath = baseDir.toRealPath().resolve(SQ_IDE_DB_FILENAME).toAbsolutePath();
-      lockFile = dbBasePath.resolveSibling(SQ_IDE_DB_FILENAME + ".lock.db");
       var url = "jdbc:h2:" + dbBasePath + ";AUTO_SERVER=TRUE";
       // Ensure H2 AUTO_SERVER binds and advertises loopback to allow local cross-process connections reliably
       var bindAddressProperty = "h2.bindAddress";
@@ -69,92 +67,47 @@ public final class SonarLintDatabase {
       LOG.debug("Initializing H2Database with URL {}", url);
       ds = JdbcConnectionPool.create(url, "sa", "");
     } catch (Exception e) {
-      reportStartupFailure(e, "h2.pool.create");
+      DatabaseExceptionReporter.capture(e, "startup", "h2.pool.create");
       throw new IllegalStateException("Failed to initialize H2Database", e);
     }
+    this.dataSource = ds;
+
+    var flyway = Flyway.configure()
+      .dataSource(this.dataSource)
+      // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
+      .connectRetries(3)
+      .connectRetriesInterval(1)
+      .locations("classpath:db/migration")
+      .defaultSchema("PUBLIC")
+      .schemas("PUBLIC")
+      .createSchemas(true)
+      .baselineOnMigrate(true)
+      .failOnMissingLocations(false)
+      .load();
     try {
-      new H2DatabaseStartup(ds, lockFile).connect();
-      var flyway = configureFlyway(ds);
-      try {
-        flyway.migrate();
-      } catch (Exception e) {
-        reportStartupFailure(e, "flyway.migrate");
-        throw e;
-      }
-
-      System.setProperty("org.jooq.no-tips", "true");
-      System.setProperty("org.jooq.no-logo", "true");
-
-      var jooqConfig = new DefaultConfiguration()
-        .set(ds)
-        .set(SQLDialect.H2)
-        .set(new Settings().withExecuteLogging(false))
-        .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
-      this.dsl = DSL.using(jooqConfig);
-      this.dataSource = ds;
-      this.dbFile = databaseFile;
-    } catch (RuntimeException | Error failure) {
-      var cancelled = SqlExceptions.isCancellation(failure);
-      try {
-        ds.dispose();
-      } catch (RuntimeException | Error cleanup) {
-        if (cleanup != failure) {
-          failure.addSuppressed(cleanup);
-        }
-      } finally {
-        // H2 cleanup can swallow InterruptedException while joining its file-lock watchdog.
-        if (cancelled) {
-          Thread.currentThread().interrupt();
-        }
-      }
-      if (!SqlExceptions.isCancellation(failure)) {
-        try {
-          logIfCorrupted(failure, databaseFile);
-        } catch (Exception ignored) {
-          // Recovery guidance is best effort and must not hide the startup failure.
-        }
-      }
-      throw failure;
-    }
-  }
-
-  private static Flyway configureFlyway(JdbcConnectionPool ds) {
-    try {
-      return Flyway.configure()
-        .dataSource(ds)
-        .locations("classpath:db/migration")
-        .defaultSchema("PUBLIC")
-        .schemas("PUBLIC")
-        .createSchemas(true)
-        .baselineOnMigrate(true)
-        .failOnMissingLocations(false)
-        .load();
+      flyway.migrate();
     } catch (Exception e) {
-      reportStartupFailure(e, "flyway.configure");
+      // We are catching the exception for Sentry and rethrowing here to fail starting the backend
+      DatabaseExceptionReporter.capture(e, "startup", "flyway.migrate");
+      logIfCorrupted(e);
       throw e;
     }
-  }
 
-  private static void reportStartupFailure(Exception failure, String operation) {
-    if (SqlExceptions.isCancellation(failure)) {
-      Thread.currentThread().interrupt();
-      return;
-    }
-    try {
-      DatabaseExceptionReporter.capture(failure, "startup", operation);
-    } catch (Exception ignored) {
-      // Reporting must not replace the startup failure.
-    }
+    System.setProperty("org.jooq.no-tips", "true");
+    System.setProperty("org.jooq.no-logo", "true");
+
+    var jooqConfig = new DefaultConfiguration()
+      .set(this.dataSource)
+      .set(SQLDialect.H2)
+      .set(new Settings().withExecuteLogging(false))
+      .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
+    this.dsl = DSL.using(jooqConfig);
   }
 
   /**
    * Tell users how to recover when the failure is caused by a corrupted database file
    */
   public void logIfCorrupted(Throwable throwable) {
-    logIfCorrupted(throwable, dbFile);
-  }
-
-  private static void logIfCorrupted(Throwable throwable, Path dbFile) {
     if (isCorruption(throwable)) {
       LOG.error("SonarQube for IDE could not read its local database. Close all IDE instances, delete '{}', and restart your IDE. " +
         "Cached server data will be downloaded again when connected.", dbFile);
