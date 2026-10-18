@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.h2.api.ErrorCode;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.jooq.Configuration;
 import org.jooq.exception.DataAccessException;
@@ -189,7 +190,7 @@ class SonarLintDatabaseExceptionTests {
       verify(pool, times(4)).getConnection();
       sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
       verify(scope).setTag("db.phase", "startup");
-      verify(scope).setTag("db.operation", "h2.connect");
+      verify(scope).setTag("db.operation", "h2.initialize");
       verify(pool).dispose();
     } finally {
       pool.dispose();
@@ -211,6 +212,26 @@ class SonarLintDatabaseExceptionTests {
       assertThat(failure.getSuppressed()).containsExactly(cleanup);
       verify(pool).getConnection();
       verify(pool).dispose();
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    }
+  }
+
+  @Test
+  void should_abort_acquisition_with_an_interrupted_cause_and_restore_interrupt(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var failure = new SQLException("Interrupted database opening", "HY000", ErrorCode.ERROR_OPENING_DATABASE_1, new InterruptedException());
+    when(pool.getConnection()).thenThrow(failure);
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      assertThat(Thread.currentThread().isInterrupted()).isFalse();
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(failure);
+
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      flyway.verifyNoInteractions();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
       assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
     }
   }
@@ -318,7 +339,7 @@ class SonarLintDatabaseExceptionTests {
       verify(connection).close();
       verify(pool).dispose();
       verify(flyway, times(stage.equals("migrate") || stage.equals("jooq") ? 1 : 0)).migrate();
-      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(stage.equals("migrate") ? 1 : 0));
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
     }
   }
 

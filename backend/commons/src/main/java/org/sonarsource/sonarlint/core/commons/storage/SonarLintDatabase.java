@@ -73,10 +73,8 @@ public final class SonarLintDatabase {
     }
     this.dataSource = ds;
 
-    var operation = "h2.connect";
     try {
       connect(ds);
-      operation = null;
       var flyway = Flyway.configure()
         .dataSource(ds)
         .locations("classpath:db/migration")
@@ -86,9 +84,7 @@ public final class SonarLintDatabase {
         .baselineOnMigrate(true)
         .failOnMissingLocations(false)
         .load();
-      operation = "flyway.migrate";
       flyway.migrate();
-      operation = null;
 
       System.setProperty("org.jooq.no-tips", "true");
       System.setProperty("org.jooq.no-logo", "true");
@@ -100,12 +96,10 @@ public final class SonarLintDatabase {
         .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
       this.dsl = DSL.using(jooqConfig);
     } catch (Exception failure) {
-      var cancelled = Thread.currentThread().isInterrupted() || ExceptionUtils.getThrowableList(failure).stream().anyMatch(InterruptedException.class::isInstance);
+      var cancelled = Thread.currentThread().isInterrupted() || ExceptionUtils.indexOfType(failure, InterruptedException.class) >= 0;
       disposeAfterFailure(ds, failure, cancelled);
       if (!cancelled) {
-        if (operation != null) {
-          DatabaseExceptionReporter.capture(failure, "startup", operation);
-        }
+        DatabaseExceptionReporter.capture(failure, "startup", "h2.initialize");
         logIfCorrupted(failure);
       }
       throw failure instanceof RuntimeException runtime ? runtime : new IllegalStateException("Failed to initialize H2Database", failure);
@@ -136,8 +130,7 @@ public final class SonarLintDatabase {
       try {
         connection = pool.getConnection();
       } catch (SQLException failure) {
-        if (failure.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1 || attempt == 3 || Thread.currentThread().isInterrupted()
-          || ExceptionUtils.getThrowableList(failure).stream().anyMatch(InterruptedException.class::isInstance)) {
+        if (failure.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1 || attempt == 3) {
           throw failure;
         }
         // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
