@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons.storage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -72,33 +73,80 @@ public final class SonarLintDatabase {
     }
     this.dataSource = ds;
 
-    var flyway = Flyway.configure()
-      .dataSource(this.dataSource)
-      .locations("classpath:db/migration")
-      .defaultSchema("PUBLIC")
-      .schemas("PUBLIC")
-      .createSchemas(true)
-      .baselineOnMigrate(true)
-      .failOnMissingLocations(false)
-      .load();
     try {
+      connect(ds);
+      var flyway = Flyway.configure()
+        .dataSource(ds)
+        .locations("classpath:db/migration")
+        .defaultSchema("PUBLIC")
+        .schemas("PUBLIC")
+        .createSchemas(true)
+        .baselineOnMigrate(true)
+        .failOnMissingLocations(false)
+        .load();
       flyway.migrate();
-    } catch (Exception e) {
-      // We are catching the exception for Sentry and rethrowing here to fail starting the backend
-      DatabaseExceptionReporter.capture(e, "startup", "flyway.migrate");
-      logIfCorrupted(e);
-      throw e;
+
+      System.setProperty("org.jooq.no-tips", "true");
+      System.setProperty("org.jooq.no-logo", "true");
+
+      var jooqConfig = new DefaultConfiguration()
+        .set(ds)
+        .set(SQLDialect.H2)
+        .set(new Settings().withExecuteLogging(false))
+        .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
+      this.dsl = DSL.using(jooqConfig);
+    } catch (Exception failure) {
+      var cancelled = Thread.currentThread().isInterrupted() || ExceptionUtils.indexOfType(failure, InterruptedException.class) >= 0;
+      disposeAfterFailure(ds, failure, cancelled);
+      if (!cancelled) {
+        DatabaseExceptionReporter.capture(failure, "startup", "h2.initialize");
+        logIfCorrupted(failure);
+      }
+      throw failure instanceof RuntimeException runtime ? runtime : new IllegalStateException("Failed to initialize H2Database", failure);
     }
+  }
 
-    System.setProperty("org.jooq.no-tips", "true");
-    System.setProperty("org.jooq.no-logo", "true");
+  private static void disposeAfterFailure(JdbcConnectionPool pool, Exception failure, boolean cancelled) {
+    try {
+      pool.dispose();
+    } catch (Exception cleanup) {
+      if (cleanup != failure) {
+        failure.addSuppressed(cleanup);
+      }
+    } finally {
+      // H2 may clear interruption while joining its file-lock watchdog during disposal.
+      if (cancelled) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
 
-    var jooqConfig = new DefaultConfiguration()
-      .set(this.dataSource)
-      .set(SQLDialect.H2)
-      .set(new Settings().withExecuteLogging(false))
-      .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
-    this.dsl = DSL.using(jooqConfig);
+  private static void connect(JdbcConnectionPool pool) throws SQLException, InterruptedException {
+    for (var attempt = 0; ; attempt++) {
+      if (Thread.currentThread().isInterrupted()) {
+        throw new InterruptedException("H2 database startup interrupted");
+      }
+      Connection connection;
+      try {
+        connection = pool.getConnection();
+      } catch (SQLException failure) {
+        if (failure.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1 || attempt == 3) {
+          throw failure;
+        }
+        // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
+        Thread.sleep(1000);
+        continue;
+      }
+      try (connection) {
+        if (Thread.currentThread().isInterrupted()) {
+          throw new InterruptedException("H2 database startup interrupted");
+        }
+      }
+      if (Thread.currentThread().isInterrupted()) {
+        throw new InterruptedException("H2 database startup interrupted");
+      }
+      return;
+    }
   }
 
   /**
