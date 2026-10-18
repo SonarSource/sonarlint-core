@@ -74,6 +74,7 @@ public final class SonarLintDatabase {
     this.dataSource = ds;
 
     try {
+      // Retry here because Flyway's connection retries discard interruption.
       connect(ds);
       var flyway = Flyway.configure()
         .dataSource(ds)
@@ -96,6 +97,7 @@ public final class SonarLintDatabase {
         .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
       this.dsl = DSL.using(jooqConfig);
     } catch (Exception failure) {
+      // Capture cancellation before cleanup can clear the flag, so cancelled startup is never reported.
       var cancelled = Thread.currentThread().isInterrupted() || ExceptionUtils.indexOfType(failure, InterruptedException.class) >= 0;
       disposeAfterFailure(ds, failure, cancelled);
       if (!cancelled) {
@@ -137,6 +139,7 @@ public final class SonarLintDatabase {
         Thread.sleep(1000);
         continue;
       }
+      // Return the connection even on cancellation; a close failure must not trigger another acquisition.
       try (connection) {
         if (Thread.currentThread().isInterrupted()) {
           throw new InterruptedException("H2 database startup interrupted");
