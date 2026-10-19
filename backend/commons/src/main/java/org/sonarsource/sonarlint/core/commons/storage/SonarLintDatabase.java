@@ -139,7 +139,8 @@ public final class SonarLintDatabase {
         Thread.sleep(1000);
         continue;
       }
-      // Return the connection even on cancellation; a close failure must not trigger another acquisition.
+      // Release the logical connection back to the pool, keeping the physical connection open.
+      // Always release it on cancellation; do not retry acquisition if close() fails.
       try (connection) {
         if (Thread.currentThread().isInterrupted()) {
           throw new InterruptedException("H2 database startup interrupted");
