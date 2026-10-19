@@ -70,6 +70,14 @@ class CircuitBreakingInterceptorTests {
   });
 
   @Test
+  void it_should_not_limit_repeated_get_requests() throws Exception {
+    var request = new BasicHttpRequest("GET", "https://example.org/api/system/status");
+    for (var i = 0; i < 20; i++) {
+      assertThat(admitted(request)).isTrue();
+    }
+  }
+
+  @Test
   void it_should_reject_the_eleventh_matching_request_and_recover_at_the_exact_boundary() throws Exception {
     admitRequests(10);
     assertThat(admitted(request())).isFalse();
@@ -282,7 +290,7 @@ class CircuitBreakingInterceptorTests {
 
   @Test
   void it_should_support_generic_bodyless_requests_and_reject_unsupported_bodies() throws Exception {
-    var original = new BasicHttpRequest("GET", URL);
+    var original = new BasicHttpRequest("POST", URL);
     assertThat(admitted(original)).isTrue();
     var producer = mock(AsyncEntityProducer.class);
     var chain = mock(AsyncExecChain.class);

@@ -41,6 +41,7 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.nio.AsyncEntityProducer;
 
 class CircuitBreakingInterceptor implements AsyncExecChainHandler {
@@ -68,6 +69,11 @@ class CircuitBreakingInterceptor implements AsyncExecChainHandler {
   @Override
   public void execute(HttpRequest request, @Nullable AsyncEntityProducer entityProducer, AsyncExecChain.Scope scope, AsyncExecChain chain,
     AsyncExecCallback callback) throws HttpException, IOException {
+    // Multi-project synchronization legitimately repeats the same GET requests.
+    if (Method.GET.isSame(request.getMethod())) {
+      chain.proceed(request, entityProducer, scope, callback);
+      return;
+    }
     String signature;
     try {
       signature = fingerprint(request, entityProducer, scope.originalRequest);
