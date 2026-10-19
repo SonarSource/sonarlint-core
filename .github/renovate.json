@@ -13,6 +13,15 @@
       "description": "Sentry 8.59.0+ ignores 'logs.enabled=false' and sends all logs forwarded by SonarLintLogger to Sentry",
       "matchPackageNames": ["io.sentry:sentry"],
       "allowedVersions": "<8.59"
+    },
+    {
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "addLabels": [
+        "renovate-major-minor"
+      ]
     }
   ]
 }
