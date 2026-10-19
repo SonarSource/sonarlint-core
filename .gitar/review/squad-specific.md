@@ -1,6 +1,4 @@
 # Core review focus
 
-- Trace public API/RPC changes through actual accessible consumers, including serialized requests, responses, defaults, and callbacks.
-- Check `API_CHANGES.md`; accept intentional coordinated changes, and flag concrete consumer breaks or missing required coordination.
-- Check that significant consumer-facing API/RPC additions, behavior changes, deprecations, breaking changes, and integration requirements are documented in `API_CHANGES.md` under the relevant version/category, following existing entries; omit internal refactors, tests, build changes, and routine dependency bumps without API impact.
-- Never edit shipped database migrations or those already on master; add a numbered migration and verify upgrades from existing databases.
+- Check public API/RPC changes for compatibility with client repositories such as `sonarlint-intellij`, `sonarlint-eclipse`, and `sonarlint-language-server`, when accessible. Identify required consumer updates and missing coordination for intentional breaking changes.
+- Check that significant API/RPC additions, deprecations, breaking changes, and API integration requirements are documented in `API_CHANGES.md`, following existing entries; omit changes with no public API impact.
