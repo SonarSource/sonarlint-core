@@ -20,10 +20,12 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,6 +41,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -149,5 +152,33 @@ class HttpClientProviderTests {
 
     sonarqubeMock.verify(1, postRequestedFor(urlEqualTo("/error"))
       .withHeader("User-Agent", equalTo("SonarLint tests")));
+  }
+
+  @Test
+  void it_should_stop_repeated_matching_requests_before_they_reach_the_server() {
+    sonarqubeMock.stubFor(post("/limited").willReturn(aResponse()));
+    var underTest = HttpClientProvider.forTesting();
+    var client = underTest.getHttpClientWithoutAuth();
+    var url = sonarqubeMock.url("/limited");
+    try {
+      for (var i = 0; i < 10; i++) {
+        try (var response = client.post(url, "text/plain", "payload")) {
+          assertThat(response.isSuccessful()).isTrue();
+        }
+      }
+      var anotherClient = underTest.getHttpClientWithoutAuth();
+      assertThatThrownBy(() -> anotherClient.post(url, "text/plain", "payload"))
+        .isInstanceOf(CompletionException.class)
+        .hasCauseInstanceOf(HttpException.class)
+        .hasRootCauseMessage("Too many matching HTTP requests in a short period");
+      try (var response = client.post(url, "text/plain", "different payload")) {
+        assertThat(response.isSuccessful()).isTrue();
+      }
+
+      sonarqubeMock.verify(10, postRequestedFor(urlEqualTo("/limited")).withRequestBody(equalTo("payload")));
+      sonarqubeMock.verify(1, postRequestedFor(urlEqualTo("/limited")).withRequestBody(equalTo("different payload")));
+    } finally {
+      underTest.close();
+    }
   }
 }

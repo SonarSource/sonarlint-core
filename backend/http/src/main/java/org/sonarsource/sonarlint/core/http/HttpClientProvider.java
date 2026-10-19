@@ -91,6 +91,7 @@ public class HttpClientProvider {
     var routePlanner = new SystemDefaultRoutePlanner(proxySelector);
     return HttpAsyncClients.custom()
       .setConnectionManager(asyncConnectionManager)
+      .addExecInterceptorFirst("circuit-breaking", new CircuitBreakingInterceptor())
       .addResponseInterceptorFirst(new RedirectInterceptor())
       .setUserAgent(userAgent)
       // proxy settings
