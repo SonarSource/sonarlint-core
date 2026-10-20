@@ -19,27 +19,50 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import io.sentry.IScope;
 import io.sentry.Sentry;
 import io.sentry.ScopeCallback;
 import io.sentry.logger.ILoggerApi;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.h2.api.ErrorCode;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.jooq.Configuration;
 import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_SELF;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SonarLintDatabaseExceptionTests {
 
@@ -59,6 +82,7 @@ class SonarLintDatabaseExceptionTests {
 
   @AfterEach
   void tearDown() {
+    Thread.interrupted();
     if (db != null) {
       db.shutdown();
     }
@@ -129,6 +153,194 @@ class SonarLintDatabaseExceptionTests {
 
     assertThat(db.dsl()).isNotNull();
     sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+  }
+
+  @Test
+  void should_retry_transient_connection_contention_before_migrating(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    var contention = new SQLException("Database is already in use", "90020", 90020);
+    doThrow(contention).doThrow(contention).doCallRealMethod().when(pool).getConnection();
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      var database = new SonarLintDatabase(storageRoot);
+
+      assertThat(database.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).isEmpty();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+    } finally {
+      pool.dispose();
+    }
+  }
+
+  @Test
+  void should_report_persistent_connection_contention_after_exhausting_retries(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    var contention = new SQLException("Database is already in use", "90020", 90020);
+    doThrow(contention).when(pool).getConnection();
+    var scope = mock(IScope.class);
+    sentryMock.when(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class))).thenAnswer(invocation -> {
+      invocation.getArgument(1, ScopeCallback.class).run(scope);
+      return null;
+    });
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(contention);
+
+      verify(pool, times(4)).getConnection();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
+      verify(scope).setTag("db.phase", "startup");
+      verify(scope).setTag("db.operation", "h2.initialize");
+      verify(pool).dispose();
+    } finally {
+      pool.dispose();
+    }
+  }
+
+  @Test
+  void should_fail_non_contention_without_retrying_and_suppress_cleanup_failure(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var failure = new SQLException("Authentication failed", "28000", 28000);
+    var cleanup = new IllegalStateException("Disposal failed");
+    when(pool.getConnection()).thenThrow(failure);
+    doThrow(cleanup).when(pool).dispose();
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(failure);
+
+      assertThat(failure.getSuppressed()).containsExactly(cleanup);
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    }
+  }
+
+  @Test
+  void should_abort_acquisition_with_an_interrupted_cause_and_restore_interrupt(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var failure = new SQLException("Interrupted database opening", "HY000", ErrorCode.ERROR_OPENING_DATABASE_1, new InterruptedException());
+    when(pool.getConnection()).thenThrow(failure);
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      assertThat(Thread.currentThread().isInterrupted()).isFalse();
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(failure);
+
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      flyway.verifyNoInteractions();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    }
+  }
+
+  @Test
+  void should_abort_interrupted_backoff_and_restore_interrupt_after_disposal(@TempDir Path storageRoot) throws Exception {
+    var pool = mock(JdbcConnectionPool.class);
+    var acquired = new CountDownLatch(1);
+    when(pool.getConnection()).thenAnswer(invocation -> {
+      acquired.countDown();
+      throw new SQLException("Database is already in use", "90020", 90020);
+    });
+    var cleanup = new IllegalStateException("Disposal failed");
+    doAnswer(invocation -> {
+      Thread.interrupted();
+      throw cleanup;
+    }).when(pool).dispose();
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      var startupThread = Thread.currentThread();
+      var interrupter = CompletableFuture.runAsync(() -> {
+        await().atMost(5, TimeUnit.SECONDS).until(() -> acquired.getCount() == 0 && startupThread.getState() == Thread.State.TIMED_WAITING);
+        startupThread.interrupt();
+      });
+      try {
+        assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).cause().isInstanceOf(InterruptedException.class).hasSuppressedException(cleanup);
+        assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      } finally {
+        Thread.interrupted();
+        interrupter.get(5, TimeUnit.SECONDS);
+      }
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      flyway.verifyNoInteractions();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    }
+  }
+
+  @Test
+  void should_return_connection_before_aborting_interruption_after_acquisition(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var connection = mock(Connection.class);
+    when(pool.getConnection()).thenAnswer(invocation -> {
+      Thread.currentThread().interrupt();
+      return connection;
+    });
+    doAnswer(invocation -> Thread.interrupted()).when(pool).dispose();
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCauseInstanceOf(InterruptedException.class);
+
+      verify(connection).close();
+      verify(pool).dispose();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      flyway.verifyNoInteractions();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+      assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
+    }
+  }
+
+  @Test
+  void should_not_retry_connection_return_failure(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var connection = mock(Connection.class);
+    var failure = new SQLException("Connection return failed", "90020", 90020);
+    when(pool.getConnection()).thenReturn(connection);
+    doThrow(failure).when(connection).close();
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(failure);
+
+      verify(pool).getConnection();
+      verify(connection).close();
+      verify(pool).dispose();
+      flyway.verifyNoInteractions();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"configure", "load", "migrate", "jooq"})
+  void should_dispose_pool_after_initialization_failure(String stage, @TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var connection = mock(Connection.class);
+    var config = mock(FluentConfiguration.class, RETURNS_SELF);
+    var flyway = mock(Flyway.class);
+    var failure = new IllegalStateException("Initialization failed at " + stage);
+    when(pool.getConnection()).thenReturn(connection);
+    when(config.load()).thenReturn(flyway);
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyways = mockStatic(Flyway.class); var dsls = mockStatic(DSL.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      flyways.when(Flyway::configure).thenReturn(config);
+      switch (stage) {
+        case "configure" -> flyways.when(Flyway::configure).thenThrow(failure);
+        case "load" -> when(config.load()).thenThrow(failure);
+        case "migrate" -> when(flyway.migrate()).thenThrow(failure);
+        case "jooq" -> dsls.when(() -> DSL.using(any(Configuration.class))).thenThrow(failure);
+        default -> throw new IllegalArgumentException(stage);
+      }
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).isSameAs(failure);
+
+      verify(connection).close();
+      verify(pool).dispose();
+      verify(flyway, times(stage.equals("migrate") || stage.equals("jooq") ? 1 : 0)).migrate();
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), times(1));
+    }
   }
 
   @Test
