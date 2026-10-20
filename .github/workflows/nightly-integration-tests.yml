@@ -74,13 +74,13 @@ jobs:
       - name: Run SonarCloud integration tests
         if: ${{ matrix.sc == true }}
         env:
-          SONARCLOUD_IT_TOKEN: ${{ fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN }}
+          SONARCLOUD_IT_TOKEN: ${{ fromJSON(steps.secrets-sc.outputs.vault || '{}').SONARCLOUD_IT_TOKEN }}
           SONARCLOUD_REGION: ${{ matrix.region }}
         run: mvn -B -f its/pom.xml -Dgroups=SonarCloud verify
       - name: Run SonarQube Server integration tests
         if: ${{ matrix.sc == false }}
         env:
-          GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault || '{}').GITHUB_TOKEN }}
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
