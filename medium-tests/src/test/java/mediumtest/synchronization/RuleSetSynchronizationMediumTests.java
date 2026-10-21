@@ -20,6 +20,7 @@
 package mediumtest.synchronization;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -66,6 +67,37 @@ class RuleSetSynchronizationMediumTests {
       .extractingByKey("java")
       .extracting(Sonarlint.RuleSet::getRuleList, as(LIST))
       .containsExactly(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("ruleKey").setSeverity("MAJOR").build()));
+  }
+
+  @SonarLintTest
+  void it_should_sync_all_projects_sharing_a_quality_profile(SonarLintTestHarness harness) {
+    var serverBuilder = harness.newFakeSonarQubeServer("2025.1")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("ruleKey", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)));
+    var scopes = new ArrayList<ConfigurationScopeDto>();
+    for (var i = 0; i < 11; i++) {
+      var projectKey = "project" + i;
+      serverBuilder.withProject(projectKey, project -> project.withQualityProfile("qpKey").withBranch("main"));
+      scopes.add(new ConfigurationScopeDto("scope" + i, null, true, projectKey, new BindingConfigurationDto("connectionId", projectKey, true)));
+    }
+    var server = serverBuilder.start();
+    var backend = harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withSonarQubeConnection("connectionId", server)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .start();
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(scopes));
+
+    waitAtMost(5, SECONDS).untilAsserted(() -> {
+      for (var i = 0; i < 11; i++) {
+        assertThat(getAnalyzerConfigFile(backend, "connectionId", "project" + i))
+          .exists()
+          .extracting(this::readRuleSets, as(InstanceOfAssertFactories.map(String.class, Sonarlint.RuleSet.class)))
+          .extractingByKey("java")
+          .extracting(Sonarlint.RuleSet::getRuleList, as(LIST))
+          .containsExactly(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("ruleKey").setSeverity("MAJOR").build());
+      }
+    });
   }
 
   @SonarLintTest
