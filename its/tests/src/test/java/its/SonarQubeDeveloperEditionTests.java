@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
@@ -742,29 +743,28 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @Nested
   class TaintVulnerabilities {
 
-    private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
-    private static final String CONFIG_SCOPE_ID = "sample-java-taint-in-ide";
-    // SONARSEC-8714 reworked taint messages from generic templated text to a dynamic "vulnerability name via vector in sink" sentence;
-    // both the legacy and reworked wording can be observed in CI depending on which SonarSecurity build the target server ships, e.g. SQDogfood vs a released version
-    private static final String TAINT_MESSAGE_LEGACY = "Change this code to not construct SQL queries directly from user-controlled data.";
-    private static final String TAINT_MESSAGE_REWORKED = "SQL Injection via unsanitized user input in DbHelper.executeQuery()";
+    private String projectKey;
+    private String configScopeId;
 
     @BeforeEach
     void prepare() {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+      var testId = UUID.randomUUID();
+      projectKey = "sample-java-taint-" + testId;
+      configScopeId = "sample-java-taint-in-ide-" + testId;
+      provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint Taint Java");
     }
 
     @AfterEach
     void stop() {
-      backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
+      backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScopeId));
       var request = new PostRequest("api/projects/bulk_delete");
-      request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
+      request.setParam("projects", projectKey);
       try (var response = adminWsClient.wsConnector().call(request)) {
         var code = response.code();
         assertThat(code)
-          .withFailMessage(() -> "Failed to delete project '" + PROJECT_KEY_JAVA_TAINT + "', got HTTP " + code
+          .withFailMessage(() -> "Failed to delete project '" + projectKey + "', got HTTP " + code
             + ". Leftover taint issues on the server can cause the next run of this test to see duplicated/stale vulnerabilities.")
           .isBetween(200, 399);
       }
@@ -772,18 +772,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     void shouldSyncTaintVulnerabilities() throws ExecutionException, InterruptedException {
-      openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
-      waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForAnalysisToBeReady(configScopeId);
 
-      analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
+      analyzeMavenProject("sample-java-taint", projectKey);
 
-      // Ensure a vulnerability has been reported on server side
-      var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(PROJECT_KEY_JAVA_TAINT))).getIssuesList();
-      assertThat(issuesList).hasSize(1);
+      var serverIssue = getServerTaintVulnerability();
 
-      var taintVulnerabilities = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID, true)).get().getTaintVulnerabilities();
+      var taintVulnerabilities = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId, true)).get().getTaintVulnerabilities();
 
-      assertThat(taintVulnerabilities).hasSize(1);
+      assertThat(taintVulnerabilities)
+        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::getMessage)
+        .containsExactly(tuple(serverIssue.getKey(), serverIssue.getMessage()));
 
       var taintVulnerability = taintVulnerabilities.get(0);
       assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
@@ -806,31 +806,24 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "2025.1")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() throws ExecutionException, InterruptedException {
-      openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
-      waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForAnalysisToBeReady(configScopeId);
 
-      assertThat(backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities()).isEmpty();
+      assertThat(backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId)).get().getTaintVulnerabilities()).isEmpty();
 
       // check TaintVulnerabilityRaised is received
-      analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
+      analyzeMavenProject("sample-java-taint", projectKey);
 
-      waitAtMost(1, TimeUnit.MINUTES).until(() -> !didChangeTaintVulnerabilitiesEvents.isEmpty());
-      var issues = getIssueKeys(adminWsClient, "javasecurity:S3649");
-      assertThat(issues).isNotEmpty();
-      var issueKey = issues.get(0);
-      var firstTaintChangedEvent = didChangeTaintVulnerabilitiesEvents.remove(0);
+      var serverIssue = getServerTaintVulnerability();
+      var firstTaintChangedEvent = nextTaintChangedEvent();
       assertThat(firstTaintChangedEvent)
         .extracting(DidChangeTaintVulnerabilitiesParams::getConfigurationScopeId, DidChangeTaintVulnerabilitiesParams::getClosedTaintVulnerabilityIds,
           DidChangeTaintVulnerabilitiesParams::getUpdatedTaintVulnerabilities)
-        .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
+        .containsExactly(configScopeId, emptySet(), emptyList());
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
-        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
+        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::getMessage, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
-      assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
-        .extracting(TaintVulnerabilityDto::getMessage)
-        .singleElement()
-        .isIn(TAINT_MESSAGE_LEGACY, TAINT_MESSAGE_REWORKED);
+        .containsExactly(tuple(serverIssue.getKey(), serverIssue.getMessage(), false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .flatExtracting("flows")
         .flatExtracting("locations")
@@ -846,15 +839,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           tuple("Source: a user can craft an HTTP request with malicious content", Paths.get("src/main/java/foo/Endpoint.java"), 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
       var raisedIssueId = firstTaintChangedEvent.getAddedTaintVulnerabilities().get(0).getId();
 
-      var taintIssues = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities();
+      var taintIssues = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId)).get().getTaintVulnerabilities();
       assertThat(taintIssues)
-        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
+        .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::getMessage, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey,
           TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::isOnNewCode)
-        .containsExactly(tuple(issueKey, false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
-      assertThat(taintIssues)
-        .extracting(TaintVulnerabilityDto::getMessage)
-        .singleElement()
-        .isIn(TAINT_MESSAGE_LEGACY, TAINT_MESSAGE_REWORKED);
+        .containsExactly(tuple(serverIssue.getKey(), serverIssue.getMessage(), false, "javasecurity:S3649", Paths.get("src/main/java/foo/DbHelper.java"), true));
       assertThat(taintIssues)
         .flatExtracting("flows")
         .flatExtracting("locations")
@@ -869,44 +858,63 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "d123d615e9ea7cc7e78c784c768f2941"),
           tuple("Source: a user can craft an HTTP request with malicious content", Paths.get("src/main/java/foo/Endpoint.java"), 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
 
-      resolveIssueAsWontFix(adminWsClient, issueKey);
+      resolveIssueAsWontFix(adminWsClient, serverIssue.getKey());
 
       // check IssueChangedEvent is received
-      waitAtMost(1, TimeUnit.MINUTES).until(() -> !didChangeTaintVulnerabilitiesEvents.isEmpty());
-      var secondTaintEvent = didChangeTaintVulnerabilitiesEvents.remove(0);
+      var secondTaintEvent = nextTaintChangedEvent();
       assertThat(secondTaintEvent)
         .extracting(DidChangeTaintVulnerabilitiesParams::getConfigurationScopeId, DidChangeTaintVulnerabilitiesParams::getClosedTaintVulnerabilityIds,
           DidChangeTaintVulnerabilitiesParams::getAddedTaintVulnerabilities)
-        .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
+        .containsExactly(configScopeId, emptySet(), emptyList());
       assertThat(secondTaintEvent.getUpdatedTaintVulnerabilities())
-        .extracting(TaintVulnerabilityDto::isResolved)
-        .containsExactly(true);
+        .extracting(TaintVulnerabilityDto::getId, TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::getMessage, TaintVulnerabilityDto::isResolved)
+        .containsExactly(tuple(raisedIssueId, serverIssue.getKey(), serverIssue.getMessage(), true));
 
-      reopenIssue(adminWsClient, issueKey);
+      reopenIssue(adminWsClient, serverIssue.getKey());
 
       // check IssueChangedEvent is received
-      waitAtMost(1, TimeUnit.MINUTES).until(() -> !didChangeTaintVulnerabilitiesEvents.isEmpty());
-      var thirdTaintEvent = didChangeTaintVulnerabilitiesEvents.remove(0);
+      var thirdTaintEvent = nextTaintChangedEvent();
       assertThat(thirdTaintEvent)
         .extracting(DidChangeTaintVulnerabilitiesParams::getConfigurationScopeId, DidChangeTaintVulnerabilitiesParams::getClosedTaintVulnerabilityIds,
           DidChangeTaintVulnerabilitiesParams::getAddedTaintVulnerabilities)
-        .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
+        .containsExactly(configScopeId, emptySet(), emptyList());
       assertThat(thirdTaintEvent.getUpdatedTaintVulnerabilities())
-        .extracting(TaintVulnerabilityDto::isResolved)
-        .containsExactly(false);
+        .extracting(TaintVulnerabilityDto::getId, TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::getMessage, TaintVulnerabilityDto::isResolved)
+        .containsExactly(tuple(raisedIssueId, serverIssue.getKey(), serverIssue.getMessage(), false));
 
       // analyze another project under the same project key to close the taint issue
-      analyzeMavenProject("sample-java", PROJECT_KEY_JAVA_TAINT);
+      analyzeMavenProject("sample-java", projectKey);
 
       // check TaintVulnerabilityClosed is received
-      waitAtMost(1, TimeUnit.MINUTES).until(() -> !didChangeTaintVulnerabilitiesEvents.isEmpty());
-      var fourthTaintEvent = didChangeTaintVulnerabilitiesEvents.remove(0);
+      var fourthTaintEvent = nextTaintChangedEvent();
       assertThat(fourthTaintEvent)
         .extracting(DidChangeTaintVulnerabilitiesParams::getConfigurationScopeId, DidChangeTaintVulnerabilitiesParams::getUpdatedTaintVulnerabilities,
           DidChangeTaintVulnerabilitiesParams::getAddedTaintVulnerabilities)
-        .containsExactly(CONFIG_SCOPE_ID, emptyList(), emptyList());
+        .containsExactly(configScopeId, emptyList(), emptyList());
       assertThat(fourthTaintEvent.getClosedTaintVulnerabilityIds())
         .containsExactly(raisedIssueId);
+      assertThat(taintEventsForCurrentScope()).isEmpty();
+    }
+
+    private Issues.Issue getServerTaintVulnerability() {
+      var issues = adminWsClient.issues().search(new SearchRequest()
+        .setComponentKeys(List.of(projectKey))
+        .setRules(List.of("javasecurity:S3649"))).getIssuesList();
+      assertThat(issues).hasSize(1);
+      return issues.get(0);
+    }
+
+    private DidChangeTaintVulnerabilitiesParams nextTaintChangedEvent() {
+      waitAtMost(1, TimeUnit.MINUTES).until(() -> !taintEventsForCurrentScope().isEmpty());
+      var event = taintEventsForCurrentScope().get(0);
+      didChangeTaintVulnerabilitiesEvents.remove(event);
+      return event;
+    }
+
+    private List<DidChangeTaintVulnerabilitiesParams> taintEventsForCurrentScope() {
+      return didChangeTaintVulnerabilitiesEvents.stream()
+        .filter(event -> configScopeId.equals(event.getConfigurationScopeId()))
+        .toList();
     }
   }
 
