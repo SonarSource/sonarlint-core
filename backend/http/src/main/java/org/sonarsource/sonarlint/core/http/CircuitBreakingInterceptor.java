@@ -49,7 +49,9 @@ class CircuitBreakingInterceptor implements AsyncExecChainHandler {
   private static final int MAX_SIGNATURES = 10_000;
   private static final long WINDOW_NANOS = TimeUnit.SECONDS.toNanos(10);
 
+  // Monotonic time source for the rolling window and cache expiry; replaceable in tests.
   private final Ticker ticker;
+  // Bounded cache of admitted timestamps per request fingerprint, oldest first.
   private final Cache<String, ArrayDeque<Long>> admissions;
 
   CircuitBreakingInterceptor() {
@@ -88,6 +90,7 @@ class CircuitBreakingInterceptor implements AsyncExecChainHandler {
     }
   }
 
+  // Checks and records admission atomically; rejected requests do not extend the window.
   private synchronized boolean admit(String signature) {
     var now = ticker.read();
     var history = admissions.getIfPresent(signature);
@@ -105,6 +108,7 @@ class CircuitBreakingInterceptor implements AsyncExecChainHandler {
     return true;
   }
 
+  // Identifies matching requests without retaining their URLs, credentials, or bodies.
   private static String fingerprint(HttpRequest request, @Nullable AsyncEntityProducer producer, HttpRequest originalRequest) throws HttpException {
     var body = originalRequest instanceof SimpleHttpRequest simpleRequest ? simpleRequest.getBody() : null;
     if (body == null && producer != null) {
@@ -163,6 +167,7 @@ class CircuitBreakingInterceptor implements AsyncExecChainHandler {
     }
   }
 
+  // Prefixes each value with its byte length to keep request components unambiguous.
   private static void frame(MessageDigest hash, @Nullable String value) {
     if (value == null) {
       frame(hash, -1);
