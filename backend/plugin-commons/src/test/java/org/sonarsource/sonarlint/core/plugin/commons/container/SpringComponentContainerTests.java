@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.Property;
@@ -30,6 +32,9 @@ import org.sonar.api.Startable;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -89,6 +94,137 @@ class SpringComponentContainerTests {
     container.startComponents();
     assertThat(container.getOptionalComponentByType(A.class)).containsInstanceOf(A.class);
     assertThat(container.getOptionalComponentByType(B.class)).isEmpty();
+  }
+
+  @Test
+  void safe_lookup_should_skip_creation_failures_without_eagerly_creating_later_components() {
+    var container = new SimpleContainer(A.class, ConstructorFailure.class, ConstructorError.class, DependencyFailure.class, B.class);
+    container.add(FailingDependency.class);
+    container.startComponents();
+    var failures = new LinkedHashMap<String, Throwable>();
+
+    var components = container.getComponentsByTypeSafely(ObjectComponent.class, (name, failure) -> {
+      assertThat(container.context.getBeanFactory().containsSingleton(componentName(B.class))).isFalse();
+      failures.put(name, failure);
+    });
+
+    assertThat(components).extracting(Object::getClass).containsExactly(A.class, B.class);
+    assertThat(failures).containsOnlyKeys(componentName(ConstructorFailure.class), componentName(ConstructorError.class), componentName(DependencyFailure.class));
+    assertThat(failures.values()).allMatch(BeanCreationException.class::isInstance);
+    assertThat(failures.get(componentName(ConstructorFailure.class))).hasRootCauseMessage("constructor failure");
+    assertThat(failures.get(componentName(ConstructorError.class))).hasRootCauseInstanceOf(LinkageError.class).hasRootCauseMessage("constructor error");
+    assertThat(failures.get(componentName(DependencyFailure.class))).hasRootCauseMessage("dependency failure");
+    container.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_return_empty_when_no_components_succeed() {
+    var container = new SpringComponentContainer();
+    container.startComponents();
+    var failures = new LinkedHashMap<String, Throwable>();
+    assertThat(container.getComponentsByTypeSafely(ObjectComponent.class, failures::put)).isEmpty();
+    assertThat(failures).isEmpty();
+    container.stopComponents();
+
+    var failingContainer = new SimpleContainer(ConstructorFailure.class);
+    failingContainer.startComponents();
+    assertThat(failingContainer.getComponentsByTypeSafely(ObjectComponent.class, failures::put)).isEmpty();
+    assertThat(failures).containsOnlyKeys(componentName(ConstructorFailure.class));
+    failingContainer.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_include_ancestors_and_preserve_child_shadowing() {
+    var grandparent = new SimpleContainer(A.class);
+    grandparent.context.registerBean("grandparent", ObjectComponent.class, B::new);
+    var parent = grandparent.createChild();
+    parent.add(B.class);
+    var child = parent.createChild();
+    child.add(A.class);
+    grandparent.startComponents();
+    parent.startComponents();
+    child.startComponents();
+
+    var components = child.getComponentsByTypeSafely(ObjectComponent.class, (name, failure) -> {
+      throw new AssertionError(failure);
+    });
+
+    assertThat(components).containsExactly(child.getComponentByType(A.class), parent.getComponentByType(B.class), grandparent.context.getBean("grandparent", ObjectComponent.class));
+    assertThat(components.getFirst()).isNotSameAs(grandparent.getComponentByType(A.class));
+    grandparent.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_not_fall_back_to_an_ancestor_when_a_shadowing_child_fails() {
+    var parent = new SpringComponentContainer();
+    parent.context.registerBean("shared", ObjectComponent.class, A::new);
+    var child = parent.createChild();
+    child.context.registerBean("shared", ConstructorFailure.class);
+    parent.startComponents();
+    child.startComponents();
+    var failures = new LinkedHashMap<String, Throwable>();
+
+    assertThat(child.getComponentsByTypeSafely(ObjectComponent.class, failures::put)).isEmpty();
+    assertThat(failures).containsOnlyKeys("shared");
+    assertThat(parent.context.getBeanFactory().containsSingleton("shared")).isFalse();
+    parent.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_use_the_dependency_comparator_with_stable_ties() {
+    var tie1 = new OrderedComponent(3);
+    var tie2 = new OrderedComponent(3);
+    var first = new OrderedComponent(0);
+    var annotated = new AnnotatedComponent();
+    var priority = new PriorityComponent();
+    var container = new SimpleContainer(tie1, annotated, priority, tie2, first, ConstructorFailure.class);
+    container.startComponents();
+
+    assertThat(container.getComponentsByTypeSafely(ObjectComponent.class, (name, failure) -> {}))
+      .containsExactly(first, priority, annotated, tie1, tie2);
+    container.context.getDefaultListableBeanFactory().setDependencyComparator(null);
+    assertThat(container.getComponentsByTypeSafely(ObjectComponent.class, (name, failure) -> {}))
+      .containsExactly(tie1, annotated, priority, tie2, first);
+    container.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_propagate_callback_and_sorting_failures() {
+    var container = new SimpleContainer(ConstructorFailure.class, A.class, B.class);
+    container.startComponents();
+    var failure = new IllegalStateException("callback failure");
+    assertThatThrownBy(() -> container.getComponentsByTypeSafely(ObjectComponent.class, (name, throwable) -> {
+      throw failure;
+    })).isSameAs(failure);
+
+    container.context.getDefaultListableBeanFactory().setDependencyComparator((first, second) -> {
+      throw failure;
+    });
+    assertThatThrownBy(() -> container.getComponentsByTypeSafely(ObjectComponent.class, (name, throwable) -> {})).isSameAs(failure);
+    container.stopComponents();
+  }
+
+  @Test
+  void safe_lookup_should_propagate_discovery_failures() {
+    var container = new SimpleContainer(A.class);
+
+    assertThatThrownBy(() -> container.getComponentsByTypeSafely(ObjectComponent.class, (name, failure) -> {
+      throw new AssertionError("Discovery failure should propagate", failure);
+    })).isInstanceOf(IllegalStateException.class).hasMessageContaining("has not been refreshed yet");
+  }
+
+  @Test
+  void existing_getters_should_still_fail_on_creation_errors() {
+    var container = new SimpleContainer(ConstructorFailure.class);
+    container.startComponents();
+    assertThatThrownBy(() -> container.getComponentByType(ConstructorFailure.class)).isInstanceOf(IllegalStateException.class).hasRootCauseMessage("constructor failure");
+    assertThatThrownBy(() -> container.getComponentsByType(ObjectComponent.class)).isInstanceOf(IllegalStateException.class).hasRootCauseMessage("constructor failure");
+    assertThatThrownBy(() -> container.getOptionalComponentByType(ConstructorFailure.class)).isInstanceOf(BeanCreationException.class).hasRootCauseMessage("constructor failure");
+    container.stopComponents();
+  }
+
+  private static String componentName(Class<?> type) {
+    return new ComponentKeys().ofClass(type);
   }
 
   @Test
@@ -281,10 +417,58 @@ class SpringComponentContainerTests {
   }
 
   @Property(key = "k", name = "name")
-  private static class A {
+  private static class A implements ObjectComponent {
   }
 
-  private static class B {
+  private static class B implements ObjectComponent {
+  }
+
+  private interface ObjectComponent {
+  }
+
+  private static class ConstructorFailure implements ObjectComponent {
+    public ConstructorFailure() {
+      throw new IllegalStateException("constructor failure");
+    }
+  }
+
+  private static class ConstructorError implements ObjectComponent {
+    public ConstructorError() {
+      throw new LinkageError("constructor error");
+    }
+  }
+
+  private static class FailingDependency {
+    public FailingDependency() {
+      throw new IllegalStateException("dependency failure");
+    }
+  }
+
+  private static class DependencyFailure implements ObjectComponent {
+    public DependencyFailure(FailingDependency dependency) {
+      // The dependency fails before this constructor is invoked.
+    }
+  }
+
+  private static class OrderedComponent implements ObjectComponent, Ordered {
+    private final int order;
+
+    public OrderedComponent(int order) {
+      this.order = order;
+    }
+
+    @Override
+    public int getOrder() {
+      return order;
+    }
+  }
+
+  @Order(2)
+  private static class AnnotatedComponent implements ObjectComponent {
+  }
+
+  @Priority(1)
+  private static class PriorityComponent implements ObjectComponent {
   }
 
   private static class ClassWithMultipleConstructorsIncNoArg {

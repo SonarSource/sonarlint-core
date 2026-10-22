@@ -21,11 +21,12 @@ package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import javax.annotation.Nullable;
 import org.sonar.api.Startable;
+import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.springframework.beans.factory.config.BeanDefinition;
 
 public class LazyUnlessStartableStrategy extends SpringInitStrategy {
   @Override
   protected boolean isLazyInit(BeanDefinition beanDefinition, @Nullable Class<?> clazz) {
-    return clazz == null || !Startable.class.isAssignableFrom(clazz);
+    return clazz == null || ProjectSensor.class.isAssignableFrom(clazz) || !Startable.class.isAssignableFrom(clazz);
   }
 }
