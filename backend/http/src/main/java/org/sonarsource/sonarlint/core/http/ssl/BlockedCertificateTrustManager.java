@@ -24,7 +24,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathBuilderException;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
@@ -37,10 +36,10 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
@@ -119,33 +118,57 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
 
   private void checkCertificatePath(X509Certificate[] chain) throws CertificateException {
     var checker = new BlockedPublicKeyChecker();
+    var anchors = new HashSet<TrustAnchor>();
+    var blockedAnchors = new HashSet<TrustAnchor>();
+    // Read the current issuers after delegation: custom trust can grow when a user approves a certificate.
+    for (var issuer : delegate.getAcceptedIssuers()) {
+      (isBlocked(issuer) ? blockedAnchors : anchors).add(new TrustAnchor(issuer, null));
+    }
     try {
-      // Read the current issuers after delegation: custom trust can grow when a user approves a certificate.
-      var anchors = Arrays.stream(delegate.getAcceptedIssuers())
-        .filter(issuer -> !isBlocked(issuer))
-        .map(issuer -> new TrustAnchor(issuer, null))
-        .collect(Collectors.toSet());
-      var target = new X509CertSelector();
-      target.setCertificate(chain[0]);
-      var parameters = new PKIXBuilderParameters(anchors, target);
-      // The delegate already applied its revocation and TLS-specific validation policies.
-      parameters.setRevocationEnabled(false);
-      parameters.setMaxPathLength(-1);
-      parameters.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(Arrays.asList(chain))));
-      parameters.addCertPathChecker(checker);
-      // AIA can supply intermediates that were absent from both the peer chain and the trust store.
-      CertPathBuilder.getInstance("PKIX").build(parameters);
-    } catch (CertPathBuilderException e) {
+      buildCertificatePath(chain, anchors, checker);
+    } catch (GeneralSecurityException e) {
       var rejection = checker.rejection.get();
+      if (rejection == null && !blockedAnchors.isEmpty()) {
+        rejection = findBlockedAnchorRejection(chain, blockedAnchors);
+      }
       if (rejection != null) {
         var failure = new CertificateException(rejection.getMessage(), rejection);
         failure.addSuppressed(e);
         throw failure;
       }
       throw new CertificateException("Certificate path could not be validated", e);
-    } catch (GeneralSecurityException e) {
-      throw new CertificateException("Certificate path could not be validated", e);
     }
+  }
+
+  private static void buildCertificatePath(X509Certificate[] chain, Set<TrustAnchor> anchors, BlockedPublicKeyChecker checker)
+    throws GeneralSecurityException {
+    var target = new X509CertSelector();
+    target.setCertificate(chain[0]);
+    var parameters = new PKIXBuilderParameters(anchors, target);
+    // The delegate already applied its revocation and TLS-specific validation policies.
+    parameters.setRevocationEnabled(false);
+    parameters.setMaxPathLength(-1);
+    parameters.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(Arrays.asList(chain))));
+    parameters.addCertPathChecker(checker);
+    // AIA can supply intermediates that were absent from both the peer chain and the trust store.
+    CertPathBuilder.getInstance("PKIX").build(parameters);
+  }
+
+  @Nullable
+  private CertPathValidatorException findBlockedAnchorRejection(X509Certificate[] chain, Set<TrustAnchor> blockedAnchors) {
+    var checker = new BlockedPublicKeyChecker();
+    try {
+      // Diagnostic only: a path to a filtered anchor is always rejected, never accepted as a fallback.
+      buildCertificatePath(chain, blockedAnchors, checker);
+      return blockedPublicKeyRejection();
+    } catch (GeneralSecurityException e) {
+      // An unrelated blocked anchor must not turn a missing issuer into a policy rejection.
+      return checker.rejection.get();
+    }
+  }
+
+  private static CertPathValidatorException blockedPublicKeyRejection() {
+    return new CertPathValidatorException("Certificate path contains a blocked public key", null, null, -1, RejectionReason.BLOCKED_PUBLIC_KEY);
   }
 
   private boolean isBlocked(X509Certificate certificate) {
@@ -183,7 +206,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     @Override
     public void check(Certificate certificate, Collection<String> unresolvedCritExts) throws CertPathValidatorException {
       if (isBlocked((X509Certificate) certificate)) {
-        var failure = new CertPathValidatorException("Certificate path contains a blocked public key", null, null, -1, RejectionReason.BLOCKED_PUBLIC_KEY);
+        var failure = blockedPublicKeyRejection();
         rejection.compareAndSet(null, failure);
         throw failure;
       }

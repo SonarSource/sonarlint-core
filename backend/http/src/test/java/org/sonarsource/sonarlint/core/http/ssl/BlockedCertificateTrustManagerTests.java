@@ -195,6 +195,11 @@ class BlockedCertificateTrustManagerTests {
     runPathValidationProbe(tempDir, "unavailable-issuer");
   }
 
+  @Test
+  void it_should_report_blocked_trust_anchors_as_policy_rejections(@TempDir Path tempDir) throws Exception {
+    runPathValidationProbe(tempDir, "blocked-trust-anchors");
+  }
+
   private static void runPathValidationProbe(Path tempDir, String scenario) throws Exception {
     // AIA configuration is cached by the JDK, so enable it in a separate JVM.
     var output = tempDir.resolve("certificate-path-validation.log");

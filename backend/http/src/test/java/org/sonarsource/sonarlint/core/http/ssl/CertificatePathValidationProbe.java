@@ -27,7 +27,6 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.MessageDigest;
 import java.security.cert.CertPathBuilderException;
 import java.security.cert.CertPathValidatorException;
@@ -56,15 +55,19 @@ public class CertificatePathValidationProbe {
     // Fixture order: root, blocked CA, allowed CA, subordinate CA, and their three leaves.
     var root = certificates[0];
     var blocked = certificates[1];
+    var blockedKeys = Set.of(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(blocked.getPublicKey().getEncoded())));
     var downloaded = new HashSet<String>();
     if (args.length > 0 && "unavailable-issuer".equals(args[0])) {
-      assertUnavailableIssuer(root, certificates[5], downloaded);
+      assertUnavailableIssuer(root, blocked, certificates[5], blockedKeys, downloaded);
+      return;
+    }
+    if (args.length > 0 && "blocked-trust-anchors".equals(args[0])) {
+      assertBlockedTrustAnchors(blocked, certificates[2], certificates[3], certificates[5], certificates[6], blockedKeys, downloaded);
       return;
     }
     serveIssuers(Map.of("/blocked.der", blocked.getEncoded(), "/allowed.der", certificates[2].getEncoded(),
       "/subordinate.der", certificates[3].getEncoded()), downloaded);
     var delegate = SSLFactory.builder().withTrustMaterial(root).build().getTrustManager().orElseThrow();
-    var blockedKeys = Set.of(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(blocked.getPublicKey().getEncoded())));
     var protectedManager = new BlockedCertificateTrustManager(delegate, blockedKeys);
 
     // First demonstrate that the original delegate accepts a leaf after downloading its issuer.
@@ -79,10 +82,7 @@ public class CertificatePathValidationProbe {
     var customTrust = SSLFactory.builder().withTrustMaterial(blocked).build().getTrustManager().orElseThrow();
     customTrust.checkServerTrusted(new X509Certificate[] {certificates[6]}, "RSA");
     var protectedCustomTrust = new BlockedCertificateTrustManager(customTrust, blockedKeys);
-    assertThatThrownBy(() -> protectedCustomTrust.checkServerTrusted(new X509Certificate[] {certificates[6]}, "RSA"))
-      .isInstanceOf(CertificateException.class)
-      .hasMessage("Certificate path could not be validated")
-      .hasCauseInstanceOf(InvalidAlgorithmParameterException.class);
+    assertBlocked(protectedCustomTrust, certificates[6]);
 
     // Legitimate AIA retrieval must still work, including the client-validation overloads.
     var allowedChain = new X509Certificate[] {certificates[5]};
@@ -114,11 +114,28 @@ public class CertificatePathValidationProbe {
         .isEqualTo(BlockedCertificateTrustManager.RejectionReason.BLOCKED_PUBLIC_KEY));
   }
 
-  private static void assertUnavailableIssuer(X509Certificate root, X509Certificate leaf, Set<String> downloaded) throws Exception {
+  private static void assertBlockedTrustAnchors(X509Certificate blocked, X509Certificate allowed, X509Certificate subordinate,
+    X509Certificate allowedLeaf, X509Certificate blockedLeaf, Set<String> blockedKeys, Set<String> downloaded) throws Exception {
+    // Only the subordinate can be downloaded: the blocked CA is available exclusively as a trust anchor.
+    serveIssuers(Map.of("/subordinate.der", subordinate.getEncoded()), downloaded);
+    var customTrust = SSLFactory.builder().withTrustMaterial(blocked).build().getTrustManager().orElseThrow();
+    customTrust.checkServerTrusted(new X509Certificate[] {blockedLeaf}, "RSA");
+    assertBlocked(new BlockedCertificateTrustManager(customTrust, blockedKeys), blockedLeaf);
+
+    var mixedTrust = SSLFactory.builder().withTrustMaterial(blocked, allowed).build().getTrustManager().orElseThrow();
+    mixedTrust.checkServerTrusted(new X509Certificate[] {blockedLeaf}, "RSA");
+    var protectedMixedTrust = new BlockedCertificateTrustManager(mixedTrust, blockedKeys);
+    assertBlocked(protectedMixedTrust, blockedLeaf);
+    protectedMixedTrust.checkServerTrusted(new X509Certificate[] {allowedLeaf}, "RSA");
+    assertThat(downloaded).contains("/subordinate.der");
+  }
+
+  private static void assertUnavailableIssuer(X509Certificate root, X509Certificate blocked, X509Certificate leaf,
+    Set<String> blockedKeys, Set<String> downloaded) throws Exception {
     serveIssuers(Map.of(), downloaded);
     // Let the outer path check handle this failure independently of the delegate's trust decision.
-    var delegate = SSLFactory.builder().withTrustMaterial(root).withTrustEnhancer(parameters -> true).build().getTrustManager().orElseThrow();
-    var manager = new BlockedCertificateTrustManager(delegate);
+    var delegate = SSLFactory.builder().withTrustMaterial(root, blocked).withTrustEnhancer(parameters -> true).build().getTrustManager().orElseThrow();
+    var manager = new BlockedCertificateTrustManager(delegate, blockedKeys);
     assertThatThrownBy(() -> manager.checkServerTrusted(new X509Certificate[] {leaf}, "RSA"))
       .isInstanceOf(CertificateException.class)
       .hasMessage("Certificate path could not be validated")
