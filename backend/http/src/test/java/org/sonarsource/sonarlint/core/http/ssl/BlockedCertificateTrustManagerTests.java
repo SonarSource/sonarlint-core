@@ -20,15 +20,19 @@
 package org.sonarsource.sonarlint.core.http.ssl;
 
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import nl.altindag.ssl.SSLFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -74,6 +78,7 @@ class BlockedCertificateTrustManagerTests {
   @Test
   void it_should_preserve_every_delegate_validation_and_accepted_issuers() throws Exception {
     var chain = new X509Certificate[] {trustedCertificate()};
+    when(delegate.getAcceptedIssuers()).thenReturn(chain);
     var socket = mock(Socket.class);
     var engine = mock(SSLEngine.class);
     underTest.checkServerTrusted(chain, "RSA");
@@ -88,7 +93,6 @@ class BlockedCertificateTrustManagerTests {
     verify(delegate).checkClientTrusted(chain, "RSA");
     verify(delegate).checkClientTrusted(chain, "RSA", socket);
     verify(delegate).checkClientTrusted(chain, "RSA", engine);
-    when(delegate.getAcceptedIssuers()).thenReturn(chain);
     assertThat(underTest.getAcceptedIssuers()).isSameAs(chain);
   }
 
@@ -139,6 +143,61 @@ class BlockedCertificateTrustManagerTests {
     var original = SSLFactory.builder().withTrustMaterial(delegate).withIdentityMaterial(keyManager).build();
     var protectedFactory = BlockedCertificateTrustManager.protect(original);
     assertThat(protectedFactory.getKeyManager()).isEqualTo(original.getKeyManager());
+  }
+
+  @Test
+  void it_should_accept_a_valid_chain_to_a_custom_root() throws Exception {
+    try (var input = getClass().getResourceAsStream("/ssl/aia-chains.pem")) {
+      var certificates = CertificateFactory.getInstance("X.509").generateCertificates(input).toArray(X509Certificate[]::new);
+      var original = SSLFactory.builder().withTrustMaterial(certificates[0]).build();
+      var manager = BlockedCertificateTrustManager.protect(original).getTrustManager().orElseThrow();
+      manager.checkServerTrusted(new X509Certificate[] {certificates[5], certificates[2]}, "RSA");
+    }
+  }
+
+  @Test
+  void it_should_preserve_custom_certificate_approval(@TempDir Path tempDir) throws Exception {
+    var trustStore = tempDir.resolve("truststore.p12");
+    var original = SSLFactory.builder()
+      .withInflatableTrustMaterial(trustStore, "changeit".toCharArray(), "PKCS12", parameters -> true)
+      .build();
+    var manager = BlockedCertificateTrustManager.protect(original).getTrustManager().orElseThrow();
+    try (var input = getClass().getResourceAsStream("/ssl/aia-chains.pem")) {
+      var certificates = CertificateFactory.getInstance("X.509").generateCertificates(input).toArray(X509Certificate[]::new);
+      var chain = new X509Certificate[] {certificates[5]};
+      manager.checkServerTrusted(chain, "RSA");
+      assertThat(manager.getAcceptedIssuers()).containsExactly(chain);
+      assertThat(trustStore).exists();
+      manager.checkServerTrusted(chain, "RSA");
+    }
+  }
+
+  @Test
+  void it_should_reject_a_chain_without_a_trusted_path_even_if_the_delegate_accepts_it() {
+    var chain = new X509Certificate[] {trustedCertificate()};
+    assertThatThrownBy(() -> underTest.checkServerTrusted(chain, "RSA"))
+      .isInstanceOf(CertificateException.class).hasMessageContaining("Certificate path could not be validated");
+  }
+
+  @Test
+  void it_should_validate_downloaded_intermediates(@TempDir Path tempDir) throws Exception {
+    // AIA configuration is cached by the JDK, so enable it in a separate JVM.
+    var output = tempDir.resolve("certificate-path-validation.log");
+    var executable = Path.of(System.getProperty("java.home"), "bin", "java").toString();
+    var process = new ProcessBuilder(executable,
+      "-Dcom.sun.security.enableAIAcaIssuers=true",
+      "-Dcom.sun.security.allowedAIALocations=http://certificates.test/",
+      "-cp", System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")),
+      CertificatePathValidationProbe.class.getName())
+      .redirectErrorStream(true)
+      .redirectOutput(output.toFile())
+      .start();
+    try {
+      assertThat(process.waitFor(30, TimeUnit.SECONDS)).as("Certificate path validation probe completed").isTrue();
+      assertThat(process.exitValue()).withFailMessage("Certificate path validation probe failed:%n%s", Files.readString(output)).isZero();
+    } finally {
+      process.destroyForcibly();
+    }
   }
 
   private static X509Certificate trustedCertificate() {

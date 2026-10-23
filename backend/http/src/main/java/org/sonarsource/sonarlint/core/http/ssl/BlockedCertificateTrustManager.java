@@ -23,16 +23,28 @@ import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathValidatorException;
+import java.security.cert.CertStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXCertPathChecker;
+import java.security.cert.TrustAnchor;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HexFormat;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 import nl.altindag.ssl.SSLFactory;
 
-/** Applies mandatory public-key distrust before any configured trust manager. */
+/** Applies mandatory public-key distrust to peer certificates and completed certificate paths. */
 public final class BlockedCertificateTrustManager extends X509ExtendedTrustManager {
   // SHA-256 of SubjectPublicKeyInfo, derived from OpenJDK certificate trust data:
   // https://github.com/openjdk/jdk/commit/22bc7357ce6bc5f1ed2f1e83e0544b2c25f781d4
@@ -48,9 +60,15 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     "ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6");
 
   private final X509ExtendedTrustManager delegate;
+  private final Set<String> blockedKeys;
 
   public BlockedCertificateTrustManager(X509ExtendedTrustManager delegate) {
+    this(delegate, BLOCKED_KEYS);
+  }
+
+  BlockedCertificateTrustManager(X509ExtendedTrustManager delegate, Set<String> blockedKeys) {
     this.delegate = delegate;
+    this.blockedKeys = Set.copyOf(blockedKeys);
   }
 
   public static SSLFactory protect(SSLFactory factory) {
@@ -68,14 +86,14 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
       var digest = MessageDigest.getInstance("SHA-256");
       for (var certificate : chain) {
         var fingerprint = HexFormat.of().formatHex(digest.digest(certificate.getPublicKey().getEncoded()));
-        if (BLOCKED_KEYS.contains(fingerprint)) {
+        if (blockedKeys.contains(fingerprint)) {
           throw new CertificateException("Certificate chain contains a blocked public key");
         }
       }
       // A locally trusted issuer may be omitted from the peer's chain.
       for (var issuer : delegate.getAcceptedIssuers()) {
         var fingerprint = HexFormat.of().formatHex(digest.digest(issuer.getPublicKey().getEncoded()));
-        if (BLOCKED_KEYS.contains(fingerprint)) {
+        if (blockedKeys.contains(fingerprint)) {
           rejectCertificatesSignedBy(chain, issuer);
         }
       }
@@ -97,40 +115,101 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     }
   }
 
+  private void checkCertificatePath(X509Certificate[] chain) throws CertificateException {
+    try {
+      // Read the current issuers after delegation: custom trust can grow when a user approves a certificate.
+      var anchors = Arrays.stream(delegate.getAcceptedIssuers())
+        .filter(issuer -> !isBlocked(issuer))
+        .map(issuer -> new TrustAnchor(issuer, null))
+        .collect(Collectors.toSet());
+      var target = new X509CertSelector();
+      target.setCertificate(chain[0]);
+      var parameters = new PKIXBuilderParameters(anchors, target);
+      // The delegate already applied its revocation and TLS-specific validation policies.
+      parameters.setRevocationEnabled(false);
+      parameters.setMaxPathLength(-1);
+      parameters.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(Arrays.asList(chain))));
+      parameters.addCertPathChecker(new BlockedPublicKeyChecker());
+      // AIA can supply intermediates that were absent from both the peer chain and the trust store.
+      CertPathBuilder.getInstance("PKIX").build(parameters);
+    } catch (GeneralSecurityException e) {
+      throw new CertificateException("Certificate path could not be validated without blocked public keys", e);
+    }
+  }
+
+  private boolean isBlocked(X509Certificate certificate) {
+    try {
+      var digest = MessageDigest.getInstance("SHA-256");
+      return blockedKeys.contains(HexFormat.of().formatHex(digest.digest(certificate.getPublicKey().getEncoded())));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 is required for certificate validation", e);
+    }
+  }
+
+  private final class BlockedPublicKeyChecker extends PKIXCertPathChecker {
+    @Override
+    public void init(boolean forward) {
+      // Public-key checks do not depend on traversal direction or previous certificates.
+    }
+
+    @Override
+    public boolean isForwardCheckingSupported() {
+      return true;
+    }
+
+    @Override
+    public Set<String> getSupportedExtensions() {
+      return Set.of();
+    }
+
+    @Override
+    public void check(Certificate certificate, Collection<String> unresolvedCritExts) throws CertPathValidatorException {
+      if (isBlocked((X509Certificate) certificate)) {
+        throw new CertPathValidatorException("Certificate path contains a blocked public key");
+      }
+    }
+  }
+
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkServerTrusted(chain, authType);
+    checkCertificatePath(chain);
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkServerTrusted(chain, authType, socket);
+    checkCertificatePath(chain);
   }
 
   @Override
   public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkServerTrusted(chain, authType, engine);
+    checkCertificatePath(chain);
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkClientTrusted(chain, authType);
+    checkCertificatePath(chain);
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkClientTrusted(chain, authType, socket);
+    checkCertificatePath(chain);
   }
 
   @Override
   public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
     checkBlockedKeys(chain);
     delegate.checkClientTrusted(chain, authType, engine);
+    checkCertificatePath(chain);
   }
 
   @Override
