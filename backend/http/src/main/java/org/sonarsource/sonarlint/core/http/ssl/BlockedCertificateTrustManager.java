@@ -63,7 +63,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
 
   private final X509ExtendedTrustManager delegate;
   private final Set<String> blockedKeys;
-  private volatile TrustMaterial trustMaterial;
+  private final AtomicReference<TrustMaterial> trustMaterial;
 
   public BlockedCertificateTrustManager(X509ExtendedTrustManager delegate) {
     this(delegate, BLOCKED_KEYS);
@@ -72,7 +72,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
   BlockedCertificateTrustManager(X509ExtendedTrustManager delegate, Set<String> blockedKeys) {
     this.delegate = delegate;
     this.blockedKeys = Set.copyOf(blockedKeys);
-    this.trustMaterial = loadTrustMaterial(delegate.getAcceptedIssuers());
+    this.trustMaterial = new AtomicReference<>(loadTrustMaterial(delegate.getAcceptedIssuers()));
   }
 
   public static SSLFactory protect(SSLFactory factory) {
@@ -92,7 +92,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
       }
     }
     // A locally trusted issuer may be omitted from the peer's chain.
-    for (var anchor : trustMaterial.blockedAnchors()) {
+    for (var anchor : trustMaterial.get().blockedAnchors()) {
       rejectCertificatesSignedBy(chain, anchor.getTrustedCert());
     }
   }
@@ -131,11 +131,13 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
 
   private TrustMaterial currentTrustMaterial() {
     // Read after delegation: custom trust can grow when a user approves a certificate.
+    var current = trustMaterial.get();
     var issuers = delegate.getAcceptedIssuers();
-    var current = trustMaterial;
     if (!current.issuers().equals(Arrays.asList(issuers))) {
-      current = loadTrustMaterial(issuers);
-      trustMaterial = current;
+      var updated = loadTrustMaterial(issuers);
+      // Keep this validation's snapshot without overwriting a concurrent cache refresh.
+      trustMaterial.compareAndSet(current, updated);
+      return updated;
     }
     return current;
   }
