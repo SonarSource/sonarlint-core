@@ -131,7 +131,7 @@ public class CertificatePathValidationProbe {
   }
 
   private static void assertUnavailableIssuer(X509Certificate root, X509Certificate blocked, X509Certificate leaf,
-    Set<String> blockedKeys, Set<String> downloaded) throws Exception {
+    Set<String> blockedKeys, Set<String> downloaded) {
     serveIssuers(Map.of(), downloaded);
     // Let the outer path check handle this failure independently of the delegate's trust decision.
     var delegate = SSLFactory.builder().withTrustMaterial(root, blocked).withTrustEnhancer(parameters -> true).build().getTrustManager().orElseThrow();
