@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Global Extension</name>
+  <language>cobol</language>
+  <rules>
+    <rule>
+      <repositoryKey>global</repositoryKey>
+      <key>inc</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

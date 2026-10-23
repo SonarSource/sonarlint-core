@@ -1,0 +1,39 @@
+name: Notify Failure
+on:
+  workflow_run:
+    workflows: [ "Build" ]
+    types:
+      - completed
+    branches:
+      - master
+
+permissions:
+  id-token: write
+
+jobs:
+  notify:
+    runs-on: sonar-xs
+    name: Send Slack Notification
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Vault Secrets
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@881045d830534a70ec3c7c275fa3714412c8ff6e # 3.6.1
+        with:
+          secrets: |
+            development/kv/data/slack token | SLACK_BOT_TOKEN;
+
+      - name: Slack Notification on Failure
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          method: chat.postMessage
+          token: ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
+          # Slack channel squad-devex-flow-interrupts
+          payload: |
+            channel: C0ADM04C59A
+            text: "Workflow failed in ${{ github.repository }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":x: *Repository:* ${{ github.repository }}\n*Branch:* ${{ github.event.workflow_run.head_branch }}\n*Workflow:* ${{ github.event.workflow_run.name }}\n*Run:* <${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.run_number }}>"

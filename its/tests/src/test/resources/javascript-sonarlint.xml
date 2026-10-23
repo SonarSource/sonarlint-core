@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Javascript</name>
+  <language>js</language>
+  <rules>
+    <rule>
+      <!-- Multiple statements per line, deprecated key -->
+      <repositoryKey>javascript</repositoryKey>
+      <key>OneStatementPerLine</key>
+      <priority>MAJOR</priority>
+    </rule>
+     <rule>
+      <!-- Multiple statements per line -->
+      <repositoryKey>javascript</repositoryKey>
+      <key>S122</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

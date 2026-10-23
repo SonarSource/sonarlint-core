@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT PHP</name>
+  <language>php</language>
+  <rules>
+    <rule>
+      <!-- TODO -->
+      <repositoryKey>php</repositoryKey>
+      <key>S1135</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

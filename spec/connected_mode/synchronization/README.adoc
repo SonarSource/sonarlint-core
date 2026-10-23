@@ -1,0 +1,6 @@
+[#synchronization]
+= Synchronization
+
+link:overview.adoc[Overview]
+
+link:pull_synchronization.adoc[Pull Synchronization]

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--    Generate a distribution archive which contains executable application with dependencies and supporting files
+        - The actual jar
+        - the dependencies
+        - the launcher scripts
+          -->
+<assembly>
+  <id>no-arch</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <!-- ZIP archive as Windows cannot work with tar.gz out of the box but Unix can work with zip out of the box  -->
+    <format>zip</format>
+  </formats>
+
+  <!-- The dependencies -->
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <excludes>
+        <exclude>${artifact}</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <!-- The sloop jar-->
+      <directory>${project.build.directory}</directory>
+      <outputDirectory>lib</outputDirectory>
+      <fileMode>0644</fileMode>
+      <includes>
+        <include>**/${project.artifactId}-${project.version}.jar</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

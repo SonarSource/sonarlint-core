@@ -1,0 +1,324 @@
+name: Build
+on:
+  push:
+    branches:
+      - master
+      - branch-*
+      - dogfood-*
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: >-
+    ${{ github.workflow }}-
+    ${{ github.event.pull_request.base.ref || 'push' }}-
+    ${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CACHE_BACKEND: s3
+
+jobs:
+  build-number:
+    outputs:
+      BUILD_NUMBER: ${{ steps.build-number.outputs.BUILD_NUMBER }}
+    runs-on: sonar-xs
+    name: Get build number
+    permissions:
+      id-token: write
+    steps:
+      - uses: SonarSource/ci-github-actions/get-build-number@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        id: build-number
+
+  build:
+    runs-on: sonar-xs
+    needs: build-number
+    name: Build
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    outputs:
+      build_number: ${{ steps.build.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.4.11
+      - uses: SonarSource/ci-github-actions/build-maven@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        id: build
+        with:
+          sonar-platform: none
+          deploy-pull-request: true
+          artifactory-reader-role: private-reader
+          artifactory-deployer-role: qa-deployer
+          maven-args: -T 1C -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
+      - name: Config Maven (cache setup)
+        run: |
+          mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
+
+  test-linux:
+    needs: [ build-number, build ]
+    runs-on: sonar-m
+    name: Test (Linux, Sonar Next)
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.4.11
+      - name: Install dotnet for Omnisharp tests
+        run: |
+          mise use dotnet@8
+      - name: Vault
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@881045d830534a70ec3c7c275fa3714412c8ff6e # 3.6.1
+        with:
+          secrets: |
+            development/kv/data/next url | NEXT_URL;
+            development/kv/data/next token | NEXT_TOKEN;
+      - name: Cache Sonar Scanner artifacts
+        id: sonar-scanner-cache
+        uses: SonarSource/ci-github-actions/cache@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        with:
+          path: ~/.sonar/cache
+          key: sonar-scanner-${{ runner.os }}
+      - uses: SonarSource/ci-github-actions/config-maven@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        id: config
+        with:
+          artifactory-reader-role: private-reader
+      - name: Run tests
+        env:
+          SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
+          SONAR_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_TOKEN }}
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+          SCANNER_VERSION: 5.1.0.4751
+          PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
+        run: |
+          mvn -B -Pcoverage -Dcommercial verify
+          maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
+          sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
+          sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}")
+          sonar_props+=("-Dsonar.coverage.jacoco.aggregateXmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
+          echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
+          mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        with:
+          name: QA Linux Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-test-report
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+
+  test-windows:
+    needs: [ build-number, build ]
+    runs-on: github-windows-latest-m
+    name: Test (Windows)
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.4.11
+      - name: Install dotnet for Omnisharp tests
+        run: |
+          mise use dotnet@8
+      - uses: SonarSource/ci-github-actions/config-maven@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        id: config
+        with:
+          artifactory-reader-role: private-reader
+      - name: Run tests
+        env:
+          MAVEN_OPTS: -Xmx4g
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+        run: |
+          mvn -B -Dcommercial verify
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        with:
+          name: QA Windows Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-test-report
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+
+  qa:
+    needs: [ build-number, build ]
+    runs-on: sonar-m
+    name: QA (${{ matrix.name }})
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SonarCloudEU
+            sq_version: SonarCloudEU
+            category: "-Dgroups=SonarCloud"
+            sc: true
+            sc_token_path: sonarcloud-it
+            region: EU
+          - name: SonarCloudUS
+            sq_version: SonarCloudUS
+            category: "-Dgroups=SonarCloud"
+            sc: true
+            sc_token_path: sonarcloud-it-US
+            region: US
+          - name: SQDogfood
+            sq_version: DEV
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQLatest
+            sq_version: LATEST_RELEASE
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQLts99
+            sq_version: "LATEST_RELEASE[9.9]"
+            category: "-DexcludedGroups=SonarCloud"
+            customOrchestratorJavaVersion: 17
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.4.11
+      - name: Setup Java ${{ matrix.customOrchestratorJavaVersion }} for Orchestrator
+        if: matrix.customOrchestratorJavaVersion
+        run: |
+          mise install java@${{ matrix.customOrchestratorJavaVersion }}
+          echo "ORCHESTRATOR_JAVA_HOME=$(mise where java@${{ matrix.customOrchestratorJavaVersion }})" >> "$GITHUB_ENV"
+      - name: Compute month key
+        #Avoid caching for DEV since it is frequently changing
+        if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
+        id: month
+        shell: bash
+        run: |
+          THIS_MONTH="$(date +%Y-%m)"
+          echo "month=${THIS_MONTH}" >> "$GITHUB_OUTPUT"
+          ORCHESTRATOR_HOME="${GITHUB_WORKSPACE}/orchestrator/${THIS_MONTH}"
+          echo "ORCHESTRATOR_HOME=${ORCHESTRATOR_HOME}" >> "$GITHUB_ENV"
+          echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+          mkdir -p "${ORCHESTRATOR_HOME}"
+      - uses: SonarSource/ci-github-actions/cache@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        if: ${{ matrix.sc != true && matrix.sq_version != 'DEV' }}
+        with:
+          path: ${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}
+          key: cache-${{ runner.os }}-${{ steps.month.outputs.month }}-${{ matrix.name }} # Use matrix name to differentiate caches
+      - name: Vault (SonarCloud IT token)
+        if: ${{ matrix.sc == true }}
+        id: secrets-sc
+        uses: SonarSource/vault-action-wrapper@881045d830534a70ec3c7c275fa3714412c8ff6e # 3.6.1
+        with:
+          secrets: |
+            development/team/sonarlint/kv/data/${{ matrix.sc_token_path }} token | SONARCLOUD_IT_TOKEN;
+      - name: Vault (GITHUB Token)
+        id: secrets-gh
+        uses: SonarSource/vault-action-wrapper@881045d830534a70ec3c7c275fa3714412c8ff6e # 3.6.1
+        with:
+          secrets: |
+            development/github/token/licenses-ro token | GITHUB_TOKEN;
+
+      - uses: SonarSource/ci-github-actions/config-maven@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        with:
+          artifactory-reader-role: private-reader
+      - name: Run QA
+        if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
+        env:
+          MAVEN_OPTS: -Xmx4g
+          SONARCLOUD_IT_TOKEN: ${{ steps.secrets-sc.outputs.vault && fromJSON(steps.secrets-sc.outputs.vault).SONARCLOUD_IT_TOKEN || '' }}
+          SONARCLOUD_REGION: ${{ matrix.sc && matrix.region || '' }}
+          GITHUB_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).GITHUB_TOKEN }}
+          SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+          SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+        run: |
+          mvn -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+      - name: Generate QA test report on failure
+        if: failure()
+        uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
+        with:
+          name: QA ${{ matrix.name }} Test Report
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qa-test-report ${{ matrix.name }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+      - name: debug
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Listing surefire-reports contents ==="
+          find ./its/tests/target/surefire-reports -type f || true
+          echo "=== Checking if directory is empty ==="
+          [ -d ./its/tests/target/surefire-reports ] && ls -la ./its/tests/target/surefire-reports/ || echo "Directory doesn't exist"
+      - name: Inspect Orchestrator Cache
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Listing orchestrator cache contents ==="
+          CACHE_DIR="${{ github.workspace }}/orchestrator/${{ steps.month.outputs.month }}"
+          if [ -d "${CACHE_DIR}" ]; then
+            echo "Directory exists: ${CACHE_DIR}"
+            ls -lah "${CACHE_DIR}"
+            echo ""
+            echo "=== Detailed file tree ==="
+            find "${CACHE_DIR}" -type f -ls || true
+          else
+            echo "Directory does not exist: ${CACHE_DIR}"
+          fi
+
+  promote:
+    needs: [ build-number, build, qa, test-linux, test-windows ]
+    runs-on: sonar-xs
+    name: Promote
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: SonarSource/ci-github-actions/promote@983645f538ff01044b1e567adb23e6f527d8b52a # 1.8.9
+        with:
+          promote-pull-request: true

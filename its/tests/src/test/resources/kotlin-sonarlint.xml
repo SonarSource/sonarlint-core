@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Kotlin</name>
+  <language>kotlin</language>
+  <rules>
+    <rule>
+      <repositoryKey>kotlin</repositoryKey>
+      <key>S1656</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

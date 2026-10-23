@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT XML</name>
+  <language>xml</language>
+  <rules>
+    <rule>
+      <repositoryKey>xml</repositoryKey>
+      <!-- Lines should not be too long (120 char) -->
+      <key>S103</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

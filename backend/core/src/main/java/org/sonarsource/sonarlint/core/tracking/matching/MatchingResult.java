@@ -1,0 +1,85 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.tracking.matching;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.annotation.CheckForNull;
+
+/**
+ * Store the result of matching of issues.
+ *
+ * @param <L>  type of the issues that are in the first collection
+ * @param <R> type of the issues that are in the second collection
+ */
+public class MatchingResult<L, R> {
+
+  /**
+   * Matched issues -> a left issue is associated to a right issue
+   */
+  private final IdentityHashMap<L, R> leftToRight = new IdentityHashMap<>();
+
+  private final Collection<L> lefts;
+
+  public MatchingResult(Collection<L> leftIssues) {
+    this.lefts = leftIssues;
+  }
+
+  /**
+   * Returns an Iterable to be traversed when matching issues. That means
+   * that the traversal does not fail if method {@link #recordMatch(L, R)}
+   * is called.
+   */
+  public Iterable<L> getUnmatchedLefts() {
+    List<L> result = new ArrayList<>();
+    for (L left : lefts) {
+      if (!leftToRight.containsKey(left)) {
+        result.add(left);
+      }
+    }
+    return result;
+  }
+
+  public Map<L, R> getMatchedLefts() {
+    return leftToRight;
+  }
+
+  void recordMatch(L left, R right) {
+    leftToRight.put(left, right);
+  }
+
+  boolean isComplete() {
+    return leftToRight.size() == lefts.size();
+  }
+
+  @CheckForNull
+  public R getMatch(L left) {
+    return leftToRight.get(left);
+  }
+
+  public Optional<R> getMatchOpt(L left) {
+    return Optional.ofNullable(getMatch(left));
+  }
+
+}

@@ -1,0 +1,670 @@
+# 11.9
+
+## Deprecation
+
+* Deprecate the `CONTEXT_GENERATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability` for removal.
+
+# 11.6
+
+## New features
+
+* Add `SHELL` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+* Add `AZUREPIPELINES` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+
+# 10.48
+
+## New features
+
+* Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`.
+* Add `label` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto`.
+* Add `language` field to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
+* Add `serverVersion` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto`.
+    * Contains the version of the SonarQube Server that provided the plugin (e.g. `"10.8.1"`).
+    * Non-null only when `source` is `SONARQUBE_SERVER`; `null` for all other sources (embedded, SonarQube Cloud, unavailable).
+* Introduce two new telemetry notification methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to track usage of the "Supported Languages" panel:
+    * `supportedLanguagesPanelOpened` - call this each time the user opens the "Supported Languages" panel.
+    * `supportedLanguagesPanelCtaClicked` - call this each time the user clicks the "set up connection/binding" CTA button in the "Supported Languages" panel.
+
+# 10.46
+
+## New features
+
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService`, accessible via `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getPluginService`.
+  * Use `getPluginStatuses` to populate the "Supported Languages" panel with the full list of known analyzer statuses (one entry per language, including unsupported ones).
+  * Pass a `configurationScopeId` to get statuses in the context of its bound connection, or `null` for standalone statuses.
+  * Each `org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto` contains: plugin name, state (`org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto`), source (`org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto`), actual version, and overridden version if applicable.
+* Add a new `didChangePluginStatuses` notification to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * Implement it to keep the "Supported Languages" panel up to date after the initial load.
+  * Called when plugin statuses change, e.g. after a sync with a connection or when a connection is removed.
+
+# 10.44
+
+## Breaking changes
+
+* Add `closedByUser` flag to `org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageRequestResponse`. It must be set to `true` if the `showMessageRequest` was explicitly closed by the user (e.g. via clicking X on the notification)
+
+# 10.43
+
+## Breaking changes
+
+* Remove the flight recorder feature. This should be handled by clients
+
+# 10.42
+
+* Add `org.sonarsource.sonarlint.core.rpc.client.Sloop.getPid` to return the pid of the backend process.
+* Add a new `PROMOTIONAL_CAMPAIGNS` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables promotional campaign notifications and tracking user responses to not show again or postpone showing them. Data about shown notifications and user responses is saved separately for each IDE in the similar manner to telemetry in path: `{sonarUserHome}/campaigns/{productKey}/campaigns`
+* Add a new `KIRO` value to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent` enum.
+
+# 10.39
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails` method and associated DTOs.
+
+# 10.38
+
+## New features
+
+* Add a new `GESSIE_TELEMETRY` capability in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Enables sending data to Gessie (Generic Event System) alongside previous telemetry implementation.
+
+# 10.37
+
+## Deprecation
+
+* Deprecate 4-parameter constructor and remove deprecation of 2-parameter one of `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams`. Move back to an old constructor as not all IDEs were able to provide all data to a new one.
+* Remove Deprecation from `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings` method. It should be used again for manual binding events instead of parametrized `didUpdateBinding`.
+
+## New features
+
+* Add ide labs flags to `org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse`.
+* Introduce 2 new methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to record Ide Labs telemetry: `externalLinkClicked`, `feedbackLinkClicked`.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.acceptedBindingSuggestion`. It should be used to for bindings created based on suggestions and pass `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` instead of parametrized `didUpdateBinding`. 
+
+# 10.36
+
+## Breaking Changes
+
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService` has been renamed to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgentService`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssitedIde` has been renamed to `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getAiAssistedIdeRpcService` has been renamed to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getAiAgentService`.
+* Replace `VSCODE` and `VSCODE_INSIDERS` with `GITHUB_COPILOT` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAgent` enum.
+    * This better reflects that the distinction is about the AI agent (GitHub Copilot), not the IDE
+
+## New features
+
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.labs.IdeLabsRpcService` service and a `joinIdeLabsProgram` method.
+  * Use it to allow users to join the SonarQube for IDE Labs program
+  * The method accepts user email and IDE name as parameters
+
+# 10.35
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` class.
+* Remove unused methods from `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`:
+  * `getGlobalStandaloneConfiguration`
+  * `getGlobalConnectedConfiguration`
+  * `getAnalysisConfig`
+  * `getRuleDetails`
+
+## New features
+
+* Add a new `CONTEXT_GENERATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. This is only accessible in dogfooding environments, and should be enabled in AI-related environments.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.log.LogRpcService` service, with a new `setLogLevel` method. This allows clients to dynamically change the logging level.
+* Introduce a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`, that accepts a `LogLevel` parameter.
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` previous constructor. Please use the new one and provide the log level.
+
+# 10.33
+
+## New features
+
+* Add a new endpoint `/sonarlint/api/analysis/automatic/config` in the embedded server to globally disable or enable the automatic analysis.
+  * This endpoint should be used by external clients such as MCP servers.
+* Add a new endpoint `/sonarlint/api/analysis/files` in our embedded server to analyze a list of files and return the issues, hotspots and taints found. 
+  * This endpoint should be used by external clients such as MCP servers.
+* Add a new `getMCPServerConfiguration` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService`
+  * It accepts `connectionId` and `token` as parameters
+  * It returns JSON string containing MCP server settings (without the `sonarqube` parent item)
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.ai.AiAssistedIdeRpcService` service and a `getRuleFileContent` method.
+  * Use it to retrieve the content of the rule file to write to provide guidance to the agent when using the SonarQube MCP server.
+* Introduce an RPC notification `embeddedServerStarted` in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`
+  * It is sent by the backend to notify the client that the embedded server has started
+  * It contains the embedded server port
+  * Example usage is by the MCP Server to establish the bridge connection
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.mcpIntegrationEnabled` method.
+  * Should only be used by SonarQube MCP Server when integration with SQ:IDE is enabled and valid
+
+# 10.31
+
+## New features
+
+* Add a new `FLIGHT_RECORDER` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time. Important note: the `MONITORING` capability is also required by this feature.
+* Add a new optional backend-to-client notification `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#flightRecorderStarted`. Clients can implement this notification to inform end users about a starting flight recorder session.
+* Add a new service  to the backend API: `org.sonarsource.sonarlint.core.rpc.protocol.backend.flightrecorder.FlightRecordingRpcService` can be used to interact with the flight recorder (e.g. to capture a thread dump of the current backend process)
+* Add a new `CURRENT_FILE_ANALYSIS_TYPE` to the `org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType` enum. This value can be used when reporting telemetry for forced analysis of currently open file.
+
+# 10.29
+
+## New features
+* Clients can now access more granular origin information via the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto`, `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.connection.ConnectionSuggestionDto` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
+* Added `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` and allowed clients to provide this information when calling `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` which will trigger telemetry events for binding updates. Clients no longer need to call separate telemetry methods while adding bindings.
+
+## Potential breaking changes
+
+* Clients are normally not expected to use following constructors directly, but if they do perhaps in their tests, it's a potential breaking change.
+* Removed the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto` constructor with `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#isFromSharedConfiguration` parameter. Clients should use the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#origin` parameter if it is used in their tests. `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.SHARED_CONFIGURATION` can be used if it was true, otherwise it wouldn't matter which other origin used, they can default to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.PROJECT_NAME`
+* Removed the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto` constructor with `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#isFromSharedConfiguration` parameter. Clients should use the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#origin` parameter if it is used in their tests. `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.SHARED_CONFIGURATION` can be used if it was true, otherwise it wouldn't matter which other origin used, they can default to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.PROJECT_NAME`
+* Removed the `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams` constructor with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams#isFromSharedConfiguration` parameter. Clients should use the `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams#origin` parameter if it is used in their tests. `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.SHARED_CONFIGURATION` can be used if it was true, otherwise it wouldn't matter which other origin used, they can default to `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin.PROJECT_NAME`
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto#getOrigin` instead.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto#getOrigin` instead.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#isFromSharedConfiguration` method since it is not used anymore. Use `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams#getOrigin` instead.
+* Deprecate `isFromSharedConfiguration` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams`.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.AssistBindingParams` constructor. Use the other one.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor. Use the other one.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedManualBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedImportedBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService#addedAutomaticBindings` method. This will be automatically handled by passing the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionOrigin` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingMode` to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams` constructor during the `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService#didUpdateBinding` call.
+
+# 10.28
+
+## Breaking changes
+
+* Fields `vulnerabilityId` and `description` from `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.GetDependencyRiskDetailsResponse` are now nullable.
+  * Dependency risks of type `PROHIBITED_LICENSE` do not have a vulnerability ID or description.
+
+## New features
+
+* Add `TEXT` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+  * Enabling this language allows detecting [text issues](https://rules.sonarsource.com/text/)
+* Add `GITHUBACTIONS` language to `org.sonarsource.sonarlint.core.commons.api.SonarLanguage`
+  * Enabling this language allows detecting [issues on GitHub Actions](https://rules.sonarsource.com/githubactions/)
+* Add new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService#checkSupported` to check if dependency risks are supported by the server
+  * It returns the reason in case the server does not support dependency risks
+
+## SCA
+
+* Introduce new fields `vulnerabilityId` and `cvssScore` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskDto`
+  * The `vulnerabilityId` is a unique identifier for the vulnerability such as `CVE-1234`, and the `cvssScore` is the Common Vulnerability Scoring System score for the vulnerability
+  * They are null in case the dependency risk is of type `PROHIBITED_LICENSE`
+
+# 10.27
+
+## Breaking changes
+
+* Merge `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.DependencyRiskTrackingRpcService` into `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService`.
+* Rename `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeScaIssues` to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeDependencyRisks`.
+
+## New features
+
+* Allow changing status of dependency risks (SCA issues) via `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.changeStatus`.
+  * Required parameters are `configScopeId`, `dependencyRiskKey` and `transition`.
+  * If transition is `ACCEPT` or `SAFE`, a `comment` field is mandatory
+* Allow clients to open dependency risk in browser
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.openDependencyRiskInBrowser` that accepts `configScopeId` and `dependencyRiskKey` (UUID) parameters
+* Allow clients to record interactions with dependency risks in telemetry
+  * Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.dependencyRiskInvestigatedLocally` method
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.DependencyRiskRpcService.getDependencyRiskDetails`.
+
+# 10.26
+
+## New features
+
+* Add a new `SCA_SYNCHRONIZATION` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ScaIssueTrackingRpcService` service and a `listAll` method
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeScaIssues` notification.
+
+# 10.25
+
+## Breaking changes
+
+* Add a new `ISSUE_STREAMING` value in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability`. Clients using the feature need to declare it at initialization time.
+
+## New features
+
+* Add a new optional parameter to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams` to track SonarQube Cloud account creation through token generation.
+
+## File exclusions
+
+* The RPC client method `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.getFilesStatus` previously returned information exclusively about server exclusions. It now includes the same exclusion criteria as used during the analysis (client exclusions, gitignore, etc.).
+
+# 10.23
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#matchProjectBranch` method since it is not used anymore.
+
+# 10.22
+
+## New features
+
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.toolCalled` method.
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.getConnectionSuggestions` method.
+  * This method is used to get connection suggestions for a given configuration scope.
+  * The method should only be used when neither connection nor binding exists for a given configuration scope.
+  * If a connection already exists, a `org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService.getBindingSuggestions` should be used instead
+
+# 10.20
+
+## Breaking changes
+
+* Remove `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService` and `org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl.getUserTokenService`. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService#checkSmartNotificationsSupported` method and associated parameter and response. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` deprecated constructors. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto` deprecated constructor and the `getPid` getter. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams` deprecated constructor. Use the other one.
+
+## New features
+
+* Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` constructor to provide flags as an enum values list.
+* Add `analysisReportingTriggered` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`
+  * It is used to report usage of analysis features such as the analysis of VCS changed files, all project files or for the pre-commit analysis
+  * Should not be implemented unless necessary
+
+## Deprecation
+
+* Deprecate `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` class.
+
+# 10.19
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams` constructor, and replace it with a new one without the `startTime` parameter, that is no longer relevant.
+
+# 10.17
+
+## New features
+
+* Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` to accept a map of `SonarCloudRegion` to `SonarQubeCloudRegionDto`.
+    *  Per region a `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto` must be provided that contains the *base*, *API* and *WebSocket* URIs.
+    * `null` values are accepted for every URI - it will internally fallback to the actual region URIs for a `null` value encountered.
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.checkSmartNotificationsSupported` method. It always returns that notifications are supported.
+
+# 10.16
+
+## New features
+
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService` class, containing a `suggestFix(SuggestFixParams)` method.
+* Introduce a new `isAiCodeFixable` method in `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto`.
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` constructor. It is replaced by an overload in which the new API base URL should be provided.
+
+# 10.14
+
+## Breaking changes
+
+* Add new method `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#invalidToken` to notify client that WebAPI calls to SQS/SQC fails due to wrong token
+    * Client can implement this method to offer user to change credentials for the connection to fix the problem
+    * For now notification is being sent only for 401 Unauthorized HTTP response code since it's corresponds to malformed/wrong token and ignores 403 Forbidden response code since it's a user permissions problem that has to be addressed on the server
+    * Also once notification sent, backend doesn't attempt to send any requests to server anymore until credentials changed
+* Add `region` to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` and `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto` to support multi-region SQC connection configuration
+    * Constructor without region parameter is removed
+
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didRaiseIssue` and associated types. See `raiseIssues` and `raiseHotspots` instead.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getIssueTrackingService` and associated types. Tracking is managed by the backend.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getSecurityHotspotMatchingService` and associated types. Tracking is managed by the backend.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams#getServerUrl()`. Use `getConnectionParams` instead.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles`. Use `analyzeFilesAndTrack` instead.
+* Removed deprecated methods in `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`:
+  * `getSeverity`
+  * `getType`
+  * `getCleanCodeAttribute`
+  * `getImpacts`
+  * Use `getSeverityMode` instead.
+* Removed deprecated methods in `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto`:
+  * `getSeverity`
+  * `getType`
+  * `getCleanCodeAttribute`
+  * `getImpacts`
+  * Use `getSeverityMode` instead.
+
+## New features
+
+* Add SonarCloud region parameter to 
+  * `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` 
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams` 
+  * This is in order to support multi-region SQC connection configuration. Constructors without region parameter are deprecated
+* `org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService#newTrace(String, String)` can be used internally
+  to initialize a manual trace in Sentry
+* When monitoring is enabled, 1% of all analysis requests are sent to Sentry's performance tracing feature 
+* Two new system properties can be used to tune the behavior of the Sentry integration:
+  * `sonarlint.internal.monitoring.dsn` overrides the default [DSN](https://docs.sentry.io/concepts/key-terms/dsn-explainer/) (e.g. for tests)
+  * `sonarlint.internal.monitoring.tracesSampleRate`, parsed as a `java.lang.Double`, overrides the default sampling rate of analysis requests
+
+# 10.13
+
+## Breaking changes
+
+* New feature flag `enableMonitoring` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` allows clients to opt into monitoring with Sentry
+
+## New features
+
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService.isDogfoodingEnvironment` method to allow clients to know if it is running in a dogfooding environment
+  * Will return `true` if `SONARSOURCE_DOGFOODING` environment variable is set and equals `"1"`
+  * Will return `false` in all other cases
+* Introduce opt-in monitoring via Sentry
+  * As a first step, the monitoring service is only initialized in dogfooding environments when the feature flag is set
+  * All logging events sent to the client at the `ERROR` level are reported as monitoring events
+
+# 10.12
+
+## Breaking changes
+
+* Adapt `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` instead of `clientNodeJsPath`
+
+## New features
+
+* Introduce `bundlePath` initialization parameter in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` to allow clients to provide the path to the unzipped es-lint bridge bundle
+  * The path will be passed down to the Js/Ts/CSS analyzer and will indicate that the analyzer does not need to unzip the bundle itself, thus reducing the usage of the `.sonarlint` temporary storage
+  * Provide `null` to keep the previous behavior
+
+# 10.11
+
+## Breaking changes
+
+* Signature of `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams#DidUpdateFileSystemParams` was changed
+  * Parameter `addedOrChangedFiles` was split into `addedFiles` and `changedFiles`
+* Removed parameter `branch` and `pullRequest` from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto` as it should not be used anymore by the client.
+
+# 10.10
+
+## New features
+
+* Introduce a new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService.shouldUseEnterpriseCSharpAnalyzer` to allow clients to know what kind of C# analyzer should be used for the analysis.
+  * The method returns a boolean value indicating whether the enterprise C# analyzer should be used or not
+  * The method returns `true` if a binding exists for config scope AND the related connected server has the enterprise C# plugin (`csharpenterprise`) installed
+  * The method returns `true` if binding exists with a SonarQube version < 10.8 (i.e. SQ versions that do not include repackaged dotnet analyzer) OR SonarCloud
+  * The method returns `false` in standalone mode or if connected to non-commercial edition of SonarQube with a version >= 10.8
+* Inject the relevant C# analyzer to analysis engines based on the above and share the path to the analyzer JAR as an analysis property for the OmniSharp plugin.
+
+## Breaking changes
+
+* Add two new constructor arguments to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto` for clients to declare the paths to the Open-Source and Enterprise C# analyzers.
+
+# 10.9
+
+## New features
+
+* A new attribute `severityMode` has been added to `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`
+  and `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto` that automatically contains either `StandardModeDetails` or `MQRModeDetails`
+  * A new type `StandardModeDetails` has been introduced, which contains information about severity and type
+  * A new type `MQRModeDetails` has been introduced, which contains information about clean code attribute and impacts
+  * You should display the finding accordingly to the information contained by `severityMode`
+* A new method `IssueRpcService#getEffectiveIssueDetails` has been added to the backend to allow clients to retrieve detailed information about an issue
+  * The method accepts a configuration scope ID and an issue ID (UUID) as parameters
+  * The method returns a `GetEffectiveIssueDetailsResponse` object containing the detailed information about the issue
+  * It is preferred to use this method instead of the `RulesRpcService#getEffectiveRuleDetails` when retrieving rule description details in the context of a specific issue, as this new method will provide more precise information based on the issue, like issue impacts & customized issue severity
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.serverconnection.ServerPathProvider` class.
+* Remove `severity` and `type` fields from `org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto` as this class is only used for fetching standalone rule details, which should always have the Clean Code Attribute and Impacts
+
+## Deprecation
+
+* The following attributes have been deprecated from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto` and
+  `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto`, you should now use the new attribute `severityMode`
+  * `severity`
+  * `type`
+  * `cleanCodeAttribute`
+  * `impacts`
+
+# 10.7.1
+
+## Breaking changes
+
+* Add a new method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#matchProjectBranch` allowing the backend to check whether the locally checked-out branch matches a requesting server branch
+
+# 10.7
+
+## Breaking changes
+
+* Signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#raiseHotspots` was changed
+  * Parameter `issuesByFileUri` has been rightfully replaced by `hotspotsByFileUri`
+  * This is purely a naming change, there is no functional impact
+
+## New features
+
+* Add return value `GetForcedNodeJsResponse` to `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didChangeClientNodeJsPath` indicating whether
+  the Node.js path is effective or not. If that's the case, the path and the version will be returned. 
+  * It's not mandatory to use this return value. It is used by some IDEs to show the current Node.js version used.
+* Add a new system property `sonarlint.debug.active.rules` to log active rules in verbose mode when triggering an analysis
+
+# 10.6
+
+## Breaking changes
+
+* Signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#noBindingSuggestionFound` was changed
+  * Replaced parameter with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams`
+  * Former parameter `projectKey` can now be accessed by `params.getProjectKey()`
+* Removed deprecated constructors from `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+
+## New features
+
+* Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.NoBindingSuggestionFoundParams` indicating whether the suggestion where
+  no binding was found by is SonarCloud or not, can be used to display a more precise notification in the IDE rather than a generic one
+* Add a signature to `SloopLauncher.start`, allowing clients to add custom JVM arguments to the start of the process
+
+# 10.4
+
+## Breaking changes
+
+* Add new `isUserDefined` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto`
+  * User-defined files will be included in the analysis. Non-user-defined files such as generated or library files will be excluded from
+    analysis when analysis is triggered by the backend. If the analysis was forced by the client, exclusions are not respected.
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `canOpenFixSuggestion`.
+  * This flag lets clients completely disable the opening a fix suggestion in the IDE, which can be useful if the feature is not yet available in the client.
+* Introduce a new initialization parameter `TelemetryMigrationDto` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+  * The parameter is nullable and should be used only by the SLVS to migrate its telemetry. All other clients should provide `null` as a value.
+
+## New features
+
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
+  exclusions from the client before every standalone analysis.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
+
+* Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto` to allow the backend to distinguish non-user-defined
+  files to exclude from analysis
+
+* Add `showFixSuggestion` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`
+  * It's only available when the feature flag `canOpenFixSuggestion` is enabled
+  * When using this method, you will receive a single fix suggestion for a specific issue that should be displayed to the user
+  * The user should have the possibility to accept or decline the fix suggestion
+  * The fix suggestion can be displayed at different locations in the file
+
+* Add `fixSuggestionResolved` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`
+  * You should use this method whenever a fix suggestion has been accepted or declined
+  * If the fix has multiple changes (snippets), you should call the method once for each
+  * The `indexSnippet` should be filled if possible, it corresponds to the snippet index in the list of changes
+  * If you do not know if the fix was accepted or declined at the snippet level, you should call the method once for the whole fix
+
+### File events
+
+* Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
+  * Clients are supposed to call these methods when a file is opened in the editor or closed.
+
+### Analysis
+
+* Add a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` to let clients provide if automatic analysis is enabled.
+* Add a new `didChangeAutomaticAnalysisSetting` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`
+  * Clients are expected to call it whenever users change the "enable automatic analysis" setting.
+* Add new methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to force analysis
+  * `analyzeFullProject` forces analysis all files of the project that was provided to backend by method `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#listFiles`
+  * `analyzeFileList` forces analysis for the provided set of files
+  * `analyzeOpenFiles` forces analysis of all files that were reported as opened using `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService#didOpenFile`
+  * `analyzeVCSChangedFiles` forces analysis of modified and not committed files
+
+# 10.3.2 
+
+## Breaking changes
+
+* Change `disabledLanguagesForAnalysis` parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` introduced in 10.3 version to `disabledPluginKeysForAnalysis`
+  * Analysis will be disabled for plugins specified in `disabledPluginKeysForAnalysis` but it will be still possible to consume Rule Descriptions
+  * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
+
+# 10.3
+
+## Breaking changes
+
+* Add new `disabledLanguagesForAnalysis` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+  * Analysis will be disabled for languages specified `disabledLanguagesForAnalysis` but it will be still possible to consume Rule Descriptions
+  * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
+
+## New features
+
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
+* Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
+* For analysis, both user-defined and inferred properties will be merged. If the same property is inferred by the client and provided by the user - the inferred value will be used for analysis.
+
+### Open Issue in IDE
+
+* Add the `getConnectionParams` method to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams`
+  * It allows clients to get parameters to create either SonarQube or SonarCloud connection
+  * This field type is `Either<AssistSonarQubeConnection, AssistSonarCloudConnection>`
+  * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
+
+## Deprecation
+
+* Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
+  * This value on no longer needed on the backend side.
+
+* `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams.getServerUrl` is only meaningful for SQ
+  connections. Use `getConnection().getLeft().getServerUrl()` instead to get the `serverUrl` of a SQ connection
+
+* The existing constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` is now deprecated, the newly added constructor should be used instead (see above).
+
+# 10.2
+
+## Breaking changes
+
+* `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didDetectSecret` had no `configScopeId` parameter, it was added
+
+## New features
+
+### Analysis and tracking
+
+* Add the `analyzeFilesAndTrack` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`.
+  * It allows clients to submit files for analysis, let the backend deal with issue tracking, and will lead to a later notification via `raiseIssues` and `raiseHotspots` (see below).
+  * Usages of `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` should be replaced by this new method.
+  * It accepts a `AnalyzeFilesAndTrackParams` object instead of the deprecated `AnalyzeFilesParams`. The extra flag `shouldFetchServerIssues` should be set to `true` when the analysis is triggered in response to a file open event.
+  * When using this method, implementation of the `didRaiseIssue` method of `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` is no longer required. The new `raiseIssues` and `raiseHotspots` methods should be implemented instead (see below).
+
+* Add `raiseIssues` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to report tracked issues.
+  * Will be called by the backend when issues should be raised to the user. The UI should be updated accordingly.
+  * The `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams` class contains a list of issues to raise by file URI.
+  * Each raised issue went through issue tracking, and has potentially been matched with a previously known issue and/or a server issue in connected mode.
+  * This new method reports a collection of issues replacing the ones previously raised. Every call contains the full list of known issues.
+
+* Add `raiseHotspots` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to report tracked Security Hotspots.
+  * Will be called by the backend when hotspots should be raised to the user. The UI should be updated accordingly.
+  * The `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseHotspotsParams` class contains a list of hotspots to raise by file URI.
+  * Each raised hotspot went through hotspot tracking, and has potentially been matched with a previously known hotspot and/or a server hotspot in connected mode.
+  * This new method reports a collection of hotspots replacing the ones previously raised. Every call contains the full list of known hotspots.
+
+* Add `getRawIssues` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse`
+  * It allows clients to get raised issues in the analysis response.
+  * This method is temporarily added and will be removed when the deprecated APIs have been dropped.
+
+## Deprecation
+
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` and the underlying DTOs are deprecated, should be replaced by `analyzeFilesAndTrack`.
+* As a consequence, `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didRaiseIssue` and the underlying DTOs are now deprecated. It should be replaced by `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseIssues` and `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseHotspots`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` and all classes from the `sonarlint-java-client-legacy` module are now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`, and the `sonarlint-java-client-legacy` artifact will soon be removed.
+* The `pid` parameter of the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto` constructor is not used anymore (the backend PID is used instead). The constructor is now deprecated, and a new constructor without this parameter was introduced and should be used. The `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto.getPid` method is not used anymore and also deprecated.
+
+# 10.1
+
+## Breaking changes
+
+* Replace the last constructor parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`.
+  * Clients should provide an instance of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements`.
+  * The previous Node.js path parameter is now part of this new `LanguageSpecificRequirements`, together with configuration related to Omnisharp.
+  * For clients not executing analysis via the backend, or not supporting C#, a `null` value can be passes as the 2nd parameter of the `LanguageSpecificRequirements` constructor
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto`.
+  * Clients should provide the PID of the host process.
+  * For clients not executing analysis via the backend, this parameter is not used, so a dummy value can be provided.
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `enableTelemetry`.
+  * This flag lets clients completely disable the telemetry, which can be useful when using Sloop in the context of tests.
+  * The flag replaces the `sonarlint.telemetry.disabled` system property.
+  * For clients that want to keep the same behavior, they can read the system property on the client side and pass it to the `FeatureFlagsDto` constructor.
+
+* Stop leaking LSP4J types in API (SLCORE-663) and wrap them in SonarLint classes instead
+  * `org.eclipse.lsp4j.jsonrpc.messages.Either` replaced by `org.sonarsource.sonarlint.core.rpc.protocol.common.Either`
+  * `org.eclipse.lsp4j.jsonrpc.CancelChecker` replaced by `org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker`
+
+* Add new client method `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#suggestConnection`.
+  * This method is used when binding settings are found for an unknown connection.
+  * Clients are expected to notify users about these.
+
+* Move class `org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams`.
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto`.
+  * Clients can provide a detected language for the file. This is the opportunity to rely on the IDE's detected type.
+  * This is used for analysis, clients can pass `null` to keep the same behavior as before, or if no language was detected.
+
+## New features
+
+### Connected mode: sharing setup
+
+* Add methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService` to track binding creation.
+  * `addedManualBindings` should be called by clients when a new binding is created manually.
+  * `addedImportedBindings` should be called by clients when a binding is created from a shared connected mode configuration file.
+  * `addedAutomaticBindings` should be called by clients when a binding is created using a suggestion from a server analysis settings files.
+
+* Add `isFromSharedConfiguration` field to `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams` and `org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto`.
+  * This field tells the client whether the binding suggestion comes from a shared connected mode configuration file (`true`) or from analysis settings files (`false`).
+
+### Analysis
+
+* Add the `analyzeFiles` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`.
+  * Clients can use this method to trigger an analysis. It's a request, so they can get a response with details about the analysis.
+  * They need to pass the list of URIs representing files to analyze.
+  * They also need to pass an "analysis ID", which is a unique ID used for correlating the analysis and issues that are raised via `didRaiseIssue` (see below).
+
+* Add the `didRaiseIssue` method in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * This lets clients be informed when an issue is detected during analysis.
+  * They can do local tracking or stream the issue to the users.
+  * They can retrieve which analysis lead to this issue being raised with the "analysis ID" correlation ID.
+
+* Add the `didSkipLoadingPlugin` method in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * This is called after an analysis when a plugin was not loaded.
+  * Clients are expected to notify users about these.
+
+* Add the `didDetectSecret` method in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * This is called after an analysis when a secret was detected in one of the analyzed files.
+  * Clients are expected to notify users about these.
+  * The backend does not keep track of any notification regarding secrets detection. Clients will need to manage some cache to avoid notifying users too often.
+
+* Add the `promoteExtraEnabledLanguagesInConnectedMode` method in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * This is called after an analysis in standalone mode when a language enabled only in connected mode was detected.
+  * Clients are expected to notify users about these.
+  * The backend does not keep track of any notification regarding this promotion. Clients will need to manage some cache to avoid notifying users too often.
+
+* Add the `getBaseDir` method in `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`.
+  * This is called during an analysis to determine the base directory for the files being analyzed.
+  * Clients are expected to implement this request if they support analysis via the backend.

@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint Taint Java</name>
+  <language>java</language>
+  <rules>
+    <!-- Database queries should not be vulnerable to injection attacks -->
+    <rule>
+      <repositoryKey>javasecurity</repositoryKey>
+      <key>S3649</key>
+      <priority>MAJOR</priority>
+    </rule>
+
+  </rules>
+</profile>

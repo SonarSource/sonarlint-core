@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Cobol</name>
+  <language>cobol</language>
+  <rules>
+    <rule>
+      <repositoryKey>cobol</repositoryKey>
+      <key>COBOL.AlterStatementUsageCheck</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

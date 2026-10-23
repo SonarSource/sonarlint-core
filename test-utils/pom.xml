@@ -1,0 +1,125 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonarsource.sonarlint.core</groupId>
+    <artifactId>sonarlint-core-parent</artifactId>
+    <version>11.10-SNAPSHOT</version>
+  </parent>
+  <artifactId>sonarlint-core-test-utils</artifactId>
+  <name>SonarLint Core - Test Utils</name>
+  <description>Test utils for SonarLint</description>
+
+  <properties>
+    <!-- Keep the module analyzed, but do not enforce coverage on shared test utilities. -->
+    <sonar.coverage.exclusions>**/*</sonar.coverage.exclusions>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-rpc-java-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-rpc-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-java-client-utils</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-jetty12</artifactId>
+    </dependency>
+    <!-- Force the Jetty artifacts affected by CVE-2026-10050 and pinned in the root pom's dependencyManagement
+         (jetty-bom import) to be direct dependencies here, otherwise the pin never propagates to consumers of
+         sonarlint-core-test-utils: wiremock-jetty12 is a direct dependency here and transitively pulls its own
+         older jetty-security/jetty-client versions. -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-security</artifactId>
+    </dependency>
+    <!-- Force the Handlebars version pinned in the root pom to be a direct dependency here, otherwise the
+         pin never propagates to consumers of sonarlint-core-test-utils. -->
+    <dependency>
+      <groupId>com.github.jknack</groupId>
+      <artifactId>handlebars</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver3</artifactId>
+    </dependency>
+    <!-- For WebSockets testing -->
+    <dependency>
+      <groupId>org.java-websocket</groupId>
+      <artifactId>Java-WebSocket</artifactId>
+      <version>1.6.0</version>
+    </dependency>
+    <!-- For Plugins testing -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.18.13-jdk5</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
+    <profile>
+      <id>conditionally-add-commons-tests-if-tests-not-skipped</id>
+      <activation>
+        <property>
+          <name>maven.test.skip</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>sonarlint-commons</artifactId>
+          <version>${project.version}</version>
+          <classifier>tests</classifier>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
+</project>

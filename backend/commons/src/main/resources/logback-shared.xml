@@ -1,0 +1,12 @@
+<!-- This file is shared between the production and medium test code -->
+<included>
+  <root level="trace"/>
+  <logger name="org.springframework" level="warn" />
+  <logger name="org.sonarsource.sonarlint.core.plugin.commons.container.PriorityBeanFactory" level="warn" />
+  <logger name="nl.altindag.ssl" level="warn" />
+  <logger name="jetbrains.exodus" level="warn" />
+  <logger name="org.apache.hc" level="warn" />
+  <logger name="org.eclipse.lsp4j.jsonrpc" level="error" />
+  <logger name="org.eclipse.jgit" level="info"/>
+  <logger name="org.sonar.scm.git.blame" level="info"/>
+</included>

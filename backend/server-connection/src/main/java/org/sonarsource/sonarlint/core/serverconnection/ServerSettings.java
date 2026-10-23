@@ -1,0 +1,34 @@
+/*
+ * SonarLint Core - Server Connection
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.serverconnection;
+
+import java.util.Map;
+import java.util.Optional;
+
+public record ServerSettings(Map<String, String> globalSettings) {
+  public static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
+  public static final String EARLY_ACCESS_MISRA_ENABLED = "sonar.earlyAccess.misra.enabled";
+  public static final String MISRA_COMPLIANCE_ENABLED = "sonar.misracompliance.enabled";
+
+  public Optional<Boolean> getAsBoolean(String settingKey) {
+    return Optional.ofNullable(globalSettings.get(settingKey))
+      .map(Boolean::valueOf);
+  }
+}

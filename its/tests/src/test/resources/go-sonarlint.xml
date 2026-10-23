@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Go</name>
+  <language>go</language>
+  <rules>
+    <rule>
+      <repositoryKey>go</repositoryKey>
+      <key>S1763</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <rule>
+      <repositoryKey>go</repositoryKey>
+      <key>S5542</key>
+      <priority>CRITICAL</priority>
+    </rule>
+  </rules>
+</profile>

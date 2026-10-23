@@ -1,0 +1,76 @@
+/*
+ * SonarLint Core - Server Connection
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core.serverconnection.aicodefix;
+
+import java.util.Optional;
+import java.util.Set;
+import org.jooq.DSLContext;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.AI_CODEFIX_SETTINGS;
+
+/**
+ * Repository for persisting and retrieving AiCodeFix entity using the local H2 database.
+ * Settings are stored per server connection, addressed by connectionId.
+ */
+public class AiCodeFixRepository {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final DSLContext database;
+
+  public AiCodeFixRepository(DSLContext dslContext) {
+    this.database = dslContext;
+  }
+
+  public Optional<AiCodeFix> get(String connectionId) {
+    var rec = database
+      .select(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, AI_CODEFIX_SETTINGS.ENABLEMENT, AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS)
+      .from(AI_CODEFIX_SETTINGS)
+      .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.eq(connectionId))
+      .fetchOne();
+    if (rec == null) {
+      return Optional.empty();
+    }
+    var supportedRules = rec.get(AI_CODEFIX_SETTINGS.SUPPORTED_RULES);
+    var organizationEligible = Boolean.TRUE.equals(rec.get(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE));
+    var enablement = AiCodeFix.Enablement.valueOf(rec.get(AI_CODEFIX_SETTINGS.ENABLEMENT));
+    var enabledProjectKeys = rec.get(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS);
+    return Optional.of(new AiCodeFix(connectionId, supportedRules, organizationEligible, enablement, enabledProjectKeys));
+  }
+
+  public void upsert(AiCodeFix entity) {
+    database
+      .insertInto(AI_CODEFIX_SETTINGS, AI_CODEFIX_SETTINGS.CONNECTION_ID, AI_CODEFIX_SETTINGS.SUPPORTED_RULES, AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE,
+        AI_CODEFIX_SETTINGS.ENABLEMENT, AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS)
+      .values(entity.connectionId(), entity.supportedRules(), entity.organizationEligible(), entity.enablement().name(), entity.enabledProjectKeys())
+      .onDuplicateKeyUpdate()
+      .set(AI_CODEFIX_SETTINGS.SUPPORTED_RULES, entity.supportedRules())
+      .set(AI_CODEFIX_SETTINGS.ORGANIZATION_ELIGIBLE, entity.organizationEligible())
+      .set(AI_CODEFIX_SETTINGS.ENABLEMENT, entity.enablement().name())
+      .set(AI_CODEFIX_SETTINGS.ENABLED_PROJECT_KEYS, entity.enabledProjectKeys())
+      .execute();
+  }
+
+  public void deleteUnknownConnections(Set<String> knownConnectionIds) {
+    database.dsl().deleteFrom(AI_CODEFIX_SETTINGS)
+      .where(AI_CODEFIX_SETTINGS.CONNECTION_ID.notIn(knownConnectionIds))
+      .execute();
+  }
+}

@@ -1,0 +1,142 @@
+/*
+ * SonarLint Core - Server Connection
+ * Copyright (C) SonarSource Sàrl
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+syntax = "proto3";
+
+package sonarlint;
+
+// The java package can be changed without breaking compatibility.
+// it impacts only the generated Java code.
+option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
+option optimize_for = SPEED;
+
+message ServerInfo {
+  string version = 1;
+  // deprecated, store in the settings map below
+  optional bool isMqrMode = 2 [deprecated=true];
+  // deprecated, store in the settings map below
+  optional bool misraEarlyAccessRulesEnabled = 3 [deprecated=true];
+  map<string, string> globalSettings = 4;
+  repeated string supportedFeatures = 5;
+  string serverId = 6;
+}
+
+message PluginReferences {
+  map<string, PluginReference> plugins_by_key = 1;
+
+  message PluginReference {
+    string key = 1;
+    string hash = 2;
+    string filename = 3;
+  }
+}
+
+message AnalyzerConfiguration {
+  map<string, string> settings = 1;
+  map<string, RuleSet> rule_sets_by_language_key = 2;
+  uint32 schema_version = 3;
+}
+
+message RuleSet {
+  repeated ActiveRule rule = 1;
+  string last_modified = 3;
+
+  message ActiveRule {
+    string rule_key = 1;
+    string severity = 2;
+    string template_key = 3;
+    map<string, string> params = 4;
+    repeated Impact overriddenImpacts = 5;
+  }
+}
+
+message ProjectBranches {
+  repeated string branch_name = 1;
+  string main_branch_name = 2;
+}
+
+message Flows {
+  repeated Flow flow = 1;
+}
+
+message Flow {
+  repeated Location location = 1;
+}
+
+message Impact {
+  string softwareQuality = 1;
+  string severity = 2;
+}
+
+message TextRange {
+  int32 start_line = 1;
+  int32 start_line_offset = 2;
+  int32 end_line = 3;
+  int32 end_line_offset = 4;
+  string hash = 5;
+}
+
+message Location {
+  optional string file_path = 1;
+  string message = 2;
+  optional TextRange text_range = 3;
+}
+
+message LastEventPolling {
+  int64 last_event_polling = 1;
+}
+
+enum NewCodeDefinitionMode {
+  UNKNOWN = 0;
+  NUMBER_OF_DAYS = 1;
+  PREVIOUS_VERSION = 2;
+  REFERENCE_BRANCH = 3;
+  SPECIFIC_ANALYSIS = 4;
+}
+
+message NewCodeDefinition {
+  NewCodeDefinitionMode mode = 1;
+  optional int32 days = 2;
+  optional int64 thresholdDate = 3;
+  optional string version = 4;
+  optional string referenceBranch = 5;
+}
+
+message Organization {
+  string id = 1;
+  string uuidV4 = 2;
+}
+
+message User {
+  optional string id = 1;
+}
+
+message AiCodeFixSettings {
+  repeated string supportedRules = 1;
+  bool organizationEligible = 2;
+  AiCodeFixEnablement enablement = 3;
+  repeated string enabledProjectKeys = 4;
+}
+
+enum AiCodeFixEnablement {
+  UNKNOWN_ENABLEMENT = 0;
+  DISABLED = 1;
+  ENABLED_FOR_SOME_PROJECTS = 2;
+  ENABLED_FOR_ALL_PROJECTS = 3;
+}
