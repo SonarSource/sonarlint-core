@@ -47,6 +47,7 @@ import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.http.ssl.BlockedCertificateTrustManager;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 
 import static org.sonarsource.sonarlint.core.http.ThreadFactories.threadWithNamePrefix;
@@ -125,7 +126,7 @@ public class HttpClientProvider {
         LOG.warn("Unable to load trust store from '{}', it will be ignored: {}", trustStore.getPath(), e.getMessage());
       }
     }
-    return sslFactoryBuilder.build().getSslContext();
+    return BlockedCertificateTrustManager.protect(sslFactoryBuilder.build()).getSslContext();
   }
 
   private static boolean isNotWindows() {
