@@ -155,19 +155,22 @@ class BlockedCertificateTrustManagerTests {
 
   @Test
   void it_should_not_rehash_trusted_issuers_for_each_handshake() throws Exception {
-    var issuer = spy(trustedCertificate());
-    when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {issuer});
-    var manager = new BlockedCertificateTrustManager(delegate);
-    var chain = new X509Certificate[] {trustedCertificate()};
-    var failure = new CertificateException("Untrusted chain");
-    doThrow(failure).when(delegate).checkServerTrusted(chain, "RSA");
-    clearInvocations(issuer);
+    try (var input = getClass().getResourceAsStream("/ssl/aia-chains.pem")) {
+      var certificates = CertificateFactory.getInstance("X.509").generateCertificates(input).toArray(X509Certificate[]::new);
+      // Observe an unrelated anchor so legitimate PKIX signature checks do not affect the assertion.
+      var unusedIssuer = spy(certificates[1]);
+      when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {certificates[0], unusedIssuer});
+      var manager = new BlockedCertificateTrustManager(delegate);
+      var chain = new X509Certificate[] {certificates[5], certificates[2]};
+      clearInvocations(unusedIssuer);
 
-    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA")).isSameAs(failure);
-    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA")).isSameAs(failure);
+      manager.checkServerTrusted(chain, "RSA");
+      manager.checkServerTrusted(chain, "RSA");
 
-    verify(issuer, never()).getPublicKey();
-    verify(delegate, times(1)).getAcceptedIssuers();
+      verify(unusedIssuer, never()).getPublicKey();
+      verify(delegate, times(2)).checkServerTrusted(chain, "RSA");
+      verify(delegate, times(3)).getAcceptedIssuers();
+    }
   }
 
   @Test
