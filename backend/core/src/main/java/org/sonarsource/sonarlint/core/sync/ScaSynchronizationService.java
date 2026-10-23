@@ -19,14 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-import java.util.Objects;
+import io.sentry.Sentry;
+import java.util.ArrayList;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
+import org.sonarsource.sonarlint.core.serverapi.sca.GetIssuesReleasesResponse;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -70,28 +75,15 @@ public class ScaSynchronizationService {
     var previousDependencyRisks = findingsStore.loadDependencyRisks(branchName);
     var previousDependencyRiskKeys = previousDependencyRisks.stream().map(ServerDependencyRisk::key).collect(toSet());
 
-    var serverDependencyRisks = issuesReleases.issuesReleases().stream()
-      .filter(issueRelease -> {
-        if (issueRelease.type() == null || issueRelease.severity() == null || issueRelease.quality() == null || issueRelease.status() == null
-          || issueRelease.transitions().stream().anyMatch(Objects::isNull)) {
-          LOG.warn("[SYNC] Skipping dependency risk '{}': unknown enum value returned by the server (type={}, severity={}, quality={}, status={}, transitions={})",
-            issueRelease.key(), issueRelease.type(), issueRelease.severity(), issueRelease.quality(), issueRelease.status(), issueRelease.transitions());
-          return false;
-        }
-        return true;
-      })
-      .map(issueRelease -> new ServerDependencyRisk(
-        issueRelease.key(),
-        ServerDependencyRisk.Type.valueOf(issueRelease.type().name()),
-        ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name()),
-        ServerDependencyRisk.SoftwareQuality.valueOf(issueRelease.quality().name()),
-        ServerDependencyRisk.Status.valueOf(issueRelease.status().name()),
-        issueRelease.release().packageName(),
-        issueRelease.release().version(),
-        issueRelease.vulnerabilityId(),
-        issueRelease.cvssScore(),
-        issueRelease.transitions().stream().map(Enum::name).map(ServerDependencyRisk.Transition::valueOf).toList()))
-      .toList();
+    var serverDependencyRisks = new ArrayList<ServerDependencyRisk>();
+    for (var issueRelease : issuesReleases.issuesReleases()) {
+      try {
+        serverDependencyRisks.add(convertDependencyRisk(issueRelease));
+      } catch (InvalidServerItemException e) {
+        LOG.warn("[SYNC] Skipping dependency risk '{}': {}", issueRelease == null ? null : issueRelease.key(), e.getMessage(), e);
+        Sentry.captureException(e);
+      }
+    }
 
     findingsStore.replaceAllDependencyRisksOfBranch(branchName, serverDependencyRisks);
 
@@ -108,6 +100,46 @@ public class ScaSynchronizationService {
       .toList();
 
     return new UpdateSummary<>(deletedDependencyRiskIds, addedDependencyRisks, updatedDependencyRisks);
+  }
+
+  private static ServerDependencyRisk convertDependencyRisk(@Nullable GetIssuesReleasesResponse.IssuesRelease serverItem) {
+    var issueRelease = required(serverItem, "item");
+    required(issueRelease.key(), "key");
+    required(issueRelease.type(), "type");
+    required(issueRelease.severity(), "severity");
+    required(issueRelease.quality(), "quality");
+    required(issueRelease.status(), "status");
+    required(issueRelease.release(), "release");
+    required(issueRelease.release().packageName(), "release.packageName");
+    required(issueRelease.release().version(), "release.version");
+    required(issueRelease.transitions(), "transitions");
+    issueRelease.transitions().forEach(transition -> required(transition, "transition"));
+    return new ServerDependencyRisk(
+      issueRelease.key(),
+      parseEnum("type", () -> ServerDependencyRisk.Type.valueOf(issueRelease.type().name())),
+      parseEnum("severity", () -> ServerDependencyRisk.Severity.valueOf(issueRelease.severity().name())),
+      parseEnum("quality", () -> ServerDependencyRisk.SoftwareQuality.valueOf(issueRelease.quality().name())),
+      parseEnum("status", () -> ServerDependencyRisk.Status.valueOf(issueRelease.status().name())),
+      issueRelease.release().packageName(),
+      issueRelease.release().version(),
+      issueRelease.vulnerabilityId(),
+      issueRelease.cvssScore(),
+      issueRelease.transitions().stream().map(transition -> parseEnum("transition", () -> ServerDependencyRisk.Transition.valueOf(transition.name()))).toList());
+  }
+
+  private static <T> T required(@Nullable T value, String field) {
+    if (value == null) {
+      throw new InvalidServerItemException("Missing or unknown dependency risk " + field);
+    }
+    return value;
+  }
+
+  private static <T> T parseEnum(String field, Supplier<T> parser) {
+    try {
+      return parser.get();
+    } catch (IllegalArgumentException e) {
+      throw new InvalidServerItemException("Unsupported dependency risk " + field, e);
+    }
   }
 
   private boolean isScaSupported(String connectionId) {

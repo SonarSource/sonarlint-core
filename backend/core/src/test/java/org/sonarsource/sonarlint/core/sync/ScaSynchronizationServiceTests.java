@@ -19,20 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
+import io.sentry.Sentry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.DependencyRisksSynchronizedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 import org.sonarsource.sonarlint.core.serverapi.features.Feature;
 import org.sonarsource.sonarlint.core.serverapi.sca.GetIssuesReleasesResponse;
 import org.sonarsource.sonarlint.core.serverapi.sca.ScaApi;
@@ -46,13 +55,24 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ScaSynchronizationServiceTests {
+
+  private MockedStatic<Sentry> sentry;
+
+  @AfterEach
+  void closeSentry() {
+    sentry.close();
+  }
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
@@ -64,9 +84,14 @@ class ScaSynchronizationServiceTests {
   private ScaSynchronizationService underTest;
   private ScaApi scaApi;
   private ProjectServerIssueStore findingsStore;
+  private ApplicationEventPublisher eventPublisher;
 
   @BeforeEach
   void setUp() {
+    var logger = Sentry.logger();
+    sentry = mockStatic(Sentry.class);
+    sentry.when(Sentry::logger).thenReturn(logger);
+
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getBackendCapabilities()).thenReturn(EnumSet.of(BackendCapability.SCA_SYNCHRONIZATION));
 
@@ -87,7 +112,87 @@ class ScaSynchronizationServiceTests {
     when(serverInfoStorage.read()).thenReturn(Optional.of(storedServerInfo));
 
     scaApi = mock(ScaApi.class);
-    underTest = new ScaSynchronizationService(storageService, mock(ApplicationEventPublisher.class), initializeParams);
+    eventPublisher = mock(ApplicationEventPublisher.class);
+    underTest = new ScaSynchronizationService(storageService, eventPublisher, initializeParams);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"item", "key", "type", "severity", "quality", "status", "release", "release.packageName", "release.version", "transitions", "transition"})
+  void should_skip_report_and_replace_around_malformed_risk(String field) {
+    var first = issueRelease(UUID.randomUUID(), GetIssuesReleasesResponse.IssuesRelease.Type.VULNERABILITY, List.of());
+    var last = issueRelease(UUID.randomUUID(), GetIssuesReleasesResponse.IssuesRelease.Type.MALWARE, List.of());
+    var malformed = new GetIssuesReleasesResponse.IssuesRelease(
+      "key".equals(field) ? null : UUID.randomUUID(),
+      "type".equals(field) ? null : first.type(),
+      "severity".equals(field) ? null : first.severity(),
+      "quality".equals(field) ? null : first.quality(),
+      "status".equals(field) ? null : first.status(),
+      "release".equals(field) ? null : new GetIssuesReleasesResponse.IssuesRelease.Release(
+        "release.packageName".equals(field) ? null : "pkg", "release.version".equals(field) ? null : "1"),
+      null, null, "transitions".equals(field) ? null : "transition".equals(field) ? Arrays.asList((GetIssuesReleasesResponse.IssuesRelease.Transition) null) : List.of());
+    when(scaApi.getIssuesReleases(eq(PROJECT_KEY), eq(BRANCH_NAME), any()))
+      .thenReturn(new GetIssuesReleasesResponse(Arrays.asList(first, "item".equals(field) ? null : malformed, last), new GetIssuesReleasesResponse.Page(3)));
+
+    underTest.synchronize(serverApiWith(scaApi), CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, new SonarLintCancelMonitor());
+
+    var saved = ArgumentCaptor.forClass(List.class);
+    verify(findingsStore).replaceAllDependencyRisksOfBranch(eq(BRANCH_NAME), saved.capture());
+    assertThat((List<ServerDependencyRisk>) saved.getValue()).extracting(ServerDependencyRisk::key).containsExactly(first.key(), last.key());
+    var error = ArgumentCaptor.forClass(Throwable.class);
+    sentry.verify(() -> Sentry.captureException(error.capture()));
+    assertThat(error.getValue()).isInstanceOf(InvalidServerItemException.class).hasMessageContaining(field);
+    var rejectedKey = "item".equals(field) ? null : malformed.key();
+    assertThat(logTester.logs()).contains("[SYNC] Skipping dependency risk '" + rejectedKey + "': Missing or unknown dependency risk " + field);
+    verify(eventPublisher).publishEvent(any(DependencyRisksSynchronizedEvent.class));
+  }
+
+  @Test
+  void should_keep_nullable_fields_and_empty_transitions() {
+    var risk = new GetIssuesReleasesResponse.IssuesRelease(UUID.randomUUID(), GetIssuesReleasesResponse.IssuesRelease.Type.PROHIBITED_LICENSE,
+      GetIssuesReleasesResponse.IssuesRelease.Severity.INFO, GetIssuesReleasesResponse.IssuesRelease.SoftwareQuality.MAINTAINABILITY,
+      GetIssuesReleasesResponse.IssuesRelease.Status.ACCEPT, new GetIssuesReleasesResponse.IssuesRelease.Release("", ""), null, null, List.of());
+    when(scaApi.getIssuesReleases(eq(PROJECT_KEY), eq(BRANCH_NAME), any()))
+      .thenReturn(new GetIssuesReleasesResponse(List.of(risk), new GetIssuesReleasesResponse.Page(1)));
+
+    underTest.synchronize(serverApiWith(scaApi), CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, new SonarLintCancelMonitor());
+
+    var saved = ArgumentCaptor.forClass(List.class);
+    verify(findingsStore).replaceAllDependencyRisksOfBranch(eq(BRANCH_NAME), saved.capture());
+    assertThat((List<ServerDependencyRisk>) saved.getValue()).singleElement().satisfies(value -> {
+      assertThat(value.vulnerabilityId()).isNull();
+      assertThat(value.cvssScore()).isNull();
+      assertThat(value.transitions()).isEmpty();
+      assertThat(value.packageName()).isEmpty();
+      assertThat(value.packageVersion()).isEmpty();
+    });
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"load", "replace", "transport", "cancellation", "unexpected"})
+  void should_propagate_operational_failures_without_reporting(String boundary) {
+    RuntimeException failure = "cancellation".equals(boundary) ? new CancellationException() : new IllegalStateException("operational failure");
+    var response = new GetIssuesReleasesResponse(List.of(), new GetIssuesReleasesResponse.Page(0));
+    when(scaApi.getIssuesReleases(eq(PROJECT_KEY), eq(BRANCH_NAME), any())).thenReturn(response);
+    switch (boundary) {
+      case "load" -> when(findingsStore.loadDependencyRisks(BRANCH_NAME)).thenThrow(failure);
+      case "replace" -> doThrow(failure).when(findingsStore).replaceAllDependencyRisksOfBranch(eq(BRANCH_NAME), any());
+      default -> when(scaApi.getIssuesReleases(eq(PROJECT_KEY), eq(BRANCH_NAME), any())).thenThrow(failure);
+    }
+
+    assertThatThrownBy(() -> underTest.synchronize(serverApiWith(scaApi), CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, new SonarLintCancelMonitor()))
+      .isSameAs(failure);
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+    verify(eventPublisher, never()).publishEvent(any(DependencyRisksSynchronizedEvent.class));
+  }
+
+  @Test
+  void should_not_publish_event_when_no_risks_changed() {
+    when(scaApi.getIssuesReleases(eq(PROJECT_KEY), eq(BRANCH_NAME), any()))
+      .thenReturn(new GetIssuesReleasesResponse(List.of(), new GetIssuesReleasesResponse.Page(0)));
+    underTest.synchronize(serverApiWith(scaApi), CONNECTION_ID, PROJECT_KEY, BRANCH_NAME, new SonarLintCancelMonitor());
+    verify(findingsStore).replaceAllDependencyRisksOfBranch(BRANCH_NAME, List.of());
+    verify(eventPublisher, never()).publishEvent(any(DependencyRisksSynchronizedEvent.class));
   }
 
   @Test

@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import com.google.common.base.Enums;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import io.sentry.Sentry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +32,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -39,6 +44,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
@@ -73,19 +80,35 @@ public class RulesApi {
   }
 
   public Optional<ServerRule> getRule(String ruleKey, SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     try (var response = serverApiHelper.get(builder.toString(), cancelMonitor)) {
       var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
+      rejectUnknownEnum(rule, Rules.Rule.TYPE_FIELD_NUMBER);
+      rejectUnknownEnum(rule, Rules.Rule.CLEANCODEATTRIBUTE_FIELD_NUMBER);
       var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
-      var impacts = rule.getImpacts().getImpactsList().stream().collect(toMap(
-        impact -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()),
-        impact -> ImpactSeverity.mapSeverity(impact.getSeverity().name())));
-      return Optional.of(new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
+      var impacts = rule.getImpacts().getImpactsList().stream().map(RulesApi::convertImpact).collect(toMap(
+        Map.Entry::getKey,
+        Map.Entry::getValue,
+        (first, duplicate) -> { throw new InvalidServerItemException("Duplicate rule impact quality"); }));
+      var severity = parseEnum("rule severity", () -> IssueSeverity.valueOf(rule.getSeverity()));
+      var type = parseEnum("rule type", () -> RuleType.valueOf(rule.getType().name()));
+      if (SonarLanguage.forKey(rule.getLang()).isEmpty()) {
+        throw new InvalidServerItemException("Unsupported rule language");
+      }
+      var result = new ServerRule(rule.getName(), severity, type, rule.getLang(), rule.getHtmlDesc(),
         convertDescriptionSections(rule),
-        rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()), cleanCodeAttribute, impacts));
+        rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()), cleanCodeAttribute, impacts);
+      cancelMonitor.checkCanceled();
+      return Optional.of(result);
     } catch (Exception e) {
+      rethrowCancellation(e);
+      cancelMonitor.checkCanceled();
       LOG.error("Error when fetching rule '" + ruleKey + "'", e);
+      if (e instanceof InvalidServerItemException || (e instanceof InvalidProtocolBufferException protobuf && protobuf.unwrapIOException() == protobuf)) {
+        Sentry.captureException(e);
+      }
     }
     return Optional.empty();
   }
@@ -110,29 +133,72 @@ public class RulesApi {
     Map<String, ServerActiveRule> activeRulesByKey = new HashMap<>();
     Map<String, String> ruleTemplatesByRuleKey = new HashMap<>();
     serverApiHelper.getPaginated(getSearchByQualityProfileUrl(qualityProfileKey),
-      Rules.SearchResponse::parseFrom,
+      response -> Rules.SearchResponse.parser().parsePartialFrom(response),
       r -> r.hasPaging() ? r.getPaging().getTotal() : r.getTotal(),
       r -> {
-        ruleTemplatesByRuleKey.putAll(r.getRulesList().stream().collect(toMap(Rules.Rule::getKey, Rules.Rule::getTemplateKey)));
+        r.getRulesList().forEach(rule -> ruleTemplatesByRuleKey.put(rule.getKey(), rule.getTemplateKey()));
         return List.copyOf(r.getActives().getActivesMap().entrySet());
       },
       activeEntry -> {
         var ruleKey = activeEntry.getKey();
-        // Since we are querying rules for a given profile, we know there will be only one active rule per rule
-        Rules.Active ar = activeEntry.getValue().getActiveListList().get(0);
-        activeRulesByKey.put(ruleKey, new ServerActiveRule(
-          ruleKey,
-          IssueSeverity.valueOf(ar.getSeverity()),
-          ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
-          ruleTemplatesByRuleKey.get(ruleKey),
-          ar.getImpacts().getImpactsList().stream()
-            .map(impact -> new ImpactPayload(impact.getSoftwareQuality().toString(), ImpactSeverity.mapSeverity(impact.getSeverity().name()).name()))
-            .toList()));
-
+        var activeRule = convertActiveRule(ruleKey, activeEntry.getValue(), ruleTemplatesByRuleKey.get(ruleKey));
+        activeRulesByKey.put(ruleKey, activeRule);
       },
       false,
       cancelMonitor);
     return activeRulesByKey.values();
+  }
+
+  private static ServerActiveRule convertActiveRule(String ruleKey, Rules.ActiveList activeList, String templateKey) {
+    if (activeList.getActiveListCount() == 0) {
+      throw new InvalidServerItemException("Missing active rule for '" + ruleKey + "'");
+    }
+    // The search is restricted to one profile, so only the first active entry is consumed.
+    var active = activeList.getActiveList(0);
+    var severity = parseEnum("active rule severity", () -> IssueSeverity.valueOf(active.getSeverity()));
+    Map<String, String> params = new HashMap<>();
+    for (var param : active.getParamsList()) {
+      if (params.putIfAbsent(param.getKey(), param.getValue()) != null) {
+        throw new InvalidServerItemException("Duplicate active rule parameter '" + param.getKey() + "'");
+      }
+    }
+    var impacts = active.getImpacts().getImpactsList().stream().map(RulesApi::convertImpact)
+      .map(impact -> new ImpactPayload(impact.getKey().name(), impact.getValue().name())).toList();
+    return new ServerActiveRule(ruleKey, severity, params, templateKey, impacts);
+  }
+
+  private static Map.Entry<SoftwareQuality, ImpactSeverity> convertImpact(Common.Impact impact) {
+    rejectUnknownEnum(impact, Common.Impact.SOFTWAREQUALITY_FIELD_NUMBER);
+    rejectUnknownEnum(impact, Common.Impact.SEVERITY_FIELD_NUMBER);
+    if (!impact.hasSoftwareQuality() || !impact.hasSeverity()) {
+      throw new InvalidServerItemException("Missing required rule impact quality or severity");
+    }
+    return Map.entry(
+      parseEnum("rule impact quality", () -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name())),
+      parseEnum("rule impact severity", () -> ImpactSeverity.mapSeverity(impact.getSeverity().name())));
+  }
+
+  private static void rejectUnknownEnum(Message message, int fieldNumber) {
+    if (!message.getUnknownFields().getField(fieldNumber).getVarintList().isEmpty()) {
+      throw new InvalidServerItemException("Unknown rule enum value in field " + fieldNumber);
+    }
+  }
+
+  private static <T> T parseEnum(String field, Supplier<T> parser) {
+    try {
+      return parser.get();
+    } catch (IllegalArgumentException e) {
+      throw new InvalidServerItemException("Unsupported " + field, e);
+    }
+  }
+
+  private static void rethrowCancellation(Exception exception) {
+    var seen = new HashSet<Throwable>();
+    for (Throwable cause = exception; cause != null && seen.add(cause); cause = cause.getCause()) {
+      if (cause instanceof CancellationException cancellation) {
+        throw cancellation;
+      }
+    }
   }
 
   private String getSearchByQualityProfileUrl(String qualityProfileKey) {

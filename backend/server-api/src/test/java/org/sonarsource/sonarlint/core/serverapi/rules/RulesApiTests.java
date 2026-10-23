@@ -19,10 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.UnknownFieldSet;
+import io.sentry.Sentry;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import mockwebserver3.MockResponse;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -31,19 +47,297 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.exception.InvalidServerItemException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class RulesApiTests {
+  private MockedStatic<Sentry> sentry;
+
+  @BeforeEach
+  void mockSentry() {
+    var logger = Sentry.logger();
+    sentry = mockStatic(Sentry.class);
+    sentry.when(Sentry::logger).thenReturn(logger);
+  }
+
+  @AfterEach
+  void closeSentry() {
+    sentry.close();
+  }
+
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
+
+  private static final String SEARCH_URL = "/api/rules/search.protobuf?qprofile=profile&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=";
+
+  @ParameterizedTest
+  @ValueSource(strings = {"empty", "severity", "duplicate", "missingImpact", "unknownQuality", "unknownSeverity", "unsupportedQuality", "unsupportedSeverity"})
+  void should_skip_malformed_active_rules_and_report_once(String invalidKind) {
+    var invalid = active("MAJOR");
+    switch (invalidKind) {
+      case "severity" -> invalid.setSeverity("NEW_SEVERITY");
+      case "duplicate" -> invalid.addParams(Rules.Active.Param.newBuilder().setKey("key").setValue("a"))
+        .addParams(Rules.Active.Param.newBuilder().setKey("key").setValue("b"));
+      case "missingImpact" -> invalid.setImpacts(Rules.Active.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder().buildPartial()).buildPartial());
+      case "unknownQuality", "unknownSeverity" -> {
+        var field = "unknownQuality".equals(invalidKind) ? Common.Impact.SOFTWAREQUALITY_FIELD_NUMBER : Common.Impact.SEVERITY_FIELD_NUMBER;
+        var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.HIGH);
+        if (field == Common.Impact.SOFTWAREQUALITY_FIELD_NUMBER) { impact.clearSoftwareQuality(); } else { impact.clearSeverity(); }
+        impact.setUnknownFields(unknownEnum(field));
+        invalid.setImpacts(Rules.Active.Impacts.newBuilder().addImpacts(impact.buildPartial()).buildPartial());
+      }
+      case "unsupportedQuality" -> invalid.setImpacts(Rules.Active.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder()
+        .setSoftwareQuality(Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY).setSeverity(Common.ImpactSeverity.HIGH)));
+      case "unsupportedSeverity" -> invalid.setImpacts(Rules.Active.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder()
+        .setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY)));
+      default -> {
+        // The empty case is represented by the active list with no entries below.
+      }
+    }
+    var invalidList = Rules.ActiveList.newBuilder();
+    if (!"empty".equals(invalidKind)) { invalidList.addActiveList(invalid.buildPartial()); }
+    mockServer.addProtobufResponse(SEARCH_URL + "1", Rules.SearchResponse.newBuilder().setTotal(3).setActives(Rules.Actives.newBuilder()
+      .putActives("first", Rules.ActiveList.newBuilder().addActiveList(active("MINOR")).build())
+      .putActives("invalid", invalidList.buildPartial())
+      .putActives("last", Rules.ActiveList.newBuilder().addActiveList(active("BLOCKER")).build()).buildPartial()).buildPartial());
+
+    var result = new RulesApi(mockServer.serverApiHelper()).getAllActiveRules("profile", new SonarLintCancelMonitor());
+
+    assertThat(result).extracting(ServerActiveRule::getRuleKey).containsExactlyInAnyOrder("first", "last");
+    var captor = ArgumentCaptor.forClass(Throwable.class);
+    sentry.verify(() -> Sentry.captureException(captor.capture()));
+    assertThat(captor.getValue()).isInstanceOf(InvalidServerItemException.class);
+    if (List.of("severity", "unsupportedQuality", "unsupportedSeverity").contains(invalidKind)) {
+      assertThat(captor.getValue()).hasCauseInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Test
+  void should_keep_valid_duplicate_when_later_active_is_malformed() {
+    mockServer.addProtobufResponse(SEARCH_URL + "1", Rules.SearchResponse.newBuilder().setTotal(501)
+      .addRules(Rules.Rule.newBuilder().setKey("same").setTemplateKey("old"))
+      .addRules(Rules.Rule.newBuilder().setKey("same").setTemplateKey("latest"))
+      .setActives(Rules.Actives.newBuilder().putActives("same", Rules.ActiveList.newBuilder().addActiveList(active("MINOR")).build())).build());
+    mockServer.addProtobufResponse(SEARCH_URL + "2", Rules.SearchResponse.newBuilder().setTotal(501)
+      .setActives(Rules.Actives.newBuilder().putActives("same", Rules.ActiveList.getDefaultInstance())).build());
+
+    var result = new RulesApi(mockServer.serverApiHelper()).getAllActiveRules("profile", new SonarLintCancelMonitor());
+
+    assertThat(result).extracting("ruleKey", "severity", "templateKey").containsExactly(tuple("same", IssueSeverity.MINOR, "latest"));
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)));
+  }
+
+  @Test
+  void should_continue_after_entirely_rejected_active_page() {
+    mockServer.addProtobufResponse(SEARCH_URL + "1", Rules.SearchResponse.newBuilder().setTotal(501)
+      .setActives(Rules.Actives.newBuilder().putActives("invalid", Rules.ActiveList.getDefaultInstance())).build());
+    mockServer.addProtobufResponse(SEARCH_URL + "2", Rules.SearchResponse.newBuilder().setTotal(501)
+      .setActives(Rules.Actives.newBuilder().putActives("valid", Rules.ActiveList.newBuilder().addActiveList(active("MAJOR")).build())).build());
+
+    assertThat(new RulesApi(mockServer.serverApiHelper()).getAllActiveRules("profile", new SonarLintCancelMonitor()))
+      .extracting(ServerActiveRule::getRuleKey).containsExactly("valid");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)));
+  }
+
+  @Test
+  void should_accept_severity_aliases_and_ignore_unused_partial_metadata() {
+    var impacts = Rules.Active.Impacts.newBuilder();
+    for (var severity : List.of(Common.ImpactSeverity.ImpactSeverity_INFO, Common.ImpactSeverity.ImpactSeverity_BLOCKER)) {
+      impacts.addImpacts(Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(severity));
+    }
+    mockServer.addProtobufResponse(SEARCH_URL + "1", Rules.SearchResponse.newBuilder().setTotal(1)
+      .addRules(Rules.Rule.newBuilder().setKey("valid").setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+        .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().buildPartial()).buildPartial()).buildPartial())
+      .setActives(Rules.Actives.newBuilder().putActives("valid", Rules.ActiveList.newBuilder()
+        .addActiveList(active("MAJOR").setImpacts(impacts).setUnknownFields(unknownEnum(1234)))
+        .addActiveList(active("unused invalid severity")).build())).buildPartial());
+
+    var result = new RulesApi(mockServer.serverApiHelper()).getAllActiveRules("profile", new SonarLintCancelMonitor());
+    assertThat(result).hasSize(1);
+    assertThat(result.iterator().next().getOverriddenImpacts()).extracting("severity").containsExactly("INFO", "BLOCKER");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"direct", "wrapped", "monitor", "successMonitor"})
+  void should_propagate_rule_cancellation_without_reporting(String mode) {
+    var helper = mock(ServerApiHelper.class);
+    var monitor = new SonarLintCancelMonitor();
+    when(helper.getOrganizationKey()).thenReturn(Optional.empty());
+    var cancellation = new CancellationException();
+    if ("monitor".equals(mode)) {
+      when(helper.get(anyString(), any())).thenAnswer(invocation -> { monitor.cancel(); throw new IllegalStateException(); });
+    } else if ("successMonitor".equals(mode)) {
+      var response = mock(HttpClient.Response.class);
+      when(response.bodyAsStream()).thenAnswer(invocation -> {
+        monitor.cancel();
+        return new java.io.ByteArrayInputStream(Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder()
+          .setLang("java").setSeverity("MAJOR").setType(Common.RuleType.BUG)).build().toByteArray());
+      });
+      when(helper.get(anyString(), any())).thenReturn(response);
+    } else {
+      when(helper.get(anyString(), any())).thenThrow("direct".equals(mode) ? cancellation : new CompletionException(cancellation));
+    }
+    var rulesApi = new RulesApi(helper);
+    assertThatThrownBy(() -> rulesApi.getRule("key", monitor)).isInstanceOf(CancellationException.class);
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @Test
+  void should_not_fetch_rule_when_monitor_already_canceled() {
+    var helper = mock(ServerApiHelper.class);
+    var monitor = new SonarLintCancelMonitor();
+    monitor.cancel();
+    var rulesApi = new RulesApi(helper);
+    assertThatThrownBy(() -> rulesApi.getRule("key", monitor)).isInstanceOf(CancellationException.class);
+    verify(helper, never()).get(anyString(), any());
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"omitted", "recognizedUnknown", "numericUnknown"})
+  void should_preserve_clean_code_attribute_defaults_and_reject_unknown_numbers(String mode) {
+    var rule = Rules.Rule.newBuilder().setLang("java").setSeverity("MAJOR").setType(Common.RuleType.BUG);
+    if ("recognizedUnknown".equals(mode)) { rule.setCleanCodeAttribute(Common.CleanCodeAttribute.UNKNOWN_ATTRIBUTE); }
+    if ("numericUnknown".equals(mode)) { rule.setUnknownFields(unknownEnum(Rules.Rule.CLEANCODEATTRIBUTE_FIELD_NUMBER)); }
+    mockServer.addProtobufResponse("/api/rules/show.protobuf?key=key", Rules.ShowResponse.newBuilder().setRule(rule).build());
+
+    var result = new RulesApi(mockServer.serverApiHelper()).getRule("key", new SonarLintCancelMonitor());
+    if ("numericUnknown".equals(mode)) {
+      assertThat(result).isEmpty();
+      sentry.verify(() -> Sentry.captureException(any(Throwable.class)));
+    } else {
+      assertThat(result).hasValueSatisfying(value -> assertThat(value.getCleanCodeAttribute()).isNull());
+      sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+    }
+  }
+
+  @Test
+  void should_propagate_malformed_active_wire_data() {
+    mockServer.addStringResponse(SEARCH_URL + "1", "trash");
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+    var monitor = new SonarLintCancelMonitor();
+    assertThatThrownBy(() -> rulesApi.getAllActiveRules("profile", monitor))
+      .isInstanceOf(IllegalStateException.class);
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  private static Rules.Active.Builder active(String severity) {
+    return Rules.Active.newBuilder().setSeverity(severity);
+  }
+
+  private static UnknownFieldSet unknownEnum(int field) {
+    return UnknownFieldSet.newBuilder().addField(field, UnknownFieldSet.Field.newBuilder().addVarint(999).build()).build();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {400, 401, 403, 404, 429, 500})
+  void should_log_http_errors_without_reporting_to_sentry(int status) {
+    mockServer.addResponse("/api/rules/show.protobuf?key=java:S1234", new MockResponse.Builder().code(status)
+      .body("{\"errors\":[{\"msg\":\"Operational failure for customer project\"}]}").build());
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @Test
+  void should_log_network_errors_without_reporting_to_sentry() {
+    var client = mock(HttpClient.class);
+    when(client.getAsync(anyString())).thenReturn(CompletableFuture.failedFuture(new IOException("https://customer.example/project")));
+    var rulesApi = new RulesApi(new ServerApiHelper(mockServer.endpointParams(), client));
+
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @Test
+  void should_log_body_read_failure_wrapped_by_protobuf_without_reporting_to_sentry() {
+    var helper = mock(ServerApiHelper.class);
+    var response = mock(HttpClient.Response.class);
+    var stream = new InputStream() {
+      @Override
+      public int read() throws IOException {
+        throw new IOException("Cannot read https://customer.example/project");
+      }
+    };
+    when(helper.getOrganizationKey()).thenReturn(Optional.empty());
+    when(helper.get(anyString(), any())).thenReturn(response);
+    when(response.bodyAsStream()).thenReturn(stream);
+    var rulesApi = new RulesApi(helper);
+
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @Test
+  void should_log_unexpected_runtime_failure_without_reporting_to_sentry() {
+    var helper = mock(ServerApiHelper.class);
+    when(helper.getOrganizationKey()).thenReturn(Optional.empty());
+    when(helper.get(anyString(), any())).thenThrow(new IllegalArgumentException("unexpected programming error"));
+    var rulesApi = new RulesApi(helper);
+
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
+    sentry.verify(() -> Sentry.captureException(any(Throwable.class)), never());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"severity", "type", "quality", "impactSeverity", "duplicateImpact", "language"})
+  void should_report_malformed_singleton_rule_once(String invalidField) {
+    var rule = Rules.Rule.newBuilder().setLang("java").setSeverity("MAJOR").setType(Common.RuleType.BUG);
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.HIGH);
+    switch (invalidField) {
+      case "severity" -> rule.setSeverity("FUTURE_SEVERITY");
+      case "type" -> rule.setType(Common.RuleType.UNKNOWN);
+      case "quality" -> impact.setSoftwareQuality(Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY);
+      case "impactSeverity" -> impact.setSeverity(Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY);
+      case "language" -> rule.setLang("unsupported-language");
+      default -> {
+        // Duplicate quality is introduced below by adding the same impact twice.
+      }
+    }
+    var impacts = Rules.Rule.Impacts.newBuilder().addImpacts(impact);
+    if ("duplicateImpact".equals(invalidField)) {
+      impacts.addImpacts(impact);
+    }
+    mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234", Rules.ShowResponse.newBuilder().setRule(rule.setImpacts(impacts)).build());
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    var error = ArgumentCaptor.forClass(Throwable.class);
+    sentry.verify(() -> Sentry.captureException(error.capture()));
+    assertThat(error.getValue()).isInstanceOf(InvalidServerItemException.class);
+    if (!List.of("duplicateImpact", "language").contains(invalidField)) {
+      assertThat(error.getValue()).hasCauseInstanceOf(IllegalArgumentException.class);
+    }
+  }
 
   @Test
   void logErrorParsingRuleDescription() {
@@ -54,6 +348,9 @@ class RulesApiTests {
     assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
 
     assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
+    var error = ArgumentCaptor.forClass(Throwable.class);
+    sentry.verify(() -> Sentry.captureException(error.capture()));
+    assertThat(error.getValue()).isInstanceOf(InvalidProtocolBufferException.class);
   }
 
   @Test
