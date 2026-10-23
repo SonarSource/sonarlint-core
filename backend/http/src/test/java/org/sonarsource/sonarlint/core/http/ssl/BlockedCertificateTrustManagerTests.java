@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.http.ssl;
 
+import java.lang.management.ManagementFactory;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -176,19 +180,35 @@ class BlockedCertificateTrustManagerTests {
   void it_should_reject_a_chain_without_a_trusted_path_even_if_the_delegate_accepts_it() {
     var chain = new X509Certificate[] {trustedCertificate()};
     assertThatThrownBy(() -> underTest.checkServerTrusted(chain, "RSA"))
-      .isInstanceOf(CertificateException.class).hasMessageContaining("Certificate path could not be validated");
+      .isInstanceOf(CertificateException.class)
+      .hasMessage("Certificate path could not be validated")
+      .hasCauseInstanceOf(InvalidAlgorithmParameterException.class);
   }
 
   @Test
   void it_should_validate_downloaded_intermediates(@TempDir Path tempDir) throws Exception {
+    runPathValidationProbe(tempDir, "available-issuers");
+  }
+
+  @Test
+  void it_should_report_an_unavailable_issuer_as_a_path_failure(@TempDir Path tempDir) throws Exception {
+    runPathValidationProbe(tempDir, "unavailable-issuer");
+  }
+
+  private static void runPathValidationProbe(Path tempDir, String scenario) throws Exception {
     // AIA configuration is cached by the JDK, so enable it in a separate JVM.
     var output = tempDir.resolve("certificate-path-validation.log");
     var executable = Path.of(System.getProperty("java.home"), "bin", "java").toString();
-    var process = new ProcessBuilder(executable,
+    var command = new ArrayList<>(List.of(executable,
       "-Dcom.sun.security.enableAIAcaIssuers=true",
       "-Dcom.sun.security.allowedAIALocations=http://certificates.test/",
       "-cp", System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")),
-      CertificatePathValidationProbe.class.getName())
+      CertificatePathValidationProbe.class.getName(), scenario));
+    // Include the regression paths exercised in the child JVM in coverage reports.
+    command.addAll(1, ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
+      .filter(argument -> argument.startsWith("-javaagent:") && argument.contains("jacoco"))
+      .toList());
+    var process = new ProcessBuilder(command)
       .redirectErrorStream(true)
       .redirectOutput(output.toFile())
       .start();

@@ -27,7 +27,10 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.MessageDigest;
+import java.security.cert.CertPathBuilderException;
+import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -38,6 +41,7 @@ import java.util.Set;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 import nl.altindag.ssl.SSLFactory;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +57,10 @@ public class CertificatePathValidationProbe {
     var root = certificates[0];
     var blocked = certificates[1];
     var downloaded = new HashSet<String>();
+    if (args.length > 0 && "unavailable-issuer".equals(args[0])) {
+      assertUnavailableIssuer(root, certificates[5], downloaded);
+      return;
+    }
     serveIssuers(Map.of("/blocked.der", blocked.getEncoded(), "/allowed.der", certificates[2].getEncoded(),
       "/subordinate.der", certificates[3].getEncoded()), downloaded);
     var delegate = SSLFactory.builder().withTrustMaterial(root).build().getTrustManager().orElseThrow();
@@ -70,7 +78,11 @@ public class CertificatePathValidationProbe {
 
     var customTrust = SSLFactory.builder().withTrustMaterial(blocked).build().getTrustManager().orElseThrow();
     customTrust.checkServerTrusted(new X509Certificate[] {certificates[6]}, "RSA");
-    assertBlocked(new BlockedCertificateTrustManager(customTrust, blockedKeys), certificates[6]);
+    var protectedCustomTrust = new BlockedCertificateTrustManager(customTrust, blockedKeys);
+    assertThatThrownBy(() -> protectedCustomTrust.checkServerTrusted(new X509Certificate[] {certificates[6]}, "RSA"))
+      .isInstanceOf(CertificateException.class)
+      .hasMessage("Certificate path could not be validated")
+      .hasCauseInstanceOf(InvalidAlgorithmParameterException.class);
 
     // Legitimate AIA retrieval must still work, including the client-validation overloads.
     var allowedChain = new X509Certificate[] {certificates[5]};
@@ -85,12 +97,33 @@ public class CertificatePathValidationProbe {
 
   private static void assertBlocked(X509ExtendedTrustManager manager, X509Certificate leaf) {
     var chain = new X509Certificate[] {leaf};
-    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA")).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
-    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA", (Socket) null)).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
-    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA", (SSLEngine) null)).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
-    assertThatThrownBy(() -> manager.checkClientTrusted(chain, "RSA")).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
-    assertThatThrownBy(() -> manager.checkClientTrusted(chain, "RSA", (Socket) null)).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
-    assertThatThrownBy(() -> manager.checkClientTrusted(chain, "RSA", (SSLEngine) null)).isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
+    assertBlockedFailure(() -> manager.checkServerTrusted(chain, "RSA"));
+    assertBlockedFailure(() -> manager.checkServerTrusted(chain, "RSA", (Socket) null));
+    assertBlockedFailure(() -> manager.checkServerTrusted(chain, "RSA", (SSLEngine) null));
+    assertBlockedFailure(() -> manager.checkClientTrusted(chain, "RSA"));
+    assertBlockedFailure(() -> manager.checkClientTrusted(chain, "RSA", (Socket) null));
+    assertBlockedFailure(() -> manager.checkClientTrusted(chain, "RSA", (SSLEngine) null));
+  }
+
+  private static void assertBlockedFailure(ThrowingCallable validation) {
+    assertThatThrownBy(validation)
+      .isInstanceOf(CertificateException.class)
+      .hasMessage("Certificate path contains a blocked public key")
+      .hasCauseInstanceOf(CertPathValidatorException.class)
+      .satisfies(failure -> assertThat(((CertPathValidatorException) failure.getCause()).getReason())
+        .isEqualTo(BlockedCertificateTrustManager.RejectionReason.BLOCKED_PUBLIC_KEY));
+  }
+
+  private static void assertUnavailableIssuer(X509Certificate root, X509Certificate leaf, Set<String> downloaded) throws Exception {
+    serveIssuers(Map.of(), downloaded);
+    // Let the outer path check handle this failure independently of the delegate's trust decision.
+    var delegate = SSLFactory.builder().withTrustMaterial(root).withTrustEnhancer(parameters -> true).build().getTrustManager().orElseThrow();
+    var manager = new BlockedCertificateTrustManager(delegate);
+    assertThatThrownBy(() -> manager.checkServerTrusted(new X509Certificate[] {leaf}, "RSA"))
+      .isInstanceOf(CertificateException.class)
+      .hasMessage("Certificate path could not be validated")
+      .hasCauseInstanceOf(CertPathBuilderException.class);
+    assertThat(downloaded).contains("/allowed.der");
   }
 
   private static void serveIssuers(Map<String, byte[]> issuers, Set<String> downloaded) {
@@ -98,8 +131,12 @@ public class CertificatePathValidationProbe {
     URL.setURLStreamHandlerFactory(protocol -> "http".equals(protocol) ? new URLStreamHandler() {
       @Override
       protected URLConnection openConnection(URL url) throws IOException {
-        if (!"certificates.test".equals(url.getHost()) || !issuers.containsKey(url.getPath())) {
+        if (!"certificates.test".equals(url.getHost())) {
           throw new IOException("Unexpected certificate URL: " + url);
+        }
+        downloaded.add(url.getPath());
+        if (!issuers.containsKey(url.getPath())) {
+          throw new IOException("Certificate issuer is unavailable");
         }
         return new HttpURLConnection(url) {
           @Override
@@ -124,7 +161,6 @@ public class CertificatePathValidationProbe {
 
           @Override
           public InputStream getInputStream() {
-            downloaded.add(url.getPath());
             return new ByteArrayInputStream(issuers.get(url.getPath()));
           }
         };

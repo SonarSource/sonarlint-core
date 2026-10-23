@@ -24,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathBuilderException;
 import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
@@ -38,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
@@ -116,6 +118,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
   }
 
   private void checkCertificatePath(X509Certificate[] chain) throws CertificateException {
+    var checker = new BlockedPublicKeyChecker();
     try {
       // Read the current issuers after delegation: custom trust can grow when a user approves a certificate.
       var anchors = Arrays.stream(delegate.getAcceptedIssuers())
@@ -129,11 +132,19 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
       parameters.setRevocationEnabled(false);
       parameters.setMaxPathLength(-1);
       parameters.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(Arrays.asList(chain))));
-      parameters.addCertPathChecker(new BlockedPublicKeyChecker());
+      parameters.addCertPathChecker(checker);
       // AIA can supply intermediates that were absent from both the peer chain and the trust store.
       CertPathBuilder.getInstance("PKIX").build(parameters);
+    } catch (CertPathBuilderException e) {
+      var rejection = checker.rejection.get();
+      if (rejection != null) {
+        var failure = new CertificateException(rejection.getMessage(), rejection);
+        failure.addSuppressed(e);
+        throw failure;
+      }
+      throw new CertificateException("Certificate path could not be validated", e);
     } catch (GeneralSecurityException e) {
-      throw new CertificateException("Certificate path could not be validated without blocked public keys", e);
+      throw new CertificateException("Certificate path could not be validated", e);
     }
   }
 
@@ -146,7 +157,14 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     }
   }
 
+  enum RejectionReason implements CertPathValidatorException.Reason {
+    BLOCKED_PUBLIC_KEY
+  }
+
   private final class BlockedPublicKeyChecker extends PKIXCertPathChecker {
+    // PKIX clones its checkers and can discard their exceptions when it backtracks.
+    private final AtomicReference<CertPathValidatorException> rejection = new AtomicReference<>();
+
     @Override
     public void init(boolean forward) {
       // Public-key checks do not depend on traversal direction or previous certificates.
@@ -165,7 +183,9 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     @Override
     public void check(Certificate certificate, Collection<String> unresolvedCritExts) throws CertPathValidatorException {
       if (isBlocked((X509Certificate) certificate)) {
-        throw new CertPathValidatorException("Certificate path contains a blocked public key");
+        var failure = new CertPathValidatorException("Certificate path contains a blocked public key", null, null, -1, RejectionReason.BLOCKED_PUBLIC_KEY);
+        rejection.compareAndSet(null, failure);
+        throw failure;
       }
     }
   }
