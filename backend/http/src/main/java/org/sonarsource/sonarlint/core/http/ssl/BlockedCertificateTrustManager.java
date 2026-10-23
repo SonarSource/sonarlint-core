@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -62,6 +63,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
 
   private final X509ExtendedTrustManager delegate;
   private final Set<String> blockedKeys;
+  private volatile TrustMaterial trustMaterial;
 
   public BlockedCertificateTrustManager(X509ExtendedTrustManager delegate) {
     this(delegate, BLOCKED_KEYS);
@@ -70,6 +72,7 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
   BlockedCertificateTrustManager(X509ExtendedTrustManager delegate, Set<String> blockedKeys) {
     this.delegate = delegate;
     this.blockedKeys = Set.copyOf(blockedKeys);
+    this.trustMaterial = loadTrustMaterial(delegate.getAcceptedIssuers());
   }
 
   public static SSLFactory protect(SSLFactory factory) {
@@ -83,23 +86,14 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
     if (chain == null || chain.length == 0) {
       throw new CertificateException("Certificate chain is empty");
     }
-    try {
-      var digest = MessageDigest.getInstance("SHA-256");
-      for (var certificate : chain) {
-        var fingerprint = HexFormat.of().formatHex(digest.digest(certificate.getPublicKey().getEncoded()));
-        if (blockedKeys.contains(fingerprint)) {
-          throw new CertificateException("Certificate chain contains a blocked public key");
-        }
+    for (var certificate : chain) {
+      if (isBlocked(certificate)) {
+        throw new CertificateException("Certificate chain contains a blocked public key");
       }
-      // A locally trusted issuer may be omitted from the peer's chain.
-      for (var issuer : delegate.getAcceptedIssuers()) {
-        var fingerprint = HexFormat.of().formatHex(digest.digest(issuer.getPublicKey().getEncoded()));
-        if (blockedKeys.contains(fingerprint)) {
-          rejectCertificatesSignedBy(chain, issuer);
-        }
-      }
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("SHA-256 is required for certificate validation", e);
+    }
+    // A locally trusted issuer may be omitted from the peer's chain.
+    for (var anchor : trustMaterial.blockedAnchors()) {
+      rejectCertificatesSignedBy(chain, anchor.getTrustedCert());
     }
   }
 
@@ -118,18 +112,13 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
 
   private void checkCertificatePath(X509Certificate[] chain) throws CertificateException {
     var checker = new BlockedPublicKeyChecker();
-    var anchors = new HashSet<TrustAnchor>();
-    var blockedAnchors = new HashSet<TrustAnchor>();
-    // Read the current issuers after delegation: custom trust can grow when a user approves a certificate.
-    for (var issuer : delegate.getAcceptedIssuers()) {
-      (isBlocked(issuer) ? blockedAnchors : anchors).add(new TrustAnchor(issuer, null));
-    }
+    var current = currentTrustMaterial();
     try {
-      buildCertificatePath(chain, anchors, checker);
+      buildCertificatePath(chain, current.anchors(), checker);
     } catch (GeneralSecurityException e) {
       var rejection = checker.rejection.get();
-      if (rejection == null && !blockedAnchors.isEmpty()) {
-        rejection = findBlockedAnchorRejection(chain, blockedAnchors);
+      if (rejection == null && !current.blockedAnchors().isEmpty()) {
+        rejection = findBlockedAnchorRejection(chain, current.blockedAnchors());
       }
       if (rejection != null) {
         var failure = new CertificateException(rejection.getMessage(), rejection);
@@ -138,6 +127,29 @@ public final class BlockedCertificateTrustManager extends X509ExtendedTrustManag
       }
       throw new CertificateException("Certificate path could not be validated", e);
     }
+  }
+
+  private TrustMaterial currentTrustMaterial() {
+    // Read after delegation: custom trust can grow when a user approves a certificate.
+    var issuers = delegate.getAcceptedIssuers();
+    var current = trustMaterial;
+    if (!current.issuers().equals(Arrays.asList(issuers))) {
+      current = loadTrustMaterial(issuers);
+      trustMaterial = current;
+    }
+    return current;
+  }
+
+  private TrustMaterial loadTrustMaterial(X509Certificate[] issuers) {
+    var anchors = new HashSet<TrustAnchor>();
+    var blockedAnchors = new HashSet<TrustAnchor>();
+    for (var issuer : issuers) {
+      (isBlocked(issuer) ? blockedAnchors : anchors).add(new TrustAnchor(issuer, null));
+    }
+    return new TrustMaterial(List.of(issuers), Set.copyOf(anchors), Set.copyOf(blockedAnchors));
+  }
+
+  private record TrustMaterial(List<X509Certificate> issuers, Set<TrustAnchor> anchors, Set<TrustAnchor> blockedAnchors) {
   }
 
   private static void buildCertificatePath(X509Certificate[] chain, Set<TrustAnchor> anchors, BlockedPublicKeyChecker checker)

@@ -24,11 +24,14 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.MessageDigest;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -40,19 +43,26 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class BlockedCertificateTrustManagerTests {
   private final X509ExtendedTrustManager delegate = mock(X509ExtendedTrustManager.class);
-  private final BlockedCertificateTrustManager underTest = new BlockedCertificateTrustManager(delegate);
+  private BlockedCertificateTrustManager underTest;
 
   @BeforeEach
   void prepareDelegate() {
     when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[0]);
+    underTest = new BlockedCertificateTrustManager(delegate);
+    clearInvocations(delegate);
   }
 
   @Test
@@ -119,6 +129,7 @@ class BlockedCertificateTrustManagerTests {
   @Test
   void it_should_wrap_the_composite_including_permissive_custom_trust() throws Exception {
     var factory = BlockedCertificateTrustManager.protect(SSLFactory.builder().withTrustMaterial(delegate).build());
+    clearInvocations(delegate);
     try (var input = getClass().getResourceAsStream("/ssl/blocked-intermediates.pem")) {
       var certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(input);
       assertThatThrownBy(() -> factory.getTrustManager().orElseThrow().checkServerTrusted(new X509Certificate[] {certificate}, "EC"))
@@ -135,9 +146,64 @@ class BlockedCertificateTrustManagerTests {
       when(leaf.getPublicKey()).thenReturn(trustedCertificate().getPublicKey());
       when(leaf.getIssuerX500Principal()).thenReturn(issuer.getSubjectX500Principal());
       when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {issuer});
+      underTest = new BlockedCertificateTrustManager(delegate);
       assertThatThrownBy(() -> underTest.checkServerTrusted(new X509Certificate[] {leaf}, "EC"))
         .isInstanceOf(CertificateException.class).hasMessageContaining("blocked public key");
       verify(leaf).verify(issuer.getPublicKey());
+    }
+  }
+
+  @Test
+  void it_should_not_rehash_trusted_issuers_for_each_handshake() throws Exception {
+    var issuer = spy(trustedCertificate());
+    when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {issuer});
+    var manager = new BlockedCertificateTrustManager(delegate);
+    var chain = new X509Certificate[] {trustedCertificate()};
+    var failure = new CertificateException("Untrusted chain");
+    doThrow(failure).when(delegate).checkServerTrusted(chain, "RSA");
+    clearInvocations(issuer);
+
+    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA")).isSameAs(failure);
+    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA")).isSameAs(failure);
+
+    verify(issuer, never()).getPublicKey();
+    verify(delegate, times(1)).getAcceptedIssuers();
+  }
+
+  @Test
+  void it_should_stop_using_removed_trust_anchors() throws Exception {
+    var chain = new X509Certificate[] {trustedCertificate()};
+    when(delegate.getAcceptedIssuers()).thenReturn(chain);
+    var manager = new BlockedCertificateTrustManager(delegate);
+    manager.checkServerTrusted(chain, "RSA");
+
+    when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[0]);
+
+    assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA"))
+      .isInstanceOf(CertificateException.class)
+      .hasMessage("Certificate path could not be validated")
+      .hasCauseInstanceOf(InvalidAlgorithmParameterException.class);
+  }
+
+  @Test
+  void it_should_refresh_blocked_issuers_added_during_delegate_validation() throws Exception {
+    try (var input = getClass().getResourceAsStream("/ssl/aia-chains.pem")) {
+      var certificates = CertificateFactory.getInstance("X.509").generateCertificates(input).toArray(X509Certificate[]::new);
+      var blocked = certificates[1];
+      var chain = new X509Certificate[] {certificates[4]};
+      var blockedKeys = Set.of(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(blocked.getPublicKey().getEncoded())));
+      when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {certificates[0]});
+      var manager = new BlockedCertificateTrustManager(delegate, blockedKeys);
+      doAnswer(invocation -> {
+        when(delegate.getAcceptedIssuers()).thenReturn(new X509Certificate[] {blocked});
+        return null;
+      }).when(delegate).checkServerTrusted(chain, "RSA");
+
+      assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA"))
+        .isInstanceOf(CertificateException.class).hasMessage("Certificate path contains a blocked public key");
+      assertThatThrownBy(() -> manager.checkServerTrusted(chain, "RSA"))
+        .isInstanceOf(CertificateException.class).hasMessage("Certificate chain contains a blocked public key");
+      verify(delegate, times(1)).checkServerTrusted(chain, "RSA");
     }
   }
 
