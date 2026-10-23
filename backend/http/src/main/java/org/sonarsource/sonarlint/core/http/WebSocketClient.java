@@ -27,10 +27,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import nl.altindag.ssl.SSLFactory;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.http.ssl.BlockedCertificateTrustManager;
 
 public class WebSocketClient {
 
@@ -48,7 +46,6 @@ public class WebSocketClient {
     this.token = token;
     this.httpClient = HttpClient
       .newBuilder()
-      .sslContext(BlockedCertificateTrustManager.protect(SSLFactory.builder().withDefaultTrustMaterial().build()).getSslContext())
       // Don't use the default thread pool as it won't allow inheriting thread local variables
       .executor(executor)
       .build();

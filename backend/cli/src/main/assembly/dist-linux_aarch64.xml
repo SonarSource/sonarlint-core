@@ -40,7 +40,6 @@
       <outputDirectory>jre</outputDirectory>
       <excludes>
         <exclude>bin/**</exclude>
-        <exclude>lib/security/blocked.certs</exclude>
         <exclude>man/**</exclude>
         <exclude>lib/jspawnhelper</exclude>
         <exclude>lib/jexec</exclude>
@@ -69,11 +68,4 @@
       <fileMode>0755</fileMode>
     </fileSet>
   </fileSets>
-  <files>
-    <file>
-      <source>src/main/security/blocked.certs</source>
-      <outputDirectory>jre/lib/security</outputDirectory>
-      <fileMode>0644</fileMode>
-    </file>
-  </files>
 </assembly>
