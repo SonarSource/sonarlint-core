@@ -58,7 +58,7 @@ public abstract class AbstractConnectedTests {
 
   public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
   protected static final String SONARLINT_USER = "sonarlint";
-  protected static final String SONARLINT_PWD = "sonarlintpwd";
+  protected static final String SONARLINT_PWD = "Sonarlint_Passw0rd!";
   protected static final String MAIN_BRANCH_NAME = "master";
 
   protected static WsClient newAdminWsClient(Orchestrator orchestrator) {
