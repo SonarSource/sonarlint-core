@@ -38,6 +38,11 @@ import org.sonarsource.sonarlint.core.os.OsSearchPath;
 
 final class OsExecutableSearch {
 
+  /**
+   * Internal, for tests of clients: replaces the PATH (or the macOS path_helper output) searched for the SonarQube CLI
+   * and agent CLIs. The standard install locations are still searched. An empty value searches no PATH directory.
+   */
+  static final String SEARCH_PATH_PROPERTY = "sonarlint.internal.ai.searchPath";
   private static final long PATH_RESOLVE_TIMEOUT_MILLIS = 30_000L;
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -69,8 +74,14 @@ final class OsExecutableSearch {
   @Nullable
   synchronized String resolvePath() {
     if (!pathResolved) {
-      resolvedPath = OsSearchPath.resolve(system2, environment, pathHelperLocation, commandExecutor,
-        PATH_RESOLVE_TIMEOUT_MILLIS);
+      var forcedPath = system2.property(SEARCH_PATH_PROPERTY);
+      if (forcedPath != null) {
+        LOG.debug("Searching AI tools in the path set by {}: {}", SEARCH_PATH_PROPERTY, forcedPath);
+        resolvedPath = forcedPath;
+      } else {
+        resolvedPath = OsSearchPath.resolve(system2, environment, pathHelperLocation, commandExecutor,
+          PATH_RESOLVE_TIMEOUT_MILLIS);
+      }
       pathResolved = true;
     }
     return resolvedPath;
