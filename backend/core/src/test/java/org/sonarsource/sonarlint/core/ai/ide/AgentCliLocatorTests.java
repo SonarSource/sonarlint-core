@@ -199,6 +199,59 @@ class AgentCliLocatorTests {
     assertThat(locator.discover()).containsExactly(AiAgent.CLAUDE_CODE);
   }
 
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_discover_agent_cli_in_forced_search_path_instead_of_path() throws IOException {
+    var pathClaude = createExecutable("path-bin/claude");
+    var forcedCodex = createExecutable("forced-bin/codex");
+    var commands = new ArrayList<String>();
+    var executor = commandReturning((command, stdout) -> {
+      commands.add(command.toCommandLine());
+      stdout.consumeLine(command.toCommandLine().contains("codex") ? "codex-cli 0.87.0" : "Claude Code 2.1.0");
+      return 0;
+    });
+    var system2 = mock(System2.class);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn(forcedCodex.getParent().toString());
+    var locator = newLocator(system2, Map.of("PATH", pathClaude.getParent().toString()), executor, OsSearchPath.MAC_OS_PATH_HELPER);
+
+    assertThat(locator.discover()).containsExactly(AiAgent.CODEX);
+    assertThat(commands).noneMatch(command -> command.contains(pathClaude.toString()));
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_probe_agent_cli_with_forced_search_path_on_mac_os() throws IOException {
+    var claude = createExecutable("forced-bin/claude");
+    var pathHelper = createPathHelper();
+    var commands = new ArrayList<String>();
+    var executor = commandReturning((command, stdout) -> {
+      commands.add(command.toCommandLine());
+      assertThat(command.getEnvironmentVariables()).containsEntry("PATH", claude.getParent().toString());
+      stdout.consumeLine("Claude Code 2.1.0");
+      return 0;
+    });
+    var system2 = mock(System2.class);
+    when(system2.isOsMac()).thenReturn(true);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn(claude.getParent().toString());
+    var locator = newLocator(system2, Map.of("PATH", "/usr/bin"), executor, pathHelper);
+
+    assertThat(locator.discover()).containsExactly(AiAgent.CLAUDE_CODE);
+    assertThat(commands).noneMatch(command -> command.contains("path_helper"));
+  }
+
+  @Test
+  void should_still_search_local_bin_when_forced_search_path_is_empty() throws IOException {
+    createExecutable(".local/bin/codex");
+    var system2 = mock(System2.class);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn("");
+    var locator = newLocator(system2, Map.of("PATH", "/usr/bin"), commandReturning((command, stdout) -> {
+      stdout.consumeLine("codex-cli 0.87.0");
+      return 0;
+    }), OsSearchPath.MAC_OS_PATH_HELPER);
+
+    assertThat(locator.discover()).containsExactly(AiAgent.CODEX);
+  }
+
   private AgentCliLocator newLocator(boolean windows, Map<String, String> environment, CommandExecutor executor) {
     var system2 = mock(System2.class);
     when(system2.isOsWindows()).thenReturn(windows);

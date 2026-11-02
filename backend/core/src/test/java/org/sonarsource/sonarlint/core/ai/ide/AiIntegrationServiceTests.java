@@ -585,6 +585,66 @@ class AiIntegrationServiceTests {
   }
 
   @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_find_cli_in_forced_search_path_instead_of_path() throws IOException {
+    createExecutable("path-bin/sonar");
+    var forcedExecutable = createExecutable("forced-bin/sonar");
+    var system2 = mock(System2.class);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn(forcedExecutable.getParent().toString());
+    var service = newService(system2, Map.of("PATH", tempDir.resolve("path-bin").toString()), versionCommandExecutor(),
+      OsSearchPath.MAC_OS_PATH_HELPER);
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(forcedExecutable.toString());
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_not_use_mac_os_path_helper_when_search_path_is_forced() throws IOException {
+    var helperExecutable = createExecutable("homebrew/bin/sonar");
+    var forcedExecutable = createExecutable("forced-bin/sonar");
+    var pathHelper = createPathHelper();
+    var commands = new ArrayList<String>();
+    var executor = commandReturning((command, stdout) -> {
+      commands.add(command.toCommandLine());
+      if (command.toCommandLine().contains("path_helper")) {
+        stdout.consumeLine("PATH=\"" + helperExecutable.getParent() + "\"; export PATH;");
+      } else {
+        stdout.consumeLine("SonarQube CLI 1.0.0");
+      }
+      return 0;
+    });
+    var system2 = mock(System2.class);
+    when(system2.isOsMac()).thenReturn(true);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn(forcedExecutable.getParent().toString());
+    var service = newService(system2, Map.of("PATH", "/usr/bin"), executor, pathHelper);
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
+
+    assertThat(cli.getExecutablePath()).isEqualTo(forcedExecutable.toString());
+    assertThat(commands).noneMatch(command -> command.contains("path_helper"));
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void should_still_find_cli_in_standard_location_when_forced_search_path_is_empty() throws IOException {
+    createExecutable("path-bin/sonar");
+    var standardExecutable = createExecutable(".local/share/sonarqube-cli/bin/sonar");
+    var system2 = mock(System2.class);
+    when(system2.property(OsExecutableSearch.SEARCH_PATH_PROPERTY)).thenReturn("");
+    var service = newService(system2, Map.of("PATH", tempDir.resolve("path-bin").toString()), versionCommandExecutor(),
+      OsSearchPath.MAC_OS_PATH_HELPER);
+
+    var cli = service.getIntegrationState(new GetAiIntegrationStateParams(AiIntegrationHost.OTHER, List.of(), AiIntegrationScope.GLOBAL, null)).getCli();
+
+    assertThat(cli.getInstallationStatus()).isEqualTo(CliInstallationStatus.INSTALLED);
+    assertThat(cli.getExecutablePath()).isEqualTo(standardExecutable.toString());
+    assertThat(cli.isUninstallAvailable()).isTrue();
+  }
+
+  @Test
   void should_prepare_login_with_ide_connection_details_but_without_credentials() throws IOException {
     var executable = createExecutable("bin/sonar");
     var service = newServiceForCurrentOs(Map.of("PATH", executable.getParent().toString()), versionCommandExecutor());
