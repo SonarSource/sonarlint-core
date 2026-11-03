@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.support.TypeBasedParameterResolver;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
 public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness>
@@ -44,6 +45,7 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
 
   private final List<SonarLintTestRpcServer> backends = new ArrayList<>();
   private final List<ServerFixture.Server> servers = new ArrayList<>();
+  private final List<BinariesServerFixture.BinariesServer> binariesServers = new ArrayList<>();
   private boolean isStatic;
 
   @Override
@@ -112,6 +114,14 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
       }
     }
     servers.clear();
+    for (BinariesServerFixture.BinariesServer binariesServer : binariesServers) {
+      try {
+        binariesServer.shutdown();
+      } catch (Exception e) {
+        LOG.log(Level.WARNING, "Failed to shutdown binaries server", e);
+      }
+    }
+    binariesServers.clear();
   }
 
   private static void doShutdown(SonarLintTestRpcServer backend) {
@@ -147,6 +157,10 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
 
   public ServerFixture.SonarQubeCloudBuilder newFakeSonarCloudServer() {
     return ServerFixture.newSonarCloudServer(servers::add);
+  }
+
+  public BinariesServerFixture.BinariesServerBuilder newFakeBinariesServer() {
+    return BinariesServerFixture.newBinariesServer(binariesServers::add);
   }
 
   public void addBackend(SonarLintTestRpcServer backend) {
