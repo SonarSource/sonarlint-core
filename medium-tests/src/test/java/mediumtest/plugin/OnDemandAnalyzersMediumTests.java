@@ -61,19 +61,9 @@ class OnDemandAnalyzersMediumTests {
 
   @SonarLintTest
   void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) throws Exception {
-    byte[] dummyJarBody;
-    try (var is = OnDemandAnalyzersMediumTests.class.getResourceAsStream("/ondemand/sonar-cpp-plugin-test.jar")) {
-      assertThat(is).as("Test resource /ondemand/sonar-cpp-plugin-test.jar must be on the classpath").isNotNull();
-      dummyJarBody = is.readAllBytes();
-    }
-    for (int i = 0; i < 5; i++) {
-      var b = new okio.Buffer();
-      b.write(dummyJarBody);
-      mockWebServer.enqueue(new mockwebserver3.MockResponse.Builder().body(b).code(200).build());
-    }
-
-    var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
-    systemProperties.set(BinariesArtifact.PROPERTY_URL_PATTERN, serverUrl);
+    harness.newFakeBinariesServer()
+      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "ondemand/fake-cpp-plugin.jar")
+      .start();
 
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
