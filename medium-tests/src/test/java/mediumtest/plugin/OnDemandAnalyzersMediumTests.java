@@ -19,11 +19,6 @@
  */
 package mediumtest.plugin;
 
-import mockwebserver3.MockResponse;
-import mockwebserver3.MockWebServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
@@ -31,33 +26,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import uk.org.webcompere.systemstubs.jupiter.SystemStub;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
-import uk.org.webcompere.systemstubs.properties.SystemProperties;
 import utils.TestPlugin;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-@ExtendWith(SystemStubsExtension.class)
 class OnDemandAnalyzersMediumTests {
-
-  @SystemStub
-  SystemProperties systemProperties;
-
-  private MockWebServer mockWebServer;
-
-  @BeforeEach
-  void setUp() throws Exception {
-    mockWebServer = new MockWebServer();
-    mockWebServer.start();
-  }
-
-  @AfterEach
-  void tearDown() {
-    mockWebServer.close();
-  }
 
   @SonarLintTest
   void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) throws Exception {
@@ -80,22 +55,20 @@ class OnDemandAnalyzersMediumTests {
 
   @SonarLintTest
   void failed_cfamily_download_should_not_trigger_infinite_reload_loop(SonarLintTestHarness harness) {
-    for (int i = 0; i < 20; i++) {
-      mockWebServer.enqueue(new MockResponse.Builder().code(500).build());
-    }
-    var serverUrl = mockWebServer.url("").toString().replaceAll("/$", "");
-    systemProperties.set(BinariesArtifact.PROPERTY_URL_PATTERN, serverUrl);
+    var binariesServer = harness.newFakeBinariesServer()
+      .withArtifact(BinariesArtifact.CFAMILY_PLUGIN, 500)
+      .start();
 
     harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.CPP)
       .withUnboundConfigScope("scopeId")
       .start(harness.newFakeClient().build());
 
-    await().atMost(10, SECONDS).until(() -> mockWebServer.getRequestCount() >= 1);
+    await().atMost(10, SECONDS).until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) >= 1);
 
-    var requestCountAfterFirstAttempt = mockWebServer.getRequestCount();
+    var requestCountAfterFirstAttempt = binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN);
     await().during(2, SECONDS).atMost(5, SECONDS)
-      .until(() -> mockWebServer.getRequestCount() == requestCountAfterFirstAttempt);
+      .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == requestCountAfterFirstAttempt);
   }
 
   @SonarLintTest
