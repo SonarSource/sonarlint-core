@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.test.utils.server;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -31,6 +32,7 @@ import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
@@ -46,14 +48,22 @@ public class BinariesServerFixture {
 
   public static class BinariesServerBuilder {
     private final Consumer<BinariesServer> onStart;
-    private final Map<BinariesArtifact, byte[]> bodiesByArtifact = new EnumMap<>(BinariesArtifact.class);
+    private final Map<BinariesArtifact, ResponseDefinitionBuilder> responsesByArtifact = new EnumMap<>(BinariesArtifact.class);
 
     private BinariesServerBuilder(@Nullable Consumer<BinariesServer> onStart) {
       this.onStart = onStart;
     }
 
     public BinariesServerBuilder withArtifact(BinariesArtifact artifact, byte[] body) {
-      bodiesByArtifact.put(artifact, body);
+      return withArtifact(artifact, 200, body);
+    }
+
+    public BinariesServerBuilder withArtifact(BinariesArtifact artifact, int status) {
+      return withArtifact(artifact, status, new byte[0]);
+    }
+
+    public BinariesServerBuilder withArtifact(BinariesArtifact artifact, int status, byte[] body) {
+      responsesByArtifact.put(artifact, aResponse().withStatus(status).withBody(body));
       return this;
     }
 
@@ -62,7 +72,7 @@ public class BinariesServerFixture {
     }
 
     public BinariesServer start() {
-      var server = new BinariesServer(bodiesByArtifact);
+      var server = new BinariesServer(responsesByArtifact);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -84,17 +94,17 @@ public class BinariesServerFixture {
 
   public static class BinariesServer {
     private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
-    private final Map<BinariesArtifact, byte[]> bodiesByArtifact;
+    private final Map<BinariesArtifact, ResponseDefinitionBuilder> responsesByArtifact;
     @Nullable
     private String previousUrlProperty;
 
-    private BinariesServer(Map<BinariesArtifact, byte[]> bodiesByArtifact) {
-      this.bodiesByArtifact = Map.copyOf(bodiesByArtifact);
+    private BinariesServer(Map<BinariesArtifact, ResponseDefinitionBuilder> responsesByArtifact) {
+      this.responsesByArtifact = Map.copyOf(responsesByArtifact);
     }
 
     public void start() {
       mockServer.start();
-      bodiesByArtifact.forEach(this::registerArtifact);
+      responsesByArtifact.forEach(this::registerArtifact);
       previousUrlProperty = System.getProperty(BinariesArtifact.PROPERTY_URL_PATTERN);
       System.setProperty(BinariesArtifact.PROPERTY_URL_PATTERN, mockServer.baseUrl());
     }
@@ -111,8 +121,12 @@ public class BinariesServerFixture {
       return mockServer.baseUrl();
     }
 
-    private void registerArtifact(BinariesArtifact artifact, byte[] body) {
-      mockServer.stubFor(get(urlEqualTo(pathOf(artifact))).willReturn(aResponse().withStatus(200).withBody(body)));
+    public int requestCount(BinariesArtifact artifact) {
+      return mockServer.countRequestsMatching(getRequestedFor(urlEqualTo(pathOf(artifact))).build()).getCount();
+    }
+
+    private void registerArtifact(BinariesArtifact artifact, ResponseDefinitionBuilder response) {
+      mockServer.stubFor(get(urlEqualTo(pathOf(artifact))).willReturn(response));
     }
 
     private void restoreUrlProperty() {
