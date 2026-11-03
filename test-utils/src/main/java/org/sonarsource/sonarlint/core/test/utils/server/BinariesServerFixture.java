@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.test.utils.server;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.http.Fault;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -64,6 +66,16 @@ public class BinariesServerFixture {
 
     public BinariesServerBuilder withArtifact(BinariesArtifact artifact, int status, byte[] body) {
       responsesByArtifact.put(artifact, aResponse().withStatus(status).withBody(body));
+      return this;
+    }
+
+    public BinariesServerBuilder withDelayedArtifact(BinariesArtifact artifact, Duration delay, byte[] body) {
+      responsesByArtifact.put(artifact, aResponse().withStatus(200).withBody(body).withFixedDelay(Math.toIntExact(delay.toMillis())));
+      return this;
+    }
+
+    public BinariesServerBuilder withConnectionReset(BinariesArtifact artifact) {
+      responsesByArtifact.put(artifact, aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER));
       return this;
     }
 
