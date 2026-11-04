@@ -74,7 +74,22 @@ class OnDemandAnalyzersMediumTests {
       .withUnboundConfigScope("scopeId")
       .start(client);
 
-    assertDownloadFailedOnceAndLoggedError(client, binariesServer, "Failed to download plugin: HTTP " + status);
+    assertDownloadFailedAndLoggedError(client, binariesServer, 1, "Failed to download plugin: HTTP " + status);
+  }
+
+  @SonarLintTest
+  void should_log_error_after_http_retries_when_connection_is_reset(SonarLintTestHarness harness) {
+    var binariesServer = harness.fakeBinariesServerBuilder()
+      .withConnectionReset(BinariesArtifact.CFAMILY_PLUGIN)
+      .start();
+    var client = harness.newFakeClient().build();
+
+    harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.CPP)
+      .withUnboundConfigScope("scopeId")
+      .start(client);
+
+    assertDownloadFailedAndLoggedError(client, binariesServer, 3, "Connection reset");
   }
 
   @SonarLintTest
@@ -105,14 +120,11 @@ class OnDemandAnalyzersMediumTests {
     });
   }
 
-  private static void assertDownloadFailedOnceAndLoggedError(FakeSonarLintRpcClient client, BinariesServer binariesServer, String expectedCause) {
-    await().atMost(10, SECONDS).until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) >= 1);
-
-    var requestCountAfterFirstAttempt = binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN);
+  private static void assertDownloadFailedAndLoggedError(FakeSonarLintRpcClient client, BinariesServer binariesServer, int expectedRequestCount, String expectedCause) {
+    await().atMost(10, SECONDS).until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) >= expectedRequestCount);
     await().during(2, SECONDS).atMost(5, SECONDS)
-      .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == requestCountAfterFirstAttempt);
+      .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == expectedRequestCount);
 
-    assertThat(requestCountAfterFirstAttempt).isEqualTo(1);
     await().atMost(5, SECONDS).untilAsserted(() -> assertThat(client.getLogs()).anySatisfy(log -> assertDownloadFailureLog(log, expectedCause)));
   }
 
