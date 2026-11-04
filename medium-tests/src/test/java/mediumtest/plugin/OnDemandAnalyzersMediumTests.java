@@ -19,13 +19,20 @@
  */
 package mediumtest.plugin;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture.BinariesServer;
 import utils.TestPlugin;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -35,7 +42,7 @@ import static org.awaitility.Awaitility.await;
 class OnDemandAnalyzersMediumTests {
 
   @SonarLintTest
-  void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) throws Exception {
+  void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) {
     harness.newFakeBinariesServer()
       .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")
       .start();
@@ -53,22 +60,21 @@ class OnDemandAnalyzersMediumTests {
     });
   }
 
-  @SonarLintTest
-  void failed_cfamily_download_should_not_trigger_infinite_reload_loop(SonarLintTestHarness harness) {
+  @ParameterizedTest(name = "failed cfamily download with HTTP {0} should not trigger infinite reload loop")
+  @ValueSource(ints = {500, 503, 404})
+  @ExtendWith(SonarLintTestHarness.class)
+  void failed_cfamily_download_should_not_trigger_infinite_reload_loop(int status, SonarLintTestHarness harness) {
     var binariesServer = harness.newFakeBinariesServer()
-      .withArtifact(BinariesArtifact.CFAMILY_PLUGIN, 500)
+      .withArtifact(BinariesArtifact.CFAMILY_PLUGIN, status)
       .start();
+    var client = harness.newFakeClient().build();
 
     harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.CPP)
       .withUnboundConfigScope("scopeId")
-      .start(harness.newFakeClient().build());
+      .start(client);
 
-    await().atMost(10, SECONDS).until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) >= 1);
-
-    var requestCountAfterFirstAttempt = binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN);
-    await().during(2, SECONDS).atMost(5, SECONDS)
-      .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == requestCountAfterFirstAttempt);
+    assertDownloadFailedOnceAndLoggedError(client, binariesServer, "Failed to download plugin: HTTP " + status);
   }
 
   @SonarLintTest
@@ -97,6 +103,24 @@ class OnDemandAnalyzersMediumTests {
       assertThat(javaStatusOpt).isPresent();
       assertThat(javaStatusOpt.get().getState()).isEqualTo(PluginStateDto.SYNCED);
     });
+  }
+
+  private static void assertDownloadFailedOnceAndLoggedError(FakeSonarLintRpcClient client, BinariesServer binariesServer, String expectedCause) {
+    await().atMost(10, SECONDS).until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) >= 1);
+
+    var requestCountAfterFirstAttempt = binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN);
+    await().during(2, SECONDS).atMost(5, SECONDS)
+      .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == requestCountAfterFirstAttempt);
+
+    assertThat(requestCountAfterFirstAttempt).isEqualTo(1);
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(client.getLogs()).anySatisfy(log -> assertDownloadFailureLog(log, expectedCause)));
+  }
+
+  private static void assertDownloadFailureLog(LogParams log, String expectedCause) {
+    assertThat(log)
+      .extracting(LogParams::getLevel, LogParams::getMessage)
+      .containsExactly(LogLevel.ERROR, "Failed to download artifact with key cpp");
+    assertThat(log.getStackTrace()).contains(expectedCause);
   }
 
 }
