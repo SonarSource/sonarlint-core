@@ -119,9 +119,12 @@ class FileUtilsTests {
     FileUtils.mkdirs(dir);
     var file = createNewFile(dir, "file");
     // Deleting the file fails with AccessDeniedException, as for a file still in use on Windows, until it is made writable
-    // again: on Windows because the file is read-only, elsewhere because its directory is
+    // again: on Windows because the file is read-only, elsewhere because its directory is. Windows cannot make a directory
+    // read-only, so that part only applies elsewhere.
     assertThat(file.setWritable(false)).isTrue();
-    assertThat(dir.toFile().setWritable(false)).isTrue();
+    if (!System.getProperty("os.name").startsWith("Windows")) {
+      assertThat(dir.toFile().setWritable(false)).isTrue();
+    }
     var madeWritable = CompletableFuture.runAsync(() -> {
       dir.toFile().setWritable(true);
       file.setWritable(true);
