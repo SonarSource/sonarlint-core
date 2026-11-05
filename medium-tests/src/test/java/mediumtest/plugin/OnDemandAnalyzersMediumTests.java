@@ -19,7 +19,6 @@
  */
 package mediumtest.plugin;
 
-import java.io.IOException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -36,7 +35,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture.BinariesServer;
 import utils.TestPlugin;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -95,9 +93,9 @@ class OnDemandAnalyzersMediumTests {
   }
 
   @SonarLintTest
-  void should_log_error_and_not_retry_download_when_artifact_fails_signature_check(SonarLintTestHarness harness) throws IOException {
+  void should_log_error_and_not_retry_download_when_artifact_fails_signature_check(SonarLintTestHarness harness) {
     var binariesServer = harness.fakeBinariesServerBuilder()
-      .withArtifact(BinariesArtifact.CFAMILY_PLUGIN, corruptedFakeCfamilyPlugin())
+      .withArtifact(BinariesArtifact.CFAMILY_PLUGIN, new byte[0])
       .start();
     var client = harness.newFakeClient().build();
 
@@ -135,14 +133,6 @@ class OnDemandAnalyzersMediumTests {
       assertThat(javaStatusOpt).isPresent();
       assertThat(javaStatusOpt.get().getState()).isEqualTo(PluginStateDto.SYNCED);
     });
-  }
-
-  private static byte[] corruptedFakeCfamilyPlugin() throws IOException {
-    try (var is = OnDemandAnalyzersMediumTests.class.getResourceAsStream("/ondemand/fake-cpp-plugin.jar")) {
-      var content = requireNonNull(is).readAllBytes();
-      content[0] ^= 1;
-      return content;
-    }
   }
 
   private static void assertDownloadFailedAndLoggedError(FakeSonarLintRpcClient client, BinariesServer binariesServer, int expectedRequestCount, String expectedCause) {
