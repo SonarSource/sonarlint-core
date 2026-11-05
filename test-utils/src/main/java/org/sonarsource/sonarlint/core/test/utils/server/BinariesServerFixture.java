@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.test.utils.server;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.Fault;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.EnumMap;
@@ -40,6 +38,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 public class BinariesServerFixture {
+
+  public static final String FILES_CLASSPATH_ROOT = "wiremock";
 
   private BinariesServerFixture() {
     // utility class
@@ -80,8 +80,9 @@ public class BinariesServerFixture {
       return this;
     }
 
-    public BinariesServerBuilder withArtifactFromResource(BinariesArtifact artifact, String resourcePath) {
-      return withArtifact(artifact, readResource(resourcePath));
+    public BinariesServerBuilder withArtifactFromResource(BinariesArtifact artifact, String fileName) {
+      responsesByArtifact.put(artifact, aResponse().withStatus(200).withBodyFile(fileName));
+      return this;
     }
 
     public BinariesServer start() {
@@ -92,23 +93,12 @@ public class BinariesServerFixture {
       }
       return server;
     }
-
-    private static byte[] readResource(String resourcePath) {
-      try (var is = BinariesServerFixture.class.getClassLoader().getResourceAsStream(resourcePath)) {
-        if (is == null) {
-          throw new IllegalArgumentException("Test resource " + resourcePath + " must be on the classpath");
-        }
-        return is.readAllBytes();
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
   }
 
   public static class BinariesServer {
     private static final AtomicBoolean ACTIVE = new AtomicBoolean();
 
-    private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
+    private final WireMockServer mockServer = new WireMockServer(options().dynamicPort().usingFilesUnderClasspath(FILES_CLASSPATH_ROOT));
     private final Map<BinariesArtifact, ResponseDefinitionBuilder> responsesByArtifact;
     @Nullable
     private String previousUrlProperty;

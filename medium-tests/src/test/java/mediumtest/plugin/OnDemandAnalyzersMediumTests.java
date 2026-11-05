@@ -37,7 +37,7 @@ class OnDemandAnalyzersMediumTests {
   @SonarLintTest
   void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) throws Exception {
     harness.newFakeBinariesServer()
-      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "ondemand/fake-cpp-plugin.jar")
+      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")
       .start();
 
     var client = harness.newFakeClient().build();

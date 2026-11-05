@@ -41,11 +41,12 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyPair;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
+import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture;
 
 public class SignedCfamilyPluginGenerator {
 
   private static final String PUBLIC_KEY_RESOURCE_PATH = "ondemand/sonarsource-public.key";
-  private static final String JAR_RESOURCE_PATH = "ondemand/fake-cpp-plugin.jar";
+  private static final String JAR_RESOURCE_PATH = BinariesServerFixture.FILES_CLASSPATH_ROOT + "/__files/fake-cpp-plugin.jar";
   private static final int KEY_SIZE = 2048;
 
   private SignedCfamilyPluginGenerator() {
