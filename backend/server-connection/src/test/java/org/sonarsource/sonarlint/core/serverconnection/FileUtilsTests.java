@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -110,6 +111,33 @@ class FileUtilsTests {
       }
     };
     FileUtils.retry(throwOnce, 10);
+    assertThat(count[0]).isEqualTo(2);
+  }
+
+  @Test
+  void retry_only_on_accepted_failures() {
+    int[] count = {0};
+    FileUtils.IORunnable throwAlways = () -> {
+      count[0]++;
+      throw new DirectoryNotEmptyException("foo");
+    };
+
+    assertThrows(DirectoryNotEmptyException.class, () -> FileUtils.retry(throwAlways, 10));
+    assertThat(count[0]).isEqualTo(1);
+  }
+
+  @Test
+  void retry_on_accepted_failures() throws IOException {
+    int[] count = {0};
+    FileUtils.IORunnable throwOnce = () -> {
+      count[0]++;
+      if (count[0] == 1) {
+        throw new DirectoryNotEmptyException("foo");
+      }
+    };
+
+    FileUtils.retry(throwOnce, 10, DirectoryNotEmptyException.class::isInstance);
+
     assertThat(count[0]).isEqualTo(2);
   }
 

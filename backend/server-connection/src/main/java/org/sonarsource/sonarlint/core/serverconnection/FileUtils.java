@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.commons.io.file.PathUtils;
 
 public class FileUtils {
@@ -74,8 +76,9 @@ public class FileUtils {
   }
 
   /**
-   * Deletes recursively the specified file or directory tree. On Windows, retries while a file is still in use, e.g. an
-   * executable that just exited, or a file the virus scanner opened, see {@link #retry(IORunnable)}.
+   * Deletes recursively the specified file or directory tree. On Windows, retries for a short while when a file cannot
+   * be deleted yet ({@link AccessDeniedException}), e.g. an executable that is still running or just exited, or when a
+   * directory still holds a file whose deletion is pending ({@link DirectoryNotEmptyException}).
    *
    * @param path
    */
@@ -88,7 +91,7 @@ public class FileUtils {
       return;
     }
     try {
-      retry(() -> PathUtils.deleteDirectory(path), maxRetries);
+      retry(() -> PathUtils.deleteDirectory(path), maxRetries, e -> e instanceof AccessDeniedException || e instanceof DirectoryNotEmptyException);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to delete directory " + path, e);
     }
@@ -131,11 +134,21 @@ public class FileUtils {
    * @param runnable the runnable whose execution should be retried
    */
   static void retry(IORunnable runnable, int maxRetries) throws IOException {
+    retry(runnable, maxRetries, AccessDeniedException.class::isInstance);
+  }
+
+  /**
+   * Like {@link #retry(IORunnable, int)}, retrying on the failures that {@code retriable} accepts.
+   */
+  static void retry(IORunnable runnable, int maxRetries, Predicate<IOException> retriable) throws IOException {
     for (var retry = 0; retry < maxRetries; retry++) {
       try {
         runnable.run();
         return;
-      } catch (AccessDeniedException e) {
+      } catch (IOException e) {
+        if (!retriable.test(e)) {
+          throw e;
+        }
         // Sleep a bit to give a chance to the virus scanner / Windows Indexing Service to release the opened file handle
         try {
           Thread.sleep(100);
