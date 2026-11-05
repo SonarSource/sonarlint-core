@@ -27,8 +27,6 @@ import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,14 +114,18 @@ class FileUtilsTests {
   }
 
   @Test
-  @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Makes a file impossible to delete with POSIX permissions")
   void deleteRecursively_should_retry_while_a_file_cannot_be_deleted(@TempDir Path temp) {
     var dir = temp.resolve("dir");
     FileUtils.mkdirs(dir);
-    createNewFile(dir, "file");
-    // Like a file still in use on Windows, a file in a read-only directory cannot be deleted, until that changes
+    var file = createNewFile(dir, "file");
+    // Deleting the file fails with AccessDeniedException, as for a file still in use on Windows, until it is made writable
+    // again: on Windows because the file is read-only, elsewhere because its directory is
+    assertThat(file.setWritable(false)).isTrue();
     assertThat(dir.toFile().setWritable(false)).isTrue();
-    var madeWritable = CompletableFuture.runAsync(() -> dir.toFile().setWritable(true), CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS));
+    var madeWritable = CompletableFuture.runAsync(() -> {
+      dir.toFile().setWritable(true);
+      file.setWritable(true);
+    }, CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS));
 
     FileUtils.deleteRecursively(dir, 20);
 
