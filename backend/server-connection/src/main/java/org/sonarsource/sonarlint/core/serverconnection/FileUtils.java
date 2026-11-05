@@ -74,16 +74,21 @@ public class FileUtils {
   }
 
   /**
-   * Deletes recursively the specified file or directory tree.
+   * Deletes recursively the specified file or directory tree. On Windows, retries while a file is still in use, e.g. an
+   * executable that just exited, or a file the virus scanner opened, see {@link #retry(IORunnable)}.
    *
    * @param path
    */
   public static void deleteRecursively(Path path) {
+    deleteRecursively(path, MAX_RETRIES);
+  }
+
+  static void deleteRecursively(Path path, int maxRetries) {
     if (!path.toFile().exists()) {
       return;
     }
     try {
-      PathUtils.deleteDirectory(path);
+      retry(() -> PathUtils.deleteDirectory(path), maxRetries);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to delete directory " + path, e);
     }
