@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -109,6 +111,29 @@ class FileUtilsTests {
     };
     FileUtils.retry(throwOnce, 10);
     assertThat(count[0]).isEqualTo(2);
+  }
+
+  @Test
+  void deleteRecursively_should_retry_while_a_file_cannot_be_deleted(@TempDir Path temp) {
+    var dir = temp.resolve("dir");
+    FileUtils.mkdirs(dir);
+    var file = createNewFile(dir, "file");
+    // Deleting the file fails with AccessDeniedException, as for a file still in use on Windows, until it is made writable
+    // again: on Windows because the file is read-only, elsewhere because its directory is. Windows cannot make a directory
+    // read-only, so that part only applies elsewhere.
+    assertThat(file.setWritable(false)).isTrue();
+    if (!System.getProperty("os.name").startsWith("Windows")) {
+      assertThat(dir.toFile().setWritable(false)).isTrue();
+    }
+    var madeWritable = CompletableFuture.runAsync(() -> {
+      dir.toFile().setWritable(true);
+      file.setWritable(true);
+    }, CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS));
+
+    FileUtils.deleteRecursively(dir, 20);
+
+    madeWritable.join();
+    assertThat(dir).doesNotExist();
   }
 
   private File createNewFile(Path basedir, String filename) {
