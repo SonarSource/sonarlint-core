@@ -19,12 +19,16 @@
  */
 package mediumtest.plugin;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
@@ -37,7 +41,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
+import org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.Server;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -168,6 +176,125 @@ class PluginSourcePriorityMediumTests {
       .until(() -> binariesServer.requestCount(BinariesArtifact.CFAMILY_PLUGIN) == 0);
   }
 
+  @ParameterizedTest(name = "{0} plugin should be preferred from SonarQube Server 2026.6 over the embedded one")
+  @CsvSource({
+    "go, GO",
+    "iac, DOCKER"
+  })
+  @ExtendWith(SonarLintTestHarness.class)
+  void should_prefer_enterprise_server_plugin_over_embedded_on_sonarqube_server(String pluginKey, Language language, @TempDir Path tempDir,
+    SonarLintTestHarness harness) throws IOException, ExecutionException, InterruptedException {
+    var plugin = generatedPlugin(tempDir, pluginKey, language);
+    var server = harness.newFakeSonarQubeServer("2026.6")
+      .withPlugin(plugin)
+      .start();
+
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(plugin)
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("2026.6").withPlugin(plugin))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    assertStatus(backend.getPluginService(), language, "configScopeId", PluginStateDto.SYNCED, ArtifactSourceDto.SONARQUBE_SERVER);
+  }
+
+  @ParameterizedTest(name = "{0} plugin should be preferred from SonarQube Cloud over the embedded one")
+  @CsvSource({
+    "go, GO",
+    "iac, DOCKER"
+  })
+  @ExtendWith(SonarLintTestHarness.class)
+  void should_prefer_enterprise_server_plugin_over_embedded_on_sonarqube_cloud(String pluginKey, Language language, @TempDir Path tempDir,
+    SonarLintTestHarness harness) throws IOException, ExecutionException, InterruptedException {
+    var plugin = generatedPlugin(tempDir, pluginKey, language);
+    var server = harness.newFakeSonarCloudServer()
+      .withPlugin(plugin)
+      .start();
+
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(plugin)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "orgKey", true, storage -> storage.withPlugin(plugin))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    assertStatus(backend.getPluginService(), language, "configScopeId", PluginStateDto.SYNCED, ArtifactSourceDto.SONARQUBE_CLOUD);
+  }
+
+  @ParameterizedTest(name = "{0}: embedded {1} should give way to {2} from the server")
+  @CsvSource({
+    "CS, csharp, csharpenterprise",
+    "VBNET, vbnet, vbnetenterprise",
+    "TEXT, text, textenterprise",
+    "TEXT, text, textdeveloper"
+  })
+  @ExtendWith(SonarLintTestHarness.class)
+  void should_use_enterprise_variant_instead_of_embedded_base_plugin(Language language, String baseKey, String variantKey, @TempDir Path tempDir,
+    SonarLintTestHarness harness) throws IOException {
+    var basePlugin = generatedPlugin(tempDir, baseKey, language);
+    var variantPlugin = generatedPlugin(tempDir, variantKey, language);
+    var server = harness.newFakeSonarQubeServer("2026.6")
+      .withPlugin(variantPlugin)
+      .start();
+
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(basePlugin)
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("2026.6"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    assertStatusEventually(backend.getPluginService(), language, "configScopeId", PluginStateDto.SYNCED, ArtifactSourceDto.SONARQUBE_SERVER);
+    assertDownloadCounts(server, variantKey, 1, baseKey, 0);
+  }
+
+  @ParameterizedTest(name = "{0}: with {1} and {2} on the server, only {2} should be downloaded")
+  @CsvSource({
+    "CS, csharp, csharpenterprise",
+    "VBNET, vbnet, vbnetenterprise",
+    "TEXT, text, textenterprise",
+    "TEXT, text, textdeveloper"
+  })
+  @ExtendWith(SonarLintTestHarness.class)
+  void should_download_only_enterprise_variant_when_server_lists_base_and_variant(Language language, String baseKey, String variantKey,
+    @TempDir Path tempDir, SonarLintTestHarness harness) throws IOException {
+    var basePlugin = generatedPlugin(tempDir, baseKey, language);
+    var variantPlugin = generatedPlugin(tempDir, variantKey, language);
+    var server = harness.newFakeSonarQubeServer("2026.6")
+      .withPlugin(basePlugin)
+      .withPlugin(variantPlugin)
+      .start();
+
+    var backend = harness.newBackend()
+      .withExtraEnabledLanguagesInConnectedMode(language)
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("2026.6"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    assertStatusEventually(backend.getPluginService(), language, "configScopeId", PluginStateDto.SYNCED, ArtifactSourceDto.SONARQUBE_SERVER);
+    assertDownloadCounts(server, variantKey, 1, baseKey, 0);
+  }
+
+  @SonarLintTest
+  void should_use_enterprise_variant_instead_of_embedded_base_plugin_on_sonarqube_cloud(SonarLintTestHarness harness, @TempDir Path tempDir)
+    throws IOException, ExecutionException, InterruptedException {
+    var basePlugin = generatedPlugin(tempDir, "csharp", Language.CS);
+    var variantPlugin = generatedPlugin(tempDir, "csharpenterprise", Language.CS);
+    var server = harness.newFakeSonarCloudServer()
+      .withPlugin(variantPlugin)
+      .start();
+
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(basePlugin)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "orgKey", true, storage -> storage.withPlugin(variantPlugin))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    assertStatus(backend.getPluginService(), Language.CS, "configScopeId", PluginStateDto.SYNCED, ArtifactSourceDto.SONARQUBE_CLOUD);
+  }
+
   private static Plugin fakeGoPlugin() throws URISyntaxException {
     return new Plugin("go", Set.of(Language.GO), fakeCppPluginPath(), FAKE_CPP_PLUGIN_VERSION, FAKE_CPP_PLUGIN_HASH);
   }
@@ -178,6 +305,35 @@ class PluginSourcePriorityMediumTests {
 
   private static Path fakeCppPluginPath() throws URISyntaxException {
     return Path.of(PluginSourcePriorityMediumTests.class.getResource(FAKE_CPP_PLUGIN_RESOURCE).toURI());
+  }
+
+  private static Plugin generatedPlugin(Path tempDir, String pluginKey, Language language) throws IOException {
+    var folder = Files.createDirectories(tempDir.resolve(pluginKey));
+    var jarPath = SonarPluginBuilder.newSonarPlugin(pluginKey).generate(folder);
+    return new Plugin(pluginKey, Set.of(language), jarPath, FAKE_CPP_PLUGIN_VERSION, pluginKey + "-hash");
+  }
+
+  private static void assertStatusEventually(PluginRpcService pluginService, Language language, String scopeId, PluginStateDto expectedState,
+    ArtifactSourceDto expectedSource) {
+    await().atMost(15, SECONDS).untilAsserted(() -> assertStatus(pluginService, language, scopeId, expectedState, expectedSource));
+  }
+
+  private static void assertStatus(PluginRpcService pluginService, Language language, String scopeId, PluginStateDto expectedState,
+    ArtifactSourceDto expectedSource) throws ExecutionException, InterruptedException {
+    assertThat(statusOf(pluginService, language, scopeId))
+      .extracting(PluginStatusDto::getState, PluginStatusDto::getSource)
+      .containsExactly(expectedState, expectedSource);
+  }
+
+  private static void assertDownloadCounts(Server server, String pluginKey, int expectedCount, String otherPluginKey, int otherExpectedCount) {
+    await().during(2, SECONDS).atMost(5, SECONDS)
+      .untilAsserted(() -> assertThat(List.of(downloadCount(server, pluginKey), downloadCount(server, otherPluginKey)))
+        .containsExactly(expectedCount, otherExpectedCount));
+  }
+
+  private static int downloadCount(Server server, String pluginKey) {
+    var downloadRequest = getRequestedFor(urlEqualTo("/api/plugins/download?plugin=" + pluginKey)).build();
+    return server.getMockServer().countRequestsMatching(downloadRequest).getCount();
   }
 
   private static PluginStatusDto statusOf(PluginRpcService pluginService, Language language, @Nullable String scopeId)
