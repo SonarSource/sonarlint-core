@@ -45,7 +45,7 @@ public class BinariesServerFixture {
     // utility class
   }
 
-  public static BinariesServerBuilder newBinariesServer(@Nullable Consumer<BinariesServer> onStart) {
+  public static BinariesServerBuilder binariesServerBuilder(@Nullable Consumer<BinariesServer> onStart) {
     return new BinariesServerBuilder(onStart);
   }
 
