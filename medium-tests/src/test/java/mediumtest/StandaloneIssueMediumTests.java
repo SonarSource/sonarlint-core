@@ -255,6 +255,7 @@ class StandaloneIssueMediumTests {
         tuple("c:S3805", 1, 0));
   }
 
+  @Disabled("SLCORE-2717 - relies on the real C# analyzer and OmniSharp binaries from binaries.sonarsource.com, to be moved to the ITs")
   @SonarLintTest
   void simpleCsharp(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     // Resolve 8.3 short Windows path (e.g. RUNNER~1) to its real form, or OmniSharp won't match the file to the project (SLCORE-2319)

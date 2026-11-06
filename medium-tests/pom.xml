@@ -191,19 +191,21 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>com.googlecode.maven-download-plugin</groupId>
-        <artifactId>download-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>download-cfamily-plugin-jar</id>
+            <id>generate-signed-cfamily-plugin</id>
             <phase>generate-test-resources</phase>
             <goals>
-              <goal>wget</goal>
+              <goal>java</goal>
             </goals>
             <configuration>
-              <url>https://binaries.sonarsource.com/CommercialDistribution/sonar-cfamily-plugin/sonar-cfamily-plugin-${cfamily.version}.jar</url>
-              <outputDirectory>${project.build.testOutputDirectory}/ondemand</outputDirectory>
-              <outputFileName>sonar-cpp-plugin-test.jar</outputFileName>
+              <mainClass>org.sonarsource.sonarlint.core.test.utils.plugins.SignedCfamilyPluginGenerator</mainClass>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>${project.build.testOutputDirectory}</argument>
+              </arguments>
             </configuration>
           </execution>
         </executions>
