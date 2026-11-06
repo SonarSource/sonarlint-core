@@ -26,6 +26,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.support.TypeBasedParameterResolver;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
 public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTestHarness>
@@ -44,6 +46,8 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
 
   private final List<SonarLintTestRpcServer> backends = new ArrayList<>();
   private final List<ServerFixture.Server> servers = new ArrayList<>();
+  @Nullable
+  private BinariesServerFixture.BinariesServer binariesServer;
   private boolean isStatic;
 
   @Override
@@ -112,6 +116,19 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
       }
     }
     servers.clear();
+    shutdownBinariesServer();
+  }
+
+  private void shutdownBinariesServer() {
+    if (binariesServer == null) {
+      return;
+    }
+    try {
+      binariesServer.shutdown();
+    } catch (Exception e) {
+      LOG.log(Level.WARNING, "Failed to shutdown binaries server", e);
+    }
+    binariesServer = null;
   }
 
   private static void doShutdown(SonarLintTestRpcServer backend) {
@@ -147,6 +164,14 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
 
   public ServerFixture.SonarQubeCloudBuilder newFakeSonarCloudServer() {
     return ServerFixture.newSonarCloudServer(servers::add);
+  }
+
+  public BinariesServerFixture.BinariesServerBuilder fakeBinariesServerBuilder() {
+    return BinariesServerFixture.binariesServerBuilder(this::setBinariesServer);
+  }
+
+  private void setBinariesServer(BinariesServerFixture.BinariesServer server) {
+    binariesServer = server;
   }
 
   public void addBackend(SonarLintTestRpcServer backend) {
