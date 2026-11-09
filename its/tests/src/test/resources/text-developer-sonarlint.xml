@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Text Developer</name>
+  <language>secrets</language>
+  <rules>
+    <rule>
+      <repositoryKey>secrets</repositoryKey>
+      <key>S7155</key>
+      <priority>BLOCKER</priority>
+    </rule>
+  </rules>
+</profile>
