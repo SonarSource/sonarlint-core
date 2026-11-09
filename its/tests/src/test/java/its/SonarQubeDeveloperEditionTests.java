@@ -123,6 +123,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.RUBY;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SCALA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SECRETS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TERRAFORM;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
 
@@ -181,7 +182,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
+      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM, SECRETS);
       backend.initialize(
         new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null,
           Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.SERVER_SENT_EVENTS, BackendCapability.SECURITY_HOTSPOTS,
@@ -282,6 +283,40 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-php"), "src/Math.php");
 
       assertThat(rawIssues).hasSize(1);
+    }
+
+    @Test
+    void shouldRaiseIssuesOnATextDeveloperProject() {
+      var configScopeId = "shouldRaiseIssuesOnATextDeveloperProject";
+      var projectKey = "sample-text-developer";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Text Developer");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/text-developer-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "secrets", "SonarLint IT Text Developer");
+
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForAnalysisToBeReady(configScopeId);
+
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-text-developer"), "src/file.yml");
+
+      assertThat(rawIssues)
+        .extracting(RaisedIssueDto::getRuleKey)
+        .containsOnly("secrets:S7155");
+    }
+
+    @Test
+    void shouldNotRaiseCustomSecretsIssuesOnATextDeveloperProject() {
+      var configScopeId = "shouldNotRaiseCustomSecretsIssuesOnATextDeveloperProject";
+      var projectKey = "sample-custom-secrets";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Custom Secrets");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-secrets-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "secrets", "SonarLint IT Custom Secrets");
+
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForAnalysisToBeReady(configScopeId);
+
+      var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-custom-secrets"), "src/file.yml");
+
+      assertThat(rawIssues).isEmpty();
     }
 
     @Test
