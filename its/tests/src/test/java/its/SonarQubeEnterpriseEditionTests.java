@@ -25,6 +25,7 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.util.Version;
+import its.utils.AnalysisUtils;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
@@ -74,10 +75,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.sca.CheckDependencyRi
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
+import static its.utils.AnalysisUtils.analyzeUntilIssuesAreRaised;
+import static its.utils.AnalysisUtils.registerFiles;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -89,6 +93,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.APEX;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CPP;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JCL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SECRETS;
@@ -104,6 +109,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_CUSTOM_SECRETS = "sample-custom-secrets";
   private static final String PROJECT_KEY_MISRA = "sample-misra";
   private static final String PROJECT_KEY_SCA = "sample-sca";
+  private static final String PROJECT_KEY_CSHARP = "sample-csharp";
   public static final String SONAR_EARLY_ACCESS_MISRA_ENABLED_PROPERTY_KEY = "sonar.earlyAccess.misra.enabled";
   public static final String SONAR_LEGACY_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.enabled";
   public static final String SONAR_SCA_FEATURE_ENABLED_PROPERTY_KEY = "sonar.sca.featureEnabled";
@@ -410,6 +416,41 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
   }
 
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class CSharp {
+
+    @BeforeAll
+    void prepare() throws IOException {
+      startBackend(Map.of("omnisharp", PluginLocator.getOmnisharpPluginPath()), Set.of(CS));
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_CSHARP, "Sample C#");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/csharp-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CSHARP, "cs", "SonarLint IT C#");
+    }
+
+    @Test
+    void shouldRaiseIssuesIncludingEnterpriseRulesOnACSharpProject() throws IOException {
+      var configScopeId = "shouldRaiseIssuesIncludingEnterpriseRulesOnACSharpProject";
+      bindProject(configScopeId, "project-" + PROJECT_KEY_CSHARP, PROJECT_KEY_CSHARP);
+
+      var baseDir = Path.of("projects", PROJECT_KEY_CSHARP).toRealPath();
+      registerFiles(backend, configScopeId, baseDir, "Foo.cs", "Enterprise.cs", "Foo.csproj", "Foo.sln");
+
+      var fooIssues = analyzeUntilIssuesAreRaised(backend, client, configScopeId, baseDir.resolve("Foo.cs"));
+      var enterpriseIssues = analyzeUntilIssuesAreRaised(backend, client, configScopeId, baseDir.resolve("Enterprise.cs"));
+
+      assertThat(fooIssues)
+        .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+        .containsOnly(
+          tuple("csharpsquid:S3903", 1),
+          tuple("csharpsquid:S2325", 2),
+          tuple("csharpsquid:S1481", 3));
+      assertThat(enterpriseIssues)
+        .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+        .containsOnly(tuple("csharpsquid:S2259", 5));
+    }
+  }
+
   private static void bindProject(String configScopeId, String projectName, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto(configScopeId, null, true, projectName,
@@ -448,6 +489,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   }
 
   static void startBackend(Map<String, Path> connectedModeEmbeddedPluginPathsByKey) throws IOException {
+    startBackend(connectedModeEmbeddedPluginPathsByKey, Set.of(JAVA, COBOL, C, CPP, TSQL, APEX, SECRETS, JCL));
+  }
+
+  static void startBackend(Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> languages) throws IOException {
     if (backend != null) {
       try {
         backend.shutdown().get();
@@ -467,7 +512,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, COBOL, C, CPP, TSQL, APEX, SECRETS, JCL);
       backend.initialize(
         new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null,
           Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS),

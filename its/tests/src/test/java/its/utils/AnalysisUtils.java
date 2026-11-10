@@ -22,11 +22,13 @@ package its.utils;
 import its.MockSonarLintRpcClientDelegate;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -50,6 +52,29 @@ public class AnalysisUtils {
       List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
       List.of(), List.of()));
     return analyzeAndAwaitIssues(backend, client, configScopeId, List.of(fileUri), toMap(properties));
+  }
+
+  public static void registerFiles(SonarLintRpcServer backend, String configScopeId, Path baseDir, String... relativePaths) {
+    var files = Arrays.stream(relativePaths).map(relativePath -> toClientFile(configScopeId, baseDir, relativePath)).toList();
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(files, List.of(), List.of()));
+  }
+
+  public static List<RaisedIssueDto> analyzeUntilIssuesAreRaised(SonarLintRpcServer backend, MockSonarLintRpcClientDelegate client, String configScopeId, Path file) {
+    return await().atMost(2, TimeUnit.MINUTES).pollInterval(4, TimeUnit.SECONDS).ignoreExceptions()
+      .until(() -> analyzeFile(backend, client, configScopeId, file), issues -> !issues.isEmpty());
+  }
+
+  public static List<RaisedIssueDto> analyzeFile(SonarLintRpcServer backend, MockSonarLintRpcClientDelegate client, String configScopeId, Path file) {
+    return analyzeAndAwaitIssues(backend, client, configScopeId, List.of(file.toUri()), Map.of());
+  }
+
+  public static int startLine(RaisedIssueDto issue) {
+    return issue.getTextRange().getStartLine();
+  }
+
+  private static ClientFileDto toClientFile(String configScopeId, Path baseDir, String relativePath) {
+    var filePath = baseDir.resolve(relativePath).toAbsolutePath();
+    return new ClientFileDto(filePath.toUri(), Path.of(relativePath), configScopeId, false, null, filePath, null, null, true);
   }
 
   public static List<RaisedIssueDto> analyzeAndAwaitIssues(SonarLintRpcServer backend, MockSonarLintRpcClientDelegate client, String configScopeId, List<URI> fileUris,
