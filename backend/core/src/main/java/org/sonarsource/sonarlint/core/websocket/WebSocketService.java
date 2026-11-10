@@ -21,10 +21,12 @@ package org.sonarsource.sonarlint.core.websocket;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
@@ -67,11 +69,9 @@ public class WebSocketService {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.shouldEnableWebSockets = params.getBackendCapabilities().contains(SERVER_SENT_EVENTS);
-    this.webSocketsByRegion = Map.of(
-      SonarCloudRegion.US,
-      new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),
-      SonarCloudRegion.EU,
-      new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.EU)));
+    this.webSocketsByRegion = Arrays.stream(SonarCloudRegion.values())
+      .collect(Collectors.toMap(Function.identity(),
+        region -> new WebSocketManager(eventPublisher, sonarQubeClientManager, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(region))));
   }
 
   @EventListener

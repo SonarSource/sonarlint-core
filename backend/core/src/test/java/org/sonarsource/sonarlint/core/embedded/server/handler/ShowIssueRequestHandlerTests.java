@@ -304,6 +304,19 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
+  void should_extract_query_from_sc_request_coming_from_au_region() {
+    var params = Map.of("project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
+      "issue", "AX2VL6pgAvx3iwyNtLyr",
+      "organizationKey", "sample-organization");
+
+    var issueQuery = showIssueRequestHandler.extractQuery(SonarCloudRegion.AU.getProductionUri().toString(), params);
+
+    assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarqube.au");
+    assertThat(issueQuery.getRegion()).isEqualTo(SonarCloudRegion.AU);
+    assertThat(issueQuery.getOrganizationKey()).isEqualTo("sample-organization");
+  }
+
+  @Test
   void should_extract_query_from_sc_request_with_token() {
     var params = Map.of("project", "org.sonarsource.sonarlint.core:sonarlint-core-parent",
       "issue", "AX2VL6pgAvx3iwyNtLyr", "tokenName", "abc",
