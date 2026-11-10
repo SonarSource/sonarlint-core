@@ -195,7 +195,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             BackendCapability.DATAFLOW_BUG_DETECTION),
           sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("work"),
-          emptySet(), embeddedPluginsWithOmnisharp(),
+          emptySet(), PluginLocator.getEmbeddedPluginsWithOmnisharpByKeyForTests(),
           languages, emptySet(), emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
             new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
@@ -1227,12 +1227,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   private static void waitForAnalysisToBeReady(String configScopeId) {
     await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
-  }
-
-  private static Map<String, Path> embeddedPluginsWithOmnisharp() {
-    var embeddedPlugins = new HashMap<>(PluginLocator.getEmbeddedPluginsByKeyForTests());
-    embeddedPlugins.put("omnisharp", PluginLocator.getOmnisharpPluginPath());
-    return embeddedPlugins;
   }
 
   private void analyzeProject(String projectDirName, String projectKey, String... properties) {

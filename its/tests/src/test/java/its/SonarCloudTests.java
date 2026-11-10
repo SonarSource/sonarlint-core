@@ -19,6 +19,7 @@
  */
 package its;
 
+import its.utils.AnalysisUtils;
 import its.utils.PluginLocator;
 import java.io.File;
 import java.io.IOException;
@@ -106,6 +107,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
+import static its.utils.AnalysisUtils.analyzeUntilIssuesAreRaised;
+import static its.utils.AnalysisUtils.registerFiles;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
@@ -116,6 +119,7 @@ import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CPP;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.HTML;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
@@ -171,13 +175,13 @@ class SonarCloudTests extends AbstractConnectedTests {
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
     backend = clientLauncher.getServerProxy();
-    var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, C, CPP);
+    var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, C, CPP, CS);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
         new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URIS),
         Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS, BackendCapability.SERVER_SENT_EVENTS),
         sonarUserHome.resolve("storage"),
-        sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
+        sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsWithOmnisharpByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.valueOf(region.name()), true)), sonarUserHome.toString(),
         emptyMap(), false, null, false, null));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
@@ -481,6 +485,34 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", projectKeyXml), "src/foo.xml");
     assertThat(issues).hasSize(1);
+  }
+
+  @Test
+  void analysisCSharp() throws IOException {
+    var configScopeId = "analysisCSharp";
+    restoreProfile("csharp-sonarlint.xml");
+    var projectKeyCSharp = "sample-csharp";
+    provisionProject(projectKeyCSharp, "Sample C#");
+    associateProjectToQualityProfile(projectKeyCSharp, "cs", "SonarLint IT C#");
+
+    openBoundConfigurationScope(configScopeId, projectKeyCSharp);
+    waitForAnalysisToBeReady(configScopeId);
+
+    var baseDir = Path.of("projects", projectKeyCSharp).toRealPath();
+    registerFiles(backend, configScopeId, baseDir, "Foo.cs", "Enterprise.cs", "Foo.csproj", "Foo.sln");
+
+    var fooIssues = analyzeUntilIssuesAreRaised(backend, client, configScopeId, baseDir.resolve("Foo.cs"));
+    var enterpriseIssues = analyzeUntilIssuesAreRaised(backend, client, configScopeId, baseDir.resolve("Enterprise.cs"));
+
+    assertThat(fooIssues)
+      .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+      .containsOnly(
+        tuple("csharpsquid:S3903", 1),
+        tuple("csharpsquid:S2325", 2),
+        tuple("csharpsquid:S1481", 3));
+    assertThat(enterpriseIssues)
+      .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+      .containsOnly(tuple("csharpsquid:S2259", 5));
   }
 
   @Test
