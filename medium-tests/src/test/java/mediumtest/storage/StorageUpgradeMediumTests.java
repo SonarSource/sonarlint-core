@@ -20,18 +20,23 @@
 package mediumtest.storage;
 
 import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static mediumtest.storage.StorageSnapshot.CONFIG_SCOPE_ID;
 import static mediumtest.storage.StorageSnapshot.CONNECTION_ID;
+import static mediumtest.storage.StorageSnapshot.KNOWN_FINDINGS_FILE;
 import static mediumtest.storage.StorageSnapshot.PROJECT_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Opens the storage written by the latest release with the current code, to catch upgrade regressions such as SLCORE-2681 (an H2 version unable to read files
- * written by the previous one) or an edited migration that already shipped.
+ * Opens the storage written by the latest release with the current code, to catch upgrade regressions such as an H2 version unable to read files written by the
+ * previous one, or an edited migration that already shipped.
+ * <p>
+ * The snapshot is cleanly closed. SLCORE-2681 only happened on files left by an unclean shutdown, which is not covered yet (SLCORE-2751).
  */
 class StorageUpgradeMediumTests {
 
@@ -56,11 +61,11 @@ class StorageUpgradeMediumTests {
       .as("Data written by %s (H2 %s) must be preserved", snapshot.release(), snapshot.h2Version())
       .containsAllEntriesOf(snapshot.rowsByTable());
     assertThat(backend.getLocalOnlyIssuesRepository().loadAll(CONFIG_SCOPE_ID))
-      .extracting(issue -> issue.getRuleKey())
+      .extracting(LocalOnlyIssue::getRuleKey)
       .containsExactly("java:S1481");
     var knownFindingsRepository = new KnownFindingsRepository(backend.getSonarLintDatabase());
-    assertThat(knownFindingsRepository.loadIssuesForFile(CONFIG_SCOPE_ID, Path.of("src/main/java/Foo.java")))
-      .extracting(finding -> finding.getServerKey())
+    assertThat(knownFindingsRepository.loadIssuesForFile(CONFIG_SCOPE_ID, Path.of(KNOWN_FINDINGS_FILE)))
+      .extracting(KnownFinding::getServerKey)
       .containsExactly("issueKey1");
     assertThat(client.getLogMessages()).noneMatch(message -> message.contains("could not read its local database"));
   }

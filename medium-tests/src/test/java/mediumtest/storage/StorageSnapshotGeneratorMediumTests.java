@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static mediumtest.storage.StorageSnapshot.CONFIG_SCOPE_ID;
 import static mediumtest.storage.StorageSnapshot.CONNECTION_ID;
+import static mediumtest.storage.StorageSnapshot.KNOWN_FINDINGS_FILE;
 import static mediumtest.storage.StorageSnapshot.PROJECT_KEY;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerDependencyRiskFixtures.aServerDependencyRisk;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
@@ -103,17 +104,17 @@ class StorageSnapshotGeneratorMediumTests {
 
     // Known findings are only stored by the backend itself, after an analysis
     var knownFindingsRepository = new KnownFindingsRepository(backend.getSonarLintDatabase());
-    knownFindingsRepository.storeKnownIssues(CONFIG_SCOPE_ID, Path.of(FILE_PATH),
+    knownFindingsRepository.storeKnownIssues(CONFIG_SCOPE_ID, Path.of(KNOWN_FINDINGS_FILE),
       List.of(new KnownFinding(UUID.fromString("a3bb189e-8bf9-3888-9912-ace4e6543002"), "issueKey1", TEXT_RANGE, new LineWithHash(1, "lineHash"), "java:S1481",
         "Remove this unused variable", CREATION_DATE)));
-    knownFindingsRepository.storeKnownSecurityHotspots(CONFIG_SCOPE_ID, Path.of(FILE_PATH),
+    knownFindingsRepository.storeKnownSecurityHotspots(CONFIG_SCOPE_ID, Path.of(KNOWN_FINDINGS_FILE),
       List.of(new KnownFinding(UUID.fromString("b4cc290f-9cf0-4999-aa23-bdf5f7654113"), "hotspotKey", TEXT_RANGE, new LineWithHash(1, "lineHash"), "java:S2068",
         "Review this hard-coded password", CREATION_DATE)));
 
     var dsl = backend.getSonarLintDatabase().dsl();
     var metadata = StorageSnapshot.Metadata.of(release, dsl);
     var schema = StorageSnapshot.schemaScript(dsl);
-    // Close the database cleanly before copying it
+    // Close the database cleanly before copying it. Files left by an unclean shutdown are not covered yet, see SLCORE-2751
     harness.shutdown(backend);
 
     FileUtils.deleteDirectory(outputDir.toFile());

@@ -43,6 +43,8 @@ final class StorageSnapshot {
   static final String CONNECTION_ID = "conn1";
   static final String PROJECT_KEY = "projectKey";
   static final String CONFIG_SCOPE_ID = "configScope";
+  // Known findings are stored with the OS-specific separator, and looked up the same way. A path without folders reads the same on every OS.
+  static final String KNOWN_FINDINGS_FILE = "Foo.java";
 
   static final String METADATA_FILE = "snapshot.properties";
   static final String SCHEMA_FILE = "schema.sql";
