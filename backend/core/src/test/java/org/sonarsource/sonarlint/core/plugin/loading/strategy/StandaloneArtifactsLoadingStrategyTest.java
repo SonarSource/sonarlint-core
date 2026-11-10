@@ -70,7 +70,19 @@ class StandaloneArtifactsLoadingStrategyTest {
         k -> new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null))));
     });
     when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(EnumSet.noneOf(SonarLanguage.class));
-    when(languageSupportRepository.isEnabledOnlyInConnectedMode(any())).thenReturn(false);
+    when(languageSupportRepository.getExtraEnabledLanguagesInConnectedMode()).thenReturn(Set.of());
+  }
+
+  @Test
+  void should_keep_connected_only_languages_separate_from_resolved_artifacts() {
+    when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(SonarLanguage.JS));
+    when(languageSupportRepository.getExtraEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.TS));
+
+    var result = createStrategy().resolveArtifacts();
+
+    assertThat(result.enabledLanguages()).containsExactly(SonarLanguage.JS);
+    assertThat(result.connectedOnlyLanguages()).containsExactly(SonarLanguage.TS);
+    assertThat(result.resolvedArtifactsByKey()).isEmpty();
   }
 
   // --- Enterprise deduplication (different-key variants: CS, VBNET) ---

@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifacts
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -103,10 +104,16 @@ public class PluginsService {
   }
 
   private static PluginStatus buildPluginStatus(SonarLanguage language, ArtifactsLoadingResult result) {
+    var connectedOnly = !result.enabledLanguages().contains(language) && result.connectedOnlyLanguages().contains(language);
+    if (!result.enabledLanguages().contains(language) && !connectedOnly) {
+      return PluginStatus.unsupported(language);
+    }
     var pluginKey = resolvePluginKey(language, result.resolvedArtifactsByKey());
     return result.getResolvedArtifactByKey(pluginKey)
       .map(artifact -> PluginStatus.forLanguage(language, artifact.state(), artifact.source(), artifact.version(), null, artifact.path(), null))
-      .orElseGet(() -> PluginStatus.unsupported(language));
+      .orElseGet(() -> connectedOnly
+        ? PluginStatus.forLanguage(language, ArtifactState.PREMIUM, null, null, null, null, null)
+        : PluginStatus.unsupported(language));
   }
 
   private ArtifactsLoadingStrategy getPluginLoadingStrategy(@Nullable String connectionId) {

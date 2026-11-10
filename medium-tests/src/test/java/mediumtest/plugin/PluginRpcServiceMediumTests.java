@@ -55,6 +55,60 @@ class PluginRpcServiceMediumTests {
   }
 
   @SonarLintTest
+  void should_return_unsupported_for_disabled_language_with_embedded_plugin(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .start();
+
+    var response = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).join();
+
+    assertThat(response.getPluginStatuses())
+      .filteredOn(s -> "Python".equals(s.getPluginName()))
+      .singleElement()
+      .satisfies(status -> {
+        assertThat(status.getState()).isEqualTo(PluginStateDto.UNSUPPORTED);
+        assertThat(status.getSource()).isNull();
+        assertThat(status.getActualVersion()).isNull();
+      });
+  }
+
+  @SonarLintTest
+  void should_keep_active_for_connected_only_language_with_embedded_plugin(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PYTHON)
+      .start();
+
+    var response = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).join();
+
+    assertThat(response.getPluginStatuses())
+      .filteredOn(s -> "Python".equals(s.getPluginName()))
+      .singleElement()
+      .satisfies(status -> {
+        assertThat(status.getState()).isEqualTo(PluginStateDto.ACTIVE);
+        assertThat(status.getSource()).isEqualTo(ArtifactSourceDto.EMBEDDED);
+      });
+  }
+
+  @SonarLintTest
+  void should_return_unsupported_for_disabled_language_in_connected_mode(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.PYTHON).start();
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.PYTHON))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .start();
+
+    var response = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams("configScopeId")).join();
+
+    assertThat(response.getPluginStatuses())
+      .filteredOn(s -> "Python".equals(s.getPluginName()))
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.UNSUPPORTED);
+  }
+
+  @SonarLintTest
   void should_return_unsupported_status_for_languages_with_no_plugin(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.PYTHON)
