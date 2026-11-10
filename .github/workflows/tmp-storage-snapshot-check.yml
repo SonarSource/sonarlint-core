@@ -12,7 +12,7 @@ jobs:
     runs-on: sonar-m
     permissions:
       id-token: write
-      contents: read
+      contents: write
     env:
       RELEASED_VERSION: 12.3.0.87938
     steps:
