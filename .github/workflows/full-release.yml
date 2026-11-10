@@ -81,29 +81,33 @@ jobs:
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.storage-snapshot.result == 'success'
+        continue-on-error: true
         with:
           name: storage-snapshot
           path: ${{ runner.temp }}/storage-snapshot
       - name: Replace the storage snapshot
         id: storage-snapshot
+        continue-on-error: true
         env:
           SNAPSHOT_RESULT: ${{ needs.storage-snapshot.result }}
           RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
+        # Master must always end up with exactly one valid snapshot, otherwise the upgrade test fails on every PR
         run: |
           snapshots=medium-tests/src/test/resources/storage-snapshots
-          case "$SNAPSHOT_RESULT" in
-            success)
-              find "$snapshots" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-              cp -R "$RUNNER_TEMP/storage-snapshot/." "$snapshots/"
-              note="The storage snapshot was regenerated from $RELEASED_VERSION. Review the changes of \`snapshot.properties\` and \`schema.sql\`, the \`.mv.db\` file always differs."
-              ;;
-            skipped)
-              note=""
-              ;;
-            *)
-              note=$(printf '> [!WARNING]\n> The storage snapshot could not be generated from %s. Generate it manually, see `%s/README.md`.' "$RELEASED_VERSION" "$snapshots")
-              ;;
-          esac
+          generated="$RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION"
+          warning=$(printf '> [!WARNING]\n> The storage snapshot could not be regenerated from %s, the previous one is kept. Generate it manually, see `%s/README.md`.' "$RELEASED_VERSION" "$snapshots")
+          if [ "$SNAPSHOT_RESULT" = skipped ]; then
+            note=""
+          elif [ "$SNAPSHOT_RESULT" != success ] || [ ! -s "$generated/h2/sq-ide.mv.db" ] || [ ! -s "$generated/snapshot.properties" ]; then
+            note="$warning"
+          elif find "$snapshots" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + && cp -R "$generated" "$snapshots/"; then
+            note="The storage snapshot was regenerated from $RELEASED_VERSION. Review the changes of \`snapshot.properties\` and \`schema.sql\`, the \`.mv.db\` file always differs."
+          else
+            # Restore the previous snapshot
+            git checkout -q -- "$snapshots"
+            git clean -fdq -- "$snapshots"
+            note="$warning"
+          fi
           {
             echo "note<<EOF"
             echo "$note"
