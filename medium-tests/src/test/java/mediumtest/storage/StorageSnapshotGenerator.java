@@ -23,11 +23,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
@@ -114,10 +119,65 @@ public class StorageSnapshotGenerator {
     backend.shutdown().get();
 
     FileUtils.deleteDirectory(outputDir.toFile());
-    var outputH2 = Files.createDirectories(outputDir.resolve("h2"));
-    var dbFileName = SonarLintDatabase.SQ_IDE_DB_FILENAME + ".mv.db";
-    Files.copy(storageRoot.resolve("h2").resolve(dbFileName), outputH2.resolve(dbFileName), StandardCopyOption.REPLACE_EXISTING);
+    copyDatabase(storageRoot, outputDir);
+    leaveTransactionOpenAndCrash(storageRoot);
+    var uncleanShutdownDir = outputDir.resolve(StorageSnapshot.UNCLEAN_SHUTDOWN_DIRECTORY);
+    copyDatabase(storageRoot, uncleanShutdownDir);
+    checkRecoversCommittedData(uncleanShutdownDir, metadata);
     metadata.write(outputDir);
     Files.writeString(outputDir.resolve(StorageSnapshot.SCHEMA_FILE), schema, StandardCharsets.UTF_8);
+  }
+
+  /**
+   * Simulates the IDE being killed while the backend is writing: a transaction deletes findings, its changes reach the file, and the database stops without
+   * committing nor closing.
+   */
+  private static void leaveTransactionOpenAndCrash(Path storageRoot) throws SQLException {
+    var url = jdbcUrl(storageRoot);
+    var writer = DriverManager.getConnection(url, "sa", "");
+    var other = DriverManager.getConnection(url, "sa", "");
+    writer.setAutoCommit(false);
+    try (var statement = writer.createStatement()) {
+      statement.execute("DELETE FROM SERVER_FINDINGS");
+      statement.execute("DELETE FROM KNOWN_FINDINGS");
+    }
+    try (var statement = other.createStatement()) {
+      statement.execute("CHECKPOINT SYNC");
+      statement.execute("SHUTDOWN IMMEDIATELY");
+    }
+    closeAfterShutdown(writer);
+    closeAfterShutdown(other);
+  }
+
+  /**
+   * Opens a copy of the crashed database with the H2 version of the release, which must roll back the open transaction
+   */
+  private static void checkRecoversCommittedData(Path snapshotDirectory, StorageSnapshot.Metadata metadata) throws Exception {
+    var copy = Files.createTempDirectory("storageSnapshotCheck");
+    copyDatabase(snapshotDirectory, copy);
+    try (var connection = DriverManager.getConnection(jdbcUrl(copy), "sa", "")) {
+      var rows = StorageSnapshot.rowCounts(DSL.using(connection, SQLDialect.H2));
+      if (!rows.equals(metadata.rowsByTable())) {
+        throw new IllegalStateException("The crashed database does not recover the committed data: expected " + metadata.rowsByTable() + " but got " + rows);
+      }
+    }
+  }
+
+  private static void copyDatabase(Path fromStorageRoot, Path toStorageRoot) throws Exception {
+    var dbFileName = SonarLintDatabase.SQ_IDE_DB_FILENAME + ".mv.db";
+    var toH2 = Files.createDirectories(toStorageRoot.resolve("h2"));
+    Files.copy(fromStorageRoot.resolve("h2").resolve(dbFileName), toH2.resolve(dbFileName), StandardCopyOption.REPLACE_EXISTING);
+  }
+
+  private static String jdbcUrl(Path storageRoot) {
+    return "jdbc:h2:" + storageRoot.resolve("h2").resolve(SonarLintDatabase.SQ_IDE_DB_FILENAME).toAbsolutePath();
+  }
+
+  private static void closeAfterShutdown(Connection connection) {
+    try {
+      connection.close();
+    } catch (SQLException e) {
+      // Expected, the database is already gone
+    }
   }
 }
