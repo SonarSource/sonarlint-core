@@ -20,6 +20,7 @@
 package mediumtest.storage;
 
 import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
@@ -34,29 +35,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Opens the storage written by the latest release with the current code, to catch upgrade regressions such as an H2 version unable to read files written by the
- * previous one, or an edited migration that already shipped. The snapshot is written after a clean shutdown.
+ * previous one, or an edited migration that already shipped.
  */
 class StorageUpgradeMediumTests {
+
+  @Test
+  void should_not_change_migrations_shipped_in_latest_release() throws Exception {
+    var snapshot = StorageSnapshot.Metadata.read(StorageSnapshot.latestSnapshotDirectory());
+
+    assertThat(StorageSnapshot.migrationFileChecksums())
+      .as("Migrations shipped in %s must not be changed, add a new migration instead", snapshot.release())
+      .containsAllEntriesOf(snapshot.checksumsByMigration());
+  }
 
   @SonarLintTest
   void should_start_on_storage_written_by_latest_release(SonarLintTestHarness harness) throws Exception {
     var snapshotDirectory = StorageSnapshot.latestSnapshotDirectory();
+
+    assertStartsAndPreservesData(harness, snapshotDirectory, snapshotDirectory);
+  }
+
+  @SonarLintTest
+  void should_start_on_storage_left_by_a_crash_of_latest_release(SonarLintTestHarness harness) throws Exception {
+    var snapshotDirectory = StorageSnapshot.latestSnapshotDirectory();
+
+    assertStartsAndPreservesData(harness, snapshotDirectory, snapshotDirectory.resolve(StorageSnapshot.UNCLEAN_SHUTDOWN_DIRECTORY));
+  }
+
+  private static void assertStartsAndPreservesData(SonarLintTestHarness harness, Path snapshotDirectory, Path storageDirectory) throws Exception {
     var snapshot = StorageSnapshot.Metadata.read(snapshotDirectory);
-    assertThat(StorageSnapshot.migrationFileChecksums())
-      .as("Migrations shipped in %s must not be changed, add a new migration instead", snapshot.release())
-      .containsAllEntriesOf(snapshot.checksumsByMigration());
     var client = harness.newFakeClient().build();
 
     // The connection must be declared, otherwise its data is purged at startup
     var backend = harness.newBackend()
-      .withStorageSnapshot(snapshotDirectory)
+      .withStorageSnapshot(storageDirectory)
       .withSonarQubeConnection(CONNECTION_ID)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .start(client);
 
     var dsl = backend.getSonarLintDatabase().dsl();
     assertThat(StorageSnapshot.rowCounts(dsl))
-      .as("Data written by %s (H2 %s) must be preserved", snapshot.release(), snapshot.h2Version())
+      .as("Data committed by %s (H2 %s) must be preserved", snapshot.release(), snapshot.h2Version())
       .containsAllEntriesOf(snapshot.rowsByTable());
     assertThat(backend.getLocalOnlyIssuesRepository().loadAll(CONFIG_SCOPE_ID))
       .extracting(LocalOnlyIssue::getRuleKey)
