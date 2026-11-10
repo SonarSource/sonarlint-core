@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import org.flywaydb.core.Flyway;
 import org.flywaydb.core.internal.license.VersionPrinter;
 import org.jooq.DSLContext;
 
@@ -56,7 +57,7 @@ final class StorageSnapshot {
   record Metadata(String release, String h2Version, String flywayVersion, Map<String, Integer> checksumsByMigration, Map<String, Integer> rowsByTable) {
 
     static Metadata of(String release, DSLContext dsl) {
-      return new Metadata(release, StorageSnapshot.h2Version(dsl), VersionPrinter.getVersion(), StorageSnapshot.migrationChecksums(dsl), StorageSnapshot.rowCounts(dsl));
+      return new Metadata(release, StorageSnapshot.h2Version(dsl), VersionPrinter.getVersion(), StorageSnapshot.appliedMigrationChecksums(dsl), StorageSnapshot.rowCounts(dsl));
     }
 
     static Metadata read(Path snapshotDirectory) throws IOException {
@@ -110,12 +111,31 @@ final class StorageSnapshot {
   }
 
   /**
-   * Successfully applied versioned migrations, in the order they were applied
+   * Checksums recorded in the database for the successfully applied versioned migrations, in the order they were applied
    */
-  static Map<String, Integer> migrationChecksums(DSLContext dsl) {
+  static Map<String, Integer> appliedMigrationChecksums(DSLContext dsl) {
     var checksums = new LinkedHashMap<String, Integer>();
     dsl.fetch("SELECT \"version\", \"checksum\" FROM \"" + FLYWAY_HISTORY_TABLE + "\" WHERE \"success\" AND \"version\" IS NOT NULL ORDER BY \"installed_rank\"")
       .forEach(rec -> checksums.put(rec.get(0, String.class), rec.get(1, Integer.class)));
+    return checksums;
+  }
+
+  /**
+   * Checksums of the migration files on the classpath, computed by Flyway. They are resolved against an empty in-memory database, where every migration is pending,
+   * so they come from the files and not from a schema history.
+   */
+  static Map<String, Integer> migrationFileChecksums() {
+    var checksums = new LinkedHashMap<String, Integer>();
+    var flyway = Flyway.configure()
+      .dataSource("jdbc:h2:mem:migrationFileChecksums", "sa", "")
+      .locations("classpath:db/migration")
+      .failOnMissingLocations(true)
+      .load();
+    for (var migration : flyway.info().pending()) {
+      if (migration.getVersion() != null) {
+        checksums.put(migration.getVersion().getVersion(), migration.getChecksum());
+      }
+    }
     return checksums;
   }
 

@@ -42,6 +42,9 @@ class StorageUpgradeMediumTests {
   void should_start_on_storage_written_by_latest_release(SonarLintTestHarness harness) throws Exception {
     var snapshotDirectory = StorageSnapshot.latestSnapshotDirectory();
     var snapshot = StorageSnapshot.Metadata.read(snapshotDirectory);
+    assertThat(StorageSnapshot.migrationFileChecksums())
+      .as("Migrations shipped in %s must not be changed, add a new migration instead", snapshot.release())
+      .containsAllEntriesOf(snapshot.checksumsByMigration());
     var client = harness.newFakeClient().build();
 
     // The connection must be declared, otherwise its data is purged at startup
@@ -52,9 +55,6 @@ class StorageUpgradeMediumTests {
       .start(client);
 
     var dsl = backend.getSonarLintDatabase().dsl();
-    assertThat(StorageSnapshot.migrationChecksums(dsl))
-      .as("Migrations shipped in %s must not be changed", snapshot.release())
-      .containsAllEntriesOf(snapshot.checksumsByMigration());
     assertThat(StorageSnapshot.rowCounts(dsl))
       .as("Data written by %s (H2 %s) must be preserved", snapshot.release(), snapshot.h2Version())
       .containsAllEntriesOf(snapshot.rowsByTable());
