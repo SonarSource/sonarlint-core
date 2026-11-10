@@ -33,7 +33,12 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
-public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
+public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey,
+  Set<SonarLanguage> connectedOnlyLanguages) {
+
+  public ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
+    this(enabledLanguages, resolvedArtifactsByKey, Set.of());
+  }
 
   public Optional<ResolvedArtifact> getResolvedArtifactByKey(String key) {
     return Optional.ofNullable(resolvedArtifactsByKey().get(key));
