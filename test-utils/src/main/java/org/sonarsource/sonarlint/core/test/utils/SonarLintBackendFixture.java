@@ -151,6 +151,8 @@ public class SonarLintBackendFixture {
     private final Set<String> disabledPluginKeysForAnalysis = new HashSet<>();
     private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
     private Path customStorageRoot;
+    @Nullable
+    private Path storageSnapshot;
     private Path customUserHome;
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
@@ -419,6 +421,15 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    /**
+     * Start the backend on a copy of a storage snapshot (a folder containing an {@code h2} subfolder), e.g. one written by a previous release.
+     * The database is handed to the backend untouched: no test migration runs before startup, so it cannot be combined with storage builders that populate the database.
+     */
+    public SonarLintBackendBuilder withStorageSnapshot(Path snapshotDirectory) {
+      this.storageSnapshot = snapshotDirectory;
+      return this;
+    }
+
     public SonarLintBackendBuilder withUserHome(Path userHome) {
       this.customUserHome = userHome;
       return this;
@@ -518,12 +529,16 @@ public class SonarLintBackendFixture {
       var storageParentPath = customStorageRoot == null ? tempDirectory("storage") : customStorageRoot.getParent();
       var storageRoot = storageParentPath.resolve("storage");
       try {
-        var database = new TestDatabase(storageRoot);
-        serverStorages.forEach(storage -> storage.populate(storageParentPath, database));
-        if (!configurationScopeStorages.isEmpty()) {
-          configurationScopeStorages.forEach(storage -> storage.populate(database));
+        if (storageSnapshot != null) {
+          copyStorageSnapshot(storageSnapshot, storageRoot);
+        } else {
+          var database = new TestDatabase(storageRoot);
+          serverStorages.forEach(storage -> storage.populate(storageParentPath, database));
+          if (!configurationScopeStorages.isEmpty()) {
+            configurationScopeStorages.forEach(storage -> storage.populate(database));
+          }
+          database.shutdown();
         }
-        database.shutdown();
         var sonarLintBackend = new SonarLintTestRpcServer(client);
         beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto(productKey, productKey,
@@ -555,6 +570,17 @@ public class SonarLintBackendFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
+    }
+
+    private void copyStorageSnapshot(Path snapshotDirectory, Path storageRoot) throws IOException {
+      if (!serverStorages.isEmpty() || !configurationScopeStorages.isEmpty()) {
+        throw new IllegalStateException("A storage snapshot cannot be combined with storage builders, as populating them would migrate the snapshot before the backend starts");
+      }
+      var snapshotH2 = snapshotDirectory.resolve("h2");
+      if (!Files.isDirectory(snapshotH2)) {
+        throw new IllegalArgumentException("No 'h2' folder in storage snapshot " + snapshotDirectory);
+      }
+      org.apache.commons.io.FileUtils.copyDirectory(snapshotH2.toFile(), storageRoot.resolve("h2").toFile());
     }
 
     private static URI createUriFromString(@Nullable String uri) {
