@@ -41,6 +41,10 @@ public class PluginLocator {
     return getPluginPath("sonar-javascript-plugin-13.9.0.44793.jar");
   }
 
+  public static Path getOmnisharpPluginPath() {
+    return getPluginPath("sonarlint-omnisharp-plugin-1.49.0.102154.jar");
+  }
+
   public static Map<String, Path> getEmbeddedPluginsByKeyForTests() {
     return Map.of(
       "javascript", getJavascriptPluginPath(),
