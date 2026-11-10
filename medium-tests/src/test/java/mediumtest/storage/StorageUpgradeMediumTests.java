@@ -34,9 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Opens the storage written by the latest release with the current code, to catch upgrade regressions such as an H2 version unable to read files written by the
- * previous one, or an edited migration that already shipped.
- * <p>
- * The snapshot is cleanly closed. SLCORE-2681 only happened on files left by an unclean shutdown, which is not covered yet (SLCORE-2751).
+ * previous one, or an edited migration that already shipped. The snapshot is written after a clean shutdown.
  */
 class StorageUpgradeMediumTests {
 

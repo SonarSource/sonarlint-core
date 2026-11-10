@@ -22,8 +22,7 @@ and is never byte-for-byte identical between two generations, even when nothing 
 
 ## Replacing the snapshot after a release
 
-This is meant to be done by the release workflow, when preparing the version bump PR. To do it manually, from a
-checkout of the release tag (the generator classes must be present, copy them from master if the tag is older):
+From a checkout of the release tag (the generator classes must be present, copy them from master if the tag is older):
 
 ```
 TAG=12.3.0.87938
@@ -51,8 +50,8 @@ When adding a table, extend the generator so that the next snapshot covers it.
 
 ## Limitations
 
-The snapshot is written after a clean shutdown. SLCORE-2681 (H2 2.5.252 failing to open files written by 2.4.240) only
-happened on files left by an unclean shutdown, so this test would not have caught it. That case is SLCORE-2751.
+The snapshot is written after a clean shutdown, so files left by an unclean shutdown (IDE killed while the backend
+was writing) are not exercised.
 
 Only the latest release is covered. Users who skip releases go through older storage stacks that are no longer
 tested once a release changes the H2 version, the Flyway version or the migrations.

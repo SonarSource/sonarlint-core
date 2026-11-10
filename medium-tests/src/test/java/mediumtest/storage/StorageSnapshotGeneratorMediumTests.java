@@ -114,7 +114,7 @@ class StorageSnapshotGeneratorMediumTests {
     var dsl = backend.getSonarLintDatabase().dsl();
     var metadata = StorageSnapshot.Metadata.of(release, dsl);
     var schema = StorageSnapshot.schemaScript(dsl);
-    // Close the database cleanly before copying it. Files left by an unclean shutdown are not covered yet, see SLCORE-2751
+    // Close the database cleanly before copying it
     harness.shutdown(backend);
 
     FileUtils.deleteDirectory(outputDir.toFile());
