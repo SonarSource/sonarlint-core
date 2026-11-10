@@ -173,6 +173,13 @@ public class SonarLintBackendFixture {
     @Nullable
     private URI usRegionWebSocketUri;
 
+    @Nullable
+    private String auRegionUri;
+    @Nullable
+    private String auRegionApiUri;
+    @Nullable
+    private URI auRegionWebSocketUri;
+
     private Duration responseTimeout;
     private Path keyStorePath;
     private String keyStorePassword;
@@ -274,6 +281,21 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(URI usRegionWebSocketUri) {
       this.usRegionWebSocketUri = usRegionWebSocketUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionUri(String auRegionUri) {
+      this.auRegionUri = auRegionUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionApiUri(String auRegionApiUri) {
+      this.auRegionApiUri = auRegionApiUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionWebSocketUri(URI auRegionWebSocketUri) {
+      this.auRegionWebSocketUri = auRegionWebSocketUri;
       return this;
     }
 
@@ -535,7 +557,9 @@ public class SonarLintBackendFixture {
           SonarCloudRegion.EU,
           new SonarQubeCloudRegionDto(createUriFromString(euRegionUri), createUriFromString(euRegionApiUri), euRegionWebSocketUri),
           SonarCloudRegion.US,
-          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), usRegionWebSocketUri)));
+          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), usRegionWebSocketUri),
+          SonarCloudRegion.AU,
+          new SonarQubeCloudRegionDto(createUriFromString(auRegionUri), createUriFromString(auRegionApiUri), auRegionWebSocketUri)));
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
         var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);
