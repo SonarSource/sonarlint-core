@@ -40,7 +40,7 @@ jobs:
     if: inputs.branch == 'master'
     permissions:
       id-token: write # for SonarSource/ci-github-actions/config-maven
-      contents: read
+      contents: write # for SonarSource/ci-github-actions/config-maven, which records a build number
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
