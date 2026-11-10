@@ -31,19 +31,70 @@ jobs:
       branch: ${{ inputs.branch }}
       slack-channel: "C06JQ30RV88" #squad-ide-slcore-bots
 
+  storage-snapshot:
+    name: Generate the storage snapshot of the release
+    runs-on: sonar-m
+    needs:
+      - release
+    # The upgrade test on master runs against the latest release of master only
+    if: inputs.branch == 'master'
+    permissions:
+      id-token: write # for SonarSource/ci-github-actions/config-maven
+      contents: write # for SonarSource/ci-github-actions/config-maven, which records a build number
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release.outputs.released-version }}
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+        with:
+          artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
+      - name: Generate storage snapshot
+        env:
+          RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
+        # See medium-tests/src/test/resources/storage-snapshots/README.md
+        run: |
+          mvn -B install -DskipTests -pl medium-tests -am -P '!its-linux'
+          mvn -B exec:java -pl medium-tests -P '!its-linux' \
+            -Dexec.mainClass=mediumtest.storage.StorageSnapshotGenerator -Dexec.classpathScope=test \
+            -Dexec.args="$RELEASED_VERSION $RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: storage-snapshot
+          path: ${{ runner.temp }}/storage-snapshot
+          if-no-files-found: error
+
   bump-version:
     name: Create a PR to bump version
     runs-on: sonar-xs
     needs:
       - release
+      - storage-snapshot
+    # A failed snapshot generation must not prevent the version bump
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     permissions:
       contents: write # write for peter-evans/create-pull-request, read for actions/checkout
       pull-requests: write # write for peter-evans/create-pull-request
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.storage-snapshot.result == 'success'
+        continue-on-error: true
+        with:
+          name: storage-snapshot
+          path: ${{ runner.temp }}/storage-snapshot
+      - name: Replace the storage snapshot
+        id: storage-snapshot
+        continue-on-error: true
+        env:
+          SNAPSHOT_RESULT: ${{ needs.storage-snapshot.result }}
+          RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
+          GENERATED_DIR: ${{ runner.temp }}/storage-snapshot/${{ needs.release.outputs.released-version }}
+        run: .github/scripts/replace-storage-snapshot.sh
       - name: bump-version
-        env: 
+        env:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
         run: |
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$NEW_VERSION-SNAPSHOT"
@@ -58,4 +109,7 @@ jobs:
           base: master
           draft: true # so that we don't actually need to re-open the PR and just make it ready for review
           reviewers: ${{ github.actor }}
-          body: Bump the version for the new iteration. Created by release automation.
+          body: |
+            Bump the version for the new iteration. Created by release automation.
+
+            ${{ steps.storage-snapshot.outputs.note }}
