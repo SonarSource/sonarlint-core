@@ -76,10 +76,6 @@ jobs:
     permissions:
       contents: write # write for peter-evans/create-pull-request, read for actions/checkout
       pull-requests: write # write for peter-evans/create-pull-request
-    env:
-      SNAPSHOTS_DIR: medium-tests/src/test/resources/storage-snapshots
-      RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
-    # The storage snapshot steps never fail the job. Master must always end up with exactly one valid snapshot, otherwise the upgrade test fails on every PR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
@@ -89,45 +85,14 @@ jobs:
         with:
           name: storage-snapshot
           path: ${{ runner.temp }}/storage-snapshot
-      - name: Check the generated storage snapshot
-        id: check-snapshot
-        if: needs.storage-snapshot.result == 'success'
-        continue-on-error: true
-        run: |
-          test -s "$RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION/h2/sq-ide.mv.db"
-          test -s "$RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION/snapshot.properties"
       - name: Replace the storage snapshot
-        id: replace-snapshot
-        if: steps.check-snapshot.outcome == 'success'
-        continue-on-error: true
-        run: |
-          find "$SNAPSHOTS_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-          cp -R "$RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION" "$SNAPSHOTS_DIR/"
-      - name: Restore the previous storage snapshot
-        if: steps.replace-snapshot.outcome == 'failure'
-        continue-on-error: true
-        run: |
-          git checkout -q -- "$SNAPSHOTS_DIR"
-          git clean -fdq -- "$SNAPSHOTS_DIR"
-      - name: Describe the storage snapshot change
-        id: snapshot-note
+        id: storage-snapshot
         continue-on-error: true
         env:
           SNAPSHOT_RESULT: ${{ needs.storage-snapshot.result }}
-          REPLACE_OUTCOME: ${{ steps.replace-snapshot.outcome }}
-        run: |
-          if [ "$SNAPSHOT_RESULT" = skipped ]; then
-            note=""
-          elif [ "$REPLACE_OUTCOME" = success ]; then
-            note="The storage snapshot was regenerated from $RELEASED_VERSION. Review the changes of \`snapshot.properties\` and \`schema.sql\`, the \`.mv.db\` file always differs."
-          else
-            note=$(printf '> [!WARNING]\n> The storage snapshot could not be regenerated from %s, the previous one is kept. Generate it manually, see `%s/README.md`.' "$RELEASED_VERSION" "$SNAPSHOTS_DIR")
-          fi
-          {
-            echo "note<<EOF"
-            echo "$note"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
+          GENERATED_DIR: ${{ runner.temp }}/storage-snapshot/${{ needs.release.outputs.released-version }}
+        run: .github/scripts/replace-storage-snapshot.sh
       - name: bump-version
         env:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
@@ -147,4 +112,4 @@ jobs:
           body: |
             Bump the version for the new iteration. Created by release automation.
 
-            ${{ steps.snapshot-note.outputs.note }}
+            ${{ steps.storage-snapshot.outputs.note }}
