@@ -22,7 +22,12 @@ and is never byte-for-byte identical between two generations, even when nothing 
 
 ## Replacing the snapshot after a release
 
-From a checkout of the release tag (the generator classes must be present, copy them from master if the tag is older):
+The `Full release` workflow does it for releases from master: it generates the snapshot from the release tag and adds
+it to the "Prepare next development iteration" PR. If that fails, the PR says so and the snapshot must be generated
+manually.
+
+To generate it manually, from a checkout of the release tag (the generator classes must be present, copy them from
+master if the tag is older):
 
 ```
 TAG=12.3.0.87938
