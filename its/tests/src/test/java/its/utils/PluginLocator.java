@@ -21,6 +21,7 @@ package its.utils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PluginLocator {
@@ -50,6 +51,12 @@ public class PluginLocator {
       "javascript", getJavascriptPluginPath(),
       "go", PluginLocator.getGoPluginPath(),
       "iac", PluginLocator.getIacPluginPath());
+  }
+
+  public static Map<String, Path> getEmbeddedPluginsWithOmnisharpByKeyForTests() {
+    var embeddedPlugins = new HashMap<>(getEmbeddedPluginsByKeyForTests());
+    embeddedPlugins.put("omnisharp", getOmnisharpPluginPath());
+    return embeddedPlugins;
   }
 
   private static Path getPluginPath(String file) {
