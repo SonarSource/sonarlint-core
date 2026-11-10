@@ -45,8 +45,6 @@ public class TestPlugin {
     PluginLocator.SONAR_KOTLIN_PLUGIN_JAR_HASH);
   public static final Plugin IAC = new Plugin("iac", Set.of(Language.SHELL, Language.AZUREPIPELINES), PluginLocator.getIacEnterprisePluginPath(),
     PluginLocator.SONAR_IAC_ENTERPRISE_PLUGIN_VERSION, PluginLocator.SONAR_IAC_ENTERPRISE_PLUGIN_JAR_HASH);
-  public static final Plugin OMNISHARP = new Plugin("omnisharp", Set.of(Language.CS, Language.VBNET), PluginLocator.getOmnisharpPluginPath(),
-    PluginLocator.SONAR_OMNISHARP_PLUGIN_VERSION, PluginLocator.SONAR_OMNISHARP_PLUGIN_JAR_HASH);
 
   private final Set<Language> languages;
   private final Path path;
