@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
@@ -39,8 +38,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
-import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
-import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 
 import static mediumtest.storage.StorageSnapshot.CONFIG_SCOPE_ID;
 import static mediumtest.storage.StorageSnapshot.CONNECTION_ID;
@@ -51,18 +49,11 @@ import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtu
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 
 /**
- * Not a test: writes a storage snapshot for {@link StorageUpgradeMediumTests}. It runs on a release tag, see storage-snapshots/README.md:
- * <pre>
- * mvn test -pl medium-tests -am -Dtest=StorageSnapshotGeneratorMediumTests -Dsurefire.failIfNoSpecifiedTests=false \
- *   -Dsonarlint.storageSnapshot.release=12.3.0.87938 \
- *   -Dsonarlint.storageSnapshot.outputDir=$PWD/medium-tests/src/test/resources/storage-snapshots/12.3.0.87938
- * </pre>
+ * Writes a storage snapshot for {@link StorageUpgradeMediumTests}, from a checkout of a release tag. See storage-snapshots/README.md for how to run it.
+ * <p>
+ * Arguments: the release tag, and the snapshot directory to (re)create.
  */
-@EnabledIfSystemProperty(named = StorageSnapshotGeneratorMediumTests.OUTPUT_DIR_PROPERTY, matches = ".+")
-class StorageSnapshotGeneratorMediumTests {
-
-  static final String OUTPUT_DIR_PROPERTY = "sonarlint.storageSnapshot.outputDir";
-  static final String RELEASE_PROPERTY = "sonarlint.storageSnapshot.release";
+public class StorageSnapshotGenerator {
 
   // Fixed values keep the content of successive snapshots comparable
   private static final Instant CREATION_DATE = Instant.parse("2026-01-01T00:00:00Z");
@@ -71,16 +62,21 @@ class StorageSnapshotGeneratorMediumTests {
   private static final TextRangeWithHash TEXT_RANGE = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
   private static final String FILE_PATH = "src/main/java/Foo.java";
 
-  @SonarLintTest
-  void generate_storage_snapshot(SonarLintTestHarness harness) throws Exception {
-    var release = System.getProperty(RELEASE_PROPERTY);
-    if (release == null || release.isBlank()) {
-      throw new IllegalArgumentException("Missing system property " + RELEASE_PROPERTY);
+  private StorageSnapshotGenerator() {
+    // only used through main()
+  }
+
+  public static void main(String[] args) throws Exception {
+    if (args.length != 2) {
+      throw new IllegalArgumentException("Usage: StorageSnapshotGenerator <release tag> <snapshot directory>");
     }
-    var outputDir = Path.of(System.getProperty(OUTPUT_DIR_PROPERTY));
+    generate(args[0], Path.of(args[1]));
+  }
+
+  private static void generate(String release, Path outputDir) throws Exception {
     var storageRoot = Files.createTempDirectory("storageSnapshot").resolve("storage");
 
-    var backend = harness.newBackend()
+    var backend = SonarLintBackendFixture.newBackend()
       .withStorageRoot(storageRoot)
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withServerVersion("2025.1")
@@ -115,7 +111,7 @@ class StorageSnapshotGeneratorMediumTests {
     var metadata = StorageSnapshot.Metadata.of(release, dsl);
     var schema = StorageSnapshot.schemaScript(dsl);
     // Close the database cleanly before copying it
-    harness.shutdown(backend);
+    backend.shutdown().get();
 
     FileUtils.deleteDirectory(outputDir.toFile());
     var outputH2 = Files.createDirectories(outputDir.resolve("h2"));

@@ -26,19 +26,17 @@ From a checkout of the release tag (the generator classes must be present, copy 
 
 ```
 TAG=12.3.0.87938
-mvn test -pl medium-tests -am -P '!its-linux' \
-  -Dtest=StorageSnapshotGeneratorMediumTests -Dsurefire.failIfNoSpecifiedTests=false \
-  -Dsonarlint.storageSnapshot.release=$TAG \
-  -Dsonarlint.storageSnapshot.outputDir=<master checkout>/medium-tests/src/test/resources/storage-snapshots/$TAG
+mvn install -DskipTests -pl medium-tests -am -P '!its-linux'
+mvn exec:java -pl medium-tests -P '!its-linux' \
+  -Dexec.mainClass=mediumtest.storage.StorageSnapshotGenerator -Dexec.classpathScope=test \
+  -Dexec.args="$TAG <master checkout>/medium-tests/src/test/resources/storage-snapshots/$TAG"
 ```
 
 Then delete the previous snapshot folder on master and commit the new one.
 
-Use `mvn test`, not `mvn install`, so that the build of the tag does not overwrite artifacts in your local repository.
-
 ## Content
 
-The generator (`StorageSnapshotGeneratorMediumTests`) fills every table with a few rows for connection `conn1`,
+The generator (`StorageSnapshotGenerator`) fills every table with a few rows for connection `conn1`,
 project `projectKey` and configuration scope `configScope`. Constraints:
 
 - the upgrade test must declare connection `conn1`, otherwise the backend purges its data at startup
