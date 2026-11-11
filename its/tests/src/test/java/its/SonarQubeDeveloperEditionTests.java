@@ -24,6 +24,7 @@ import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
+import its.utils.AnalysisUtils;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.IOException;
@@ -100,6 +101,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.AnalysisUtils.analyzeAndAwaitIssues;
+import static its.utils.AnalysisUtils.analyzeFile;
+import static its.utils.AnalysisUtils.analyzeUntilIssuesAreRaised;
+import static its.utils.AnalysisUtils.registerFiles;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -113,6 +117,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CLOUDFORMATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.DOCKER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.GO;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.HTML;
@@ -634,6 +639,106 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeAndAwaitIssues(backend, client, configScopeId, Path.of("projects", "sample-xml"), "src/foo.xml");
 
       assertThat(rawIssues).hasSize(1);
+    }
+  }
+
+  @Nested
+  class CSharp {
+
+    @TempDir
+    private Path csharpUserHome;
+
+    private final Map<String, Boolean> csharpAnalysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
+    private MockSonarLintRpcClientDelegate csharpClient;
+    private SonarLintRpcServer csharpBackend;
+
+    @BeforeEach
+    void startCSharpBackend() throws IOException {
+      var clientToServerOutputStream = new PipedOutputStream();
+      var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
+
+      var serverToClientOutputStream = new PipedOutputStream();
+      var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
+
+      new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
+      csharpClient = newCSharpClient();
+      var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, csharpClient);
+
+      csharpBackend = clientLauncher.getServerProxy();
+      try {
+        csharpBackend.initialize(
+          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null,
+            Set.of(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.PROJECT_SYNCHRONIZATION),
+            csharpUserHome.resolve("storage"),
+            csharpUserHome.resolve("work"),
+            emptySet(), Map.of("omnisharp", PluginLocator.getOmnisharpPluginPath()),
+            Set.of(CS), emptySet(), emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false)),
+            emptyList(),
+            csharpUserHome.toString(),
+            Map.of(), false, null, false, null))
+          .get();
+      } catch (Exception e) {
+        throw new IllegalStateException("Cannot initialize the backend", e);
+      }
+    }
+
+    @AfterEach
+    void stopCSharpBackend() throws ExecutionException, InterruptedException {
+      csharpBackend.shutdown().get();
+    }
+
+    @Test
+    void shouldRaiseIssuesOnACSharpProject() throws IOException {
+      var configScopeId = "shouldRaiseIssuesOnACSharpProject";
+      var projectKey = "sample-csharp";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample C#");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/csharp-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "cs", "SonarLint IT C#");
+
+      csharpBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(configScopeId, null, true, "My " + configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
+      await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertReadyForAnalysis(configScopeId));
+
+      var baseDir = Path.of("projects", "sample-csharp").toRealPath();
+      registerFiles(csharpBackend, configScopeId, baseDir, "Foo.cs", "Enterprise.cs", "Foo.csproj", "Foo.sln");
+
+      var fooIssues = analyzeUntilIssuesAreRaised(csharpBackend, csharpClient, configScopeId, baseDir.resolve("Foo.cs"));
+      var enterpriseIssues = analyzeFile(csharpBackend, csharpClient, configScopeId, baseDir.resolve("Enterprise.cs"));
+
+      assertThat(fooIssues)
+        .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+        .containsOnly(
+          tuple("csharpsquid:S3903", 1),
+          tuple("csharpsquid:S2325", 2),
+          tuple("csharpsquid:S1481", 3));
+      assertThat(enterpriseIssues)
+        .extracting(RaisedIssueDto::getRuleKey, AnalysisUtils::startLine)
+        .containsOnly(tuple("csharpsquid:S2259", 5));
+    }
+
+    private void assertReadyForAnalysis(String configScopeId) {
+      assertThat(csharpAnalysisReadinessByConfigScopeId).containsEntry(configScopeId, true);
+    }
+
+    private MockSonarLintRpcClientDelegate newCSharpClient() {
+      return new MockSonarLintRpcClientDelegate() {
+
+        @Override
+        public Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) {
+          return Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
+        }
+
+        @Override
+        public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+          configurationScopeIds.forEach(id -> csharpAnalysisReadinessByConfigScopeId.put(id, areReadyForAnalysis));
+        }
+
+        @Override
+        public void log(LogParams params) {
+          rpcClientLogs.add(params);
+        }
+      };
     }
   }
 

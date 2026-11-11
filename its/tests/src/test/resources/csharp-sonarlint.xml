@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT C#</name>
+  <language>cs</language>
+  <rules>
+    <rule>
+      <repositoryKey>csharpsquid</repositoryKey>
+      <key>S3903</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <rule>
+      <repositoryKey>csharpsquid</repositoryKey>
+      <key>S2325</key>
+      <priority>MINOR</priority>
+    </rule>
+    <rule>
+      <repositoryKey>csharpsquid</repositoryKey>
+      <key>S1481</key>
+      <priority>MINOR</priority>
+    </rule>
+    <rule>
+      <repositoryKey>csharpsquid</repositoryKey>
+      <key>S2259</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
