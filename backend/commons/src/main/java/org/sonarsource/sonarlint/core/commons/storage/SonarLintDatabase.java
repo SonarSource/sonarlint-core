@@ -55,7 +55,7 @@ public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
-  private static final String STARTUP_LOCK_FILENAME = SQ_IDE_DB_FILENAME + ".startup.lock";
+  public static final String STARTUP_LOCK_FILENAME = SQ_IDE_DB_FILENAME + ".startup.lock";
   private static final Duration STARTUP_TURN_TIMEOUT = Duration.ofSeconds(30);
   // A file lock is held by the whole process, so threads of the same process take turns separately
   private static final ReentrantLock STARTUP_TURN_IN_THIS_PROCESS = new ReentrantLock();
@@ -150,63 +150,48 @@ public final class SonarLintDatabase {
       connect(pool);
       return;
     }
-    try {
-      var turn = waitForTurn(baseDir.resolve(STARTUP_LOCK_FILENAME));
-      try {
-        connect(pool);
-      } finally {
-        endTurn(turn);
-      }
+    try (var startupLock = openStartupLock(baseDir.resolve(STARTUP_LOCK_FILENAME)); var turn = waitForTurn(startupLock)) {
+      // The turn ends once the database is open
+      connect(pool);
+    } catch (IOException e) {
+      // Only when ending the turn, the database is open
+      LOG.debug("Error while releasing the database startup lock: {}", e.getMessage());
     } finally {
       STARTUP_TURN_IN_THIS_PROCESS.unlock();
     }
   }
 
   @CheckForNull
-  private static FileLock waitForTurn(Path lockFile) throws InterruptedException {
-    FileChannel channel = null;
+  private static FileChannel openStartupLock(Path lockFile) {
     try {
-      channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-      var deadline = System.nanoTime() + STARTUP_TURN_TIMEOUT.toNanos();
-      while (true) {
-        var turn = channel.tryLock();
-        if (turn != null) {
-          return turn;
-        }
-        if (System.nanoTime() > deadline) {
-          LOG.debug("Timed out waiting for other IDE instances to open the database, opening it anyway");
-          closeQuietly(channel);
-          return null;
-        }
+      return FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+    } catch (IOException e) {
+      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
+      return null;
+    }
+  }
+
+  @CheckForNull
+  private static FileLock waitForTurn(@Nullable FileChannel startupLock) throws InterruptedException {
+    if (startupLock == null) {
+      return null;
+    }
+    var deadline = System.nanoTime() + STARTUP_TURN_TIMEOUT.toNanos();
+    try {
+      var turn = startupLock.tryLock();
+      while (turn == null && System.nanoTime() < deadline) {
         Thread.sleep(50);
+        turn = startupLock.tryLock();
       }
+      if (turn == null) {
+        LOG.debug("Timed out waiting for other IDE instances to open the database, opening it anyway");
+      }
+      return turn;
     } catch (ClosedByInterruptException e) {
       throw new InterruptedException("H2 database startup interrupted");
     } catch (IOException e) {
       LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
-      closeQuietly(channel);
       return null;
-    } catch (InterruptedException e) {
-      closeQuietly(channel);
-      throw e;
-    }
-  }
-
-  private static void endTurn(@Nullable FileLock turn) {
-    if (turn != null) {
-      // Closing the channel also releases the lock
-      closeQuietly(turn.channel());
-    }
-  }
-
-  private static void closeQuietly(@Nullable FileChannel channel) {
-    if (channel == null) {
-      return;
-    }
-    try {
-      channel.close();
-    } catch (IOException e) {
-      LOG.debug("Error while closing the database startup lock: {}", e.getMessage());
     }
   }
 
