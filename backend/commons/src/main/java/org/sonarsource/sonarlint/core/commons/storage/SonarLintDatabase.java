@@ -188,7 +188,8 @@ public final class SonarLintDatabase {
   }
 
   /**
-   * Reading past the end of the file means it is shorter than what H2 wrote. Other read failures can happen with a healthy file, e.g. when the thread is interrupted.
+   * Reading past the end of the file means it is shorter than its headers say, e.g. it was cut short or incompletely synced. Other read failures can happen with a
+   * healthy file, e.g. when the thread is interrupted.
    */
   private static boolean isTruncation(MVStoreException mvStoreException) {
     return mvStoreException.getErrorCode() == DataUtils.ERROR_READING_FAILED && ExceptionUtils.indexOfType(mvStoreException, EOFException.class) >= 0;
