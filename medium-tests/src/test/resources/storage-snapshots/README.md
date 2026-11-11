@@ -4,7 +4,8 @@ This folder holds a copy of the local H2 storage written by the **latest release
 `StorageUpgradeMediumTests` starts the current backend on it, which is what users experience when they upgrade.
 It catches:
 
-- an H2 or Flyway upgrade that cannot read cleanly closed files written by the previous version
+- an H2 or Flyway upgrade that cannot read files written by the previous version, after a clean shutdown or after a
+  crash while a transaction was open (like H2 2.5.252, which saw an empty database in files left that way by 2.4.240)
 - a migration that was edited after it shipped (Flyway rejects the changed checksum at startup)
 - data lost during migration
 
@@ -13,6 +14,8 @@ There is only ever one snapshot folder, named after the release tag that wrote i
 ```
 <release tag>/
   h2/sq-ide.mv.db       the database file, as written by that release
+  unclean-shutdown/h2/sq-ide.mv.db
+                        the same data, after a crash while a transaction deleting findings was open
   snapshot.properties   release, H2 and Flyway versions, migration checksums and row count per table
   schema.sql            text dump of the schema, to review changes between snapshots
 ```
@@ -51,10 +54,12 @@ project `projectKey` and configuration scope `configScope`. Constraints:
 
 When adding a table, extend the generator so that the next snapshot covers it.
 
-## Limitations
+The crash is simulated with `SHUTDOWN IMMEDIATELY`, which stops the database without committing nor closing anything,
+right after a `CHECKPOINT SYNC` has written the open transaction to the file. This is deterministic, unlike killing a
+process at a random time. The generator then checks that the release's own H2 version recovers all the committed
+rows from that file, and fails otherwise.
 
-The snapshot is written after a clean shutdown, so files left by an unclean shutdown (IDE killed while the backend
-was writing) are not exercised.
+## Limitations
 
 Only the latest release is covered. Users who skip releases go through older storage stacks that are no longer
 tested once a release changes the H2 version, the Flyway version or the migrations.
