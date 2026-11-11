@@ -165,10 +165,14 @@ public final class SonarLintDatabase {
   }
 
   static boolean isCorruption(Throwable throwable) {
-    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(t -> (t instanceof MVStoreException mvStoreException
+    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(SonarLintDatabase::isCorruptionCause);
+  }
+
+  private static boolean isCorruptionCause(Throwable throwable) {
+    return (throwable instanceof MVStoreException mvStoreException
       && (isCorruptionCode(mvStoreException.getErrorCode()) || isTruncation(mvStoreException)))
-      || (t instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
-        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && hasMVStoreCorruptionCode(sqlException.getMessage())))));
+      || (throwable instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
+        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && hasMVStoreCorruptionCode(sqlException.getMessage()))));
   }
 
   /**
