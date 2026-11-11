@@ -34,7 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +51,10 @@ class StorageConcurrentStartupMediumTests {
 
   // Some processes failed every time with 5 before backends took turns to open the database
   private static final int PROCESSES = 5;
+
+  // The database is also opened in this process, where it logs
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final List<Process> processes = new ArrayList<>();
   // One reader per process, as each one blocks until all the processes are ready
