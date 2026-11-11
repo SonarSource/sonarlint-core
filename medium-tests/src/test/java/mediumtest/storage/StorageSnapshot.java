@@ -48,6 +48,10 @@ final class StorageSnapshot {
   static final String KNOWN_FINDINGS_FILE = "Foo.java";
 
   static final String METADATA_FILE = "snapshot.properties";
+  /**
+   * The same data, left by a crash while a transaction was open, in its own storage folder
+   */
+  static final String UNCLEAN_SHUTDOWN_DIRECTORY = "unclean-shutdown";
   static final String SCHEMA_FILE = "schema.sql";
   private static final String SNAPSHOTS_RESOURCE = "/storage-snapshots";
   private static final String FLYWAY_HISTORY_TABLE = "flyway_schema_history";
