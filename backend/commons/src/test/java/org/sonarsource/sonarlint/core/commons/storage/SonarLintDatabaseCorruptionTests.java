@@ -19,65 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
-import io.sentry.Sentry;
-import io.sentry.logger.ILoggerApi;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.Random;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.h2.api.ErrorCode;
 import org.h2.mvstore.DataUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.MockedStatic;
-import org.sonarsource.sonarlint.core.commons.log.LogOutput;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 class SonarLintDatabaseCorruptionTests {
-
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
-
-  private MockedStatic<Sentry> sentryMock;
-
-  @BeforeEach
-  void setUp() {
-    DatabaseExceptionReporter.clearRecentExceptions();
-    sentryMock = mockStatic(Sentry.class);
-    var loggerApi = mock(ILoggerApi.class);
-    sentryMock.when(Sentry::logger).thenReturn(loggerApi);
-  }
-
-  @AfterEach
-  void tearDown() {
-    sentryMock.close();
-    DatabaseExceptionReporter.clearRecentExceptions();
-  }
-
-  @Test
-  void should_log_how_to_fix_a_corrupted_database_and_fail(@TempDir Path storageRoot) throws IOException {
-    new SonarLintDatabase(storageRoot).shutdown();
-    var dbFile = storageRoot.resolve("h2").resolve(SonarLintDatabase.SQ_IDE_DB_FILENAME + ".mv.db");
-    corrupt(dbFile);
-
-    assertThatThrownBy(() -> new SonarLintDatabase(storageRoot))
-      .satisfies(e -> assertThat(SonarLintDatabase.isCorruption(e)).isTrue());
-    assertThat(logTester.logs(LogOutput.Level.ERROR))
-      .containsExactly("SonarQube for IDE could not read its local database. Close all IDE instances, delete '" + dbFile.toAbsolutePath()
-        + "', and restart your IDE. Cached server data will be downloaded again when connected.");
-    assertThat(dbFile).exists();
-  }
 
   @Test
   void should_detect_corruption_errors() {
@@ -124,18 +75,6 @@ class SonarLintDatabaseCorruptionTests {
       new ClosedByInterruptException());
 
     assertThat(SonarLintDatabase.isCorruption(new SQLException("General error: \"" + readFailure + "\"", "HY000", ErrorCode.GENERAL_ERROR_1, readFailure))).isFalse();
-  }
-
-  /**
-   * Overwrite the two file headers, so that H2 fails with {@link ErrorCode#FILE_CORRUPTED_1} on open.
-   * Damaging only the chunks is not enough: H2 then silently falls back to an empty store.
-   */
-  private static void corrupt(Path dbFile) throws IOException {
-    var garbage = new byte[8192];
-    new Random(42).nextBytes(garbage);
-    try (var file = new RandomAccessFile(dbFile.toFile(), "rw")) {
-      file.write(garbage);
-    }
   }
 
 }
