@@ -95,6 +95,8 @@ jobs:
         with:
           artifactory-reader-role: private-reader
           repox-url: https://repox-internal.dev.sonar.build
+      - name: Check shard selection
+        run: node --test .github/scripts/test-shards.test.mjs
       - name: Run tests
         env:
           SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
@@ -104,12 +106,9 @@ jobs:
           PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
         run: |
           mvn -B -Pcoverage -Dcommercial verify
-          maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
-          sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
-          sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}")
-          sonar_props+=("-Dsonar.coverage.jacoco.aggregateXmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
-          echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
-          mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
+          mvn -B "org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar" \
+            "-Dsonar.projectVersion=${CURRENT_VERSION}" \
+            "-Dsonar.coverage.jacoco.aggregateXmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml"
       - name: Generate test report on failure
         if: failure()
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
@@ -176,7 +175,7 @@ jobs:
   qa:
     needs: [ build-number, build ]
     runs-on: sonar-m
-    name: QA (${{ matrix.name }})
+    name: QA (${{ matrix.name }}${{ matrix.shards && format(', shard {0}', matrix.shard) || '' }})
     permissions:
       id-token: write
       contents: write
@@ -200,10 +199,25 @@ jobs:
             region: US
           - name: SQDogfood
             sq_version: DEV
+            shard: 0
+            shards: 2
+            # Run the latest CLI compatibility test once in normal QA.
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQDogfood
+            sq_version: DEV
+            shard: 1
+            shards: 2
             # Run the latest CLI compatibility test once in normal QA.
             category: "-DexcludedGroups=SonarCloud"
           - name: SQLatest
             sq_version: LATEST_RELEASE
+            shard: 0
+            shards: 2
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility"
+          - name: SQLatest
+            sq_version: LATEST_RELEASE
+            shard: 1
+            shards: 2
             category: "-DexcludedGroups=SonarCloud,CliCompatibility"
           - name: SQLts251
             sq_version: "LATEST_RELEASE[2025.1]"
@@ -288,13 +302,24 @@ jobs:
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+        shell: bash
         run: |
-          mvn "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+          shard_args=()
+          if [[ -n "${{ matrix.shards }}" ]]; then
+            rm -rf its/tests/target/surefire-reports
+            mvn -B -f its/pom.xml -DskipTests package
+            node .github/scripts/test-shards.mjs select its/tests/target/test-classes ${{ matrix.shard }} ${{ matrix.shards }} "$RUNNER_TEMP/qa-tests.txt"
+            shard_args=("-Dtest=$(paste -sd, "$RUNNER_TEMP/qa-tests.txt")" -Dsurefire.failIfNoSpecifiedTests=false)
+          fi
+          mvn "${shard_args[@]}" "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+          if [[ -n "${{ matrix.shards }}" ]]; then
+            node .github/scripts/test-shards.mjs verify its/tests/target/surefire-reports
+          fi
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
         with:
-          name: QA ${{ matrix.name }} Test Report
+          name: QA ${{ matrix.name }}${{ matrix.shards && format(' shard {0}', matrix.shard) || '' }} Test Report
           reporter: java-junit
           path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
@@ -304,7 +329,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: qa-test-report ${{ matrix.name }}
+          name: qa-test-report ${{ matrix.name }}${{ matrix.shards && format('-{0}', matrix.shard) || '' }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
