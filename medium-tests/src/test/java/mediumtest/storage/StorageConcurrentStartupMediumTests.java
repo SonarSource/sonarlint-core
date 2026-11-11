@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -34,8 +35,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 /**
  * Each IDE window runs its own backend, and they all share the same storage. Backends of the same process share the database, so the processes must be separate to
@@ -62,8 +66,7 @@ class StorageConcurrentStartupMediumTests {
 
   @Test
   void should_open_the_storage_when_several_ide_windows_start_together(@TempDir Path tempDir) throws Exception {
-    var storageRoot = tempDir.resolve("storage");
-    FileUtils.copyDirectory(StorageSnapshot.latestSnapshotDirectory().resolve("h2").toFile(), storageRoot.resolve("h2").toFile());
+    var storageRoot = copyOfLatestSnapshot(tempDir);
     var startFile = tempDir.resolve("start");
     var stopFile = tempDir.resolve("stop");
     var readiness = new ArrayList<CompletableFuture<Void>>();
@@ -85,8 +88,100 @@ class StorageConcurrentStartupMediumTests {
     var results = outcomes.stream().map(outcome -> outcome.orTimeout(2, TimeUnit.MINUTES).join()).toList();
     Files.createFile(stopFile);
 
-    var expectedFindings = StorageSnapshot.Metadata.read(StorageSnapshot.latestSnapshotDirectory()).rowsByTable().get("SERVER_FINDINGS");
-    assertThat(results).containsOnly(OpenStorageProcess.OPENED + expectedFindings);
+    assertThat(results).containsOnly(OpenStorageProcess.OPENED + expectedServerFindings());
+  }
+
+  @Test
+  void should_wait_for_another_ide_window_to_open_the_storage(@TempDir Path tempDir) throws Exception {
+    var storageRoot = copyOfLatestSnapshot(tempDir);
+    var stopFile = tempDir.resolve("stop");
+    holdStartupTurn(storageRoot, stopFile);
+
+    var opening = CompletableFuture.supplyAsync(() -> new SonarLintDatabase(storageRoot), outputReaders);
+
+    await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(5)).until(() -> !opening.isDone());
+    Files.createFile(stopFile);
+    var database = opening.get(1, TimeUnit.MINUTES);
+    try {
+      assertThat(database.dsl().fetchCount(SERVER_FINDINGS)).isEqualTo(expectedServerFindings());
+    } finally {
+      database.shutdown();
+    }
+  }
+
+  @Test
+  void should_stop_waiting_for_another_ide_window_when_the_startup_is_cancelled(@TempDir Path tempDir) throws Exception {
+    var storageRoot = copyOfLatestSnapshot(tempDir);
+    holdStartupTurn(storageRoot, tempDir.resolve("stop"));
+    var failure = new CompletableFuture<Throwable>();
+    var interruptedAfterFailure = new CompletableFuture<Boolean>();
+    var startup = new Thread(() -> {
+      try {
+        new SonarLintDatabase(storageRoot).shutdown();
+        failure.complete(null);
+      } catch (Exception e) {
+        interruptedAfterFailure.complete(Thread.currentThread().isInterrupted());
+        failure.complete(e);
+      }
+    });
+    startup.start();
+
+    // Waiting for its turn
+    await().until(() -> startup.getState() == Thread.State.TIMED_WAITING);
+    startup.interrupt();
+
+    assertThat(failure.get(1, TimeUnit.MINUTES)).hasRootCauseInstanceOf(InterruptedException.class);
+    assertThat(interruptedAfterFailure.get()).isTrue();
+  }
+
+  @Test
+  void should_open_the_storage_when_ide_windows_cannot_take_turns(@TempDir Path tempDir) throws Exception {
+    var storageRoot = copyOfLatestSnapshot(tempDir);
+    // Cannot be opened as a file
+    Files.createDirectories(storageRoot.resolve("h2").resolve(SonarLintDatabase.STARTUP_LOCK_FILENAME));
+
+    var database = new SonarLintDatabase(storageRoot);
+
+    try {
+      assertThat(database.dsl().fetchCount(SERVER_FINDINGS)).isEqualTo(expectedServerFindings());
+    } finally {
+      database.shutdown();
+    }
+  }
+
+  /**
+   * Like another IDE window still opening the storage, until the stop file exists
+   */
+  private void holdStartupTurn(Path storageRoot, Path stopFile) throws Exception {
+    var process = new ProcessBuilder(javaExecutable(), "-cp", System.getProperty("java.class.path"), HoldStartupTurnProcess.class.getName(),
+      storageRoot.toString(), stopFile.toString())
+      .redirectErrorStream(true)
+      .start();
+    processes.add(process);
+    var holding = CompletableFuture.supplyAsync(() -> {
+      try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          if (line.equals(HoldStartupTurnProcess.HOLDING)) {
+            return true;
+          }
+        }
+        return false;
+      } catch (Exception e) {
+        return false;
+      }
+    }, outputReaders);
+    assertThat(holding.get(2, TimeUnit.MINUTES)).as("The other IDE window takes the turn").isTrue();
+  }
+
+  private static Path copyOfLatestSnapshot(Path tempDir) throws Exception {
+    var storageRoot = tempDir.resolve("storage");
+    FileUtils.copyDirectory(StorageSnapshot.latestSnapshotDirectory().resolve("h2").toFile(), storageRoot.resolve("h2").toFile());
+    return storageRoot;
+  }
+
+  private static int expectedServerFindings() throws Exception {
+    return StorageSnapshot.Metadata.read(StorageSnapshot.latestSnapshotDirectory()).rowsByTable().get("SERVER_FINDINGS");
   }
 
   private static String outcome(Process process, CompletableFuture<Void> ready) {

@@ -21,9 +21,11 @@ package mediumtest.storage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 /**
@@ -64,9 +66,7 @@ public class OpenStorageProcess {
     Runtime.getRuntime().halt(0);
   }
 
-  private static void waitFor(Path file) throws InterruptedException {
-    while (!Files.exists(file)) {
-      Thread.sleep(10);
-    }
+  static void waitFor(Path file) {
+    await().pollInterval(Duration.ofMillis(10)).atMost(Duration.ofMinutes(5)).until(() -> Files.exists(file));
   }
 }
