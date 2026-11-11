@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import java.io.EOFException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -164,9 +165,24 @@ public final class SonarLintDatabase {
   }
 
   static boolean isCorruption(Throwable throwable) {
-    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(t -> (t instanceof MVStoreException mvStoreException && isCorruptionCode(mvStoreException.getErrorCode()))
-      || (t instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
-        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && hasMVStoreCorruptionCode(sqlException.getMessage())))));
+    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(cause -> isMVStoreCorruption(cause)
+      || isFileCorruption(cause)
+      || isWrappedMVStoreCorruption(cause));
+  }
+
+  private static boolean isMVStoreCorruption(Throwable throwable) {
+    return throwable instanceof MVStoreException mvStoreException
+      && (isCorruptionCode(mvStoreException.getErrorCode()) || isTruncation(mvStoreException));
+  }
+
+  private static boolean isFileCorruption(Throwable throwable) {
+    return throwable instanceof SQLException sqlException && sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1;
+  }
+
+  private static boolean isWrappedMVStoreCorruption(Throwable throwable) {
+    return throwable instanceof SQLException sqlException
+      && sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1
+      && hasMVStoreCorruptionCode(sqlException.getMessage());
   }
 
   /**
@@ -183,6 +199,14 @@ public final class SonarLintDatabase {
       }
     }
     return false;
+  }
+
+  /**
+   * Reading past the end of the file means it is shorter than its headers say, e.g. it was cut short or incompletely synced. Other read failures can happen with a
+   * healthy file, e.g. when the thread is interrupted.
+   */
+  private static boolean isTruncation(MVStoreException mvStoreException) {
+    return mvStoreException.getErrorCode() == DataUtils.ERROR_READING_FAILED && ExceptionUtils.indexOfType(mvStoreException, EOFException.class) >= 0;
   }
 
   /**
