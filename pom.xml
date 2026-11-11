@@ -79,7 +79,7 @@
     <!-- CI provides mvn on PATH; skip the mvnw wrapper whose distribution download is not authenticated -->
     <sonar.sca.mavenIgnoreWrapper>true</sonar.sca.mavenIgnoreWrapper>
     <sonar.organization>sonarsource</sonar.organization>
-    <!-- 2.5.x fails to open files left by an unclean 2.4.x shutdown, see https://github.com/h2database/h2database/issues/4446 -->
+    <!-- 2.5.250 and 2.5.252 cannot read files left by a 2.4.x crash while a transaction was open (SLCORE-2681), StorageUpgradeMediumTests checks it -->
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.21.9</jooq.version>
