@@ -30,7 +30,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
@@ -145,11 +144,8 @@ public final class SonarLintDatabase {
    * a time avoids it. If taking turns is not possible, e.g. on a file system without locks, the database is opened anyway.
    */
   private static void connectInTurn(JdbcConnectionPool pool, Path baseDir) throws SQLException, InterruptedException {
-    if (!STARTUP_TURN_IN_THIS_PROCESS.tryLock(STARTUP_TURN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
-      LOG.debug("Timed out waiting for another startup of this process to open the database, opening it anyway");
-      connect(pool);
-      return;
-    }
+    // No timeout needed: another startup of this process only holds it while waiting for its own turn, which times out, and connecting
+    STARTUP_TURN_IN_THIS_PROCESS.lockInterruptibly();
     try (var startupLock = openStartupLock(baseDir.resolve(STARTUP_LOCK_FILENAME)); var turn = waitForTurn(startupLock)) {
       // The turn ends once the database is open
       connect(pool);
