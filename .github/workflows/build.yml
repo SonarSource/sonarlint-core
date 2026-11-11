@@ -64,7 +64,155 @@ jobs:
   test-linux:
     needs: [ build-number, build ]
     runs-on: sonar-m
-    name: Test (Linux, Sonar Next)
+    name: Test (Linux, shard ${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.10.21
+      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+        id: config
+        with:
+          artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
+      - name: Check shard selection
+        run: node --test .github/scripts/test-shards.test.mjs
+      - name: Run tests
+        env:
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+        shell: bash
+        run: |
+          rm -rf medium-tests/target/surefire-reports
+          mvn -B -Dcommercial -DskipTests package
+          node .github/scripts/test-shards.mjs select medium-tests/target/test-classes ${{ matrix.shard }} 2 "$RUNNER_TEMP/medium-tests.txt"
+          mvn -B -Pcoverage -Dcommercial "-DmediumTests.includesFile=$RUNNER_TEMP/medium-tests.txt" verify
+          node .github/scripts/test-shards.mjs verify medium-tests/target/surefire-reports
+      - name: Prepare execution data
+        shell: bash
+        run: |
+          test -s medium-tests/target/jacoco.exec
+          find . -path '*/target/jacoco.exec' -exec sh -c 'mv "$1" "${1%.exec}-${2}.exec"' _ {} ${{ matrix.shard }} \;
+      - name: Prepare test execution reports
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/test-results"
+          # Keep unit reports once and include each shard's disjoint medium reports.
+          report_roots=(medium-tests)
+          if [[ "${{ matrix.shard }}" == 0 ]]; then
+            report_roots=(.)
+          fi
+          find "${report_roots[@]}" -path '*/target/surefire-reports/TEST-*.xml' -exec cp --parents {} "$RUNNER_TEMP/test-results" \;
+      - name: Upload test execution reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: ${{ runner.temp }}/test-results/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload execution data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.shard }}
+          path: '**/target/jacoco-*.exec'
+          if-no-files-found: error
+          retention-days: 1
+      - name: Upload analysis classes
+        if: matrix.shard == 0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: analysis-classes
+          path: |
+            **/target/classes/**
+            **/target/test-classes/**
+          if-no-files-found: error
+          retention-days: 1
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        with:
+          name: QA Linux Test Report ${{ matrix.shard }}
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-test-report-${{ matrix.shard }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+
+  test-windows:
+    needs: [ build-number, build ]
+    runs-on: warp-custom-windows-2022-l
+    name: Test (Windows, shard ${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.10.21
+      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+        id: config
+        with:
+          artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
+      - name: Run tests
+        env:
+          MAVEN_OPTS: -Xmx4g
+          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
+        shell: bash
+        run: |
+          rm -rf medium-tests/target/surefire-reports
+          mvn -B -Dcommercial -DskipTests package
+          node .github/scripts/test-shards.mjs select medium-tests/target/test-classes ${{ matrix.shard }} 2 "$RUNNER_TEMP/medium-tests.txt"
+          mvn -B -Dcommercial "-DmediumTests.includesFile=$(cygpath -m "$RUNNER_TEMP/medium-tests.txt")" verify
+          node .github/scripts/test-shards.mjs verify medium-tests/target/surefire-reports
+      - name: Generate test report on failure
+        if: failure()
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        with:
+          name: QA Windows Test Report ${{ matrix.shard }}
+          reporter: java-junit
+          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
+          list-suites: failed
+          list-tests: failed
+          fail-on-empty: false
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-test-report-${{ matrix.shard }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**
+
+  analysis:
+    needs: [ build-number, test-linux ]
+    runs-on: sonar-m
+    name: Sonar Next
     permissions:
       id-token: write
       contents: write
@@ -95,7 +243,18 @@ jobs:
         with:
           artifactory-reader-role: private-reader
           repox-url: https://repox-internal.dev.sonar.build
-      - name: Run tests
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: analysis-classes
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+      - name: Aggregate coverage and analyze
         env:
           SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
           SONAR_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_TOKEN }}
@@ -103,80 +262,19 @@ jobs:
           SCANNER_VERSION: 5.1.0.4751
           PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
         run: |
-          mvn -B -Pcoverage -Dcommercial verify
-          maven_goals=("org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar")
-          sonar_props=("-Dsonar.host.url=${SONAR_HOST_URL}" "-Dsonar.token=${SONAR_TOKEN}")
-          sonar_props+=("-Dsonar.projectVersion=${CURRENT_VERSION}")
-          sonar_props+=("-Dsonar.coverage.jacoco.aggregateXmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml")
-          echo "Maven command: mvn ${maven_goals[*]} ${sonar_props[*]}"
-          mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
-      - name: Generate test report on failure
-        if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
-        with:
-          name: QA Linux Test Report
-          reporter: java-junit
-          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
-          list-suites: failed
-          list-tests: failed
-          fail-on-empty: false
-      - name: Upload failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: linux-test-report
-          path: |
-            **/target/surefire-reports/**
-            **/target/failsafe-reports/**
-
-  test-windows:
-    needs: [ build-number, build ]
-    runs-on: warp-custom-windows-2022-l
-    name: Test (Windows)
-    permissions:
-      id-token: write
-      contents: write
-    env:
-      BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
-        with:
-          version: 2026.10.21
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
-        id: config
-        with:
-          artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
-      - name: Run tests
-        env:
-          MAVEN_OPTS: -Xmx4g
-          PROJECT_VERSION: ${{ steps.config.outputs.project-version }}
-        run: |
-          mvn -B -Dcommercial verify
-      - name: Generate test report on failure
-        if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
-        with:
-          name: QA Windows Test Report
-          reporter: java-junit
-          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
-          list-suites: failed
-          list-tests: failed
-          fail-on-empty: false
-      - name: Upload failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: windows-test-report
-          path: |
-            **/target/surefire-reports/**
-            **/target/failsafe-reports/**
+          # Read all shard execution files directly; do not compile or run tests again.
+          test -s medium-tests/target/jacoco-0.exec
+          test -s medium-tests/target/jacoco-1.exec
+          mvn -B -Pcoverage jacoco:report-aggregate
+          test -s report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+          mvn -B "org.sonarsource.scanner.maven:sonar-maven-plugin:${SCANNER_VERSION}:sonar" \
+            "-Dsonar.projectVersion=${CURRENT_VERSION}" \
+            "-Dsonar.coverage.jacoco.xmlReportPaths=${{ github.workspace }}/report-aggregate/target/site/jacoco-aggregate/jacoco.xml"
 
   qa:
     needs: [ build-number, build ]
     runs-on: sonar-m
-    name: QA (${{ matrix.name }})
+    name: QA (${{ matrix.name }}${{ matrix.shards && format(', shard {0}', matrix.shard) || '' }})
     permissions:
       id-token: write
       contents: write
@@ -200,10 +298,25 @@ jobs:
             region: US
           - name: SQDogfood
             sq_version: DEV
+            shard: 0
+            shards: 2
+            # Run the latest CLI compatibility test once in normal QA.
+            category: "-DexcludedGroups=SonarCloud"
+          - name: SQDogfood
+            sq_version: DEV
+            shard: 1
+            shards: 2
             # Run the latest CLI compatibility test once in normal QA.
             category: "-DexcludedGroups=SonarCloud"
           - name: SQLatest
             sq_version: LATEST_RELEASE
+            shard: 0
+            shards: 2
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility"
+          - name: SQLatest
+            sq_version: LATEST_RELEASE
+            shard: 1
+            shards: 2
             category: "-DexcludedGroups=SonarCloud,CliCompatibility"
           - name: SQLts251
             sq_version: "LATEST_RELEASE[2025.1]"
@@ -288,13 +401,24 @@ jobs:
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
+        shell: bash
         run: |
-          mvn "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+          shard_args=()
+          if [[ -n "${{ matrix.shards }}" ]]; then
+            rm -rf its/tests/target/surefire-reports
+            mvn -B -f its/pom.xml -DskipTests package
+            node .github/scripts/test-shards.mjs select its/tests/target/test-classes ${{ matrix.shard }} ${{ matrix.shards }} "$RUNNER_TEMP/qa-tests.txt"
+            shard_args=("-Dtest=$(paste -sd, "$RUNNER_TEMP/qa-tests.txt")" -Dsurefire.failIfNoSpecifiedTests=false)
+          fi
+          mvn "${shard_args[@]}" "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
+          if [[ -n "${{ matrix.shards }}" ]]; then
+            node .github/scripts/test-shards.mjs verify its/tests/target/surefire-reports
+          fi
       - name: Generate QA test report on failure
         if: failure()
         uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
         with:
-          name: QA ${{ matrix.name }} Test Report
+          name: QA ${{ matrix.name }}${{ matrix.shards && format(' shard {0}', matrix.shard) || '' }} Test Report
           reporter: java-junit
           path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
@@ -304,7 +428,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: qa-test-report ${{ matrix.name }}
+          name: qa-test-report ${{ matrix.name }}${{ matrix.shards && format('-{0}', matrix.shard) || '' }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
@@ -333,7 +457,7 @@ jobs:
           fi
 
   promote:
-    needs: [ build-number, build, qa, test-linux, test-windows ]
+    needs: [ build-number, build, qa, test-linux, test-windows, analysis ]
     runs-on: sonar-xs
     name: Promote
     permissions:
