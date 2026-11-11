@@ -24,7 +24,8 @@ import java.util.Arrays;
 
 public enum SonarCloudRegion {
   EU("https://sonarcloud.io", "https://api.sonarcloud.io", "wss://events-api.sonarcloud.io/"),
-  US("https://sonarqube.us", "https://api.sonarqube.us", "wss://events-api.sonarqube.us/");
+  US("https://sonarqube.us", "https://api.sonarqube.us", "wss://events-api.sonarqube.us/"),
+  AU("https://sonarqube.au", "https://api.sonarqube.au", "wss://events-api.sonarqube.au/");
 
   public static final String[] CLOUD_URLS = Arrays.stream(values())
     .map(SonarCloudRegion::getProductionUri)

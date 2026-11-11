@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
 public enum SonarCloudRegion {
-  EU, US
+  EU, US, AU
 }
