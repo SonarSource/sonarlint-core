@@ -118,14 +118,18 @@ public class StorageSnapshotGenerator {
     // Close the database cleanly before copying it
     backend.shutdown().get();
 
-    FileUtils.deleteDirectory(outputDir.toFile());
-    copyDatabase(storageRoot, outputDir);
+    // Build and check the whole snapshot aside, so that a failure leaves the output directory untouched
+    var snapshot = Files.createTempDirectory("storageSnapshotOutput");
+    copyDatabase(storageRoot, snapshot);
     leaveTransactionOpenAndCrash(storageRoot);
-    var uncleanShutdownDir = outputDir.resolve(StorageSnapshot.UNCLEAN_SHUTDOWN_DIRECTORY);
+    var uncleanShutdownDir = snapshot.resolve(StorageSnapshot.UNCLEAN_SHUTDOWN_DIRECTORY);
     copyDatabase(storageRoot, uncleanShutdownDir);
     checkRecoversCommittedData(uncleanShutdownDir, metadata);
-    metadata.write(outputDir);
-    Files.writeString(outputDir.resolve(StorageSnapshot.SCHEMA_FILE), schema, StandardCharsets.UTF_8);
+    metadata.write(snapshot);
+    Files.writeString(snapshot.resolve(StorageSnapshot.SCHEMA_FILE), schema, StandardCharsets.UTF_8);
+
+    FileUtils.deleteDirectory(outputDir.toFile());
+    FileUtils.copyDirectory(snapshot.toFile(), outputDir.toFile());
   }
 
   /**
