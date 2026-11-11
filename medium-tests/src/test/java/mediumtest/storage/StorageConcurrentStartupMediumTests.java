@@ -51,8 +51,12 @@ class StorageConcurrentStartupMediumTests {
   private final ExecutorService outputReaders = Executors.newFixedThreadPool(PROCESSES);
 
   @AfterEach
-  void stopProcesses() {
+  void stopProcesses() throws InterruptedException {
     processes.forEach(Process::destroyForcibly);
+    // On Windows, the storage cannot be deleted until the processes holding it have exited
+    for (var process : processes) {
+      process.waitFor(30, TimeUnit.SECONDS);
+    }
     outputReaders.shutdownNow();
   }
 
