@@ -27,13 +27,14 @@ import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER_FINDINGS;
 
 /**
- * Run in a separate process by {@link StorageConcurrentStartupMediumTests}, like the backend of one IDE window: opens the storage once the start file exists, prints the
- * outcome, and keeps the storage open until the stop file exists.
+ * Run in a separate process by {@link StorageConcurrentStartupMediumTests}, like the backend of one IDE window: reports that it is ready, opens the storage once the start
+ * file exists, prints the outcome, and keeps the storage open until the stop file exists.
  * <p>
  * Arguments: the storage root, the start file, the stop file.
  */
 public class OpenStorageProcess {
 
+  static final String READY = "READY";
   static final String OPENED = "OPENED server_findings=";
   static final String FAILED = "FAILED ";
 
@@ -45,7 +46,11 @@ public class OpenStorageProcess {
     var storageRoot = Path.of(args[0]);
     var startFile = Path.of(args[1]);
     var stopFile = Path.of(args[2]);
-    // Start all the processes at the same moment, once their JVM is up
+    // Load what opening the storage needs, so that the processes only differ by when they get the start signal
+    Class.forName("org.h2.Driver");
+    Class.forName(SonarLintDatabase.class.getName());
+    System.out.println(READY);
+    System.out.flush();
     waitFor(startFile);
     try {
       var database = new SonarLintDatabase(storageRoot);
