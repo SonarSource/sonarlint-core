@@ -19,11 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.commons.storage;
 
+import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +55,12 @@ public final class SonarLintDatabase {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
+  private static final String STARTUP_LOCK_FILENAME = SQ_IDE_DB_FILENAME + ".startup.lock";
+  private static final Duration STARTUP_TURN_TIMEOUT = Duration.ofSeconds(30);
+  // A file lock is held by the whole process, so threads of the same process take turns separately
+  private static final ReentrantLock STARTUP_TURN_IN_THIS_PROCESS = new ReentrantLock();
+  // Reasons given by H2 when several processes run its lock file protocol at the same time. They are not translated.
+  private static final List<String> LOCK_RACE_REASONS = List.of("Lock file recently modified", "Another process was faster", "Concurrent update");
   private static final Pattern MVSTORE_ERROR_CODE_PATTERN = Pattern.compile("\\[\\d++\\.\\d++\\.\\d++/(\\d++)]");
 
   private final Path dbFile;
@@ -75,7 +91,7 @@ public final class SonarLintDatabase {
 
     try {
       // Retry here because Flyway's connection retries discard interruption.
-      connect(ds);
+      connectInTurn(ds, storageRoot.resolve("h2"));
       var flyway = Flyway.configure()
         .dataSource(ds)
         .locations("classpath:db/migration")
@@ -123,6 +139,82 @@ public final class SonarLintDatabase {
     }
   }
 
+  /**
+   * H2 decides which process owns the database through a protocol on its lock file, and connects the other processes through the owner. When three or more processes
+   * run that protocol at the same time, e.g. when several IDE windows are restored together, they disturb each other and some fail. Opening the database one process at
+   * a time avoids it. If taking turns is not possible, e.g. on a file system without locks, the database is opened anyway.
+   */
+  private static void connectInTurn(JdbcConnectionPool pool, Path baseDir) throws SQLException, InterruptedException {
+    if (!STARTUP_TURN_IN_THIS_PROCESS.tryLock(STARTUP_TURN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+      LOG.debug("Timed out waiting for another startup of this process to open the database, opening it anyway");
+      connect(pool);
+      return;
+    }
+    try {
+      var turn = waitForTurn(baseDir.resolve(STARTUP_LOCK_FILENAME));
+      try {
+        connect(pool);
+      } finally {
+        endTurn(turn);
+      }
+    } finally {
+      STARTUP_TURN_IN_THIS_PROCESS.unlock();
+    }
+  }
+
+  @CheckForNull
+  private static FileLock waitForTurn(Path lockFile) throws InterruptedException {
+    FileChannel channel = null;
+    try {
+      channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+      var deadline = System.nanoTime() + STARTUP_TURN_TIMEOUT.toNanos();
+      while (true) {
+        var turn = channel.tryLock();
+        if (turn != null) {
+          return turn;
+        }
+        if (System.nanoTime() > deadline) {
+          LOG.debug("Timed out waiting for other IDE instances to open the database, opening it anyway");
+          closeQuietly(channel);
+          return null;
+        }
+        Thread.sleep(50);
+      }
+    } catch (ClosedByInterruptException e) {
+      throw new InterruptedException("H2 database startup interrupted");
+    } catch (IOException e) {
+      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
+      closeQuietly(channel);
+      return null;
+    } catch (InterruptedException e) {
+      closeQuietly(channel);
+      throw e;
+    }
+  }
+
+  private static void endTurn(@Nullable FileLock turn) {
+    if (turn != null) {
+      // Closing the channel also releases the lock
+      closeQuietly(turn.channel());
+    }
+  }
+
+  private static void closeQuietly(@Nullable FileChannel channel) {
+    if (channel == null) {
+      return;
+    }
+    try {
+      channel.close();
+    } catch (IOException e) {
+      LOG.debug("Error while closing the database startup lock: {}", e.getMessage());
+    }
+  }
+
+  private static boolean isLockContention(SQLException failure) {
+    return failure.getErrorCode() == ErrorCode.DATABASE_ALREADY_OPEN_1
+      || (failure.getErrorCode() == ErrorCode.ERROR_OPENING_DATABASE_1 && LOCK_RACE_REASONS.stream().anyMatch(reason -> StringUtils.contains(failure.getMessage(), reason)));
+  }
+
   private static void connect(JdbcConnectionPool pool) throws SQLException, InterruptedException {
     for (var attempt = 0; ; attempt++) {
       if (Thread.currentThread().isInterrupted()) {
@@ -132,7 +224,7 @@ public final class SonarLintDatabase {
       try {
         connection = pool.getConnection();
       } catch (SQLException failure) {
-        if (failure.getErrorCode() != ErrorCode.DATABASE_ALREADY_OPEN_1 || attempt == 3) {
+        if (!isLockContention(failure) || attempt == 3) {
           throw failure;
         }
         // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
