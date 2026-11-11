@@ -165,14 +165,24 @@ public final class SonarLintDatabase {
   }
 
   static boolean isCorruption(Throwable throwable) {
-    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(SonarLintDatabase::isCorruptionCause);
+    return ExceptionUtils.getThrowableList(throwable).stream().anyMatch(cause -> isMVStoreCorruption(cause)
+      || isFileCorruption(cause)
+      || isWrappedMVStoreCorruption(cause));
   }
 
-  private static boolean isCorruptionCause(Throwable throwable) {
-    return (throwable instanceof MVStoreException mvStoreException
-      && (isCorruptionCode(mvStoreException.getErrorCode()) || isTruncation(mvStoreException)))
-      || (throwable instanceof SQLException sqlException && (sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1
-        || (sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1 && hasMVStoreCorruptionCode(sqlException.getMessage()))));
+  private static boolean isMVStoreCorruption(Throwable throwable) {
+    return throwable instanceof MVStoreException mvStoreException
+      && (isCorruptionCode(mvStoreException.getErrorCode()) || isTruncation(mvStoreException));
+  }
+
+  private static boolean isFileCorruption(Throwable throwable) {
+    return throwable instanceof SQLException sqlException && sqlException.getErrorCode() == ErrorCode.FILE_CORRUPTED_1;
+  }
+
+  private static boolean isWrappedMVStoreCorruption(Throwable throwable) {
+    return throwable instanceof SQLException sqlException
+      && sqlException.getErrorCode() == ErrorCode.GENERAL_ERROR_1
+      && hasMVStoreCorruptionCode(sqlException.getMessage());
   }
 
   /**
