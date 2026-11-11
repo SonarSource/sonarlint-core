@@ -207,7 +207,7 @@
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
-              <stripVersion>false</stripVersion>
+              <stripVersion>true</stripVersion>
             </configuration>
           </execution>
         </executions>
