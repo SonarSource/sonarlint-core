@@ -21,24 +21,29 @@ package its.utils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 public class PluginLocator {
 
   public static Path getCppPluginPath() {
-    return getPluginPath("sonar-cfamily-plugin-6.75.1.93101.jar");
+    return getPluginPath("sonar-cfamily-plugin.jar");
   }
 
   public static Path getGoPluginPath() {
-    return getPluginPath("sonar-go-plugin-1.31.0.4938.jar");
+    return getPluginPath("sonar-go-plugin.jar");
   }
 
   public static Path getIacPluginPath() {
-    return getPluginPath("sonar-iac-plugin-2.2.0.18377.jar");
+    return getPluginPath("sonar-iac-plugin.jar");
   }
 
   public static Path getJavascriptPluginPath() {
-    return getPluginPath("sonar-javascript-plugin-13.9.0.44793.jar");
+    return getPluginPath("sonar-javascript-plugin.jar");
+  }
+
+  public static Path getOmnisharpPluginPath() {
+    return getPluginPath("sonarlint-omnisharp-plugin.jar");
   }
 
   public static Map<String, Path> getEmbeddedPluginsByKeyForTests() {
@@ -46,6 +51,12 @@ public class PluginLocator {
       "javascript", getJavascriptPluginPath(),
       "go", PluginLocator.getGoPluginPath(),
       "iac", PluginLocator.getIacPluginPath());
+  }
+
+  public static Map<String, Path> getEmbeddedPluginsWithOmnisharpByKeyForTests() {
+    var embeddedPlugins = new HashMap<>(getEmbeddedPluginsByKeyForTests());
+    embeddedPlugins.put("omnisharp", getOmnisharpPluginPath());
+    return embeddedPlugins;
   }
 
   private static Path getPluginPath(String file) {
