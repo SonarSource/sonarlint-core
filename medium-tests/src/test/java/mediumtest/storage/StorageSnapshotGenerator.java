@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 
 import static mediumtest.storage.StorageSnapshot.CONFIG_SCOPE_ID;
 import static mediumtest.storage.StorageSnapshot.CONNECTION_ID;
@@ -81,7 +82,22 @@ public class StorageSnapshotGenerator {
   private static void generate(String release, Path outputDir) throws Exception {
     var storageRoot = Files.createTempDirectory("storageSnapshot").resolve("storage");
 
-    var backend = SonarLintBackendFixture.newBackend()
+    var backend = startBackendWithSnapshotData(storageRoot);
+    var database = backend.getSonarLintDatabase();
+    storeKnownFindings(database);
+    var metadata = StorageSnapshot.Metadata.of(release, database.dsl());
+    var schema = StorageSnapshot.schemaScript(database.dsl());
+    // Close the database cleanly before copying it
+    backend.shutdown().get();
+
+    // Build and check the whole snapshot aside, so that a failure leaves the output directory untouched
+    var snapshot = buildAndCheckSnapshot(storageRoot, metadata, schema);
+    FileUtils.deleteDirectory(outputDir.toFile());
+    FileUtils.copyDirectory(snapshot.toFile(), outputDir.toFile());
+  }
+
+  private static SonarLintTestRpcServer startBackendWithSnapshotData(Path storageRoot) {
+    return SonarLintBackendFixture.newBackend()
       .withStorageRoot(storageRoot)
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withServerVersion("2025.1")
@@ -102,23 +118,20 @@ public class StorageSnapshotGenerator {
         .withLocalOnlyIssue(new LocalOnlyIssue(UUID.fromString("7c9e6679-7425-40de-944b-e07fc1f90ae7"), Path.of(FILE_PATH), TEXT_RANGE, new LineWithHash(1, "lineHash"),
           "java:S1481", "Remove this unused variable", new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, FAR_FUTURE, "comment"))))
       .start();
+  }
 
+  private static void storeKnownFindings(SonarLintDatabase database) {
     // Known findings are only stored by the backend itself, after an analysis
-    var knownFindingsRepository = new KnownFindingsRepository(backend.getSonarLintDatabase());
+    var knownFindingsRepository = new KnownFindingsRepository(database);
     knownFindingsRepository.storeKnownIssues(CONFIG_SCOPE_ID, Path.of(KNOWN_FINDINGS_FILE),
       List.of(new KnownFinding(UUID.fromString("a3bb189e-8bf9-3888-9912-ace4e6543002"), "issueKey1", TEXT_RANGE, new LineWithHash(1, "lineHash"), "java:S1481",
         "Remove this unused variable", CREATION_DATE)));
     knownFindingsRepository.storeKnownSecurityHotspots(CONFIG_SCOPE_ID, Path.of(KNOWN_FINDINGS_FILE),
       List.of(new KnownFinding(UUID.fromString("b4cc290f-9cf0-4999-aa23-bdf5f7654113"), "hotspotKey", TEXT_RANGE, new LineWithHash(1, "lineHash"), "java:S2068",
         "Review this hard-coded password", CREATION_DATE)));
+  }
 
-    var dsl = backend.getSonarLintDatabase().dsl();
-    var metadata = StorageSnapshot.Metadata.of(release, dsl);
-    var schema = StorageSnapshot.schemaScript(dsl);
-    // Close the database cleanly before copying it
-    backend.shutdown().get();
-
-    // Build and check the whole snapshot aside, so that a failure leaves the output directory untouched
+  private static Path buildAndCheckSnapshot(Path storageRoot, StorageSnapshot.Metadata metadata, String schema) throws Exception {
     var snapshot = Files.createTempDirectory("storageSnapshotOutput");
     copyDatabase(storageRoot, snapshot);
     leaveTransactionOpenAndCrash(storageRoot);
@@ -127,9 +140,7 @@ public class StorageSnapshotGenerator {
     checkRecoversCommittedData(uncleanShutdownDir, metadata);
     metadata.write(snapshot);
     Files.writeString(snapshot.resolve(StorageSnapshot.SCHEMA_FILE), schema, StandardCharsets.UTF_8);
-
-    FileUtils.deleteDirectory(outputDir.toFile());
-    FileUtils.copyDirectory(snapshot.toFile(), outputDir.toFile());
+    return snapshot;
   }
 
   /**
