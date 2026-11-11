@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -45,10 +47,13 @@ class StorageConcurrentStartupMediumTests {
   private static final int PROCESSES = 5;
 
   private final List<Process> processes = new ArrayList<>();
+  // One reader per process, as each one blocks until all the processes are ready
+  private final ExecutorService outputReaders = Executors.newFixedThreadPool(PROCESSES);
 
   @AfterEach
   void stopProcesses() {
     processes.forEach(Process::destroyForcibly);
+    outputReaders.shutdownNow();
   }
 
   @Test
@@ -57,6 +62,7 @@ class StorageConcurrentStartupMediumTests {
     FileUtils.copyDirectory(StorageSnapshot.latestSnapshotDirectory().resolve("h2").toFile(), storageRoot.resolve("h2").toFile());
     var startFile = tempDir.resolve("start");
     var stopFile = tempDir.resolve("stop");
+    var readiness = new ArrayList<CompletableFuture<Void>>();
     var outcomes = new ArrayList<CompletableFuture<String>>();
     for (var i = 0; i < PROCESSES; i++) {
       var process = new ProcessBuilder(javaExecutable(), "-cp", System.getProperty("java.class.path"), OpenStorageProcess.class.getName(),
@@ -64,9 +70,13 @@ class StorageConcurrentStartupMediumTests {
         .redirectErrorStream(true)
         .start();
       processes.add(process);
-      outcomes.add(CompletableFuture.supplyAsync(() -> outcome(process)));
+      var ready = new CompletableFuture<Void>();
+      readiness.add(ready);
+      outcomes.add(CompletableFuture.supplyAsync(() -> outcome(process, ready), outputReaders));
     }
 
+    // Release all the processes at the same moment, once their JVMs are up
+    CompletableFuture.allOf(readiness.toArray(CompletableFuture[]::new)).orTimeout(2, TimeUnit.MINUTES).join();
     Files.createFile(startFile);
     var results = outcomes.stream().map(outcome -> outcome.orTimeout(2, TimeUnit.MINUTES).join()).toList();
     Files.createFile(stopFile);
@@ -75,17 +85,22 @@ class StorageConcurrentStartupMediumTests {
     assertThat(results).containsOnly(OpenStorageProcess.OPENED + expectedFindings);
   }
 
-  private static String outcome(Process process) {
+  private static String outcome(Process process, CompletableFuture<Void> ready) {
     try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
       String line;
       while ((line = reader.readLine()) != null) {
-        if (line.startsWith(OpenStorageProcess.OPENED) || line.startsWith(OpenStorageProcess.FAILED)) {
+        if (line.equals(OpenStorageProcess.READY)) {
+          ready.complete(null);
+        } else if (line.startsWith(OpenStorageProcess.OPENED) || line.startsWith(OpenStorageProcess.FAILED)) {
           return line;
         }
       }
       return "EXITED with " + process.waitFor();
     } catch (Exception e) {
       return "ERROR " + e;
+    } finally {
+      // Do not wait forever for a process that died before being ready
+      ready.complete(null);
     }
   }
 
