@@ -26,7 +26,4 @@ import org.sonarsource.sonarlint.core.commons.Version;
 
 public record ResolvedArtifact(ArtifactState state, @Nullable Path path, @Nullable ArtifactOrigin source, @Nullable Version version,
   @Nullable CompletableFuture<?> downloadFuture) {
-  public static ResolvedArtifact premium() {
-    return new ResolvedArtifact(ArtifactState.PREMIUM, null, null, null, null);
-  }
 }
