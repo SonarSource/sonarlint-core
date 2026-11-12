@@ -44,7 +44,7 @@
     -->
     <maven.compiler.release>21</maven.compiler.release>
 
-    <sonar-plugin-api.version>14.1.0.5543</sonar-plugin-api.version>
+    <sonar-plugin-api.version>14.3.0.5639</sonar-plugin-api.version>
     <sonar-markdown.version>26.11.0.134175</sonar-markdown.version>
     <protobuf.version>4.36.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
