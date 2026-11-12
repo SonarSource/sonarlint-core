@@ -96,7 +96,7 @@
     <handlebars.version>4.5.8</handlebars.version>
     <!-- On-demand plugin versions -->
     <cfamily.version>6.86.0.113840</cfamily.version>
-    <csharp.version>10.35.0.4138</csharp.version>
+    <csharp.version>10.36.0.15337</csharp.version>
     <omnisharp.version>1.39.15.1-sonar</omnisharp.version>
   </properties>
 
