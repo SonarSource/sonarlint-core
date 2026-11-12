@@ -70,7 +70,6 @@ class StandaloneArtifactsLoadingStrategyTest {
         k -> new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null))));
     });
     when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(EnumSet.noneOf(SonarLanguage.class));
-    when(languageSupportRepository.isEnabledOnlyInConnectedMode(any())).thenReturn(false);
   }
 
   // --- Enterprise deduplication (different-key variants: CS, VBNET) ---
