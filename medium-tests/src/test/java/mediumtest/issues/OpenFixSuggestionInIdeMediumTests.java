@@ -387,6 +387,23 @@ class OpenFixSuggestionInIdeMediumTests {
     assertInvalidRequestMessage(client);
   }
 
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud_au(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+    HttpRequest request = openFixSuggestionRequest(backend,
+      "",
+      org.sonarsource.sonarlint.core.SonarCloudRegion.AU.getProductionUri().toString(),
+      "someOrigin");
+
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(400);
+    assertInvalidRequestMessage(client);
+  }
+
   private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
     verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
