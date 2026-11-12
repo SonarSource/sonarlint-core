@@ -96,6 +96,6 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
     var result = new LinkedHashMap<String, ResolvedArtifact>();
     keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
 
-    return new ArtifactsLoadingResult(enabledLanguages, result, languageSupportRepository.getExtraEnabledLanguagesInConnectedMode());
+    return new ArtifactsLoadingResult(result);
   }
 }

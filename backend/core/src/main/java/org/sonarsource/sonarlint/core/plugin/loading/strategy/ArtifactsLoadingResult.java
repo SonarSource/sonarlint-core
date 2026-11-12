@@ -25,20 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
-public record ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey,
-  Set<SonarLanguage> connectedOnlyLanguages) {
-
-  public ArtifactsLoadingResult(Set<SonarLanguage> enabledLanguages, Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
-    this(enabledLanguages, resolvedArtifactsByKey, Set.of());
-  }
+public record ArtifactsLoadingResult(Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
 
   public Optional<ResolvedArtifact> getResolvedArtifactByKey(String key) {
     return Optional.ofNullable(resolvedArtifactsByKey().get(key));

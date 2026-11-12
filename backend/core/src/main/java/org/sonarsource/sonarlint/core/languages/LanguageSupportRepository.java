@@ -57,10 +57,6 @@ public class LanguageSupportRepository {
     return enabledLanguagesInConnectedMode;
   }
 
-  public Set<SonarLanguage> getExtraEnabledLanguagesInConnectedMode() {
-    return extraEnabledLanguagesInConnectedMode;
-  }
-
   public boolean areTaintVulnerabilitiesSupported() {
     var intersection = EnumSet.copyOf(LANGUAGES_RAISING_TAINT_VULNERABILITIES);
     intersection.retainAll(enabledLanguagesInConnectedMode);
