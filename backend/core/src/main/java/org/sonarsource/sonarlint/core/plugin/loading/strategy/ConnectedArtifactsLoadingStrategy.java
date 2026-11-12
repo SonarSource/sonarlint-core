@@ -126,6 +126,6 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     candidates.forEach((key, candidate) -> keysBySource.get(candidate.source()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
     keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
-    return new ArtifactsLoadingResult(enabledLanguages, result);
+    return new ArtifactsLoadingResult(result);
   }
 }

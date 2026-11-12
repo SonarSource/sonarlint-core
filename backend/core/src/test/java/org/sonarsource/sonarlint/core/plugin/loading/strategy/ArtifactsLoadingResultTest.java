@@ -20,15 +20,12 @@
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
@@ -107,7 +104,7 @@ class ArtifactsLoadingResultTest {
   @Test
   void getPluginPaths_should_keep_omnisharp_when_enterprise_csharp_dependency_is_present() {
     var omnisharpPath = Path.of("omnisharp.jar");
-    var result = new ArtifactsLoadingResult(Set.of(), Map.of(
+    var result = new ArtifactsLoadingResult(Map.of(
       SonarPlugin.SONARLINT_OMNISHARP.getKey(), activeArtifact(omnisharpPath),
       SonarPlugin.CSHARP_ENTERPRISE.getKey(), activeArtifact(Path.of("csharpenterprise.jar")),
       SonarPluginDependency.OMNISHARP_MONO.getKey(), activeArtifact(Path.of("omnisharp-mono.tar.gz")),
@@ -120,7 +117,7 @@ class ArtifactsLoadingResultTest {
   @Test
   void getPluginPaths_should_remove_omnisharp_when_neither_csharp_dependency_is_present() {
     var omnisharpPath = Path.of("omnisharp.jar");
-    var result = new ArtifactsLoadingResult(Set.of(), Map.of(
+    var result = new ArtifactsLoadingResult(Map.of(
       SonarPlugin.SONARLINT_OMNISHARP.getKey(), activeArtifact(omnisharpPath),
       SonarPluginDependency.OMNISHARP_MONO.getKey(), activeArtifact(Path.of("omnisharp-mono.tar.gz")),
       SonarPluginDependency.OMNISHARP_NET472.getKey(), activeArtifact(Path.of("omnisharp-net472.tar.gz")),
@@ -132,7 +129,7 @@ class ArtifactsLoadingResultTest {
   private static ArtifactsLoadingResult resultWithFutures(Map<String, CompletableFuture<Void>> futures) {
     var artifacts = new HashMap<String, ResolvedArtifact>();
     futures.forEach((key, future) -> artifacts.put(key, new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, future)));
-    return new ArtifactsLoadingResult(EnumSet.of(SonarLanguage.CPP), artifacts);
+    return new ArtifactsLoadingResult(artifacts);
   }
 
   private static ResolvedArtifact activeArtifact(Path path) {

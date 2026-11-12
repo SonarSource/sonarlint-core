@@ -193,7 +193,7 @@ class BinariesArtifactSourceTest {
     var downloadFuture = loadResult.resolvedArtifactsByKey().get("cpp").downloadFuture();
 
     var reloadTriggered = new AtomicBoolean(false);
-    new ArtifactsLoadingResult(EnumSet.of(SonarLanguage.CPP), loadResult.resolvedArtifactsByKey())
+    new ArtifactsLoadingResult(loadResult.resolvedArtifactsByKey())
       .whenAllArtifactsDownloaded(() -> reloadTriggered.set(true));
 
     await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isDone);
