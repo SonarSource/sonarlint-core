@@ -87,10 +87,10 @@ public class EmbeddedPluginSource implements ArtifactSource {
     for (var key : artifactKeys) {
       var path = embeddedPathsByKey.get(key);
       if (path != null) {
-        resolved.put(key, new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path), null));
+        resolved.put(key, new ResolvedArtifact(ArtifactState.ACTIVE, path, ArtifactOrigin.EMBEDDED, PluginJarUtils.readVersion(path)));
       }
     }
-    return new LoadResult(resolved);
+    return new LoadResult(resolved, List.of());
   }
 
   private static AvailableArtifact toAvailableArtifact(String key, Path path) {
