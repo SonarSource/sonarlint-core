@@ -25,6 +25,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.UniqueTaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -61,8 +63,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils
  * Handles both plugins (CFamily, C# OSS) and plugin dependencies (OmniSharp distributions).
  *
  * <p>{@link #listAvailableArtifacts(Set)} is a pure query: it returns all known artifacts, with a
- * non-null {@code jarPath} only for those already cached and verified on disk. {@link #load(String)}
- * schedules a background download when the artifact is not yet cached, returning
+ * non-null {@code jarPath} only for those already cached and verified on disk. {@link #load(Set)}
+ * plans a background download when the artifact is not yet cached, returning
  * {@link ArtifactState#DOWNLOADING} immediately. A {@link PluginStatusUpdateEvent} is published
  * when the download completes.</p>
  */
@@ -107,20 +109,22 @@ public class BinariesArtifactSource implements ArtifactSource {
   @Override
   public LoadResult load(Set<String> artifactKeys) {
     var resolved = new HashMap<String, ResolvedArtifact>();
+    var pendingDownloads = new ArrayList<PendingDownload>();
     for (var key : artifactKeys) {
       BinariesArtifact.findByKey(key).ifPresent(artifact -> {
         var resolvedArtifact = findCachedArtifact(artifact)
           .map(cached -> toActiveArtifact(artifact, cached.path()))
-          .orElseGet(() -> scheduleDownload(artifact));
+          .orElseGet(() -> planDownload(artifact, pendingDownloads));
         resolved.put(key, resolvedArtifact);
       });
     }
-    return new LoadResult(resolved);
+    return new LoadResult(resolved, pendingDownloads);
   }
 
-  private ResolvedArtifact scheduleDownload(BinariesArtifact artifact) {
-    var downloadFuture = uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact));
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
+  private ResolvedArtifact planDownload(BinariesArtifact artifact, List<PendingDownload> pendingDownloads) {
+    pendingDownloads.add(new PendingDownload(artifact.artifactKey(),
+      () -> uniqueTaskExecutor.scheduleIfAbsent(artifact.artifactKey(), () -> downloadAndFireEvent(artifact))));
+    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
   private Optional<ResolvedArtifact> findCachedArtifact(BinariesArtifact artifact) {
@@ -165,7 +169,7 @@ public class BinariesArtifactSource implements ArtifactSource {
   }
 
   private static ResolvedArtifact toActiveArtifact(BinariesArtifact artifact, Path artifactPath) {
-    return new ResolvedArtifact(ArtifactState.ACTIVE, artifactPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()), null);
+    return new ResolvedArtifact(ArtifactState.ACTIVE, artifactPath, ArtifactOrigin.ON_DEMAND, Version.create(artifact.version()));
   }
 
   private Path downloadAndCache(BinariesArtifact artifact) throws IOException {
