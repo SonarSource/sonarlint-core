@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +38,8 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
@@ -82,6 +85,7 @@ class PluginsServiceTest {
   private InitializeParams initializeParams;
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
+  private LanguageSupportRepository languageSupportRepository;
 
   @BeforeEach
   void prepare() {
@@ -102,16 +106,18 @@ class PluginsServiceTest {
     var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
 
     var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
-    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
-    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Set.of(), Map.of("csharp", csharpArtifact)));
+    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)));
+    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)));
     when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
     var binariesArtifactSource = mock(BinariesArtifactSource.class);
     when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
 
+    languageSupportRepository = mock(LanguageSupportRepository.class);
+
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource);
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, languageSupportRepository);
   }
 
   @Test
@@ -344,6 +350,133 @@ class PluginsServiceTest {
     var result = underTest.getPluginStatuses(connectionId);
 
     assertThat(result).hasSize(SonarLanguage.values().length);
+  }
+
+  @Test
+  void should_report_unsupported_for_disabled_language_with_embedded_plugin() {
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, Version.create("1.0"), null);
+    mockStatuses(null, Map.of("python", artifact));
+
+    assertThat(status(null, SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = ArtifactState.class, names = {"ACTIVE", "SYNCED", "DOWNLOADING", "FAILED"})
+  void should_preserve_enabled_language_status_and_metadata(ArtifactState state) {
+    var version = Version.create("1.0");
+    var artifact = new ResolvedArtifact(state, ossPath, ArtifactOrigin.EMBEDDED, version, null);
+    mockEnabledInStandalone(SonarLanguage.PYTHON);
+    mockStatuses(null, Map.of("python", artifact));
+
+    assertThat(status(null, SonarLanguage.PYTHON))
+      .isEqualTo(PluginStatus.forLanguage(SonarLanguage.PYTHON, state, ArtifactOrigin.EMBEDDED, version, null, ossPath, null));
+  }
+
+  @Test
+  void should_report_unsupported_for_disabled_language_in_connected_mode() {
+    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null, null);
+    mockStatuses("connection", Map.of("python", artifact));
+
+    assertThat(status("connection", SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
+  }
+
+  @Test
+  void should_use_connected_mode_languages_for_connection() {
+    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null, null);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.PYTHON));
+    mockStatuses("connection", Map.of("python", artifact));
+
+    assertThat(status("connection", SonarLanguage.PYTHON))
+      .isEqualTo(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, ossPath, null));
+  }
+
+  @Test
+  void should_report_premium_for_connected_only_language_without_plugin() {
+    mockConnectedOnly(SonarLanguage.PYTHON);
+    mockStatuses(null, Map.of());
+
+    assertThat(status(null, SonarLanguage.PYTHON)).isEqualTo(PluginStatus.premium(SonarLanguage.PYTHON));
+  }
+
+  @Test
+  void should_not_report_premium_in_connected_mode_for_language_without_plugin() {
+    mockConnectedOnly(SonarLanguage.PYTHON);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.PYTHON));
+    mockStatuses("connection", Map.of());
+
+    assertThat(status("connection", SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
+  }
+
+  @Test
+  void should_preserve_active_for_connected_only_language_with_embedded_plugin() {
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    mockConnectedOnly(SonarLanguage.PYTHON);
+    mockStatuses(null, Map.of("python", artifact));
+
+    assertThat(status(null, SonarLanguage.PYTHON))
+      .isEqualTo(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, null, null, ossPath, null));
+  }
+
+  @Test
+  void should_not_share_enablement_between_languages_of_same_plugin() {
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    mockEnabledInStandalone(SonarLanguage.JS);
+    mockStatuses(null, Map.of("javascript", artifact));
+
+    assertThat(status(null, SonarLanguage.JS).state()).isEqualTo(ArtifactState.ACTIVE);
+    assertThat(status(null, SonarLanguage.TS)).isEqualTo(PluginStatus.unsupported(SonarLanguage.TS));
+  }
+
+  @Test
+  void should_not_share_premium_between_languages_of_same_plugin() {
+    mockEnabledInStandalone(SonarLanguage.JS);
+    mockConnectedOnly(SonarLanguage.TS);
+    mockStatuses(null, Map.of());
+
+    assertThat(status(null, SonarLanguage.JS)).isEqualTo(PluginStatus.unsupported(SonarLanguage.JS));
+    assertThat(status(null, SonarLanguage.TS)).isEqualTo(PluginStatus.premium(SonarLanguage.TS));
+  }
+
+  @Test
+  void should_publish_connected_mode_statuses_when_connection_plugins_are_loaded() {
+    var connectionId = "SQC";
+    mockConnection(createConnection(connectionId, ConnectionKind.SONARCLOUD));
+    mockEnabledLanguages(Language.CS);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.CS));
+    var csharpStatus = PluginStatus.forLanguage(SonarLanguage.CS, ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, null, null, ossPath, null);
+
+    underTest.getPlugins(connectionId);
+
+    verify(eventPublisher).publishEvent(new PluginStatusesChangedEvent(connectionId, allUnsupportedExcept(csharpStatus)));
+  }
+
+  private static List<PluginStatus> allUnsupportedExcept(PluginStatus status) {
+    var statuses = new ArrayList<PluginStatus>();
+    for (var language : SonarLanguage.values()) {
+      statuses.add(language == status.language() ? status : PluginStatus.unsupported(language));
+    }
+    return statuses;
+  }
+
+  private void mockEnabledInStandalone(SonarLanguage... languages) {
+    when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(languages));
+  }
+
+  private void mockConnectedOnly(SonarLanguage language) {
+    when(languageSupportRepository.isEnabledOnlyInConnectedMode(language)).thenReturn(true);
+  }
+
+  private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts) {
+    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of());
+    if (connectionId == null) {
+      when(pluginsRepository.getEmbeddedPlugins()).thenReturn(configuration);
+    } else {
+      when(pluginsRepository.getPlugins(connectionId)).thenReturn(configuration);
+    }
+  }
+
+  private PluginStatus status(@Nullable String connectionId, SonarLanguage language) {
+    return underTest.getPluginStatuses(connectionId).stream().filter(status -> status.language() == language).findFirst().orElseThrow();
   }
 
   @Test
