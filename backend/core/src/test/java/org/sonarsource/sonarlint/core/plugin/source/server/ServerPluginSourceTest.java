@@ -123,7 +123,10 @@ class ServerPluginSourceTest {
 
     var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
+    verify(downloader, never()).schedulePluginDownload(any(), any());
+    assertThat(result.pendingDownloads()).hasSize(1);
+    result.pendingDownloads().getFirst().start().get();
     verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
@@ -137,7 +140,10 @@ class ServerPluginSourceTest {
 
     var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
+    verify(downloader, never()).schedulePluginDownload(any(), any());
+    assertThat(result.pendingDownloads()).hasSize(1);
+    result.pendingDownloads().getFirst().start().get();
     verify(downloader).schedulePluginDownload("conn", serverPlugin);
   }
 
@@ -196,7 +202,7 @@ class ServerPluginSourceTest {
 
     var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null));
   }
 
   @Test
@@ -443,6 +449,6 @@ class ServerPluginSourceTest {
   }
 
   private static ResolvedArtifact resolved(ArtifactState state, Path path, ArtifactOrigin source) {
-    return new ResolvedArtifact(state, path, source, null, null);
+    return new ResolvedArtifact(state, path, source, null);
   }
 }
