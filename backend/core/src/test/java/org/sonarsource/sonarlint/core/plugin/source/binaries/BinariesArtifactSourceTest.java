@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -47,7 +46,6 @@ import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.PluginStatus;
-import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
@@ -106,10 +104,11 @@ class BinariesArtifactSourceTest {
     var source = buildSource();
     try {
       var result = source.load(Set.of("cpp"));
+      verify(httpClientProvider, org.mockito.Mockito.never()).getHttpClientWithoutAuth();
+      result.pendingDownloads().forEach(d -> d.start().get());
 
       assertThat(result.resolvedArtifactsByKey().get("cpp"))
         .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
@@ -123,13 +122,13 @@ class BinariesArtifactSourceTest {
     mockBlockingHttpClient(proceedLatch);
     var source = buildSource();
     try {
-      source.load(Set.of("cpp"));
+      var running = source.load(Set.of("cpp")).pendingDownloads().getFirst().start().get();
 
       var result = source.load(Set.of("cpp"));
+      assertThat(result.pendingDownloads().getFirst().start().get()).isSameAs(running);
 
       assertThat(result.resolvedArtifactsByKey().get("cpp"))
         .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
@@ -145,7 +144,7 @@ class BinariesArtifactSourceTest {
     var source = buildSource();
 
     var result = source.load(Set.of("cpp"));
-    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
+    var downloadFuture = result.pendingDownloads().getFirst().start().get();
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -162,7 +161,7 @@ class BinariesArtifactSourceTest {
     var source = buildSource();
 
     var result = source.load(Set.of("cpp"));
-    var downloadFuture = result.resolvedArtifactsByKey().get("cpp").downloadFuture();
+    var downloadFuture = result.pendingDownloads().getFirst().start().get();
 
     await().atMost(5, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     assertThat(capturedStatuses).containsExactlyInAnyOrder(
@@ -190,16 +189,10 @@ class BinariesArtifactSourceTest {
     var source = buildSource();
 
     var loadResult = source.load(Set.of("cpp"));
-    var downloadFuture = loadResult.resolvedArtifactsByKey().get("cpp").downloadFuture();
-
-    var reloadTriggered = new AtomicBoolean(false);
-    new ArtifactsLoadingResult(loadResult.resolvedArtifactsByKey())
-      .whenAllArtifactsDownloaded(() -> reloadTriggered.set(true));
+    var downloadFuture = loadResult.pendingDownloads().getFirst().start().get();
 
     await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isDone);
     assertThat(downloadFuture).isCompletedExceptionally();
-    await().during(200, TimeUnit.MILLISECONDS).atMost(1, TimeUnit.SECONDS)
-      .until(() -> !reloadTriggered.get());
   }
 
   @Test
@@ -208,7 +201,7 @@ class BinariesArtifactSourceTest {
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
     var source = buildSource();
 
-    source.load(Set.of("cpp"));
+    source.load(Set.of("cpp")).pendingDownloads().forEach(d -> d.start().get());
 
     await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == 3);
     var artifactVersion = BinariesArtifact.CFAMILY_PLUGIN.version();
@@ -237,8 +230,7 @@ class BinariesArtifactSourceTest {
 
     assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
       .usingRecursiveComparison()
-      .ignoringFields("downloadFuture")
-      .isEqualTo(new ResolvedArtifact(ArtifactState.ACTIVE, omnisharpDir, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion), null));
+      .isEqualTo(new ResolvedArtifact(ArtifactState.ACTIVE, omnisharpDir, ArtifactOrigin.ON_DEMAND, Version.create(artifactVersion)));
   }
 
   @Test
@@ -252,10 +244,10 @@ class BinariesArtifactSourceTest {
 
     try {
       var result = source.load(Set.of("omnisharp-mono"));
+      result.pendingDownloads().forEach(d -> d.start().get());
 
       assertThat(result.resolvedArtifactsByKey().get("omnisharp-mono"))
         .usingRecursiveComparison()
-        .ignoringFields("downloadFuture")
         .isEqualTo(downloading());
     } finally {
       proceedLatch.countDown();
@@ -326,7 +318,7 @@ class BinariesArtifactSourceTest {
   }
 
   private static ResolvedArtifact downloading() {
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, null);
+    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
   }
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {

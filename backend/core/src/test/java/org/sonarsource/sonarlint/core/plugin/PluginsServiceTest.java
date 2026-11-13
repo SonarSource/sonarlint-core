@@ -27,12 +27,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -43,10 +50,12 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ResolutionPlan;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -59,11 +68,14 @@ import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doAnswer;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -105,9 +117,9 @@ class PluginsServiceTest {
     connectedArtifactsLoadingStrategyFactory = mock(ConnectedArtifactsLoadingStrategyFactory.class);
     var connectedArtifactsLoadingStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
 
-    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
-    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)));
-    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)));
+    var csharpArtifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
+    when(standaloneArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ResolutionPlan(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)), List.of()));
+    when(connectedArtifactsLoadingStrategy.resolveArtifacts()).thenReturn(new ResolutionPlan(new ArtifactsLoadingResult(Map.of("csharp", csharpArtifact)), List.of()));
     when(connectedArtifactsLoadingStrategyFactory.getOrCreate(any())).thenReturn(connectedArtifactsLoadingStrategy);
 
     var binariesArtifactSource = mock(BinariesArtifactSource.class);
@@ -117,7 +129,113 @@ class PluginsServiceTest {
 
     underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
-      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, languageSupportRepository);
+      standaloneArtifactsLoadingStrategy, connectedArtifactsLoadingStrategyFactory, binariesArtifactSource, languageSupportRepository, mock(ExecutorService.class));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void caches_and_publishes_statuses_before_start_even_for_immediate_completion(boolean connected) throws Exception {
+    var callbackTasks = new ArrayList<Runnable>();
+    var executor = mock(ExecutorService.class);
+    doAnswer(inv -> {
+      callbackTasks.add(inv.getArgument(0));
+      return null;
+    }).when(executor).execute(any());
+    var statusesPublished = new AtomicBoolean();
+    doAnswer(inv -> {
+      statusesPublished.set(true);
+      return null;
+    }).when(eventPublisher).publishEvent(any(PluginStatusesChangedEvent.class));
+    var pending = new PendingDownload("java", () -> {
+      assertThat(cachedPlugins(connected)).isNotNull();
+      assertThat(statusesPublished).isTrue();
+      return CompletableFuture.completedFuture(null);
+    });
+    configureDownloads(pending, executor);
+
+    var config = connected ? underTest.getPlugins("conn") : underTest.getEmbeddedPlugins();
+
+    assertThat(cachedPlugins(connected)).isSameAs(config);
+    verify(eventPublisher, never()).publishEvent(any(PluginsSynchronizedEvent.class));
+    assertThat(callbackTasks).hasSize(1);
+    try (var callbackExecutor = Executors.newSingleThreadExecutor()) {
+      callbackExecutor.submit(callbackTasks.getFirst()).get(5, TimeUnit.SECONDS);
+    }
+    verify(eventPublisher).publishEvent(any(PluginsSynchronizedEvent.class));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void starts_downloads_even_when_status_publication_throws(boolean connected) {
+    var started = new AtomicBoolean();
+    configureDownloads(new PendingDownload("java", () -> {
+      started.set(true);
+      return CompletableFuture.completedFuture(null);
+    }), mock(ExecutorService.class));
+    doAnswer(inv -> {
+      throw new IllegalStateException("status listener failed");
+    })
+      .when(eventPublisher).publishEvent(any(PluginStatusesChangedEvent.class));
+
+    assertThatThrownBy(() -> {
+      if (connected) {
+        underTest.getPlugins("conn");
+      } else {
+        underTest.getEmbeddedPlugins();
+      }
+    }).isInstanceOf(IllegalStateException.class).hasMessage("status listener failed");
+    assertThat(started).isTrue();
+    assertThat(cachedPlugins(connected).downloads().completion().orElseThrow()).isCompletedWithValue(null);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void immediate_download_on_another_thread_cannot_leave_stale_cached_status(boolean connected) throws Exception {
+    try (var executor = Executors.newCachedThreadPool()) {
+      configureDownloads(new PendingDownload("java", () -> CompletableFuture.runAsync(() -> {}, executor)), executor);
+      var reloaded = new CountDownLatch(1);
+      doAnswer(inv -> {
+        if (connected) {
+          pluginsRepository.unload("conn");
+        } else {
+          pluginsRepository.unloadEmbedded();
+        }
+        reloaded.countDown();
+        return null;
+      }).when(eventPublisher).publishEvent(any(PluginsSynchronizedEvent.class));
+
+      var initial = underTest.getPluginStatuses(connected ? "conn" : null);
+      assertThat(initial).anySatisfy(status -> {
+        assertThat(status.language()).isEqualTo(SonarLanguage.JAVA);
+        assertThat(status.state()).isEqualTo(ArtifactState.DOWNLOADING);
+      });
+      assertThat(reloaded.await(5, TimeUnit.SECONDS)).isTrue();
+      assertThat(underTest.getPluginStatuses(connected ? "conn" : null)).anySatisfy(status -> {
+        assertThat(status.language()).isEqualTo(SonarLanguage.JAVA);
+        assertThat(status.state()).isEqualTo(ArtifactState.ACTIVE);
+      });
+    }
+  }
+
+  private PluginsConfiguration cachedPlugins(boolean connected) {
+    return connected ? pluginsRepository.getPlugins("conn") : pluginsRepository.getEmbeddedPlugins();
+  }
+
+  private void configureDownloads(PendingDownload pending, ExecutorService executor) {
+    pluginsRepository = new PluginsRepository();
+    mockNoConnection("conn");
+    var initial = new ResolutionPlan(new ArtifactsLoadingResult(Map.of("java", new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null))), List.of(pending));
+    var completed = new ResolutionPlan(new ArtifactsLoadingResult(Map.of("java", new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null))), List.of());
+    var standalone = mock(StandaloneArtifactsLoadingStrategy.class);
+    var connectedStrategy = mock(ConnectedArtifactsLoadingStrategy.class);
+    when(standalone.resolveArtifacts()).thenReturn(initial, completed);
+    when(connectedStrategy.resolveArtifacts()).thenReturn(initial, completed);
+    when(connectedArtifactsLoadingStrategyFactory.getOrCreate("conn")).thenReturn(connectedStrategy);
+    when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(Set.of(SonarLanguage.JAVA));
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.JAVA));
+    underTest = new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
+      initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
+      standalone, connectedArtifactsLoadingStrategyFactory, mock(BinariesArtifactSource.class), languageSupportRepository, executor);
   }
 
   @Test
@@ -354,7 +472,7 @@ class PluginsServiceTest {
 
   @Test
   void should_report_unsupported_for_disabled_language_with_embedded_plugin() {
-    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, Version.create("1.0"), null);
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, Version.create("1.0"));
     mockStatuses(null, Map.of("python", artifact));
 
     assertThat(status(null, SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
@@ -364,7 +482,7 @@ class PluginsServiceTest {
   @EnumSource(value = ArtifactState.class, names = {"ACTIVE", "SYNCED", "DOWNLOADING", "FAILED"})
   void should_preserve_enabled_language_status_and_metadata(ArtifactState state) {
     var version = Version.create("1.0");
-    var artifact = new ResolvedArtifact(state, ossPath, ArtifactOrigin.EMBEDDED, version, null);
+    var artifact = new ResolvedArtifact(state, ossPath, ArtifactOrigin.EMBEDDED, version);
     mockEnabledInStandalone(SonarLanguage.PYTHON);
     mockStatuses(null, Map.of("python", artifact));
 
@@ -374,7 +492,7 @@ class PluginsServiceTest {
 
   @Test
   void should_report_unsupported_for_disabled_language_in_connected_mode() {
-    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null, null);
+    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
     mockStatuses("connection", Map.of("python", artifact));
 
     assertThat(status("connection", SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
@@ -382,7 +500,7 @@ class PluginsServiceTest {
 
   @Test
   void should_use_connected_mode_languages_for_connection() {
-    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null, null);
+    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
     when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.PYTHON));
     mockStatuses("connection", Map.of("python", artifact));
 
@@ -409,7 +527,7 @@ class PluginsServiceTest {
 
   @Test
   void should_preserve_active_for_connected_only_language_with_embedded_plugin() {
-    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
     mockConnectedOnly(SonarLanguage.PYTHON);
     mockStatuses(null, Map.of("python", artifact));
 
@@ -419,7 +537,7 @@ class PluginsServiceTest {
 
   @Test
   void should_not_share_enablement_between_languages_of_same_plugin() {
-    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null, null);
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
     mockEnabledInStandalone(SonarLanguage.JS);
     mockStatuses(null, Map.of("javascript", artifact));
 
@@ -467,7 +585,7 @@ class PluginsServiceTest {
   }
 
   private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts) {
-    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of());
+    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of(), new DownloadBatch(List.of(), Runnable::run));
     if (connectionId == null) {
       when(pluginsRepository.getEmbeddedPlugins()).thenReturn(configuration);
     } else {

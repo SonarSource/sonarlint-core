@@ -23,5 +23,5 @@ import java.util.Map;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 
-public record PluginsConfiguration(ArtifactsLoadingResult artifactsResult, LoadedPlugins plugins, Map<String, String> extraProperties) {
+public record PluginsConfiguration(ArtifactsLoadingResult artifactsResult, LoadedPlugins plugins, Map<String, String> extraProperties, DownloadBatch downloads) {
 }

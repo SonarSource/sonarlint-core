@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
@@ -80,14 +81,13 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
   }
 
   /**
-   * Resolves all artifacts from all sources using a winner-map pattern. May schedule background
-   * downloads.
+   * Resolves all artifacts from all sources using a winner-map pattern. Plans background downloads without starting them.
    *
    * <p>Priority (highest wins in normal cases): embedded &gt; server &gt; binaries.
    * Exception: enterprise server plugins beat embedded (see class Javadoc).</p>
    */
   @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
+  public ResolutionPlan resolveArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
 
     // Query server artifacts once; reused in normal pass and enterprise-override pass
@@ -125,7 +125,12 @@ public class ConnectedArtifactsLoadingStrategy extends BaseArtifactsLoadingStrat
     }
     candidates.forEach((key, candidate) -> keysBySource.get(candidate.source()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
-    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
-    return new ArtifactsLoadingResult(result);
+    var pendingDownloads = new ArrayList<PendingDownload>();
+    keysBySource.forEach((source, keys) -> {
+      var loaded = source.load(keys);
+      result.putAll(loaded.resolvedArtifactsByKey());
+      pendingDownloads.addAll(loaded.pendingDownloads());
+    });
+    return new ResolutionPlan(new ArtifactsLoadingResult(result), pendingDownloads);
   }
 }
