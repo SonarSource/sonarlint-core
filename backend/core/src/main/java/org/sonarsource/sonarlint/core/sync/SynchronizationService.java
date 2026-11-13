@@ -368,17 +368,14 @@ public class SynchronizationService {
   private void synchronizePlugins(String connectionId) {
     var plugins = pluginsService.getPlugins(connectionId);
     // synchronization is synchronous, wait for downloads to happen
-    plugins.artifactsResult().getAllDownloadsFuture()
-      .ifPresent(future -> {
-        try {
-          future.get(5, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(e);
-        } catch (ExecutionException | TimeoutException e) {
-          throw new RuntimeException(e);
-        }
-      });
+    try {
+      plugins.downloads().completion().get(5, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    } catch (ExecutionException | TimeoutException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private boolean shouldSynchronizeBinding(Binding binding) {

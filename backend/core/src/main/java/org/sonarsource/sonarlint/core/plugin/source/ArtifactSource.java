@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.plugin.source.server.ServerPluginSource;
  * <ul>
  *   <li>{@link #listAvailableArtifacts(Set)} is a pure query — no side effects, no downloads.</li>
  *   <li>{@link #load(Set)} is the action — given the full set of artifact keys that this source
- *       won in the priority contest, it ensures each artifact is available, scheduling background
+ *       won in the priority contest, it ensures each artifact is available, planning background
  *       downloads when necessary. Receiving the complete set at once allows implementations (in
  *       particular {@link ServerPluginSource}) to take storage-level actions that require knowing
  *       all winners upfront (e.g. writing empty reference files for server plugins that were not
@@ -60,12 +60,12 @@ public interface ArtifactSource {
   List<AvailableArtifact> listAvailableArtifacts(Set<SonarLanguage> enabledLanguages);
 
   /**
-   * Ensures every artifact in {@code artifactKeys} is available from this source, scheduling
+   * Ensures every artifact in {@code artifactKeys} is available from this source, planning
    * background downloads when necessary. {@code artifactKeys} is the complete set of keys that
    * this source won in the priority contest for the current load cycle, allowing implementations
    * to reason about the full picture at once. A key may be absent from the returned
    * {@link LoadResult} if this source cannot provide it. Resolved artifacts may carry the state
-   * {@link ArtifactState#DOWNLOADING} when a background download has been scheduled.
+   * {@link ArtifactState#DOWNLOADING} when a background download is planned. The caller starts pending downloads after caching the result.
    */
   LoadResult load(Set<String> artifactKeys);
 }
