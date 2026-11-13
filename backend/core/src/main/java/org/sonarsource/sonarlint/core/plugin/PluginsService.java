@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
@@ -52,6 +53,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
@@ -73,13 +75,15 @@ public class PluginsService {
   private final ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
   private final BinariesArtifactSource binariesArtifactSource;
   private final LanguageSupportRepository languageSupportRepository;
+  private final ExecutorService pluginDownloadExecutor;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository,
     StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository,
     NodeJsService nodeJsService, ApplicationEventPublisher eventPublisher,
     StandaloneArtifactsLoadingStrategy standaloneArtifactsLoadingStrategy,
     ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory,
-    BinariesArtifactSource binariesArtifactSource, LanguageSupportRepository languageSupportRepository) {
+    BinariesArtifactSource binariesArtifactSource, LanguageSupportRepository languageSupportRepository,
+    @Qualifier("pluginDownloadExecutor") ExecutorService pluginDownloadExecutor) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.storageService = storageService;
@@ -92,6 +96,7 @@ public class PluginsService {
     this.connectedArtifactsLoadingStrategyFactory = connectedArtifactsLoadingStrategyFactory;
     this.binariesArtifactSource = binariesArtifactSource;
     this.languageSupportRepository = languageSupportRepository;
+    this.pluginDownloadExecutor = pluginDownloadExecutor;
   }
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
@@ -155,7 +160,11 @@ public class PluginsService {
     if (cached == null) {
       cached = loadPlugins(null);
       pluginsRepository.setEmbeddedPlugins(cached);
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(null, getPluginStatuses(null, cached.artifactsResult())));
+      try {
+        eventPublisher.publishEvent(new PluginStatusesChangedEvent(null, getPluginStatuses(null, cached.artifactsResult())));
+      } finally {
+        cached.downloads().start(() -> publishPluginsSynchronized(null));
+      }
     }
     return cached;
   }
@@ -165,15 +174,20 @@ public class PluginsService {
     if (cached == null) {
       cached = loadPlugins(connectionId);
       pluginsRepository.setPlugins(connectionId, cached);
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, cached.artifactsResult())));
+      try {
+        eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, cached.artifactsResult())));
+      } finally {
+        cached.downloads().start(() -> publishPluginsSynchronized(connectionId));
+      }
     }
     return cached;
   }
 
   private PluginsConfiguration loadPlugins(@Nullable String connectionId) {
     var strategy = getPluginLoadingStrategy(connectionId);
-    var artifactsResult = strategy.resolveArtifacts();
-    artifactsResult.whenAllArtifactsDownloaded(() -> eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId)));
+    var plan = strategy.resolveArtifacts();
+    var artifactsResult = plan.result();
+    var downloads = new DownloadBatch(plan.pendingDownloads(), pluginDownloadExecutor);
 
     var config = new PluginsLoader.Configuration(new HashSet<>(artifactsResult.getPluginPaths()), getEnabledLanguages(connectionId),
       enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
@@ -189,7 +203,11 @@ public class PluginsService {
       skippedPluginsRepository.setSkippedPlugins(connectionId, skippedPlugins);
     }
 
-    return new PluginsConfiguration(artifactsResult, pluginsLoadResult.getLoadedPlugins(), buildExtraProperties(connectionId, artifactsResult));
+    return new PluginsConfiguration(artifactsResult, pluginsLoadResult.getLoadedPlugins(), buildExtraProperties(connectionId, artifactsResult), downloads);
+  }
+
+  private void publishPluginsSynchronized(@Nullable String connectionId) {
+    eventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
   }
 
   private Map<String, String> buildExtraProperties(@Nullable String connectionId, ArtifactsLoadingResult result) {

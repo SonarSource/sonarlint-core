@@ -46,16 +46,17 @@ listAvailableArtifacts(Set<SonarLanguage> enabledLanguages) → List<AvailableAr
    Returns all artifacts known to this source for the given set of enabled languages, without triggering any downloads. This is a pure query.
    Implementations should return artifacts corresponding to enabled languages, and artifacts that are not tied to a specific language.
 
-load(String artifactKey) → Optional<ResolvedArtifact>
-    Action. Ensures the artifact is available, scheduling a background
-    download if needed. Returns empty if this source does not handle
-    the given key.
-    May return a ResolvedArtifact in DOWNLOADING state.
+load(Set<String> artifactKeys) → LoadResult
+    Resolves the selected artifacts and plans downloads for missing files.
+    Returns the resolved artifact map and a list of PendingDownload suppliers.
+    Omits keys that this source does not handle. Does not start downloads.
+    Missing artifacts have the DOWNLOADING state.
 ```
 
-`ResolvedArtifact` captures the outcome: `(ArtifactState state, Path path, ArtifactOrigin origin,
-Version version)`. The state is one of: `ACTIVE`, `SYNCED`, `DOWNLOADING`, `FAILED`, `PREMIUM`,
-`UNSUPPORTED`.
+`ResolvedArtifact` captures the outcome: `(ArtifactState state, Path path, ArtifactOrigin source,
+Version version)`. It contains no download future. Each `PendingDownload` holds an artifact key
+and a supplier that starts its download when called. The state is one of: `ACTIVE`, `SYNCED`,
+`DOWNLOADING`, `FAILED`, `PREMIUM`, `UNSUPPORTED`.
 
 There are three concrete implementations:
 
@@ -76,8 +77,9 @@ dependencies** (OmniSharp distributions). Artifacts are cached under
 `<storage-root>/ondemand-plugins/`.
 
 - `listAvailableArtifacts(Set<SonarLanguage> enabledLanguages)` lists artifacts available on Binaries.
-- `load(key)` checks the cache first; if absent, schedules an async download and returns
-  `DOWNLOADING` immediately. A `PluginStatusUpdateEvent` is published when the download finishes
+- `load(keys)` checks the cache first. For each missing artifact, it returns a
+  `DOWNLOADING` result and a pending supplier. The supplier starts the download after the
+  caller caches the configuration. A `PluginStatusUpdateEvent` is published when the download finishes
   (with `ACTIVE` or `FAILED`).
 - Signature verification (`OnDemandPluginSignatureVerifier`) runs after every download.
 - Concurrent duplicate downloads for the same artifact are deduplicated (`UniqueTaskExecutor`).
@@ -91,8 +93,9 @@ cached by `ConnectedArtifactsLoadingStrategyFactory`.
   plugin list). Falls back to an empty list if the server is unreachable.
 - `listServerPlugins()` returns the raw `ServerPlugin` list (richer metadata, used by the loading
   policy for skip-list and companion decisions).
-- `load(key)` returns `SYNCED` if the artifact is on disk with a matching hash, or schedules an
-  async download (returns `DOWNLOADING`). Enterprise-variant resolution happens here.
+- `load(keys)` returns `SYNCED` for artifacts on disk with a matching hash. For each missing
+  artifact, it returns `DOWNLOADING` and a pending supplier that calls `ServerPluginDownloader`.
+  It does not start downloads. Enterprise-variant selection belongs to the loading strategy.
 - `isAnyDownloadInProgress()` delegates to `ServerPluginDownloader`.
 
 ---
@@ -103,11 +106,11 @@ Represents **how sources are combined** to produce the full set of resolved arti
 context (standalone or connected). The interface exposes:
 
 ```
-resolveArtifacts() → ArtifactsLoadingResult
+resolveArtifacts() → ResolutionPlan
     Resolves all artifacts from all managed sources, applying priority and
-    policy rules. The result holds the resolved artifact map (keyed by
-    artifact key) and the set of enabled languages.
-    May schedule background downloads.
+    policy rules. The plan contains an ArtifactsLoadingResult with the resolved
+    artifact map and the pending downloads collected from all sources.
+    Does not start downloads. PluginsService selects enabled languages.
 ```
 
 There are two implementations:
@@ -156,9 +159,10 @@ Resolution uses a winner-map (ascending priority, last writer wins per key), the
                │ No
                ▼
        ┌───────────────┐
-       │  Schedule     │
+       │  Plan         │
        │  download     │──────────► DOWNLOADING
        └───────────────┘
+               │ cache configuration, publish statuses, start batch
                │ (async)
         ┌──────┴──────┐
         ▼             ▼
@@ -188,19 +192,35 @@ what the server exposes. This updates the local storage with expected plugin pat
 
 When analysis is requested (or when the IDE requests plugin statuses), `PluginsService` calls
 `resolveArtifacts()` on the appropriate `ArtifactsLoadingStrategy`. The strategy runs its
-resolution passes and returns an `ArtifactsLoadingResult`.
+resolution passes and returns a `ResolutionPlan`. Its `ArtifactsLoadingResult` contains plain
+artifact data. Its pending downloads have not started.
 
-Artifacts in `DOWNLOADING` state have a non-null `downloadFuture`. The caller uses
-`ArtifactsLoadingResult.whenAllArtifactsDownloaded()` to run a callback (publishing a
-`PluginsSynchronizedEvent`) once all pending downloads complete.
+`PluginsService` creates a `DownloadBatch` from the pending suppliers and stores it on the
+`PluginsConfiguration`. In both modes, the service then:
+
+1. Caches the configuration in `PluginsRepository`.
+2. Publishes `PluginStatusesChangedEvent` with the initial statuses.
+3. Calls `DownloadBatch.start()` in a `finally` block, so downloads start even if status
+   publication throws.
+
+This order ensures that a completed download can invalidate the cached configuration. It also
+ensures that the initial `DOWNLOADING` statuses are published before completion can cause a reload.
 
 ### 4. Background Download
 
-When `load()` on a source cannot find the artifact locally, it enqueues a background download:
+`DownloadBatch.start()` calls each pending supplier at most once per batch:
 - `BinariesArtifactSource` uses `UniqueTaskExecutor` + HTTP fetch from
   `binaries.sonarsource.com`, followed by signature verification.
 - `ServerPluginSource` delegates to `ServerPluginDownloader`, which deduplicates concurrent
   downloads for the same connection.
+
+The batch dispatches one `PluginsSynchronizedEvent` on the plugin download executor after all
+downloads end, if at least one succeeds. The callback does not run on the calling thread. Empty
+batches and batches where every download fails emit no completion event.
+
+`DownloadBatch.completion()` exposes a separate promise from construction. It completes normally
+after all downloads end, including failures. `SynchronizationService` waits on this promise;
+a slow completion callback does not delay that wait. An empty batch has no completion promise.
 
 ### 5. Class Loading
 

@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -67,12 +68,26 @@ class StandaloneArtifactsLoadingStrategyTest {
     when(binariesSource.load(any())).thenAnswer(inv -> {
       @SuppressWarnings("unchecked") var keys = (Set<String>) inv.getArgument(0);
       return new LoadResult(keys.stream().collect(Collectors.toMap(k -> k,
-        k -> new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null, null))));
+        k -> new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null))), List.of());
     });
     when(languageSupportRepository.getEnabledLanguagesInStandaloneMode()).thenReturn(EnumSet.noneOf(SonarLanguage.class));
   }
 
   // --- Enterprise deduplication (different-key variants: CS, VBNET) ---
+
+  @Test
+  void resolution_collects_pending_downloads_without_starting_them() {
+    var pending = new PendingDownload("java", () -> {
+      throw new AssertionError("resolution must not start downloads");
+    });
+    when(binariesSource.listAvailableArtifacts(any())).thenReturn(List.of(new AvailableArtifact("java", null, false, Optional.empty())));
+    when(binariesSource.load(Set.of("java"))).thenReturn(new LoadResult(Map.of("java",
+      new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null)), List.of(pending)));
+    var plan = createStrategy().resolveArtifacts();
+
+    assertThat(plan.pendingDownloads()).containsExactlyInAnyOrder(pending);
+    assertThat(plan.result().resolvedArtifactsByKey()).containsKey("java");
+  }
 
   @Test
   void resolvePlugins_should_remove_base_key_when_enterprise_variant_is_present() {
@@ -83,7 +98,7 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPlugin.CSHARP_ENTERPRISE.getKey(), null, true, Optional.of(SonarPlugin.CSHARP_ENTERPRISE))));
     var strategy = createStrategy();
 
-    var result = strategy.resolveArtifacts();
+    var result = strategy.resolveArtifacts().result();
 
     assertThat(result.resolvedArtifactsByKey())
       .containsKey(SonarPlugin.CSHARP_ENTERPRISE.getKey())
@@ -100,7 +115,7 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_MONO.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_MONO))));
     var strategy = createStrategy();
 
-    var result = strategy.resolveArtifacts();
+    var result = strategy.resolveArtifacts().result();
 
     assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPluginDependency.OMNISHARP_MONO.getKey());
   }
@@ -115,7 +130,7 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET6.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET6))));
     var strategy = createStrategy();
 
-    var result = strategy.resolveArtifacts();
+    var result = strategy.resolveArtifacts().result();
 
     assertThat(result.resolvedArtifactsByKey()).containsKey(SonarPluginDependency.OMNISHARP_MONO.getKey());
   }
@@ -128,7 +143,7 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPlugin.SONARLINT_OMNISHARP.getKey(), null, false, Optional.of(SonarPlugin.SONARLINT_OMNISHARP))));
     var strategy = createStrategy();
 
-    var result = strategy.resolveArtifacts();
+    var result = strategy.resolveArtifacts().result();
 
     assertThat(result.resolvedArtifactsByKey()).doesNotContainKey(SonarPlugin.SONARLINT_OMNISHARP.getKey());
   }
@@ -143,7 +158,7 @@ class StandaloneArtifactsLoadingStrategyTest {
       new AvailableArtifact(SonarPluginDependency.OMNISHARP_NET6.getKey(), null, false, Optional.of(SonarPluginDependency.OMNISHARP_NET6))));
     var strategy = createStrategy();
 
-    var result = strategy.resolveArtifacts();
+    var result = strategy.resolveArtifacts().result();
 
     assertThat(result.resolvedArtifactsByKey()).containsKey(SonarPlugin.SONARLINT_OMNISHARP.getKey());
   }

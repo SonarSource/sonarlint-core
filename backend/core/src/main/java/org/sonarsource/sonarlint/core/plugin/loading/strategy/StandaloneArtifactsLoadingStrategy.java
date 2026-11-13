@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.embedded.EmbeddedPluginSource;
@@ -71,7 +72,7 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
    * <p>Priority (highest wins): embedded over binaries.</p>
    */
   @Override
-  public ArtifactsLoadingResult resolveArtifacts() {
+  public ResolutionPlan resolveArtifacts() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
 
     // Winner-map: ascending priority, last writer wins per key
@@ -94,8 +95,13 @@ public class StandaloneArtifactsLoadingStrategy extends BaseArtifactsLoadingStra
     var keysBySource = new HashMap<ArtifactSource, HashSet<String>>();
     candidates.forEach((key, candidate) -> keysBySource.computeIfAbsent(candidate.source(), s -> new HashSet<>()).add(key));
     var result = new LinkedHashMap<String, ResolvedArtifact>();
-    keysBySource.forEach((source, keys) -> result.putAll(source.load(keys).resolvedArtifactsByKey()));
+    var pendingDownloads = new ArrayList<PendingDownload>();
+    keysBySource.forEach((source, keys) -> {
+      var loaded = source.load(keys);
+      result.putAll(loaded.resolvedArtifactsByKey());
+      pendingDownloads.addAll(loaded.pendingDownloads());
+    });
 
-    return new ArtifactsLoadingResult(result);
+    return new ResolutionPlan(new ArtifactsLoadingResult(result), pendingDownloads);
   }
 }
