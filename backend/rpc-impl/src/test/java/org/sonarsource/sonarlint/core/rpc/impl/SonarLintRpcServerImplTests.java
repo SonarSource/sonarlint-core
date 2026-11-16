@@ -30,7 +30,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -90,7 +92,7 @@ class SonarLintRpcServerImplTests {
 
     assertThat(requestStarted.await(10, TimeUnit.SECONDS)).isTrue();
     var shutdown = backend.shutdown();
-    awaitRequestExecutorShutdown(backend);
+    await().atMost(5, SECONDS).until(() -> backend.getRequestsExecutor().isShutdown());
     releaseRequest.countDown();
 
     assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
@@ -109,16 +111,6 @@ class SonarLintRpcServerImplTests {
     var field = SonarLintRpcServerImpl.class.getDeclaredField("springApplicationContextInitializer");
     field.setAccessible(true);
     return field;
-  }
-
-  private static void awaitRequestExecutorShutdown(SonarLintRpcServerImpl backend) throws InterruptedException {
-    var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-    while (!backend.getRequestsExecutor().isShutdown()) {
-      if (System.nanoTime() > deadline) {
-        throw new AssertionError("Request executor was not shut down");
-      }
-      Thread.sleep(10);
-    }
   }
 
 }

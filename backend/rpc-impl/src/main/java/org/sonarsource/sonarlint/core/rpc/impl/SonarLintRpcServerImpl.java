@@ -312,8 +312,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.get().setTarget(logOutput);
-      // Let in-flight RPCs finish against the open context. Clearing the flag first makes them fail with
-      // "Backend is not initialized", which is reserved for calls made before initialize().
+      // Drain in-flight RPC messages before clearing the flag so the backend remains initialized
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);
       var wasInitialized = initialized.getAndSet(false);
