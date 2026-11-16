@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
@@ -161,26 +163,7 @@ public class SonarLintBackendFixture {
     private final List<StorageFixture.StorageBuilder> serverStorages = new ArrayList<>();
     private boolean isFocusOnNewCode;
 
-    @Nullable
-    private String euRegionUri;
-    @Nullable
-    private String euRegionApiUri;
-    @Nullable
-    private URI euRegionWebSocketUri;
-
-    @Nullable
-    private String usRegionUri;
-    @Nullable
-    private String usRegionApiUri;
-    @Nullable
-    private URI usRegionWebSocketUri;
-
-    @Nullable
-    private String auRegionUri;
-    @Nullable
-    private String auRegionApiUri;
-    @Nullable
-    private URI auRegionWebSocketUri;
+    private final Map<SonarCloudRegion, RegionUris> regionUrisByRegion = new EnumMap<>(SonarCloudRegion.class);
 
     private Duration responseTimeout;
     private Path keyStorePath;
@@ -256,48 +239,44 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudEuRegionUri(String euRegionUri) {
-      this.euRegionUri = euRegionUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionUri(String uri) {
+      return updateRegionUris(SonarCloudRegion.EU, uris -> uris.withUri(uri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudEuRegionApiUri(String euRegionApiUri) {
-      this.euRegionApiUri = euRegionApiUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionApiUri(String apiUri) {
+      return updateRegionUris(SonarCloudRegion.EU, uris -> uris.withApiUri(apiUri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudEuRegionWebSocketUri(URI euRegionWebSocketUri) {
-      this.euRegionWebSocketUri = euRegionWebSocketUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionWebSocketUri(URI webSocketUri) {
+      return updateRegionUris(SonarCloudRegion.EU, uris -> uris.withWebSocketUri(webSocketUri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudUsRegionUri(String usRegionUri) {
-      this.usRegionUri = usRegionUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionUri(String uri) {
+      return updateRegionUris(SonarCloudRegion.US, uris -> uris.withUri(uri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudUsRegionApiUri(String usRegionApiUri) {
-      this.usRegionApiUri = usRegionApiUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionApiUri(String apiUri) {
+      return updateRegionUris(SonarCloudRegion.US, uris -> uris.withApiUri(apiUri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(URI usRegionWebSocketUri) {
-      this.usRegionWebSocketUri = usRegionWebSocketUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(URI webSocketUri) {
+      return updateRegionUris(SonarCloudRegion.US, uris -> uris.withWebSocketUri(webSocketUri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudAuRegionUri(String auRegionUri) {
-      this.auRegionUri = auRegionUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionUri(String uri) {
+      return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withUri(uri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudAuRegionApiUri(String auRegionApiUri) {
-      this.auRegionApiUri = auRegionApiUri;
-      return this;
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionApiUri(String apiUri) {
+      return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withApiUri(apiUri));
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudAuRegionWebSocketUri(URI auRegionWebSocketUri) {
-      this.auRegionWebSocketUri = auRegionWebSocketUri;
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionWebSocketUri(URI webSocketUri) {
+      return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withWebSocketUri(webSocketUri));
+    }
+
+    private SonarLintBackendBuilder updateRegionUris(SonarCloudRegion region, UnaryOperator<RegionUris> update) {
+      regionUrisByRegion.put(region, update.apply(regionUrisByRegion.getOrDefault(region, RegionUris.EMPTY)));
       return this;
     }
 
@@ -567,14 +546,12 @@ public class SonarLintBackendFixture {
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
 
-        // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
-        var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
-          SonarCloudRegion.EU,
-          new SonarQubeCloudRegionDto(createUriFromString(euRegionUri), createUriFromString(euRegionApiUri), euRegionWebSocketUri),
-          SonarCloudRegion.US,
-          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), usRegionWebSocketUri),
-          SonarCloudRegion.AU,
-          new SonarQubeCloudRegionDto(createUriFromString(auRegionUri), createUriFromString(auRegionApiUri), auRegionWebSocketUri)));
+        var alternativeRegions = new EnumMap<SonarCloudRegion, SonarQubeCloudRegionDto>(SonarCloudRegion.class);
+        for (var region : SonarCloudRegion.values()) {
+          var uris = regionUrisByRegion.getOrDefault(region, RegionUris.EMPTY);
+          alternativeRegions.put(region, new SonarQubeCloudRegionDto(createUriFromString(uris.uri()), createUriFromString(uris.apiUri()), uris.webSocketUri()));
+        }
+        var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.copyOf(alternativeRegions));
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
         var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);
@@ -605,6 +582,22 @@ public class SonarLintBackendFixture {
         throw new IllegalArgumentException("No 'h2' folder in storage snapshot " + snapshotDirectory);
       }
       org.apache.commons.io.FileUtils.copyDirectory(snapshotH2.toFile(), storageRoot.resolve("h2").toFile());
+    }
+
+    private record RegionUris(@Nullable String uri, @Nullable String apiUri, @Nullable URI webSocketUri) {
+      private static final RegionUris EMPTY = new RegionUris(null, null, null);
+
+      private RegionUris withUri(String uri) {
+        return new RegionUris(uri, apiUri, webSocketUri);
+      }
+
+      private RegionUris withApiUri(String apiUri) {
+        return new RegionUris(uri, apiUri, webSocketUri);
+      }
+
+      private RegionUris withWebSocketUri(URI webSocketUri) {
+        return new RegionUris(uri, apiUri, webSocketUri);
+      }
     }
 
     private static URI createUriFromString(@Nullable String uri) {
