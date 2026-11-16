@@ -71,6 +71,7 @@ class WebSocketMediumTests {
 
   private WebSocketServer webSocketServerEU;
   private WebSocketServer webSocketServerUS;
+  private WebSocketServer webSocketServerAU;
 
   @BeforeEach
   void prepare() {
@@ -78,6 +79,8 @@ class WebSocketMediumTests {
     webSocketServerEU.start();
     webSocketServerUS = new WebSocketServer();
     webSocketServerUS.start();
+    webSocketServerAU = new WebSocketServer();
+    webSocketServerAU.start();
   }
 
   @AfterEach
@@ -87,6 +90,9 @@ class WebSocketMediumTests {
     }
     if (webSocketServerUS != null) {
       webSocketServerUS.stop();
+    }
+    if (webSocketServerAU != null) {
+      webSocketServerAU.stop();
     }
   }
 
@@ -202,6 +208,55 @@ class WebSocketMediumTests {
           .containsExactly(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").unsubscribeWithProjectKey(
               "projectKey").build()));
         assertThat(webSocketServerUS.getConnections())
+          .hasSize(1)
+          .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+          .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()));
+      });
+    }
+
+    @SonarLintTest
+    void should_subscribe_to_the_au_region_when_bound_to_an_au_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient().withToken("connectionIdAU", "token").build();
+      var backend = newBackendWithWebSockets(harness)
+        .withSonarCloudConnection("connectionIdAU", "orgKey", false, null, SonarCloudRegion.AU)
+        .withUnboundConfigScope("configScope")
+        .start(client);
+
+      bind(backend, "configScope", "connectionIdAU", "projectKey");
+
+      await().untilAsserted(() -> assertThat(webSocketServerAU.getConnections())
+        .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+        .containsExactly(tuple("Bearer token", true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+      assertThat(webSocketServerEU.getConnections()).isEmpty();
+      assertThat(webSocketServerUS.getConnections()).isEmpty();
+    }
+
+    @SonarLintTest
+    void should_unsubscribe_from_old_region_and_subscribe_to_au_when_connection_and_region_changed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
+        .withToken("connectionId", "token")
+        .withToken("connectionIdAU", "token")
+        .build();
+
+      // backend with two sonarqube cloud connections - one EU and one AU; bound initially to EU
+      var backend = newBackendWithWebSockets(harness)
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withSonarCloudConnection("connectionIdAU", "orgKey", false, null, SonarCloudRegion.AU)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .start(client);
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
+
+      // Change binding to AU connection
+      bind(backend, "configScope", "connectionIdAU", "projectKey");
+
+      // assert unsubscribed and closed connection to EU region; subscribed to AU region.
+      await().untilAsserted(() -> {
+        assertThat(webSocketServerEU.getConnections())
+          .hasSize(1)
+          .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+          .containsExactly(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").unsubscribeWithProjectKey(
+              "projectKey").build()));
+        assertThat(webSocketServerAU.getConnections())
           .hasSize(1)
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
           .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()));
@@ -1522,7 +1577,10 @@ class WebSocketMediumTests {
       .withSonarQubeCloudUsRegionUri(server.baseUrl())
       .withSonarQubeCloudUsRegionApiUri(server.baseUrl())
       .withSonarQubeCloudEuRegionWebSocketUri(webSocketServerEU.getUri())
-      .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUri());
+      .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUri())
+      .withSonarQubeCloudAuRegionUri(server.baseUrl())
+      .withSonarQubeCloudAuRegionApiUri(server.baseUrl())
+      .withSonarQubeCloudAuRegionWebSocketUri(webSocketServerAU.getUri());
   }
 
   public static class WebSocketPayloadBuilder {

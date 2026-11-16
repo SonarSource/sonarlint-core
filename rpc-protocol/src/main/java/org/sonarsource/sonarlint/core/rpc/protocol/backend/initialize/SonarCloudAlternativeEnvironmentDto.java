@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 
-/** This contains the alternative environment information for SonarQube Cloud with both the EU and US region */
+/** This contains the alternative environment information for SonarQube Cloud with the EU, US and AU regions */
 public class SonarCloudAlternativeEnvironmentDto {
   private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
 
