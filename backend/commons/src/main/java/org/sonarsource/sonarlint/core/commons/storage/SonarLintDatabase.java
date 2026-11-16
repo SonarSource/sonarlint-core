@@ -188,7 +188,7 @@ public final class SonarLintDatabase {
     } catch (ClosedByInterruptException e) {
       throw new InterruptedException("H2 database startup interrupted");
     } catch (IOException | OverlappingFileLockException e) {
-      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
+      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.toString());
       return null;
     }
   }
