@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -155,10 +156,17 @@ class SonarLintDatabaseExceptionTests {
     sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
   }
 
-  @Test
-  void should_retry_transient_connection_contention_before_migrating(@TempDir Path storageRoot) throws SQLException {
+  @ParameterizedTest
+  @CsvSource(delimiter = '|', value = {
+    "90020 | Database may be already in use",
+    // Lock file races between processes, the reason is not translated
+    "8000  | Error opening database: \"Lock file recently modified\"",
+    "8000  | Error abriendo la base de datos: \"Another process was faster\"",
+    "8000  | Error opening database: \"Concurrent update\""
+  })
+  void should_retry_transient_connection_contention_before_migrating(int errorCode, String message, @TempDir Path storageRoot) throws SQLException {
     var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
-    var contention = new SQLException("Database is already in use", "90020", 90020);
+    var contention = new SQLException(message, String.valueOf(errorCode), errorCode);
     doThrow(contention).doThrow(contention).doCallRealMethod().when(pool).getConnection();
     try (var pools = mockStatic(JdbcConnectionPool.class)) {
       pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
