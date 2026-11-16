@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -186,7 +187,7 @@ public final class SonarLintDatabase {
       return turn;
     } catch (ClosedByInterruptException e) {
       throw new InterruptedException("H2 database startup interrupted");
-    } catch (IOException e) {
+    } catch (IOException | OverlappingFileLockException e) {
       LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
       return null;
     }
