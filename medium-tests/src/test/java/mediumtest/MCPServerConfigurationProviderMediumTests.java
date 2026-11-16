@@ -142,6 +142,51 @@ class MCPServerConfigurationProviderMediumTests {
   }
 
   @SonarLintTest
+  void should_return_sonarcloud_config_with_au_address_for_sonarcloud_au_connection(SonarLintTestHarness harness) throws Exception {
+    var connectionId = "scAuConnection";
+    var organizationKey = "myOrg";
+    var token = "token123";
+
+    var expectedSettings = String.format("""
+      {
+        "command": "docker",
+        "args": [
+          "run",
+          "--init",
+          "--pull=always",
+          "-i",
+          "--rm",
+          "-e",
+          "SONARQUBE_TOKEN",
+          "-e",
+          "SONARQUBE_ORG",
+          "-e",
+          "SONARQUBE_URL",
+          "-e",
+          "SONARQUBE_IDE_PORT",
+          "sonarsource/sonarqube-mcp"
+        ],
+        "env": {
+          "SONARQUBE_ORG": "%s",
+          "SONARQUBE_URL": "https://sonarqube.au",
+          "SONARQUBE_TOKEN": "%s"
+        }
+      }
+      """, organizationKey, token);
+
+    var backend = harness.newBackend()
+      .withSonarCloudConnection(connectionId, organizationKey, "AU")
+      .withTelemetryEnabled()
+      .start();
+
+    var result = getSettings(backend, connectionId, token);
+
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    assertThat(result.get().getJsonConfiguration()).isEqualTo(expectedSettings);
+    assertThat(backend.telemetryFileContent().getMcpServerConfigurationRequestedCount()).isEqualTo(1);
+  }
+
+  @SonarLintTest
   void should_return_sonarqube_config_for_sonarqube_connection(SonarLintTestHarness harness) throws Exception {
     var connectionId = "scConnection";
     var organizationKey = "myOrg";

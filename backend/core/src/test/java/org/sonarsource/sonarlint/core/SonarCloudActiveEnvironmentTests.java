@@ -42,6 +42,8 @@ class SonarCloudActiveEnvironmentTests {
       .isEqualTo(SonarCloudRegion.EU.getProductionUri());
     assertThat(SonarCloudActiveEnvironment.prod().getUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getProductionUri());
+    assertThat(SonarCloudActiveEnvironment.prod().getUri(SonarCloudRegion.AU))
+      .isEqualTo(URI.create("https://sonarqube.au"));
 
     assertThat(new SonarCloudActiveEnvironment(
       Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithBaseUri))
@@ -68,6 +70,8 @@ class SonarCloudActiveEnvironmentTests {
       .isEqualTo(SonarCloudRegion.EU.getApiProductionUri());
     assertThat(SonarCloudActiveEnvironment.prod().getApiUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getApiProductionUri());
+    assertThat(SonarCloudActiveEnvironment.prod().getApiUri(SonarCloudRegion.AU))
+      .isEqualTo(URI.create("https://api.sonarqube.au"));
 
     assertThat(new SonarCloudActiveEnvironment(
       Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithApiUri))
@@ -94,6 +98,8 @@ class SonarCloudActiveEnvironmentTests {
       .isEqualTo(SonarCloudRegion.EU.getWebSocketUri());
     assertThat(SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getWebSocketUri());
+    assertThat(SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri(SonarCloudRegion.AU))
+      .isEqualTo(URI.create("wss://events-api.sonarqube.au/"));
 
     assertThat(new SonarCloudActiveEnvironment(
       Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithWebSocketUri)).
@@ -122,6 +128,8 @@ class SonarCloudActiveEnvironmentTests {
       .isSonarQubeCloud(SonarCloudRegion.EU.getProductionUri().toString())).isTrue();
     assertThat(SonarCloudActiveEnvironment.prod()
       .isSonarQubeCloud(SonarCloudRegion.US.getProductionUri().toString())).isTrue();
+    assertThat(SonarCloudActiveEnvironment.prod().isSonarQubeCloud("https://sonarqube.au")).isTrue();
+    assertThat(SonarCloudActiveEnvironment.prod().isSonarQubeCloud("https://sonarqube.au/")).isTrue();
 
     assertThat(new SonarCloudActiveEnvironment(
       Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithBaseUri))
@@ -146,6 +154,8 @@ class SonarCloudActiveEnvironmentTests {
       .getRegionOrThrow(SonarCloudRegion.EU.getProductionUri().toString())).isEqualTo(SonarCloudRegion.EU);
     assertThat(SonarCloudActiveEnvironment.prod()
       .getRegionOrThrow(SonarCloudRegion.US.getProductionUri().toString())).isEqualTo(SonarCloudRegion.US);
+    assertThat(SonarCloudActiveEnvironment.prod()
+      .getRegionOrThrow("https://sonarqube.au")).isEqualTo(SonarCloudRegion.AU);
 
     assertThat(new SonarCloudActiveEnvironment(
       Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithBaseUri))

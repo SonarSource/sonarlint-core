@@ -404,6 +404,21 @@ class OpenIssueInIdeMediumTests {
     assertInvalidRequestMessage(client);
   }
 
+  @SonarLintTest
+  void it_should_fail_request_when_server_points_to_sonarcloud_au_from_sqs(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+
+    var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
+      SonarCloudRegion.AU.getProductionUri().toString(),
+      "http://fake.sonar"));
+
+    assertThat(statusCode).isEqualTo(400);
+    assertInvalidRequestMessage(client);
+  }
+
   private static void assertInvalidRequestMessage(SonarLintBackendFixture.FakeSonarLintRpcClient client) {
     verify(client, timeout(10000)).showMessage(MessageType.ERROR,
       "Invalid request to SonarQube backend. The 'server' parameter should not be SonarQube Cloud URL, use it only to specify URL of a SonarQube Server.");
@@ -419,6 +434,24 @@ class OpenIssueInIdeMediumTests {
     var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
       SonarCloudRegion.EU.getProductionUri().toString(),
       SonarCloudRegion.EU.getProductionUri().toString(),
+      "&issue=" + ISSUE_KEY,
+      "&project=" + PROJECT_KEY,
+      "&branch=" + BRANCH_NAME,
+      "&organizationKey=orgKey"));
+
+    assertThat(statusCode).isEqualTo(200);
+  }
+
+  @SonarLintTest
+  void it_should_not_fail_request_when_server_points_to_sonarcloud_au_from_sonarcloud_au(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withBackendCapability(EMBEDDED_SERVER)
+      .start(client);
+
+    var statusCode = sendRequest(openIssueRequestWithOrigin(backend,
+      SonarCloudRegion.AU.getProductionUri().toString(),
+      SonarCloudRegion.AU.getProductionUri().toString(),
       "&issue=" + ISSUE_KEY,
       "&project=" + PROJECT_KEY,
       "&branch=" + BRANCH_NAME,
