@@ -21,12 +21,18 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class SonarLintRpcServerImplTests {
 
@@ -53,6 +59,66 @@ class SonarLintRpcServerImplTests {
 
     assertThat(future)
       .succeedsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  void it_should_let_in_flight_requests_finish_before_clearing_initialized() throws Exception {
+    var backend = new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+    var initialized = initializedFlag(backend);
+    initialized.set(true);
+    var contextInitializer = mock(SpringApplicationContextInitializer.class);
+    contextInitializerField().set(backend, contextInitializer);
+
+    var requestStarted = new CountDownLatch(1);
+    var releaseRequest = new CountDownLatch(1);
+    var sawInitializedContext = new AtomicBoolean(false);
+    backend.getRequestsExecutor().execute(() -> {
+      requestStarted.countDown();
+      try {
+        assertThat(releaseRequest.await(10, TimeUnit.SECONDS)).isTrue();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(e);
+      }
+      try {
+        backend.getInitializedApplicationContext();
+        sawInitializedContext.set(true);
+      } catch (IllegalStateException e) {
+        sawInitializedContext.set(false);
+      }
+    });
+
+    assertThat(requestStarted.await(10, TimeUnit.SECONDS)).isTrue();
+    var shutdown = backend.shutdown();
+    awaitRequestExecutorShutdown(backend);
+    releaseRequest.countDown();
+
+    assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(sawInitializedContext).isTrue();
+    assertThat(initialized).isFalse();
+    verify(contextInitializer).close();
+  }
+
+  private static AtomicBoolean initializedFlag(SonarLintRpcServerImpl backend) throws Exception {
+    var field = SonarLintRpcServerImpl.class.getDeclaredField("initialized");
+    field.setAccessible(true);
+    return (AtomicBoolean) field.get(backend);
+  }
+
+  private static Field contextInitializerField() throws Exception {
+    var field = SonarLintRpcServerImpl.class.getDeclaredField("springApplicationContextInitializer");
+    field.setAccessible(true);
+    return field;
+  }
+
+  private static void awaitRequestExecutorShutdown(SonarLintRpcServerImpl backend) throws InterruptedException {
+    var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (!backend.getRequestsExecutor().isShutdown()) {
+      if (System.nanoTime() > deadline) {
+        throw new AssertionError("Request executor was not shut down");
+      }
+      Thread.sleep(10);
+    }
   }
 
 }
