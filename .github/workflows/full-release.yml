@@ -95,13 +95,15 @@ jobs:
           GENERATED_DIR: ${{ runner.temp }}/storage-snapshot/${{ needs.release.outputs.released-version }}
         run: .github/scripts/replace-storage-snapshot.sh
       # Resolve dependencies through Artifactory instead of hitting Maven Central directly (avoids HTTP 429)
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@e2032bdce92b0675c839fd6a697c8bb0078985d5 # 2.5.2
         env:
+          # A provided value makes get-build-number skip its increment of the shared build_number property.
+          # The Maven version update is already skipped, so this value is unused.
+          BUILD_NUMBER: "0"
           CURRENT_VERSION: skip
           PROJECT_VERSION: skip
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
       - name: bump-version
         env:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
