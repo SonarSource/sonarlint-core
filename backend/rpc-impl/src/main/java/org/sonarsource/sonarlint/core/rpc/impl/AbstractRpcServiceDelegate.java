@@ -64,9 +64,6 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected <R> CompletableFuture<R> requestAsync(Function<SonarLintCancelMonitor, R> code, @Nullable String configScopeId) {
-    if (executorsAreShuttingDown()) {
-      return shuttingDown();
-    }
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(requestsExecutor);
     try {
@@ -87,9 +84,6 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected <R> CompletableFuture<R> requestFutureAsync(Function<SonarLintCancelMonitor, CompletableFuture<R>> code, @Nullable String configScopeId) {
-    if (executorsAreShuttingDown()) {
-      return shuttingDown();
-    }
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(requestsExecutor);
     try {
@@ -110,9 +104,6 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code, @Nullable String configScopeId) {
-    if (executorsAreShuttingDown()) {
-      return shuttingDown();
-    }
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(requestsExecutor);
     try {
@@ -158,10 +149,6 @@ abstract class AbstractRpcServiceDelegate {
     } catch (RejectedExecutionException e) {
       LOG.debug("Dropping a notification during backend shutdown", e);
     }
-  }
-
-  private boolean executorsAreShuttingDown() {
-    return isShutdown(requestAndNotificationsSequentialExecutor) || isShutdown(requestsExecutor);
   }
 
   private static boolean isShutdown(Executor executor) {
