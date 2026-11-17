@@ -96,6 +96,9 @@ class SonarLintRpcServerImplTests {
     assertThat(requestStarted.await(10, TimeUnit.SECONDS)).isTrue();
     var shutdown = backend.shutdown();
     await().atMost(5, SECONDS).until(() -> backend.getRequestsExecutor().isShutdown());
+    // Client responses are still delivered while the request pool drains.
+    assertThat(backend.isInboundDispatcherShutdown()).isFalse();
+    assertThat(backend.isReaderShutdown()).isFalse();
     releaseRequest.countDown();
 
     assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
