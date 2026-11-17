@@ -93,12 +93,28 @@ class SonarLintRpcServerImplTests {
     assertThat(requestStarted.await(10, TimeUnit.SECONDS)).isTrue();
     var shutdown = backend.shutdown();
     await().atMost(5, SECONDS).until(() -> backend.getRequestsExecutor().isShutdown());
+    // Client responses are still delivered while the request pool drains.
+    assertThat(backend.isInboundDispatcherShutdown()).isFalse();
+    assertThat(backend.isReaderShutdown()).isFalse();
     releaseRequest.countDown();
 
     assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
     assertThat(sawInitializedContext).isTrue();
     assertThat(initialized).isFalse();
     verify(contextInitializer).close();
+  }
+
+  @Test
+  void shutdown_stops_inbound_dispatch_before_the_outbound_writer() {
+    var backend = new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+
+    var shutdown = backend.shutdown();
+
+    await().atMost(5, SECONDS).until(backend::isInboundDispatcherShutdown);
+    assertThat(backend.isReaderShutdown()).isTrue();
+    assertThat(backend.isOutboundWriterShutdown()).isFalse();
+    assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
+    await().atMost(5, SECONDS).until(backend::isOutboundWriterShutdown);
   }
 
   private static AtomicBoolean initializedFlag(SonarLintRpcServerImpl backend) throws Exception {
