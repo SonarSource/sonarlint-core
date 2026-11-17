@@ -93,13 +93,13 @@ public final class SonarLintDatabase {
       throw new IllegalStateException("Failed to initialize H2Database", e);
     }
     this.dataSource = ds;
-    var reconnecting = new ReconnectingDataSource(ds, baseDir);
+    var reconnectingDataSource = new ReconnectingDataSource(ds, baseDir);
 
     try {
       // Retry here because Flyway's connection retries discard interruption.
       connectInTurn(ds, baseDir);
       var flyway = Flyway.configure()
-        .dataSource(reconnecting)
+        .dataSource(reconnectingDataSource)
         .locations("classpath:db/migration")
         .defaultSchema("PUBLIC")
         .schemas("PUBLIC")
@@ -113,7 +113,7 @@ public final class SonarLintDatabase {
       System.setProperty("org.jooq.no-logo", "true");
 
       var jooqConfig = new DefaultConfiguration()
-        .set(reconnecting)
+        .set(reconnectingDataSource)
         .set(SQLDialect.H2)
         .set(new Settings().withExecuteLogging(false))
         .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
