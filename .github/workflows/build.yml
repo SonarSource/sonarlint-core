@@ -175,7 +175,7 @@ jobs:
 
   qa:
     needs: [ build-number, build ]
-    runs-on: sonar-m
+    runs-on: sonar-l
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
