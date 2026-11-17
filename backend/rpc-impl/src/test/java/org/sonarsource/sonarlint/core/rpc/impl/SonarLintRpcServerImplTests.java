@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,8 @@ import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -99,6 +102,30 @@ class SonarLintRpcServerImplTests {
     assertThat(sawInitializedContext).isTrue();
     assertThat(initialized).isFalse();
     verify(contextInitializer).close();
+  }
+
+  @Test
+  void shutdown_stops_inbound_dispatch_before_the_outbound_writer() {
+    var backend = new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+
+    var shutdown = backend.shutdown();
+
+    await().atMost(5, SECONDS).until(backend::isInboundDispatcherShutdown);
+    assertThat(backend.isReaderShutdown()).isTrue();
+    assertThat(backend.isOutboundWriterShutdown()).isFalse();
+    assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
+    await().atMost(5, SECONDS).until(backend::isOutboundWriterShutdown);
+  }
+
+  @Test
+  void requests_and_notifications_after_shutdown_are_not_rejected() {
+    var backend = new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+    assertThat(backend.shutdown()).succeedsWithin(Duration.ofSeconds(5));
+
+    assertThatThrownBy(() -> backend.getTelemetryService().getStatus().join())
+      .isInstanceOf(CancellationException.class)
+      .hasMessage("SonarLint backend is shutting down");
+    assertThatCode(() -> backend.getNewCodeService().didToggleFocus()).doesNotThrowAnyException();
   }
 
   private static AtomicBoolean initializedFlag(SonarLintRpcServerImpl backend) throws Exception {
