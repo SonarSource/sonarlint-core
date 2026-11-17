@@ -55,6 +55,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_SELF;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -318,6 +319,100 @@ class SonarLintDatabaseExceptionTests {
       verify(connection).close();
       verify(pool).dispose();
       flyway.verifyNoInteractions();
+    }
+  }
+
+  @ParameterizedTest
+  @CsvSource(delimiter = '|', value = {
+    // The pooled connection was to a process that has exited
+    "90067 | Connection is broken: \"session closed\"",
+    "90121 | Database is already closed",
+    // Replacing that process races with other processes
+    "8000  | Error opening database: \"Lock file recently modified\""
+  })
+  void should_get_another_connection_when_the_process_serving_the_database_has_exited(int errorCode, String message, @TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      db = new SonarLintDatabase(storageRoot);
+      doThrow(new SQLException(message, "08006", errorCode)).doCallRealMethod().when(pool).getConnection();
+
+      assertThat(db.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).isEmpty();
+
+      sentryMock.verify(() -> Sentry.captureException(any(Throwable.class), any(ScopeCallback.class)), never());
+    }
+  }
+
+  @Test
+  void should_not_retry_a_lost_connection_at_startup(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var lost = new SQLException("Connection is broken", "08006", ErrorCode.CONNECTION_BROKEN_1);
+    when(pool.getConnection()).thenThrow(lost);
+    when(pool.getMaxConnections()).thenReturn(10);
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(lost);
+
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      flyway.verifyNoInteractions();
+    }
+  }
+
+  @Test
+  void should_fail_after_every_pooled_connection_was_lost(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      db = new SonarLintDatabase(storageRoot);
+      var lost = new SQLException("Connection is broken", "08006", ErrorCode.CONNECTION_BROKEN_1);
+      var lostAgain = new SQLException("Connection is broken", "08006", ErrorCode.CONNECTION_BROKEN_1);
+      doThrow(lost).doThrow(lostAgain).when(pool).getConnection();
+      clearInvocations(pool);
+
+      assertThatThrownBy(() -> db.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).hasCause(lostAgain);
+
+      assertThat(lostAgain.getSuppressed()).containsExactly(lost);
+      // The first attempt, then one per connection that the pool can discard, then the last one
+      verify(pool, times(pool.getMaxConnections() + 2)).getConnection();
+    }
+  }
+
+  @Test
+  void should_not_reconnect_after_other_connection_failures(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      db = new SonarLintDatabase(storageRoot);
+      var failure = new SQLException("Authentication failed", "28000", 28000);
+      doThrow(failure).when(pool).getConnection();
+      clearInvocations(pool);
+
+      assertThatThrownBy(() -> db.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).hasCause(failure);
+
+      verify(pool).getConnection();
+    }
+  }
+
+  @Test
+  void should_stop_reconnecting_and_restore_interrupt_when_interrupted(@TempDir Path storageRoot) throws SQLException {
+    var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
+    try (var pools = mockStatic(JdbcConnectionPool.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+      db = new SonarLintDatabase(storageRoot);
+      var lost = new SQLException("Connection is broken", "08006", ErrorCode.CONNECTION_BROKEN_1);
+      doThrow(lost).doCallRealMethod().when(pool).getConnection();
+      clearInvocations(pool);
+      Thread.currentThread().interrupt();
+
+      assertThatThrownBy(() -> db.dsl().fetch("SELECT connection_id FROM AI_CODEFIX_SETTINGS")).hasCause(lost);
+
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      assertThat(lost.getSuppressed()).singleElement().isInstanceOf(InterruptedException.class);
+      verify(pool).getConnection();
+    } finally {
+      Thread.interrupted();
     }
   }
 
