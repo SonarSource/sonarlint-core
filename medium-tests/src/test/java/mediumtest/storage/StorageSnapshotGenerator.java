@@ -39,17 +39,22 @@ import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.issues.KnownFindingsRepository;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 
+import static mediumtest.storage.StorageSnapshot.AI_CODEFIX_RULE;
+import static mediumtest.storage.StorageSnapshot.BRANCH_NAME;
 import static mediumtest.storage.StorageSnapshot.CONFIG_SCOPE_ID;
 import static mediumtest.storage.StorageSnapshot.CONNECTION_ID;
+import static mediumtest.storage.StorageSnapshot.CREATION_DATE;
+import static mediumtest.storage.StorageSnapshot.DEPENDENCY_RISK_KEY;
 import static mediumtest.storage.StorageSnapshot.KNOWN_FINDINGS_FILE;
 import static mediumtest.storage.StorageSnapshot.PROJECT_KEY;
+import static mediumtest.storage.StorageSnapshot.SERVER_FINDINGS_FILE;
+import static mediumtest.storage.StorageSnapshot.TEXT_RANGE;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerDependencyRiskFixtures.aServerDependencyRisk;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
@@ -61,12 +66,8 @@ import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHo
  */
 public class StorageSnapshotGenerator {
 
-  // Fixed values keep the content of successive snapshots comparable
-  private static final Instant CREATION_DATE = Instant.parse("2026-01-01T00:00:00Z");
   // Resolved local-only issues are purged one week after their resolution at every startup
   private static final Instant FAR_FUTURE = Instant.parse("2100-01-01T00:00:00Z");
-  private static final TextRangeWithHash TEXT_RANGE = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
-  private static final String FILE_PATH = "src/main/java/Foo.java";
 
   private StorageSnapshotGenerator() {
     // only used through main()
@@ -101,13 +102,13 @@ public class StorageSnapshotGenerator {
       .withStorageRoot(storageRoot)
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withServerVersion("2025.1")
-        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix.withSupportedRules(Set.of("java:S1481")).organizationEligible(true).enabledForProjects(PROJECT_KEY))
-        .withProject(PROJECT_KEY, project -> project.withMainBranch("main", branch -> branch
-          .withIssue(aServerIssue("issueKey1").withFilePath(FILE_PATH).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE).withType(RuleType.BUG))
-          .withIssue(aServerIssue("issueKey2").withFilePath(FILE_PATH).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE).withType(RuleType.CODE_SMELL))
-          .withHotspot(aServerHotspot("hotspotKey").withFilePath(FILE_PATH).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix.withSupportedRules(Set.of(AI_CODEFIX_RULE)).organizationEligible(true).enabledForProjects(PROJECT_KEY))
+        .withProject(PROJECT_KEY, project -> project.withMainBranch(BRANCH_NAME, branch -> branch
+          .withIssue(aServerIssue("issueKey1").withFilePath(SERVER_FINDINGS_FILE).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE).withType(RuleType.BUG))
+          .withIssue(aServerIssue("issueKey2").withFilePath(SERVER_FINDINGS_FILE).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE).withType(RuleType.CODE_SMELL))
+          .withHotspot(aServerHotspot("hotspotKey").withFilePath(SERVER_FINDINGS_FILE).withTextRange(TEXT_RANGE).withIntroductionDate(CREATION_DATE))
           .withDependencyRisk(aServerDependencyRisk()
-            .withKey(UUID.fromString("550e8400-e29b-41d4-a716-446655440000"))
+            .withKey(DEPENDENCY_RISK_KEY)
             .withPackageName("com.example.vulnerable")
             .withPackageVersion("2.1.0")
             .withVulnerabilityId("CVE-1234")
@@ -115,7 +116,7 @@ public class StorageSnapshotGenerator {
             .withType(ServerDependencyRisk.Type.VULNERABILITY)
             .withSeverity(ServerDependencyRisk.Severity.HIGH)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY, storage -> storage
-        .withLocalOnlyIssue(new LocalOnlyIssue(UUID.fromString("7c9e6679-7425-40de-944b-e07fc1f90ae7"), Path.of(FILE_PATH), TEXT_RANGE, new LineWithHash(1, "lineHash"),
+        .withLocalOnlyIssue(new LocalOnlyIssue(UUID.fromString("7c9e6679-7425-40de-944b-e07fc1f90ae7"), Path.of(SERVER_FINDINGS_FILE), TEXT_RANGE, new LineWithHash(1, "lineHash"),
           "java:S1481", "Remove this unused variable", new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, FAR_FUTURE, "comment"))))
       .start();
   }
