@@ -209,7 +209,7 @@ jobs:
             category: "-DexcludedGroups=SonarCloud,CliCompatibility,CommunityBuild"
           - name: SQLts251
             sq_version: "LATEST_RELEASE[2025.1]"
-            category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=SonarQubeDeveloperEditionTests,SonarQubeEnterpriseEditionTests"
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=SonarQubeDeveloperEditionTests,SonarQubeDeveloperEditionAnalysisTests,SonarQubeEnterpriseEditionTests"
           - name: SQcbLatest
             sq_version: LATEST_RELEASE
             category: "-Dgroups=CommunityBuild"
