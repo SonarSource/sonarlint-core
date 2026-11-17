@@ -315,9 +315,9 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.get().setTarget(logOutput);
-      // Stop accepting messages before the request pools reject new tasks. Queued requests can still hand their work
-      // to the request pool, so drain the sequential executor first.
-      stopInboundTransport();
+      // Keep the inbound dispatcher alive so client responses can still complete in-flight calls. A request that
+      // arrives after these pools stop accepting work is cancelled by the RPC delegate. Drain the sequential
+      // executor first so a queued request can still submit its work.
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
       var wasInitialized = initialized.getAndSet(false);
@@ -328,6 +328,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
           SonarLintLogger.get().error("Error while closing Spring context", e);
         }
       }
+      stopInboundTransport();
       // The shutdown response is queued on the outbound writer. Leave that thread alive until the response is written.
       scheduleOutboundShutdown();
       return null;
