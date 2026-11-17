@@ -172,8 +172,12 @@
         <configuration>
           <forkCount>${its.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
-          <!-- Start the longest classes (SonarQube Developer and Enterprise editions) in the first wave of forks. -->
-          <runOrder>alphabetical</runOrder>
+          <!-- Starts SonarQubeEnterpriseEditionTests in the first wave and SonarQubeDeveloperEditionTests right after the sub-second StandaloneTests. -->
+          <runOrder>reversealphabetical</runOrder>
+          <systemPropertyVariables>
+            <!-- Orchestrator numbers its install directories per JVM and deletes them before unzipping, so forks need separate workspaces. -->
+            <orchestrator.workspaceDir>${project.build.directory}/orchestrator-fork-${surefire.forkNumber}</orchestrator.workspaceDir>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>
