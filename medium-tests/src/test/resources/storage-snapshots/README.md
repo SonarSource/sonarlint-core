@@ -8,6 +8,7 @@ It catches:
   crash while a transaction was open (like H2 2.5.252, which saw an empty database in files left that way by 2.4.240)
 - a migration that was edited after it shipped (Flyway rejects the changed checksum at startup)
 - data lost during migration
+- stored values that the current code can no longer read, like a renamed enum constant or a changed JSON format
 
 There is only ever one snapshot folder, named after the release tag that wrote it:
 

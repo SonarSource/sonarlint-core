@@ -25,13 +25,16 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.internal.license.VersionPrinter;
 import org.jooq.DSLContext;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 /**
  * A copy of the local storage written by a released version of SonarLint Core, see storage-snapshots/README.md.
@@ -46,6 +49,14 @@ final class StorageSnapshot {
   static final String CONFIG_SCOPE_ID = "configScope";
   // Known findings are stored with the OS-specific separator, and looked up the same way. A path without folders reads the same on every OS.
   static final String KNOWN_FINDINGS_FILE = "Foo.java";
+  // Server findings are stored with '/' and read back with Path.of(), so they are only looked up by key in the upgrade test
+  static final String SERVER_FINDINGS_FILE = "src/main/java/Foo.java";
+  static final String BRANCH_NAME = "main";
+  static final UUID DEPENDENCY_RISK_KEY = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+  static final String AI_CODEFIX_RULE = "java:S1481";
+  // Fixed values keep the content of successive snapshots comparable
+  static final Instant CREATION_DATE = Instant.parse("2026-01-01T00:00:00Z");
+  static final TextRangeWithHash TEXT_RANGE = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
 
   static final String METADATA_FILE = "snapshot.properties";
   /**
