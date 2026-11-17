@@ -104,6 +104,7 @@ jobs:
           PROJECT_VERSION: skip
         with:
           artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.dev.sonar.build
       - name: bump-version
         env:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
