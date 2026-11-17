@@ -95,15 +95,21 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
   public SonarLintRpcServerImpl(InputStream in, OutputStream out) {
+    // lsp4j asks for two consumers: the outgoing stream first, then the incoming endpoint. Each one keeps a single
+    // thread so piped streams are only written from one thread, and shutdown can stop dispatch without stopping writes.
+    this(in, out,
+      Executors.newSingleThreadExecutor(r -> new Thread(r, "Server message writer")),
+      Executors.newSingleThreadExecutor(r -> new Thread(r, "Server inbound dispatcher")));
+  }
+
+  SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService outboundMessageExecutor, ExecutorService inboundMessageExecutor) {
     this.messageReaderExecutor = Executors.newCachedThreadPool(r -> {
       var t = new Thread(r);
       t.setName("Server message reader");
       return t;
     });
-    // lsp4j asks for two consumers: the outgoing stream first, then the incoming endpoint. Each one keeps a single
-    // thread so piped streams are only written from one thread, and shutdown can stop dispatch without stopping writes.
-    this.outboundMessageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "Server message writer"));
-    this.inboundMessageExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "Server inbound dispatcher"));
+    this.outboundMessageExecutor = outboundMessageExecutor;
+    this.inboundMessageExecutor = inboundMessageExecutor;
     var nextMessageExecutorIsOutbound = new AtomicBoolean(true);
     this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
     this.requestsExecutor = new ExecutorServiceShutdownWatchable<>(Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor")));
@@ -359,14 +365,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   public boolean isReaderShutdown() {
     return messageReaderExecutor.isShutdown();
-  }
-
-  boolean isInboundDispatcherShutdown() {
-    return inboundMessageExecutor.isShutdown();
-  }
-
-  boolean isOutboundWriterShutdown() {
-    return outboundMessageExecutor.isShutdown();
   }
 
   public int getEmbeddedServerPort() {
