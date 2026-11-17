@@ -74,6 +74,7 @@ jobs:
     # A failed snapshot generation must not prevent the version bump
     if: ${{ !cancelled() && needs.release.result == 'success' }}
     permissions:
+      id-token: write # for SonarSource/ci-github-actions/config-maven
       contents: write # write for peter-evans/create-pull-request, read for actions/checkout
       pull-requests: write # write for peter-evans/create-pull-request
     steps:
@@ -93,11 +94,24 @@ jobs:
           RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
           GENERATED_DIR: ${{ runner.temp }}/storage-snapshot/${{ needs.release.outputs.released-version }}
         run: .github/scripts/replace-storage-snapshot.sh
+      # Resolve dependencies through Artifactory instead of hitting Maven Central directly (avoids HTTP 429)
+      - uses: SonarSource/ci-github-actions/config-maven@e2032bdce92b0675c839fd6a697c8bb0078985d5 # 2.5.2
+        env:
+          # A provided value makes get-build-number skip its increment of the shared build_number property.
+          # The Maven version update is already skipped, so this value is unused.
+          BUILD_NUMBER: "0"
+          CURRENT_VERSION: skip
+          PROJECT_VERSION: skip
+        with:
+          artifactory-reader-role: private-reader
       - name: bump-version
         env:
           NEW_VERSION: ${{ needs.release.outputs.new-version }}
         run: |
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$NEW_VERSION-SNAPSHOT"
+          # config-maven leaves .actions/ symlinks (absolute runner paths) in the workspace;
+          # remove them so create-pull-request's `git add -A` does not commit them
+          rm -rf .actions .build_number.txt
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           author: ${{ github.actor }} <${{ github.actor }}>
