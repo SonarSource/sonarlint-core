@@ -121,7 +121,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(consumer -> new SingleThreadedMessageConsumer(consumer,
         nextMessageExecutorIsOutbound.getAndSet(false) ? outboundMessageExecutor : inboundMessageExecutor,
-        System.err::println))
+        error -> LOG.error("Failed to consume an RPC message", error)))
       .traceMessages(getMessageTracer())
       .setExceptionHandler(this::handleError)
       .create();
@@ -348,15 +348,17 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   private void scheduleOutboundShutdown() {
-    var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Server outbound shutdown"));
-    try {
-      scheduledExecutorService.schedule(() -> {
-        outboundMessageExecutor.shutdownNow();
-        disconnectFromClient();
-      }, 1, TimeUnit.SECONDS);
-    } finally {
-      scheduledExecutorService.shutdown();
-    }
+    var shutdown = new Thread(() -> {
+      try {
+        TimeUnit.SECONDS.sleep(1);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+      outboundMessageExecutor.shutdownNow();
+      disconnectFromClient();
+    }, "SonarLint Server outbound shutdown");
+    shutdown.start();
   }
 
   private void disconnectFromClient() {
