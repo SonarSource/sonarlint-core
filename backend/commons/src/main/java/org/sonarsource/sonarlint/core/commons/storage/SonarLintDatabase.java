@@ -153,24 +153,25 @@ public final class SonarLintDatabase {
   private static void connectInTurn(JdbcConnectionPool pool, Path baseDir) throws SQLException, InterruptedException {
     // Release the logical connection back to the pool, keeping the physical connection open.
     // Always release it on cancellation; do not retry acquisition if close() fails.
-    try (var connection = connectionInTurn(pool, baseDir)) {
+    // A new pool has no connection to discard, so a lost connection is not retried
+    try (var connection = connectionInTurn(pool, baseDir, 0)) {
       checkNotInterrupted();
     }
     checkNotInterrupted();
   }
 
-  private static Connection connectionInTurn(JdbcConnectionPool pool, Path baseDir) throws SQLException, InterruptedException {
+  private static Connection connectionInTurn(JdbcConnectionPool pool, Path baseDir, int lostConnectionRetries) throws SQLException, InterruptedException {
     // No timeout needed: another opening in this process only holds it while waiting for its own turn, which times out, and connecting
     TURN_IN_THIS_PROCESS.lockInterruptibly();
     try (var turn = Turn.take(baseDir)) {
       // The turn ends once the database is open
-      return connection(pool);
+      return connection(pool, lostConnectionRetries);
     } finally {
       TURN_IN_THIS_PROCESS.unlock();
     }
   }
 
-  private static Connection connection(JdbcConnectionPool pool) throws SQLException, InterruptedException {
+  private static Connection connection(JdbcConnectionPool pool, int lostConnectionRetries) throws SQLException, InterruptedException {
     var lockContentionRetries = 0;
     var discardedConnections = 0;
     while (true) {
@@ -178,7 +179,7 @@ public final class SonarLintDatabase {
       try {
         return pool.getConnection();
       } catch (SQLException failure) {
-        if (isLostConnection(failure) && discardedConnections < pool.getMaxConnections()) {
+        if (isLostConnection(failure) && discardedConnections < lostConnectionRetries) {
           // The pool discards a connection that fails, so the next one is either another pooled connection or a new one
           discardedConnections++;
         } else if (isLockContention(failure) && lockContentionRetries < LOCK_CONTENTION_RETRIES) {
@@ -323,7 +324,8 @@ public final class SonarLintDatabase {
 
     private Connection reconnect(SQLException failure) throws SQLException {
       try {
-        return connectionInTurn(pool, baseDir);
+        // Each pooled connection may have been lost
+        return connectionInTurn(pool, baseDir, pool.getMaxConnections());
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         failure.addSuppressed(e);

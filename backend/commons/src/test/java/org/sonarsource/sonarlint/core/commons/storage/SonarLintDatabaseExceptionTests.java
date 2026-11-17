@@ -344,6 +344,23 @@ class SonarLintDatabaseExceptionTests {
   }
 
   @Test
+  void should_not_retry_a_lost_connection_at_startup(@TempDir Path storageRoot) throws SQLException {
+    var pool = mock(JdbcConnectionPool.class);
+    var lost = new SQLException("Connection is broken", "08006", ErrorCode.CONNECTION_BROKEN_1);
+    when(pool.getConnection()).thenThrow(lost);
+    when(pool.getMaxConnections()).thenReturn(10);
+    try (var pools = mockStatic(JdbcConnectionPool.class); var flyway = mockStatic(Flyway.class)) {
+      pools.when(() -> JdbcConnectionPool.create(anyString(), anyString(), anyString())).thenReturn(pool);
+
+      assertThatThrownBy(() -> new SonarLintDatabase(storageRoot)).hasCause(lost);
+
+      verify(pool).getConnection();
+      verify(pool).dispose();
+      flyway.verifyNoInteractions();
+    }
+  }
+
+  @Test
   void should_fail_after_every_pooled_connection_was_lost(@TempDir Path storageRoot) throws SQLException {
     var pool = spy(JdbcConnectionPool.create("jdbc:h2:" + storageRoot.resolve("h2/sq-ide") + ";AUTO_SERVER=TRUE", "sa", ""));
     try (var pools = mockStatic(JdbcConnectionPool.class)) {
