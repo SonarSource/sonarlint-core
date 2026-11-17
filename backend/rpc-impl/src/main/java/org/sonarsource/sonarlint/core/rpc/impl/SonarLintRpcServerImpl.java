@@ -315,9 +315,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.get().setTarget(logOutput);
-      // Keep the inbound dispatcher alive so client responses can still complete in-flight calls. A request that
-      // arrives after these pools stop accepting work is cancelled by the RPC delegate. Drain the sequential
-      // executor first so a queued request can still submit its work.
+      // Keep the inbound dispatcher alive so client responses can still complete in-flight calls. Drain the
+      // sequential executor first so a queued request can still submit its work.
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
       var wasInitialized = initialized.getAndSet(false);
