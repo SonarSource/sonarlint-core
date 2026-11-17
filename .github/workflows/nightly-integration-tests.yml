@@ -44,13 +44,13 @@ jobs:
       - name: Install dotnet for Omnisharp tests
         run: |
           mise use dotnet@8
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@e2032bdce92b0675c839fd6a697c8bb0078985d5 # 2.5.2
         env:
           # Supply a build number without claiming repository refs.
           BUILD_NUMBER: ${{ github.run_number }}
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox-internal.sonar.build
       - name: Build core and integration test fixtures
         run: mvn -B -Pits -DskipTests install
       - name: Vault (SonarCloud IT token)
@@ -67,6 +67,25 @@ jobs:
         with:
           secrets: |
             development/github/token/licenses-ro token | GITHUB_TOKEN;
+            development/artifactory-edge-prod/token/{REPO_OWNER_NAME_DASH}-private-reader access_token | ORCHESTRATOR_ACCESS_TOKEN;
+      - name: Configure production Orchestrator
+        if: ${{ matrix.sc == false }}
+        shell: bash
+        env:
+          ORCHESTRATOR_ACCESS_TOKEN: ${{ fromJSON(steps.secrets-gh.outputs.vault).ORCHESTRATOR_ACCESS_TOKEN }}
+        run: |
+          umask 077
+          config_dir="$RUNNER_TEMP/orchestrator-production-config"
+          mkdir -p "$config_dir"
+          printf '%s\n' \
+            'orchestrator.artifactory.url=https://repox-internal.sonar.build/artifactory' \
+            "orchestrator.artifactory.accessToken=$ORCHESTRATOR_ACCESS_TOKEN" > "$config_dir/orchestrator.properties"
+          config_path="$config_dir/orchestrator.properties"
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            config_path="/$(cygpath -m "$config_path")"
+          fi
+          config_path="${config_path// /%20}"
+          echo "ORCHESTRATOR_CONFIG_URL=file://$config_path" >> "$GITHUB_ENV"
       - name: Create fresh Orchestrator home
         if: ${{ matrix.sc == false }}
         env:
@@ -87,7 +106,7 @@ jobs:
           SONAR_SEARCH_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_WEB_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
-        run: mvn -B -f its/pom.xml -Dsonar.runtimeVersion=LATEST_RELEASE -DexcludedGroups=SonarCloud,CliCompatibility verify
+        run: mvn -B "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=LATEST_RELEASE -DexcludedGroups=SonarCloud,CliCompatibility verify
       - name: Generate integration test report on failure
         if: failure()
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0

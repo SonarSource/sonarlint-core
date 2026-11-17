@@ -28,9 +28,10 @@ jobs:
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         with:
           version: 2026.10.21
-      - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
+      - uses: SonarSource/ci-github-actions/config-maven@e2032bdce92b0675c839fd6a697c8bb0078985d5 # 2.5.2
         with:
           artifactory-reader-role: private-reader
+          repox-url: https://repox-internal.sonar.build
       - name: Test SLCORE against the latest SonarQube CLI
         run: >-
           mvn -B -Pits -pl its/tests -am
