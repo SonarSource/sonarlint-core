@@ -180,13 +180,13 @@ class StorageConcurrentStartupMediumTests {
     assertThat(holding.get(2, TimeUnit.MINUTES)).as("The other IDE window takes the turn").isTrue();
   }
 
-  private static Path copyOfLatestSnapshot(Path tempDir) throws Exception {
+  static Path copyOfLatestSnapshot(Path tempDir) throws Exception {
     var storageRoot = tempDir.resolve("storage");
     FileUtils.copyDirectory(StorageSnapshot.latestSnapshotDirectory().resolve("h2").toFile(), storageRoot.resolve("h2").toFile());
     return storageRoot;
   }
 
-  private static int expectedServerFindings() throws Exception {
+  static int expectedServerFindings() throws Exception {
     return StorageSnapshot.Metadata.read(StorageSnapshot.latestSnapshotDirectory()).rowsByTable().get("SERVER_FINDINGS");
   }
 
@@ -209,7 +209,7 @@ class StorageConcurrentStartupMediumTests {
     }
   }
 
-  private static String javaExecutable() {
+  static String javaExecutable() {
     return Path.of(System.getProperty("java.home"), "bin", "java").toString();
   }
 }

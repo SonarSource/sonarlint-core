@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons.storage;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -33,9 +34,11 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -57,9 +60,10 @@ public final class SonarLintDatabase {
 
   public static final String SQ_IDE_DB_FILENAME = "sq-ide";
   public static final String STARTUP_LOCK_FILENAME = SQ_IDE_DB_FILENAME + ".startup.lock";
-  private static final Duration STARTUP_TURN_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration TURN_TIMEOUT = Duration.ofSeconds(30);
   // A file lock is held by the whole process, so threads of the same process take turns separately
-  private static final ReentrantLock STARTUP_TURN_IN_THIS_PROCESS = new ReentrantLock();
+  private static final ReentrantLock TURN_IN_THIS_PROCESS = new ReentrantLock();
+  private static final int LOCK_CONTENTION_RETRIES = 3;
   // Reasons given by H2 when several processes run its lock file protocol at the same time. They are not translated.
   private static final List<String> LOCK_RACE_REASONS = List.of("Lock file recently modified", "Another process was faster", "Concurrent update");
   private static final Pattern MVSTORE_ERROR_CODE_PATTERN = Pattern.compile("\\[\\d++\\.\\d++\\.\\d++/(\\d++)]");
@@ -70,9 +74,9 @@ public final class SonarLintDatabase {
 
   public SonarLintDatabase(Path storageRoot) {
     this.dbFile = storageRoot.resolve("h2").resolve(SQ_IDE_DB_FILENAME + ".mv.db").toAbsolutePath();
+    var baseDir = storageRoot.resolve("h2");
     JdbcConnectionPool ds;
     try {
-      var baseDir = storageRoot.resolve("h2");
       deleteLegacyDatabase(baseDir);
       Files.createDirectories(baseDir);
       var dbBasePath = baseDir.toRealPath().resolve(SQ_IDE_DB_FILENAME).toAbsolutePath();
@@ -89,12 +93,13 @@ public final class SonarLintDatabase {
       throw new IllegalStateException("Failed to initialize H2Database", e);
     }
     this.dataSource = ds;
+    var reconnecting = new ReconnectingDataSource(ds, baseDir);
 
     try {
       // Retry here because Flyway's connection retries discard interruption.
-      connectInTurn(ds, storageRoot.resolve("h2"));
+      connectInTurn(ds, baseDir);
       var flyway = Flyway.configure()
-        .dataSource(ds)
+        .dataSource(reconnecting)
         .locations("classpath:db/migration")
         .defaultSchema("PUBLIC")
         .schemas("PUBLIC")
@@ -108,7 +113,7 @@ public final class SonarLintDatabase {
       System.setProperty("org.jooq.no-logo", "true");
 
       var jooqConfig = new DefaultConfiguration()
-        .set(ds)
+        .set(reconnecting)
         .set(SQLDialect.H2)
         .set(new Settings().withExecuteLogging(false))
         .set(new DefaultExecuteListenerProvider(new JooqDatabaseExceptionListener()));
@@ -146,50 +151,51 @@ public final class SonarLintDatabase {
    * a time avoids it. If taking turns is not possible, e.g. on a file system without locks, the database is opened anyway.
    */
   private static void connectInTurn(JdbcConnectionPool pool, Path baseDir) throws SQLException, InterruptedException {
-    // No timeout needed: another startup of this process only holds it while waiting for its own turn, which times out, and connecting
-    STARTUP_TURN_IN_THIS_PROCESS.lockInterruptibly();
-    try (var startupLock = openStartupLock(baseDir.resolve(STARTUP_LOCK_FILENAME)); var turn = waitForTurn(startupLock)) {
+    // Release the logical connection back to the pool, keeping the physical connection open.
+    // Always release it on cancellation; do not retry acquisition if close() fails.
+    // A new pool has no connection to discard, so a lost connection is not retried
+    try (var connection = connectionInTurn(pool, baseDir, 0)) {
+      checkNotInterrupted();
+    }
+    checkNotInterrupted();
+  }
+
+  private static Connection connectionInTurn(JdbcConnectionPool pool, Path baseDir, int lostConnectionRetries) throws SQLException, InterruptedException {
+    // No timeout needed: another opening in this process only holds it while waiting for its own turn, which times out, and connecting
+    TURN_IN_THIS_PROCESS.lockInterruptibly();
+    try (var turn = Turn.take(baseDir)) {
       // The turn ends once the database is open
-      connect(pool);
-    } catch (IOException e) {
-      // Only when ending the turn, the database is open
-      LOG.debug("Error while releasing the database startup lock: {}", e.getMessage());
+      return connection(pool, lostConnectionRetries);
     } finally {
-      STARTUP_TURN_IN_THIS_PROCESS.unlock();
+      TURN_IN_THIS_PROCESS.unlock();
     }
   }
 
-  @CheckForNull
-  private static FileChannel openStartupLock(Path lockFile) {
-    try {
-      return FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-    } catch (IOException e) {
-      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
-      return null;
+  private static Connection connection(JdbcConnectionPool pool, int lostConnectionRetries) throws SQLException, InterruptedException {
+    var lockContentionRetries = 0;
+    var discardedConnections = 0;
+    while (true) {
+      checkNotInterrupted();
+      try {
+        return pool.getConnection();
+      } catch (SQLException failure) {
+        if (isLostConnection(failure) && discardedConnections < lostConnectionRetries) {
+          // The pool discards a connection that fails, so the next one is either another pooled connection or a new one
+          discardedConnections++;
+        } else if (isLockContention(failure) && lockContentionRetries < LOCK_CONTENTION_RETRIES) {
+          lockContentionRetries++;
+          // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
+          Thread.sleep(1000);
+        } else {
+          throw failure;
+        }
+      }
     }
   }
 
-  @CheckForNull
-  private static FileLock waitForTurn(@Nullable FileChannel startupLock) throws InterruptedException {
-    if (startupLock == null) {
-      return null;
-    }
-    var deadline = System.nanoTime() + STARTUP_TURN_TIMEOUT.toNanos();
-    try {
-      var turn = startupLock.tryLock();
-      while (turn == null && System.nanoTime() < deadline) {
-        Thread.sleep(50);
-        turn = startupLock.tryLock();
-      }
-      if (turn == null) {
-        LOG.debug("Timed out waiting for other IDE instances to open the database, opening it anyway");
-      }
-      return turn;
-    } catch (ClosedByInterruptException e) {
-      throw new InterruptedException("H2 database startup interrupted");
-    } catch (IOException | OverlappingFileLockException e) {
-      LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.toString());
-      return null;
+  private static void checkNotInterrupted() throws InterruptedException {
+    if (Thread.currentThread().isInterrupted()) {
+      throw new InterruptedException("Opening the H2 database was interrupted");
     }
   }
 
@@ -198,33 +204,176 @@ public final class SonarLintDatabase {
       || (failure.getErrorCode() == ErrorCode.ERROR_OPENING_DATABASE_1 && LOCK_RACE_REASONS.stream().anyMatch(reason -> StringUtils.contains(failure.getMessage(), reason)));
   }
 
-  private static void connect(JdbcConnectionPool pool) throws SQLException, InterruptedException {
-    for (var attempt = 0; ; attempt++) {
-      if (Thread.currentThread().isInterrupted()) {
-        throw new InterruptedException("H2 database startup interrupted");
-      }
-      Connection connection;
+  /**
+   * The connection was to another process that served the database and has exited, and could not be reconnected
+   */
+  private static boolean isLostConnection(SQLException failure) {
+    return failure.getErrorCode() == ErrorCode.CONNECTION_BROKEN_1 || failure.getErrorCode() == ErrorCode.DATABASE_CALLED_AT_SHUTDOWN;
+  }
+
+  /**
+   * The turn of this process to open the database. Taking it is not always possible, the database is then opened anyway.
+   */
+  private static final class Turn implements AutoCloseable {
+    @Nullable
+    private final FileChannel startupLock;
+    @Nullable
+    private final FileLock lock;
+
+    private Turn(@Nullable FileChannel startupLock, @Nullable FileLock lock) {
+      this.startupLock = startupLock;
+      this.lock = lock;
+    }
+
+    static Turn take(Path baseDir) throws InterruptedException {
+      var startupLock = openStartupLock(baseDir.resolve(STARTUP_LOCK_FILENAME));
       try {
-        connection = pool.getConnection();
+        return new Turn(startupLock, waitForTurn(startupLock));
+      } catch (InterruptedException e) {
+        closeQuietly(startupLock);
+        throw e;
+      }
+    }
+
+    @CheckForNull
+    private static FileChannel openStartupLock(Path lockFile) {
+      try {
+        return FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+      } catch (IOException e) {
+        LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.getMessage());
+        return null;
+      }
+    }
+
+    @CheckForNull
+    private static FileLock waitForTurn(@Nullable FileChannel startupLock) throws InterruptedException {
+      if (startupLock == null) {
+        return null;
+      }
+      var deadline = System.nanoTime() + TURN_TIMEOUT.toNanos();
+      try {
+        var turn = startupLock.tryLock();
+        while (turn == null && System.nanoTime() < deadline) {
+          Thread.sleep(50);
+          turn = startupLock.tryLock();
+        }
+        if (turn == null) {
+          LOG.debug("Timed out waiting for other IDE instances to open the database, opening it anyway");
+        }
+        return turn;
+      } catch (ClosedByInterruptException e) {
+        throw new InterruptedException("Opening the H2 database was interrupted");
+      } catch (IOException | OverlappingFileLockException e) {
+        LOG.debug("Cannot wait for other IDE instances to open the database, opening it anyway: {}", e.toString());
+        return null;
+      }
+    }
+
+    /**
+     * Only called once the database is open, or failed to open, so failing to end the turn does not matter
+     */
+    @Override
+    public void close() {
+      if (lock != null) {
+        try {
+          lock.close();
+        } catch (IOException e) {
+          LOG.debug("Error while releasing the database startup lock: {}", e.getMessage());
+        }
+      }
+      closeQuietly(startupLock);
+    }
+
+    private static void closeQuietly(@Nullable FileChannel startupLock) {
+      if (startupLock != null) {
+        try {
+          startupLock.close();
+        } catch (IOException e) {
+          LOG.debug("Error while releasing the database startup lock: {}", e.getMessage());
+        }
+      }
+    }
+  }
+
+  /**
+   * When the process that served the database to the others exits, H2 reconnects each pooled connection on its next use, and runs the lock file protocol to replace the
+   * owner. As all the processes do it at the same time, some fail like at startup. The pool discards the connection that failed, so get another one in turn instead of
+   * failing the request.
+   */
+  private static final class ReconnectingDataSource implements DataSource {
+    private final JdbcConnectionPool pool;
+    private final Path baseDir;
+
+    private ReconnectingDataSource(JdbcConnectionPool pool, Path baseDir) {
+      this.pool = pool;
+      this.baseDir = baseDir;
+    }
+
+    @Override
+    public Connection getConnection() throws SQLException {
+      try {
+        return pool.getConnection();
       } catch (SQLException failure) {
-        if (!isLockContention(failure) || attempt == 3) {
+        if (!isLostConnection(failure) && !isLockContention(failure)) {
           throw failure;
         }
-        // Another H2 owner may hold the file lock before its AUTO_SERVER is ready.
-        Thread.sleep(1000);
-        continue;
+        LOG.debug("Lost the connection to the database, reconnecting: {}", failure.getMessage());
+        return reconnect(failure);
       }
-      // Release the logical connection back to the pool, keeping the physical connection open.
-      // Always release it on cancellation; do not retry acquisition if close() fails.
-      try (connection) {
-        if (Thread.currentThread().isInterrupted()) {
-          throw new InterruptedException("H2 database startup interrupted");
-        }
+    }
+
+    private Connection reconnect(SQLException failure) throws SQLException {
+      try {
+        // Each pooled connection may have been lost
+        return connectionInTurn(pool, baseDir, pool.getMaxConnections());
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        failure.addSuppressed(e);
+        throw failure;
+      } catch (SQLException retryFailure) {
+        retryFailure.addSuppressed(failure);
+        throw retryFailure;
       }
-      if (Thread.currentThread().isInterrupted()) {
-        throw new InterruptedException("H2 database startup interrupted");
-      }
-      return;
+    }
+
+    @Override
+    public Connection getConnection(String username, String password) throws SQLException {
+      return pool.getConnection(username, password);
+    }
+
+    @Override
+    public PrintWriter getLogWriter() {
+      return pool.getLogWriter();
+    }
+
+    @Override
+    public void setLogWriter(PrintWriter out) {
+      pool.setLogWriter(out);
+    }
+
+    @Override
+    public void setLoginTimeout(int seconds) {
+      pool.setLoginTimeout(seconds);
+    }
+
+    @Override
+    public int getLoginTimeout() {
+      return pool.getLoginTimeout();
+    }
+
+    @Override
+    public Logger getParentLogger() {
+      return pool.getParentLogger();
+    }
+
+    @Override
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+      return pool.unwrap(iface);
+    }
+
+    @Override
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+      return pool.isWrapperFor(iface);
     }
   }
 
