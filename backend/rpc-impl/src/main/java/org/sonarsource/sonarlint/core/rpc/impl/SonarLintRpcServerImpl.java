@@ -90,20 +90,27 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final RpcClientLogOutput logOutput;
   private final ExecutorService messageReaderExecutor;
-  private final ExecutorService messageWriterExecutor;
+  private final ExecutorService inboundMessageExecutor;
+  private final ExecutorService outboundMessageExecutor;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
   public SonarLintRpcServerImpl(InputStream in, OutputStream out) {
+    // lsp4j asks for two consumers: the outgoing stream first, then the incoming endpoint. Each one keeps a single
+    // thread so piped streams are only written from one thread, and shutdown can stop dispatch without stopping writes.
+    this(in, out,
+      Executors.newSingleThreadExecutor(r -> new Thread(r, "Server message writer")),
+      Executors.newSingleThreadExecutor(r -> new Thread(r, "Server inbound dispatcher")));
+  }
+
+  SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService outboundMessageExecutor, ExecutorService inboundMessageExecutor) {
     this.messageReaderExecutor = Executors.newCachedThreadPool(r -> {
       var t = new Thread(r);
       t.setName("Server message reader");
       return t;
     });
-    this.messageWriterExecutor = Executors.newCachedThreadPool(r -> {
-      var t = new Thread(r);
-      t.setName("Server message writer");
-      return t;
-    });
+    this.outboundMessageExecutor = outboundMessageExecutor;
+    this.inboundMessageExecutor = inboundMessageExecutor;
+    var nextMessageExecutorIsOutbound = new AtomicBoolean(true);
     this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
     this.requestsExecutor = new ExecutorServiceShutdownWatchable<>(Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor")));
     var launcher = new SonarLintLauncherBuilder<SonarLintRpcClient>()
@@ -112,7 +119,9 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setInput(in)
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
-      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
+      .wrapMessages(consumer -> new SingleThreadedMessageConsumer(consumer,
+        nextMessageExecutorIsOutbound.getAndSet(false) ? outboundMessageExecutor : inboundMessageExecutor,
+        System.err::println))
       .traceMessages(getMessageTracer())
       .setExceptionHandler(this::handleError)
       .create();
@@ -312,9 +321,10 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.get().setTarget(logOutput);
-      // Drain in-flight RPC messages before clearing the flag so the backend remains initialized
-      MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
+      // Keep the inbound dispatcher alive so client responses can still complete in-flight calls. Drain the
+      // sequential executor first so a queued request can still submit its work.
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);
+      MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
       var wasInitialized = initialized.getAndSet(false);
       if (wasInitialized) {
         try {
@@ -323,21 +333,25 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
           SonarLintLogger.get().error("Error while closing Spring context", e);
         }
       }
-      shutdownReaderAndWriter();
+      stopInboundTransport();
+      // The shutdown response is queued on the outbound writer. Leave that thread alive until the response is written.
+      scheduleOutboundShutdown();
       return null;
     });
     executor.shutdown();
     return future;
   }
 
-  public void shutdownReaderAndWriter() {
+  private void stopInboundTransport() {
     messageReaderExecutor.shutdownNow();
+    inboundMessageExecutor.shutdownNow();
+  }
 
-    // shutdown writer and disconnect from client asynchronously to make sure the client gets the response
-    var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+  private void scheduleOutboundShutdown() {
+    var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Server outbound shutdown"));
     try {
       scheduledExecutorService.schedule(() -> {
-        messageWriterExecutor.shutdownNow();
+        outboundMessageExecutor.shutdownNow();
         disconnectFromClient();
       }, 1, TimeUnit.SECONDS);
     } finally {
