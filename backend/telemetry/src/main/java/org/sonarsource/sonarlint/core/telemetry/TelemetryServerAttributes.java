@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
  * @param sonarQubeServerBindingCount   Number of bindings with SonarQube Server
  * @param sonarQubeCloudEUBindingCount  Number of bindings with SonarQube Cloud EU
  * @param sonarQubeCloudUSBindingCount  Number of bindings with SonarQube Cloud US
+ * @param sonarQubeCloudAUBindingCount  Number of bindings with SonarQube Cloud AU
  * @param devNotificationsDisabled      Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
  * @param nonDefaultEnabledRules        Rule keys for rules that disabled by default, but was enabled by user in settings.
  * @param defaultDisabledRules          Rule keys for rules that enabled by default, but was disabled by user in settings.
@@ -37,7 +38,8 @@ import javax.annotation.Nullable;
  * @param connectionsAttributes         Information about the connections configured in the IDE
  */
 public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, int childBindingCount, int sonarQubeServerBindingCount,
-                                        int sonarQubeCloudEUBindingCount, int sonarQubeCloudUSBindingCount, boolean devNotificationsDisabled,
+                                        int sonarQubeCloudEUBindingCount, int sonarQubeCloudUSBindingCount,
+                                        int sonarQubeCloudAUBindingCount, boolean devNotificationsDisabled,
                                         List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
                                         @Nullable String nodeVersion, List<TelemetryConnectionAttributes> connectionsAttributes) {
 }

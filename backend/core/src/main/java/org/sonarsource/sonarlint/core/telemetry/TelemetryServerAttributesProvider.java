@@ -67,6 +67,7 @@ public class TelemetryServerAttributesProvider {
     var sonarQubeServerBindingCount = countSonarQubeServerBindings(allBindings);
     var sonarQubeCloudEUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.EU);
     var sonarQubeCloudUSBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.US);
+    var sonarQubeCloudAUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.AU);
 
     var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
@@ -106,8 +107,8 @@ public class TelemetryServerAttributesProvider {
       .toList();
 
     return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, childBindingCount, sonarQubeServerBindingCount,
-      sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, devNotificationsDisabled, nonDefaultEnabledRules,
-      defaultDisabledRules, nodeJsVersion, connectionsAttributes);
+      sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, sonarQubeCloudAUBindingCount, devNotificationsDisabled,
+      nonDefaultEnabledRules, defaultDisabledRules, nodeJsVersion, connectionsAttributes);
   }
 
   private int countSonarQubeCloudBindings(Collection<BoundScope> allBindings, SonarCloudRegion region) {
