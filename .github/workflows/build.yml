@@ -55,7 +55,7 @@ jobs:
           deploy-pull-request: true
           artifactory-reader-role: private-reader
           artifactory-deployer-role: qa-deployer
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox.sonar.build
           maven-args: -T 1C -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
       - name: Config Maven (cache setup)
         run: |
@@ -94,7 +94,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox.sonar.build
       - name: Run tests
         env:
           SONAR_HOST_URL: ${{ fromJSON(steps.secrets.outputs.vault).NEXT_URL }}
@@ -147,7 +147,7 @@ jobs:
         id: config
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox.sonar.build
       - name: Run tests
         env:
           MAVEN_OPTS: -Xmx4g
@@ -264,7 +264,7 @@ jobs:
           config_dir="$RUNNER_TEMP/orchestrator-production-config"
           mkdir -p "$config_dir"
           printf '%s\n' \
-            'orchestrator.artifactory.url=https://repox-internal.sonar.build/artifactory' \
+            'orchestrator.artifactory.url=https://repox.sonar.build/artifactory' \
             "orchestrator.artifactory.accessToken=$ORCHESTRATOR_ACCESS_TOKEN" > "$config_dir/orchestrator.properties"
           config_path="$config_dir/orchestrator.properties"
           if [[ "$RUNNER_OS" == Windows ]]; then
@@ -276,7 +276,7 @@ jobs:
       - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox.sonar.build
       - name: Run QA
         if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         env:
