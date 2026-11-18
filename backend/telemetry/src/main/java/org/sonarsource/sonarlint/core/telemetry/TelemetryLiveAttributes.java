@@ -59,6 +59,10 @@ public class TelemetryLiveAttributes {
     return serverAttributes.sonarQubeCloudUSBindingCount();
   }
 
+  public int countSonarQubeCloudAUBindings() {
+    return serverAttributes.sonarQubeCloudAUBindingCount();
+  }
+
   public boolean isDevNotificationsDisabled() {
     return serverAttributes.devNotificationsDisabled();
   }

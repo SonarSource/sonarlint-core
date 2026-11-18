@@ -82,6 +82,7 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"bindings.server_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_eu_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_us_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"bindings.cloud_au_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"connections.attributes\",\"value\":\"[{\\\"userId\\\":\\\"user-id\\\",\\\"organizationId\\\":\\\"org-id\\\"}]\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"analysis_reporting.trigger_count_vcs_changed_files\",\"value\":\"7\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
@@ -143,6 +144,7 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(2), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(0), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(0), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("bindings.cloud_au_count", String.valueOf(0), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("connections.attributes", new Gson().toJson(List.of(new TelemetryConnectionAttributes("user-id", null, "org-id"))), STRING, DAILY));
 
