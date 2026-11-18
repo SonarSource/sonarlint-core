@@ -308,6 +308,14 @@ jobs:
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
+      - name: Upload SonarQube server logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sonarqube-logs ${{ matrix.name }}
+          # Orchestrator installs each server under its workspace, its/tests/target by default.
+          path: its/tests/target/*/*/logs/*.log
+          if-no-files-found: ignore
       - name: debug
         if: failure()
         shell: bash
