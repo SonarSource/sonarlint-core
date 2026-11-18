@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -37,7 +38,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePlugin
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,6 +100,74 @@ class PluginStatusNotifierServiceTest {
       .usingRecursiveComparison()
       .ignoringCollectionOrder()
       .isEqualTo(List.of(expectedScope1Params, expectedScope2Params));
+  }
+
+  @Test
+  void should_notify_final_download_state_for_bound_scopes_without_a_scheduler() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var downloading = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.DOWNLOADING, null, null, null, null, null);
+    var synced = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, null, null);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(downloading, PluginStatus.unsupported(SonarLanguage.PYTHON)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getConfigScopeId()).isEqualTo(SCOPE_1);
+    assertThat(captor.getValue().getPluginStatuses())
+      .filteredOn(status -> status.getLanguage() == Language.JAVA)
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.SYNCED);
+    assertThat(captor.getValue().getPluginStatuses())
+      .filteredOn(status -> status.getLanguage() == Language.PYTHON)
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.UNSUPPORTED);
+  }
+
+  @Test
+  void should_notify_each_scope_when_a_standalone_download_ends() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
+    var downloading = PluginStatus.forLanguage(SonarLanguage.CPP, ArtifactState.DOWNLOADING, null, null, null, null, null);
+    var active = PluginStatus.forLanguage(SonarLanguage.CPP, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+    when(pluginsService.getPluginStatuses(null)).thenReturn(List.of(downloading));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(active)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.ACTIVE);
+  }
+
+  @Test
+  void should_keep_current_status_when_the_language_is_not_downloading() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var unsupported = PluginStatus.unsupported(SonarLanguage.JAVA);
+    var active = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(unsupported));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(active)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.UNSUPPORTED);
+  }
+
+  @Test
+  void should_ignore_companion_only_download_updates() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null,
+      List.of(PluginStatus.forCompanion("omnisharp", ArtifactState.FAILED, null, null, null))));
+
+    verify(client, never()).didChangePluginStatuses(any());
   }
 
   private static PluginStatusDto standaloneStatusDto() {

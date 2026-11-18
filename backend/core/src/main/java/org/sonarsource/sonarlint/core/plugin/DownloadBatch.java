@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
@@ -32,6 +35,7 @@ public class DownloadBatch {
   private final List<PendingDownload> pending;
   private final Executor callbackExecutor;
   private final CompletableFuture<Void> completion;
+  private final Set<String> failedArtifactKeys = ConcurrentHashMap.newKeySet();
   private boolean startedAnyDownload;
   private RuntimeException supplierFailure;
 
@@ -54,6 +58,10 @@ public class DownloadBatch {
       return null;
     }
     return supplierFailure;
+  }
+
+  public boolean hasFailed(String artifactKey) {
+    return failedArtifactKeys.contains(artifactKey);
   }
 
   void start(Runnable onSomeDownloadSucceeded) {
@@ -98,7 +106,7 @@ public class DownloadBatch {
     try {
       var future = download.starter().get();
       startedAnyDownload = true;
-      return future;
+      return future.whenComplete((ignored, error) -> recordFailure(download.artifactKey(), error));
     } catch (Exception e) {
       LOG.error("Could not start download for '{}'", download.artifactKey(), e);
       rememberStartFailure(e);
@@ -115,6 +123,12 @@ public class DownloadBatch {
       supplierFailure = runtime;
     } else {
       supplierFailure.addSuppressed(runtime);
+    }
+  }
+
+  private void recordFailure(String artifactKey, @Nullable Throwable error) {
+    if (error != null) {
+      failedArtifactKeys.add(artifactKey);
     }
   }
 }
