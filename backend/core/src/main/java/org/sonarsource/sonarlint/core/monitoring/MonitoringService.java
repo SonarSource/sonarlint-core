@@ -107,9 +107,6 @@ public class MonitoringService {
     addCaptureIgnoreRule(sentryOptions, "(?s)com\\.sonar\\.sslr\\.impl\\.LexerException.*");
     sentryOptions.setBeforeSend(MonitoringService::beforeSend);
     sentryOptions.setBeforeSendTransaction(MonitoringService::beforeSend);
-    // Structured logs are not collected. beforeSend drops manual Sentry.logger() calls, which 8.59+ sends even when logs are disabled.
-    sentryOptions.getLogs().setEnabled(false);
-    sentryOptions.getLogs().setBeforeSend(log -> null);
   }
 
   private String getEnvironment() {

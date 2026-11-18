@@ -21,9 +21,6 @@ package mediumtest.monitoring;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.sentry.Sentry;
-import io.sentry.SentryLogEvent;
-import io.sentry.SentryLogLevel;
-import io.sentry.protocol.SentryId;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -427,9 +424,7 @@ class MonitoringMediumTests {
   void should_not_enable_sentry_logs(SonarLintTestHarness harness) {
     startMonitoringBackend(harness);
 
-    var logs = Sentry.getCurrentScopes().getOptions().getLogs();
-    assertThat(logs.isEnabled()).isFalse();
-    assertThat(logs.getBeforeSend().execute(new SentryLogEvent(new SentryId(), 0d, "should be dropped", SentryLogLevel.INFO))).isNull();
+    assertThat(Sentry.getCurrentScopes().getOptions().getLogs().isEnabled()).isFalse();
   }
 
   @SonarLintTest
