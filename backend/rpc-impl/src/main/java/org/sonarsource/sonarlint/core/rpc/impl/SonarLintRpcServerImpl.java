@@ -121,7 +121,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(consumer -> new SingleThreadedMessageConsumer(consumer,
         nextMessageExecutorIsOutbound.getAndSet(false) ? outboundMessageExecutor : inboundMessageExecutor,
-        SonarLintRpcServerImpl::logRpcConsumeFailure))
+        // The RPC logger writes through this consumer, so a failed write would be logged and fail again.
+        error -> System.err.println(error))) // NOSONAR
       .traceMessages(getMessageTracer())
       .setExceptionHandler(this::handleError)
       .create();
@@ -142,32 +143,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rootLogger.addAppender(rpcAppender);
 
     this.clientListener = launcher.startListening();
-  }
-
-  /**
-   * Logging a closed pipe through the RPC appender writes another message on this same consumer, which fails again.
-   */
-  private static void logRpcConsumeFailure(Throwable error) {
-    if (!isBrokenPipe(error)) {
-      LOG.error("Failed to consume an RPC message", error);
-    }
-  }
-
-  private static boolean isBrokenPipe(Throwable error) {
-    var current = error;
-    while (current != null) {
-      var message = current.getMessage();
-      if (message != null && (message.contains("Pipe closed") || message.contains("Pipe broken")
-        || message.contains("Read end dead") || message.contains("Write end dead"))) {
-        return true;
-      }
-      var next = current.getCause();
-      if (next == current) {
-        return false;
-      }
-      current = next;
-    }
-    return false;
   }
 
   private ResponseError handleError(Throwable throwable) {
