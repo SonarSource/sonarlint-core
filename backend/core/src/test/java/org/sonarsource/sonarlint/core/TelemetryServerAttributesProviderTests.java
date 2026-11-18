@@ -65,6 +65,7 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isEqualTo(1);
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudAUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
@@ -106,9 +107,38 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isEqualTo(2);
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudAUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isTrue();
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
+  }
+
+  @Test
+  void it_should_count_bindings_per_sonarqube_cloud_region() {
+    var configurationRepository = mock(ConfigurationRepository.class);
+    when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
+      new BoundScope("scope1", "euConnection", "project1"),
+      new BoundScope("scope2", "auConnection", "project2"),
+      new BoundScope("scope3", "auConnection", "project3"),
+      new BoundScope("scope4", "usConnection", "project4")));
+
+    var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
+    when(connectionConfigurationRepository.getConnectionById("euConnection")).thenReturn(sonarCloudConnection("euConnection", SonarCloudRegion.EU));
+    when(connectionConfigurationRepository.getConnectionById("auConnection")).thenReturn(sonarCloudConnection("auConnection", SonarCloudRegion.AU));
+    when(connectionConfigurationRepository.getConnectionById("usConnection")).thenReturn(sonarCloudConnection("usConnection", SonarCloudRegion.US));
+    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(ActiveRulesService.class), mock(RulesRepository.class), mock(NodeJsService.class), mock(StorageService.class));
+
+    var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
+
+    assertThat(telemetryLiveAttributes.usesSonarCloud()).isTrue();
+    assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isEqualTo(1);
+    assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isEqualTo(1);
+    assertThat(telemetryLiveAttributes.sonarQubeCloudAUBindingCount()).isEqualTo(2);
+  }
+
+  private static SonarCloudConnectionConfiguration sonarCloudConnection(String connectionId, SonarCloudRegion region) {
+    return new SonarCloudConnectionConfiguration(region.getProductionUri(), region.getApiProductionUri(), connectionId, "myTestOrg", region, false);
   }
 
   @Test
@@ -140,6 +170,7 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudAUBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
   }

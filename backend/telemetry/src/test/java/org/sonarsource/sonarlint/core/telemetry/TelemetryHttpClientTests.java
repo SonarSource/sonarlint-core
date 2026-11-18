@@ -243,7 +243,7 @@ class TelemetryHttpClientTests {
     var connectionsAttributes = new ArrayList<TelemetryConnectionAttributes>();
     connectionsAttributes.add(new TelemetryConnectionAttributes("user-id-sqc", null, "org-id"));
     connectionsAttributes.add(new TelemetryConnectionAttributes(null, "server-id", null));
-    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", connectionsAttributes);
+    var serverAttributes = new TelemetryServerAttributes(true, true, 1, 1, 1, 1, 1, false, Collections.emptyList(), Collections.emptyList(), "3.1.7", connectionsAttributes);
     var clientAttributes = new TelemetryClientLiveAttributesResponse(Map.of("joinedIdeLabs", true, "enabledIdeLabs", false));
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }
