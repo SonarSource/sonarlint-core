@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons.storage;
 import io.sentry.IScope;
 import io.sentry.Sentry;
 import io.sentry.ScopeCallback;
-import io.sentry.logger.ILoggerApi;
 import java.sql.SQLException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,8 +50,6 @@ class DatabaseExceptionReporterTests {
   void setUp() {
     DatabaseExceptionReporter.clearRecentExceptions();
     sentryMock = mockStatic(Sentry.class);
-    ILoggerApi loggerApi = mock(ILoggerApi.class);
-    sentryMock.when(Sentry::logger).thenReturn(loggerApi);
   }
 
   @AfterEach

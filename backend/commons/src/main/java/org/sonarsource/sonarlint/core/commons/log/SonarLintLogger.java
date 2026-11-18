@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
-import io.sentry.Sentry;
-import io.sentry.SentryLogLevel;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -164,16 +162,6 @@ public class SonarLintLogger {
     });
     if (output != null) {
       output.log(formattedMessage, level, stackTrace);
-      Sentry.logger().log(getSentryLogLevel(level), formattedMessage);
-    }
-  }
-
-  private static SentryLogLevel getSentryLogLevel(Level level) {
-    try {
-      return SentryLogLevel.valueOf(level.name());
-    } catch (IllegalArgumentException notSupported) {
-      // Current log levels map nicely almost 1:1, but this may change later
-      return SentryLogLevel.ERROR;
     }
   }
 

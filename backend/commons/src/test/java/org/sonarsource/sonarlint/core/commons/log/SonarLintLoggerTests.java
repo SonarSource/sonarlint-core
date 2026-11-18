@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
+import io.sentry.Sentry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -27,6 +28,8 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
 class SonarLintLoggerTests {
@@ -147,6 +150,16 @@ class SonarLintLoggerTests {
     inOrder.verify(output).log("msg a", Level.TRACE, null);
     inOrder.verify(output).log("msg a a", Level.TRACE, null);
     inOrder.verify(output).log("msg b", Level.TRACE, null);
+  }
+
+  @Test
+  void should_not_forward_logs_to_sentry() {
+    try (var sentry = mockStatic(Sentry.class)) {
+      logger.error("msg");
+      logger.error("msg with ex", THROWN);
+
+      sentry.verify(Sentry::logger, never());
+    }
   }
 
   // SLCORE-292
