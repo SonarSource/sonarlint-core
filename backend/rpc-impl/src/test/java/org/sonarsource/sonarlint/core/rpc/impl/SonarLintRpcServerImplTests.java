@@ -25,6 +25,8 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -65,7 +67,8 @@ class SonarLintRpcServerImplTests {
 
   @Test
   void it_should_let_in_flight_requests_finish_before_clearing_initialized() throws Exception {
-    var backend = new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream());
+    var inboundMessageExecutor = newSingleThreadExecutor("Server inbound dispatcher");
+    var backend = newBackend(newSingleThreadExecutor("Server message writer"), inboundMessageExecutor);
     var initialized = initializedFlag(backend);
     initialized.set(true);
     var contextInitializer = mock(SpringApplicationContextInitializer.class);
@@ -93,12 +96,38 @@ class SonarLintRpcServerImplTests {
     assertThat(requestStarted.await(10, TimeUnit.SECONDS)).isTrue();
     var shutdown = backend.shutdown();
     await().atMost(5, SECONDS).until(() -> backend.getRequestsExecutor().isShutdown());
+    // Client responses are still delivered while the request pool drains.
+    assertThat(inboundMessageExecutor.isShutdown()).isFalse();
+    assertThat(backend.isReaderShutdown()).isFalse();
     releaseRequest.countDown();
 
     assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
     assertThat(sawInitializedContext).isTrue();
     assertThat(initialized).isFalse();
     verify(contextInitializer).close();
+  }
+
+  @Test
+  void shutdown_stops_inbound_dispatch_before_the_outbound_writer() {
+    var outboundMessageExecutor = newSingleThreadExecutor("Server message writer");
+    var inboundMessageExecutor = newSingleThreadExecutor("Server inbound dispatcher");
+    var backend = newBackend(outboundMessageExecutor, inboundMessageExecutor);
+
+    var shutdown = backend.shutdown();
+
+    await().atMost(5, SECONDS).until(inboundMessageExecutor::isShutdown);
+    assertThat(backend.isReaderShutdown()).isTrue();
+    assertThat(outboundMessageExecutor.isShutdown()).isFalse();
+    assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
+    await().atMost(5, SECONDS).until(outboundMessageExecutor::isShutdown);
+  }
+
+  private static SonarLintRpcServerImpl newBackend(ExecutorService outboundMessageExecutor, ExecutorService inboundMessageExecutor) {
+    return new SonarLintRpcServerImpl(new ByteArrayInputStream(new byte[0]), new ByteArrayOutputStream(), outboundMessageExecutor, inboundMessageExecutor);
+  }
+
+  private static ExecutorService newSingleThreadExecutor(String threadName) {
+    return Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
   }
 
   private static AtomicBoolean initializedFlag(SonarLintRpcServerImpl backend) throws Exception {
