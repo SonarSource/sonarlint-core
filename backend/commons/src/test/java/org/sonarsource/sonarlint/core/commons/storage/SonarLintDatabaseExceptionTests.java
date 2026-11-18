@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons.storage;
 import io.sentry.IScope;
 import io.sentry.Sentry;
 import io.sentry.ScopeCallback;
-import io.sentry.logger.ILoggerApi;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -78,8 +77,6 @@ class SonarLintDatabaseExceptionTests {
   void setUp() {
     DatabaseExceptionReporter.clearRecentExceptions();
     sentryMock = mockStatic(Sentry.class);
-    ILoggerApi loggerApi = mock(ILoggerApi.class);
-    sentryMock.when(Sentry::logger).thenReturn(loggerApi);
   }
 
   @AfterEach

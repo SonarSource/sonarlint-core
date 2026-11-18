@@ -88,9 +88,7 @@ class ScaSynchronizationServiceTests {
 
   @BeforeEach
   void setUp() {
-    var logger = Sentry.logger();
     sentry = mockStatic(Sentry.class);
-    sentry.when(Sentry::logger).thenReturn(logger);
 
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getBackendCapabilities()).thenReturn(EnumSet.of(BackendCapability.SCA_SYNCHRONIZATION));

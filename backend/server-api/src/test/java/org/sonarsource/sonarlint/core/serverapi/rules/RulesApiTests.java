@@ -70,9 +70,7 @@ class RulesApiTests {
 
   @BeforeEach
   void mockSentry() {
-    var logger = Sentry.logger();
     sentry = mockStatic(Sentry.class);
-    sentry.when(Sentry::logger).thenReturn(logger);
   }
 
   @AfterEach
