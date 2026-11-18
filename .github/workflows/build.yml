@@ -177,7 +177,8 @@ jobs:
 
   qa:
     needs: [ build-number, build ]
-    runs-on: sonar-l
+    # Jobs that boot several SonarQube servers in parallel forks need sonar-l's CPUs.
+    runs-on: ${{ matrix.runner || 'sonar-m' }}
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
@@ -202,13 +203,16 @@ jobs:
             region: US
           - name: SQDogfood
             sq_version: DEV
+            runner: sonar-l
             # Run the latest CLI compatibility test once in normal QA.
             category: "-DexcludedGroups=SonarCloud,CommunityBuild"
           - name: SQLatest
             sq_version: LATEST_RELEASE
+            runner: sonar-l
             category: "-DexcludedGroups=SonarCloud,CliCompatibility,CommunityBuild"
           - name: SQLts251
             sq_version: "LATEST_RELEASE[2025.1]"
+            runner: sonar-l
             category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=SonarQubeDeveloperEditionTests,SonarQubeEnterpriseEditionTests"
           - name: SQcbLatest
             sq_version: LATEST_RELEASE
