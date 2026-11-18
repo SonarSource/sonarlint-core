@@ -604,13 +604,15 @@ class PluginsServiceTest {
   }
 
   @Test
-  void should_keep_unsupported_when_plugin_is_skipped_because_its_languages_are_not_enabled() {
+  void should_keep_active_when_plugin_is_skipped_because_its_languages_are_not_enabled() {
     var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
+    mockConnectedOnly(SonarLanguage.PYTHON);
     when(skippedPluginsRepository.getSkippedEmbeddedPlugins()).thenReturn(List.of(
       new SkippedPlugin("python", new SkipReason.LanguagesNotEnabled(List.of(SonarLanguage.PYTHON)))));
     mockStatuses(null, Map.of("python", artifact));
 
-    assertThat(status(null, SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
+    assertThat(status(null, SonarLanguage.PYTHON))
+      .isEqualTo(PluginStatus.forLanguage(SonarLanguage.PYTHON, ArtifactState.ACTIVE, ArtifactOrigin.EMBEDDED, null, null, ossPath, null));
   }
 
   @Test
