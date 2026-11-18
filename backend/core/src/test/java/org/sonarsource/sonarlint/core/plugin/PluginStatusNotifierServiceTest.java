@@ -161,6 +161,14 @@ class PluginStatusNotifierServiceTest {
   }
 
   @Test
+  void should_not_load_plugins_when_no_scope_is_bound_to_the_connection() {
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(PluginStatus.failed(SonarLanguage.JAVA))));
+
+    verify(pluginsService, never()).getPluginStatuses(any());
+    verify(client, never()).didChangePluginStatuses(any());
+  }
+
+  @Test
   void should_ignore_companion_only_download_updates() {
     configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
 

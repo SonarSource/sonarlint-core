@@ -135,16 +135,17 @@ class PluginFailureStatusMediumTests {
   }
 
   @SonarLintTest
-  void should_keep_unsupported_when_a_plugin_is_skipped_because_its_languages_are_not_enabled(SonarLintTestHarness harness) {
+  void should_keep_active_when_a_plugin_is_skipped_because_its_languages_are_not_enabled(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PYTHON)
       .withUnboundConfigScope(SCOPE_ID)
       .start(client);
 
-    awaitPluginState(client, Language.PYTHON, PluginStateDto.UNSUPPORTED);
+    awaitPluginState(client, Language.PYTHON, PluginStateDto.ACTIVE);
     assertThat(notifiedStates(client, Language.PYTHON)).doesNotContain(PluginStateDto.FAILED);
-    assertThat(stateOf(pluginStatuses(backend), Language.PYTHON)).isEqualTo(PluginStateDto.UNSUPPORTED);
+    assertThat(stateOf(pluginStatuses(backend), Language.PYTHON)).isEqualTo(PluginStateDto.ACTIVE);
   }
 
   @SonarLintTest
