@@ -122,7 +122,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .wrapMessages(consumer -> new SingleThreadedMessageConsumer(consumer,
         nextMessageExecutorIsOutbound.getAndSet(false) ? outboundMessageExecutor : inboundMessageExecutor,
         // The RPC logger writes through this consumer, so a failed write would be logged and fail again.
-        error -> System.err.println(error)))
+        System.err::println))
       .traceMessages(getMessageTracer())
       .setExceptionHandler(this::handleError)
       .create();
