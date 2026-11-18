@@ -10,6 +10,11 @@
   <name>SonarLint Core - ITs - Tests</name>
   <description>Integration tests</description>
 
+  <properties>
+    <!-- Each test class starts its own SonarQube, so classes run in separate JVMs to boot and test servers concurrently. -->
+    <its.forkCount>3</its.forkCount>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -161,6 +166,20 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>${its.forkCount}</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- Starts SonarQubeEnterpriseEditionTests in the first wave and SonarQubeDeveloperEditionTests right after the sub-second StandaloneTests. -->
+          <runOrder>reversealphabetical</runOrder>
+          <systemPropertyVariables>
+            <!-- Orchestrator numbers its install directories per JVM and deletes them before unzipping, so forks need separate workspaces. -->
+            <orchestrator.workspaceDir>${project.build.directory}/orchestrator-fork-${surefire.forkNumber}</orchestrator.workspaceDir>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
