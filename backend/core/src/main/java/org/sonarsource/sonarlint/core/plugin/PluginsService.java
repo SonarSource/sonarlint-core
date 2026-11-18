@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingStrategy;
@@ -46,6 +47,7 @@ import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifacts
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -101,16 +103,16 @@ public class PluginsService {
 
   public List<PluginStatus> getPluginStatuses(@Nullable String connectionId) {
     var plugins = connectionId == null ? getEmbeddedPlugins() : getPlugins(connectionId);
-    return getPluginStatuses(connectionId, plugins.artifactsResult());
+    return getPluginStatuses(connectionId, plugins);
   }
 
-  private List<PluginStatus> getPluginStatuses(@Nullable String connectionId, ArtifactsLoadingResult result) {
+  private List<PluginStatus> getPluginStatuses(@Nullable String connectionId, PluginsConfiguration plugins) {
     return Arrays.stream(SonarLanguage.values())
-      .map(language -> buildPluginStatus(connectionId, language, result))
+      .map(language -> buildPluginStatus(connectionId, language, plugins.artifactsResult(), plugins.downloads()))
       .toList();
   }
 
-  private PluginStatus buildPluginStatus(@Nullable String connectionId, SonarLanguage language, ArtifactsLoadingResult result) {
+  private PluginStatus buildPluginStatus(@Nullable String connectionId, SonarLanguage language, ArtifactsLoadingResult result, DownloadBatch downloads) {
     var enabled = getEnabledLanguages(connectionId).contains(language);
     var connectedOnly = !enabled && connectionId == null && languageSupportRepository.isEnabledOnlyInConnectedMode(language);
     if (!enabled && !connectedOnly) {
@@ -118,12 +120,35 @@ public class PluginsService {
     }
     var pluginKey = resolvePluginKey(language, result.resolvedArtifactsByKey());
     return result.getResolvedArtifactByKey(pluginKey)
-      .map(artifact -> toPluginStatus(language, artifact))
+      .map(artifact -> toPluginStatus(language, artifact, downloads.hasFailed(pluginKey), isFailedSkip(connectionId, pluginKey)))
       .orElseGet(() -> statusWithoutArtifact(language, connectedOnly));
   }
 
-  private static PluginStatus toPluginStatus(SonarLanguage language, ResolvedArtifact artifact) {
-    return PluginStatus.forLanguage(language, artifact.state(), artifact.source(), artifact.version(), null, artifact.path(), null);
+  private static PluginStatus toPluginStatus(SonarLanguage language, ResolvedArtifact artifact, boolean downloadFailed, boolean skippedAsFailure) {
+    var state = artifact.state();
+    if ((state == ArtifactState.DOWNLOADING && downloadFailed) || skippedAsFailure) {
+      state = ArtifactState.FAILED;
+    }
+    return PluginStatus.forLanguage(language, state, artifact.source(), artifact.version(), null, artifact.path(), null);
+  }
+
+  /**
+   * Load failures that mean the analyzer cannot run. {@link SkipReason.LanguagesNotEnabled} and
+   * {@link SkipReason.UnsupportedFeature} keep the status derived from the artifact.
+   */
+  private boolean isFailedSkip(@Nullable String connectionId, String pluginKey) {
+    var skipped = connectionId == null ? skippedPluginsRepository.getSkippedEmbeddedPlugins()
+      : skippedPluginsRepository.getSkippedPlugins(connectionId);
+    if (skipped == null) {
+      return false;
+    }
+    return skipped.stream().anyMatch(plugin -> plugin.getKey().equals(pluginKey) && reportsFailure(plugin.getReason()));
+  }
+
+  private static boolean reportsFailure(SkipReason reason) {
+    return reason instanceof SkipReason.IncompatiblePluginApi
+      || reason instanceof SkipReason.UnsatisfiedRuntimeRequirement
+      || reason instanceof SkipReason.UnsatisfiedDependency;
   }
 
   private static PluginStatus statusWithoutArtifact(SonarLanguage language, boolean connectedOnly) {
@@ -179,7 +204,7 @@ public class PluginsService {
     // A publication failure must not skip the start-failure check, or a download that never started stays cached.
     RuntimeException publicationFailure = null;
     try {
-      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config.artifactsResult())));
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config)));
     } catch (RuntimeException error) {
       publicationFailure = error;
     }
