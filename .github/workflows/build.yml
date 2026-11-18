@@ -45,7 +45,7 @@ jobs:
       build_number: ${{ steps.build.outputs.build_number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: SonarSource/mise-action-wrapper@65aa289d3f408f4999d13a52a14cde4f54b48442 # 2.0.0
         with:
           version: 2026.10.21
       - uses: SonarSource/ci-github-actions/build-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: SonarSource/mise-action-wrapper@65aa289d3f408f4999d13a52a14cde4f54b48442 # 2.0.0
         with:
           version: 2026.10.21
       - name: Vault
@@ -112,7 +112,7 @@ jobs:
           mvn -B "${maven_goals[@]}" "${sonar_props[@]}"
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: step-security/test-reporter@033644e32639f3077b48dc7c3a692b15fb929c8d # v3.0.0
         with:
           name: QA Linux Test Report
           reporter: java-junit
@@ -140,7 +140,7 @@ jobs:
       BUILD_NUMBER: ${{ needs.build-number.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: SonarSource/mise-action-wrapper@65aa289d3f408f4999d13a52a14cde4f54b48442 # 2.0.0
         with:
           version: 2026.10.21
       - uses: SonarSource/ci-github-actions/config-maven@c3a85ac3a2f67f86966e2fb1fdf9a7c1bdc997dc # 2.2.0
@@ -156,7 +156,7 @@ jobs:
           mvn -B -Dcommercial verify
       - name: Generate test report on failure
         if: failure()
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: step-security/test-reporter@033644e32639f3077b48dc7c3a692b15fb929c8d # v3.0.0
         with:
           name: QA Windows Test Report
           reporter: java-junit
@@ -213,7 +213,7 @@ jobs:
             category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=FileExclusionTests,SonarQubeCommunityEditionTests"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: SonarSource/mise-action-wrapper@65aa289d3f408f4999d13a52a14cde4f54b48442 # 2.0.0
         with:
           version: 2026.10.21
       - name: Install dotnet for Omnisharp tests
