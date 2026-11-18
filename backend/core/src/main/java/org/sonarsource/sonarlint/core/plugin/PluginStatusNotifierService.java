@@ -68,6 +68,9 @@ public class PluginStatusNotifierService {
     }
     var connectionId = event.connectionId();
     if (connectionId != null) {
+      if (configurationRepository.getBoundScopesToConnection(connectionId).isEmpty()) {
+        return;
+      }
       notifyBoundScopes(connectionId, mergeDownloadUpdate(pluginsService.getPluginStatuses(connectionId), event.newStatuses()));
     } else {
       notifyEachScope(scopeId -> mergeDownloadUpdate(statusesForScope(scopeId), event.newStatuses()));
