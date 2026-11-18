@@ -50,7 +50,7 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
         with:
           artifactory-reader-role: private-reader
-          repox-url: https://repox-internal.dev.sonar.build
+          repox-url: https://repox.sonar.build
       - name: Build core and integration test fixtures
         run: mvn -B -Pits -DskipTests install
       - name: Vault (SonarCloud IT token)
