@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -49,11 +50,14 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ResolutionPlan;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
+import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -88,6 +92,8 @@ class PluginsServiceTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
+  private static final Executor IGNORE_CALLBACKS = command -> {
+  };
   private static final Path ossPath = Paths.get("folder", "oss");
   private static final Path enterprisePath = Paths.get("folder", "enterprise");
   private PluginsService underTest;
@@ -101,6 +107,7 @@ class PluginsServiceTest {
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
   private LanguageSupportRepository languageSupportRepository;
+  private SkippedPluginsRepository skippedPluginsRepository;
 
   @BeforeEach
   void prepare() {
@@ -129,6 +136,7 @@ class PluginsServiceTest {
     when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
 
     languageSupportRepository = mock(LanguageSupportRepository.class);
+    skippedPluginsRepository = mock(SkippedPluginsRepository.class);
 
     underTest = createService(standaloneArtifactsLoadingStrategy, binariesArtifactSource, mock(ExecutorService.class));
   }
@@ -240,7 +248,7 @@ class PluginsServiceTest {
   }
 
   private PluginsService createService(StandaloneArtifactsLoadingStrategy standalone, BinariesArtifactSource binaries, ExecutorService executor) {
-    return new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
+    return new PluginsService(pluginsRepository, skippedPluginsRepository, storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
       standalone, connectedArtifactsLoadingStrategyFactory, binaries, languageSupportRepository, executor);
   }
@@ -498,6 +506,94 @@ class PluginsServiceTest {
   }
 
   @Test
+  void should_report_failed_when_download_completed_exceptionally() {
+    var download = new CompletableFuture<Void>();
+    download.completeExceptionally(new RuntimeException("download failed"));
+    var batch = new DownloadBatch(List.of(new PendingDownload("cpp", () -> download)), IGNORE_CALLBACKS);
+    batch.start(() -> {
+    });
+    mockEnabledInStandalone(SonarLanguage.CPP);
+    mockStatuses(null, Map.of("cpp", new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null)), batch);
+
+    assertThat(status(null, SonarLanguage.CPP)).isEqualTo(PluginStatus.failed(SonarLanguage.CPP));
+  }
+
+  @Test
+  void should_keep_downloading_while_the_download_is_still_running() {
+    var batch = new DownloadBatch(List.of(new PendingDownload("cpp", CompletableFuture::new)), IGNORE_CALLBACKS);
+    batch.start(() -> {
+    });
+    mockEnabledInStandalone(SonarLanguage.CPP);
+    mockStatuses(null, Map.of("cpp", new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null)), batch);
+
+    assertThat(status(null, SonarLanguage.CPP).state()).isEqualTo(ArtifactState.DOWNLOADING);
+  }
+
+  @Test
+  void should_keep_downloading_when_the_download_completed_successfully() {
+    var batch = new DownloadBatch(List.of(new PendingDownload("cpp", () -> CompletableFuture.completedFuture(null))), IGNORE_CALLBACKS);
+    batch.start(() -> {
+    });
+    mockEnabledInStandalone(SonarLanguage.CPP);
+    mockStatuses(null, Map.of("cpp", new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null)), batch);
+
+    assertThat(status(null, SonarLanguage.CPP).state()).isEqualTo(ArtifactState.DOWNLOADING);
+  }
+
+  @Test
+  void should_report_failed_when_plugin_is_skipped_for_incompatible_api() {
+    assertSkippedPluginReportedAs(SkipReason.IncompatiblePluginApi.INSTANCE, ArtifactState.FAILED);
+  }
+
+  @Test
+  void should_report_failed_when_plugin_is_skipped_for_unsatisfied_runtime() {
+    assertSkippedPluginReportedAs(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "17", "21"), ArtifactState.FAILED);
+  }
+
+  @Test
+  void should_report_failed_when_plugin_is_skipped_for_unsatisfied_dependency() {
+    assertSkippedPluginReportedAs(new SkipReason.UnsatisfiedDependency("javascript"), ArtifactState.FAILED);
+  }
+
+  @Test
+  void should_keep_active_when_plugin_is_skipped_for_unsupported_feature() {
+    assertSkippedPluginReportedAs(SkipReason.UnsupportedFeature.INSTANCE, ArtifactState.ACTIVE);
+  }
+
+  @Test
+  void should_keep_unsupported_when_plugin_is_skipped_because_its_languages_are_not_enabled() {
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, null);
+    when(skippedPluginsRepository.getSkippedEmbeddedPlugins()).thenReturn(List.of(
+      new SkippedPlugin("python", new SkipReason.LanguagesNotEnabled(List.of(SonarLanguage.PYTHON)))));
+    mockStatuses(null, Map.of("python", artifact));
+
+    assertThat(status(null, SonarLanguage.PYTHON)).isEqualTo(PluginStatus.unsupported(SonarLanguage.PYTHON));
+  }
+
+  @Test
+  void should_report_failed_for_a_connected_plugin_skipped_for_incompatible_api() {
+    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
+    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.JAVA));
+    when(skippedPluginsRepository.getSkippedPlugins("connection")).thenReturn(List.of(
+      new SkippedPlugin("java", SkipReason.IncompatiblePluginApi.INSTANCE)));
+    mockStatuses("connection", Map.of("java", artifact));
+
+    assertThat(status("connection", SonarLanguage.JAVA).state()).isEqualTo(ArtifactState.FAILED);
+    assertThat(status("connection", SonarLanguage.JAVA).source()).isEqualTo(ArtifactOrigin.SONARQUBE_SERVER);
+  }
+
+  private void assertSkippedPluginReportedAs(SkipReason reason, ArtifactState expectedState) {
+    var version = Version.create("1.0");
+    var artifact = new ResolvedArtifact(ArtifactState.ACTIVE, ossPath, ArtifactOrigin.EMBEDDED, version);
+    mockEnabledInStandalone(SonarLanguage.JAVA);
+    when(skippedPluginsRepository.getSkippedEmbeddedPlugins()).thenReturn(List.of(new SkippedPlugin("java", reason)));
+    mockStatuses(null, Map.of("java", artifact));
+
+    assertThat(status(null, SonarLanguage.JAVA))
+      .isEqualTo(PluginStatus.forLanguage(SonarLanguage.JAVA, expectedState, ArtifactOrigin.EMBEDDED, version, null, ossPath, null));
+  }
+
+  @Test
   void should_report_unsupported_for_disabled_language_in_connected_mode() {
     var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
     mockStatuses("connection", Map.of("python", artifact));
@@ -592,7 +688,11 @@ class PluginsServiceTest {
   }
 
   private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts) {
-    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of(), new DownloadBatch(List.of(), Runnable::run));
+    mockStatuses(connectionId, artifacts, new DownloadBatch(List.of(), Runnable::run));
+  }
+
+  private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts, DownloadBatch downloads) {
+    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of(), downloads);
     if (connectionId == null) {
       when(pluginsRepository.getEmbeddedPlugins()).thenReturn(configuration);
     } else {
