@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -37,7 +38,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePlugin
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,6 +101,191 @@ class PluginStatusNotifierServiceTest {
       .usingRecursiveComparison()
       .ignoringCollectionOrder()
       .isEqualTo(List.of(expectedScope1Params, expectedScope2Params));
+  }
+
+  @Test
+  void should_not_apply_a_binaries_download_to_a_server_download() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var serverDownload = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.DOWNLOADING, ArtifactOrigin.SONARQUBE_SERVER, null, null, null, null);
+    var binariesResult = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(serverDownload));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(binariesResult)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState, PluginStatusDto::getSource)
+      .containsExactly(PluginStateDto.DOWNLOADING, ArtifactSourceDto.SONARQUBE_SERVER);
+  }
+
+  @Test
+  void should_keep_an_earlier_binaries_result_when_a_server_download_finishes() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(
+      downloadingFromBinaries(SonarLanguage.CPP),
+      downloading(SonarLanguage.JAVA)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.CPP))));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(2)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(1).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.CPP, PluginStateDto.ACTIVE),
+        tuple(Language.JAVA, PluginStateDto.SYNCED));
+  }
+
+  @Test
+  void should_keep_an_earlier_server_result_when_a_binaries_download_finishes() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(
+      downloading(SonarLanguage.JAVA),
+      downloadingFromBinaries(SonarLanguage.CPP)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.CPP))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(2)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(1).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.SYNCED),
+        tuple(Language.CPP, PluginStateDto.ACTIVE));
+  }
+
+  @Test
+  void should_keep_an_earlier_download_result_when_a_later_download_finishes() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var javaDownloading = downloading(SonarLanguage.JAVA);
+    var pythonDownloading = downloading(SonarLanguage.PYTHON);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(javaDownloading, pythonDownloading));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.PYTHON))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(2)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(1).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.SYNCED),
+        tuple(Language.PYTHON, PluginStateDto.SYNCED));
+  }
+
+  @Test
+  void should_keep_a_bound_scope_binaries_result_when_embedded_statuses_are_published() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_2, null, true, "Scope 2"), BindingConfiguration.noBinding());
+    var javaDownloading = downloadingFromBinaries(SonarLanguage.JAVA);
+    var pythonDownloading = downloadingFromBinaries(SonarLanguage.PYTHON);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(javaDownloading, pythonDownloading));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.JAVA))));
+    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(null, List.of()));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.PYTHON))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(6)).didChangePluginStatuses(captor.capture());
+    var boundNotifications = captor.getAllValues().stream()
+      .filter(notification -> SCOPE_1.equals(notification.getConfigScopeId()))
+      .toList();
+    assertThat(boundNotifications).hasSize(3);
+    assertThat(boundNotifications.get(2).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.ACTIVE),
+        tuple(Language.PYTHON, PluginStateDto.ACTIVE));
+  }
+
+  @Test
+  void should_drop_a_binaries_result_when_the_connection_publishes_a_new_snapshot() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var javaDownloading = downloadingFromBinaries(SonarLanguage.JAVA);
+    var pythonDownloading = downloadingFromBinaries(SonarLanguage.PYTHON);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(javaDownloading, pythonDownloading));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(PluginStatus.failed(SonarLanguage.JAVA))));
+    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(CONNECTION_1, List.of(javaDownloading, pythonDownloading)));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.PYTHON))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(3)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(0).getPluginStatuses())
+      .filteredOn(status -> status.getLanguage() == Language.JAVA)
+      .singleElement()
+      .extracting(PluginStatusDto::getState, PluginStatusDto::getSource)
+      .containsExactly(PluginStateDto.FAILED, ArtifactSourceDto.ON_DEMAND);
+    assertThat(captor.getAllValues().get(2).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.DOWNLOADING),
+        tuple(Language.PYTHON, PluginStateDto.ACTIVE));
+  }
+
+  @Test
+  void should_keep_the_downloading_source_when_a_failure_update_has_none() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(downloading(SonarLanguage.JAVA)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(PluginStatus.failed(SonarLanguage.JAVA))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState, PluginStatusDto::getSource)
+      .containsExactly(PluginStateDto.FAILED, ArtifactSourceDto.SONARQUBE_SERVER);
+  }
+
+  @Test
+  void should_drop_remembered_download_results_when_a_new_status_snapshot_is_published() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var javaDownloading = downloading(SonarLanguage.JAVA);
+    var pythonDownloading = downloading(SonarLanguage.PYTHON);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(javaDownloading, pythonDownloading));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+    underTest.onPluginStatusesChanged(new PluginStatusesChangedEvent(CONNECTION_1, List.of(javaDownloading, pythonDownloading)));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.PYTHON))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(3)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(2).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.DOWNLOADING),
+        tuple(Language.PYTHON, PluginStateDto.SYNCED));
+  }
+
+  @Test
+  void should_ignore_companion_only_download_updates() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null,
+      List.of(PluginStatus.forCompanion("omnisharp", ArtifactState.FAILED, null, null, null))));
+
+    verify(client, never()).didChangePluginStatuses(any());
+  }
+
+  private static PluginStatus downloading(SonarLanguage language) {
+    return PluginStatus.forLanguage(language, ArtifactState.DOWNLOADING, ArtifactOrigin.SONARQUBE_SERVER, null, null, null, null);
+  }
+
+  private static PluginStatus downloadingFromBinaries(SonarLanguage language) {
+    return PluginStatus.forLanguage(language, ArtifactState.DOWNLOADING, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+  }
+
+  private static PluginStatus activeFromBinaries(SonarLanguage language) {
+    return PluginStatus.forLanguage(language, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+  }
+
+  private static PluginStatus synced(SonarLanguage language) {
+    return PluginStatus.forLanguage(language, ArtifactState.SYNCED, ArtifactOrigin.SONARQUBE_SERVER, null, null, null, null);
   }
 
   private static PluginStatusDto standaloneStatusDto() {

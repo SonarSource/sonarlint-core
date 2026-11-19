@@ -120,7 +120,7 @@ public class BinariesArtifactSource implements ArtifactSource {
       if (cached.isPresent()) {
         resolved.put(key, cached.get());
       } else {
-        resolved.put(key, ResolvedArtifact.downloading());
+        resolved.put(key, ResolvedArtifact.downloading(ArtifactOrigin.ON_DEMAND));
         pendingDownloads.add(new PendingDownload(key, () -> startDownload(artifact)));
       }
     }
