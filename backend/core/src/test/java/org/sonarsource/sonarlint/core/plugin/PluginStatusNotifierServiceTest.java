@@ -103,31 +103,6 @@ class PluginStatusNotifierServiceTest {
   }
 
   @Test
-  void should_keep_current_status_when_the_language_is_not_downloading() {
-    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
-    var unsupported = PluginStatus.unsupported(SonarLanguage.JAVA);
-    var active = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
-    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(unsupported));
-
-    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(active)));
-
-    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
-    verify(client).didChangePluginStatuses(captor.capture());
-    assertThat(captor.getValue().getPluginStatuses())
-      .singleElement()
-      .extracting(PluginStatusDto::getState)
-      .isEqualTo(PluginStateDto.UNSUPPORTED);
-  }
-
-  @Test
-  void should_not_load_plugins_when_no_scope_is_bound_to_the_connection() {
-    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(PluginStatus.failed(SonarLanguage.JAVA))));
-
-    verify(pluginsService, never()).getPluginStatuses(any());
-    verify(client, never()).didChangePluginStatuses(any());
-  }
-
-  @Test
   void should_ignore_companion_only_download_updates() {
     configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
 

@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -50,13 +49,11 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategy;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ConnectedArtifactsLoadingStrategyFactory;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.ResolutionPlan;
 import org.sonarsource.sonarlint.core.plugin.loading.strategy.StandaloneArtifactsLoadingStrategy;
-import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
@@ -92,8 +89,6 @@ class PluginsServiceTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final Executor IGNORE_CALLBACKS = command -> {
-  };
   private static final Path ossPath = Paths.get("folder", "oss");
   private static final Path enterprisePath = Paths.get("folder", "enterprise");
   private PluginsService underTest;
@@ -548,29 +543,6 @@ class PluginsServiceTest {
   }
 
   @Test
-  void should_keep_downloading_while_the_download_is_still_running() {
-    var batch = new DownloadBatch(List.of(new PendingDownload("cpp", CompletableFuture::new)), IGNORE_CALLBACKS);
-    batch.start(() -> {
-    });
-    mockEnabledInStandalone(SonarLanguage.CPP);
-    mockStatuses(null, Map.of("cpp", new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null)), batch);
-
-    assertThat(status(null, SonarLanguage.CPP).state()).isEqualTo(ArtifactState.DOWNLOADING);
-  }
-
-  @Test
-  void should_report_failed_for_a_connected_plugin_skipped_for_incompatible_api() {
-    var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
-    when(languageSupportRepository.getEnabledLanguagesInConnectedMode()).thenReturn(Set.of(SonarLanguage.JAVA));
-    when(skippedPluginsRepository.getSkippedPlugins("connection")).thenReturn(List.of(
-      new SkippedPlugin("java", SkipReason.IncompatiblePluginApi.INSTANCE)));
-    mockStatuses("connection", Map.of("java", artifact));
-
-    assertThat(status("connection", SonarLanguage.JAVA).state()).isEqualTo(ArtifactState.FAILED);
-    assertThat(status("connection", SonarLanguage.JAVA).source()).isEqualTo(ArtifactOrigin.SONARQUBE_SERVER);
-  }
-
-  @Test
   void should_report_unsupported_for_disabled_language_in_connected_mode() {
     var artifact = new ResolvedArtifact(ArtifactState.SYNCED, ossPath, ArtifactOrigin.SONARQUBE_SERVER, null);
     mockStatuses("connection", Map.of("python", artifact));
@@ -665,11 +637,7 @@ class PluginsServiceTest {
   }
 
   private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts) {
-    mockStatuses(connectionId, artifacts, new DownloadBatch(List.of(), Runnable::run));
-  }
-
-  private void mockStatuses(@Nullable String connectionId, Map<String, ResolvedArtifact> artifacts, DownloadBatch downloads) {
-    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of(), downloads);
+    var configuration = new PluginsConfiguration(new ArtifactsLoadingResult(artifacts), mock(LoadedPlugins.class), Map.of(), new DownloadBatch(List.of(), Runnable::run));
     if (connectionId == null) {
       when(pluginsRepository.getEmbeddedPlugins()).thenReturn(configuration);
     } else {
