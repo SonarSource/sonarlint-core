@@ -64,6 +64,10 @@ public class DownloadBatch {
     return failedArtifactKeys.contains(artifactKey);
   }
 
+  public boolean hasFailedArtifact() {
+    return !failedArtifactKeys.isEmpty();
+  }
+
   void start(Runnable onSomeDownloadSucceeded) {
     if (pending.isEmpty()) {
       return;
