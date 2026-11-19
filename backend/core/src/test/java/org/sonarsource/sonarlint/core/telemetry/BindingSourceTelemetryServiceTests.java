@@ -77,6 +77,29 @@ class BindingSourceTelemetryServiceTests {
   }
 
   @Test
+  void should_merge_the_sources_of_the_same_kind_declared_at_a_root_and_at_a_symlink_to_it() throws Exception {
+    var repo = repo("repo");
+    var link = Files.createSymbolicLink(workspace.resolve("link"), repo);
+
+    var events = underTest.toEvents(params(
+      new ObservedBindingSourceDto(repo, BindingSource.SONAR_CONFIG, 2),
+      new ObservedBindingSourceDto(link, BindingSource.SONAR_CONFIG, 2)));
+
+    assertThat(events).hasSize(1);
+  }
+
+  @Test
+  void should_merge_the_sources_of_the_same_kind_declared_at_the_same_missing_root() {
+    var missing = workspace.resolve("missing");
+
+    var events = underTest.toEvents(params(
+      new ObservedBindingSourceDto(missing, BindingSource.IDE_SETTINGS, 1),
+      new ObservedBindingSourceDto(missing.resolve("sub").resolve(".."), BindingSource.IDE_SETTINGS, 1)));
+
+    assertThat(events).hasSize(1);
+  }
+
+  @Test
   void should_keep_every_source_without_a_root() {
     var events = underTest.toEvents(params(
       new ObservedBindingSourceDto(null, BindingSource.IDE_SETTINGS, 1),

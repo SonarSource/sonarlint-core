@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -53,7 +54,7 @@ public class BindingSourceTelemetryService {
     return params.getSources().stream()
       .filter(BindingSourceTelemetryService::isValid)
       .filter(source -> source.getDeclarationRoot() == null
-        || declarations.add(new Declaration(source.getBindingSource(), source.getDeclarationRoot().toAbsolutePath().normalize())))
+        || declarations.add(new Declaration(source.getBindingSource(), canonical(source.getDeclarationRoot()))))
       .map(source -> new BindingSourceObservedPayload(snapshotId, repositoryIdOf(source.getDeclarationRoot()), toPayload(source.getBindingSource()),
         source.getDeclaredBindingCount()))
       .toList();
@@ -61,6 +62,14 @@ public class BindingSourceTelemetryService {
 
   private static boolean isValid(@Nullable ObservedBindingSourceDto source) {
     return source != null && source.getBindingSource() != null && source.getDeclaredBindingCount() >= 1;
+  }
+
+  private static Path canonical(Path root) {
+    try {
+      return root.toRealPath();
+    } catch (IOException e) {
+      return root.toAbsolutePath().normalize();
+    }
   }
 
   @CheckForNull
