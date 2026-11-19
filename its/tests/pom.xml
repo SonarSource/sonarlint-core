@@ -11,8 +11,10 @@
   <description>Integration tests</description>
 
   <properties>
-    <!-- Each test class starts its own SonarQube, so classes run in separate JVMs to boot and test servers concurrently. -->
-    <its.forkCount>3</its.forkCount>
+    <!-- Each test class starts its own SonarQube, so classes run in separate JVMs to boot and test servers concurrently.
+         With at least one fork per IT class, every class starts right away, whatever the run order.
+         Surefire starts no more forks than there are classes. -->
+    <its.forkCount>10</its.forkCount>
   </properties>
 
   <dependencies>
@@ -172,8 +174,6 @@
         <configuration>
           <forkCount>${its.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
-          <!-- Starts SonarQubeEnterpriseEditionTests in the first wave and SonarQubeDeveloperEditionTests right after the sub-second StandaloneTests. -->
-          <runOrder>reversealphabetical</runOrder>
           <systemPropertyVariables>
             <!-- Orchestrator numbers its install directories per JVM and deletes them before unzipping, so forks need separate workspaces. -->
             <orchestrator.workspaceDir>${project.build.directory}/orchestrator-fork-${surefire.forkNumber}</orchestrator.workspaceDir>
