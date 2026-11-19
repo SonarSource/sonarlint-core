@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
@@ -32,6 +35,7 @@ public class DownloadBatch {
   private final List<PendingDownload> pending;
   private final Executor callbackExecutor;
   private final CompletableFuture<Void> completion;
+  private final Set<String> failedArtifactKeys = ConcurrentHashMap.newKeySet();
 
   DownloadBatch(List<PendingDownload> pending, Executor callbackExecutor) {
     this.pending = List.copyOf(pending);
@@ -43,12 +47,16 @@ public class DownloadBatch {
     return completion;
   }
 
+  public boolean hasFailed(String artifactKey) {
+    return failedArtifactKeys.contains(artifactKey);
+  }
+
   void start(Runnable onSomeDownloadSucceeded) {
     if (pending.isEmpty()) {
       return;
     }
     var logOutput = LOG.getTargetForCopy();
-    var futures = pending.stream().map(DownloadBatch::startDownload).toList();
+    var futures = pending.stream().map(this::startDownload).toList();
     var normalized = futures.stream().map(f -> f.exceptionally(e -> null)).toArray(CompletableFuture[]::new);
     var allEnded = CompletableFuture.allOf(normalized);
     allEnded.thenRun(this::completeNormally);
@@ -81,12 +89,19 @@ public class DownloadBatch {
     }
   }
 
-  private static CompletableFuture<Void> startDownload(PendingDownload download) {
+  private CompletableFuture<Void> startDownload(PendingDownload download) {
     try {
-      return download.starter().get();
+      return download.starter().get().whenComplete((ignored, error) -> recordFailure(download.artifactKey(), error));
     } catch (Exception e) {
+      failedArtifactKeys.add(download.artifactKey());
       LOG.error("Could not start download for '{}'", download.artifactKey(), e);
       return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  private void recordFailure(String artifactKey, @Nullable Throwable error) {
+    if (error != null) {
+      failedArtifactKeys.add(artifactKey);
     }
   }
 }
