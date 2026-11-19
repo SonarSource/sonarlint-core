@@ -47,6 +47,8 @@ public class PluginStatusNotifierService {
   /**
    * Terminal states already reported for downloads that the cached configuration still lists as DOWNLOADING.
    * A later completion merges into that cache, so these results have to be applied again or the earlier language is sent as DOWNLOADING.
+   * The key is the scope's effective connection, including for a binaries download, so a standalone snapshot does not drop a bound
+   * scope's result and a connection snapshot clears it.
    */
   private final Map<String, Map<SonarLanguage, PluginStatus>> appliedDownloadResultsByConnection = new HashMap<>();
   private final Object appliedDownloadResultsLock = new Object();
@@ -87,8 +89,13 @@ public class PluginStatusNotifierService {
       var current = pluginsService.getPluginStatuses(connectionId);
       notifyBoundScopes(connectionId, mergeKeepingEarlierResults(connectionId, current, event.newStatuses(), false));
     } else {
-      notifyEachScope(scopeId -> mergeKeepingEarlierResults(null, statusesForScope(scopeId), event.newStatuses(), true));
+      notifyEachScope(scopeId -> mergeBinariesDownload(scopeId, event.newStatuses()));
     }
+  }
+
+  private List<PluginStatus> mergeBinariesDownload(String scopeId, Collection<PluginStatus> updates) {
+    var effectiveConnectionId = configurationRepository.getEffectiveBinding(scopeId).map(Binding::connectionId).orElse(null);
+    return mergeKeepingEarlierResults(effectiveConnectionId, pluginsService.getPluginStatuses(effectiveConnectionId), updates, true);
   }
 
   private List<PluginStatus> mergeKeepingEarlierResults(@Nullable String connectionId, List<PluginStatus> current, Collection<PluginStatus> updates,
@@ -97,11 +104,7 @@ public class PluginStatusNotifierService {
       var remembered = appliedDownloadResultsByConnection.computeIfAbsent(connectionKey(connectionId), key -> new EnumMap<>(SonarLanguage.class));
       var withEarlierResults = mergeDownloadUpdate(current, remembered.values(), binariesDownload);
       var merged = mergeDownloadUpdate(withEarlierResults, updates, binariesDownload);
-      for (var update : updates) {
-        if (update.language() != null && merged.contains(update)) {
-          remembered.put(update.language(), update);
-        }
-      }
+      rememberAppliedUpdates(remembered, withEarlierResults, merged, binariesDownload);
       return merged;
     }
   }
@@ -156,7 +159,38 @@ public class PluginStatusNotifierService {
       return status;
     }
     var update = updatesByLanguage.get(status.language());
-    return update != null ? update : status;
+    if (update == null) {
+      return status;
+    }
+    if (update.source() != null || status.source() == null) {
+      return update;
+    }
+    return new PluginStatus(update.pluginKey(), update.language(), update.state(), status.source(), update.actualVersion(), update.overriddenVersion(),
+      update.path(), update.serverVersion());
+  }
+
+  /**
+   * Remembers the status that was actually sent. A failure update has no source, so the sent status is the update with the
+   * downloading source kept, and that is the object a later merge has to apply again.
+   */
+  private static void rememberAppliedUpdates(Map<SonarLanguage, PluginStatus> remembered, List<PluginStatus> before, List<PluginStatus> merged,
+    boolean binariesDownload) {
+    var beforeByLanguage = new EnumMap<SonarLanguage, PluginStatus>(SonarLanguage.class);
+    for (var status : before) {
+      if (status.language() != null) {
+        beforeByLanguage.put(status.language(), status);
+      }
+    }
+    for (var status : merged) {
+      var language = status.language();
+      if (language == null) {
+        continue;
+      }
+      var previous = beforeByLanguage.get(language);
+      if (previous != null && previous.state() == ArtifactState.DOWNLOADING && isSameDownload(previous.source(), binariesDownload) && status != previous) {
+        remembered.put(language, status);
+      }
+    }
   }
 
   private static boolean isSameDownload(@Nullable ArtifactOrigin source, boolean binariesDownload) {
