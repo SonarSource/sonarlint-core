@@ -217,11 +217,27 @@ public class PluginsService {
       } else {
         throw startFailure;
       }
+    } else if (config.downloads().hasFailedArtifact()) {
+      publicationFailure = publishFailedStatuses(connectionId, config, publicationFailure);
     }
     if (publicationFailure != null) {
       throw publicationFailure;
     }
     return config;
+  }
+
+  @Nullable
+  private RuntimeException publishFailedStatuses(@Nullable String connectionId, PluginsConfiguration config, @Nullable RuntimeException publicationFailure) {
+    try {
+      eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config)));
+      return publicationFailure;
+    } catch (RuntimeException error) {
+      if (publicationFailure == null) {
+        return error;
+      }
+      publicationFailure.addSuppressed(error);
+      return publicationFailure;
+    }
   }
 
   private void discardFailedStart(@Nullable String connectionId) {

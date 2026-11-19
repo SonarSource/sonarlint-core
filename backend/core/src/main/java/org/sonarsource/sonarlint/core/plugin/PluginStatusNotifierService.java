@@ -23,10 +23,12 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -71,9 +73,9 @@ public class PluginStatusNotifierService {
       if (configurationRepository.getBoundScopesToConnection(connectionId).isEmpty()) {
         return;
       }
-      notifyBoundScopes(connectionId, mergeDownloadUpdate(pluginsService.getPluginStatuses(connectionId), event.newStatuses()));
+      notifyBoundScopes(connectionId, mergeDownloadUpdate(pluginsService.getPluginStatuses(connectionId), event.newStatuses(), false));
     } else {
-      notifyEachScope(scopeId -> mergeDownloadUpdate(statusesForScope(scopeId), event.newStatuses()));
+      notifyEachScope(scopeId -> mergeDownloadUpdate(statusesForScope(scopeId), event.newStatuses(), true));
     }
   }
 
@@ -97,10 +99,10 @@ public class PluginStatusNotifierService {
   }
 
   /**
-   * Replaces a language that is still {@link ArtifactState#DOWNLOADING} with the state reported at the end of its download.
-   * Languages that are not downloading keep their current status.
+   * Replaces a language that is still downloading from the same source with the state reported at the end of that download.
+   * A binaries download does not replace a SonarQube download, and a language that is not downloading keeps its status.
    */
-  private static List<PluginStatus> mergeDownloadUpdate(List<PluginStatus> current, Collection<PluginStatus> updates) {
+  private static List<PluginStatus> mergeDownloadUpdate(List<PluginStatus> current, Collection<PluginStatus> updates, boolean binariesDownload) {
     var updatesByLanguage = new EnumMap<SonarLanguage, PluginStatus>(SonarLanguage.class);
     for (var update : updates) {
       if (update.language() != null) {
@@ -108,16 +110,23 @@ public class PluginStatusNotifierService {
       }
     }
     return current.stream()
-      .map(status -> overlayDownloading(status, updatesByLanguage))
+      .map(status -> overlayDownloading(status, updatesByLanguage, binariesDownload))
       .toList();
   }
 
-  private static PluginStatus overlayDownloading(PluginStatus status, EnumMap<SonarLanguage, PluginStatus> updatesByLanguage) {
-    if (status.language() == null || status.state() != ArtifactState.DOWNLOADING) {
+  private static PluginStatus overlayDownloading(PluginStatus status, EnumMap<SonarLanguage, PluginStatus> updatesByLanguage, boolean binariesDownload) {
+    if (status.language() == null || status.state() != ArtifactState.DOWNLOADING || !isSameDownload(status.source(), binariesDownload)) {
       return status;
     }
     var update = updatesByLanguage.get(status.language());
     return update != null ? update : status;
+  }
+
+  private static boolean isSameDownload(@Nullable ArtifactOrigin source, boolean binariesDownload) {
+    if (binariesDownload) {
+      return source == ArtifactOrigin.ON_DEMAND;
+    }
+    return source == ArtifactOrigin.SONARQUBE_SERVER || source == ArtifactOrigin.SONARQUBE_CLOUD;
   }
 
 }

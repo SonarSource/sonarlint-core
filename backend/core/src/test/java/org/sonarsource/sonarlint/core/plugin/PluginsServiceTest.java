@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -81,6 +82,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -263,6 +265,24 @@ class PluginsServiceTest {
     }
     reloaded.countDown();
     return null;
+  }
+
+  @Test
+  void should_publish_failed_statuses_when_a_scheduled_download_fails() {
+    var download = new CompletableFuture<Void>();
+    download.completeExceptionally(new RuntimeException("download failed"));
+    configureDownloads(new PendingDownload("java", () -> download), mock(ExecutorService.class));
+
+    underTest.getEmbeddedPlugins();
+
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher, times(2)).publishEvent(captor.capture());
+    assertThat(captor.getAllValues().get(1).pluginStatuses())
+      .filteredOn(status -> status.language() == SonarLanguage.JAVA)
+      .singleElement()
+      .extracting(PluginStatus::state)
+      .isEqualTo(ArtifactState.FAILED);
+    assertThat(cachedPlugins(false)).isNotNull();
   }
 
   private PluginsConfiguration cachedPlugins(boolean connected) {
