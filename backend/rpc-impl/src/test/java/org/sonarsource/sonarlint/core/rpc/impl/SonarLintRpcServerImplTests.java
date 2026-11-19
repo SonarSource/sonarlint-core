@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -120,6 +121,22 @@ class SonarLintRpcServerImplTests {
     assertThat(outboundMessageExecutor.isShutdown()).isFalse();
     assertThat(shutdown).succeedsWithin(Duration.ofSeconds(5));
     await().atMost(5, SECONDS).until(outboundMessageExecutor::isShutdown);
+  }
+
+  @Test
+  void shutdown_response_is_written_through_the_outbound_executor() {
+    var request = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"shutdown\"}";
+    var payload = request.getBytes(StandardCharsets.UTF_8);
+    var framed = ("Content-Length: " + payload.length + "\r\n\r\n").getBytes(StandardCharsets.UTF_8);
+    var message = new byte[framed.length + payload.length];
+    System.arraycopy(framed, 0, message, 0, framed.length);
+    System.arraycopy(payload, 0, message, framed.length, payload.length);
+    var output = new ByteArrayOutputStream();
+
+    new SonarLintRpcServerImpl(new ByteArrayInputStream(message), output);
+
+    await().atMost(5, SECONDS).until(() -> output.toString(StandardCharsets.UTF_8).contains("\"result\":null"));
+    assertThat(output.toString(StandardCharsets.UTF_8)).doesNotContain("\"error\"");
   }
 
   private static SonarLintRpcServerImpl newBackend(ExecutorService outboundMessageExecutor, ExecutorService inboundMessageExecutor) {
