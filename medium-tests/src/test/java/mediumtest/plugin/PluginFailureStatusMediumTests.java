@@ -121,6 +121,28 @@ class PluginFailureStatusMediumTests {
   }
 
   @SonarLintTest
+  void should_keep_unsupported_for_languages_of_the_same_plugin_that_are_not_enabled(SonarLintTestHarness harness) {
+    harness.fakeBinariesServerBuilder()
+      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")
+      .start();
+    var client = harness.newFakeClient().build();
+    harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.CPP)
+      .withUnboundConfigScope(SCOPE_ID)
+      .start(client);
+
+    await().atMost(20, SECONDS).untilAsserted(() -> {
+      var completedDownload = client.getPluginStatusChanges().stream()
+        .filter(change -> SCOPE_ID.equals(change.getConfigScopeId()))
+        .filter(change -> stateOf(change.getPluginStatuses(), Language.CPP) == PluginStateDto.ACTIVE)
+        .findFirst();
+      assertThat(completedDownload).isPresent();
+      assertThat(stateOf(completedDownload.get().getPluginStatuses(), Language.C)).isEqualTo(PluginStateDto.UNSUPPORTED);
+      assertThat(stateOf(completedDownload.get().getPluginStatuses(), Language.OBJC)).isEqualTo(PluginStateDto.UNSUPPORTED);
+    });
+  }
+
+  @SonarLintTest
   void should_notify_synced_after_a_successful_download_when_no_analysis_scheduler_exists(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).start();
     var client = harness.newFakeClient().withToken(CONNECTION_ID, "token").build();
