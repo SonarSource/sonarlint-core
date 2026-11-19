@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -73,6 +74,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
+@Tag("CommunityBuild")
 class FileExclusionTests extends AbstractConnectedTests {
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
