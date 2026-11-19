@@ -89,6 +89,25 @@ public class GitService {
     return nativeGitExecutable.get().blame(projectBaseDir, fileUris, thresholdDate);
   }
 
+  /**
+   * The root of the work tree containing the given directory, as a real path, or {@code null} outside a non-bare
+   * repository. A linked worktree is a work tree of its own.
+   */
+  @CheckForNull
+  public static Path findWorkTreeRoot(Path dir) {
+    var builder = new RepositoryBuilder().findGitDir(dir.toFile());
+    if (builder.getGitDir() == null) {
+      return null;
+    }
+    try {
+      builder.setup();
+      return builder.getWorkTree() == null ? null : builder.getWorkTree().toPath().toRealPath();
+    } catch (IOException | IllegalArgumentException e) {
+      LOG.debug("Unable to resolve the work tree of {}: {}", dir, e.getMessage());
+      return null;
+    }
+  }
+
   // Could be optimized to only fetch VCS changed files matching the base dir
   // Currently, it finds all the files of the git repo, even when called against a subfolder
   public static Set<URI> getVCSChangedFiles(@Nullable Path baseDir) {

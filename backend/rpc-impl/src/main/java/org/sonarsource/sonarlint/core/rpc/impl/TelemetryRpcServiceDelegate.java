@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegratio
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.BindingSourcesObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.IdeLabsFeedb
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.McpTransportModeUsedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
+import org.sonarsource.sonarlint.core.telemetry.BindingSourceTelemetryService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.telemetry.gessie.GessieService;
 
@@ -75,6 +77,16 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params) {
     notify(() -> getBean(GessieService.class).aiAgentIntegrationStateObserved(params));
+  }
+
+  @Override
+  public void bindingSourcesObserved(BindingSourcesObservedParams params) {
+    notify(() -> {
+      var gessieService = getBean(GessieService.class);
+      if (gessieService.isEnabled()) {
+        gessieService.bindingSourcesObserved(getBean(BindingSourceTelemetryService.class).toEvents(params));
+      }
+    });
   }
 
   @Override

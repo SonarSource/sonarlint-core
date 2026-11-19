@@ -41,10 +41,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegratio
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.BindingSourceObservedPayload;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.BindingSourceObservedPayload.BindingSource.IDE_SETTINGS;
+import static org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.BindingSourceObservedPayload.BindingSource.SONAR_CONFIG;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -57,6 +61,7 @@ class GessieServiceTests {
 
   private final GessieHttpClient client = mock(GessieHttpClient.class);
   private final TelemetryUserSetting setting = mock(TelemetryUserSetting.class);
+
   private GessieService service;
 
   @BeforeEach
@@ -91,6 +96,19 @@ class GessieServiceTests {
   }
 
   @Test
+  void should_emit_one_binding_source_event_per_payload() {
+    var payloads = List.of(
+      new BindingSourceObservedPayload("snapshot", "repository", SONAR_CONFIG, 3),
+      new BindingSourceObservedPayload("snapshot", null, IDE_SETTINGS, 1));
+
+    service.bindingSourcesObserved(payloads);
+
+    var events = sentEvents();
+    assertThat(events).extracting(event -> event.metadata().eventType()).containsOnly("Analytics.Editor.IdeBindingSourceObserved");
+    assertThat(events).extracting(GessieEvent::eventPayload).containsExactlyElementsOf(payloads);
+  }
+
+  @Test
   void should_drop_incomplete_reports() {
     service.aiIntegrationAction(null);
     service.aiIntegrationCliStateObserved(new AiIntegrationCliStateObservedParams(null, CliAuthenticationStatus.UNKNOWN, AiIntegrationHost.VSCODE));
@@ -118,6 +136,17 @@ class GessieServiceTests {
   }
 
   @Test
+  void should_be_enabled_only_with_the_capability_and_current_consent() {
+    assertThat(newService(false).isEnabled()).isFalse();
+
+    when(setting.isTelemetryEnabledByUser()).thenReturn(false);
+    assertThat(newService(true).isEnabled()).isFalse();
+
+    when(setting.isTelemetryEnabledByUser()).thenReturn(true);
+    assertThat(newService(true).isEnabled()).isTrue();
+  }
+
+  @Test
   void should_isolate_synchronous_submission_failure() {
     doThrow(new IllegalStateException("private response")).when(client).postEvent(any(GessieEvent.class));
     assertThatCode(() -> service.aiIntegrationAction(action(AiIntegrationActionStatus.FAILED))).doesNotThrowAnyException();
@@ -138,5 +167,11 @@ class GessieServiceTests {
     var captor = ArgumentCaptor.forClass(GessieEvent.class);
     verify(client).postEvent(captor.capture());
     return captor.getValue();
+  }
+
+  private List<GessieEvent> sentEvents() {
+    var captor = ArgumentCaptor.forClass(GessieEvent.class);
+    verify(client, atLeastOnce()).postEvent(captor.capture());
+    return captor.getAllValues();
   }
 }

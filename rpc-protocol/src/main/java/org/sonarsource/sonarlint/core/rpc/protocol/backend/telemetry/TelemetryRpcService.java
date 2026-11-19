@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegratio
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegrationCliStateObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.BindingSourcesObservedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FindingsFilteredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
@@ -79,6 +80,13 @@ public interface TelemetryRpcService {
    */
   @JsonNotification
   void aiAgentIntegrationStateObserved(AiAgentIntegrationStateObservedParams params);
+
+  /**
+   * Report the bound sources of the roots present at startup, once per IDE session.
+   * Emission requires GESSIE_TELEMETRY and current user consent.
+   */
+  @JsonNotification
+  void bindingSourcesObserved(BindingSourcesObservedParams params);
 
   /**
    * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
