@@ -27,11 +27,15 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginRpcService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LocalOnlyIssuesRepository;
@@ -272,16 +276,40 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
     } catch (Exception e) {
       throw new IllegalStateException(e);
     } finally {
-      try {
-        serverLauncher.close();
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-      }
-      try {
-        clientLauncher.close();
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-      }
+      closeTransport();
+    }
+    return CompletableFuture.completedFuture(null);
+  }
+
+  /**
+   * Sends shutdown over JSON-RPC and fails if the response is not written in time.
+   * The backend is closed either way, so the caller must not shut it down again.
+   */
+  public void awaitShutdownResponse(Duration timeout) {
+    try {
+      serverUsingRpc.shutdown().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      throw new AssertionError("Shutdown response was not received", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    } catch (ExecutionException e) {
+      throw new IllegalStateException("Shutdown request failed", e);
+    } finally {
+      closeTransport();
+    }
+  }
+
+  private void closeTransport() {
+    try {
+      serverLauncher.close();
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+    }
+    try {
+      clientLauncher.close();
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
     }
     try {
       this.clientToServerOutputStream.close();
@@ -291,7 +319,6 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
     } catch (Exception e) {
       e.printStackTrace(System.err);
     }
-    return CompletableFuture.completedFuture(null);
   }
 
   public int getEmbeddedServerPort() {
