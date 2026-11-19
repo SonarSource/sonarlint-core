@@ -196,6 +196,38 @@ class PluginFailureStatusMediumTests {
   }
 
   @SonarLintTest
+  void should_keep_an_earlier_binaries_plugin_when_a_server_download_finishes(SonarLintTestHarness harness) throws IOException {
+    harness.fakeBinariesServerBuilder()
+      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")
+      .start();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    server.getMockServer().stubFor(get(urlEqualTo(JAVA_DOWNLOAD_PATH))
+      .atPriority(1)
+      .willReturn(aResponse().withStatus(200).withBody(Files.readAllBytes(TestPlugin.JAVA.getPath())).withFixedDelay(1_500)));
+    var client = harness.newFakeClient().withToken(CONNECTION_ID, "token").build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.CPP)
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .start(client);
+
+    backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(SCOPE_ID)).join();
+
+    awaitPluginState(client, Language.CPP, PluginStateDto.ACTIVE);
+    await().atMost(20, SECONDS).untilAsserted(() -> {
+      var javaSynced = client.getPluginStatusChanges().stream()
+        .filter(change -> SCOPE_ID.equals(change.getConfigScopeId()))
+        .filter(change -> stateOf(change.getPluginStatuses(), Language.JAVA) == PluginStateDto.SYNCED)
+        .findFirst();
+      assertThat(javaSynced).isPresent();
+      assertThat(stateOf(javaSynced.get().getPluginStatuses(), Language.CPP)).isEqualTo(PluginStateDto.ACTIVE);
+    });
+  }
+
+  @SonarLintTest
   void should_not_download_again_when_the_connection_has_no_bound_scope(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).start();
     server.getMockServer().stubFor(get(urlEqualTo(JAVA_DOWNLOAD_PATH))
