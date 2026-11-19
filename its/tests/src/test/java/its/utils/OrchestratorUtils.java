@@ -22,6 +22,7 @@ package its.utils;
 import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.junit5.OrchestratorExtensionBuilder;
+import javax.annotation.CheckForNull;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 
@@ -42,29 +43,32 @@ public class OrchestratorUtils {
     if (orchestratorJavaHome != null) {
       config.setProperty("java.home", orchestratorJavaHome);
     }
+    var forkPortBase = forkPortBase();
+    if (forkPortBase != null) {
+      // Orchestrator reads the H2 URL from its configuration and starts the embedded database on the URL's port
+      config.setProperty("sonar.jdbc.url", "jdbc:h2:tcp://127.0.0.1:" + (forkPortBase + 3) + "/sonar;USER=sonar;PASSWORD=sonar");
+    }
     var builder = OrchestratorExtension.builder(config.build())
       .defaultForceAuthentication()
       .keepBundledPlugins()
       .useDefaultAdminCredentialsForBuilds(true)
       .setSonarVersion(SONAR_VERSION);
-    setForkPorts(builder);
+    if (forkPortBase != null) {
+      builder
+        .setServerProperty("sonar.web.port", String.valueOf(forkPortBase))
+        .setServerProperty("sonar.search.port", String.valueOf(forkPortBase + 1))
+        .setServerProperty("sonar.es.port", String.valueOf(forkPortBase + 2));
+    }
     return builder;
   }
 
   /**
    * Orchestrator picks a free port, releases it and only binds it when the server starts, so servers started at the same time
-   * in parallel forks can get the same port. Each fork gets its own fixed web and Elasticsearch ports instead.
-   * The H2 port stays random: Orchestrator always picks it itself.
+   * in parallel forks can get the same port. Each fork gets its own fixed web, Elasticsearch and H2 ports instead.
    */
-  private static void setForkPorts(OrchestratorExtensionBuilder builder) {
+  @CheckForNull
+  private static Integer forkPortBase() {
     var forkNumber = Integer.getInteger(FORK_NUMBER_PROPERTY);
-    if (forkNumber == null) {
-      return;
-    }
-    var base = FORK_PORT_BASE + forkNumber * PORTS_PER_FORK;
-    builder
-      .setServerProperty("sonar.web.port", String.valueOf(base))
-      .setServerProperty("sonar.search.port", String.valueOf(base + 1))
-      .setServerProperty("sonar.es.port", String.valueOf(base + 2));
+    return forkNumber == null ? null : (FORK_PORT_BASE + forkNumber * PORTS_PER_FORK);
   }
 }
