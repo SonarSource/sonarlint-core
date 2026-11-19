@@ -47,7 +47,7 @@ class PluginDownloadStartFailureMediumTests {
     var context = backend.getApplicationContext();
     var multicaster = context.getBean(SimpleApplicationEventMulticaster.class);
     multicaster.setErrorHandler(rethrowingErrorHandler());
-    context.addApplicationListener(statusPublicationFailure());
+    context.addApplicationListener(new StatusPublicationFailure());
     context.getBean("pluginDownloadExecutor", ExecutorService.class).shutdown();
 
     try {
@@ -60,12 +60,16 @@ class PluginDownloadStartFailureMediumTests {
   }
 
   private static void assertPublicationAndStartBothFailed(SonarLintTestRpcServer backend) {
-    assertThatThrownBy(() -> backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).join())
+    assertThatThrownBy(() -> fetchPluginStatuses(backend))
       .isInstanceOf(CompletionException.class)
       .cause()
       .isInstanceOfSatisfying(ResponseErrorException.class, error -> assertThat(error.getResponseError().getData().toString())
         .contains("status listener failed")
         .contains("Suppressed: java.util.concurrent.RejectedExecutionException"));
+  }
+
+  private static void fetchPluginStatuses(SonarLintTestRpcServer backend) {
+    backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).join();
   }
 
   private static ErrorHandler rethrowingErrorHandler() {
@@ -77,15 +81,13 @@ class PluginDownloadStartFailureMediumTests {
     };
   }
 
-  private static ApplicationListener<PayloadApplicationEvent<?>> statusPublicationFailure() {
-    return new ApplicationListener<>() {
-      @Override
-      public void onApplicationEvent(PayloadApplicationEvent<?> event) {
-        if (event.getPayload() instanceof PluginStatusesChangedEvent) {
-          throw new IllegalStateException("status listener failed");
-        }
+  private static final class StatusPublicationFailure implements ApplicationListener<PayloadApplicationEvent<?>> {
+    @Override
+    public void onApplicationEvent(PayloadApplicationEvent<?> event) {
+      if (event.getPayload() instanceof PluginStatusesChangedEvent) {
+        throw new IllegalStateException("status listener failed");
       }
-    };
+    }
   }
 
 }
