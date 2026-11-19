@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @Import({
   TelemetryService.class,
+  BindingSourceTelemetryService.class,
   TelemetryManager.class,
   TelemetryLocalStorageManager.class,
   TelemetryHttpClient.class,

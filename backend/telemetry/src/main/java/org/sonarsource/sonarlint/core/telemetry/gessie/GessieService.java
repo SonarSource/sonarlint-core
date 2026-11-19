@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiIntegratio
 import org.sonarsource.sonarlint.core.telemetry.common.TelemetryUserSetting;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieEvent;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.GessieMetadata;
+import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.BindingSourceObservedPayload;
 import org.sonarsource.sonarlint.core.telemetry.gessie.event.payload.MessagePayload;
 
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.GESSIE_TELEMETRY;
@@ -88,8 +89,16 @@ public class GessieService {
       params.getStandaloneMcpState(), params.getHost()));
   }
 
+  public void bindingSourcesObserved(List<BindingSourceObservedPayload> payloads) {
+    payloads.forEach(payload -> emit("Analytics.Editor.IdeBindingSourceObserved", payload));
+  }
+
+  public boolean isEnabled() {
+    return isGessieFeatureEnabled && userSetting.isTelemetryEnabledByUser();
+  }
+
   private void emit(String eventType, Object payload) {
-    if (!isGessieFeatureEnabled || !userSetting.isTelemetryEnabledByUser()) {
+    if (!isEnabled()) {
       return;
     }
     try {

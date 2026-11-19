@@ -1,3 +1,9 @@
+# 12.4
+
+## New features
+
+* Add `bindingSourcesObserved` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`, with `BindingSourcesObservedParams`, `ObservedBindingSourceDto` and `BindingSource` (`IDE_SETTINGS`, `SONAR_CONFIG`) in `org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry`. Call it once per IDE session with the bound sources of the roots present at startup, each with its `declarationRoot`: the root for IDE settings, the directory of the file for a `.sonar-config.json`. Emitted to Gessie as one `Analytics.Editor.IdeBindingSourceObserved` event per distinct source and root when `GESSIE_TELEMETRY` is declared and telemetry is enabled.
+
 # 12.1
 
 ## New features
