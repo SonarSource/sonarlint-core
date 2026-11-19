@@ -177,6 +177,8 @@
           <systemPropertyVariables>
             <!-- Orchestrator numbers its install directories per JVM and deletes them before unzipping, so forks need separate workspaces. -->
             <orchestrator.workspaceDir>${project.build.directory}/orchestrator-fork-${surefire.forkNumber}</orchestrator.workspaceDir>
+            <!-- Gives each fork its own server ports, see OrchestratorUtils. -->
+            <its.forkNumber>${surefire.forkNumber}</its.forkNumber>
           </systemPropertyVariables>
         </configuration>
       </plugin>
