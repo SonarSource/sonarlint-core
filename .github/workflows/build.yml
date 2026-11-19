@@ -62,7 +62,8 @@ jobs:
           mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
 
   test-linux:
-    needs: [ build-number, build ]
+    # Builds the whole reactor itself, so it does not wait for the Build job.
+    needs: [ build-number ]
     runs-on: sonar-m
     name: Test (Linux, Sonar Next)
     permissions:
@@ -130,7 +131,8 @@ jobs:
             **/target/failsafe-reports/**
 
   test-windows:
-    needs: [ build-number, build ]
+    # Builds the whole reactor itself, so it does not wait for the Build job.
+    needs: [ build-number ]
     runs-on: warp-custom-windows-2022-l
     name: Test (Windows)
     permissions:
@@ -175,7 +177,8 @@ jobs:
 
   qa:
     needs: [ build-number, build ]
-    runs-on: sonar-m
+    # Jobs that boot several SonarQube servers in parallel forks need sonar-l's CPUs.
+    runs-on: ${{ matrix.runner || 'sonar-m' }}
     name: QA (${{ matrix.name }})
     permissions:
       id-token: write
@@ -200,17 +203,20 @@ jobs:
             region: US
           - name: SQDogfood
             sq_version: DEV
+            runner: sonar-l
             # Run the latest CLI compatibility test once in normal QA.
-            category: "-DexcludedGroups=SonarCloud"
+            category: "-DexcludedGroups=SonarCloud,CommunityBuild"
           - name: SQLatest
             sq_version: LATEST_RELEASE
-            category: "-DexcludedGroups=SonarCloud,CliCompatibility"
+            runner: sonar-l
+            category: "-DexcludedGroups=SonarCloud,CliCompatibility,CommunityBuild"
           - name: SQLts251
             sq_version: "LATEST_RELEASE[2025.1]"
+            runner: sonar-l
             category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=SonarQubeDeveloperEditionTests,SonarQubeEnterpriseEditionTests"
-          - name: SQcb251
-            sq_version: "LATEST_RELEASE[25.1]"
-            category: "-DexcludedGroups=SonarCloud,CliCompatibility -Dsurefire.failIfNoSpecifiedTests=false -Dtest=FileExclusionTests,SonarQubeCommunityEditionTests"
+          - name: SQcbLatest
+            sq_version: LATEST_RELEASE
+            category: "-Dgroups=CommunityBuild"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
