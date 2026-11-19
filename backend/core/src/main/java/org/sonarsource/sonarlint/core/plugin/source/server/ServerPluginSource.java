@@ -198,7 +198,7 @@ public class ServerPluginSource implements ArtifactSource {
       LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", pluginKey);
       return toResolvedArtifact(stored.get().getJarPath());
     }
-    return ResolvedArtifact.downloading();
+    return ResolvedArtifact.downloading(downloader.sourceFor(connectionId));
   }
 
   private static Optional<StoredPlugin> findStoredPlugin(String pluginKey, Map<String, StoredPlugin> storedPlugins) {

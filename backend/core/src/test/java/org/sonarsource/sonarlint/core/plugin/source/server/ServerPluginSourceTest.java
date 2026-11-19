@@ -119,11 +119,13 @@ class ServerPluginSourceTest {
     mockStoredPlugin(SonarPlugin.JAVA.getKey(), tempDir.resolve("missing.jar"), "hash");
     var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash");
     mockServerPlugins("conn", List.of(serverPlugin));
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
     var source = createSource("conn");
 
     var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(),
+      new ResolvedArtifact(ArtifactState.DOWNLOADING, null, ArtifactOrigin.SONARQUBE_SERVER, null));
     verify(downloader, never()).schedulePluginDownload(any(), any());
     assertThat(result.pendingDownloads()).hasSize(1);
     result.pendingDownloads().getFirst().starter().get();
@@ -136,11 +138,13 @@ class ServerPluginSourceTest {
     when(pluginsStorage.getStoredPluginPathsByKey()).thenReturn(Map.of());
     var serverPlugin = mockServerPlugin(SonarPlugin.JAVA.getKey());
     mockServerPlugins("conn", List.of(serverPlugin));
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
     var source = createSource("conn");
 
     var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
-    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(), new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null));
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(),
+      new ResolvedArtifact(ArtifactState.DOWNLOADING, null, ArtifactOrigin.SONARQUBE_SERVER, null));
     verify(downloader, never()).schedulePluginDownload(any(), any());
     assertThat(result.pendingDownloads()).hasSize(1);
     result.pendingDownloads().getFirst().starter().get();
