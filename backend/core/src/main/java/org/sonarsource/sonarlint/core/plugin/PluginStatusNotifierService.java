@@ -19,8 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactOrigin;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
@@ -28,9 +39,19 @@ import org.springframework.context.event.EventListener;
 
 public class PluginStatusNotifierService {
 
+  private static final String EMBEDDED_RESULTS_KEY = "";
+
   private final PluginsService pluginsService;
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
+  /**
+   * Terminal states already reported for downloads that the cached configuration still lists as DOWNLOADING.
+   * A later completion merges into that cache, so these results have to be applied again or the earlier language is sent as DOWNLOADING.
+   * The key is the scope's effective connection, including for a binaries download, so a standalone snapshot does not drop a bound
+   * scope's result and a connection snapshot clears it.
+   */
+  private final Map<String, Map<SonarLanguage, PluginStatus>> appliedDownloadResultsByConnection = new HashMap<>();
+  private final Object appliedDownloadResultsLock = new Object();
 
   public PluginStatusNotifierService(PluginsService pluginsService, SonarLintRpcClient client, ConfigurationRepository configurationRepository) {
     this.pluginsService = pluginsService;
@@ -40,22 +61,143 @@ public class PluginStatusNotifierService {
 
   @EventListener
   public void onPluginStatusesChanged(PluginStatusesChangedEvent event) {
+    clearAppliedDownloadResults(event.connectionId());
     var connectionId = event.connectionId();
     if (connectionId != null) {
       // All affected scopes share the same connection: reuse the pre-computed statuses from the event
-      var statusDtos = PluginStatusMapper.toDto(event.pluginStatuses());
-      configurationRepository.getBoundScopesToConnection(connectionId).stream()
-        .map(BoundScope::getConfigScopeId)
-        .forEach(scopeId -> client.didChangePluginStatuses(new DidChangePluginStatusesParams(scopeId, statusDtos)));
+      notifyBoundScopes(connectionId, event.pluginStatuses());
     } else {
       // Embedded plugins changed: each scope may have a different effective connection, resolve per scope
-      for (var configScopeId : configurationRepository.getConfigScopeIds()) {
-        var effectiveConnectionId = configurationRepository.getEffectiveBinding(configScopeId)
-          .map(Binding::connectionId).orElse(null);
-        var newStatuses = pluginsService.getPluginStatuses(effectiveConnectionId);
-        client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(newStatuses)));
+      notifyEachScope(this::statusesForScope);
+    }
+  }
+
+  /**
+   * A download publishes {@link PluginStatusUpdateEvent} when it ends, whether or not an analysis scheduler exists.
+   * The event carries only the languages of that artifact, so it is merged into the full per-scope list.
+   */
+  @EventListener
+  public void onPluginStatusUpdate(PluginStatusUpdateEvent event) {
+    if (event.newStatuses().stream().noneMatch(status -> status.language() != null)) {
+      return;
+    }
+    var connectionId = event.connectionId();
+    if (connectionId != null) {
+      if (configurationRepository.getBoundScopesToConnection(connectionId).isEmpty()) {
+        return;
+      }
+      var current = pluginsService.getPluginStatuses(connectionId);
+      notifyBoundScopes(connectionId, mergeKeepingEarlierResults(connectionId, current, event.newStatuses(), false));
+    } else {
+      notifyEachScope(scopeId -> mergeBinariesDownload(scopeId, event.newStatuses()));
+    }
+  }
+
+  private List<PluginStatus> mergeBinariesDownload(String scopeId, Collection<PluginStatus> updates) {
+    var effectiveConnectionId = configurationRepository.getEffectiveBinding(scopeId).map(Binding::connectionId).orElse(null);
+    return mergeKeepingEarlierResults(effectiveConnectionId, pluginsService.getPluginStatuses(effectiveConnectionId), updates, true);
+  }
+
+  private List<PluginStatus> mergeKeepingEarlierResults(@Nullable String connectionId, List<PluginStatus> current, Collection<PluginStatus> updates,
+    boolean binariesDownload) {
+    synchronized (appliedDownloadResultsLock) {
+      var remembered = appliedDownloadResultsByConnection.computeIfAbsent(connectionKey(connectionId), key -> new EnumMap<>(SonarLanguage.class));
+      var withEarlierResults = mergeDownloadUpdate(current, remembered.values(), binariesDownload);
+      var merged = mergeDownloadUpdate(withEarlierResults, updates, binariesDownload);
+      rememberAppliedUpdates(remembered, withEarlierResults, merged, binariesDownload);
+      return merged;
+    }
+  }
+
+  private void clearAppliedDownloadResults(@Nullable String connectionId) {
+    synchronized (appliedDownloadResultsLock) {
+      appliedDownloadResultsByConnection.remove(connectionKey(connectionId));
+    }
+  }
+
+  private static String connectionKey(@Nullable String connectionId) {
+    return connectionId == null ? EMBEDDED_RESULTS_KEY : connectionId;
+  }
+
+  private List<PluginStatus> statusesForScope(String configScopeId) {
+    var effectiveConnectionId = configurationRepository.getEffectiveBinding(configScopeId)
+      .map(Binding::connectionId).orElse(null);
+    return pluginsService.getPluginStatuses(effectiveConnectionId);
+  }
+
+  private void notifyBoundScopes(String connectionId, List<PluginStatus> statuses) {
+    var statusDtos = PluginStatusMapper.toDto(statuses);
+    configurationRepository.getBoundScopesToConnection(connectionId).stream()
+      .map(BoundScope::getConfigScopeId)
+      .forEach(scopeId -> client.didChangePluginStatuses(new DidChangePluginStatusesParams(scopeId, statusDtos)));
+  }
+
+  private void notifyEachScope(Function<String, List<PluginStatus>> statusesByScope) {
+    for (var configScopeId : configurationRepository.getConfigScopeIds()) {
+      client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(statusesByScope.apply(configScopeId))));
+    }
+  }
+
+  /**
+   * Replaces a language that is still downloading from the same source with the state reported at the end of that download.
+   * A binaries download does not replace a SonarQube download, and a language that is not downloading keeps its status.
+   */
+  private static List<PluginStatus> mergeDownloadUpdate(List<PluginStatus> current, Collection<PluginStatus> updates, boolean binariesDownload) {
+    var updatesByLanguage = new EnumMap<SonarLanguage, PluginStatus>(SonarLanguage.class);
+    for (var update : updates) {
+      if (update.language() != null) {
+        updatesByLanguage.put(update.language(), update);
       }
     }
+    return current.stream()
+      .map(status -> overlayDownloading(status, updatesByLanguage, binariesDownload))
+      .toList();
+  }
+
+  private static PluginStatus overlayDownloading(PluginStatus status, EnumMap<SonarLanguage, PluginStatus> updatesByLanguage, boolean binariesDownload) {
+    if (status.language() == null || status.state() != ArtifactState.DOWNLOADING || !isSameDownload(status.source(), binariesDownload)) {
+      return status;
+    }
+    var update = updatesByLanguage.get(status.language());
+    if (update == null) {
+      return status;
+    }
+    if (update.source() != null || status.source() == null) {
+      return update;
+    }
+    return new PluginStatus(update.pluginKey(), update.language(), update.state(), status.source(), update.actualVersion(), update.overriddenVersion(),
+      update.path(), update.serverVersion());
+  }
+
+  /**
+   * Remembers the status that was actually sent. A failure update has no source, so the sent status is the update with the
+   * downloading source kept, and that is the object a later merge has to apply again.
+   */
+  private static void rememberAppliedUpdates(Map<SonarLanguage, PluginStatus> remembered, List<PluginStatus> before, List<PluginStatus> merged,
+    boolean binariesDownload) {
+    var beforeByLanguage = new EnumMap<SonarLanguage, PluginStatus>(SonarLanguage.class);
+    for (var status : before) {
+      if (status.language() != null) {
+        beforeByLanguage.put(status.language(), status);
+      }
+    }
+    for (var status : merged) {
+      var language = status.language();
+      if (language == null) {
+        continue;
+      }
+      var previous = beforeByLanguage.get(language);
+      if (previous != null && previous.state() == ArtifactState.DOWNLOADING && isSameDownload(previous.source(), binariesDownload) && status != previous) {
+        remembered.put(language, status);
+      }
+    }
+  }
+
+  private static boolean isSameDownload(@Nullable ArtifactOrigin source, boolean binariesDownload) {
+    if (binariesDownload) {
+      return source == ArtifactOrigin.ON_DEMAND;
+    }
+    return source == ArtifactOrigin.SONARQUBE_SERVER || source == ArtifactOrigin.SONARQUBE_CLOUD;
   }
 
 }
