@@ -83,7 +83,10 @@ class PluginFailureStatusMediumTests {
       .start(client);
 
     awaitPluginState(client, Language.CPP, PluginStateDto.FAILED);
+    assertThat(failedNotifications(client, Language.CPP))
+      .allSatisfy(statuses -> assertThat(sourceOf(statuses, Language.CPP)).isEqualTo(ArtifactSourceDto.ON_DEMAND));
     assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.FAILED);
+    assertThat(sourceOf(pluginStatuses(backend), Language.CPP)).isEqualTo(ArtifactSourceDto.ON_DEMAND);
   }
 
   @SonarLintTest
@@ -102,7 +105,10 @@ class PluginFailureStatusMediumTests {
     backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(SCOPE_ID)).join();
 
     awaitPluginState(client, Language.JAVA, PluginStateDto.FAILED);
+    assertThat(failedNotifications(client, Language.JAVA))
+      .allSatisfy(statuses -> assertThat(sourceOf(statuses, Language.JAVA)).isEqualTo(ArtifactSourceDto.SONARQUBE_SERVER));
     assertThat(stateOf(pluginStatuses(backend), Language.JAVA)).isEqualTo(PluginStateDto.FAILED);
+    assertThat(sourceOf(pluginStatuses(backend), Language.JAVA)).isEqualTo(ArtifactSourceDto.SONARQUBE_SERVER);
   }
 
   @SonarLintTest
@@ -330,10 +336,26 @@ class PluginFailureStatusMediumTests {
       .toList();
   }
 
+  private static List<List<PluginStatusDto>> failedNotifications(FakeSonarLintRpcClient client, Language language) {
+    return client.getPluginStatusChanges().stream()
+      .filter(change -> SCOPE_ID.equals(change.getConfigScopeId()))
+      .map(change -> change.getPluginStatuses())
+      .filter(statuses -> stateOf(statuses, language) == PluginStateDto.FAILED)
+      .toList();
+  }
+
   private static PluginStateDto stateOf(List<PluginStatusDto> statuses, Language language) {
     return statuses.stream()
       .filter(status -> status.getLanguage() == language)
       .map(PluginStatusDto::getState)
+      .findFirst()
+      .orElseThrow();
+  }
+
+  private static ArtifactSourceDto sourceOf(List<PluginStatusDto> statuses, Language language) {
+    return statuses.stream()
+      .filter(status -> status.getLanguage() == language)
+      .map(PluginStatusDto::getSource)
       .findFirst()
       .orElseThrow();
   }
