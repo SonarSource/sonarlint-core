@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 public class SloopLauncher {
   public static final String SLOOP_CLI_ENTRYPOINT_CLASS = "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli";
+  static final String DISABLE_BASE64_INTRINSICS_JVM_OPT = "-XX:-UseBASE64Intrinsics";
   private final SonarLintRpcClientDelegate rpcClient;
   private final Function<List<String>, ProcessBuilder> processBuilderFactory;
   private final Supplier<String> osNameSupplier;
@@ -127,6 +128,7 @@ public class SloopLauncher {
     var classpath = libFolderPath.toAbsolutePath().normalize() + File.separator + '*';
     List<String> commands = new ArrayList<>();
     commands.add(jreJavaExePath.toAbsolutePath().normalize().toString());
+    commands.add(DISABLE_BASE64_INTRINSICS_JVM_OPT);
     var sonarlintEnvJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
     if (sonarlintEnvJvmOpts != null) {
       commands.addAll(Arrays.asList(sonarlintEnvJvmOpts.split(" ")));
