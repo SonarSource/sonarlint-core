@@ -32,6 +32,8 @@ public class DownloadBatch {
   private final List<PendingDownload> pending;
   private final Executor callbackExecutor;
   private final CompletableFuture<Void> completion;
+  private boolean startedAnyDownload;
+  private RuntimeException supplierFailure;
 
   DownloadBatch(List<PendingDownload> pending, Executor callbackExecutor) {
     this.pending = List.copyOf(pending);
@@ -43,12 +45,23 @@ public class DownloadBatch {
     return completion;
   }
 
+  /**
+   * Supplier error when every pending download failed before it was scheduled.
+   * A download that was scheduled and later failed does not count.
+   */
+  RuntimeException failureToStart() {
+    if (startedAnyDownload) {
+      return null;
+    }
+    return supplierFailure;
+  }
+
   void start(Runnable onSomeDownloadSucceeded) {
     if (pending.isEmpty()) {
       return;
     }
     var logOutput = LOG.getTargetForCopy();
-    var futures = pending.stream().map(DownloadBatch::startDownload).toList();
+    var futures = pending.stream().map(this::startDownload).toList();
     var normalized = futures.stream().map(f -> f.exceptionally(e -> null)).toArray(CompletableFuture[]::new);
     var allEnded = CompletableFuture.allOf(normalized);
     allEnded.thenRun(this::completeNormally);
@@ -81,12 +94,27 @@ public class DownloadBatch {
     }
   }
 
-  private static CompletableFuture<Void> startDownload(PendingDownload download) {
+  private CompletableFuture<Void> startDownload(PendingDownload download) {
     try {
-      return download.starter().get();
+      var future = download.starter().get();
+      startedAnyDownload = true;
+      return future;
     } catch (Exception e) {
       LOG.error("Could not start download for '{}'", download.artifactKey(), e);
+      rememberStartFailure(e);
       return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  private void rememberStartFailure(Exception error) {
+    if (startedAnyDownload) {
+      return;
+    }
+    var runtime = error instanceof RuntimeException runtimeError ? runtimeError : new IllegalStateException(error);
+    if (supplierFailure == null) {
+      supplierFailure = runtime;
+    } else {
+      supplierFailure.addSuppressed(runtime);
     }
   }
 }

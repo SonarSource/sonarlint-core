@@ -181,7 +181,20 @@ public class PluginsService {
     } finally {
       config.downloads().start(() -> publishPluginsSynchronized(connectionId));
     }
+    var startFailure = config.downloads().failureToStart();
+    if (startFailure != null) {
+      discardFailedStart(connectionId);
+      throw startFailure;
+    }
     return config;
+  }
+
+  private void discardFailedStart(@Nullable String connectionId) {
+    if (connectionId == null) {
+      unloadEmbeddedPlugins();
+    } else {
+      unloadPlugins(connectionId);
+    }
   }
 
   private PluginsConfiguration loadPlugins(@Nullable String connectionId) {

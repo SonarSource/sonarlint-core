@@ -170,6 +170,25 @@ class PluginsServiceTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
+  void should_drop_cached_configuration_when_download_supplier_throws(boolean connected) {
+    configureDownloads(new PendingDownload("java", PluginsServiceTest::failToStartDownload), mock(ExecutorService.class));
+
+    ThrowingCallable loadPlugins = connected ? () -> underTest.getPlugins("conn") : underTest::getEmbeddedPlugins;
+    assertThatThrownBy(loadPlugins).isInstanceOf(IllegalStateException.class).hasMessage("cannot start");
+    assertThat(cachedPlugins(connected)).isNull();
+
+    var retried = connected ? underTest.getPlugins("conn") : underTest.getEmbeddedPlugins();
+    assertThat(cachedPlugins(connected)).isSameAs(retried);
+    assertThat(retried.artifactsResult().getResolvedArtifactByKey("java"))
+      .contains(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null));
+  }
+
+  private static CompletableFuture<Void> failToStartDownload() {
+    throw new IllegalStateException("cannot start");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
   void should_immediate_download_on_another_thread_cannot_leave_stale_cached_status(boolean connected) throws Exception {
     try (var executor = Executors.newCachedThreadPool()) {
       configureDownloads(new PendingDownload("java", () -> completeOnExecutor(executor)), executor);
