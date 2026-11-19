@@ -160,6 +160,36 @@ class PluginFailureStatusMediumTests {
   }
 
   @SonarLintTest
+  void should_keep_an_earlier_synced_plugin_when_a_later_download_finishes(SonarLintTestHarness harness) throws IOException {
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.JAVA)
+      .withPlugin(TestPlugin.PYTHON)
+      .start();
+    server.getMockServer().stubFor(get(urlEqualTo("/api/plugins/download?plugin=python"))
+      .atPriority(1)
+      .willReturn(aResponse().withStatus(200).withBody(Files.readAllBytes(TestPlugin.PYTHON.getPath())).withFixedDelay(1_500)));
+    var client = harness.newFakeClient().withToken(CONNECTION_ID, "token").build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withExtraEnabledLanguagesInConnectedMode(Language.PYTHON)
+      .start(client);
+
+    backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(SCOPE_ID)).join();
+
+    awaitPluginState(client, Language.JAVA, PluginStateDto.SYNCED);
+    await().atMost(20, SECONDS).untilAsserted(() -> {
+      var pythonSynced = client.getPluginStatusChanges().stream()
+        .filter(change -> SCOPE_ID.equals(change.getConfigScopeId()))
+        .filter(change -> stateOf(change.getPluginStatuses(), Language.PYTHON) == PluginStateDto.SYNCED)
+        .findFirst();
+      assertThat(pythonSynced).isPresent();
+      assertThat(stateOf(pythonSynced.get().getPluginStatuses(), Language.JAVA)).isEqualTo(PluginStateDto.SYNCED);
+    });
+  }
+
+  @SonarLintTest
   void should_not_download_again_when_the_connection_has_no_bound_scope(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).start();
     server.getMockServer().stubFor(get(urlEqualTo(JAVA_DOWNLOAD_PATH))
