@@ -176,15 +176,25 @@ public class PluginsService {
   }
 
   private PluginsConfiguration publishStatusesAndStart(@Nullable String connectionId, PluginsConfiguration config) {
+    // A publication failure must not skip the start-failure check, or a download that never started stays cached.
+    RuntimeException publicationFailure = null;
     try {
       eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config.artifactsResult())));
-    } finally {
-      config.downloads().start(() -> publishPluginsSynchronized(connectionId));
+    } catch (RuntimeException error) {
+      publicationFailure = error;
     }
+    config.downloads().start(() -> publishPluginsSynchronized(connectionId));
     var startFailure = config.downloads().failureToStart();
     if (startFailure != null) {
       discardFailedStart(connectionId);
-      throw startFailure;
+      if (publicationFailure != null) {
+        publicationFailure.addSuppressed(startFailure);
+      } else {
+        throw startFailure;
+      }
+    }
+    if (publicationFailure != null) {
+      throw publicationFailure;
     }
     return config;
   }

@@ -77,6 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -175,6 +176,29 @@ class PluginsServiceTest {
 
     ThrowingCallable loadPlugins = connected ? () -> underTest.getPlugins("conn") : underTest::getEmbeddedPlugins;
     assertThatThrownBy(loadPlugins).isInstanceOf(IllegalStateException.class).hasMessage("cannot start");
+    assertThat(cachedPlugins(connected)).isNull();
+
+    var retried = connected ? underTest.getPlugins("conn") : underTest.getEmbeddedPlugins();
+    assertThat(cachedPlugins(connected)).isSameAs(retried);
+    assertThat(retried.artifactsResult().getResolvedArtifactByKey("java"))
+      .contains(new ResolvedArtifact(ArtifactState.ACTIVE, null, ArtifactOrigin.ON_DEMAND, null));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void should_drop_cached_configuration_when_status_publication_and_supplier_throw(boolean connected) {
+    configureDownloads(new PendingDownload("java", PluginsServiceTest::failToStartDownload), mock(ExecutorService.class));
+    doThrow(new IllegalStateException("status listener failed"))
+      .doNothing()
+      .when(eventPublisher).publishEvent(any(PluginStatusesChangedEvent.class));
+
+    ThrowingCallable loadPlugins = connected ? () -> underTest.getPlugins("conn") : underTest::getEmbeddedPlugins;
+    assertThatThrownBy(loadPlugins)
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("status listener failed")
+      .satisfies(thrown -> assertThat(thrown.getSuppressed())
+        .singleElement()
+        .isInstanceOfSatisfying(IllegalStateException.class, suppressed -> assertThat(suppressed).hasMessage("cannot start")));
     assertThat(cachedPlugins(connected)).isNull();
 
     var retried = connected ? underTest.getPlugins("conn") : underTest.getEmbeddedPlugins();
