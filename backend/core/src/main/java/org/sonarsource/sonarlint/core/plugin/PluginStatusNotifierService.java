@@ -102,7 +102,7 @@ public class PluginStatusNotifierService {
     boolean binariesDownload) {
     synchronized (appliedDownloadResultsLock) {
       var remembered = appliedDownloadResultsByConnection.computeIfAbsent(connectionKey(connectionId), key -> new EnumMap<>(SonarLanguage.class));
-      var withEarlierResults = mergeDownloadUpdate(current, remembered.values(), binariesDownload);
+      var withEarlierResults = overlayRemembered(current, remembered.values());
       var merged = mergeDownloadUpdate(withEarlierResults, updates, binariesDownload);
       rememberAppliedUpdates(remembered, withEarlierResults, merged, binariesDownload);
       return merged;
@@ -136,6 +136,33 @@ public class PluginStatusNotifierService {
     for (var configScopeId : configurationRepository.getConfigScopeIds()) {
       client.didChangePluginStatuses(new DidChangePluginStatusesParams(configScopeId, PluginStatusMapper.toDto(statusesByScope.apply(configScopeId))));
     }
+  }
+
+  /**
+   * Puts a remembered result back onto the download it belongs to. The match is the result's own source, so a later
+   * download from the other source does not drop it.
+   */
+  private static List<PluginStatus> overlayRemembered(List<PluginStatus> current, Collection<PluginStatus> remembered) {
+    var rememberedByLanguage = new EnumMap<SonarLanguage, PluginStatus>(SonarLanguage.class);
+    for (var status : remembered) {
+      if (status.language() != null) {
+        rememberedByLanguage.put(status.language(), status);
+      }
+    }
+    return current.stream()
+      .map(status -> earlierResult(status, rememberedByLanguage))
+      .toList();
+  }
+
+  private static PluginStatus earlierResult(PluginStatus status, EnumMap<SonarLanguage, PluginStatus> rememberedByLanguage) {
+    if (status.language() == null || status.state() != ArtifactState.DOWNLOADING) {
+      return status;
+    }
+    var earlier = rememberedByLanguage.get(status.language());
+    if (earlier == null || earlier.source() != status.source()) {
+      return status;
+    }
+    return earlier;
   }
 
   /**

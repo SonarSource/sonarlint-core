@@ -121,6 +121,44 @@ class PluginStatusNotifierServiceTest {
   }
 
   @Test
+  void should_keep_an_earlier_binaries_result_when_a_server_download_finishes() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(
+      downloadingFromBinaries(SonarLanguage.CPP),
+      downloading(SonarLanguage.JAVA)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.CPP))));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(2)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(1).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.CPP, PluginStateDto.ACTIVE),
+        tuple(Language.JAVA, PluginStateDto.SYNCED));
+  }
+
+  @Test
+  void should_keep_an_earlier_server_result_when_a_binaries_download_finishes() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(
+      downloading(SonarLanguage.JAVA),
+      downloadingFromBinaries(SonarLanguage.CPP)));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(synced(SonarLanguage.JAVA))));
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(activeFromBinaries(SonarLanguage.CPP))));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client, times(2)).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getAllValues().get(1).getPluginStatuses())
+      .extracting(PluginStatusDto::getLanguage, PluginStatusDto::getState)
+      .containsExactlyInAnyOrder(
+        tuple(Language.JAVA, PluginStateDto.SYNCED),
+        tuple(Language.CPP, PluginStateDto.ACTIVE));
+  }
+
+  @Test
   void should_keep_an_earlier_download_result_when_a_later_download_finishes() {
     configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
     var javaDownloading = downloading(SonarLanguage.JAVA);
