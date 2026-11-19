@@ -103,6 +103,40 @@ class PluginStatusNotifierServiceTest {
   }
 
   @Test
+  void should_keep_current_status_when_the_language_is_not_downloading() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var unsupported = PluginStatus.unsupported(SonarLanguage.JAVA);
+    var active = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(unsupported));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(CONNECTION_1, List.of(active)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState)
+      .isEqualTo(PluginStateDto.UNSUPPORTED);
+  }
+
+  @Test
+  void should_not_apply_a_binaries_download_to_a_server_download() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), new BindingConfiguration(CONNECTION_1, "project1", false));
+    var serverDownload = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.DOWNLOADING, ArtifactOrigin.SONARQUBE_SERVER, null, null, null, null);
+    var binariesResult = PluginStatus.forLanguage(SonarLanguage.JAVA, ArtifactState.ACTIVE, ArtifactOrigin.ON_DEMAND, null, null, null, null);
+    when(pluginsService.getPluginStatuses(CONNECTION_1)).thenReturn(List.of(serverDownload));
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null, List.of(binariesResult)));
+
+    var captor = ArgumentCaptor.forClass(DidChangePluginStatusesParams.class);
+    verify(client).didChangePluginStatuses(captor.capture());
+    assertThat(captor.getValue().getPluginStatuses())
+      .singleElement()
+      .extracting(PluginStatusDto::getState, PluginStatusDto::getSource)
+      .containsExactly(PluginStateDto.DOWNLOADING, ArtifactSourceDto.SONARQUBE_SERVER);
+  }
+
+  @Test
   void should_ignore_companion_only_download_updates() {
     configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
 

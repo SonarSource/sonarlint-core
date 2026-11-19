@@ -329,7 +329,7 @@ class BinariesArtifactSourceTest {
   }
 
   private static ResolvedArtifact downloading() {
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null);
+    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, ArtifactOrigin.ON_DEMAND, null);
   }
 
   private static PluginStatus activeStatus(SonarLanguage lang, Path path) {

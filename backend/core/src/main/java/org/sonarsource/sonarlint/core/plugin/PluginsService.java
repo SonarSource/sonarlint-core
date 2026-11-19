@@ -205,6 +205,9 @@ public class PluginsService {
       eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config)));
     } finally {
       config.downloads().start(() -> publishPluginsSynchronized(connectionId));
+      if (config.downloads().hasFailedArtifact()) {
+        eventPublisher.publishEvent(new PluginStatusesChangedEvent(connectionId, getPluginStatuses(connectionId, config)));
+      }
     }
     return config;
   }

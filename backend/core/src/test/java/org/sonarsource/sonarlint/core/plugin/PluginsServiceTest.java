@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -80,6 +82,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -220,6 +223,23 @@ class PluginsServiceTest {
     }
     reloaded.countDown();
     return null;
+  }
+
+  @Test
+  void should_publish_failed_statuses_when_a_download_fails_to_start() {
+    configureDownloads(new PendingDownload("java", () -> {
+      throw new RejectedExecutionException("executor closed");
+    }), mock(ExecutorService.class));
+
+    underTest.getEmbeddedPlugins();
+
+    var captor = ArgumentCaptor.forClass(PluginStatusesChangedEvent.class);
+    verify(eventPublisher, times(2)).publishEvent(captor.capture());
+    assertThat(captor.getAllValues().get(1).pluginStatuses())
+      .filteredOn(status -> status.language() == SonarLanguage.JAVA)
+      .singleElement()
+      .extracting(PluginStatus::state)
+      .isEqualTo(ArtifactState.FAILED);
   }
 
   private PluginsConfiguration cachedPlugins(boolean connected) {
