@@ -23,15 +23,23 @@ import java.time.Duration;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class ShutdownMediumTests {
 
   @SonarLintTest
   void it_should_receive_the_shutdown_response(SonarLintTestHarness harness) {
     var backend = harness.newBackend().start();
-    // shutdown closes the transport, so the harness must not shut this backend down again
+    // The transport is closed below, so the harness must not shut this backend down again.
     harness.getBackends().remove(backend);
 
-    backend.awaitShutdownResponse(Duration.ofSeconds(20));
+    var shutdownResponse = backend.requestShutdown();
+
+    try {
+      assertThat(shutdownResponse).succeedsWithin(Duration.ofSeconds(20));
+    } finally {
+      backend.closeTransport();
+    }
   }
 
 }
