@@ -22,16 +22,20 @@ package mediumtest.plugin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.ArtifactSourceDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.GetPluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -40,6 +44,7 @@ import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +54,22 @@ class PluginFailureStatusMediumTests {
 
   private static final String SCOPE_ID = "scopeId";
   private static final String CONNECTION_ID = "connId";
+  private static final String JAVA_DOWNLOAD_PATH = "/api/plugins/download?plugin=java";
+  private static final String STORED_PLUGIN_HASH = "hash";
+
+  @SonarLintTest
+  void should_report_downloading_while_a_binaries_download_is_running(SonarLintTestHarness harness) {
+    harness.fakeBinariesServerBuilder()
+      .withDelayedArtifact(BinariesArtifact.CFAMILY_PLUGIN, Duration.ofSeconds(15), new byte[0])
+      .start();
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.CPP)
+      .withUnboundConfigScope(SCOPE_ID)
+      .start(client);
+
+    assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.DOWNLOADING);
+  }
 
   @SonarLintTest
   void should_report_failed_and_notify_when_a_binaries_download_fails(SonarLintTestHarness harness) {
@@ -117,9 +138,72 @@ class PluginFailureStatusMediumTests {
   }
 
   @SonarLintTest
+  void should_not_download_again_when_the_connection_has_no_bound_scope(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withPlugin(TestPlugin.JAVA).start();
+    server.getMockServer().stubFor(get(urlEqualTo(JAVA_DOWNLOAD_PATH))
+      .atPriority(1)
+      .willReturn(aResponse().withStatus(500).withFixedDelay(8_000)));
+    var client = harness.newFakeClient().withToken(CONNECTION_ID, "token").build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .start(client);
+
+    assertThat(stateOf(pluginStatuses(backend), Language.JAVA)).isEqualTo(PluginStateDto.DOWNLOADING);
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(SCOPE_ID));
+
+    await().atMost(15, SECONDS).untilAsserted(() -> assertThat(client.getLogMessages()).anyMatch(message -> message.contains("Failed to download plugin 'java'")));
+    await().during(1, SECONDS).atMost(3, SECONDS).until(() -> pluginDownloadCount(server) == 1);
+    assertThat(notifiedStates(client, Language.JAVA)).doesNotContain(PluginStateDto.FAILED);
+  }
+
+  @SonarLintTest
+  void should_keep_other_language_status_when_a_download_ends(SonarLintTestHarness harness) {
+    harness.fakeBinariesServerBuilder()
+      .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")
+      .start();
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.CPP)
+      .withUnboundConfigScope(SCOPE_ID)
+      .start(client);
+
+    await().atMost(20, SECONDS).untilAsserted(() -> {
+      var completedDownload = client.getPluginStatusChanges().stream()
+        .filter(change -> SCOPE_ID.equals(change.getConfigScopeId()))
+        .filter(change -> stateOf(change.getPluginStatuses(), Language.CPP) == PluginStateDto.ACTIVE)
+        .findFirst();
+      assertThat(completedDownload).isPresent();
+      assertThat(stateOf(completedDownload.get().getPluginStatuses(), Language.PYTHON)).isEqualTo(PluginStateDto.ACTIVE);
+    });
+    assertThat(stateOf(pluginStatuses(backend), Language.PYTHON)).isEqualTo(PluginStateDto.ACTIVE);
+  }
+
+  @SonarLintTest
   void should_report_failed_and_notify_when_a_plugin_is_skipped_for_incompatible_api(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var plugin = pluginJar(tempDir, "java.jar", "java", "Sonar-Version", "99.9");
     assertEmbeddedPluginFailed(harness, plugin, Language.JAVA);
+  }
+
+  @SonarLintTest
+  void should_report_failed_when_a_connected_plugin_is_skipped_for_incompatible_api(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
+    var plugin = pluginJar(tempDir, "java.jar", "java", "Sonar-Version", "99.9");
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin("java", builder -> builder.withJarPath(plugin).withHash(STORED_PLUGIN_HASH))
+      .start();
+    var client = harness.newFakeClient().withToken(CONNECTION_ID, "token").build();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin("java", plugin, STORED_PLUGIN_HASH))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .start(client);
+
+    var javaStatus = pluginStatuses(backend).stream().filter(status -> status.getLanguage() == Language.JAVA).findFirst().orElseThrow();
+    assertThat(javaStatus.getState()).isEqualTo(PluginStateDto.FAILED);
+    assertThat(javaStatus.getSource()).isEqualTo(ArtifactSourceDto.SONARQUBE_SERVER);
+    assertThat(notifiedStates(client, Language.JAVA)).contains(PluginStateDto.FAILED);
   }
 
   @SonarLintTest
@@ -173,6 +257,10 @@ class PluginFailureStatusMediumTests {
 
     awaitPluginState(client, language, PluginStateDto.FAILED);
     assertThat(stateOf(pluginStatuses(backend), language)).isEqualTo(PluginStateDto.FAILED);
+  }
+
+  private static int pluginDownloadCount(ServerFixture.Server server) {
+    return server.getMockServer().countRequestsMatching(getRequestedFor(urlEqualTo(JAVA_DOWNLOAD_PATH)).build()).getCount();
   }
 
   private static List<PluginStatusDto> pluginStatuses(SonarLintTestRpcServer backend) {
