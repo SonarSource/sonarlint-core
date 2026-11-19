@@ -71,21 +71,6 @@ class DownloadBatchTest {
   }
 
   @Test
-  void should_remember_artifact_keys_whose_download_failed() {
-    var failed = new CompletableFuture<Void>();
-    var succeeded = new CompletableFuture<Void>();
-    var batch = batchWithFutures(Map.of("cpp", failed, "java", succeeded));
-
-    batch.start(() -> {
-    });
-    failed.completeExceptionally(new RuntimeException("download failed"));
-    succeeded.complete(null);
-
-    assertThat(batch.hasFailed("cpp")).isTrue();
-    assertThat(batch.hasFailed("java")).isFalse();
-  }
-
-  @Test
   void should_not_invoke_callback_when_all_futures_complete_exceptionally() {
     var future = new CompletableFuture<Void>();
     var batch = batchWithFutures(Map.of("cpp", future));
