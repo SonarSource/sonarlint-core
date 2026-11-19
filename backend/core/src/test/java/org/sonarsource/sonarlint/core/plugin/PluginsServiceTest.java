@@ -101,6 +101,7 @@ class PluginsServiceTest {
   private ApplicationEventPublisher eventPublisher;
   private ConnectedArtifactsLoadingStrategyFactory connectedArtifactsLoadingStrategyFactory;
   private LanguageSupportRepository languageSupportRepository;
+  private SkippedPluginsRepository skippedPluginsRepository;
 
   @BeforeEach
   void prepare() {
@@ -129,6 +130,7 @@ class PluginsServiceTest {
     when(binariesArtifactSource.getOmnisharpExtraProperties()).thenReturn(Map.of());
 
     languageSupportRepository = mock(LanguageSupportRepository.class);
+    skippedPluginsRepository = mock(SkippedPluginsRepository.class);
 
     underTest = createService(standaloneArtifactsLoadingStrategy, binariesArtifactSource, mock(ExecutorService.class));
   }
@@ -240,7 +242,7 @@ class PluginsServiceTest {
   }
 
   private PluginsService createService(StandaloneArtifactsLoadingStrategy standalone, BinariesArtifactSource binaries, ExecutorService executor) {
-    return new PluginsService(pluginsRepository, mock(SkippedPluginsRepository.class), storageService,
+    return new PluginsService(pluginsRepository, skippedPluginsRepository, storageService,
       initializeParams, connectionConfigurationStorage, mock(NodeJsService.class), eventPublisher,
       standalone, connectedArtifactsLoadingStrategyFactory, binaries, languageSupportRepository, executor);
   }

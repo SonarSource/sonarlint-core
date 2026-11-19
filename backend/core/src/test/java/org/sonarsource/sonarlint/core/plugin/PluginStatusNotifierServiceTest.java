@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.event.PluginStatusUpdateEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -37,7 +38,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePlugin
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,6 +100,16 @@ class PluginStatusNotifierServiceTest {
       .usingRecursiveComparison()
       .ignoringCollectionOrder()
       .isEqualTo(List.of(expectedScope1Params, expectedScope2Params));
+  }
+
+  @Test
+  void should_ignore_companion_only_download_updates() {
+    configurationRepository.addOrReplace(new ConfigurationScope(SCOPE_1, null, true, "Scope 1"), BindingConfiguration.noBinding());
+
+    underTest.onPluginStatusUpdate(new PluginStatusUpdateEvent(null,
+      List.of(PluginStatus.forCompanion("omnisharp", ArtifactState.FAILED, null, null, null))));
+
+    verify(client, never()).didChangePluginStatuses(any());
   }
 
   private static PluginStatusDto standaloneStatusDto() {
