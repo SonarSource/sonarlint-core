@@ -272,16 +272,25 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
     } catch (Exception e) {
       throw new IllegalStateException(e);
     } finally {
-      try {
-        serverLauncher.close();
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-      }
-      try {
-        clientLauncher.close();
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-      }
+      closeTransport();
+    }
+    return CompletableFuture.completedFuture(null);
+  }
+
+  public CompletableFuture<Void> requestShutdown() {
+    return serverUsingRpc.shutdown();
+  }
+
+  public void closeTransport() {
+    try {
+      serverLauncher.close();
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
+    }
+    try {
+      clientLauncher.close();
+    } catch (Exception e) {
+      e.printStackTrace(System.err);
     }
     try {
       this.clientToServerOutputStream.close();
@@ -291,7 +300,6 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
     } catch (Exception e) {
       e.printStackTrace(System.err);
     }
-    return CompletableFuture.completedFuture(null);
   }
 
   public int getEmbeddedServerPort() {
