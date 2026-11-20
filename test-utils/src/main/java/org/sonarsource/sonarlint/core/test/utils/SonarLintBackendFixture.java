@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCap
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin.PluginStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
@@ -87,6 +88,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDt
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidChangePluginStatusesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -678,6 +680,7 @@ public class SonarLintBackendFixture {
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
     private final List<DidChangeDependencyRisksParams> dependencyRiskChanges = new CopyOnWriteArrayList<>();
+    private final List<DidChangePluginStatusesParams> pluginStatusChanges = new CopyOnWriteArrayList<>();
     private final Map<String, String> matchedBranchPerScopeId;
     private final Map<String, Path> baseDirsByConfigScope;
     private final Map<String, Set<String>> fileExclusionsByConfigScope;
@@ -954,6 +957,15 @@ public class SonarLintBackendFixture {
 
     public Queue<ShowSmartNotificationParams> getSmartNotificationsToShow() {
       return smartNotificationsToShow;
+    }
+
+    @Override
+    public void didChangePluginStatuses(String configScopeId, List<PluginStatusDto> pluginStatuses) {
+      pluginStatusChanges.add(new DidChangePluginStatusesParams(configScopeId, pluginStatuses));
+    }
+
+    public List<DidChangePluginStatusesParams> getPluginStatusChanges() {
+      return pluginStatusChanges;
     }
 
     public Queue<LogParams> getLogs() {
