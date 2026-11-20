@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -202,12 +203,16 @@ class TelemetryMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().ideInstallationId()).isNotBlank());
-    var ideInstallationId = backend.telemetryFileContent().ideInstallationId();
+    var ideInstallationId = new AtomicReference<String>();
+    await().untilAsserted(() -> {
+      var id = backend.telemetryFileContent().ideInstallationId();
+      assertThat(id).isNotBlank();
+      ideInstallationId.set(id);
+    });
 
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(matchingJsonPath("$.machine_id", matching("[0-9a-f-]{36}")))
-      .withRequestBody(matchingJsonPath("$.ide_installation_id", equalTo(ideInstallationId)))));
+      .withRequestBody(matchingJsonPath("$.ide_installation_id", equalTo(ideInstallationId.get())))));
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
   }
 
@@ -223,7 +228,7 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().disableTelemetry();
 
-    assertThat(backend.telemetryFileContent().ideInstallationId()).isNull();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().ideInstallationId()).isNull());
     await().untilAsserted(() -> telemetryEndpointMock.verify(deleteRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(containing("\"machine_id\":null"))
       .withRequestBody(containing("\"ide_installation_id\":null"))));
@@ -245,7 +250,7 @@ class TelemetryMediumTests {
     telemetryLocalStorageManager.tryUpdateAtomically(data -> data.setEnabled(false));
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
-    assertThat(backend.telemetryFileContent().enabled()).isFalse();
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().enabled()).isFalse());
   }
 
   @SonarLintTest
@@ -704,8 +709,12 @@ class TelemetryMediumTests {
     backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
     backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"findingsFilteredCountersByType\":{\"severity\":{\"findingsFilteredCount\":2},\"location\":{\"findingsFilteredCount\":1},\"fix_availability\":{\"findingsFilteredCount\":3}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getFindingsFilteredCountersByType())
+      .extractingFromEntries(Map.Entry::getKey, e -> e.getValue().getFindingsFilteredCount())
+      .containsOnly(
+        tuple("severity", 2),
+        tuple("location", 1),
+        tuple("fix_availability", 3)));
   }
 
   @SonarLintTest
