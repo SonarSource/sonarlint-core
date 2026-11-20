@@ -224,7 +224,7 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().disableTelemetry();
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().ideInstallationId()).isNull());
+    assertThat(backend.telemetryFileContent().ideInstallationId()).isNull();
     await().untilAsserted(() -> telemetryEndpointMock.verify(deleteRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(containing("\"machine_id\":null"))
       .withRequestBody(containing("\"ide_installation_id\":null"))));
@@ -246,7 +246,7 @@ class TelemetryMediumTests {
     telemetryLocalStorageManager.tryUpdateAtomically(data -> data.setEnabled(false));
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
-    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().enabled()).isFalse());
+    assertThat(backend.telemetryFileContent().enabled()).isFalse();
   }
 
   @SonarLintTest
