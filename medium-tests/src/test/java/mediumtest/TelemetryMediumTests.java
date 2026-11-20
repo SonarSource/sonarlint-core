@@ -202,9 +202,8 @@ class TelemetryMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
-    var ideInstallationId = await()
-      .ignoreExceptionsInstanceOf(AssertionError.class)
-      .until(() -> backend.telemetryFileContent().ideInstallationId(), id -> id != null && !id.isBlank());
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().ideInstallationId()).isNotBlank());
+    var ideInstallationId = backend.telemetryFileContent().ideInstallationId();
 
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(matchingJsonPath("$.machine_id", matching("[0-9a-f-]{36}")))
