@@ -704,8 +704,12 @@ class TelemetryMediumTests {
     backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
     backend.getTelemetryService().findingsFiltered(new FindingsFilteredParams("fix_availability"));
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString()
-      .contains("\"findingsFilteredCountersByType\":{\"severity\":{\"findingsFilteredCount\":2},\"location\":{\"findingsFilteredCount\":1},\"fix_availability\":{\"findingsFilteredCount\":3}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFileContent().getFindingsFilteredCountersByType())
+      .extractingFromEntries(Map.Entry::getKey, e -> e.getValue().getFindingsFilteredCount())
+      .containsOnly(
+        tuple("severity", 2),
+        tuple("location", 1),
+        tuple("fix_availability", 3)));
   }
 
   @SonarLintTest
