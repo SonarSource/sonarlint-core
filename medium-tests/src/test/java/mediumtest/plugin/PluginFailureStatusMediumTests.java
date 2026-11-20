@@ -122,10 +122,9 @@ class PluginFailureStatusMediumTests {
       .withUnboundConfigScope(SCOPE_ID)
       .start(client);
 
-    await().untilAsserted(() -> {
-      assertThat(notifiedStates(client, Language.CPP)).last().isEqualTo(PluginStateDto.ACTIVE);
-      assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.ACTIVE);
-    });
+    awaitPluginState(client, Language.CPP, PluginStateDto.ACTIVE);
+    await().untilAsserted(() ->
+      assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.ACTIVE));
   }
 
   @SonarLintTest
