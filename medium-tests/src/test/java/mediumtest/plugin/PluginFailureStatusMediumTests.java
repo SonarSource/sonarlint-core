@@ -123,7 +123,8 @@ class PluginFailureStatusMediumTests {
       .start(client);
 
     awaitPluginState(client, Language.CPP, PluginStateDto.ACTIVE);
-    assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.ACTIVE);
+    await().untilAsserted(() ->
+      assertThat(stateOf(pluginStatuses(backend), Language.CPP)).isEqualTo(PluginStateDto.ACTIVE));
   }
 
   @SonarLintTest
