@@ -19,9 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.plugin.loading.strategy;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPlugin;
 import org.sonarsource.sonarlint.core.commons.plugins.SonarPluginDependency;
+import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
+import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 
 /**
  * Base class for artifact loading strategies. Provides shared filter passes that apply to both
@@ -63,5 +69,16 @@ abstract class BaseArtifactsLoadingStrategy implements ArtifactsLoadingStrategy 
         && plugin.getDependencies().stream()
           .anyMatch(dep -> dep.anyRequiredArtifacts().stream().noneMatch(artifact -> candidates.containsKey(artifact.getKey())));
     });
+  }
+
+  protected static ResolutionPlan loadFromSources(Map<ArtifactSource, ? extends Set<String>> keysBySource) {
+    var result = new LinkedHashMap<String, ResolvedArtifact>();
+    var pendingDownloads = new ArrayList<PendingDownload>();
+    for (var entry : keysBySource.entrySet()) {
+      var loaded = entry.getKey().load(entry.getValue());
+      result.putAll(loaded.resolvedArtifactsByKey());
+      pendingDownloads.addAll(loaded.pendingDownloads());
+    }
+    return new ResolutionPlan(new ArtifactsLoadingResult(result), pendingDownloads);
   }
 }

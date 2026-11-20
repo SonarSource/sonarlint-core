@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.plugin.source.server;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.plugin.source.ArtifactSource;
 import org.sonarsource.sonarlint.core.plugin.source.ArtifactState;
 import org.sonarsource.sonarlint.core.plugin.source.AvailableArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.LoadResult;
+import org.sonarsource.sonarlint.core.plugin.source.PendingDownload;
 import org.sonarsource.sonarlint.core.plugin.source.ResolvedArtifact;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -66,7 +68,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
  * </ul>
  *
  * <p>{@link #load} resolves a plugin: it returns the stored artifact when already on disk with a
- * matching hash, or schedules a background download (returning
+ * matching hash, or plans a background download (returning
  * {@link ArtifactState#DOWNLOADING}). It does <em>not</em> apply the skip-list check — that is
  * the responsibility of the loading strategy that owns this source.</p>
  */
@@ -145,6 +147,7 @@ public class ServerPluginSource implements ArtifactSource {
   public LoadResult load(Set<String> artifactKeys) {
     var storedPlugins = loadStoredPlugins();
     var resolved = new HashMap<String, ResolvedArtifact>();
+    var pendingDownloads = new ArrayList<PendingDownload>();
     var serverAccessible = false;
     List<ServerPlugin> expectedServerPlugins = List.of();
     try {
@@ -154,7 +157,11 @@ public class ServerPluginSource implements ArtifactSource {
       for (var key : artifactKeys) {
         var serverPlugin = serverPluginsByKey.get(key);
         if (serverPlugin != null) {
-          resolved.put(key, resolveFromStorageOrSchedule(serverPlugin, storedPlugins, key));
+          var artifact = resolveArtifact(serverPlugin, storedPlugins, key);
+          resolved.put(key, artifact);
+          if (artifact.state() == ArtifactState.DOWNLOADING) {
+            pendingDownloads.add(new PendingDownload(key, () -> downloader.schedulePluginDownload(connectionId, serverPlugin)));
+          }
         } else {
           findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
             .ifPresent(r -> resolved.put(key, r));
@@ -182,18 +189,16 @@ public class ServerPluginSource implements ArtifactSource {
     if (serverAccessible) {
       storageService.connection(connectionId).plugins().cleanUpUnknownPlugins(expectedServerPlugins);
     }
-    return new LoadResult(resolved);
+    return new LoadResult(resolved, pendingDownloads);
   }
 
-  private ResolvedArtifact resolveFromStorageOrSchedule(ServerPlugin serverPlugin,
-    Map<String, StoredPlugin> storedPlugins, String pluginKey) {
+  private ResolvedArtifact resolveArtifact(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPlugins, String pluginKey) {
     var stored = findStoredPlugin(pluginKey, storedPlugins);
     if (stored.isPresent() && stored.get().hasSameHash(serverPlugin)) {
       LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", pluginKey);
       return toResolvedArtifact(stored.get().getJarPath());
     }
-    var downloadFuture = downloader.schedulePluginDownload(connectionId, serverPlugin);
-    return new ResolvedArtifact(ArtifactState.DOWNLOADING, null, null, null, downloadFuture);
+    return ResolvedArtifact.downloading();
   }
 
   private static Optional<StoredPlugin> findStoredPlugin(String pluginKey, Map<String, StoredPlugin> storedPlugins) {
@@ -202,7 +207,7 @@ public class ServerPluginSource implements ArtifactSource {
   }
 
   private ResolvedArtifact toResolvedArtifact(Path pluginPath) {
-    return new ResolvedArtifact(ArtifactState.SYNCED, pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath), null);
+    return new ResolvedArtifact(ArtifactState.SYNCED, pluginPath, downloader.sourceFor(connectionId), PluginJarUtils.readVersion(pluginPath));
   }
 
   private Map<String, StoredPlugin> loadStoredPlugins() {

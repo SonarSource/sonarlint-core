@@ -19,14 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin.source;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * The result of a batch {@link ArtifactSource#load(java.util.Set)} call.
- *
- * <p>Wraps the resolved artifacts by key. Using a dedicated type instead of a raw map leaves
- * room for future fields (e.g. the set of artifacts that were available from this source but
- * not selected as winners, needed by {@code ServerPluginSource} to write empty reference files).</p>
+ * Resolved artifacts and downloads that the caller must start after caching the result.
  */
-public record LoadResult(Map<String, ResolvedArtifact> resolvedArtifactsByKey) {
+public record LoadResult(Map<String, ResolvedArtifact> resolvedArtifactsByKey, List<PendingDownload> pendingDownloads) {
 }

@@ -65,6 +65,7 @@ import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateAdapter;
 import org.sonarsource.sonarlint.core.commons.storage.adapter.LocalDateTimeAdapter;
 import org.sonarsource.sonarlint.core.commons.storage.adapter.OffsetDateTimeAdapter;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -100,6 +101,11 @@ public final class SonarLintTestRpcServer implements SonarLintRpcServer {
   /** The client delegate this backend was started with (e.g. a {@code FakeSonarLintRpcClient} in medium tests). */
   public SonarLintRpcClientDelegate getClient() {
     return client;
+  }
+
+  /** Spring context of the running backend, for tests that need to reach internal beans. */
+  public ConfigurableApplicationContext getApplicationContext() {
+    return serverUsingJava.getInitializedApplicationContext();
   }
 
   @Override
