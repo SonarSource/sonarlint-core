@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -203,16 +202,13 @@ class TelemetryMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
-    var ideInstallationId = new AtomicReference<String>();
-    await().untilAsserted(() -> {
-      var id = backend.telemetryFileContent().ideInstallationId();
-      assertThat(id).isNotBlank();
-      ideInstallationId.set(id);
-    });
+    var ideInstallationId = await()
+      .ignoreExceptionsInstanceOf(AssertionError.class)
+      .until(() -> backend.telemetryFileContent().ideInstallationId(), id -> id != null && !id.isBlank());
 
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(matchingJsonPath("$.machine_id", matching("[0-9a-f-]{36}")))
-      .withRequestBody(matchingJsonPath("$.ide_installation_id", equalTo(ideInstallationId.get())))));
+      .withRequestBody(matchingJsonPath("$.ide_installation_id", equalTo(ideInstallationId)))));
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
   }
 
