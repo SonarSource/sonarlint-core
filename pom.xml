@@ -81,7 +81,7 @@
     <!-- 2.5.250 and 2.5.252 cannot read files left by a 2.4.x crash while a transaction was open (SLCORE-2681), StorageUpgradeMediumTests checks it -->
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
-    <jooq.version>3.21.9</jooq.version>
+    <jooq.version>3.21.10</jooq.version>
     <flyway.version>11.20.3</flyway.version>
     <!-- Override the Jackson transitively pulled by flyway-core (2.19.1): 11.20.3 is the last Flyway release
          on Jackson 2.x, later versions move flyway-core itself to Jackson 3.x (tools.jackson.core) -->
