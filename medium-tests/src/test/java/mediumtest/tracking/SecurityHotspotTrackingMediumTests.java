@@ -29,7 +29,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -49,7 +52,9 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,6 +62,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 
@@ -169,21 +175,14 @@ class SecurityHotspotTrackingMediumTests {
       .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 3, 65, 3, 76);
   }
 
-  @SonarLintTest
-  void it_should_complete_analysis_after_refreshing_project_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var files = IntStream.range(0, 11)
-      .mapToObj(index -> createFile(baseDir, "Foo" + index + ".java", """
-        public class Foo%d {
-          void foo() throws Exception {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-          }
-        }""".formatted(index)))
-      .map(file -> new ClientFileDto(file.toUri(), baseDir.relativize(file), CONFIG_SCOPE_ID, false, null, file, null, null, true))
-      .toList();
-    var fileUris = files.stream().map(ClientFileDto::getUri).toList();
+  @ParameterizedTest
+  @ValueSource(strings = {"2025.1", "2025.4", "2026.1", "2026.5", "25.1", "26.9", "26.10", "26.11"})
+  @ExtendWith(SonarLintTestHarness.class)
+  void it_should_complete_analysis_after_refreshing_project_hotspots(String version, SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var files = createHotspotFiles(baseDir);
     var client = harness.newFakeClient().withInitialFs(CONFIG_SCOPE_ID, baseDir, files).build();
     var ruleKey = "java:S4790";
-    var server = harness.newFakeSonarQubeServer("26.11")
+    var server = harness.newFakeSonarQubeServer(version)
       .withProject("projectKey", project -> {
         files.forEach(file -> project.withFile(file.getIdeRelativePath().toString()));
         return project.withQualityProfile("qp").withBranch("main");
@@ -193,15 +192,70 @@ class SecurityHotspotTrackingMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey", project -> project
-        .withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MAJOR"))
-        .withMainBranch("main")))
+      .withSonarQubeConnection("connectionId", server)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withBackendCapability(SECURITY_HOTSPOTS)
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
-    var analysisId = UUID.randomUUID();
+    client.waitForSynchronization();
 
+    analyzeFilesAndVerifyFinalHotspots(backend, files, client);
+
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/system/status")));
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/hotspots/search.protobuf?project=projectKey&branch=main&ps=500&p=1")));
+    server.getMockServer().verify(0, getRequestedFor(urlPathEqualTo("/api/hotspots/search.protobuf")).withQueryParam("projectKey", matching(".*")));
+  }
+
+  @SonarLintTest
+  void it_should_complete_analysis_after_refreshing_cloud_project_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var files = createHotspotFiles(baseDir);
+    var client = harness.newFakeClient().withInitialFs(CONFIG_SCOPE_ID, baseDir, files).build();
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organization", organization -> organization
+        .withProject("projectKey", project -> {
+          files.forEach(file -> project.withFile(file.getIdeRelativePath().toString()));
+          return project.withQualityProfile("qp").withBranch("main");
+        })
+        .withQualityProfile("qp", profile -> profile.withLanguage("java")
+          .withActiveRule("java:S4790", rule -> rule.withSeverity(IssueSeverity.MAJOR))))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var backend = harness.newBackend()
+      .withSonarCloudConnection("connectionId", "organization", true, storage -> storage.withGlobalSettings(Map.of())
+        .withProject("projectKey", project -> project
+          .withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4790", "MAJOR"))
+          .withMainBranch("main")))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withBackendCapability(SECURITY_HOTSPOTS)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .start(client);
+
+    analyzeFilesAndVerifyFinalHotspots(backend, files, client);
+
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/batch/issues?key=projectKey&branch=main")));
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/hotspots/search.protobuf?projectKey=projectKey&branch=main&ps=500&p=1")));
+    server.getMockServer().verify(0, getRequestedFor(urlPathEqualTo("/api/hotspots/search.protobuf")).withQueryParam("project", matching(".*")));
+    server.getMockServer().verify(0, getRequestedFor(urlPathEqualTo("/api/hotspots/pull")));
+  }
+
+  private static List<ClientFileDto> createHotspotFiles(Path baseDir) {
+    return IntStream.range(0, 11)
+      .mapToObj(index -> createFile(baseDir, "Foo" + index + ".java", """
+        public class Foo%d {
+          void foo() throws Exception {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+          }
+        }""".formatted(index)))
+      .map(file -> new ClientFileDto(file.toUri(), baseDir.relativize(file), CONFIG_SCOPE_ID, false, null, file, null, null, true))
+      .toList();
+  }
+
+  private void analyzeFilesAndVerifyFinalHotspots(SonarLintTestRpcServer backend, List<ClientFileDto> files, SonarLintRpcClientDelegate client) {
+    var fileUris = files.stream().map(ClientFileDto::getUri).toList();
+    var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, fileUris, Map.of(), true)).join();
 
@@ -210,9 +264,8 @@ class SecurityHotspotTrackingMediumTests {
     assertThat(publishedHotspots).containsOnlyKeys(fileUris);
     assertThat(publishedHotspots.values()).allSatisfy(hotspots -> {
       assertThat(hotspots).hasSize(1);
-      assertThat(hotspots.get(0).getRuleKey()).isEqualTo(ruleKey);
+      assertThat(hotspots.get(0).getRuleKey()).isEqualTo("java:S4790");
     });
-    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/hotspots/search.protobuf?project=projectKey&branch=main&ps=500&p=1")));
   }
 
   @SonarLintTest
