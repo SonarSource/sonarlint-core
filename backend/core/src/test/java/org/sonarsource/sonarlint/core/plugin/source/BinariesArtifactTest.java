@@ -58,7 +58,7 @@ class BinariesArtifactTest {
   @Test
   void should_return_versions_from_properties() {
     assertThat(BinariesArtifact.CFAMILY_PLUGIN.version()).isEqualTo("6.86.0.113840");
-    assertThat(BinariesArtifact.CSHARP_OSS.version()).isEqualTo("10.36.0.15337");
+    assertThat(BinariesArtifact.CSHARP_OSS.version()).isEqualTo("10.37.0.15768");
   }
 
   @Test
