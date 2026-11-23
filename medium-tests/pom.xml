@@ -311,10 +311,10 @@
                 </goals>
                 <configuration>
                   <skip>${maven.test.skip}</skip>
-                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_windows_hotspot_21.0.10_7.zip</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_windows_hotspot_21.0.13.1_2.zip</url>
                   <unpack>true</unpack>
                   <outputDirectory>${project.build.directory}/jre-windows</outputDirectory>
-                  <sha256>a6ac6789e51a2c245f41430c42e72b39ec706a449812fc5e4cbfc55ceed1e5ae</sha256>
+                  <sha256>e15ee1e54a5a3b38027a09cedfa87bc3348d7dd3ce50866dd3d9671d7fffc6c1</sha256>
                 </configuration>
               </execution>
             </executions>
@@ -372,10 +372,10 @@
                 </goals>
                 <configuration>
                   <skip>${maven.test.skip}</skip>
-                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_linux_hotspot_21.0.10_7.tar.gz</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_linux_hotspot_21.0.13.1_2.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${project.build.directory}/jre-linux</outputDirectory>
-                  <sha256>991be6ac6725e76109ecbd131d658f992dcbeacba3a8b4b6650302c8012b52fb</sha256>
+                  <sha256>18f44fab9065217f3ba61d0eef8a7b5f3c3713aa7293001b0d4ac10ede3850f0</sha256>
                 </configuration>
               </execution>
             </executions>
