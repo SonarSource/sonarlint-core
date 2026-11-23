@@ -48,7 +48,7 @@ public class BinariesSignatureVerifier {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final List<String> SONAR_PUBLIC_KEYS = List.of(
     "ondemand/sonarsource-public.key",
-    // Kept temporarily for artifacts signed before the July 2026 signing key rotation
+    // Kept temporarily for artifacts signed before the November 2026 signing key rotation
     "ondemand/sonarsource-public-legacy.key");
   private static final BouncyCastleProvider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
