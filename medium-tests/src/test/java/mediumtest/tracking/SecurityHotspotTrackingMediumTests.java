@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -47,6 +48,8 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -164,6 +167,52 @@ class SecurityHotspotTrackingMediumTests {
       .extracting("id", "ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
       .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 3, 65, 3, 76);
+  }
+
+  @SonarLintTest
+  void it_should_complete_analysis_after_refreshing_project_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var files = IntStream.range(0, 11)
+      .mapToObj(index -> createFile(baseDir, "Foo" + index + ".java", """
+        public class Foo%d {
+          void foo() throws Exception {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+          }
+        }""".formatted(index)))
+      .map(file -> new ClientFileDto(file.toUri(), baseDir.relativize(file), CONFIG_SCOPE_ID, false, null, file, null, null, true))
+      .toList();
+    var fileUris = files.stream().map(ClientFileDto::getUri).toList();
+    var client = harness.newFakeClient().withInitialFs(CONFIG_SCOPE_ID, baseDir, files).build();
+    var ruleKey = "java:S4790";
+    var server = harness.newFakeSonarQubeServer("26.11")
+      .withProject("projectKey", project -> {
+        files.forEach(file -> project.withFile(file.getIdeRelativePath().toString()));
+        return project.withQualityProfile("qp").withBranch("main");
+      })
+      .withQualityProfile("qp", profile -> profile.withLanguage("java")
+        .withActiveRule(ruleKey, rule -> rule.withSeverity(IssueSeverity.MAJOR)))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey", project -> project
+        .withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MAJOR"))
+        .withMainBranch("main")))
+      .withBackendCapability(SECURITY_HOTSPOTS)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .start(client);
+    var analysisId = UUID.randomUUID();
+
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, fileUris, Map.of(), true)).join();
+
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    var publishedHotspots = getPublishedHotspots(client, analysisId);
+    assertThat(publishedHotspots).containsOnlyKeys(fileUris);
+    assertThat(publishedHotspots.values()).allSatisfy(hotspots -> {
+      assertThat(hotspots).hasSize(1);
+      assertThat(hotspots.get(0).getRuleKey()).isEqualTo(ruleKey);
+    });
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/hotspots/search.protobuf?project=projectKey&branch=main&ps=500&p=1")));
   }
 
   @SonarLintTest

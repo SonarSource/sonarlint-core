@@ -1042,14 +1042,14 @@ public class ServerFixture {
     private void registerHotspotsApiResponses() {
       if (version != null) {
         registerApiHotspotsPullResponses();
-      } else {
-        registerApiHotspotSearchResponses();
       }
+      registerApiHotspotSearchResponses();
       registerHotspotsShowApiResponses();
       registerHotspotsStatusChangeApiResponses();
     }
 
     private void registerApiHotspotSearchResponses() {
+      var projectParameter = version != null ? "project" : "projectKey";
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var messagesPerFilePath = branch.hotspots.stream()
           .collect(groupingBy(AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerHotspot::getFilePath,
@@ -1077,14 +1077,14 @@ public class ServerFixture {
             }, toList())));
         var branchParameter = branchName == null ? "" : ("&branch=" + urlEncode(branchName));
         messagesPerFilePath.forEach((filePath,
-          messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
+          messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?" + projectParameter + "=" + urlEncode(projectKey) + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
             .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
               .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
               .addAllHotspots(messages)
               .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
               .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).toList();
-        mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
+        mockServer.stubFor(get("/api/hotspots/search.protobuf?" + projectParameter + "=" + urlEncode(projectKey) + branchParameter + "&ps=500&p=1")
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
             .addAllComponents(messagesPerFilePath.keySet().stream().map(filePath -> Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
               .toList())
