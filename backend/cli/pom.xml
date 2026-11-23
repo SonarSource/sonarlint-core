@@ -12,9 +12,9 @@
   <description>SonarLint backend as a standalone CLI</description>
   <properties>
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
-    <jre.dirname.linux>jdk-21.0.10+7-jre</jre.dirname.linux>
-    <jre.dirname.windows>jdk-21.0.10+7-jre</jre.dirname.windows>
-    <jre.dirname.macosx>jdk-21.0.10+7-jre/Contents/Home</jre.dirname.macosx>
+    <jre.dirname.linux>jdk-21.0.13.1+2-jre</jre.dirname.linux>
+    <jre.dirname.windows>jdk-21.0.13.1+2-jre</jre.dirname.windows>
+    <jre.dirname.macosx>jdk-21.0.13.1+2-jre/Contents/Home</jre.dirname.macosx>
   </properties>
 
   <build>
@@ -81,10 +81,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_windows_hotspot_21.0.10_7.zip</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_windows_hotspot_21.0.13.1_2.zip</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/windows_x64</outputDirectory>
-                      <sha256>a6ac6789e51a2c245f41430c42e72b39ec706a449812fc5e4cbfc55ceed1e5ae</sha256>
+                      <sha256>e15ee1e54a5a3b38027a09cedfa87bc3348d7dd3ce50866dd3d9671d7fffc6c1</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -131,10 +131,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_linux_hotspot_21.0.10_7.tar.gz</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_linux_hotspot_21.0.13.1_2.tar.gz</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/linux_x64</outputDirectory>
-                      <sha256>991be6ac6725e76109ecbd131d658f992dcbeacba3a8b4b6650302c8012b52fb</sha256>
+                      <sha256>18f44fab9065217f3ba61d0eef8a7b5f3c3713aa7293001b0d4ac10ede3850f0</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -176,10 +176,10 @@
                       <goal>wget</goal>
                     </goals>
                     <configuration>
-                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.10_7.tar.gz</url>
+                      <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.13.1_2.tar.gz</url>
                       <unpack>true</unpack>
                       <outputDirectory>${unpack.dir}/linux_aarch64</outputDirectory>
-                      <sha256>3ca84da7c4f57eee8d7e7f0645dc904a3a06456d32b37a4dd57a5e7527245250</sha256>
+                      <sha256>52bc58323d9266538a6361a3cf8365fc1186dd9510d7f33f623681c4aabb7e72</sha256>
                     </configuration>
                   </execution>
                 </executions>
@@ -221,10 +221,10 @@
                   <goal>wget</goal>
                 </goals>
                 <configuration>
-                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_x64_mac_hotspot_21.0.10_7.tar.gz</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_mac_hotspot_21.0.13.1_2.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${unpack.dir}/macosx_x64</outputDirectory>
-                  <sha256>008d2bb904c0e07500b92bf4b0f8d434d694b13d5189f06358a52d46b1351f37</sha256>
+                  <sha256>10cee6ba4cd83fd4613a3f0bb3ef9dddd68c68d5f3ccfcc7e456707c9e1eafe0</sha256>
                 </configuration>
               </execution>
             </executions>
@@ -266,10 +266,10 @@
                   <goal>wget</goal>
                 </goals>
                 <configuration>
-                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.10_7.tar.gz</url>
+                  <url>https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.13.1_2.tar.gz</url>
                   <unpack>true</unpack>
                   <outputDirectory>${unpack.dir}/macosx_aarch64</outputDirectory>
-                  <sha256>c3be8c87f1a5cdc727903546eb810e112f94cd7222dac6a9d3f3146ee932008d</sha256>
+                  <sha256>848feb1906c7de79de4f8391636042193fbd46eff86e26299506c4656f62c260</sha256>
                 </configuration>
               </execution>
             </executions>
