@@ -19,13 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.plugin.resources;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -33,14 +39,32 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
+import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ConnectedResourceFetcherTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @TempDir
   Path storage;
@@ -119,6 +143,131 @@ class ConnectedResourceFetcherTests {
     assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessageContaining("only zip and tar.gz");
+  }
+
+  @Test
+  void downloads_a_server_resource_into_the_connection_directory() throws IOException {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), api -> {
+      when(api.isSonarCloud()).thenReturn(false);
+      var pluginsApi = mock(PluginsApi.class);
+      when(api.plugins()).thenReturn(pluginsApi);
+      answerWith(pluginsApi, bytes);
+    });
+
+    var file = fetcher.fetch("javascript", "linux-x64/native-tool");
+
+    assertThat(Files.readAllBytes(file)).isEqualTo(bytes);
+    assertThat(file).startsWith(storage.resolve("tmp"));
+  }
+
+  @Test
+  void downloads_a_sonarcloud_resource() throws IOException {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), api -> {
+      when(api.isSonarCloud()).thenReturn(true);
+      var helper = mock(ServerApiHelper.class);
+      var response = mock(HttpClient.Response.class);
+      when(api.getHelper()).thenReturn(helper);
+      when(helper.getBaseUrl()).thenReturn("https://sonarcloud.io");
+      when(helper.getAnonymousUrl(any(), any())).thenReturn(response);
+      when(response.bodyAsStream()).thenReturn(new ByteArrayInputStream(bytes));
+    });
+
+    assertThat(Files.readAllBytes(fetcher.fetch("javascript", "linux-x64/native-tool"))).isEqualTo(bytes);
+  }
+
+  @Test
+  void rejects_a_sonarcloud_plugin_without_a_resource_folder() {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var plugin = new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), " ", List.of(resource("linux-x64/native-tool", bytes)));
+    var fetcher = connected(plugin, api -> {
+      when(api.isSonarCloud()).thenReturn(true);
+    });
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessageContaining("no static resource folder");
+  }
+
+  @Test
+  void rejects_a_connection_that_cannot_download() {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var clients = mock(SonarQubeClientManager.class);
+    when(clients.withActiveClientAndReturn(eq("conn"), any())).thenReturn(Optional.empty());
+    var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), clients);
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessageContaining("cannot download");
+  }
+
+  @Test
+  void wraps_a_download_that_cannot_be_read() {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), api -> {
+      when(api.isSonarCloud()).thenReturn(false);
+      var pluginsApi = mock(PluginsApi.class);
+      when(api.plugins()).thenReturn(pluginsApi);
+      answerWith(pluginsApi, new InputStream() {
+        @Override
+        public int read() throws IOException {
+          throw new IOException("broken");
+        }
+      });
+    });
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(UncheckedIOException.class)
+      .hasCauseInstanceOf(IOException.class);
+  }
+
+  @Test
+  void wraps_an_archive_that_cannot_be_extracted() throws IOException {
+    var bytes = zip("../outside.txt", "nope");
+    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+
+    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
+      .isInstanceOf(UncheckedIOException.class)
+      .hasMessageContaining("Cannot extract");
+  }
+
+  private ConnectedResourceFetcher connected(StoredPlugin plugin, Consumer<ServerApi> prepareApi) {
+    var clients = mock(SonarQubeClientManager.class);
+    when(clients.withActiveClientAndReturn(eq("conn"), any())).thenAnswer(invocation -> {
+      Function<ServerApi, byte[]> call = invocation.getArgument(1);
+      var api = mock(ServerApi.class);
+      prepareApi.accept(api);
+      return Optional.of(call.apply(api));
+    });
+    return connected(plugin, clients);
+  }
+
+  private ConnectedResourceFetcher connected(StoredPlugin plugin, SonarQubeClientManager clients) {
+    var storageService = mock(StorageService.class);
+    var connection = mock(ConnectionStorage.class);
+    var plugins = mock(PluginsStorage.class);
+    when(storageService.connection("conn")).thenReturn(connection);
+    when(connection.storageRoot()).thenReturn(storage);
+    when(connection.plugins()).thenReturn(plugins);
+    when(plugins.getStoredPluginsByKey()).thenReturn(Map.of(plugin.getKey(), plugin));
+    return new ConnectedResourceFetcher("conn", storageService, clients);
+  }
+
+  private StoredPlugin plugin(StaticResource resource) {
+    return new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", List.of(resource));
+  }
+
+  private static void answerWith(PluginsApi pluginsApi, byte[] bytes) {
+    answerWith(pluginsApi, new ByteArrayInputStream(bytes));
+  }
+
+  private static void answerWith(PluginsApi pluginsApi, InputStream stream) {
+    doAnswer(invocation -> {
+      Consumer<InputStream> consumer = invocation.getArgument(2);
+      consumer.accept(stream);
+      return null;
+    }).when(pluginsApi).getStaticResource(any(), any(), any(), any());
   }
 
   private ConnectedResourceFetcher fetcher(StaticResource resource, ConnectedResourceFetcher.Downloader downloader) {
