@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -87,13 +88,19 @@ class ConnectedResourceFetcherTests {
 
     var first = new Thread(() -> fetcher.fetch("javascript", "linux-x64/native-tool"));
     first.start();
-    started.await();
+    assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
     var second = new Thread(() -> fetcher.fetch("javascript", "linux-x64/native-tool"));
     second.start();
+    var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (second.getState() != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+      Thread.sleep(10);
+    }
+
+    assertThat(second.getState()).isEqualTo(Thread.State.BLOCKED);
+    assertThat(calls).hasValue(1);
     release.countDown();
     first.join();
     second.join();
-
     assertThat(calls).hasValue(1);
   }
 
@@ -138,6 +145,20 @@ class ConnectedResourceFetcherTests {
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
     assertThat(again).isEqualTo(extracted);
     assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void leaves_another_process_extraction_directory_in_place() throws IOException {
+    var bytes = zip("hello.txt", "hello");
+    var foreign = storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes)).resolve(".extracting");
+    Files.createDirectories(foreign);
+    Files.writeString(foreign.resolve("partial"), "partial");
+    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+
+    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+
+    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
+    assertThat(foreign.resolve("partial")).hasContent("partial");
   }
 
   @Test

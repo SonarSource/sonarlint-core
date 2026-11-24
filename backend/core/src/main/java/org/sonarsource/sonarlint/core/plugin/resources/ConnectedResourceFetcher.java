@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.sonar.api.scanner.ResourceFetcher;
@@ -101,11 +102,8 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       if (Files.isDirectory(destination)) {
         return destination;
       }
-      var staging = destination.resolveSibling(".extracting");
+      var staging = destination.resolveSibling(".extracting-" + UUID.randomUUID());
       try {
-        if (Files.exists(staging)) {
-          deleteRecursively(staging);
-        }
         Files.createDirectories(staging);
         if (zip) {
           ZipUtils.unzip(archive.toFile(), staging.toFile());
@@ -119,6 +117,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         }
         return destination;
       } catch (IOException e) {
+        deleteRecursivelyQuietly(staging);
         throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
       }
     }
@@ -172,6 +171,14 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       throw new IllegalArgumentException("Invalid static resource path: " + resourcePath);
     }
     return name.toString();
+  }
+
+  private static void deleteRecursivelyQuietly(Path root) {
+    try {
+      deleteRecursively(root);
+    } catch (IOException ignored) {
+      // The extraction is already failing.
+    }
   }
 
   private static void deleteRecursively(Path root) throws IOException {
