@@ -88,7 +88,8 @@ public class StaticResourceStorage {
 
   /**
    * Deletes {@code resources/{sha256}/} directories whose hash is absent from the plugins' inventories.
-   * A directory that cannot be removed, because a file is still open, is left in place.
+   * This only waits for the current process to unload its analysis container. On POSIX, deleting a file that another
+   * process still has open succeeds, so a second IDE sharing this storage can lose that file.
    */
   public void purgeExcept(Collection<StoredPlugin> plugins) {
     var keep = plugins.stream()

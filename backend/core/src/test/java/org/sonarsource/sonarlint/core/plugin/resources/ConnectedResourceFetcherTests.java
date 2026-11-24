@@ -152,6 +152,9 @@ class ConnectedResourceFetcherTests {
 
     assertThat(destination.resolve("hello.txt")).hasContent("hello");
     assertThat(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
+    try (var children = Files.list(storage)) {
+      assertThat(children.map(path -> path.getFileName().toString())).containsExactly("extracted");
+    }
   }
 
   @Test

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -114,7 +115,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         return destination;
       }
       publishExtraction(extracting, destination);
-      if (!Files.isRegularFile(complete)) {
+      if (!extractionRemainsComplete(complete)) {
         throw new IOException("Extracted resource '" + resourcePath + "' for plugin '" + pluginKey + "' is incomplete");
       }
       return destination;
@@ -176,10 +177,14 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   }
 
   /**
-   * Moves {@code destination} aside before deciding it is incomplete. A publish that lands between the marker check and
-   * this move is preserved, because the marker travels with the directory and is moved back.
+   * Returns true when {@code destination} is already complete, without moving it. An incomplete directory is renamed
+   * aside and deleted. A complete directory that replaces it during that rename is moved back.
    */
   static boolean keepNewlyCompletedExtraction(Path destination) throws IOException {
+    var marker = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    if (Files.isRegularFile(marker)) {
+      return true;
+    }
     if (!Files.exists(destination)) {
       return false;
     }
@@ -187,7 +192,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     try {
       Files.move(destination, aside);
     } catch (IOException moveFailed) {
-      if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+      if (Files.isRegularFile(marker)) {
         return true;
       }
       if (!Files.exists(destination)) {
@@ -199,16 +204,30 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       deleteRecursively(aside);
       return false;
     }
+    restoreCompletedExtraction(aside, destination);
+    return true;
+  }
+
+  private static void restoreCompletedExtraction(Path aside, Path destination) throws IOException {
     try {
       Files.move(aside, destination);
     } catch (IOException moveFailed) {
       if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
         deleteRecursively(aside);
-        return true;
+        return;
       }
       throw moveFailed;
     }
-    return true;
+  }
+
+  private static boolean extractionRemainsComplete(Path complete) {
+    var deadline = System.nanoTime() + Duration.ofMillis(200).toNanos();
+    do {
+      if (Files.isRegularFile(complete)) {
+        return true;
+      }
+    } while (System.nanoTime() < deadline);
+    return false;
   }
 
   static void publishExtraction(Path extracting, Path destination) throws IOException {
