@@ -22,9 +22,10 @@ package org.sonarsource.sonarlint.core.plugin.resources;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +47,9 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
  * A JAR-packaged plugin has an empty inventory, so a fetch for it fails.
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
+
+  private static final Duration STALE_STAGING_AGE = Duration.ofHours(1);
+  private static final String STAGING_PREFIX = ".extracting-";
 
   private final String connectionId;
   private final Map<String, StoredPlugin> plugins;
@@ -99,10 +103,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
     synchronized (downloadsByHash.computeIfAbsent(resource.hash().toLowerCase(Locale.ROOT), hash -> new Object())) {
       var destination = storage.extractionDirectory(resource.hash());
+      deleteStaleStagingDirectories(destination);
       if (Files.isDirectory(destination)) {
         return destination;
       }
-      var staging = destination.resolveSibling(".extracting-" + UUID.randomUUID());
+      var staging = destination.resolveSibling(STAGING_PREFIX + UUID.randomUUID());
       try {
         Files.createDirectories(staging);
         if (zip) {
@@ -110,11 +115,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         } else {
           TarGzUtils.extractTarGz(archive, staging);
         }
-        try {
-          Files.move(staging, destination);
-        } catch (FileAlreadyExistsException alreadyExtracted) {
-          deleteRecursively(staging);
-        }
+        publishExtraction(staging, destination);
         return destination;
       } catch (IOException e) {
         deleteRecursivelyQuietly(staging);
@@ -171,6 +172,38 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       throw new IllegalArgumentException("Invalid static resource path: " + resourcePath);
     }
     return name.toString();
+  }
+
+  static void publishExtraction(Path staging, Path destination) throws IOException {
+    try {
+      Files.move(staging, destination);
+    } catch (IOException moveFailed) {
+      deleteRecursivelyQuietly(staging);
+      if (!Files.isDirectory(destination)) {
+        throw moveFailed;
+      }
+    }
+  }
+
+  private static void deleteStaleStagingDirectories(Path destination) {
+    var parent = destination.getParent();
+    if (parent == null || !Files.isDirectory(parent)) {
+      return;
+    }
+    var cutoff = Instant.now().minus(STALE_STAGING_AGE);
+    try (var children = Files.list(parent)) {
+      for (var child : children.filter(path -> path.getFileName().toString().startsWith(STAGING_PREFIX)).toList()) {
+        try {
+          if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
+            deleteRecursively(child);
+          }
+        } catch (IOException ignored) {
+          // Another process may still be writing this staging directory.
+        }
+      }
+    } catch (IOException ignored) {
+      // A failed sweep must not block the extraction.
+    }
   }
 
   private static void deleteRecursivelyQuietly(Path root) {
