@@ -20,17 +20,28 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 
 public class StoredPlugin {
   private final String key;
   private final String hash;
   private final Path jarPath;
+  private final String staticResourceFolder;
+  private final List<StaticResource> staticResources;
 
   public StoredPlugin(String key, String hash, Path jarPath) {
+    this(key, hash, jarPath, null, List.of());
+  }
+
+  public StoredPlugin(String key, String hash, Path jarPath, @Nullable String staticResourceFolder, List<StaticResource> staticResources) {
     this.key = key;
     this.hash = hash;
     this.jarPath = jarPath;
+    this.staticResourceFolder = staticResourceFolder;
+    this.staticResources = List.copyOf(staticResources);
   }
 
   public String getKey() {
@@ -47,5 +58,14 @@ public class StoredPlugin {
 
   public boolean hasSameHash(ServerPlugin serverPlugin) {
     return getHash().equals(serverPlugin.getHash());
+  }
+
+  @Nullable
+  public String getStaticResourceFolder() {
+    return staticResourceFolder;
+  }
+
+  public List<StaticResource> getStaticResources() {
+    return staticResources;
   }
 }

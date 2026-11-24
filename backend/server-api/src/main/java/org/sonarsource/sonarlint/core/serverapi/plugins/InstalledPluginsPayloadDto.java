@@ -20,6 +20,10 @@
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
 public record InstalledPluginsPayloadDto(InstalledPluginPayloadDto[] plugins) {
-  public record InstalledPluginPayloadDto(String key, String hash, String filename, boolean sonarLintSupported) {
+  public record InstalledPluginPayloadDto(String key, String hash, String filename, boolean sonarLintSupported, String staticResourceFolder,
+    StaticResourcePayloadDto[] staticResources) {
+  }
+
+  public record StaticResourcePayloadDto(String path, String hash, long size) {
   }
 }

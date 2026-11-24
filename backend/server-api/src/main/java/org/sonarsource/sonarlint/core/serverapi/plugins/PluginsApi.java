@@ -55,7 +55,9 @@ public class PluginsApi {
   }
 
   private static ServerPlugin toInstalledPlugin(InstalledPluginsPayloadDto.InstalledPluginPayloadDto payload) {
-    return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported());
+    var resources = payload.staticResources() == null ? List.<StaticResource>of()
+      : Arrays.stream(payload.staticResources()).map(resource -> new StaticResource(resource.path(), resource.hash(), resource.size())).toList();
+    return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported(), payload.staticResourceFolder(), resources);
   }
 
   public void getPlugin(String key, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
