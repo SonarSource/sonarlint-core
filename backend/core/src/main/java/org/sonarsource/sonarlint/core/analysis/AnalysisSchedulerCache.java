@@ -158,21 +158,18 @@ public class AnalysisSchedulerCache {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
       // ResetPluginsCommand stops the previous container before calling this supplier.
+      // Reloading plugins then runs ServerPluginSource.load, which purges only when the server is reachable and nothing is downloading.
       scheduler.reset(configurationAfterUnload(connectionId));
     } else {
-      // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
-      // This ensures that when the scheduler is eventually created, it won't use stale cached data
+      // No scheduler exists yet, so this branch only unloads the cached plugins. The download that published the event has finished,
+      // and load() skipped its purge while that download was pending. Purge the stored inventory here; loading again would schedule downloads.
       pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
       purgeStaticResources(connectionId);
     }
   }
 
   Supplier<SchedulerResetConfiguration> configurationAfterUnload(String connectionId) {
-    return () -> {
-      var configuration = toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId);
-      purgeStaticResources(connectionId);
-      return configuration;
-    };
+    return () -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId);
   }
 
   private void purgeStaticResources(String connectionId) {

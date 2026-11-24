@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,31 +91,11 @@ class AnalysisSchedulerCacheTest {
   }
 
   @Test
-  void reset_supplier_purges_after_the_previous_plugins_are_unloaded(@TempDir Path tempDir) {
+  void reset_supplier_reloads_plugins_without_purging_again(@TempDir Path tempDir) {
     var pluginLifecycleService = mock(PluginLifecycleService.class);
     var resources = staticResources("conn");
     when(pluginLifecycleService.reloadPluginsAndEvictCaches("conn"))
       .thenReturn(new PluginsConfiguration(mock(ArtifactsLoadingResult.class), mock(LoadedPlugins.class), Map.of(), mock(DownloadBatch.class)));
-
-    var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
-      mock(ConfigurationRepository.class), mock(NodeJsService.class),
-      mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
-
-    cache.configurationAfterUnload("conn").get();
-
-    var order = inOrder(pluginLifecycleService, resources.resources());
-    order.verify(pluginLifecycleService).reloadPluginsAndEvictCaches("conn");
-    order.verify(resources.resources()).purgeExcept(List.of());
-  }
-
-  @Test
-  void reset_supplier_still_returns_when_the_purge_fails(@TempDir Path tempDir) {
-    var pluginLifecycleService = mock(PluginLifecycleService.class);
-    var resources = staticResources("conn");
-    when(pluginLifecycleService.reloadPluginsAndEvictCaches("conn"))
-      .thenReturn(new PluginsConfiguration(mock(ArtifactsLoadingResult.class), mock(LoadedPlugins.class), Map.of(), mock(DownloadBatch.class)));
-    doThrow(new UncheckedIOException(new IOException("busy"))).when(resources.resources()).purgeExcept(any());
 
     var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
@@ -122,6 +103,25 @@ class AnalysisSchedulerCacheTest {
       mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
 
     assertThat(cache.configurationAfterUnload("conn").get()).isNotNull();
+
+    verify(pluginLifecycleService).reloadPluginsAndEvictCaches("conn");
+    verify(resources.resources(), never()).purgeExcept(any());
+  }
+
+  @Test
+  void reloadPlugins_still_unloads_when_the_purge_fails(@TempDir Path tempDir) {
+    var pluginLifecycleService = mock(PluginLifecycleService.class);
+    var resources = staticResources("conn");
+    doThrow(new UncheckedIOException(new IOException("busy"))).when(resources.resources()).purgeExcept(any());
+
+    var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
+      mock(ConfigurationRepository.class), mock(NodeJsService.class),
+      mock(PluginsService.class), pluginLifecycleService,
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+
+    cache.reloadPlugins("conn");
+
+    verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn");
   }
 
   private static Storage staticResources(String connectionId) {
