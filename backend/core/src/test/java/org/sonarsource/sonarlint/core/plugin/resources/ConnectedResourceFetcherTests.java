@@ -84,7 +84,7 @@ class ConnectedResourceFetcherTests {
 
   @Test
   void rejects_an_unknown_plugin() {
-    var fetcher = new ConnectedResourceFetcher("conn", Map::of, (plugin, path) -> new byte[0]);
+    var fetcher = new ConnectedResourceFetcher("conn", Map::of, (plugin, path) -> new byte[0], storage);
 
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
@@ -127,7 +127,7 @@ class ConnectedResourceFetcherTests {
 
   private ConnectedResourceFetcher fetcher(List<StaticResource> resources, ConnectedResourceFetcher.Downloader downloader) {
     var plugin = new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", resources);
-    return new ConnectedResourceFetcher("conn", () -> Map.of("javascript", plugin), downloader);
+    return new ConnectedResourceFetcher("conn", () -> Map.of("javascript", plugin), downloader, storage);
   }
 
   private static StaticResource resource(String path, byte[] bytes) {

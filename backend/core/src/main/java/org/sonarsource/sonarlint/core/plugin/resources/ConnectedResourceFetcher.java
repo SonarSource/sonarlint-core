@@ -48,17 +48,20 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   private final String connectionId;
   private final Supplier<Map<String, StoredPlugin>> plugins;
   private final Downloader downloader;
+  private final Path workDirectory;
 
   public ConnectedResourceFetcher(String connectionId, StorageService storageService, SonarQubeClientManager clientManager) {
     this(connectionId,
       () -> storageService.connection(connectionId).plugins().getStoredPluginsByKey(),
-      (plugin, resourcePath) -> download(clientManager, connectionId, plugin, resourcePath));
+      (plugin, resourcePath) -> download(clientManager, connectionId, plugin, resourcePath),
+      storageService.connection(connectionId).storageRoot().resolve("tmp"));
   }
 
-  ConnectedResourceFetcher(String connectionId, Supplier<Map<String, StoredPlugin>> plugins, Downloader downloader) {
+  ConnectedResourceFetcher(String connectionId, Supplier<Map<String, StoredPlugin>> plugins, Downloader downloader, Path workDirectory) {
     this.connectionId = connectionId;
     this.plugins = plugins;
     this.downloader = downloader;
+    this.workDirectory = workDirectory;
   }
 
   @Override
@@ -70,7 +73,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     if (!actualHash.equalsIgnoreCase(resource.hash())) {
       throw new IllegalStateException("Static resource '" + resourcePath + "' for plugin '" + pluginKey + "' has SHA-256 " + actualHash + ", expected " + resource.hash());
     }
-    return writeTemporaryFile(resourcePath, bytes);
+    return writeTemporaryFile(workDirectory, resourcePath, bytes);
   }
 
   @Override
@@ -83,7 +86,8 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
     var archive = fetch(pluginKey, resourcePath);
     try {
-      var destination = Files.createTempDirectory("sonarlint-resource-");
+      Files.createDirectories(workDirectory);
+      var destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
       if (zip) {
         ZipUtils.extractZip(archive, destination);
       } else {
@@ -137,10 +141,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
-  private static Path writeTemporaryFile(String resourcePath, byte[] bytes) {
+  private static Path writeTemporaryFile(Path workDirectory, String resourcePath, byte[] bytes) {
     var filename = Path.of(resourcePath).getFileName().toString();
     try {
-      var file = Files.createTempFile("sonarlint-resource-", "-" + filename);
+      Files.createDirectories(workDirectory);
+      var file = Files.createTempFile(workDirectory, "sonarlint-resource-", "-" + filename);
       Files.write(file, bytes);
       return file;
     } catch (IOException e) {
