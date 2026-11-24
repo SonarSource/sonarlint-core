@@ -22,11 +22,13 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -42,7 +44,7 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class));
+      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class));
 
     cache.reloadStandalonePlugins();
 
@@ -57,7 +59,7 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class));
+      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class));
 
     cache.reloadPlugins("conn1");
 

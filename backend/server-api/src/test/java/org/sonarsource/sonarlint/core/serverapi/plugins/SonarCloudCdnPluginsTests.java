@@ -59,6 +59,8 @@ class SonarCloudCdnPluginsTests {
       .isEqualTo("https://scanner.sonarqube.us/plugins/java/versions/de5308f43260d357acc97712ce4c5475.jar");
     assertThat(SonarCloudCdnPlugins.buildDownloadUrl("https://sonarcloud.io", "java plugin", "plugin hash"))
       .isEqualTo("https://scanner.sonarcloud.io/plugins/java%20plugin/versions/plugin%20hash.jar");
+    assertThat(SonarCloudCdnPlugins.buildResourceUrl("https://sonarcloud.io", "javascript", "folder-hash", "linux-x64/native-tool"))
+      .isEqualTo("https://scanner.sonarcloud.io/plugins/javascript/versions/folder-hash/linux-x64/native-tool");
   }
 
   @Test

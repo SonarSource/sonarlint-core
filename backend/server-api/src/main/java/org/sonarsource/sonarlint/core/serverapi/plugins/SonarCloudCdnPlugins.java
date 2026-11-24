@@ -41,23 +41,37 @@ public class SonarCloudCdnPlugins {
   }
 
   public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
-    var url = buildDownloadUrl(helper.getBaseUrl(), key, hash);
+    download(buildDownloadUrl(helper.getBaseUrl(), key, hash), key, pluginFileConsumer, cancelMonitor);
+  }
+
+  public void getResource(String key, String staticResourceFolder, String resourcePath, Consumer<InputStream> resourceConsumer, SonarLintCancelMonitor cancelMonitor) {
+    download(buildResourceUrl(helper.getBaseUrl(), key, staticResourceFolder, resourcePath), key + ":" + resourcePath, resourceConsumer, cancelMonitor);
+  }
+
+  private void download(String url, String description, Consumer<InputStream> consumer, SonarLintCancelMonitor cancelMonitor) {
     var start = System.currentTimeMillis();
     try (var response = helper.getAnonymousUrl(url, cancelMonitor)) {
-      pluginFileConsumer.accept(response.bodyAsStream());
+      consumer.accept(response.bodyAsStream());
       var duration = System.currentTimeMillis() - start;
-      LOG.info("Downloaded '{}' in {}ms", key, duration);
+      LOG.info("Downloaded '{}' in {}ms", description, duration);
     }
   }
 
   static String buildDownloadUrl(String baseUrl, String key, String hash) {
+    return scannerUrl(baseUrl, "/plugins/" + key + "/versions/" + hash + ".jar");
+  }
+
+  static String buildResourceUrl(String baseUrl, String key, String staticResourceFolder, String resourcePath) {
+    return scannerUrl(baseUrl, "/plugins/" + key + "/versions/" + staticResourceFolder + "/" + resourcePath);
+  }
+
+  private static String scannerUrl(String baseUrl, String path) {
     var baseUri = URI.create(baseUrl);
     var host = baseUri.getHost();
     if (host == null) {
       throw new IllegalArgumentException("SonarQube Cloud URL must contain a host: " + baseUrl);
     }
     try {
-      var path = "/plugins/" + key + "/versions/" + hash + ".jar";
       return new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), path, null, null).toASCIIString();
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException("Unable to build the SonarQube Cloud plugin download URL", e);

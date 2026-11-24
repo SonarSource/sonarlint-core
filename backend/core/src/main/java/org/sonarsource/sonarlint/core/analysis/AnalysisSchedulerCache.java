@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import org.sonar.api.scanner.ResourceFetcher;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
@@ -39,6 +41,8 @@ import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsConfiguration;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.resources.ConnectedResourceFetcher;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.event.EventListener;
 
@@ -51,15 +55,20 @@ public class AnalysisSchedulerCache {
   private final PluginsService pluginsService;
   private final PluginLifecycleService pluginLifecycleService;
   private final NodeJsService nodeJsService;
+  private final StorageService storageService;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final ConcurrentHashMap<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
   public AnalysisSchedulerCache(UserPaths userPaths, ConfigurationRepository configurationRepository,
-    NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService) {
+    NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService,
+    StorageService storageService, SonarQubeClientManager sonarQubeClientManager) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.pluginLifecycleService = pluginLifecycleService;
     this.nodeJsService = nodeJsService;
+    this.storageService = storageService;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.workDir = userPaths.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
   }
@@ -83,7 +92,7 @@ public class AnalysisSchedulerCache {
 
   private synchronized AnalysisScheduler getOrCreateConnectedScheduler(String connectionId, @Nullable Trace trace) {
     return connectedSchedulerByConnectionId.computeIfAbsent(connectionId,
-      k -> createScheduler(pluginsService.getPlugins(connectionId), trace));
+      k -> createScheduler(pluginsService.getPlugins(connectionId), connectedResourceFetcher(connectionId), trace));
   }
 
   @CheckForNull
@@ -94,7 +103,7 @@ public class AnalysisSchedulerCache {
   private synchronized AnalysisScheduler getOrCreateStandaloneScheduler(@Nullable Trace trace) {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), trace);
+      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), null, trace);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -105,12 +114,12 @@ public class AnalysisSchedulerCache {
     return standaloneScheduler.get();
   }
 
-  private AnalysisScheduler createScheduler(PluginsConfiguration pluginsConfiguration, @Nullable Trace trace) {
-    var config = buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), trace);
+  private AnalysisScheduler createScheduler(PluginsConfiguration pluginsConfiguration, @Nullable ResourceFetcher resourceFetcher, @Nullable Trace trace) {
+    var config = buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), resourceFetcher, trace);
     return new AnalysisScheduler(config, pluginsConfiguration.plugins(), SonarLintLogger.get().getTargetForCopy());
   }
 
-  private AnalysisSchedulerConfiguration buildSchedulerConfiguration(Map<String, String> extraProperties, @Nullable Trace trace) {
+  private AnalysisSchedulerConfiguration buildSchedulerConfiguration(Map<String, String> extraProperties, @Nullable ResourceFetcher resourceFetcher, @Nullable Trace trace) {
     var activeNodeJs = startChild(trace, "getActiveNodeJs", "createSchedulerConfiguration", nodeJsService::getActiveNodeJs);
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
     return AnalysisSchedulerConfiguration.builder()
@@ -119,11 +128,17 @@ public class AnalysisSchedulerCache {
       .setExtraProperties(extraProperties)
       .setNodeJs(nodeJsPath)
       .setFileSystemProvider(this::getFileSystem)
+      .setResourceFetcher(resourceFetcher)
       .build();
   }
 
-  private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration) {
-    return new SchedulerResetConfiguration(buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), null), pluginsConfiguration.plugins());
+  private ResourceFetcher connectedResourceFetcher(String connectionId) {
+    return new ConnectedResourceFetcher(connectionId, storageService, sonarQubeClientManager);
+  }
+
+  private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration, @Nullable String connectionId) {
+    var resourceFetcher = connectionId == null ? null : connectedResourceFetcher(connectionId);
+    return new SchedulerResetConfiguration(buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), resourceFetcher, null), pluginsConfiguration.plugins());
   }
 
   private ClientModuleFileSystem getFileSystem(String configurationScopeId) {
@@ -138,7 +153,7 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId)));
+      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId));
     } else {
       // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
       // This ensures that when the scheduler is eventually created, it won't use stale cached data
@@ -149,7 +164,7 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadStandalonePlugins() {
     var scheduler = standaloneScheduler.get();
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches()));
+      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadEmbeddedPluginsAndEvictCaches(), null));
     } else {
       pluginLifecycleService.unloadEmbeddedPluginsAndEvictCaches();
     }
@@ -184,10 +199,10 @@ public class AnalysisSchedulerCache {
   private synchronized void resetStartedSchedulers() {
     var standaloneAnalysisScheduler = this.standaloneScheduler.get();
     if (standaloneAnalysisScheduler != null) {
-      standaloneAnalysisScheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getEmbeddedPlugins()));
+      standaloneAnalysisScheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getEmbeddedPlugins(), null));
     }
     connectedSchedulerByConnectionId.forEach(
-      (connectionId, scheduler) -> scheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getPlugins(connectionId))));
+      (connectionId, scheduler) -> scheduler.reset(() -> toSchedulerResetConfiguration(pluginsService.getPlugins(connectionId), connectionId)));
   }
 
   private synchronized void stopAll() {

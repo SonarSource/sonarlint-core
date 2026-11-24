@@ -69,6 +69,14 @@ class PluginsApiTests {
   }
 
   @Test
+  void should_download_a_static_resource_with_the_connection_credentials() {
+    var underTest = new PluginsApi(mockServer.serverApiHelper());
+    mockServer.addStringResponse("/static/javascript/linux-x64/native-tool", "bytes");
+
+    underTest.getStaticResource("javascript", "linux-x64/native-tool", stream -> assertThat(stream).hasContent("bytes"), new SonarLintCancelMonitor());
+  }
+
+  @Test
   void should_return_sonarqube_server_plugin_content() {
     var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/download?plugin=pluginKey", "content");
