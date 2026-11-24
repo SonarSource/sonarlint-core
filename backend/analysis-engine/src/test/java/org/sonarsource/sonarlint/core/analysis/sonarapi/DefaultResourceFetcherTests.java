@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class UnsupportedResourceFetcherTests {
+class DefaultResourceFetcherTests {
 
-  private final UnsupportedResourceFetcher underTest = new UnsupportedResourceFetcher();
+  private final DefaultResourceFetcher underTest = new DefaultResourceFetcher();
 
   @Test
   void fetch_is_not_supported() {

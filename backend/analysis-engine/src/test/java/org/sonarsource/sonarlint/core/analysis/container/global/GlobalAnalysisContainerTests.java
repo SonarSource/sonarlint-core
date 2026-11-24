@@ -28,8 +28,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.scanner.HostPlatform;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultResourceFetcher;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintHostPlatform;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.UnsupportedResourceFetcher;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 
@@ -56,7 +56,7 @@ class GlobalAnalysisContainerTests {
     container.startComponents();
 
     assertThat(container.getComponentByType(HostPlatform.class)).isInstanceOf(SonarLintHostPlatform.class);
-    assertThat(container.getComponentByType(ResourceFetcher.class)).isInstanceOf(UnsupportedResourceFetcher.class);
+    assertThat(container.getComponentByType(ResourceFetcher.class)).isInstanceOf(DefaultResourceFetcher.class);
 
     var analysisContainer = container.createChild();
     analysisContainer.startComponents();

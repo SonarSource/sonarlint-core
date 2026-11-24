@@ -24,8 +24,8 @@ import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultResourceFetcher;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintHostPlatform;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.UnsupportedResourceFetcher;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -64,7 +64,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
       Clock.systemDefaultZone(),
       System2.INSTANCE,
       SonarLintHostPlatform.class,
-      UnsupportedResourceFetcher.class);
+      DefaultResourceFetcher.class);
   }
 
   @Override

@@ -25,7 +25,7 @@ import org.sonar.api.scanner.ResourceFetcher;
 /**
  * Placeholder so sensors can be constructed. Downloading static resources is implemented in a later ticket.
  */
-public class UnsupportedResourceFetcher implements ResourceFetcher {
+public class DefaultResourceFetcher implements ResourceFetcher {
 
   @Override
   public Path fetch(String pluginKey, String resourcePath) {
