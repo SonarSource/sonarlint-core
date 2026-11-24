@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +77,17 @@ class PluginsStorageTests {
     underTest.cleanUpUnknownPlugins(List.of(plugin));
 
     assertThat(underTest.getStoredPluginsByKey().get("javascript").getStaticResources()).containsExactly(resource);
+  }
+
+  @Test
+  void cleanup_leaves_cached_resources_beside_the_plugins_directory() throws IOException {
+    var cached = storageRoot.resolve("resources").resolve("abc").resolve("native-tool");
+    Files.createDirectories(cached.getParent());
+    Files.writeString(cached, "cached");
+
+    underTest.cleanUpUnknownPlugins(List.of());
+
+    assertThat(cached).hasContent("cached");
   }
 
 }
