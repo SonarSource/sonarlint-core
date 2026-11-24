@@ -112,23 +112,27 @@ public class StaticResourceStorage {
 
   private static void deleteIfPossible(Path directory) {
     var complete = directory.resolve(EXTRACTED_DIRECTORY).resolve(EXTRACTION_COMPLETE);
-    try {
-      Files.deleteIfExists(complete);
-    } catch (IOException e) {
-      LOG.debug("Leaving static resource {} in place because it is still in use", complete, e);
+    if (!deleteFileIfPossible(complete)) {
       return;
     }
     try (var walk = Files.walk(directory)) {
       for (var path : walk.sorted((left, right) -> right.compareTo(left)).toList()) {
-        try {
-          Files.deleteIfExists(path);
-        } catch (IOException e) {
-          LOG.debug("Leaving static resource {} in place because it is still in use", path, e);
+        if (!deleteFileIfPossible(path)) {
           return;
         }
       }
     } catch (IOException | UncheckedIOException e) {
       LOG.debug("Cannot purge static resource {}", directory, e);
+    }
+  }
+
+  private static boolean deleteFileIfPossible(Path path) {
+    try {
+      Files.deleteIfExists(path);
+      return true;
+    } catch (IOException e) {
+      LOG.debug("Leaving static resource {} in place because it is still in use", path, e);
+      return false;
     }
   }
 

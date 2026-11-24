@@ -24,9 +24,11 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -35,12 +37,17 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -230,6 +237,40 @@ class ConnectedResourceFetcherTests {
     } finally {
       Thread.interrupted();
     }
+  }
+
+  @Test
+  @EnabledOnOs(OS.LINUX)
+  void reports_a_move_failure_when_the_incomplete_extraction_cannot_be_set_aside() throws IOException {
+    var destination = storage.resolve("extracted");
+    Files.createDirectories(destination);
+    Files.writeString(destination.resolve("hello.txt"), "partial");
+    Files.setPosixFilePermissions(storage, Set.of(OWNER_READ, OWNER_EXECUTE));
+
+    try {
+      assertThatThrownBy(() -> ConnectedResourceFetcher.keepNewlyCompletedExtraction(destination))
+        .isInstanceOf(IOException.class);
+      assertThat(destination.resolve("hello.txt")).hasContent("partial");
+    } finally {
+      Files.setPosixFilePermissions(storage, Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+    }
+  }
+
+  @Test
+  void fails_the_restore_when_the_destination_is_an_incomplete_directory() throws IOException {
+    var destination = storage.resolve("extracted");
+    var aside = storage.resolve(".extracting-aside");
+    Files.createDirectories(destination);
+    Files.writeString(destination.resolve("partial.txt"), "partial");
+    Files.createDirectories(aside);
+    Files.writeString(aside.resolve("hello.txt"), "hello");
+    Files.writeString(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+
+    assertThatThrownBy(() -> ConnectedResourceFetcher.restoreCompletedExtraction(aside, destination))
+      .isInstanceOf(IOException.class);
+
+    assertThat(destination.resolve("partial.txt")).hasContent("partial");
+    assertThat(aside.resolve("hello.txt")).hasContent("hello");
   }
 
   @Test

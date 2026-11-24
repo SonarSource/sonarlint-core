@@ -83,6 +83,41 @@ class StaticResourceStorageTests {
 
   @Test
   @EnabledOnOs(OS.LINUX)
+  void leaves_the_cache_in_place_when_the_resource_directory_cannot_be_listed() throws IOException {
+    var file = write("bb", "native-tool", "keep");
+    var root = file.getParent().getParent();
+    Files.setPosixFilePermissions(root, Set.of(OWNER_READ));
+
+    try {
+      underTest.purgeExcept(List.of());
+    } finally {
+      Files.setPosixFilePermissions(root, Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+    }
+
+    assertThat(file).hasContent("keep");
+  }
+
+  @Test
+  @EnabledOnOs(OS.LINUX)
+  void leaves_a_directory_in_place_when_a_subdirectory_cannot_be_listed() throws IOException {
+    var file = write("bb", "native-tool", "locked");
+    var child = file.getParent().resolve("child");
+    Files.createDirectories(child);
+    Files.writeString(child.resolve("inside.txt"), "inside");
+    Files.setPosixFilePermissions(child, Set.of(OWNER_READ));
+
+    try {
+      underTest.purgeExcept(List.of());
+    } finally {
+      Files.setPosixFilePermissions(child, Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+    }
+
+    assertThat(file).hasContent("locked");
+    assertThat(child.resolve("inside.txt")).hasContent("inside");
+  }
+
+  @Test
+  @EnabledOnOs(OS.LINUX)
   void leaves_a_directory_in_place_when_a_file_cannot_be_deleted() throws IOException {
     var locked = write("bb", "native-tool", "locked");
     var directory = locked.getParent();
