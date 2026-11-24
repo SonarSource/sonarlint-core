@@ -158,9 +158,9 @@ public class HotspotApi {
     return hotspots;
   }
 
-  private static String getSearchUrl(String projectKey, @Nullable Path filePath, String branchName) {
+  private String getSearchUrl(String projectKey, @Nullable Path filePath, String branchName) {
     return HOTSPOTS_SEARCH_API_URL
-      + PROJECT_KEY_QUERY_PARAM + urlEncode(projectKey)
+      + (helper.isSonarCloud() ? PROJECT_KEY_QUERY_PARAM : "?project=") + urlEncode(projectKey)
       + (filePath != null ? ("&files=" + urlEncode(toSonarQubePath(filePath))) : "")
       + "&branch=" + urlEncode(branchName);
   }

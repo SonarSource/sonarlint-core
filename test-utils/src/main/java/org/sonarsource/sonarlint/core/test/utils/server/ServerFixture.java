@@ -95,6 +95,7 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 public class ServerFixture {
 
   private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
+  private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1040,16 +1041,16 @@ public class ServerFixture {
     }
 
     private void registerHotspotsApiResponses() {
-      if (version != null) {
+      if (serverKind == ServerKind.SONARQUBE) {
         registerApiHotspotsPullResponses();
-      } else {
-        registerApiHotspotSearchResponses();
       }
+      registerApiHotspotSearchResponses();
       registerHotspotsShowApiResponses();
       registerHotspotsStatusChangeApiResponses();
     }
 
     private void registerApiHotspotSearchResponses() {
+      var projectParameter = serverKind == ServerKind.SONARCLOUD ? "projectKey" : "project";
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var messagesPerFilePath = branch.hotspots.stream()
           .collect(groupingBy(AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerHotspot::getFilePath,
@@ -1075,16 +1076,17 @@ public class ServerFixture {
               }
               return builder.build();
             }, toList())));
+        var searchUrl = "/api/hotspots/search.protobuf?" + projectParameter + "=" + urlEncode(projectKey);
         var branchParameter = branchName == null ? "" : ("&branch=" + urlEncode(branchName));
         messagesPerFilePath.forEach((filePath,
-          messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
+          messages) -> mockServer.stubFor(get(searchUrl + "&files=" + urlEncode(filePath) + branchParameter + FIRST_PAGE_PARAMS)
             .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
               .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
               .addAllHotspots(messages)
               .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
               .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).toList();
-        mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
+        mockServer.stubFor(get(searchUrl + branchParameter + FIRST_PAGE_PARAMS)
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
             .addAllComponents(messagesPerFilePath.keySet().stream().map(filePath -> Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
               .toList())
@@ -1153,7 +1155,7 @@ public class ServerFixture {
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
           var searchUrl = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY"
             + componentKeyParams(projectKey) + "&rules=&branch=" + branchName
-            + "&ps=500&p=1";
+            + FIRST_PAGE_PARAMS;
           mockServer.stubFor(get(searchUrl)
             .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
               .addAllIssues(
@@ -1256,7 +1258,7 @@ public class ServerFixture {
     }
 
     private void registerIssuesApiResponses() {
-      if (version != null) {
+      if (serverKind == ServerKind.SONARQUBE) {
         registerApiIssuesPullResponses();
         registerApiIssuesPullTaintResponses();
       } else {
@@ -1265,7 +1267,7 @@ public class ServerFixture {
       registerIssuesStatusChangeApiResponses();
       registerAddIssueCommentApiResponses();
       registerSearchIssueApiResponses();
-      if (version != null) {
+      if (serverKind == ServerKind.SONARQUBE) {
         registerIssueAnticipateTransitionResponses();
       }
     }
@@ -1471,7 +1473,7 @@ public class ServerFixture {
           if (organizationKey.isPresent()) {
             url += "&organization=" + organizationKey.get();
           }
-          url += "&ps=500&p=1";
+          url += FIRST_PAGE_PARAMS;
           mockServer.stubFor(get(url)
             .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
               .addAllComponents(projects.stream().map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build())
@@ -1504,7 +1506,7 @@ public class ServerFixture {
         if (project.organizationKey != null) {
           url += "&organization=" + project.organizationKey;
         }
-        url += "&ps=500&p=1";
+        url += FIRST_PAGE_PARAMS;
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withResponseBody(protobufBody(Components.TreeWsResponse.newBuilder()
             .addAllComponents(

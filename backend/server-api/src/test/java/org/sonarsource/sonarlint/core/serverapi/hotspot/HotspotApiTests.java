@@ -27,6 +27,8 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -202,9 +204,12 @@ class HotspotApiTests {
     assertThat(hotspot.resolution).isEqualTo(ServerHotspotDetails.Resolution.ACKNOWLEDGED);
   }
 
-  @Test
-  void it_should_fetch_project_hotspots() {
-    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void it_should_fetch_project_hotspots(boolean sonarCloud) {
+    underTest = new HotspotApi(mockServer.serverApiHelper(sonarCloud ? "organization" : null));
+    var projectParameter = sonarCloud ? "projectKey" : "project";
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?" + projectParameter + "=p%2Fkey&branch=feature%2Fbranch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
       .setPaging(Common.Paging.newBuilder().setTotal(1).build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path1")
@@ -278,7 +283,7 @@ class HotspotApiTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path6").setPath("path6").build())
       .build());
 
-    var hotspots = underTest.getAll("p", "branch", new SonarLintCancelMonitor());
+    var hotspots = underTest.getAll("p/key", "feature/branch", new SonarLintCancelMonitor());
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
@@ -292,9 +297,12 @@ class HotspotApiTests {
         tuple("hotspotKey6", "ruleKey6", "message6", Path.of("path6"), 21, 22, 23, 24, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
 
-  @Test
-  void it_should_fetch_file_hotspots() {
-    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&files=path%2Fto%2Ffile.ext&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void it_should_fetch_file_hotspots(boolean sonarCloud) {
+    underTest = new HotspotApi(mockServer.serverApiHelper(sonarCloud ? "organization" : null));
+    var projectParameter = sonarCloud ? "projectKey" : "project";
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?" + projectParameter + "=p%2Fkey&files=path%2Fto%2Ffile.ext&branch=feature%2Fbranch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
       .setPaging(Common.Paging.newBuilder().setTotal(1).build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path/to/file.ext")
@@ -309,7 +317,7 @@ class HotspotApiTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path/to/file.ext").setPath("path/to/file.ext").build())
       .build());
 
-    var hotspots = underTest.getFromFile("p", Path.of("path/to/file.ext"), "branch", new SonarLintCancelMonitor());
+    var hotspots = underTest.getFromFile("p/key", Path.of("path/to/file.ext"), "feature/branch", new SonarLintCancelMonitor());
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
@@ -321,7 +329,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_log_when_hotspot_component_is_missing() {
-    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?project=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
       .setPaging(Common.Paging.newBuilder().setTotal(1).build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path")
