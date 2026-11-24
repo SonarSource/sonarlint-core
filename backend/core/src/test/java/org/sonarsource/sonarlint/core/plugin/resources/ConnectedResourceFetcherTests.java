@@ -142,7 +142,7 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
-  void keeps_a_completed_extraction_that_appears_before_the_old_directory_is_replaced() throws IOException {
+  void keeps_a_completed_extraction_without_moving_it() throws IOException {
     var destination = storage.resolve("extracted");
     Files.createDirectories(destination);
     Files.writeString(destination.resolve("hello.txt"), "hello");
@@ -154,6 +154,80 @@ class ConnectedResourceFetcherTests {
     assertThat(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
     try (var children = Files.list(storage)) {
       assertThat(children.map(path -> path.getFileName().toString())).containsExactly("extracted");
+    }
+  }
+
+  @Test
+  void moves_a_completed_extraction_back_into_place() throws IOException {
+    var destination = storage.resolve("extracted");
+    var aside = storage.resolve(".extracting-aside");
+    Files.createDirectories(aside);
+    Files.writeString(aside.resolve("hello.txt"), "hello");
+    Files.writeString(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+
+    ConnectedResourceFetcher.restoreCompletedExtraction(aside, destination);
+
+    assertThat(destination.resolve("hello.txt")).hasContent("hello");
+    assertThat(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
+    assertThat(aside).doesNotExist();
+  }
+
+  @Test
+  void discards_the_aside_copy_when_another_process_already_restored_the_extraction() throws IOException {
+    var destination = storage.resolve("extracted");
+    var aside = storage.resolve(".extracting-aside");
+    Files.createDirectories(destination);
+    Files.writeString(destination.resolve("hello.txt"), "winner");
+    Files.writeString(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+    Files.createDirectories(aside);
+    Files.writeString(aside.resolve("hello.txt"), "loser");
+    Files.writeString(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+
+    ConnectedResourceFetcher.restoreCompletedExtraction(aside, destination);
+
+    assertThat(destination.resolve("hello.txt")).hasContent("winner");
+    assertThat(aside).doesNotExist();
+  }
+
+  @Test
+  void waits_for_a_completion_marker_to_reappear() throws Exception {
+    var complete = storage.resolve("extracted").resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    var releaseWriter = new CountDownLatch(1);
+    var writer = new Thread(() -> {
+      try {
+        if (!releaseWriter.await(5, TimeUnit.SECONDS)) {
+          return;
+        }
+        Files.createDirectories(complete.getParent());
+        Files.writeString(complete, "");
+      } catch (InterruptedException | IOException e) {
+        throw new IllegalStateException(e);
+      }
+    });
+    writer.start();
+    releaseWriter.countDown();
+
+    assertThat(ConnectedResourceFetcher.extractionRemainsComplete(complete)).isTrue();
+    writer.join(TimeUnit.SECONDS.toMillis(5));
+    assertThat(complete).isEmptyFile();
+  }
+
+  @Test
+  void reports_an_extraction_incomplete_when_the_marker_stays_missing() {
+    var complete = storage.resolve("extracted").resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+
+    assertThat(ConnectedResourceFetcher.extractionRemainsComplete(complete)).isFalse();
+  }
+
+  @Test
+  void stops_waiting_for_a_completion_marker_when_interrupted() {
+    var complete = storage.resolve("extracted").resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    Thread.currentThread().interrupt();
+    try {
+      assertThat(ConnectedResourceFetcher.extractionRemainsComplete(complete)).isFalse();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+    } finally {
+      Thread.interrupted();
     }
   }
 

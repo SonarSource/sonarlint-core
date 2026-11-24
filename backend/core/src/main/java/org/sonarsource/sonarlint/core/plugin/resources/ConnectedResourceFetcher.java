@@ -208,7 +208,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     return true;
   }
 
-  private static void restoreCompletedExtraction(Path aside, Path destination) throws IOException {
+  /**
+   * Moves a completed aside directory back to {@code destination}. When another process has already restored that
+   * directory, the aside copy is deleted.
+   */
+  static void restoreCompletedExtraction(Path aside, Path destination) throws IOException {
     try {
       Files.move(aside, destination);
     } catch (IOException moveFailed) {
@@ -220,14 +224,26 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
-  private static boolean extractionRemainsComplete(Path complete) {
+  /**
+   * A completed extraction can disappear for the moment another process moves it aside and restores it.
+   * Poll instead of spinning: this runs while holding the per-hash lock.
+   */
+  static boolean extractionRemainsComplete(Path complete) {
     var deadline = System.nanoTime() + Duration.ofMillis(200).toNanos();
-    do {
+    while (true) {
       if (Files.isRegularFile(complete)) {
         return true;
       }
-    } while (System.nanoTime() < deadline);
-    return false;
+      if (System.nanoTime() >= deadline) {
+        return false;
+      }
+      try {
+        Thread.sleep(Duration.ofMillis(10));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return Files.isRegularFile(complete);
+      }
+    }
   }
 
   static void publishExtraction(Path extracting, Path destination) throws IOException {
