@@ -299,8 +299,6 @@ public class AnalysisService {
     var connectionId = event.connectionId();
     if (connectionId != null) {
       schedulerCache.reloadPlugins(connectionId);
-      var connection = storageService.connection(connectionId);
-      connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
       checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
         .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
     } else {

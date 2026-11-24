@@ -106,6 +106,7 @@ class ConnectedResourceFetcherTests {
     var again = fetcher.fetchAndExtract("javascript", "tools/native.zip");
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
+    assertThat(extracted.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
     assertThat(again).isEqualTo(extracted);
     assertThat(calls).hasValue(1);
   }
@@ -138,6 +139,25 @@ class ConnectedResourceFetcherTests {
 
     assertThat(destination.resolve("hello.txt")).hasContent("hello");
     assertThat(extracting).doesNotExist();
+  }
+
+  @Test
+  void reextracts_when_the_previous_extraction_lost_its_completion_marker() throws IOException {
+    var bytes = zip("hello.txt", "hello");
+    var calls = new AtomicInteger();
+    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> {
+      calls.incrementAndGet();
+      return bytes;
+    });
+    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+    Files.delete(extracted.resolve(StaticResourceStorage.EXTRACTION_COMPLETE));
+    Files.delete(extracted.resolve("hello.txt"));
+
+    var again = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+
+    assertThat(again.resolve("hello.txt")).hasContent("hello");
+    assertThat(again.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
+    assertThat(calls).hasValue(1);
   }
 
   @Test

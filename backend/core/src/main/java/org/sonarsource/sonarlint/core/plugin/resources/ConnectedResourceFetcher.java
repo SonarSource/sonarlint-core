@@ -95,7 +95,8 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
     var destination = storage.extractionDirectory(resource.hash());
-    if (Files.isDirectory(destination)) {
+    var complete = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    if (Files.isRegularFile(complete)) {
       return destination;
     }
     var archive = fetch(pluginKey, resourcePath);
@@ -107,7 +108,14 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       } else {
         TarGzUtils.extractTarGz(archive, extracting);
       }
+      Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+      if (Files.exists(destination) && !Files.isRegularFile(complete)) {
+        deleteRecursively(destination);
+      }
       publishExtraction(extracting, destination);
+      if (!Files.isRegularFile(complete)) {
+        throw new IOException("Extracted resource '" + resourcePath + "' for plugin '" + pluginKey + "' is incomplete");
+      }
       return destination;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);

@@ -33,16 +33,11 @@ import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,9 +48,6 @@ class AnalysisServicePluginsSynchronizedTest {
   private ConfigurationRepository configurationRepository;
   private StorageService storageService;
   private AnalysisSchedulerCache schedulerCache;
-  private ConnectionStorage connectionStorage;
-  private PluginsStorage pluginsStorage;
-  private StaticResourceStorage staticResources;
   private AnalysisService underTest;
 
   @BeforeEach
@@ -63,9 +55,6 @@ class AnalysisServicePluginsSynchronizedTest {
     configurationRepository = mock(ConfigurationRepository.class);
     storageService = mock(StorageService.class);
     schedulerCache = mock(AnalysisSchedulerCache.class);
-    connectionStorage = mock(ConnectionStorage.class);
-    pluginsStorage = mock(PluginsStorage.class);
-    staticResources = mock(StaticResourceStorage.class);
     var initializeParams = mock(InitializeParams.class);
     when(initializeParams.isAutomaticAnalysisEnabled()).thenReturn(false);
     underTest = new AnalysisService(mock(SonarLintRpcClient.class), configurationRepository, mock(LanguageSupportRepository.class), storageService,
@@ -75,19 +64,13 @@ class AnalysisServicePluginsSynchronizedTest {
   }
 
   @Test
-  void purges_static_resources_after_the_previous_container_is_unloaded() {
-    var stored = List.<StoredPlugin>of();
+  void reloads_plugins_without_purging_before_the_container_is_unloaded() {
     when(configurationRepository.getBoundScopesToConnection("conn")).thenReturn(List.of());
-    when(storageService.connection("conn")).thenReturn(connectionStorage);
-    when(connectionStorage.plugins()).thenReturn(pluginsStorage);
-    when(connectionStorage.staticResources()).thenReturn(staticResources);
-    when(pluginsStorage.getStoredPlugins()).thenReturn(stored);
 
     underTest.onPluginsSynchronized(new PluginsSynchronizedEvent("conn"));
 
-    var order = inOrder(schedulerCache, staticResources);
-    order.verify(schedulerCache).reloadPlugins("conn");
-    order.verify(staticResources).purgeExcept(stored);
+    verify(schedulerCache).reloadPlugins("conn");
+    verify(storageService, never()).connection(any());
   }
 
   @Test

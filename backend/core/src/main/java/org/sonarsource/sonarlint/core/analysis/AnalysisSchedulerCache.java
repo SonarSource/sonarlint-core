@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -154,12 +155,27 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId));
+      // ResetPluginsCommand stops the previous container before calling this supplier.
+      scheduler.reset(configurationAfterUnload(connectionId));
     } else {
       // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
       // This ensures that when the scheduler is eventually created, it won't use stale cached data
       pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
+      purgeStaticResources(connectionId);
     }
+  }
+
+  Supplier<SchedulerResetConfiguration> configurationAfterUnload(String connectionId) {
+    return () -> {
+      var configuration = toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId);
+      purgeStaticResources(connectionId);
+      return configuration;
+    };
+  }
+
+  private void purgeStaticResources(String connectionId) {
+    var connection = storageService.connection(connectionId);
+    connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
   }
 
   public synchronized void reloadStandalonePlugins() {

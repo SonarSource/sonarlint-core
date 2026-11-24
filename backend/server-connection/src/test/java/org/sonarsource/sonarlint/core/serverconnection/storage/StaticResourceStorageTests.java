@@ -26,7 +26,11 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 
@@ -36,6 +40,9 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StaticResourceStorageTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @TempDir
   Path storageRoot;
@@ -75,6 +82,7 @@ class StaticResourceStorageTests {
   }
 
   @Test
+  @EnabledOnOs(OS.LINUX)
   void leaves_a_directory_in_place_when_a_file_cannot_be_deleted() throws IOException {
     var locked = write("bb", "native-tool", "locked");
     var directory = locked.getParent();

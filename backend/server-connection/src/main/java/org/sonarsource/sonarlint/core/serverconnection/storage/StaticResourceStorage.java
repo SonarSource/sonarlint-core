@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 public class StaticResourceStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   static final String EXTRACTED_DIRECTORY = "extracted";
+  public static final String EXTRACTION_COMPLETE = ".complete";
 
   private final Path root;
 
@@ -108,6 +109,13 @@ public class StaticResourceStorage {
   }
 
   private static void deleteIfPossible(Path directory) {
+    var complete = directory.resolve(EXTRACTED_DIRECTORY).resolve(EXTRACTION_COMPLETE);
+    try {
+      Files.deleteIfExists(complete);
+    } catch (IOException e) {
+      LOG.debug("Leaving static resource {} in place because it is still in use", complete, e);
+      return;
+    }
     try (var walk = Files.walk(directory)) {
       for (var path : walk.sorted((left, right) -> right.compareTo(left)).toList()) {
         try {
