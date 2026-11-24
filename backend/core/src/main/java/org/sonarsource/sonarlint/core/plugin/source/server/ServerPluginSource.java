@@ -187,7 +187,11 @@ public class ServerPluginSource implements ArtifactSource {
       }
     }
     if (serverAccessible) {
-      storageService.connection(connectionId).plugins().cleanUpUnknownPlugins(expectedServerPlugins);
+      var connection = storageService.connection(connectionId);
+      connection.plugins().cleanUpUnknownPlugins(expectedServerPlugins);
+      if (pendingDownloads.isEmpty()) {
+        connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
+      }
     }
     return new LoadResult(resolved, pendingDownloads);
   }
