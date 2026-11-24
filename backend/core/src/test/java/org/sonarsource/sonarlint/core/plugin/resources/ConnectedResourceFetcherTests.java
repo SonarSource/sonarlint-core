@@ -96,7 +96,7 @@ class ConnectedResourceFetcherTests {
     second.start();
     var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
     while (second.getState() != Thread.State.BLOCKED && System.nanoTime() < deadline) {
-      Thread.sleep(10);
+      second.join(10);
     }
 
     assertThat(second.getState()).isEqualTo(Thread.State.BLOCKED);

@@ -193,16 +193,20 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     var cutoff = Instant.now().minus(STALE_STAGING_AGE);
     try (var children = Files.list(parent)) {
       for (var child : children.filter(path -> path.getFileName().toString().startsWith(STAGING_PREFIX)).toList()) {
-        try {
-          if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
-            deleteRecursively(child);
-          }
-        } catch (IOException ignored) {
-          // Another process may still be writing this staging directory.
-        }
+        deleteStagingDirectoryIfStale(child, cutoff);
       }
     } catch (IOException ignored) {
       // A failed sweep must not block the extraction.
+    }
+  }
+
+  private static void deleteStagingDirectoryIfStale(Path child, Instant cutoff) {
+    try {
+      if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
+        deleteRecursively(child);
+      }
+    } catch (IOException ignored) {
+      // Another process may still be writing this staging directory.
     }
   }
 
