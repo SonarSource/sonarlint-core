@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -103,7 +104,7 @@ public class StaticResourceStorage {
           deleteIfPossible(directory);
         }
       });
-    } catch (IOException e) {
+    } catch (IOException | UncheckedIOException e) {
       LOG.debug("Cannot list cached static resources in {}", root, e);
     }
   }
@@ -125,7 +126,7 @@ public class StaticResourceStorage {
           return;
         }
       }
-    } catch (IOException e) {
+    } catch (IOException | UncheckedIOException e) {
       LOG.debug("Cannot purge static resource {}", directory, e);
     }
   }

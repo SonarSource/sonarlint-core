@@ -109,7 +109,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         TarGzUtils.extractTarGz(archive, extracting);
       }
       Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
-      if (Files.exists(destination) && !Files.isRegularFile(complete)) {
+      if (Files.isRegularFile(complete)) {
+        deleteRecursively(extracting);
+        return destination;
+      }
+      if (Files.exists(destination)) {
         deleteRecursively(destination);
       }
       publishExtraction(extracting, destination);

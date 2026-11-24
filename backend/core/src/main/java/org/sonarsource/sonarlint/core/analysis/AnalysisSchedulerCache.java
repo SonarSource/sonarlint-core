@@ -50,6 +50,8 @@ import org.springframework.context.event.EventListener;
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
 public class AnalysisSchedulerCache {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private final Path workDir;
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
@@ -174,8 +176,12 @@ public class AnalysisSchedulerCache {
   }
 
   private void purgeStaticResources(String connectionId) {
-    var connection = storageService.connection(connectionId);
-    connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
+    try {
+      var connection = storageService.connection(connectionId);
+      connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
+    } catch (RuntimeException e) {
+      LOG.debug("Cannot purge cached static resources for connection {}", connectionId, e);
+    }
   }
 
   public synchronized void reloadStandalonePlugins() {
