@@ -142,6 +142,30 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
+  void keeps_a_completed_extraction_that_appears_before_the_old_directory_is_replaced() throws IOException {
+    var destination = storage.resolve("extracted");
+    Files.createDirectories(destination);
+    Files.writeString(destination.resolve("hello.txt"), "hello");
+    Files.writeString(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+
+    assertThat(ConnectedResourceFetcher.keepNewlyCompletedExtraction(destination)).isTrue();
+
+    assertThat(destination.resolve("hello.txt")).hasContent("hello");
+    assertThat(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
+  }
+
+  @Test
+  void removes_an_incomplete_extraction_without_deleting_it_in_place() throws IOException {
+    var destination = storage.resolve("extracted");
+    Files.createDirectories(destination);
+    Files.writeString(destination.resolve("hello.txt"), "partial");
+
+    assertThat(ConnectedResourceFetcher.keepNewlyCompletedExtraction(destination)).isFalse();
+
+    assertThat(destination).doesNotExist();
+  }
+
+  @Test
   void reextracts_when_the_previous_extraction_lost_its_completion_marker() throws IOException {
     var bytes = zip("hello.txt", "hello");
     var calls = new AtomicInteger();

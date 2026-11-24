@@ -109,12 +109,9 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         TarGzUtils.extractTarGz(archive, extracting);
       }
       Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
-      if (Files.isRegularFile(complete)) {
+      if (Files.isRegularFile(complete) || keepNewlyCompletedExtraction(destination)) {
         deleteRecursively(extracting);
         return destination;
-      }
-      if (Files.exists(destination)) {
-        deleteRecursively(destination);
       }
       publishExtraction(extracting, destination);
       if (!Files.isRegularFile(complete)) {
@@ -176,6 +173,42 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       throw new IllegalArgumentException("Invalid static resource path: " + resourcePath);
     }
     return name.toString();
+  }
+
+  /**
+   * Moves {@code destination} aside before deciding it is incomplete. A publish that lands between the marker check and
+   * this move is preserved, because the marker travels with the directory and is moved back.
+   */
+  static boolean keepNewlyCompletedExtraction(Path destination) throws IOException {
+    if (!Files.exists(destination)) {
+      return false;
+    }
+    var aside = destination.resolveSibling(EXTRACTING_PREFIX + UUID.randomUUID());
+    try {
+      Files.move(destination, aside);
+    } catch (IOException moveFailed) {
+      if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+        return true;
+      }
+      if (!Files.exists(destination)) {
+        return false;
+      }
+      throw moveFailed;
+    }
+    if (!Files.isRegularFile(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+      deleteRecursively(aside);
+      return false;
+    }
+    try {
+      Files.move(aside, destination);
+    } catch (IOException moveFailed) {
+      if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+        deleteRecursively(aside);
+        return true;
+      }
+      throw moveFailed;
+    }
+    return true;
   }
 
   static void publishExtraction(Path extracting, Path destination) throws IOException {
