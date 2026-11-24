@@ -229,7 +229,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
    * Poll instead of spinning: this runs while holding the per-hash lock.
    */
   static boolean extractionRemainsComplete(Path complete) {
-    var deadline = System.nanoTime() + Duration.ofMillis(200).toNanos();
+    return extractionRemainsComplete(complete, Duration.ofMillis(200), Duration.ofMillis(10), Thread::sleep);
+  }
+
+  static boolean extractionRemainsComplete(Path complete, Duration timeout, Duration pollInterval, PollDelay pollDelay) {
+    var deadline = System.nanoTime() + timeout.toNanos();
     while (true) {
       if (Files.isRegularFile(complete)) {
         return true;
@@ -238,7 +242,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         return false;
       }
       try {
-        Thread.sleep(Duration.ofMillis(10));
+        pollDelay.awaitNext(pollInterval);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         return Files.isRegularFile(complete);
@@ -274,6 +278,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         Files.deleteIfExists(path);
       }
     }
+  }
+
+  @FunctionalInterface
+  interface PollDelay {
+    void awaitNext(Duration pollInterval) throws InterruptedException;
   }
 
   @FunctionalInterface

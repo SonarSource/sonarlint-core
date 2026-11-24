@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.resources;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -190,25 +191,25 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
-  void waits_for_a_completion_marker_to_reappear() throws Exception {
+  void waits_for_a_completion_marker_to_reappear() throws IOException {
     var complete = storage.resolve("extracted").resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
-    var releaseWriter = new CountDownLatch(1);
-    var writer = new Thread(() -> {
+    Files.createDirectories(complete.getParent());
+    Files.writeString(complete, "");
+    Files.delete(complete);
+    var polls = new AtomicInteger();
+
+    var found = ConnectedResourceFetcher.extractionRemainsComplete(complete, Duration.ofMillis(200), Duration.ofMillis(10), pollInterval -> {
+      assertThat(pollInterval).isEqualTo(Duration.ofMillis(10));
+      polls.incrementAndGet();
       try {
-        if (!releaseWriter.await(5, TimeUnit.SECONDS)) {
-          return;
-        }
-        Files.createDirectories(complete.getParent());
         Files.writeString(complete, "");
-      } catch (InterruptedException | IOException e) {
-        throw new IllegalStateException(e);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
     });
-    writer.start();
-    releaseWriter.countDown();
 
-    assertThat(ConnectedResourceFetcher.extractionRemainsComplete(complete)).isTrue();
-    writer.join(TimeUnit.SECONDS.toMillis(5));
+    assertThat(found).isTrue();
+    assertThat(polls).hasValue(1);
     assertThat(complete).isEmptyFile();
   }
 
