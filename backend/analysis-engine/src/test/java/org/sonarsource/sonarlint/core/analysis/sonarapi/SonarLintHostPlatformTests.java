@@ -19,13 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.scanner.Arch;
 import org.sonar.api.scanner.Os;
 import org.sonar.api.utils.System2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SonarLintHostPlatformTests {
 
@@ -66,6 +77,122 @@ class SonarLintHostPlatformTests {
 
     assertThat(platform.getOs()).isNotNull();
     assertThat(platform.getArch()).isNotNull();
+  }
+
+  @Test
+  void detects_windows_from_the_declared_architecture() {
+    var system = system("Windows 11", "amd64", true);
+
+    var platform = new SonarLintHostPlatform(system);
+
+    assertThat(platform.getOs()).isEqualTo(Os.WINDOWS);
+    assertThat(platform.getArch()).isEqualTo(Arch.X64);
+  }
+
+  @Test
+  void reports_a_missing_os_name_as_unknown() {
+    var system = system(null, "amd64", true);
+
+    var platform = new SonarLintHostPlatform(system);
+
+    assertThat(platform.getOs()).isEqualTo(Os.UNKNOWN);
+    assertThat(platform.getArch()).isEqualTo(Arch.X64);
+  }
+
+  @Test
+  void reads_os_release_from_the_primary_file_then_the_fallback(@TempDir Path dir) throws IOException {
+    var primary = dir.resolve("os-release");
+    var fallback = dir.resolve("fallback");
+    Files.writeString(primary, "ID=debian\n");
+    Files.writeString(fallback, "ID=alpine\n");
+
+    assertThat(SonarLintHostPlatform.readOsReleaseLines(primary, dir.resolve("unused"))).containsExactly("ID=debian");
+    assertThat(SonarLintHostPlatform.readOsReleaseLines(dir.resolve("missing"), fallback)).containsExactly("ID=alpine");
+    assertThat(SonarLintHostPlatform.readOsReleaseLines(dir.resolve("missing"), dir.resolve("also-missing"))).isEmpty();
+  }
+
+  @Test
+  void prefers_uname_and_falls_back_to_the_declared_architecture() {
+    var unix = mock(System2.class);
+    when(unix.isOsWindows()).thenReturn(false);
+    var windows = mock(System2.class);
+    when(windows.isOsWindows()).thenReturn(true);
+    when(windows.property("os.arch")).thenReturn("amd64");
+
+    assertThat(SonarLintHostPlatform.readRawArch(unix, () -> "aarch64")).isEqualTo("aarch64");
+    when(unix.property("os.arch")).thenReturn("amd64");
+    assertThat(SonarLintHostPlatform.readRawArch(unix, () -> null)).isEqualTo("amd64");
+    assertThat(SonarLintHostPlatform.readRawArch(windows, () -> {
+      throw new AssertionError("uname should not run on Windows");
+    })).isEqualTo("amd64");
+  }
+
+  @Test
+  void resolves_an_absolute_uname_executable(@TempDir Path dir) throws IOException {
+    var missing = dir.resolve("missing");
+    var uname = dir.resolve("uname");
+    Files.writeString(uname, "");
+    assertThat(uname.toFile().setExecutable(true)).isTrue();
+
+    assertThat(SonarLintHostPlatform.resolveUname(List.of(missing.toString(), uname.toString()))).isEqualTo(uname.toString());
+    assertThat(SonarLintHostPlatform.resolveUname(List.of(missing.toString()))).isNull();
+    assertThat(SonarLintHostPlatform.tryUname((String) null)).isNull();
+  }
+
+  @Test
+  void reads_the_architecture_from_uname() {
+    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 0, "aarch64\n"))).isEqualTo("aarch64");
+    assertThat(SonarLintHostPlatform.tryUname(() -> process(false, 0, "aarch64\n"))).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 1, "aarch64\n"))).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 0, " \n"))).isNull();
+  }
+
+  @Test
+  void uname_failure_returns_no_architecture() throws Exception {
+    var interrupted = mock(Process.class);
+    when(interrupted.waitFor(2, TimeUnit.SECONDS)).thenThrow(new InterruptedException("stop"));
+    try {
+      assertThat(SonarLintHostPlatform.tryUname(() -> interrupted)).isNull();
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+    } finally {
+      Thread.interrupted();
+    }
+    verify(interrupted).destroy();
+
+    var unreadable = mock(Process.class);
+    when(unreadable.waitFor(2, TimeUnit.SECONDS)).thenReturn(true);
+    when(unreadable.getInputStream()).thenReturn(new InputStream() {
+      @Override
+      public int read() throws IOException {
+        throw new IOException("unreadable");
+      }
+    });
+    assertThat(SonarLintHostPlatform.tryUname(() -> unreadable)).isNull();
+    verify(unreadable).destroy();
+
+    assertThat(SonarLintHostPlatform.tryUname(() -> {
+      throw new IOException("missing");
+    })).isNull();
+  }
+
+  private static System2 system(String osName, String arch, boolean windows) {
+    var system = mock(System2.class);
+    when(system.property("os.name")).thenReturn(osName);
+    when(system.property("os.arch")).thenReturn(arch);
+    when(system.isOsWindows()).thenReturn(windows);
+    return system;
+  }
+
+  private static Process process(boolean finished, int exitCode, String output) {
+    var process = mock(Process.class);
+    try {
+      when(process.waitFor(2, TimeUnit.SECONDS)).thenReturn(finished);
+    } catch (InterruptedException e) {
+      throw new AssertionError(e);
+    }
+    when(process.exitValue()).thenReturn(exitCode);
+    when(process.getInputStream()).thenReturn(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
+    return process;
   }
 
 }

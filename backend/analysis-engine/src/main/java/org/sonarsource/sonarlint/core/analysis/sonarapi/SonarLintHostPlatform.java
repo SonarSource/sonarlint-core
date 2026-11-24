@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.scanner.Arch;
 import org.sonar.api.scanner.HostPlatform;
@@ -42,14 +43,15 @@ public class SonarLintHostPlatform implements HostPlatform {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Path OS_RELEASE = Path.of("/etc/os-release");
   private static final Path OS_RELEASE_FALLBACK = Path.of("/usr/lib/os-release");
+  private static final List<String> UNAME_EXECUTABLES = List.of("/usr/bin/uname", "/bin/uname");
 
   private final Os os;
   private final Arch arch;
 
   public SonarLintHostPlatform(System2 system) {
     var osName = system.property("os.name");
-    this.os = detectOs(osName, isLinux(osName) ? readOsReleaseLines() : List.of());
-    this.arch = detectArch(readRawArch(system));
+    this.os = detectOs(osName, isLinux(osName) ? readOsReleaseLines(OS_RELEASE, OS_RELEASE_FALLBACK) : List.of());
+    this.arch = detectArch(readRawArch(system, SonarLintHostPlatform::tryUname));
   }
 
   @Override
@@ -103,23 +105,23 @@ public class SonarLintHostPlatform implements HostPlatform {
     return osReleaseLines.stream().anyMatch(line -> line.matches("^ID=alpine$"));
   }
 
-  private static List<String> readOsReleaseLines() {
+  static List<String> readOsReleaseLines(Path primary, Path fallback) {
     try {
-      return Files.readAllLines(OS_RELEASE);
-    } catch (IOException primary) {
+      return Files.readAllLines(primary);
+    } catch (IOException primaryFailure) {
       try {
-        return Files.readAllLines(OS_RELEASE_FALLBACK);
-      } catch (IOException fallback) {
-        primary.addSuppressed(fallback);
-        LOG.debug("Failed to read the os-release file", primary);
+        return Files.readAllLines(fallback);
+      } catch (IOException fallbackFailure) {
+        primaryFailure.addSuppressed(fallbackFailure);
+        LOG.debug("Failed to read the os-release file", primaryFailure);
         return List.of();
       }
     }
   }
 
-  private static String readRawArch(System2 system) {
+  static String readRawArch(System2 system, Supplier<String> uname) {
     if (!system.isOsWindows()) {
-      var fromUname = tryUname();
+      var fromUname = uname.get();
       if (fromUname != null) {
         return fromUname;
       }
@@ -129,9 +131,27 @@ public class SonarLintHostPlatform implements HostPlatform {
 
   @Nullable
   private static String tryUname() {
+    return tryUname(resolveUname(UNAME_EXECUTABLES));
+  }
+
+  @Nullable
+  static String resolveUname(List<String> candidates) {
+    return candidates.stream().filter(candidate -> Files.isExecutable(Path.of(candidate))).findFirst().orElse(null);
+  }
+
+  @Nullable
+  static String tryUname(@Nullable String executable) {
+    if (executable == null) {
+      return null;
+    }
+    return tryUname(() -> new ProcessBuilder(executable, "-m").redirectErrorStream(true).start());
+  }
+
+  @Nullable
+  static String tryUname(ProcessStarter starter) {
     Process process = null;
     try {
-      process = new ProcessBuilder("uname", "-m").redirectErrorStream(true).start();
+      process = starter.start();
       if (!process.waitFor(2, TimeUnit.SECONDS)) {
         return null;
       }
@@ -152,6 +172,11 @@ public class SonarLintHostPlatform implements HostPlatform {
         process.destroy();
       }
     }
+  }
+
+  @FunctionalInterface
+  interface ProcessStarter {
+    Process start() throws IOException;
   }
 
 }

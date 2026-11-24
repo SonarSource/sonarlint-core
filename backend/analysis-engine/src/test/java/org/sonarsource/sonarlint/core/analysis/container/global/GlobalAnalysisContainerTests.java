@@ -64,9 +64,10 @@ class GlobalAnalysisContainerTests {
     var hostPlatform = analysisContainer.getComponentByType(HostPlatform.class);
     assertThat(hostPlatform.getOs()).isNotNull();
     assertThat(hostPlatform.getArch()).isNotNull();
-    assertThatThrownBy(() -> analysisContainer.getComponentByType(ResourceFetcher.class).fetch("javascript", "linux-x64/native-tool"))
+    var fetcher = analysisContainer.getComponentByType(ResourceFetcher.class);
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> analysisContainer.getComponentByType(ResourceFetcher.class).fetchAndExtract("javascript", "linux-x64/native-tool.tar.gz"))
+    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "linux-x64/native-tool.tar.gz"))
       .isInstanceOf(UnsupportedOperationException.class);
   }
 
