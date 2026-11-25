@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
+import org.sonarsource.sonarlint.core.serverapi.staticfiles.StaticFiles;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
@@ -150,9 +150,9 @@ class ConnectedResourceFetcherTests {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
     var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), api -> {
       when(api.isSonarCloud()).thenReturn(false);
-      var pluginsApi = mock(PluginsApi.class);
-      when(api.plugins()).thenReturn(pluginsApi);
-      answerWith(pluginsApi, bytes);
+      var staticFiles = mock(StaticFiles.class);
+      when(api.staticFiles()).thenReturn(staticFiles);
+      answerWith(staticFiles, bytes);
     });
 
     var file = fetcher.fetch("javascript", "linux-x64/native-tool");
@@ -207,9 +207,9 @@ class ConnectedResourceFetcherTests {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
     var fetcher = connected(plugin(resource("linux-x64/native-tool", bytes)), api -> {
       when(api.isSonarCloud()).thenReturn(false);
-      var pluginsApi = mock(PluginsApi.class);
-      when(api.plugins()).thenReturn(pluginsApi);
-      answerWith(pluginsApi, new InputStream() {
+      var staticFiles = mock(StaticFiles.class);
+      when(api.staticFiles()).thenReturn(staticFiles);
+      answerWith(staticFiles, new InputStream() {
         @Override
         public int read() throws IOException {
           throw new IOException("broken");
@@ -228,8 +228,8 @@ class ConnectedResourceFetcherTests {
     var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
 
     assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
-      .isInstanceOf(UncheckedIOException.class)
-      .hasMessageContaining("Cannot extract");
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessageContaining("outside the target directory");
   }
 
   private ConnectedResourceFetcher connected(StoredPlugin plugin, Consumer<ServerApi> prepareApi) {
@@ -258,16 +258,16 @@ class ConnectedResourceFetcherTests {
     return new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", List.of(resource));
   }
 
-  private static void answerWith(PluginsApi pluginsApi, byte[] bytes) {
-    answerWith(pluginsApi, new ByteArrayInputStream(bytes));
+  private static void answerWith(StaticFiles staticFiles, byte[] bytes) {
+    answerWith(staticFiles, new ByteArrayInputStream(bytes));
   }
 
-  private static void answerWith(PluginsApi pluginsApi, InputStream stream) {
+  private static void answerWith(StaticFiles staticFiles, InputStream stream) {
     doAnswer(invocation -> {
-      Consumer<InputStream> consumer = invocation.getArgument(2);
+      Consumer<InputStream> consumer = invocation.getArgument(1);
       consumer.accept(stream);
       return null;
-    }).when(pluginsApi).getStaticResource(any(), any(), any(), any());
+    }).when(staticFiles).get(any(), any(), any());
   }
 
   private ConnectedResourceFetcher fetcher(StaticResource resource, ConnectedResourceFetcher.Downloader downloader) {

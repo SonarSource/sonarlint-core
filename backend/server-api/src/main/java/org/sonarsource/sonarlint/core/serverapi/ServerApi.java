@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.sca.ScaApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.staticfiles.StaticFiles;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 import org.sonarsource.sonarlint.core.serverapi.users.UsersApi;
 
@@ -95,6 +96,10 @@ public class ServerApi {
 
   public PluginsApi plugins() {
     return new PluginsApi(helper);
+  }
+
+  public StaticFiles staticFiles() {
+    return new StaticFiles(helper);
   }
 
   public RulesApi rules() {

@@ -20,12 +20,9 @@
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
 import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -61,24 +58,6 @@ public class PluginsApi {
     var resources = payload.staticResources() == null ? List.<StaticResource>of()
       : payload.staticResources().stream().map(resource -> new StaticResource(resource.path(), resource.hash(), resource.size())).toList();
     return new ServerPlugin(payload.key(), payload.hash(), payload.filename(), payload.sonarLintSupported(), payload.staticResourceFolder(), resources);
-  }
-
-  public void getStaticResource(String pluginKey, String resourcePath, Consumer<InputStream> resourceConsumer, SonarLintCancelMonitor cancelMonitor) {
-    var path = staticResourcePath(pluginKey, resourcePath);
-    var start = System.currentTimeMillis();
-    try (var response = helper.get(path, cancelMonitor)) {
-      resourceConsumer.accept(response.bodyAsStream());
-      LOG.info("Downloaded '{}' for plugin '{}' in {}ms", resourcePath, pluginKey, System.currentTimeMillis() - start);
-    }
-  }
-
-  static String staticResourcePath(String pluginKey, String resourcePath) {
-    var encodedPath = Arrays.stream(resourcePath.split("/", -1)).map(PluginsApi::encodeSegment).collect(Collectors.joining("/"));
-    return "static/" + encodeSegment(pluginKey) + "/" + encodedPath;
-  }
-
-  private static String encodeSegment(String segment) {
-    return URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20");
   }
 
   public void getPlugin(String key, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {

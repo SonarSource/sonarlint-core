@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.sonar.api.scanner.ResourceFetcher;
+import org.sonar.api.utils.ZipUtils;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -36,7 +37,6 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.SonarCloudCdnPlugins;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ZipUtils;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 /**
@@ -89,7 +89,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       Files.createDirectories(workDirectory);
       var destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
       if (zip) {
-        ZipUtils.extractZip(archive, destination);
+        ZipUtils.unzip(archive.toFile(), destination.toFile());
       } else {
         TarGzUtils.extractTarGz(archive, destination);
       }
@@ -128,7 +128,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       }
       new SonarCloudCdnPlugins(api.getHelper()).getResource(plugin.getKey(), folder, resourcePath, stream -> bytes[0] = readBytes(stream), new SonarLintCancelMonitor());
     } else {
-      api.plugins().getStaticResource(plugin.getKey(), resourcePath, stream -> bytes[0] = readBytes(stream), new SonarLintCancelMonitor());
+      api.staticFiles().get("static/" + plugin.getKey() + "/" + resourcePath, stream -> bytes[0] = readBytes(stream), new SonarLintCancelMonitor());
     }
     return bytes[0];
   }
