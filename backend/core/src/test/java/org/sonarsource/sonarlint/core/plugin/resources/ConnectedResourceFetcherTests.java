@@ -89,7 +89,7 @@ class ConnectedResourceFetcherTests {
 
   @Test
   void rejects_an_unknown_plugin() {
-    var fetcher = new ConnectedResourceFetcher("conn", Map.of(), mock(SonarQubeClientManager.class), new StaticResourceStorage(storage));
+    var fetcher = new ConnectedResourceFetcher("conn", Map.of(), new StaticResourceStorage(storage), mock(SonarQubeClientManager.class));
 
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
@@ -131,7 +131,7 @@ class ConnectedResourceFetcherTests {
     var foreign = storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes)).resolve(".extracting");
     Files.createDirectories(foreign);
     Files.writeString(foreign.resolve("partial"), "partial");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes);
 
     var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
 
