@@ -30,14 +30,14 @@ class DefaultResourceFetcherTests {
   @Test
   void fetch_is_not_supported() {
     assertThatThrownBy(() -> underTest.fetch("javascript", "linux-x64/native-tool"))
-      .isInstanceOf(UnsupportedOperationException.class)
+      .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("Cannot fetch 'linux-x64/native-tool' for plugin 'javascript' because resource fetching is not supported in SonarLint");
   }
 
   @Test
   void fetch_and_extract_is_not_supported() {
     assertThatThrownBy(() -> underTest.fetchAndExtract("javascript", "linux-x64/native-tool.tar.gz"))
-      .isInstanceOf(UnsupportedOperationException.class)
+      .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("Cannot fetch 'linux-x64/native-tool.tar.gz' for plugin 'javascript' because resource fetching is not supported in SonarLint");
   }
 

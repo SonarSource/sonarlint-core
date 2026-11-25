@@ -19,25 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.scanner.Arch;
 import org.sonar.api.scanner.Os;
 import org.sonar.api.utils.System2;
+import org.sonar.api.utils.command.Command;
+import org.sonar.api.utils.command.CommandException;
+import org.sonar.api.utils.command.CommandExecutor;
+import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SonarLintHostPlatformTests {
@@ -141,43 +143,33 @@ class SonarLintHostPlatformTests {
 
     assertThat(SonarLintHostPlatform.resolveUname(List.of(missing.toString(), uname.toString()))).isEqualTo(uname.toString());
     assertThat(SonarLintHostPlatform.resolveUname(List.of(missing.toString()))).isNull();
-    assertThat(SonarLintHostPlatform.tryUname((String) null)).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(mock(CommandExecutor.class), null)).isNull();
   }
 
   @Test
   void reads_the_architecture_from_uname() {
-    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 0, "aarch64\n"))).isEqualTo("aarch64");
-    assertThat(SonarLintHostPlatform.tryUname(() -> process(false, 0, "aarch64\n"))).isNull();
-    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 1, "aarch64\n"))).isNull();
-    assertThat(SonarLintHostPlatform.tryUname(() -> process(true, 0, " \n"))).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(executor(0, "aarch64"), "/bin/uname")).isEqualTo("aarch64");
+    assertThat(SonarLintHostPlatform.tryUname(executor(1, "aarch64"), "/bin/uname")).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(executor(0, "  "), "/bin/uname")).isNull();
+    assertThat(SonarLintHostPlatform.tryUname(executor(0), "/bin/uname")).isNull();
   }
 
   @Test
-  void uname_failure_returns_no_architecture() throws Exception {
-    var interrupted = mock(Process.class);
-    when(interrupted.waitFor(2, TimeUnit.SECONDS)).thenThrow(new InterruptedException("stop"));
+  void uname_failure_returns_no_architecture() {
+    var command = Command.create("/bin/uname");
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(), any(), any(), eq(2_000L)))
+      .thenThrow(new CommandException(command, new InterruptedException("stop")));
     try {
-      assertThat(SonarLintHostPlatform.tryUname(() -> interrupted)).isNull();
+      assertThat(SonarLintHostPlatform.tryUname(executor, "/bin/uname")).isNull();
       assertThat(Thread.currentThread().isInterrupted()).isTrue();
     } finally {
       Thread.interrupted();
     }
-    verify(interrupted).destroy();
 
-    var unreadable = mock(Process.class);
-    when(unreadable.waitFor(2, TimeUnit.SECONDS)).thenReturn(true);
-    when(unreadable.getInputStream()).thenReturn(new InputStream() {
-      @Override
-      public int read() throws IOException {
-        throw new IOException("unreadable");
-      }
-    });
-    assertThat(SonarLintHostPlatform.tryUname(() -> unreadable)).isNull();
-    verify(unreadable).destroy();
-
-    assertThat(SonarLintHostPlatform.tryUname(() -> {
-      throw new IOException("missing");
-    })).isNull();
+    when(executor.execute(any(), any(), any(), eq(2_000L)))
+      .thenThrow(new CommandException(command, new IOException("missing")));
+    assertThat(SonarLintHostPlatform.tryUname(executor, "/bin/uname")).isNull();
   }
 
   private static System2 system(String osName, String arch, boolean windows) {
@@ -188,16 +180,16 @@ class SonarLintHostPlatformTests {
     return system;
   }
 
-  private static Process process(boolean finished, int exitCode, String output) {
-    var process = mock(Process.class);
-    try {
-      when(process.waitFor(2, TimeUnit.SECONDS)).thenReturn(finished);
-    } catch (InterruptedException e) {
-      throw new AssertionError(e);
-    }
-    when(process.exitValue()).thenReturn(exitCode);
-    when(process.getInputStream()).thenReturn(new ByteArrayInputStream(output.getBytes(StandardCharsets.UTF_8)));
-    return process;
+  private static CommandExecutor executor(int exitCode, String... stdout) {
+    var executor = mock(CommandExecutor.class);
+    when(executor.execute(any(), any(), any(), anyLong())).thenAnswer(invocation -> {
+      StreamConsumer out = invocation.getArgument(1);
+      for (var line : stdout) {
+        out.consumeLine(line);
+      }
+      return exitCode;
+    });
+    return executor;
   }
 
 }

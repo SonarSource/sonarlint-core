@@ -20,18 +20,20 @@
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonar.api.scanner.Arch;
 import org.sonar.api.scanner.HostPlatform;
 import org.sonar.api.scanner.Os;
 import org.sonar.api.utils.System2;
+import org.sonar.api.utils.command.Command;
+import org.sonar.api.utils.command.CommandException;
+import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
@@ -44,14 +46,16 @@ public class SonarLintHostPlatform implements HostPlatform {
   private static final Path OS_RELEASE = Path.of("/etc/os-release");
   private static final Path OS_RELEASE_FALLBACK = Path.of("/usr/lib/os-release");
   private static final List<String> UNAME_EXECUTABLES = List.of("/usr/bin/uname", "/bin/uname");
+  private static final long UNAME_TIMEOUT_MS = 2_000;
 
   private final Os os;
   private final Arch arch;
 
   public SonarLintHostPlatform(System2 system) {
+    var commandExecutor = CommandExecutor.create();
     var osName = system.property("os.name");
     this.os = detectOs(osName, isLinux(osName) ? readOsReleaseLines(OS_RELEASE, OS_RELEASE_FALLBACK) : List.of());
-    this.arch = detectArch(readRawArch(system, SonarLintHostPlatform::tryUname));
+    this.arch = detectArch(readRawArch(system, () -> tryUname(commandExecutor, resolveUname(UNAME_EXECUTABLES))));
   }
 
   @Override
@@ -130,53 +134,39 @@ public class SonarLintHostPlatform implements HostPlatform {
   }
 
   @Nullable
-  private static String tryUname() {
-    return tryUname(resolveUname(UNAME_EXECUTABLES));
-  }
-
-  @Nullable
   static String resolveUname(List<String> candidates) {
     return candidates.stream().filter(candidate -> Files.isExecutable(Path.of(candidate))).findFirst().orElse(null);
   }
 
+  /**
+   * Reads the machine architecture from {@code uname -m}. Stderr is discarded so a diagnostic line cannot be mistaken
+   * for the architecture. A timeout or a failed command yields no architecture.
+   */
   @Nullable
-  static String tryUname(@Nullable String executable) {
+  static String tryUname(CommandExecutor commandExecutor, @Nullable String executable) {
     if (executable == null) {
       return null;
     }
-    return tryUname(() -> new ProcessBuilder(executable, "-m").redirectErrorStream(true).start());
-  }
-
-  @Nullable
-  static String tryUname(ProcessStarter starter) {
-    Process process = null;
+    var stdout = new ArrayList<String>();
+    var stderr = new ArrayList<String>();
+    var command = Command.create(executable).addArgument("-m");
     try {
-      process = starter.start();
-      if (!process.waitFor(2, TimeUnit.SECONDS)) {
+      var exitCode = commandExecutor.execute(command, stdout::add, stderr::add, UNAME_TIMEOUT_MS);
+      if (exitCode != 0 || stdout.isEmpty()) {
+        if (!stderr.isEmpty()) {
+          LOG.debug("uname -m failed, stderr: {}", String.join("\n", stderr));
+        }
         return null;
       }
-      var arch = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-      if (process.exitValue() != 0 || arch.isEmpty()) {
-        return null;
+      var arch = stdout.get(0).trim();
+      return arch.isEmpty() ? null : arch;
+    } catch (CommandException e) {
+      if (e.getCause() instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
       }
-      return arch;
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       LOG.debug("Failed to get the architecture using 'uname -m'", e);
       return null;
-    } catch (IOException e) {
-      LOG.debug("Failed to get the architecture using 'uname -m'", e);
-      return null;
-    } finally {
-      if (process != null) {
-        process.destroy();
-      }
     }
-  }
-
-  @FunctionalInterface
-  interface ProcessStarter {
-    Process start() throws IOException;
   }
 
 }

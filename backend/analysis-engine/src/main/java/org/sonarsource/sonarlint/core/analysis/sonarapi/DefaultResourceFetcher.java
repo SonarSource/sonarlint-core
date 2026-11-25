@@ -37,8 +37,8 @@ public class DefaultResourceFetcher implements ResourceFetcher {
     throw unsupported(pluginKey, resourcePath);
   }
 
-  private static UnsupportedOperationException unsupported(String pluginKey, String resourcePath) {
-    return new UnsupportedOperationException(
+  private static IllegalArgumentException unsupported(String pluginKey, String resourcePath) {
+    return new IllegalArgumentException(
       "Cannot fetch '" + resourcePath + "' for plugin '" + pluginKey + "' because resource fetching is not supported in SonarLint");
   }
 
