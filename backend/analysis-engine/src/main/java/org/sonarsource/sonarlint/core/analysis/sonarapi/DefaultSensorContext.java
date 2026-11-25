@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
+import org.sonar.api.scanner.HostPlatform;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -68,11 +69,12 @@ public class DefaultSensorContext implements SensorContext {
   private final SensorStorage sensorStorage;
   private final SonarLintInputProject project;
   private final SonarRuntime sqRuntime;
+  private final HostPlatform hostPlatform;
   private final ProgressIndicator progressIndicator;
   private final Configuration config;
 
   public DefaultSensorContext(SonarLintInputProject project, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime, ProgressIndicator progressIndicator) {
+    SonarRuntime sqRuntime, HostPlatform hostPlatform, ProgressIndicator progressIndicator) {
     this.project = project;
     this.settings = settings;
     this.config = config;
@@ -80,6 +82,7 @@ public class DefaultSensorContext implements SensorContext {
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
     this.sqRuntime = sqRuntime;
+    this.hostPlatform = hostPlatform;
     this.progressIndicator = progressIndicator;
   }
 
@@ -141,6 +144,11 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public SonarRuntime runtime() {
     return sqRuntime;
+  }
+
+  @Override
+  public HostPlatform hostPlatform() {
+    return hostPlatform;
   }
 
   @Override

@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonar.api.scanner.HostPlatform;
 import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileIndexer;
@@ -52,7 +53,7 @@ import static org.mockito.Mockito.when;
 class SensorsExecutorTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
-  public static final DefaultSensorContext DEFAULT_SENSOR_CONTEXT = new DefaultSensorContext(null, null, null, null, null, null, null, new ProgressIndicator() {
+  public static final DefaultSensorContext DEFAULT_SENSOR_CONTEXT = new DefaultSensorContext(null, null, null, null, null, null, null, HostPlatform.UNKNOWN, new ProgressIndicator() {
     @Override
     public void notifyProgress(@Nullable String message, @Nullable Integer percentage) {
       // no-op

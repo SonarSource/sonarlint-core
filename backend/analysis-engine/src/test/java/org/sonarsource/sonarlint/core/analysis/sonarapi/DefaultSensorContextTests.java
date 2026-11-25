@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
+import org.sonar.api.scanner.HostPlatform;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.config.Configuration;
@@ -64,6 +65,8 @@ class DefaultSensorContextTests {
   private SensorStorage sensorStorage;
   @Mock
   private SonarRuntime sqRuntime;
+  @Mock
+  private HostPlatform hostPlatform;
 
   private DefaultSensorContext ctx;
   private ProgressIndicator progressIndicator;
@@ -83,7 +86,7 @@ class DefaultSensorContextTests {
         return canceled;
       }
     };
-    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, progressIndicator);
+    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, hostPlatform, progressIndicator);
   }
 
   @Test
@@ -96,6 +99,7 @@ class DefaultSensorContextTests {
     assertThat(ctx.fileSystem()).isEqualTo(fs);
     assertThat(ctx.module()).isEqualTo(module);
     assertThat(ctx.runtime()).isEqualTo(sqRuntime);
+    assertThat(ctx.hostPlatform()).isEqualTo(hostPlatform);
 
     assertThat(ctx.getSonarQubeVersion()).isEqualTo(Version.create(6, 1));
     assertThat(ctx.isCancelled()).isFalse();
