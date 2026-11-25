@@ -107,6 +107,22 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
+  void keeps_the_plugins_read_when_the_fetcher_is_created() throws IOException {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var reads = new AtomicInteger();
+    var plugin = new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", List.of(resource("linux-x64/native-tool", bytes)));
+    var fetcher = new ConnectedResourceFetcher("conn", () -> {
+      reads.incrementAndGet();
+      return Map.of("javascript", plugin);
+    }, (stored, path) -> bytes, storage);
+
+    fetcher.fetch("javascript", "linux-x64/native-tool");
+    fetcher.fetch("javascript", "linux-x64/native-tool");
+
+    assertThat(reads).hasValue(1);
+  }
+
+  @Test
   void rejects_an_unknown_plugin() {
     var fetcher = new ConnectedResourceFetcher("conn", Map::of, (plugin, path) -> new byte[0], storage);
 

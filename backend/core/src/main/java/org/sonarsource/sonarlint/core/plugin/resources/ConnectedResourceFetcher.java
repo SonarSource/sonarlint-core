@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
   private final String connectionId;
-  private final Supplier<Map<String, StoredPlugin>> plugins;
+  private final Map<String, StoredPlugin> plugins;
   private final Downloader downloader;
   private final Path workDirectory;
 
@@ -59,7 +59,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
 
   ConnectedResourceFetcher(String connectionId, Supplier<Map<String, StoredPlugin>> plugins, Downloader downloader, Path workDirectory) {
     this.connectionId = connectionId;
-    this.plugins = plugins;
+    this.plugins = Map.copyOf(plugins.get());
     this.downloader = downloader;
     this.workDirectory = workDirectory;
   }
@@ -100,7 +100,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   }
 
   private StoredPlugin requirePlugin(String pluginKey) {
-    var plugin = plugins.get().get(pluginKey);
+    var plugin = plugins.get(pluginKey);
     if (plugin == null) {
       throw new IllegalStateException("Plugin '" + pluginKey + "' is not stored for connection '" + connectionId + "'");
     }
