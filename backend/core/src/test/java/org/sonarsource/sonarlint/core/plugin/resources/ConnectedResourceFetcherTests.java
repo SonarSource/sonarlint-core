@@ -23,14 +23,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -69,41 +64,6 @@ class ConnectedResourceFetcherTests {
     assertThat(Files.readAllBytes(first)).isEqualTo(bytes);
     assertThat(second).isEqualTo(first);
     assertThat(first).isEqualTo(storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes)).resolve("native-tool"));
-    assertThat(calls).hasValue(1);
-  }
-
-  @Test
-  void shares_one_download_per_resource_inside_the_process() throws Exception {
-    var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var calls = new AtomicInteger();
-    var started = new CountDownLatch(1);
-    var release = new CountDownLatch(1);
-    var plugin = new StoredPlugin("javascript", "jar", storage.resolve("plugins").resolve("javascript.jar"), "folder",
-      List.of(resource("linux-x64/native-tool", bytes)));
-    var clients = mock(SonarQubeClientManager.class);
-    when(clients.withActiveClientAndReturn(eq("conn"), any())).thenAnswer(invocation -> {
-      calls.incrementAndGet();
-      started.countDown();
-      release.await();
-      return Optional.of(bytes);
-    });
-    var fetcher = new ConnectedResourceFetcher("conn", Map.of("javascript", plugin), new StaticResourceStorage(storage), clients);
-
-    var first = new Thread(() -> fetcher.fetch("javascript", "linux-x64/native-tool"));
-    first.start();
-    assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
-    var second = new Thread(() -> fetcher.fetch("javascript", "linux-x64/native-tool"));
-    second.start();
-    var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-    while (second.getState() != Thread.State.BLOCKED && System.nanoTime() < deadline) {
-      second.join(10);
-    }
-
-    assertThat(second.getState()).isEqualTo(Thread.State.BLOCKED);
-    assertThat(calls).hasValue(1);
-    release.countDown();
-    first.join();
-    second.join();
     assertThat(calls).hasValue(1);
   }
 
@@ -153,36 +113,16 @@ class ConnectedResourceFetcherTests {
   @Test
   void keeps_an_extraction_another_process_already_published() throws IOException {
     var destination = storage.resolve("extracted");
-    var staging = storage.resolve(".extracting-local");
+    var extracting = storage.resolve(".extracting-local");
     Files.createDirectories(destination);
     Files.writeString(destination.resolve("hello.txt"), "hello");
-    Files.createDirectories(staging);
-    Files.writeString(staging.resolve("partial"), "partial");
+    Files.createDirectories(extracting);
+    Files.writeString(extracting.resolve("partial"), "partial");
 
-    ConnectedResourceFetcher.publishExtraction(staging, destination);
+    ConnectedResourceFetcher.publishExtraction(extracting, destination);
 
     assertThat(destination.resolve("hello.txt")).hasContent("hello");
-    assertThat(staging).doesNotExist();
-  }
-
-  @Test
-  void deletes_staging_directories_left_by_an_interrupted_extraction() throws IOException {
-    var bytes = zip("hello.txt", "hello");
-    var hashDirectory = storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes));
-    var stale = hashDirectory.resolve(".extracting-stale");
-    var current = hashDirectory.resolve(".extracting-current");
-    Files.createDirectories(stale);
-    Files.writeString(stale.resolve("partial"), "partial");
-    Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
-    Files.createDirectories(current);
-    Files.writeString(current.resolve("partial"), "partial");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
-
-    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
-
-    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(stale).doesNotExist();
-    assertThat(current.resolve("partial")).hasContent("partial");
+    assertThat(extracting).doesNotExist();
   }
 
   @Test

@@ -24,12 +24,9 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonar.api.utils.ZipUtils;
@@ -48,14 +45,12 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
-  private static final Duration STALE_STAGING_AGE = Duration.ofHours(1);
-  private static final String STAGING_PREFIX = ".extracting-";
+  private static final String EXTRACTING_PREFIX = ".extracting-";
 
   private final String connectionId;
   private final Map<String, StoredPlugin> plugins;
   private final StaticResourceStorage storage;
   private final Downloader downloader;
-  private final ConcurrentHashMap<String, Object> downloadsByHash = new ConcurrentHashMap<>();
 
   public ConnectedResourceFetcher(String connectionId, Map<String, StoredPlugin> plugins, StaticResourceStorage storage, SonarQubeClientManager clientManager) {
     this.connectionId = connectionId;
@@ -68,9 +63,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   public Path fetch(String pluginKey, String resourcePath) {
     var plugin = requirePlugin(pluginKey);
     var resource = requireResource(plugin, pluginKey, resourcePath);
-    synchronized (downloadsByHash.computeIfAbsent(resource.hash().toLowerCase(Locale.ROOT), hash -> new Object())) {
-      return cachedOrDownload(plugin, pluginKey, resource);
-    }
+    return cachedOrDownload(plugin, pluginKey, resource);
   }
 
   private Path cachedOrDownload(StoredPlugin plugin, String pluginKey, StaticResource resource) {
@@ -101,26 +94,23 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
     var archive = fetch(pluginKey, resourcePath);
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
-    synchronized (downloadsByHash.computeIfAbsent(resource.hash().toLowerCase(Locale.ROOT), hash -> new Object())) {
-      var destination = storage.extractionDirectory(resource.hash());
-      deleteStaleStagingDirectories(destination);
-      if (Files.isDirectory(destination)) {
-        return destination;
+    var destination = storage.extractionDirectory(resource.hash());
+    if (Files.isDirectory(destination)) {
+      return destination;
+    }
+    var extracting = destination.resolveSibling(EXTRACTING_PREFIX + UUID.randomUUID());
+    try {
+      Files.createDirectories(extracting);
+      if (zip) {
+        ZipUtils.unzip(archive.toFile(), extracting.toFile());
+      } else {
+        TarGzUtils.extractTarGz(archive, extracting);
       }
-      var staging = destination.resolveSibling(STAGING_PREFIX + UUID.randomUUID());
-      try {
-        Files.createDirectories(staging);
-        if (zip) {
-          ZipUtils.unzip(archive.toFile(), staging.toFile());
-        } else {
-          TarGzUtils.extractTarGz(archive, staging);
-        }
-        publishExtraction(staging, destination);
-        return destination;
-      } catch (IOException e) {
-        deleteRecursivelyQuietly(staging);
-        throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
-      }
+      publishExtraction(extracting, destination);
+      return destination;
+    } catch (IOException e) {
+      deleteRecursivelyQuietly(extracting);
+      throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
     }
   }
 
@@ -174,39 +164,14 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     return name.toString();
   }
 
-  static void publishExtraction(Path staging, Path destination) throws IOException {
+  static void publishExtraction(Path extracting, Path destination) throws IOException {
     try {
-      Files.move(staging, destination);
+      Files.move(extracting, destination);
     } catch (IOException moveFailed) {
-      deleteRecursivelyQuietly(staging);
+      deleteRecursivelyQuietly(extracting);
       if (!Files.isDirectory(destination)) {
         throw moveFailed;
       }
-    }
-  }
-
-  private static void deleteStaleStagingDirectories(Path destination) {
-    var parent = destination.getParent();
-    if (parent == null || !Files.isDirectory(parent)) {
-      return;
-    }
-    var cutoff = Instant.now().minus(STALE_STAGING_AGE);
-    try (var children = Files.list(parent)) {
-      for (var child : children.filter(path -> path.getFileName().toString().startsWith(STAGING_PREFIX)).toList()) {
-        deleteStagingDirectoryIfStale(child, cutoff);
-      }
-    } catch (IOException ignored) {
-      // A failed sweep must not block the extraction.
-    }
-  }
-
-  private static void deleteStagingDirectoryIfStale(Path child, Instant cutoff) {
-    try {
-      if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
-        deleteRecursively(child);
-      }
-    } catch (IOException ignored) {
-      // Another process may still be writing this staging directory.
     }
   }
 
