@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.serverapi.staticfiles.StaticFiles;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 import org.sonarsource.sonarlint.core.serverapi.users.UsersApi;
 
+// Facade over one client per server domain. One more domain client crosses java:S6539.
+@SuppressWarnings("java:S6539")
 public class ServerApi {
   private final ServerApiHelper helper;
 
