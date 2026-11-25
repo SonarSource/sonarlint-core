@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.sonar.api.scanner.ResourceFetcher;
 
 @Immutable
 public class AnalysisSchedulerConfiguration {
@@ -38,6 +39,7 @@ public class AnalysisSchedulerConfiguration {
   private final Path nodeJsPath;
   private final long clientPid;
   private final Function<String, ClientModuleFileSystem> fileSystemProvider;
+  private final ResourceFetcher resourceFetcher;
 
   private AnalysisSchedulerConfiguration(Builder builder) {
     this.workDir = builder.workDir;
@@ -45,6 +47,7 @@ public class AnalysisSchedulerConfiguration {
     this.nodeJsPath = builder.nodeJsPath;
     this.clientPid = builder.clientPid;
     this.fileSystemProvider = builder.fileSystemProvider;
+    this.resourceFetcher = builder.resourceFetcher;
   }
 
   public static Builder builder() {
@@ -63,6 +66,15 @@ public class AnalysisSchedulerConfiguration {
     return fileSystemProvider;
   }
 
+  /**
+   * Connected mode supplies the fetcher that downloads static resources for this connection.
+   * Standalone mode leaves this empty and the analysis container registers a placeholder.
+   */
+  @Nullable
+  public ResourceFetcher getResourceFetcher() {
+    return resourceFetcher;
+  }
+
   public Map<String, String> getEffectiveSettings() {
     Map<String, String> props = new HashMap<>(extraProperties);
     if (nodeJsPath != null) {
@@ -77,6 +89,7 @@ public class AnalysisSchedulerConfiguration {
     private Path nodeJsPath;
     private long clientPid;
     private Function<String, ClientModuleFileSystem> fileSystemProvider = key -> null;
+    private ResourceFetcher resourceFetcher;
 
     private Builder() {
 
@@ -113,6 +126,11 @@ public class AnalysisSchedulerConfiguration {
 
     public Builder setFileSystemProvider(Function<String, ClientModuleFileSystem> fileSystemProvider) {
       this.fileSystemProvider = fileSystemProvider;
+      return this;
+    }
+
+    public Builder setResourceFetcher(@Nullable ResourceFetcher resourceFetcher) {
+      this.resourceFetcher = resourceFetcher;
       return this;
     }
 

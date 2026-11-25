@@ -78,6 +78,10 @@ public class ConnectionStorage {
     return connectionId;
   }
 
+  public Path storageRoot() {
+    return connectionStorageRoot;
+  }
+
   public void delete() {
     FileUtils.deleteRecursively(connectionStorageRoot);
     serverIssueStoresManager.delete();

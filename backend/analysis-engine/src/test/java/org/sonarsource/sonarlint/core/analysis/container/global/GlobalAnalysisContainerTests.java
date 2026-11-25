@@ -71,4 +71,15 @@ class GlobalAnalysisContainerTests {
       .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  void uses_the_resource_fetcher_configured_for_the_connection(@TempDir Path workDir) {
+    var fetcher = mock(ResourceFetcher.class);
+    container = new GlobalAnalysisContainer(
+      AnalysisSchedulerConfiguration.builder().setWorkDir(workDir).setClientPid(1L).setResourceFetcher(fetcher).build(),
+      new LoadedPlugins(new HashMap<>(), mock(PluginInstancesLoader.class), Set.of(), Set.of()));
+    container.startComponents();
+
+    assertThat(container.getComponentByType(ResourceFetcher.class)).isSameAs(fetcher);
+  }
+
 }

@@ -52,6 +52,19 @@ class SonarCloudCdnPluginsTests {
   }
 
   @Test
+  void should_return_sonarcloud_static_resource_content() {
+    var helper = mock(ServerApiHelper.class);
+    var response = mock(HttpClient.Response.class);
+    var cancelMonitor = new SonarLintCancelMonitor();
+    when(helper.getBaseUrl()).thenReturn("https://sonarcloud.io");
+    when(helper.getAnonymousUrl("https://scanner.sonarcloud.io/plugins/javascript/versions/folder/linux-x64/native-tool", cancelMonitor)).thenReturn(response);
+    when(response.bodyAsStream()).thenReturn(new ByteArrayInputStream("content".getBytes(UTF_8)));
+    var underTest = new SonarCloudCdnPlugins(helper);
+
+    underTest.getResource("javascript", "folder", "linux-x64/native-tool", stream -> assertThat(stream).hasContent("content"), cancelMonitor);
+  }
+
+  @Test
   void should_build_sonarcloud_plugin_download_urls() {
     assertThat(SonarCloudCdnPlugins.buildDownloadUrl("https://sonarcloud.io", "java", "de5308f43260d357acc97712ce4c5475"))
       .isEqualTo("https://scanner.sonarcloud.io/plugins/java/versions/de5308f43260d357acc97712ce4c5475.jar");
@@ -59,6 +72,8 @@ class SonarCloudCdnPluginsTests {
       .isEqualTo("https://scanner.sonarqube.us/plugins/java/versions/de5308f43260d357acc97712ce4c5475.jar");
     assertThat(SonarCloudCdnPlugins.buildDownloadUrl("https://sonarcloud.io", "java plugin", "plugin hash"))
       .isEqualTo("https://scanner.sonarcloud.io/plugins/java%20plugin/versions/plugin%20hash.jar");
+    assertThat(SonarCloudCdnPlugins.buildResourceUrl("https://sonarcloud.io", "javascript", "folder-hash", "linux-x64/native-tool"))
+      .isEqualTo("https://scanner.sonarcloud.io/plugins/javascript/versions/folder-hash/linux-x64/native-tool");
   }
 
   @Test
