@@ -274,7 +274,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       for (var child : children.filter(path -> path.getFileName().toString().startsWith(EXTRACTING_PREFIX)).toList()) {
         deleteExtractingDirectoryIfStale(child, cutoff);
       }
-    } catch (IOException ignored) {
+    } catch (IOException | UncheckedIOException ignored) {
       // A failed sweep must not block the extraction.
     }
   }
@@ -284,7 +284,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
         deleteRecursively(child);
       }
-    } catch (IOException ignored) {
+    } catch (IOException | UncheckedIOException ignored) {
       // Another process may still be writing this extracting directory.
     }
   }
@@ -292,7 +292,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   private static void deleteRecursivelyQuietly(Path root) {
     try {
       deleteRecursively(root);
-    } catch (IOException ignored) {
+    } catch (IOException | UncheckedIOException ignored) {
       // The extraction is already failing.
     }
   }
