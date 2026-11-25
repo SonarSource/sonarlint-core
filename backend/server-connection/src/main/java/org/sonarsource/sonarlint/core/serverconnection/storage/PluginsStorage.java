@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
@@ -105,18 +106,36 @@ public class PluginsStorage {
   }
 
   private static Sonarlint.PluginReferences.PluginReference adapt(ServerPlugin plugin) {
-    return Sonarlint.PluginReferences.PluginReference.newBuilder()
+    var builder = Sonarlint.PluginReferences.PluginReference.newBuilder()
       .setKey(plugin.getKey())
       .setHash(plugin.getHash())
-      .setFilename(plugin.getFilename())
+      .setFilename(plugin.getFilename());
+    if (plugin.getStaticResourceFolder() != null) {
+      builder.setStaticResourceFolder(plugin.getStaticResourceFolder());
+    }
+    plugin.getStaticResources().forEach(resource -> builder.addStaticResources(adapt(resource)));
+    return builder.build();
+  }
+
+  private static Sonarlint.PluginReferences.StaticResource adapt(StaticResource resource) {
+    return Sonarlint.PluginReferences.StaticResource.newBuilder()
+      .setPath(resource.path())
+      .setHash(resource.hash())
+      .setSize(resource.size())
       .build();
   }
 
   private StoredPlugin adapt(Sonarlint.PluginReferences.PluginReference plugin) {
+    var folder = plugin.getStaticResourceFolder();
+    var resources = plugin.getStaticResourcesList().stream()
+      .map(resource -> new StaticResource(resource.getPath(), resource.getHash(), resource.getSize()))
+      .toList();
     return new StoredPlugin(
       plugin.getKey(),
       plugin.getHash(),
-      rootPath.resolve(plugin.getFilename()));
+      rootPath.resolve(plugin.getFilename()),
+      folder.isEmpty() ? null : folder,
+      resources);
   }
 
   public void cleanUpUnknownPlugins(List<ServerPlugin> serverPluginsExpectedInStorage) {

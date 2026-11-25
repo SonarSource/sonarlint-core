@@ -19,17 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
+import java.util.List;
+import javax.annotation.Nullable;
+
 public class ServerPlugin {
   private final String key;
   private final String hash;
   private final String filename;
   private final boolean sonarLintSupported;
+  private final String staticResourceFolder;
+  private final List<StaticResource> staticResources;
 
   public ServerPlugin(String key, String hash, String filename, boolean sonarLintSupported) {
+    this(key, hash, filename, sonarLintSupported, null, List.of());
+  }
+
+  public ServerPlugin(String key, String hash, String filename, boolean sonarLintSupported, @Nullable String staticResourceFolder,
+    List<StaticResource> staticResources) {
     this.key = key;
     this.hash = hash;
     this.filename = filename;
     this.sonarLintSupported = sonarLintSupported;
+    this.staticResourceFolder = staticResourceFolder;
+    this.staticResources = List.copyOf(staticResources);
+  }
+
+  public ServerPlugin withFilename(String filename) {
+    return new ServerPlugin(key, hash, filename, sonarLintSupported, staticResourceFolder, staticResources);
   }
 
   public String getKey() {
@@ -46,5 +62,14 @@ public class ServerPlugin {
 
   public boolean isSonarLintSupported() {
     return sonarLintSupported;
+  }
+
+  @Nullable
+  public String getStaticResourceFolder() {
+    return staticResourceFolder;
+  }
+
+  public List<StaticResource> getStaticResources() {
+    return staticResources;
   }
 }

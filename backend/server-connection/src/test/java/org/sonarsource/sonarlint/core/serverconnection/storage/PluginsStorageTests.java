@@ -19,14 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
+import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class PluginsStorageTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @TempDir
   Path storageRoot;
@@ -40,6 +51,30 @@ class PluginsStorageTests {
   @Test
   void should_consider_storage_invalid_if_file_doesnt_exist() {
     assertFalse(underTest.isValid());
+  }
+
+  @Test
+  void stores_the_static_resource_inventory_with_the_plugin_reference() {
+    var resource = new StaticResource("linux-x64/native-tool", "deadbeef", 42);
+    var plugin = new ServerPlugin("javascript", "jar-hash", "javascript.jar", true, "folder-hash", List.of(resource));
+
+    underTest.store(plugin, new ByteArrayInputStream("jar".getBytes(StandardCharsets.UTF_8)));
+
+    var stored = underTest.getStoredPluginsByKey().get("javascript");
+    assertThat(stored.getStaticResourceFolder()).isEqualTo("folder-hash");
+    assertThat(stored.getStaticResources()).containsExactly(resource);
+    assertThat(stored.getJarPath()).isEqualTo(storageRoot.resolve("plugins").resolve("javascript.jar"));
+  }
+
+  @Test
+  void cleanup_keeps_the_static_resource_inventory() {
+    var resource = new StaticResource("linux-x64/native-tool", "deadbeef", 42);
+    var plugin = new ServerPlugin("javascript", "jar-hash", "javascript.jar", true, "folder-hash", List.of(resource));
+    underTest.store(plugin, new ByteArrayInputStream("jar".getBytes(StandardCharsets.UTF_8)));
+
+    underTest.cleanUpUnknownPlugins(List.of(plugin));
+
+    assertThat(underTest.getStoredPluginsByKey().get("javascript").getStaticResources()).containsExactly(resource);
   }
 
 }

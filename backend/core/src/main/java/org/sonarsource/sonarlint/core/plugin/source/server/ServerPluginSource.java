@@ -175,7 +175,7 @@ public class ServerPluginSource implements ArtifactSource {
           // use the stored filename so cleanUpUnknownPlugins does not delete it.
           return findStoredPlugin(key, storedPlugins)
             .filter(stored -> stored.hasSameHash(serverPlugin))
-            .map(stored -> new ServerPlugin(key, serverPlugin.getHash(), stored.getJarPath().getFileName().toString(), serverPlugin.isSonarLintSupported()))
+            .map(stored -> serverPlugin.withFilename(stored.getJarPath().getFileName().toString()))
             .orElse(serverPlugin);
         })
         .toList();
@@ -230,7 +230,7 @@ public class ServerPluginSource implements ArtifactSource {
   private List<ServerPlugin> storedPluginsAsServerPlugins() {
     return loadStoredPlugins().values().stream()
       .filter(s -> Files.exists(s.getJarPath()))
-      .map(s -> new ServerPlugin(s.getKey(), s.getHash(), s.getJarPath().getFileName().toString(), true))
+      .map(s -> new ServerPlugin(s.getKey(), s.getHash(), s.getJarPath().getFileName().toString(), true, s.getStaticResourceFolder(), s.getStaticResources()))
       .toList();
   }
 }

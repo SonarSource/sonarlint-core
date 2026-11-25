@@ -44,6 +44,14 @@ message PluginReferences {
     string key = 1;
     string hash = 2;
     string filename = 3;
+    string static_resource_folder = 4;
+    repeated StaticResource static_resources = 5;
+  }
+
+  message StaticResource {
+    string path = 1;
+    string hash = 2;
+    int64 size = 3;
   }
 }
 

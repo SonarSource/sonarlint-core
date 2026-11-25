@@ -47,6 +47,25 @@ class PluginsApiTests {
     assertThat(serverPlugins)
       .extracting("key", "hash", "filename", "sonarLintSupported")
       .containsOnly(tuple("pluginKey", "de5308f43260d357acc97712ce4c5475", "plugin-1.0.0.1234.jar", true));
+    assertThat(serverPlugins.getFirst().getStaticResourceFolder()).isNull();
+    assertThat(serverPlugins.getFirst().getStaticResources()).isEmpty();
+  }
+
+  @Test
+  void should_return_static_resource_inventory() {
+    var underTest = new PluginsApi(mockServer.serverApiHelper());
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [{" +
+      "\"key\": \"javascript\", \"hash\": \"abc\", \"filename\": \"javascript.jar\", \"sonarLintSupported\": true," +
+      "\"staticResourceFolder\": \"folder-hash\"," +
+      "\"staticResources\": [{\"path\": \"linux-x64/native-tool\", \"hash\": \"deadbeef\", \"size\": 42}]" +
+      "}]}");
+
+    var serverPlugins = underTest.getInstalled(new SonarLintCancelMonitor());
+
+    assertThat(serverPlugins).hasSize(1);
+    assertThat(serverPlugins.getFirst().getStaticResourceFolder()).isEqualTo("folder-hash");
+    assertThat(serverPlugins.getFirst().getStaticResources())
+      .containsExactly(new StaticResource("linux-x64/native-tool", "deadbeef", 42));
   }
 
   @Test
