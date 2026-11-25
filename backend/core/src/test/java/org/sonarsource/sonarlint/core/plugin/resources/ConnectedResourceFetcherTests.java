@@ -24,7 +24,9 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -315,6 +317,26 @@ class ConnectedResourceFetcherTests {
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
     assertThat(foreign.resolve("partial")).hasContent("partial");
+  }
+
+  @Test
+  void deletes_extracting_directories_left_by_an_interrupted_extraction() throws IOException {
+    var bytes = zip("hello.txt", "hello");
+    var hashDirectory = storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes));
+    var stale = hashDirectory.resolve(".extracting-stale");
+    var current = hashDirectory.resolve(".extracting-current");
+    Files.createDirectories(stale);
+    Files.writeString(stale.resolve("partial"), "partial");
+    Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
+    Files.createDirectories(current);
+    Files.writeString(current.resolve("partial"), "partial");
+    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+
+    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+
+    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
+    assertThat(stale).doesNotExist();
+    assertThat(current.resolve("partial")).hasContent("partial");
   }
 
   @Test

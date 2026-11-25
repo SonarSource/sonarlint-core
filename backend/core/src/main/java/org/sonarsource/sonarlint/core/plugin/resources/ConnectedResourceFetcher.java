@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +48,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
+  private static final Duration STALE_EXTRACTING_AGE = Duration.ofHours(1);
   private static final String EXTRACTING_PREFIX = ".extracting-";
 
   private final String connectionId;
@@ -96,6 +98,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
     var destination = storage.extractionDirectory(resource.hash());
+    deleteStaleExtractingDirectories(destination);
     var complete = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
     if (Files.isRegularFile(complete)) {
       return destination;
@@ -226,7 +229,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
 
   /**
    * A completed extraction can disappear for the moment another process moves it aside and restores it.
-   * Poll instead of spinning: this runs while holding the per-hash lock.
+   * Poll instead of spinning while that move is in progress.
    */
   static boolean extractionRemainsComplete(Path complete) {
     return extractionRemainsComplete(complete, Duration.ofMillis(200), Duration.ofMillis(10), Thread::sleep);
@@ -258,6 +261,31 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       if (!Files.isDirectory(destination)) {
         throw moveFailed;
       }
+    }
+  }
+
+  private static void deleteStaleExtractingDirectories(Path destination) {
+    var parent = destination.getParent();
+    if (parent == null || !Files.isDirectory(parent)) {
+      return;
+    }
+    var cutoff = Instant.now().minus(STALE_EXTRACTING_AGE);
+    try (var children = Files.list(parent)) {
+      for (var child : children.filter(path -> path.getFileName().toString().startsWith(EXTRACTING_PREFIX)).toList()) {
+        deleteExtractingDirectoryIfStale(child, cutoff);
+      }
+    } catch (IOException ignored) {
+      // A failed sweep must not block the extraction.
+    }
+  }
+
+  private static void deleteExtractingDirectoryIfStale(Path child, Instant cutoff) {
+    try {
+      if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
+        deleteRecursively(child);
+      }
+    } catch (IOException ignored) {
+      // Another process may still be writing this extracting directory.
     }
   }
 
