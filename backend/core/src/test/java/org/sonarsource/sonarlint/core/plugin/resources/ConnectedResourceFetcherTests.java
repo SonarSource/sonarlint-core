@@ -111,6 +111,21 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
+  void reuses_a_cached_extraction_when_the_archive_is_gone() throws IOException {
+    var bytes = zip("hello.txt", "hello");
+    var calls = new AtomicInteger();
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes, calls);
+    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+    Files.delete(storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes)).resolve("native.zip"));
+
+    var again = fetcher.fetchAndExtract("javascript", "tools/native.zip");
+
+    assertThat(again).isEqualTo(extracted);
+    assertThat(again.resolve("hello.txt")).hasContent("hello");
+    assertThat(calls).hasValue(1);
+  }
+
+  @Test
   void keeps_an_extraction_another_process_already_published() throws IOException {
     var destination = storage.resolve("extracted");
     var extracting = storage.resolve(".extracting-local");

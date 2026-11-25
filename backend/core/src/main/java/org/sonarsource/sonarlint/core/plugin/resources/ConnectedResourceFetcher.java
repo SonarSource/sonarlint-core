@@ -92,12 +92,12 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     if (!zip && !tarGz) {
       throw new IllegalArgumentException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "' because only zip and tar.gz resources are supported");
     }
-    var archive = fetch(pluginKey, resourcePath);
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
     var destination = storage.extractionDirectory(resource.hash());
     if (Files.isDirectory(destination)) {
       return destination;
     }
+    var archive = fetch(pluginKey, resourcePath);
     var extracting = destination.resolveSibling(EXTRACTING_PREFIX + UUID.randomUUID());
     try {
       Files.createDirectories(extracting);
