@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,10 +38,13 @@ class StaticFilesTests {
 
   @Test
   void should_download_a_static_file_with_the_connection_credentials() {
-    var underTest = new StaticFiles(mockServer.serverApiHelper());
+    var helper = new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClientWithPreemptiveAuth("token"));
+    var underTest = new StaticFiles(helper);
     mockServer.addStringResponse("/static/javascript/linux-x64/native-tool", "bytes");
 
     underTest.get("static/javascript/linux-x64/native-tool", stream -> assertThat(stream).hasContent("bytes"), new SonarLintCancelMonitor());
+
+    assertThat(mockServer.takeRequest().getHeaders().get("Authorization")).isEqualTo("Bearer token");
   }
 
 }
