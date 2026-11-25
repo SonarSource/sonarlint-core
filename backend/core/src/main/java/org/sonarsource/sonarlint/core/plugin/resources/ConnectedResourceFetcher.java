@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Supplier;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonar.api.utils.ZipUtils;
@@ -37,7 +36,6 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.SonarCloudCdnPlugins;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 
 /**
  * Downloads a connected-mode static resource on every call and checks it against the stored inventory.
@@ -50,17 +48,10 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
   private final Downloader downloader;
   private final Path workDirectory;
 
-  public ConnectedResourceFetcher(String connectionId, StorageService storageService, SonarQubeClientManager clientManager) {
-    this(connectionId,
-      () -> storageService.connection(connectionId).plugins().getStoredPluginsByKey(),
-      (plugin, resourcePath) -> download(clientManager, connectionId, plugin, resourcePath),
-      storageService.connection(connectionId).storageRoot().resolve("tmp"));
-  }
-
-  ConnectedResourceFetcher(String connectionId, Supplier<Map<String, StoredPlugin>> plugins, Downloader downloader, Path workDirectory) {
+  public ConnectedResourceFetcher(String connectionId, Map<String, StoredPlugin> plugins, SonarQubeClientManager clientManager, Path workDirectory) {
     this.connectionId = connectionId;
-    this.plugins = Map.copyOf(plugins.get());
-    this.downloader = downloader;
+    this.plugins = Map.copyOf(plugins);
+    this.downloader = (plugin, resourcePath) -> download(clientManager, connectionId, plugin, resourcePath);
     this.workDirectory = workDirectory;
   }
 

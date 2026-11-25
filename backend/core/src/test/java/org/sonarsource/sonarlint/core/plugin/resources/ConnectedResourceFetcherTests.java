@@ -48,10 +48,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.staticfiles.StaticFiles;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -73,10 +70,7 @@ class ConnectedResourceFetcherTests {
   void downloads_the_resource_on_every_call() throws IOException {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
     var calls = new AtomicInteger();
-    var fetcher = fetcher(resource("linux-x64/native-tool", bytes), (plugin, path) -> {
-      calls.incrementAndGet();
-      return bytes;
-    });
+    var fetcher = fetcher(resource("linux-x64/native-tool", bytes), bytes, calls);
 
     var first = fetcher.fetch("javascript", "linux-x64/native-tool");
     var second = fetcher.fetch("javascript", "linux-x64/native-tool");
@@ -90,7 +84,7 @@ class ConnectedResourceFetcherTests {
   @Test
   void rejects_a_resource_whose_hash_does_not_match_the_inventory() {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var fetcher = fetcher(new StaticResource("linux-x64/native-tool", "not-the-hash", bytes.length), (plugin, path) -> bytes);
+    var fetcher = fetcher(new StaticResource("linux-x64/native-tool", "not-the-hash", bytes.length), bytes);
 
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
@@ -99,7 +93,7 @@ class ConnectedResourceFetcherTests {
 
   @Test
   void rejects_a_plugin_without_that_resource() {
-    var fetcher = fetcher(List.of(), (plugin, path) -> new byte[0]);
+    var fetcher = fetcher(List.of(), new byte[0]);
 
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
@@ -107,24 +101,8 @@ class ConnectedResourceFetcherTests {
   }
 
   @Test
-  void keeps_the_plugins_read_when_the_fetcher_is_created() throws IOException {
-    var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var reads = new AtomicInteger();
-    var plugin = new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", List.of(resource("linux-x64/native-tool", bytes)));
-    var fetcher = new ConnectedResourceFetcher("conn", () -> {
-      reads.incrementAndGet();
-      return Map.of("javascript", plugin);
-    }, (stored, path) -> bytes, storage);
-
-    fetcher.fetch("javascript", "linux-x64/native-tool");
-    fetcher.fetch("javascript", "linux-x64/native-tool");
-
-    assertThat(reads).hasValue(1);
-  }
-
-  @Test
   void rejects_an_unknown_plugin() {
-    var fetcher = new ConnectedResourceFetcher("conn", Map::of, (plugin, path) -> new byte[0], storage);
+    var fetcher = new ConnectedResourceFetcher("conn", Map.of(), mock(SonarQubeClientManager.class), storage);
 
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
@@ -134,7 +112,7 @@ class ConnectedResourceFetcherTests {
   @Test
   void extracts_a_zip_resource() throws IOException {
     var bytes = zip("hello.txt", "hello");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes);
 
     var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
 
@@ -144,7 +122,7 @@ class ConnectedResourceFetcherTests {
   @Test
   void extracts_a_tar_gz_resource() throws IOException {
     var bytes = tarGz("hello.txt", "hello");
-    var fetcher = fetcher(resource("tools/native.tar.gz", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("tools/native.tar.gz", bytes), bytes);
 
     var extracted = fetcher.fetchAndExtract("javascript", "tools/native.tar.gz");
 
@@ -154,7 +132,7 @@ class ConnectedResourceFetcherTests {
   @Test
   void rejects_extracting_a_resource_that_is_not_an_archive() {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var fetcher = fetcher(resource("linux-x64/native-tool", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("linux-x64/native-tool", bytes), bytes);
 
     assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalArgumentException.class)
@@ -241,7 +219,7 @@ class ConnectedResourceFetcherTests {
   @Test
   void wraps_an_archive_that_cannot_be_extracted() throws IOException {
     var bytes = zip("../outside.txt", "nope");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes);
 
     assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
       .isInstanceOf(IllegalStateException.class)
@@ -260,14 +238,7 @@ class ConnectedResourceFetcherTests {
   }
 
   private ConnectedResourceFetcher connected(StoredPlugin plugin, SonarQubeClientManager clients) {
-    var storageService = mock(StorageService.class);
-    var connection = mock(ConnectionStorage.class);
-    var plugins = mock(PluginsStorage.class);
-    when(storageService.connection("conn")).thenReturn(connection);
-    when(connection.storageRoot()).thenReturn(storage);
-    when(connection.plugins()).thenReturn(plugins);
-    when(plugins.getStoredPluginsByKey()).thenReturn(Map.of(plugin.getKey(), plugin));
-    return new ConnectedResourceFetcher("conn", storageService, clients);
+    return new ConnectedResourceFetcher("conn", Map.of(plugin.getKey(), plugin), clients, storage.resolve("tmp"));
   }
 
   private StoredPlugin plugin(StaticResource resource) {
@@ -286,13 +257,26 @@ class ConnectedResourceFetcherTests {
     }).when(staticFiles).get(any(), any(), any());
   }
 
-  private ConnectedResourceFetcher fetcher(StaticResource resource, ConnectedResourceFetcher.Downloader downloader) {
-    return fetcher(List.of(resource), downloader);
+  private ConnectedResourceFetcher fetcher(StaticResource resource, byte[] bytes) {
+    return fetcher(List.of(resource), bytes, new AtomicInteger());
   }
 
-  private ConnectedResourceFetcher fetcher(List<StaticResource> resources, ConnectedResourceFetcher.Downloader downloader) {
+  private ConnectedResourceFetcher fetcher(List<StaticResource> resources, byte[] bytes) {
+    return fetcher(resources, bytes, new AtomicInteger());
+  }
+
+  private ConnectedResourceFetcher fetcher(StaticResource resource, byte[] bytes, AtomicInteger calls) {
+    return fetcher(List.of(resource), bytes, calls);
+  }
+
+  private ConnectedResourceFetcher fetcher(List<StaticResource> resources, byte[] bytes, AtomicInteger calls) {
     var plugin = new StoredPlugin("javascript", "jar", storage.resolve("javascript.jar"), "folder", resources);
-    return new ConnectedResourceFetcher("conn", () -> Map.of("javascript", plugin), downloader, storage);
+    var clients = mock(SonarQubeClientManager.class);
+    when(clients.withActiveClientAndReturn(eq("conn"), any())).thenAnswer(invocation -> {
+      calls.incrementAndGet();
+      return Optional.of(bytes);
+    });
+    return new ConnectedResourceFetcher("conn", Map.of("javascript", plugin), clients, storage);
   }
 
   private static StaticResource resource(String path, byte[] bytes) {
