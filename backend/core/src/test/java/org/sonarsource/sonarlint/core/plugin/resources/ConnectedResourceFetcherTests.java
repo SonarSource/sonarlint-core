@@ -290,10 +290,7 @@ class ConnectedResourceFetcherTests {
   void reextracts_when_the_previous_extraction_lost_its_completion_marker() throws IOException {
     var bytes = zip("hello.txt", "hello");
     var calls = new AtomicInteger();
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> {
-      calls.incrementAndGet();
-      return bytes;
-    });
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes, calls);
     var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
     Files.delete(extracted.resolve(StaticResourceStorage.EXTRACTION_COMPLETE));
     Files.delete(extracted.resolve("hello.txt"));
@@ -330,7 +327,7 @@ class ConnectedResourceFetcherTests {
     Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
     Files.createDirectories(current);
     Files.writeString(current.resolve("partial"), "partial");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), (plugin, path) -> bytes);
+    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes);
 
     var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
 
