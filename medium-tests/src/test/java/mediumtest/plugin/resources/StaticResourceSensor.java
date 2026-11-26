@@ -51,9 +51,7 @@ public class StaticResourceSensor implements Sensor {
       var report = Path.of(file.uri()).resolveSibling(file.filename() + ".result");
       try {
         Files.writeString(report, run(file));
-      } catch (RuntimeException e) {
-        writeFailure(report, e);
-      } catch (IOException e) {
+      } catch (RuntimeException | IOException e) {
         writeFailure(report, e);
       }
     }

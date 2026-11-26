@@ -341,13 +341,12 @@ class ConnectedStaticResourceMediumTests {
   }
 
   private static ServerFixture.Server sonarCloud(SonarLintTestHarness harness, Path jar, Consumer<ServerPluginBuilder> customize) {
-    var server = harness.newFakeSonarCloudServer()
+    return harness.newFakeSonarCloudServer()
       .withOrganization("orgKey", org -> org
         .withProject(PROJECT_KEY, project -> project.withBranch("main").withQualityProfile("qp"))
         .withQualityProfile("qp", profile -> profile.withLanguage("js")))
       .withPlugin(PLUGIN_KEY, plugin -> customizePlugin(plugin, jar, customize))
       .start();
-    return server;
   }
 
   private static ServerPluginBuilder customizePlugin(ServerPluginBuilder plugin, Path jar, Consumer<ServerPluginBuilder> customize) {
