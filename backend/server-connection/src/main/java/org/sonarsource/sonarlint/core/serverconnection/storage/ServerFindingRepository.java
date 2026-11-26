@@ -50,6 +50,8 @@ import static org.sonarsource.sonarlint.core.commons.storage.model.Tables.SERVER
 
 public class ServerFindingRepository implements ProjectServerIssueStore {
 
+  private static final int MAX_IN_CLAUSE_SIZE = 500;
+
   private final EntityMapper mapper = new EntityMapper();
   private final DSLContext database;
   private final String connectionId;
@@ -145,24 +147,32 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
     });
   }
 
+  /**
+   * H2 limits the number of bind parameters of a single statement, so large IN clauses must be split into chunks.
+   */
+  private static <T> void forEachChunk(Collection<T> values, Consumer<List<T>> action) {
+    var list = List.copyOf(values);
+    for (var from = 0; from < list.size(); from += MAX_IN_CLAUSE_SIZE) {
+      action.accept(list.subList(from, Math.min(from + MAX_IN_CLAUSE_SIZE, list.size())));
+    }
+  }
+
   @Override
   public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     database.transaction(trx -> {
-      if (!closedIssueKeysToDelete.isEmpty()) {
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
-            .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.ISSUE.name()))
-            .and(SERVER_FINDINGS.SERVER_KEY.in(closedIssueKeysToDelete))
-            .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-            .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-          .execute();
-      }
+      forEachChunk(closedIssueKeysToDelete, keys -> trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
+          .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.ISSUE.name()))
+          .and(SERVER_FINDINGS.SERVER_KEY.in(keys))
+          .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
+          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
+        .execute());
       var issueIds = issuesToMerge.stream().map(ServerIssue::getId).collect(Collectors.toSet());
-      trx.dsl().deleteFrom(SERVER_FINDINGS)
-        .where(SERVER_FINDINGS.ID.in(issueIds))
+      forEachChunk(issueIds, ids -> trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.ID.in(ids))
         .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
         .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey))
-        .execute();
+        .execute());
       batchMergeIssues(branchName, connectionId, sonarProjectKey, trx, issuesToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_ISSUE_SYNC_TS,
@@ -175,15 +185,13 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   public void mergeTaintIssues(String branchName, List<ServerTaintIssue> taintsToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
     Set<SonarLanguage> enabledLanguages) {
     database.transaction(trx -> {
-      if (!closedIssueKeysToDelete.isEmpty()) {
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
-            .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.TAINT.name()))
-            .and(SERVER_FINDINGS.SERVER_KEY.in(closedIssueKeysToDelete))
-            .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-            .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-          .execute();
-      }
+      forEachChunk(closedIssueKeysToDelete, keys -> trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
+          .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.TAINT.name()))
+          .and(SERVER_FINDINGS.SERVER_KEY.in(keys))
+          .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
+          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
+        .execute());
       batchMergeTaints(branchName, connectionId, sonarProjectKey, trx, taintsToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_TAINT_SYNC_TS,
@@ -196,15 +204,13 @@ public class ServerFindingRepository implements ProjectServerIssueStore {
   public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp,
     Set<SonarLanguage> enabledLanguages) {
     database.transaction(trx -> {
-      if (!closedHotspotKeysToDelete.isEmpty()) {
-        trx.dsl().deleteFrom(SERVER_FINDINGS)
-          .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
-            .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.HOTSPOT.name()))
-            .and(SERVER_FINDINGS.SERVER_KEY.in(closedHotspotKeysToDelete))
-            .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
-            .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
-          .execute();
-      }
+      forEachChunk(closedHotspotKeysToDelete, keys -> trx.dsl().deleteFrom(SERVER_FINDINGS)
+        .where(SERVER_FINDINGS.BRANCH_NAME.eq(branchName)
+          .and(SERVER_FINDINGS.FINDING_TYPE.eq(ServerFindingType.HOTSPOT.name()))
+          .and(SERVER_FINDINGS.SERVER_KEY.in(keys))
+          .and(SERVER_FINDINGS.CONNECTION_ID.eq(connectionId))
+          .and(SERVER_FINDINGS.SONAR_PROJECT_KEY.eq(sonarProjectKey)))
+        .execute());
       batchMergeHotspots(branchName, connectionId, sonarProjectKey, trx, hotspotsToMerge);
       upsertBranchMetadata(branchName,
         SERVER_BRANCHES.LAST_HOTSPOT_SYNC_TS,

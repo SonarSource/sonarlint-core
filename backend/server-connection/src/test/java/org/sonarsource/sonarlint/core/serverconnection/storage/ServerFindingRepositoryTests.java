@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,9 +45,11 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerDependencyRisk;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 class ServerFindingRepositoryTests {
 
@@ -282,6 +286,24 @@ class ServerFindingRepositoryTests {
     var afterMerge = repo.load(branch, filePath);
     assertThat(afterMerge.stream().anyMatch(i -> i.getKey().equals("ISSUE_KEY_1"))).isFalse();
     assertThat(afterMerge.stream().anyMatch(i -> i.getKey().equals("ISSUE_KEY_4"))).isTrue();
+  }
+
+  @Test
+  void merge_issues_supports_a_very_large_number_of_issues_to_merge() {
+    List<ServerIssue<?>> issues = IntStream.range(0, 100_000)
+      .<ServerIssue<?>>mapToObj(i -> lineIssue("ISSUE_KEY_BULK_" + i, filePath, 1))
+      .toList();
+
+    assertThatCode(() -> repo.mergeIssues(branch, issues, Set.of(), Instant.now(), Set.of())).doesNotThrowAnyException();
+
+    assertThat(repo.load(branch, filePath)).hasSizeGreaterThanOrEqualTo(100_000);
+  }
+
+  @Test
+  void merge_issues_supports_a_very_large_number_of_closed_issues_to_delete() {
+    var closedKeys = IntStream.range(0, 100_000).mapToObj(i -> "ISSUE_KEY_CLOSED_" + i).collect(Collectors.toSet());
+
+    assertThatCode(() -> repo.mergeIssues(branch, List.of(), closedKeys, Instant.now(), Set.of())).doesNotThrowAnyException();
   }
 
   @Test
