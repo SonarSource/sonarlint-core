@@ -204,7 +204,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       throw moveFailed;
     }
     if (!Files.isRegularFile(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
-      deleteRecursively(aside);
+      deleteRecursivelyQuietly(aside);
       return false;
     }
     restoreCompletedExtraction(aside, destination);
