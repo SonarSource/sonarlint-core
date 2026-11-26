@@ -151,40 +151,43 @@ public class ServerPluginSource implements ArtifactSource {
     var serverAccessible = false;
     List<ServerPlugin> expectedServerPlugins = List.of();
     try {
-      var serverPluginsByKey = serverPluginsCache.getPlugins(connectionId).orElse(List.of())
-        .stream().collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
-      serverAccessible = true;
-      for (var key : artifactKeys) {
-        var serverPlugin = serverPluginsByKey.get(key);
-        if (serverPlugin != null) {
-          var artifact = resolveArtifact(serverPlugin, storedPlugins, key);
-          resolved.put(key, artifact);
-          if (artifact.state() == ArtifactState.DOWNLOADING) {
-            pendingDownloads.add(new PendingDownload(key, () -> downloader.schedulePluginDownload(connectionId, serverPlugin)));
-          }
-        } else {
-          findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-            .ifPresent(r -> resolved.put(key, r));
-        }
-      }
-      expectedServerPlugins = artifactKeys.stream()
-        .filter(serverPluginsByKey::containsKey)
-        .map(key -> {
+      var fetchedPlugins = serverPluginsCache.getPlugins(connectionId);
+      if (fetchedPlugins.isEmpty()) {
+        // No active client. An empty list from the server is a real answer and still cleans up below.
+        resolveFromStorage(artifactKeys, storedPlugins, resolved);
+      } else {
+        var serverPluginsByKey = fetchedPlugins.get().stream()
+          .collect(Collectors.toMap(ServerPlugin::getKey, Function.identity()));
+        serverAccessible = true;
+        for (var key : artifactKeys) {
           var serverPlugin = serverPluginsByKey.get(key);
-          // If the stored file already has the correct hash but a different filename (e.g. in tests),
-          // use the stored filename so cleanUpUnknownPlugins does not delete it.
-          return findStoredPlugin(key, storedPlugins)
-            .filter(stored -> stored.hasSameHash(serverPlugin))
-            .map(stored -> serverPlugin.withFilename(stored.getJarPath().getFileName().toString()))
-            .orElse(serverPlugin);
-        })
-        .toList();
+          if (serverPlugin != null) {
+            var artifact = resolveArtifact(serverPlugin, storedPlugins, key);
+            resolved.put(key, artifact);
+            if (artifact.state() == ArtifactState.DOWNLOADING) {
+              pendingDownloads.add(new PendingDownload(key, () -> downloader.schedulePluginDownload(connectionId, serverPlugin)));
+            }
+          } else {
+            findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
+              .ifPresent(r -> resolved.put(key, r));
+          }
+        }
+        expectedServerPlugins = artifactKeys.stream()
+          .filter(serverPluginsByKey::containsKey)
+          .map(key -> {
+            var serverPlugin = serverPluginsByKey.get(key);
+            // If the stored file already has the correct hash but a different filename (e.g. in tests),
+            // use the stored filename so cleanUpUnknownPlugins does not delete it.
+            return findStoredPlugin(key, storedPlugins)
+              .filter(stored -> stored.hasSameHash(serverPlugin))
+              .map(stored -> serverPlugin.withFilename(stored.getJarPath().getFileName().toString()))
+              .orElse(serverPlugin);
+          })
+          .toList();
+      }
     } catch (Exception e) {
       LOG.debug(PLUGIN_FETCH_ERROR, connectionId);
-      for (var key : artifactKeys) {
-        findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
-          .ifPresent(r -> resolved.put(key, r));
-      }
+      resolveFromStorage(artifactKeys, storedPlugins, resolved);
     }
     if (serverAccessible) {
       var connection = storageService.connection(connectionId);
@@ -194,6 +197,13 @@ public class ServerPluginSource implements ArtifactSource {
       }
     }
     return new LoadResult(resolved, pendingDownloads);
+  }
+
+  private void resolveFromStorage(Set<String> artifactKeys, Map<String, StoredPlugin> storedPlugins, Map<String, ResolvedArtifact> resolved) {
+    for (var key : artifactKeys) {
+      findStoredPlugin(key, storedPlugins).map(s -> toResolvedArtifact(s.getJarPath()))
+        .ifPresent(r -> resolved.put(key, r));
+    }
   }
 
   private ResolvedArtifact resolveArtifact(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPlugins, String pluginKey) {

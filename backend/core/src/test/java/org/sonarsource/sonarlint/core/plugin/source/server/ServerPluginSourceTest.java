@@ -183,6 +183,22 @@ class ServerPluginSourceTest {
   }
 
   @Test
+  void load_should_keep_stored_plugins_when_there_is_no_active_client() {
+    mockStorage("conn");
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
+    when(serverPluginsCache.getPlugins("conn")).thenReturn(Optional.empty());
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
+    var source = createSource("conn");
+
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
+
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(),
+      new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null));
+    verify(pluginsStorage, never()).cleanUpUnknownPlugins(any());
+    verify(staticResources, never()).purgeExcept(any());
+  }
+
+  @Test
   void load_should_not_call_cleanUpUnknownPlugins_when_server_is_not_accessible() {
     mockStorage("conn");
     when(serverPluginsCache.getPlugins("conn")).thenThrow(new ServerRequestException("Connection refused"));
