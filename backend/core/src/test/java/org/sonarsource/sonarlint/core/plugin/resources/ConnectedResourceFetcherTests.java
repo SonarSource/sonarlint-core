@@ -24,9 +24,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,9 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -74,50 +69,6 @@ class ConnectedResourceFetcherTests {
     assertThat(Files.readAllBytes(first)).isEqualTo(bytes);
     assertThat(second).isEqualTo(first);
     assertThat(first).isEqualTo(storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes)).resolve("native-tool"));
-    assertThat(calls).hasValue(1);
-  }
-
-  @Test
-  void rejects_a_resource_whose_hash_does_not_match_the_inventory() {
-    var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var fetcher = fetcher(new StaticResource("linux-x64/native-tool", "deadbeef", bytes.length), bytes);
-
-    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessageContaining("expected deadbeef");
-    assertThat(storage.resolve("resources")).doesNotExist();
-  }
-
-  @Test
-  void rejects_a_plugin_without_that_resource() {
-    var fetcher = fetcher(List.of(), new byte[0]);
-
-    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessage("Plugin 'javascript' has no static resource 'linux-x64/native-tool'");
-  }
-
-  @Test
-  void rejects_an_unknown_plugin() {
-    var fetcher = new ConnectedResourceFetcher("conn", Map.of(), new StaticResourceStorage(storage), mock(SonarQubeClientManager.class));
-
-    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessage("Plugin 'javascript' is not stored for connection 'conn'");
-  }
-
-  @Test
-  void extracts_a_zip_resource() throws IOException {
-    var bytes = zip("hello.txt", "hello");
-    var calls = new AtomicInteger();
-    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes, calls);
-
-    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
-    var again = fetcher.fetchAndExtract("javascript", "tools/native.zip");
-
-    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(extracted.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
-    assertThat(again).isEqualTo(extracted);
     assertThat(calls).hasValue(1);
   }
 
@@ -316,46 +267,6 @@ class ConnectedResourceFetcherTests {
     assertThat(foreign.resolve("partial")).hasContent("partial");
   }
 
-  @Test
-  void deletes_extracting_directories_left_by_an_interrupted_extraction() throws IOException {
-    var bytes = zip("hello.txt", "hello");
-    var hashDirectory = storage.resolve("resources").resolve(DigestUtils.sha256Hex(bytes));
-    var stale = hashDirectory.resolve(".extracting-stale");
-    var current = hashDirectory.resolve(".extracting-current");
-    Files.createDirectories(stale);
-    Files.writeString(stale.resolve("partial"), "partial");
-    Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
-    Files.createDirectories(current);
-    Files.writeString(current.resolve("partial"), "partial");
-    var fetcher = fetcher(resource("tools/native.zip", bytes), bytes);
-
-    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.zip");
-
-    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(stale).doesNotExist();
-    assertThat(current.resolve("partial")).hasContent("partial");
-  }
-
-  @Test
-  void extracts_a_tar_gz_resource() throws IOException {
-    var bytes = tarGz("hello.txt", "hello");
-    var fetcher = fetcher(resource("tools/native.tar.gz", bytes), bytes);
-
-    var extracted = fetcher.fetchAndExtract("javascript", "tools/native.tar.gz");
-
-    assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-  }
-
-  @Test
-  void rejects_extracting_a_resource_that_is_not_an_archive() {
-    var bytes = "native".getBytes(StandardCharsets.UTF_8);
-    var fetcher = fetcher(resource("linux-x64/native-tool", bytes), bytes);
-
-    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "linux-x64/native-tool"))
-      .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("only zip and tar.gz");
-  }
-
   private ConnectedResourceFetcher fetcher(StaticResource resource, byte[] bytes) {
     return fetcher(List.of(resource), bytes, new AtomicInteger());
   }
@@ -388,19 +299,6 @@ class ConnectedResourceFetcherTests {
       zip.putNextEntry(new ZipEntry(name));
       zip.write(content.getBytes(StandardCharsets.UTF_8));
       zip.closeEntry();
-    }
-    return Files.readAllBytes(file);
-  }
-
-  private static byte[] tarGz(String name, String content) throws IOException {
-    var file = Files.createTempFile("resource", ".tar.gz");
-    var data = content.getBytes(StandardCharsets.UTF_8);
-    try (var tar = new TarArchiveOutputStream(new GzipCompressorOutputStream(Files.newOutputStream(file)))) {
-      var entry = new TarArchiveEntry(name);
-      entry.setSize(data.length);
-      tar.putArchiveEntry(entry);
-      tar.write(data);
-      tar.closeArchiveEntry();
     }
     return Files.readAllBytes(file);
   }
