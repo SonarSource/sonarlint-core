@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +48,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
+  private static final Duration STALE_EXTRACTING_AGE = Duration.ofHours(1);
   private static final String EXTRACTING_PREFIX = ".extracting-";
 
   private final String connectionId;
@@ -95,7 +98,9 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
     var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
     var destination = storage.extractionDirectory(resource.hash());
-    if (Files.isDirectory(destination)) {
+    deleteStaleExtractingDirectories(destination);
+    var complete = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    if (Files.isRegularFile(complete)) {
       return destination;
     }
     var archive = fetch(pluginKey, resourcePath);
@@ -107,7 +112,15 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       } else {
         TarGzUtils.extractTarGz(archive, extracting);
       }
+      Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+      if (Files.isRegularFile(complete) || keepNewlyCompletedExtraction(destination)) {
+        deleteRecursivelyQuietly(extracting);
+        return destination;
+      }
       publishExtraction(extracting, destination);
+      if (!extractionRemainsComplete(complete)) {
+        throw new IOException("Extracted resource '" + resourcePath + "' for plugin '" + pluginKey + "' is incomplete");
+      }
       return destination;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
@@ -166,6 +179,80 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     return name.toString();
   }
 
+  /**
+   * Returns true when {@code destination} is already complete, without moving it. An incomplete directory is renamed
+   * aside and deleted. A complete directory that replaces it during that rename is moved back.
+   */
+  static boolean keepNewlyCompletedExtraction(Path destination) throws IOException {
+    var marker = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    if (Files.isRegularFile(marker)) {
+      return true;
+    }
+    if (!Files.exists(destination)) {
+      return false;
+    }
+    var aside = destination.resolveSibling(EXTRACTING_PREFIX + UUID.randomUUID());
+    try {
+      Files.move(destination, aside);
+    } catch (IOException moveFailed) {
+      if (Files.isRegularFile(marker)) {
+        return true;
+      }
+      if (!Files.exists(destination)) {
+        return false;
+      }
+      throw moveFailed;
+    }
+    if (!Files.isRegularFile(aside.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+      deleteRecursivelyQuietly(aside);
+      return false;
+    }
+    restoreCompletedExtraction(aside, destination);
+    return true;
+  }
+
+  /**
+   * Moves a completed aside directory back to {@code destination}. When another process has already restored that
+   * directory, the aside copy is deleted.
+   */
+  static void restoreCompletedExtraction(Path aside, Path destination) throws IOException {
+    try {
+      Files.move(aside, destination);
+    } catch (IOException moveFailed) {
+      if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
+        deleteRecursivelyQuietly(aside);
+        return;
+      }
+      throw moveFailed;
+    }
+  }
+
+  /**
+   * A completed extraction can disappear for the moment another process moves it aside and restores it.
+   * Poll instead of spinning while that move is in progress.
+   */
+  static boolean extractionRemainsComplete(Path complete) {
+    return extractionRemainsComplete(complete, Duration.ofMillis(200), Duration.ofMillis(10), Thread::sleep);
+  }
+
+  static boolean extractionRemainsComplete(Path complete, Duration timeout, Duration pollInterval, PollDelay pollDelay) {
+    var deadline = System.nanoTime() + timeout.toNanos();
+    while (true) {
+      if (Files.isRegularFile(complete)) {
+        return true;
+      }
+      if (System.nanoTime() >= deadline) {
+        return false;
+      }
+      try {
+        pollDelay.awaitNext(pollInterval);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return Files.isRegularFile(complete);
+      }
+    }
+  }
+
   static void publishExtraction(Path extracting, Path destination) throws IOException {
     try {
       Files.move(extracting, destination);
@@ -177,10 +264,35 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
+  private static void deleteStaleExtractingDirectories(Path destination) {
+    var parent = destination.getParent();
+    if (parent == null || !Files.isDirectory(parent)) {
+      return;
+    }
+    var cutoff = Instant.now().minus(STALE_EXTRACTING_AGE);
+    try (var children = Files.list(parent)) {
+      for (var child : children.filter(path -> path.getFileName().toString().startsWith(EXTRACTING_PREFIX)).toList()) {
+        deleteExtractingDirectoryIfStale(child, cutoff);
+      }
+    } catch (IOException | UncheckedIOException ignored) {
+      // A failed sweep must not block the extraction.
+    }
+  }
+
+  private static void deleteExtractingDirectoryIfStale(Path child, Instant cutoff) {
+    try {
+      if (Files.getLastModifiedTime(child).toInstant().isBefore(cutoff)) {
+        deleteRecursively(child);
+      }
+    } catch (IOException | UncheckedIOException ignored) {
+      // Another process may still be writing this extracting directory.
+    }
+  }
+
   private static void deleteRecursivelyQuietly(Path root) {
     try {
       deleteRecursively(root);
-    } catch (IOException ignored) {
+    } catch (IOException | UncheckedIOException ignored) {
       // The extraction is already failing.
     }
   }
@@ -194,6 +306,11 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
         Files.deleteIfExists(path);
       }
     }
+  }
+
+  @FunctionalInterface
+  interface PollDelay {
+    void awaitNext(Duration pollInterval) throws InterruptedException;
   }
 
   @FunctionalInterface

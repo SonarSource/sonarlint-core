@@ -20,18 +20,25 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 
 /**
  * Cached static resources for one connection, stored beside {@code plugins/} at {@code resources/{sha256}/{filename}}.
  */
 public class StaticResourceStorage {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   static final String EXTRACTED_DIRECTORY = "extracted";
+  public static final String EXTRACTION_COMPLETE = ".complete";
 
   private final Path root;
 
@@ -76,6 +83,56 @@ public class StaticResourceStorage {
       Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     } catch (AtomicMoveNotSupportedException e) {
       Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+  }
+
+  /**
+   * Deletes {@code resources/{sha256}/} directories whose hash is absent from the plugins' inventories.
+   * This only waits for the current process to unload its analysis container. On POSIX, deleting a file that another
+   * process still has open succeeds, so a second IDE sharing this storage can lose that file.
+   */
+  public void purgeExcept(Collection<StoredPlugin> plugins) {
+    var keep = plugins.stream()
+      .flatMap(plugin -> plugin.getStaticResources().stream())
+      .map(resource -> resource.hash().toLowerCase(Locale.ROOT))
+      .collect(Collectors.toSet());
+    if (!Files.isDirectory(root)) {
+      return;
+    }
+    try (var directories = Files.list(root)) {
+      directories.filter(Files::isDirectory).forEach(directory -> {
+        if (!keep.contains(directory.getFileName().toString().toLowerCase(Locale.ROOT))) {
+          deleteIfPossible(directory);
+        }
+      });
+    } catch (IOException | UncheckedIOException e) {
+      LOG.debug("Cannot list cached static resources in {}", root, e);
+    }
+  }
+
+  private static void deleteIfPossible(Path directory) {
+    var complete = directory.resolve(EXTRACTED_DIRECTORY).resolve(EXTRACTION_COMPLETE);
+    if (!deleteFileIfPossible(complete)) {
+      return;
+    }
+    try (var walk = Files.walk(directory)) {
+      for (var path : walk.sorted((left, right) -> right.compareTo(left)).toList()) {
+        if (!deleteFileIfPossible(path)) {
+          return;
+        }
+      }
+    } catch (IOException | UncheckedIOException e) {
+      LOG.debug("Cannot purge static resource {}", directory, e);
+    }
+  }
+
+  private static boolean deleteFileIfPossible(Path path) {
+    try {
+      Files.deleteIfExists(path);
+      return true;
+    } catch (IOException e) {
+      LOG.debug("Leaving static resource {} in place because it is still in use", path, e);
+      return false;
     }
   }
 

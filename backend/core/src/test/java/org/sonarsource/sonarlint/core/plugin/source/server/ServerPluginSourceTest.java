@@ -42,8 +42,10 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +69,7 @@ class ServerPluginSourceTest {
   private StorageService storageService;
   private ConnectionStorage connectionStorage;
   private PluginsStorage pluginsStorage;
+  private StaticResourceStorage staticResources;
   private ServerPluginsCache serverPluginsCache;
   private ServerPluginDownloader downloader;
 
@@ -78,11 +81,14 @@ class ServerPluginSourceTest {
     storageService = mock(StorageService.class);
     connectionStorage = mock(ConnectionStorage.class);
     pluginsStorage = mock(PluginsStorage.class);
+    staticResources = mock(StaticResourceStorage.class);
     serverPluginsCache = mock(ServerPluginsCache.class);
     downloader = mock(ServerPluginDownloader.class);
     when(downloader.schedulePluginDownload(any(), any())).thenReturn(null);
     when(connectionStorage.plugins()).thenReturn(pluginsStorage);
+    when(connectionStorage.staticResources()).thenReturn(staticResources);
     when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of());
+    when(pluginsStorage.getStoredPlugins()).thenReturn(List.of());
   }
 
   // --- load() — connected mode ---
@@ -160,6 +166,7 @@ class ServerPluginSourceTest {
     source.load(Set.of());
 
     verify(pluginsStorage).cleanUpUnknownPlugins(List.of());
+    verify(staticResources).purgeExcept(List.of());
   }
 
   @Test
@@ -172,6 +179,23 @@ class ServerPluginSourceTest {
     source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
     verify(pluginsStorage).cleanUpUnknownPlugins(List.of(javaPlugin));
+    verify(staticResources, never()).purgeExcept(any());
+  }
+
+  @Test
+  void load_should_keep_stored_plugins_when_there_is_no_active_client() {
+    mockStorage("conn");
+    mockStoredPlugin(SonarPlugin.JAVA.getKey(), javaJar, "hash");
+    when(serverPluginsCache.getPlugins("conn")).thenReturn(Optional.empty());
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
+    var source = createSource("conn");
+
+    var result = source.load(Set.of(SonarPlugin.JAVA.getKey()));
+
+    assertThat(result.resolvedArtifactsByKey()).containsEntry(SonarPlugin.JAVA.getKey(),
+      new ResolvedArtifact(ArtifactState.SYNCED, javaJar, ArtifactOrigin.SONARQUBE_SERVER, null));
+    verify(pluginsStorage, never()).cleanUpUnknownPlugins(any());
+    verify(staticResources, never()).purgeExcept(any());
   }
 
   @Test
@@ -183,6 +207,21 @@ class ServerPluginSourceTest {
     source.load(Set.of(SonarPlugin.JAVA.getKey()));
 
     verify(pluginsStorage, never()).cleanUpUnknownPlugins(any());
+    verify(staticResources, never()).purgeExcept(any());
+  }
+
+  @Test
+  void load_purges_static_resources_from_the_stored_inventory_when_nothing_is_downloading() {
+    mockStorage("conn");
+    var stored = new StoredPlugin(SonarPlugin.JAVA.getKey(), "hash", javaJar, "folder", List.of(new StaticResource("linux-x64/native-tool", "abc", 1)));
+    when(pluginsStorage.getStoredPluginsByKey()).thenReturn(Map.of(SonarPlugin.JAVA.getKey(), stored));
+    when(pluginsStorage.getStoredPlugins()).thenReturn(List.of(stored));
+    mockServerPlugins("conn", List.of(mockServerPlugin(SonarPlugin.JAVA.getKey(), "hash")));
+    when(downloader.sourceFor("conn")).thenReturn(ArtifactOrigin.SONARQUBE_SERVER);
+
+    createSource("conn").load(Set.of(SonarPlugin.JAVA.getKey()));
+
+    verify(staticResources).purgeExcept(List.of(stored));
   }
 
   @Test
@@ -445,6 +484,7 @@ class ServerPluginSourceTest {
     var plugin = mock(ServerPlugin.class);
     when(plugin.getKey()).thenReturn(pluginKey);
     when(plugin.getHash()).thenReturn(hash);
+    when(plugin.withFilename(any())).thenReturn(plugin);
     return plugin;
   }
 

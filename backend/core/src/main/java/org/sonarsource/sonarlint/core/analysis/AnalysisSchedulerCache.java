@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -49,6 +50,8 @@ import org.springframework.context.event.EventListener;
 import static org.sonarsource.sonarlint.core.commons.tracing.Trace.startChild;
 
 public class AnalysisSchedulerCache {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private final Path workDir;
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
@@ -154,11 +157,27 @@ public class AnalysisSchedulerCache {
   public synchronized void reloadPlugins(String connectionId) {
     var scheduler = connectedSchedulerByConnectionId.get(connectionId);
     if (scheduler != null) {
-      scheduler.reset(() -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId));
+      // ResetPluginsCommand stops the previous container before calling this supplier.
+      // Reloading plugins then runs ServerPluginSource.load, which purges only when the server is reachable and nothing is downloading.
+      scheduler.reset(configurationAfterUnload(connectionId));
     } else {
-      // Scheduler doesn't exist yet (lazy initialization), but still need to unload old plugins and evict caches
-      // This ensures that when the scheduler is eventually created, it won't use stale cached data
+      // No scheduler exists yet, so this branch only unloads the cached plugins. The download that published the event has finished,
+      // and load() skipped its purge while that download was pending. Purge the stored inventory here; loading again would schedule downloads.
       pluginLifecycleService.unloadPluginsAndEvictCaches(connectionId);
+      purgeStaticResources(connectionId);
+    }
+  }
+
+  Supplier<SchedulerResetConfiguration> configurationAfterUnload(String connectionId) {
+    return () -> toSchedulerResetConfiguration(pluginLifecycleService.reloadPluginsAndEvictCaches(connectionId), connectionId);
+  }
+
+  private void purgeStaticResources(String connectionId) {
+    try {
+      var connection = storageService.connection(connectionId);
+      connection.staticResources().purgeExcept(connection.plugins().getStoredPlugins());
+    } catch (RuntimeException e) {
+      LOG.debug("Cannot purge cached static resources for connection {}", connectionId, e);
     }
   }
 

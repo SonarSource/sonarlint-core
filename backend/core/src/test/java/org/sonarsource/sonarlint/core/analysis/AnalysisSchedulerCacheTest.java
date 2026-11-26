@@ -19,22 +19,43 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.plugin.DownloadBatch;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
+import org.sonarsource.sonarlint.core.plugin.PluginsConfiguration;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.loading.strategy.ArtifactsLoadingResult;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AnalysisSchedulerCacheTest {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
   void reloadStandalonePlugins_evicts_caches_when_no_scheduler_started(@TempDir Path tempDir) {
@@ -55,15 +76,67 @@ class AnalysisSchedulerCacheTest {
   void reloadPlugins_evicts_caches_when_no_connected_scheduler_exists(@TempDir Path tempDir) {
     var userPaths = mockUserPaths(tempDir);
     var pluginLifecycleService = mock(PluginLifecycleService.class);
+    var resources = staticResources("conn1");
 
     var cache = new AnalysisSchedulerCache(userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class));
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
 
     cache.reloadPlugins("conn1");
 
-    verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn1");
+    var order = inOrder(pluginLifecycleService, resources.resources());
+    order.verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn1");
+    order.verify(resources.resources()).purgeExcept(List.of());
+  }
+
+  @Test
+  void reset_supplier_reloads_plugins_without_purging_again(@TempDir Path tempDir) {
+    var pluginLifecycleService = mock(PluginLifecycleService.class);
+    var resources = staticResources("conn");
+    when(pluginLifecycleService.reloadPluginsAndEvictCaches("conn"))
+      .thenReturn(new PluginsConfiguration(mock(ArtifactsLoadingResult.class), mock(LoadedPlugins.class), Map.of(), mock(DownloadBatch.class)));
+
+    var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
+      mock(ConfigurationRepository.class), mock(NodeJsService.class),
+      mock(PluginsService.class), pluginLifecycleService,
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+
+    assertThat(cache.configurationAfterUnload("conn").get()).isNotNull();
+
+    verify(pluginLifecycleService).reloadPluginsAndEvictCaches("conn");
+    verify(resources.resources(), never()).purgeExcept(any());
+  }
+
+  @Test
+  void reloadPlugins_still_unloads_when_the_purge_fails(@TempDir Path tempDir) {
+    var pluginLifecycleService = mock(PluginLifecycleService.class);
+    var resources = staticResources("conn");
+    doThrow(new UncheckedIOException(new IOException("busy"))).when(resources.resources()).purgeExcept(any());
+
+    var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
+      mock(ConfigurationRepository.class), mock(NodeJsService.class),
+      mock(PluginsService.class), pluginLifecycleService,
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+
+    cache.reloadPlugins("conn");
+
+    verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn");
+  }
+
+  private static Storage staticResources(String connectionId) {
+    var storageService = mock(StorageService.class);
+    var connection = mock(ConnectionStorage.class);
+    var plugins = mock(PluginsStorage.class);
+    var resources = mock(StaticResourceStorage.class);
+    when(storageService.connection(connectionId)).thenReturn(connection);
+    when(connection.plugins()).thenReturn(plugins);
+    when(connection.staticResources()).thenReturn(resources);
+    when(plugins.getStoredPlugins()).thenReturn(List.of());
+    return new Storage(storageService, resources);
+  }
+
+  private record Storage(StorageService storage, StaticResourceStorage resources) {
   }
 
   private static UserPaths mockUserPaths(Path tempDir) {
