@@ -41,11 +41,11 @@ public class SonarCloudCdnPlugins {
   }
 
   public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
-    download(url("/plugins/" + key + "/versions/" + hash + ".jar"), key, pluginFileConsumer, cancelMonitor);
+    download(url(pluginPath(key, hash + ".jar")), key, pluginFileConsumer, cancelMonitor);
   }
 
   public void getResource(String key, String staticResourceFolder, String resourcePath, Consumer<InputStream> resourceConsumer, SonarLintCancelMonitor cancelMonitor) {
-    download(url("/plugins/" + key + "/versions/" + staticResourceFolder + "/" + resourcePath), key + ":" + resourcePath, resourceConsumer, cancelMonitor);
+    download(url(pluginPath(key, staticResourceFolder + "/" + resourcePath)), key + ":" + resourcePath, resourceConsumer, cancelMonitor);
   }
 
   private String url(String path) {
@@ -66,11 +66,15 @@ public class SonarCloudCdnPlugins {
   }
 
   static String buildDownloadUrl(String baseUrl, String key, String hash) {
-    return scannerUrl(baseUrl, "/plugins/" + key + "/versions/" + hash + ".jar");
+    return scannerUrl(baseUrl, pluginPath(key, hash + ".jar"));
   }
 
   static String buildResourceUrl(String baseUrl, String key, String staticResourceFolder, String resourcePath) {
-    return scannerUrl(baseUrl, "/plugins/" + key + "/versions/" + staticResourceFolder + "/" + resourcePath);
+    return scannerUrl(baseUrl, pluginPath(key, staticResourceFolder + "/" + resourcePath));
+  }
+
+  private static String pluginPath(String key, String versionPath) {
+    return "/plugins/" + key + "/versions/" + versionPath;
   }
 
   private static String scannerUrl(String baseUrl, String path) {

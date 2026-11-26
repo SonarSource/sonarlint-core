@@ -101,6 +101,7 @@ public class ServerFixture {
 
   private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
+  private static final String ORGANIZATION_PARAM = "&organization=";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -312,7 +313,24 @@ public class ServerFixture {
         }
       }
 
-      private record StaticResourceFixture(String path, String hash, long size, byte[] content, @Nullable Integer status, @Nullable Fault fault) {
+      private static final class StaticResourceFixture {
+        private final String path;
+        private final String hash;
+        private final long size;
+        private final byte[] content;
+        @Nullable
+        private final Integer status;
+        @Nullable
+        private final Fault fault;
+
+        private StaticResourceFixture(String path, String hash, long size, byte[] content, @Nullable Integer status, @Nullable Fault fault) {
+          this.path = path;
+          this.hash = hash;
+          this.size = size;
+          this.content = content;
+          this.status = status;
+          this.fault = fault;
+        }
       }
     }
 
@@ -1030,10 +1048,12 @@ public class ServerFixture {
     }
 
     private void stubStaticResource(String path, AbstractServerBuilder.ServerPluginBuilder.StaticResourceFixture resource) {
-      var response = resource.fault != null
-        ? aResponse().withFault(resource.fault)
-        : aResponse().withStatus(resource.status != null ? resource.status : responseCodes.statusCode).withBody(resource.content);
-      mockServer.stubFor(get(path).willReturn(response));
+      if (resource.fault != null) {
+        mockServer.stubFor(get(path).willReturn(aResponse().withFault(resource.fault)));
+        return;
+      }
+      var status = resource.status != null ? resource.status : responseCodes.statusCode;
+      mockServer.stubFor(get(path).willReturn(aResponse().withStatus(status).withBody(resource.content)));
     }
 
     private void registerPluginsDownloadResponses() {
@@ -1055,7 +1075,7 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var urlBuilder = new StringBuilder("/api/qualityprofiles/search.protobuf?project=" + projectKey);
         if (project.organizationKey != null) {
-          urlBuilder.append("&organization=").append(project.organizationKey);
+          urlBuilder.append(ORGANIZATION_PARAM).append(project.organizationKey);
         }
         mockServer.stubFor(get(urlBuilder.toString())
           .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
@@ -1079,7 +1099,7 @@ public class ServerFixture {
       qualityProfilesByKey.forEach((qualityProfileKey, qualityProfile) -> {
         var url = "/api/rules/search.protobuf?qprofile=" + qualityProfileKey;
         if (qualityProfile.organizationKey != null) {
-          url += "&organization=" + qualityProfile.organizationKey;
+          url += ORGANIZATION_PARAM + qualityProfile.organizationKey;
         }
         url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -1100,7 +1120,7 @@ public class ServerFixture {
       qualityProfilesByKey.values().stream().map(qp -> qp.organizationKey).collect(Collectors.toSet()).forEach(organizationKey -> {
         var url = "/api/rules/search.protobuf?repositories=" + taintRepositories();
         if (organizationKey != null) {
-          url += "&organization=" + organizationKey;
+          url += ORGANIZATION_PARAM + organizationKey;
         }
         url += "&f=repo&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -1157,7 +1177,7 @@ public class ServerFixture {
         var url = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys="
           + urlEncode(projectKey) + "&components=" + urlEncode(projectKey) + "&rules=&branch=" + urlEncode(branchName);
         if (project.organizationKey != null) {
-          url += "&organization=" + urlEncode(project.organizationKey);
+          url += ORGANIZATION_PARAM + urlEncode(project.organizationKey);
         }
         mockServer.stubFor(get(url + FIRST_PAGE_PARAMS)
           .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(emptyPage)));
@@ -1577,7 +1597,7 @@ public class ServerFixture {
           .filter(e -> projectKey.equals(e.getValue().projectKey()))
           .forEach(e -> {
             var projectBinding = e.getValue();
-            var endpoint = "/api/components/search_projects?projectIds=" + projectBinding.projectId() + "&organization=" + organizationKey;
+            var endpoint = "/api/components/search_projects?projectIds=" + projectBinding.projectId() + ORGANIZATION_PARAM + organizationKey;
             var body = """
               {"components":[{"key":"%s","name":"%s"}]}
               """.formatted(projectKey, projectName);
@@ -1605,7 +1625,7 @@ public class ServerFixture {
         .forEach((organizationKey, projects) -> {
           var url = "/api/components/search.protobuf?qualifiers=TRK";
           if (organizationKey.isPresent()) {
-            url += "&organization=" + organizationKey.get();
+            url += ORGANIZATION_PARAM + organizationKey.get();
           }
           url += FIRST_PAGE_PARAMS;
           mockServer.stubFor(get(url)
@@ -1638,7 +1658,7 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var url = "/api/components/tree.protobuf?qualifiers=FIL,UTS&component=" + projectKey;
         if (project.organizationKey != null) {
-          url += "&organization=" + project.organizationKey;
+          url += ORGANIZATION_PARAM + project.organizationKey;
         }
         url += FIRST_PAGE_PARAMS;
         mockServer.stubFor(get(url)

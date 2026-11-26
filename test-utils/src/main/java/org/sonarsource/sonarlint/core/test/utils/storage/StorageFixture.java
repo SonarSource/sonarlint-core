@@ -181,7 +181,14 @@ public class StorageFixture {
       });
     }
 
-    private record CachedStaticResource(String relativePath, byte[] content) {
+    private static final class CachedStaticResource {
+      private final String relativePath;
+      private final byte[] content;
+
+      private CachedStaticResource(String relativePath, byte[] content) {
+        this.relativePath = relativePath;
+        this.content = content;
+      }
     }
 
     private record Plugin(Path path, String jarName, String hash, String key) {
