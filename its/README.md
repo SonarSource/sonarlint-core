@@ -26,6 +26,6 @@
 
 # Nightly integration tests
 
-The [Nightly integration tests](../.github/workflows/nightly-integration-tests.yml) workflow runs daily at 03:00 UTC against SonarQube Cloud staging (EU and US) and the latest released SonarQube Server started locally by Orchestrator. Scheduled runs use the default branch; manual runs use the selected branch.
+The [Nightly integration tests](../.github/workflows/nightly-integration-tests.yml) workflow runs daily at 03:00 UTC against SonarQube Cloud staging (EU, US and AU) and the latest released SonarQube Server started locally by Orchestrator. Scheduled runs use the default branch; manual runs use the selected branch.
 
 Failures produce test reports and diagnostic artifacts, with Slack notifications for `master`.

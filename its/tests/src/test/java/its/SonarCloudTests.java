@@ -139,6 +139,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       URI.create("wss://events-api.sc-staging.io/")));
     SONARCLOUD_STAGING_URIS.put(SonarCloudRegion.US, new SonarQubeCloudRegionDto(URI.create("https://us-sc-staging.io"), URI.create("https://api.us-sc-staging.io"),
       URI.create("wss://events-api.us-sc-staging.io/")));
+    SONARCLOUD_STAGING_URIS.put(SonarCloudRegion.AU, new SonarQubeCloudRegionDto(URI.create("https://au-sc-staging.io"), URI.create("https://api.au-sc-staging.io"),
+      URI.create("wss://events-api.au-sc-staging.io/")));
   }
   private static final SonarCloudRegion region = StringUtils.isNotBlank(System.getenv("SONARCLOUD_REGION")) ? SonarCloudRegion.valueOf(System.getenv("SONARCLOUD_REGION"))
     : SonarCloudRegion.EU;
