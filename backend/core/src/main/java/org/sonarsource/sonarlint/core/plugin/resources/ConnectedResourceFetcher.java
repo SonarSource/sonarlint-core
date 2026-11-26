@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonar.api.utils.ZipUtils;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -40,7 +41,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceSto
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 
 /**
- * Returns a connected-mode static resource from {@code resources/{sha256}/{filename}}, downloading it once per hash.
+ * Returns a connected-mode static resource from {@code resources/{sha256}/{filename}}.
  * A JAR-packaged plugin has an empty inventory, so a fetch for it fails.
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
@@ -109,8 +110,9 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       publishExtraction(extracting, destination);
       return destination;
     } catch (IOException e) {
-      deleteRecursivelyQuietly(extracting);
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
+    } finally {
+      FileUtils.deleteQuietly(extracting.toFile());
     }
   }
 
