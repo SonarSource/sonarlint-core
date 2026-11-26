@@ -301,9 +301,14 @@ class ServerFindingRepositoryTests {
 
   @Test
   void merge_issues_supports_a_very_large_number_of_closed_issues_to_delete() {
+    var seeded = IntStream.of(0, 499, 500, 99_999)
+      .<ServerIssue<?>>mapToObj(i -> lineIssue("ISSUE_KEY_CLOSED_" + i, filePath, 1)).toList();
+    repo.mergeIssues(branch, seeded, Set.of(), Instant.now(), Set.of());
     var closedKeys = IntStream.range(0, 100_000).mapToObj(i -> "ISSUE_KEY_CLOSED_" + i).collect(Collectors.toSet());
 
     assertThatCode(() -> repo.mergeIssues(branch, List.of(), closedKeys, Instant.now(), Set.of())).doesNotThrowAnyException();
+
+    assertThat(repo.load(branch, filePath)).noneMatch(i -> i.getKey().startsWith("ISSUE_KEY_CLOSED_"));
   }
 
   @Test
