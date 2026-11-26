@@ -114,7 +114,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       }
       Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
       if (Files.isRegularFile(complete) || keepNewlyCompletedExtraction(destination)) {
-        deleteRecursively(extracting);
+        deleteRecursivelyQuietly(extracting);
         return destination;
       }
       publishExtraction(extracting, destination);
@@ -220,7 +220,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
       Files.move(aside, destination);
     } catch (IOException moveFailed) {
       if (Files.isRegularFile(destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE))) {
-        deleteRecursively(aside);
+        deleteRecursivelyQuietly(aside);
         return;
       }
       throw moveFailed;
