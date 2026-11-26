@@ -26,7 +26,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonar.api.utils.ZipUtils;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
@@ -35,36 +37,52 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.SonarCloudCdnPlugins;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 
 /**
- * Downloads a connected-mode static resource on every call and checks it against the stored inventory.
+ * Returns a connected-mode static resource from {@code resources/{sha256}/{filename}}.
  * A JAR-packaged plugin has an empty inventory, so a fetch for it fails.
  */
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
+  private static final String EXTRACTING_PREFIX = ".extracting-";
+
   private final String connectionId;
   private final Map<String, StoredPlugin> plugins;
+  private final StaticResourceStorage storage;
   private final Downloader downloader;
-  private final Path workDirectory;
 
-  public ConnectedResourceFetcher(String connectionId, Map<String, StoredPlugin> plugins, SonarQubeClientManager clientManager, Path workDirectory) {
+  public ConnectedResourceFetcher(String connectionId, Map<String, StoredPlugin> plugins, StaticResourceStorage storage, SonarQubeClientManager clientManager) {
     this.connectionId = connectionId;
     this.plugins = Map.copyOf(plugins);
+    this.storage = storage;
     this.downloader = (plugin, resourcePath) -> download(clientManager, connectionId, plugin, resourcePath);
-    this.workDirectory = workDirectory;
   }
 
   @Override
   public Path fetch(String pluginKey, String resourcePath) {
     var plugin = requirePlugin(pluginKey);
     var resource = requireResource(plugin, pluginKey, resourcePath);
-    var bytes = downloader.download(plugin, resourcePath);
+    return cachedOrDownload(plugin, pluginKey, resource);
+  }
+
+  private Path cachedOrDownload(StoredPlugin plugin, String pluginKey, StaticResource resource) {
+    var filename = filename(resource.path());
+    var cached = storage.file(resource.hash(), filename);
+    if (storage.matches(cached, resource.hash())) {
+      return cached;
+    }
+    var bytes = downloader.download(plugin, resource.path());
     var actualHash = DigestUtils.sha256Hex(bytes);
     if (!actualHash.equalsIgnoreCase(resource.hash())) {
-      throw new IllegalStateException("Static resource '" + resourcePath + "' for plugin '" + pluginKey + "' has SHA-256 " + actualHash + ", expected " + resource.hash());
+      throw new IllegalStateException("Static resource '" + resource.path() + "' for plugin '" + pluginKey + "' has SHA-256 " + actualHash + ", expected " + resource.hash());
     }
-    return writeTemporaryFile(workDirectory, resourcePath, bytes);
+    try {
+      return storage.store(resource.hash(), filename, bytes);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot store static resource '" + resource.path() + "'", e);
+    }
   }
 
   @Override
@@ -75,18 +93,26 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     if (!zip && !tarGz) {
       throw new IllegalArgumentException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "' because only zip and tar.gz resources are supported");
     }
+    var resource = requireResource(requirePlugin(pluginKey), pluginKey, resourcePath);
+    var destination = storage.extractionDirectory(resource.hash());
+    if (Files.isDirectory(destination)) {
+      return destination;
+    }
     var archive = fetch(pluginKey, resourcePath);
+    var extracting = destination.resolveSibling(EXTRACTING_PREFIX + UUID.randomUUID());
     try {
-      Files.createDirectories(workDirectory);
-      var destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
+      Files.createDirectories(extracting);
       if (zip) {
-        ZipUtils.unzip(archive.toFile(), destination.toFile());
+        ZipUtils.unzip(archive.toFile(), extracting.toFile());
       } else {
-        TarGzUtils.extractTarGz(archive, destination);
+        TarGzUtils.extractTarGz(archive, extracting);
       }
+      publishExtraction(extracting, destination);
       return destination;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
+    } finally {
+      FileUtils.deleteQuietly(extracting.toFile());
     }
   }
 
@@ -132,15 +158,41 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
-  private static Path writeTemporaryFile(Path workDirectory, String resourcePath, byte[] bytes) {
-    var filename = Path.of(resourcePath).getFileName().toString();
+  private static String filename(String resourcePath) {
+    var name = Path.of(resourcePath).getFileName();
+    if (name == null || name.toString().isBlank() || ".".equals(name.toString()) || "..".equals(name.toString())) {
+      throw new IllegalArgumentException("Invalid static resource path: " + resourcePath);
+    }
+    return name.toString();
+  }
+
+  static void publishExtraction(Path extracting, Path destination) throws IOException {
     try {
-      Files.createDirectories(workDirectory);
-      var file = Files.createTempFile(workDirectory, "sonarlint-resource-", "-" + filename);
-      Files.write(file, bytes);
-      return file;
-    } catch (IOException e) {
-      throw new UncheckedIOException("Cannot store static resource '" + resourcePath + "'", e);
+      Files.move(extracting, destination);
+    } catch (IOException moveFailed) {
+      deleteRecursivelyQuietly(extracting);
+      if (!Files.isDirectory(destination)) {
+        throw moveFailed;
+      }
+    }
+  }
+
+  private static void deleteRecursivelyQuietly(Path root) {
+    try {
+      deleteRecursively(root);
+    } catch (IOException ignored) {
+      // The extraction is already failing.
+    }
+  }
+
+  private static void deleteRecursively(Path root) throws IOException {
+    if (!Files.exists(root)) {
+      return;
+    }
+    try (var walk = Files.walk(root)) {
+      for (var path : walk.sorted((left, right) -> right.compareTo(left)).toList()) {
+        Files.deleteIfExists(path);
+      }
     }
   }
 

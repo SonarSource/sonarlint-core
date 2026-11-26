@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.commons.storage.SonarLintDatabase;
 import org.sonarsource.sonarlint.core.serverconnection.storage.OrganizationStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UserStorage;
@@ -37,6 +38,7 @@ public class ConnectionStorage {
   private final Map<String, SonarProjectStorage> sonarProjectStorageByKey = new ConcurrentHashMap<>();
   private final Path projectsStorageRoot;
   private final PluginsStorage pluginsStorage;
+  private final StaticResourceStorage staticResourceStorage;
   private final Path connectionStorageRoot;
   private final OrganizationStorage organizationStorage;
   private final String connectionId;
@@ -49,6 +51,7 @@ public class ConnectionStorage {
     this.serverIssueStoresManager = new ServerIssueStoresManager(connectionId, database);
     this.serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
+    this.staticResourceStorage = new StaticResourceStorage(connectionStorageRoot);
     this.organizationStorage = new OrganizationStorage(connectionStorageRoot);
     this.userStorage = new UserStorage(connectionStorageRoot);
   }
@@ -66,6 +69,10 @@ public class ConnectionStorage {
     return pluginsStorage;
   }
 
+  public StaticResourceStorage staticResources() {
+    return staticResourceStorage;
+  }
+
   public OrganizationStorage organization() {
     return organizationStorage;
   }
@@ -76,10 +83,6 @@ public class ConnectionStorage {
 
   public String connectionId() {
     return connectionId;
-  }
-
-  public Path storageRoot() {
-    return connectionStorageRoot;
   }
 
   public void delete() {

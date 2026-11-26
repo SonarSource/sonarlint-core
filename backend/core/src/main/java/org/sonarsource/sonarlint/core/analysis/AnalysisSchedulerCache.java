@@ -134,7 +134,7 @@ public class AnalysisSchedulerCache {
 
   private ResourceFetcher connectedResourceFetcher(String connectionId) {
     var connection = storageService.connection(connectionId);
-    return new ConnectedResourceFetcher(connectionId, connection.plugins().getStoredPluginsByKey(), sonarQubeClientManager, connection.storageRoot().resolve("tmp"));
+    return new ConnectedResourceFetcher(connectionId, connection.plugins().getStoredPluginsByKey(), connection.staticResources(), sonarQubeClientManager);
   }
 
   private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration, @Nullable String connectionId) {
