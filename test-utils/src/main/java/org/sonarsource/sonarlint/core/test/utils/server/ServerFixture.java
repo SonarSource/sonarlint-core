@@ -281,7 +281,6 @@ public class ServerFixture {
         public StaticResourceBuilder withContent(byte[] content) {
           this.content = content;
           this.size = content.length;
-          this.hash = sha256(content);
           return this;
         }
 
@@ -301,7 +300,7 @@ public class ServerFixture {
         }
 
         private StaticResourceFixture build() {
-          return new StaticResourceFixture(path, hash, size, content, status, fault);
+          return new StaticResourceFixture(path, hash != null ? hash : sha256(content), size, content, status, fault);
         }
       }
 

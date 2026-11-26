@@ -51,9 +51,18 @@ public class SonarCloudCdnPlugins {
   private String url(String path) {
     var cdnBaseUrl = helper.getCdnBaseUrl();
     if (cdnBaseUrl != null && !cdnBaseUrl.isBlank()) {
-      return (cdnBaseUrl.endsWith("/") ? cdnBaseUrl.substring(0, cdnBaseUrl.length() - 1) : cdnBaseUrl) + path;
+      return cdnUrl(cdnBaseUrl, path);
     }
     return scannerUrl(helper.getBaseUrl(), path);
+  }
+
+  private static String cdnUrl(String cdnBaseUrl, String path) {
+    var base = URI.create(cdnBaseUrl.endsWith("/") ? cdnBaseUrl.substring(0, cdnBaseUrl.length() - 1) : cdnBaseUrl);
+    var host = base.getHost();
+    if (host == null) {
+      throw new IllegalArgumentException("CDN URL must contain a host: " + cdnBaseUrl);
+    }
+    return buildUrl(base, host, base.getPath() + path);
   }
 
   private void download(String url, String description, Consumer<InputStream> consumer, SonarLintCancelMonitor cancelMonitor) {
@@ -83,8 +92,12 @@ public class SonarCloudCdnPlugins {
     if (host == null) {
       throw new IllegalArgumentException("SonarQube Cloud URL must contain a host: " + baseUrl);
     }
+    return buildUrl(baseUri, "scanner." + host, path);
+  }
+
+  private static String buildUrl(URI baseUri, String host, String path) {
     try {
-      return new URI(baseUri.getScheme(), null, "scanner." + host, baseUri.getPort(), path, null, null).toASCIIString();
+      return new URI(baseUri.getScheme(), null, host, baseUri.getPort(), path, null, null).toASCIIString();
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException("Unable to build the SonarQube Cloud plugin download URL", e);
     }

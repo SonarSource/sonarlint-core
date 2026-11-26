@@ -65,6 +65,30 @@ class SonarCloudCdnPluginsTests {
   }
 
   @Test
+  void should_encode_a_resource_path_on_the_configured_cdn() {
+    var helper = mock(ServerApiHelper.class);
+    var response = mock(HttpClient.Response.class);
+    var cancelMonitor = new SonarLintCancelMonitor();
+    when(helper.getCdnBaseUrl()).thenReturn("http://localhost:1234/cdn/");
+    when(helper.getAnonymousUrl("http://localhost:1234/cdn/plugins/java%20plugin/versions/folder/linux%20x64/native-tool", cancelMonitor)).thenReturn(response);
+    when(response.bodyAsStream()).thenReturn(new ByteArrayInputStream("content".getBytes(UTF_8)));
+    var underTest = new SonarCloudCdnPlugins(helper);
+
+    underTest.getResource("java plugin", "folder", "linux x64/native-tool", stream -> assertThat(stream).hasContent("content"), cancelMonitor);
+  }
+
+  @Test
+  void should_reject_a_cdn_url_without_a_host() {
+    var helper = mock(ServerApiHelper.class);
+    when(helper.getCdnBaseUrl()).thenReturn("localhost:1234");
+    var underTest = new SonarCloudCdnPlugins(helper);
+
+    assertThatThrownBy(() -> underTest.getResource("javascript", "folder", "native-tool", stream -> {}, new SonarLintCancelMonitor()))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("CDN URL must contain a host: localhost:1234");
+  }
+
+  @Test
   void should_return_sonarcloud_static_resource_content() {
     var helper = mock(ServerApiHelper.class);
     var response = mock(HttpClient.Response.class);
