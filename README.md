@@ -7,7 +7,6 @@
 </p>
 
 [![Build Status](https://github.com/SonarSource/sonarlint-core/actions/workflows/build.yml/badge.svg)](https://github.com/SonarSource/sonarlint-core/actions)
-[![Quality Gate Status](https://next.sonarqube.com/sonarqube/api/project_badges/measure?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent&metric=alert_status)](https://next.sonarqube.com/sonarqube/dashboard?id=org.sonarsource.sonarlint.core%3Asonarlint-core-parent)
 
 <!-- sonar-marketing:start -->
 <!-- Marketing maintains this section. For wording changes, consult the relevant Product Marketing Manager (PMM). Repository maintainers review accuracy and merge changes. -->
