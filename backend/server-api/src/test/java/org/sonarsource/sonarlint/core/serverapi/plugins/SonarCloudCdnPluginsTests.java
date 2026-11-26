@@ -80,10 +80,11 @@ class SonarCloudCdnPluginsTests {
   @Test
   void should_reject_a_cdn_url_without_a_host() {
     var helper = mock(ServerApiHelper.class);
+    var cancelMonitor = new SonarLintCancelMonitor();
     when(helper.getCdnBaseUrl()).thenReturn("localhost:1234");
     var underTest = new SonarCloudCdnPlugins(helper);
 
-    assertThatThrownBy(() -> underTest.getResource("javascript", "folder", "native-tool", stream -> {}, new SonarLintCancelMonitor()))
+    assertThatThrownBy(() -> underTest.getResource("javascript", "folder", "native-tool", stream -> {}, cancelMonitor))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("CDN URL must contain a host: localhost:1234");
   }
