@@ -30,12 +30,20 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
   private final URI apiUri;
+  @Nullable
+  private final URI cdnUri;
   private final String organization;
   private final SonarCloudRegion region;
 
   public SonarCloudConnectionConfiguration(URI uri, URI apiUri, String connectionId, String organization, SonarCloudRegion region, boolean disableNotifications) {
+    this(uri, apiUri, null, connectionId, organization, region, disableNotifications);
+  }
+
+  public SonarCloudConnectionConfiguration(URI uri, URI apiUri, @Nullable URI cdnUri, String connectionId, String organization, SonarCloudRegion region,
+    boolean disableNotifications) {
     super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, uri.toString());
     this.apiUri = apiUri;
+    this.cdnUri = cdnUri;
     this.organization = organization;
     this.region = region;
   }
@@ -46,7 +54,14 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
 
   @Override
   public EndpointParams getEndpointParams() {
-    return new EndpointParams(getUrl(), Strings.CS.removeEnd(apiUri.toString(), "/"), true, organization);
+    return new EndpointParams(getUrl(), Strings.CS.removeEnd(apiUri.toString(), "/"), true, organization, withoutTrailingSlash(cdnUri));
+  }
+
+  private static String withoutTrailingSlash(@Nullable URI uri) {
+    if (uri == null) {
+      return null;
+    }
+    return Strings.CS.removeEnd(uri.toString(), "/");
   }
 
   public SonarCloudRegion getRegion() {

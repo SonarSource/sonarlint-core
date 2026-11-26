@@ -35,12 +35,19 @@ public class EndpointParams {
   private final boolean sonarCloud;
   @Nullable
   private final String organization;
+  @Nullable
+  private final String cdnBaseUrl;
 
   public EndpointParams(String baseUrl, @Nullable String apiBaseUrl, boolean isSonarCloud, @Nullable String organization) {
+    this(baseUrl, apiBaseUrl, isSonarCloud, organization, null);
+  }
+
+  public EndpointParams(String baseUrl, @Nullable String apiBaseUrl, boolean isSonarCloud, @Nullable String organization, @Nullable String cdnBaseUrl) {
     this.baseUrl = baseUrl;
     this.apiBaseUrl = apiBaseUrl;
     this.sonarCloud = isSonarCloud;
     this.organization = organization;
+    this.cdnBaseUrl = cdnBaseUrl;
   }
 
   public String getBaseUrl() {
@@ -50,6 +57,14 @@ public class EndpointParams {
   @CheckForNull
   public String getApiBaseUrl() {
     return apiBaseUrl;
+  }
+
+  /**
+   * @return the analyzer CDN base URL, without a trailing slash. Null means derive {@code scanner.<host>} from the base URL.
+   */
+  @CheckForNull
+  public String getCdnBaseUrl() {
+    return cdnBaseUrl;
   }
 
   public boolean isSonarCloud() {

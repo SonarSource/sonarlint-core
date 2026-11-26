@@ -31,8 +31,10 @@ class SonarCloudActiveEnvironmentTests {
   private static URI baseUri = URI.create("baseUri");
   private static URI apiUri = URI.create("apiUri");
   private static URI webSocketUri = URI.create("webSocketUri");
-  
+  private static URI cdnUri = URI.create("http://localhost:1234");
+
   private static SonarQubeCloudRegionDto regionWithBaseUri = new SonarQubeCloudRegionDto(baseUri, null, null);
+  private static SonarQubeCloudRegionDto regionWithCdnUri = new SonarQubeCloudRegionDto(null, null, null, cdnUri);
   private static SonarQubeCloudRegionDto regionWithApiUri = new SonarQubeCloudRegionDto(null, apiUri, null);
   private static SonarQubeCloudRegionDto regionWithWebSocketUri = new SonarQubeCloudRegionDto(null, null, webSocketUri);
   
@@ -120,6 +122,19 @@ class SonarCloudActiveEnvironmentTests {
       .isEqualTo(SonarCloudRegion.US.getWebSocketUri());
   }
   
+  @Test
+  void test_getCdnUri() {
+    assertThat(SonarCloudActiveEnvironment.prod().getCdnUri(SonarCloudRegion.EU)).isNull();
+    assertThat(new SonarCloudActiveEnvironment(
+      Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithCdnUri))
+      .getCdnUri(SonarCloudRegion.EU))
+      .isEqualTo(cdnUri);
+    assertThat(new SonarCloudActiveEnvironment(
+      Map.of(org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, regionWithBaseUri))
+      .getCdnUri(SonarCloudRegion.EU))
+      .isNull();
+  }
+
   @Test
   void test_isSonarQubeCloud() {
     assertThat(SonarCloudActiveEnvironment.prod().isSonarQubeCloud("aaaa")).isFalse();

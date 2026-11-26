@@ -31,6 +31,8 @@ public class SonarQubeCloudRegionDto {
   private final URI apiUri;
   @Nullable
   private final URI webSocketsEndpointUri;
+  @Nullable
+  private final URI cdnUri;
 
   /**
    *  All of the URIs can be null!
@@ -39,9 +41,14 @@ public class SonarQubeCloudRegionDto {
    *  @param apiUri the base URI of new endpoints, e.g. https://api.sonarcloud.io. Must be specified because for some env it cannot be deduced from the base URI (e.g. Dev)
    */
   public SonarQubeCloudRegionDto(@Nullable URI uri, @Nullable URI apiUri, @Nullable URI webSocketsEndpointUri) {
+    this(uri, apiUri, webSocketsEndpointUri, null);
+  }
+
+  public SonarQubeCloudRegionDto(@Nullable URI uri, @Nullable URI apiUri, @Nullable URI webSocketsEndpointUri, @Nullable URI cdnUri) {
     this.uri = uri;
     this.apiUri = apiUri;
     this.webSocketsEndpointUri = webSocketsEndpointUri;
+    this.cdnUri = cdnUri;
   }
 
   @CheckForNull
@@ -57,5 +64,13 @@ public class SonarQubeCloudRegionDto {
   @CheckForNull
   public URI getWebSocketsEndpointUri() {
     return webSocketsEndpointUri;
+  }
+
+  /**
+   * Base URL of the analyzer CDN ({@code scanner.<host>} in production). Null means the CDN host is derived from the region URI.
+   */
+  @CheckForNull
+  public URI getCdnUri() {
+    return cdnUri;
   }
 }

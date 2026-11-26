@@ -60,6 +60,16 @@ public class SonarCloudActiveEnvironment {
     return region.getWebSocketUri();
   }
 
+  /**
+   * @return the configured analyzer CDN, or null when downloads should use {@code scanner.<host>} of the region URI
+   */
+  public URI getCdnUri(SonarCloudRegion region) {
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getCdnUri() != null) {
+      return alternativeRegionUris.get(region).getCdnUri();
+    }
+    return null;
+  }
+
   public boolean isSonarQubeCloud(String uri) {
     return getRegionByUri(uri).isPresent();
   }

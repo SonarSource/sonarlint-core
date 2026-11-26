@@ -24,10 +24,14 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -56,6 +60,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -222,6 +227,8 @@ public class ServerFixture {
       private String hash = "hash";
       private Path jarPath;
       private boolean sonarLintSupported = true;
+      private String staticResourceFolder;
+      private final List<StaticResourceFixture> staticResources = new ArrayList<>();
 
       public ServerPluginBuilder withHash(String hash) {
         this.hash = hash;
@@ -236,6 +243,76 @@ public class ServerFixture {
       public ServerPluginBuilder withSonarLintSupported(boolean sonarLintSupported) {
         this.sonarLintSupported = sonarLintSupported;
         return this;
+      }
+
+      public ServerPluginBuilder withStaticResourceFolder(String staticResourceFolder) {
+        this.staticResourceFolder = staticResourceFolder;
+        return this;
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, byte[] content) {
+        return withStaticResource(path, sha256(content), content);
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, String hash, byte[] content) {
+        staticResources.add(new StaticResourceFixture(path, hash, content.length, content, null, null));
+        return this;
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, UnaryOperator<StaticResourceBuilder> resource) {
+        var builder = new StaticResourceBuilder(path);
+        staticResources.add(resource.apply(builder).build());
+        return this;
+      }
+
+      public static class StaticResourceBuilder {
+        private final String path;
+        private String hash;
+        private long size;
+        private byte[] content = new byte[0];
+        private Integer status;
+        private Fault fault;
+
+        private StaticResourceBuilder(String path) {
+          this.path = path;
+        }
+
+        public StaticResourceBuilder withContent(byte[] content) {
+          this.content = content;
+          this.size = content.length;
+          this.hash = sha256(content);
+          return this;
+        }
+
+        public StaticResourceBuilder withHash(String hash) {
+          this.hash = hash;
+          return this;
+        }
+
+        public StaticResourceBuilder withStatus(int status) {
+          this.status = status;
+          return this;
+        }
+
+        public StaticResourceBuilder withEmptyResponse() {
+          this.fault = Fault.EMPTY_RESPONSE;
+          return this;
+        }
+
+        private StaticResourceFixture build() {
+          return new StaticResourceFixture(path, hash, size, content, status, fault);
+        }
+      }
+
+      private static String sha256(byte[] content) {
+        try {
+          return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+
+      private record StaticResourceFixture(String path, String hash, long size, byte[] content, @Nullable Integer status, @Nullable Fault fault) {
       }
     }
 
@@ -908,6 +985,7 @@ public class ServerFixture {
     private void registerPluginsApiResponses() {
       registerPluginsInstalledResponses();
       registerPluginsDownloadResponses();
+      registerStaticResourceResponses();
     }
 
     private void registerPluginsInstalledResponses() {
@@ -916,13 +994,46 @@ public class ServerFixture {
           pluginsByKey.entrySet().stream().map(
             entry -> {
               var pluginKey = entry.getKey();
-              return "{\"key\": \"" + pluginKey + "\", " +
-                "\"hash\": \"" + entry.getValue().hash + "\", " +
-                "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
-                "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
+              return installedPluginJson(pluginKey, entry.getValue());
             })
             .collect(Collectors.joining(", "))
           + "]}")));
+    }
+
+    private static String installedPluginJson(String pluginKey, AbstractServerBuilder.ServerPluginBuilder plugin) {
+      var json = new StringBuilder();
+      json.append("{\"key\": \"").append(pluginKey).append("\", ");
+      json.append("\"hash\": \"").append(plugin.hash).append("\", ");
+      json.append("\"filename\": \"").append(plugin.jarPath.getFileName()).append("\", ");
+      json.append("\"sonarLintSupported\": ").append(plugin.sonarLintSupported);
+      if (plugin.staticResourceFolder != null) {
+        json.append(", \"staticResourceFolder\": \"").append(plugin.staticResourceFolder).append('"');
+      }
+      if (!plugin.staticResources.isEmpty()) {
+        json.append(", \"staticResources\": [");
+        json.append(plugin.staticResources.stream()
+          .map(resource -> "{\"path\": \"" + resource.path + "\", \"hash\": \"" + resource.hash + "\", \"size\": " + resource.size + "}")
+          .collect(Collectors.joining(", ")));
+        json.append(']');
+      }
+      json.append('}');
+      return json.toString();
+    }
+
+    private void registerStaticResourceResponses() {
+      pluginsByKey.forEach((pluginKey, plugin) -> plugin.staticResources.forEach(resource -> {
+        stubStaticResource("/static/" + pluginKey + "/" + resource.path, resource);
+        if (plugin.staticResourceFolder != null) {
+          stubStaticResource("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path, resource);
+        }
+      }));
+    }
+
+    private void stubStaticResource(String path, AbstractServerBuilder.ServerPluginBuilder.StaticResourceFixture resource) {
+      var response = resource.fault != null
+        ? aResponse().withFault(resource.fault)
+        : aResponse().withStatus(resource.status != null ? resource.status : responseCodes.statusCode).withBody(resource.content);
+      mockServer.stubFor(get(path).willReturn(response));
     }
 
     private void registerPluginsDownloadResponses() {
@@ -987,7 +1098,7 @@ public class ServerFixture {
       var taintActiveRulesByKey = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream())
         .filter(entry -> TAINT_REPOS_BY_LANGUAGE.containsValue(entry.getKey())).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
       qualityProfilesByKey.values().stream().map(qp -> qp.organizationKey).collect(Collectors.toSet()).forEach(organizationKey -> {
-        var url = "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity";
+        var url = "/api/rules/search.protobuf?repositories=" + taintRepositories();
         if (organizationKey != null) {
           url += "&organization=" + organizationKey;
         }
@@ -1028,6 +1139,29 @@ public class ServerFixture {
               .build())
             .build()))));
       });
+      if (serverKind == ServerKind.SONARCLOUD) {
+        registerEmptyTaintVulnerabilitySearch();
+      }
+    }
+
+    private static String taintRepositories() {
+      return Stream.of(SonarLanguage.values())
+        .map(TAINT_REPOS_BY_LANGUAGE::get)
+        .filter(Objects::nonNull)
+        .collect(Collectors.joining(","));
+    }
+
+    private void registerEmptyTaintVulnerabilitySearch() {
+      var emptyPage = protobufBody(Issues.SearchWsResponse.newBuilder().setPaging(Common.Paging.newBuilder().setTotal(0).build()).build());
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.keySet().stream().filter(Objects::nonNull).forEach(branchName -> {
+        var url = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys="
+          + urlEncode(projectKey) + "&components=" + urlEncode(projectKey) + "&rules=&branch=" + urlEncode(branchName);
+        if (project.organizationKey != null) {
+          url += "&organization=" + urlEncode(project.organizationKey);
+        }
+        mockServer.stubFor(get(url + FIRST_PAGE_PARAMS)
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(emptyPage)));
+      }));
     }
 
     private void registerProjectBranchesApiResponses() {

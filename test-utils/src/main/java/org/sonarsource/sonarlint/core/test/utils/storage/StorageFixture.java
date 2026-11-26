@@ -42,6 +42,7 @@ public class StorageFixture {
     private final String connectionId;
     private final List<Feature> supportedFeatures = new ArrayList<>();
     private final List<Plugin> plugins = new ArrayList<>();
+    private final List<CachedStaticResource> cachedStaticResources = new ArrayList<>();
     private final List<ProjectStorageFixture.ProjectStorageBuilder> projectBuilders = new ArrayList<>();
     private AiCodeFixFixtures.Builder aiCodeFixBuilder;
     private String serverVersion;
@@ -83,6 +84,11 @@ public class StorageFixture {
       return this;
     }
 
+    public StorageBuilder withCachedStaticResource(String relativePath, byte[] content) {
+      cachedStaticResources.add(new CachedStaticResource(relativePath, content));
+      return this;
+    }
+
     public StorageBuilder withProject(String projectKey, Consumer<ProjectStorageFixture.ProjectStorageBuilder> consumer) {
       var builder = new ProjectStorageFixture.ProjectStorageBuilder(connectionId, projectKey);
       consumer.accept(builder);
@@ -121,6 +127,7 @@ public class StorageFixture {
 
       createPlugins(pluginsFolderPath);
       createPluginReferences(pluginsFolderPath);
+      createCachedStaticResources(connectionStorage);
 
       projectBuilders.forEach(project -> project.populate(projectsFolderPath, database));
       if (aiCodeFixBuilder != null) {
@@ -160,6 +167,21 @@ public class StorageFixture {
         .setKey(plugin.key)
         .build()));
       ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
+    }
+
+    private void createCachedStaticResources(Path connectionStorage) {
+      cachedStaticResources.forEach(resource -> {
+        var file = connectionStorage.resolve("resources").resolve(resource.relativePath);
+        try {
+          Files.createDirectories(file.getParent());
+          Files.write(file, resource.content);
+        } catch (IOException e) {
+          throw new IllegalStateException("Cannot write cached static resource " + resource.relativePath, e);
+        }
+      });
+    }
+
+    private record CachedStaticResource(String relativePath, byte[] content) {
     }
 
     private record Plugin(Path path, String jarName, String hash, String key) {

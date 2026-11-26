@@ -41,11 +41,19 @@ public class SonarCloudCdnPlugins {
   }
 
   public void getPlugin(String key, String hash, Consumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
-    download(buildDownloadUrl(helper.getBaseUrl(), key, hash), key, pluginFileConsumer, cancelMonitor);
+    download(url("/plugins/" + key + "/versions/" + hash + ".jar"), key, pluginFileConsumer, cancelMonitor);
   }
 
   public void getResource(String key, String staticResourceFolder, String resourcePath, Consumer<InputStream> resourceConsumer, SonarLintCancelMonitor cancelMonitor) {
-    download(buildResourceUrl(helper.getBaseUrl(), key, staticResourceFolder, resourcePath), key + ":" + resourcePath, resourceConsumer, cancelMonitor);
+    download(url("/plugins/" + key + "/versions/" + staticResourceFolder + "/" + resourcePath), key + ":" + resourcePath, resourceConsumer, cancelMonitor);
+  }
+
+  private String url(String path) {
+    var cdnBaseUrl = helper.getCdnBaseUrl();
+    if (cdnBaseUrl != null && !cdnBaseUrl.isBlank()) {
+      return (cdnBaseUrl.endsWith("/") ? cdnBaseUrl.substring(0, cdnBaseUrl.length() - 1) : cdnBaseUrl) + path;
+    }
+    return scannerUrl(helper.getBaseUrl(), path);
   }
 
   private void download(String url, String description, Consumer<InputStream> consumer, SonarLintCancelMonitor cancelMonitor) {

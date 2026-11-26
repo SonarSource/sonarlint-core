@@ -52,6 +52,19 @@ class SonarCloudCdnPluginsTests {
   }
 
   @Test
+  void should_download_a_static_resource_from_the_configured_cdn() {
+    var helper = mock(ServerApiHelper.class);
+    var response = mock(HttpClient.Response.class);
+    var cancelMonitor = new SonarLintCancelMonitor();
+    when(helper.getCdnBaseUrl()).thenReturn("http://localhost:1234");
+    when(helper.getAnonymousUrl("http://localhost:1234/plugins/javascript/versions/folder/linux-x64/native-tool", cancelMonitor)).thenReturn(response);
+    when(response.bodyAsStream()).thenReturn(new ByteArrayInputStream("content".getBytes(UTF_8)));
+    var underTest = new SonarCloudCdnPlugins(helper);
+
+    underTest.getResource("javascript", "folder", "linux-x64/native-tool", stream -> assertThat(stream).hasContent("content"), cancelMonitor);
+  }
+
+  @Test
   void should_return_sonarcloud_static_resource_content() {
     var helper = mock(ServerApiHelper.class);
     var response = mock(HttpClient.Response.class);

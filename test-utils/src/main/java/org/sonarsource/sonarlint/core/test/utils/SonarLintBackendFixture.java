@@ -253,6 +253,10 @@ public class SonarLintBackendFixture {
       return updateRegionUris(SonarCloudRegion.EU, uris -> uris.withWebSocketUri(webSocketUri));
     }
 
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionCdnUri(String cdnUri) {
+      return updateRegionUris(SonarCloudRegion.EU, uris -> uris.withCdnUri(cdnUri));
+    }
+
     public SonarLintBackendBuilder withSonarQubeCloudUsRegionUri(String uri) {
       return updateRegionUris(SonarCloudRegion.US, uris -> uris.withUri(uri));
     }
@@ -265,6 +269,10 @@ public class SonarLintBackendFixture {
       return updateRegionUris(SonarCloudRegion.US, uris -> uris.withWebSocketUri(webSocketUri));
     }
 
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionCdnUri(String cdnUri) {
+      return updateRegionUris(SonarCloudRegion.US, uris -> uris.withCdnUri(cdnUri));
+    }
+
     public SonarLintBackendBuilder withSonarQubeCloudAuRegionUri(String uri) {
       return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withUri(uri));
     }
@@ -275,6 +283,10 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSonarQubeCloudAuRegionWebSocketUri(URI webSocketUri) {
       return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withWebSocketUri(webSocketUri));
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudAuRegionCdnUri(String cdnUri) {
+      return updateRegionUris(SonarCloudRegion.AU, uris -> uris.withCdnUri(cdnUri));
     }
 
     private SonarLintBackendBuilder updateRegionUris(SonarCloudRegion region, UnaryOperator<RegionUris> update) {
@@ -551,7 +563,8 @@ public class SonarLintBackendFixture {
         var alternativeRegions = new EnumMap<SonarCloudRegion, SonarQubeCloudRegionDto>(SonarCloudRegion.class);
         for (var region : SonarCloudRegion.values()) {
           var uris = regionUrisByRegion.getOrDefault(region, RegionUris.EMPTY);
-          alternativeRegions.put(region, new SonarQubeCloudRegionDto(createUriFromString(uris.uri()), createUriFromString(uris.apiUri()), uris.webSocketUri()));
+          alternativeRegions.put(region, new SonarQubeCloudRegionDto(createUriFromString(uris.uri()), createUriFromString(uris.apiUri()), uris.webSocketUri(),
+            createUriFromString(uris.cdnUri())));
         }
         var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.copyOf(alternativeRegions));
 
@@ -586,19 +599,23 @@ public class SonarLintBackendFixture {
       org.apache.commons.io.FileUtils.copyDirectory(snapshotH2.toFile(), storageRoot.resolve("h2").toFile());
     }
 
-    private record RegionUris(@Nullable String uri, @Nullable String apiUri, @Nullable URI webSocketUri) {
-      private static final RegionUris EMPTY = new RegionUris(null, null, null);
+    private record RegionUris(@Nullable String uri, @Nullable String apiUri, @Nullable URI webSocketUri, @Nullable String cdnUri) {
+      private static final RegionUris EMPTY = new RegionUris(null, null, null, null);
 
       private RegionUris withUri(String uri) {
-        return new RegionUris(uri, apiUri, webSocketUri);
+        return new RegionUris(uri, apiUri, webSocketUri, cdnUri);
       }
 
       private RegionUris withApiUri(String apiUri) {
-        return new RegionUris(uri, apiUri, webSocketUri);
+        return new RegionUris(uri, apiUri, webSocketUri, cdnUri);
       }
 
       private RegionUris withWebSocketUri(URI webSocketUri) {
-        return new RegionUris(uri, apiUri, webSocketUri);
+        return new RegionUris(uri, apiUri, webSocketUri, cdnUri);
+      }
+
+      private RegionUris withCdnUri(String cdnUri) {
+        return new RegionUris(uri, apiUri, webSocketUri, cdnUri);
       }
     }
 
