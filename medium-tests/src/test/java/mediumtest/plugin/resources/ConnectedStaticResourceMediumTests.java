@@ -315,7 +315,11 @@ class ConnectedStaticResourceMediumTests {
       backendBuilder.withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(PLUGIN_KEY, jar, PLUGIN_HASH));
     }
     var backend = backendBuilder.start(client);
-    await().atMost(20, SECONDS).untilAsserted(() -> assertThat(references(backend, CONNECTION_ID).get(PLUGIN_KEY).getStaticResourcesCount()).isPositive());
+    await().atMost(20, SECONDS).untilAsserted(() -> {
+      var reference = references(backend, CONNECTION_ID).get(PLUGIN_KEY);
+      assertThat(reference).isNotNull();
+      assertThat(reference.getStaticResourcesCount()).isPositive();
+    });
     var analysis = new Analysis(server, backend, file);
     analyzeAgain(analysis);
     return analysis;
