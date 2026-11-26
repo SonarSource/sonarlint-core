@@ -163,7 +163,9 @@ class PluginFailureStatusMediumTests {
     backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(SCOPE_ID)).join();
 
     awaitPluginState(client, Language.JAVA, PluginStateDto.SYNCED);
-    assertThat(stateOf(pluginStatuses(backend), Language.JAVA)).isEqualTo(PluginStateDto.SYNCED);
+    // The notification can arrive before PluginsSynchronizedEvent unloads the cached DOWNLOADING artifact.
+    await().untilAsserted(() ->
+      assertThat(stateOf(pluginStatuses(backend), Language.JAVA)).isEqualTo(PluginStateDto.SYNCED));
   }
 
   @SonarLintTest
