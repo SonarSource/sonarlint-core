@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.sonar.api.scanner.ResourceFetcher;
 import org.sonar.api.utils.ZipUtils;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -84,17 +85,25 @@ public class StandaloneResourceFetcher implements ResourceFetcher {
       throw new IllegalArgumentException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "' because only zip and tar.gz resources are supported");
     }
     var archive = fetch(pluginKey, resourcePath);
+    Path destination = null;
     try {
       Files.createDirectories(workDirectory);
-      var destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
+      destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
       if (zip) {
         ZipUtils.unzip(archive.toFile(), destination.toFile());
       } else {
         TarGzUtils.extractTarGz(archive, destination);
       }
-      return destination;
+      var extracted = destination;
+      destination = null;
+      return extracted;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
+    } finally {
+      if (destination != null) {
+        FileUtils.deleteQuietly(destination.toFile());
+      }
+      FileUtils.deleteQuietly(archive.toFile());
     }
   }
 
@@ -146,13 +155,20 @@ public class StandaloneResourceFetcher implements ResourceFetcher {
 
   private static Path writeTemporaryFile(Path workDirectory, String resourcePath, byte[] bytes) {
     var filename = filename(resourcePath);
+    Path file = null;
     try {
       Files.createDirectories(workDirectory);
-      var file = Files.createTempFile(workDirectory, "sonarlint-resource-", "-" + filename);
+      file = Files.createTempFile(workDirectory, "sonarlint-resource-", "-" + filename);
       Files.write(file, bytes);
-      return file;
+      var written = file;
+      file = null;
+      return written;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot store static resource '" + resourcePath + "'", e);
+    } finally {
+      if (file != null) {
+        FileUtils.deleteQuietly(file.toFile());
+      }
     }
   }
 

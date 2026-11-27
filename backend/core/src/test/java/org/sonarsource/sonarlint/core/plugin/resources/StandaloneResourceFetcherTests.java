@@ -248,6 +248,9 @@ class StandaloneResourceFetcherTests {
     assertThat(again.resolve("hello.txt")).hasContent("hello");
     assertThat(again).isNotEqualTo(extracted);
     assertThat(calls).hasValue(2);
+    try (var children = Files.list(storage.resolve("tmp"))) {
+      assertThat(children).containsExactlyInAnyOrder(extracted, again);
+    }
   }
 
   @Test
@@ -260,6 +263,23 @@ class StandaloneResourceFetcherTests {
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
     assertThat(extracted).hasParentRaw(storage.resolve("tmp"));
+    try (var children = Files.list(storage.resolve("tmp"))) {
+      assertThat(children).containsExactly(extracted);
+    }
+  }
+
+  @Test
+  void deletes_the_archive_and_a_partial_extraction_when_extraction_fails() throws IOException {
+    var bytes = "not-a-zip".getBytes(StandardCharsets.UTF_8);
+    writeManifest("javascript", "tools/native.zip", DigestUtils.sha256Hex(bytes), bytes.length);
+    var fetcher = fetcher(url -> bytes);
+
+    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
+      .isInstanceOf(UncheckedIOException.class)
+      .hasMessageContaining("Cannot extract");
+    try (var children = Files.list(storage.resolve("tmp"))) {
+      assertThat(children).isEmpty();
+    }
   }
 
   @Test
