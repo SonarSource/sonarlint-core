@@ -27,6 +27,8 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -1039,11 +1041,17 @@ public class ServerFixture {
 
     private void registerStaticResourceResponses() {
       pluginsByKey.forEach((pluginKey, plugin) -> plugin.staticResources.forEach(resource -> {
-        stubStaticResource("/static/" + pluginKey + "/" + resource.path, resource);
+        stubStaticResource(encodeResourcePath("/static/" + pluginKey + "/" + resource.path), resource);
         if (plugin.staticResourceFolder != null) {
-          stubStaticResource("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path, resource);
+          stubStaticResource(encodeResourcePath("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path), resource);
         }
       }));
+    }
+
+    private static String encodeResourcePath(String path) {
+      return Stream.of(path.split("/", -1))
+        .map(segment -> URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20"))
+        .collect(Collectors.joining("/"));
     }
 
     private void stubStaticResource(String path, AbstractServerBuilder.ServerPluginBuilder.StaticResourceFixture resource) {
@@ -1172,15 +1180,24 @@ public class ServerFixture {
 
     private void registerEmptyTaintVulnerabilitySearch() {
       var emptyPage = protobufBody(Issues.SearchWsResponse.newBuilder().setPaging(Common.Paging.newBuilder().setTotal(0).build()).build());
-      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.keySet().stream().filter(Objects::nonNull).forEach(branchName -> {
-        var url = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys="
-          + urlEncode(projectKey) + "&components=" + urlEncode(projectKey) + "&rules=&branch=" + urlEncode(branchName);
-        if (project.organizationKey != null) {
-          url += ORGANIZATION_PARAM + urlEncode(project.organizationKey);
-        }
-        mockServer.stubFor(get(url + FIRST_PAGE_PARAMS)
-          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(emptyPage)));
-      }));
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.keySet().stream().filter(Objects::nonNull).forEach(branchName -> mockServer.stubFor(
+        get(taintVulnerabilitySearchUrl(projectKey, branchName, project.organizationKey))
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(emptyPage)))));
+    }
+
+    private static String taintVulnerabilitySearchUrl(String projectKey, @Nullable String branchName, @Nullable String organizationKey) {
+      var url = new StringBuilder("/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys=")
+        .append(urlEncode(projectKey))
+        .append("&components=")
+        .append(urlEncode(projectKey))
+        .append("&rules=");
+      if (branchName != null) {
+        url.append("&branch=").append(urlEncode(branchName));
+      }
+      if (organizationKey != null) {
+        url.append(ORGANIZATION_PARAM).append(urlEncode(organizationKey));
+      }
+      return url.append(FIRST_PAGE_PARAMS).toString();
     }
 
     private void registerProjectBranchesApiResponses() {
@@ -1306,9 +1323,7 @@ public class ServerFixture {
           });
 
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
-          var searchUrl = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY"
-            + componentKeyParams(projectKey) + "&rules=&branch=" + branchName
-            + FIRST_PAGE_PARAMS;
+          var searchUrl = taintVulnerabilitySearchUrl(projectKey, branchName, project.organizationKey);
           mockServer.stubFor(get(searchUrl)
             .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
               .addAllIssues(
