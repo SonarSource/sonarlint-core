@@ -114,7 +114,7 @@ class PluginDownloadStatusNotificationMediumTests {
     harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withPlugin("java", TestPlugin.JAVA.getPath(), TestPlugin.JAVA.getHash()))
-      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
       .withEnabledLanguageInStandaloneMode(Language.CPP)
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withUnboundConfigScope(SCOPE_ID)
@@ -134,10 +134,10 @@ class PluginDownloadStatusNotificationMediumTests {
         if (List.of("boundScope", "inheritedScope").contains(change.getConfigScopeId())) {
           assertThat(statusOf(change.getPluginStatuses(), Language.JAVA).getState()).isEqualTo(PluginStateDto.SYNCED);
           assertThat(statusOf(change.getPluginStatuses(), Language.JAVA).getSource()).isEqualTo(ArtifactSourceDto.SONARQUBE_SERVER);
-          assertThat(statusOf(change.getPluginStatuses(), Language.PYTHON).getState()).isEqualTo(PluginStateDto.UNSUPPORTED);
+          assertThat(statusOf(change.getPluginStatuses(), Language.PHP).getState()).isEqualTo(PluginStateDto.UNSUPPORTED);
         } else {
-          assertThat(statusOf(change.getPluginStatuses(), Language.PYTHON).getState()).isEqualTo(PluginStateDto.ACTIVE);
-          assertThat(statusOf(change.getPluginStatuses(), Language.PYTHON).getSource()).isEqualTo(ArtifactSourceDto.EMBEDDED);
+          assertThat(statusOf(change.getPluginStatuses(), Language.PHP).getState()).isEqualTo(PluginStateDto.ACTIVE);
+          assertThat(statusOf(change.getPluginStatuses(), Language.PHP).getSource()).isEqualTo(ArtifactSourceDto.EMBEDDED);
           assertThat(statusOf(change.getPluginStatuses(), Language.JAVA).getState()).isEqualTo(PluginStateDto.PREMIUM);
         }
       });

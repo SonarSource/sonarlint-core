@@ -42,10 +42,21 @@ public enum BinariesArtifact {
   OMNISHARP_NET472(SonarPluginDependency.OMNISHARP_NET472, "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net472.tar.gz",
     "ondemand/omnisharp-net472.tar.gz.asc"),
   OMNISHARP_NET6(SonarPluginDependency.OMNISHARP_NET6, "omnisharp.version", "/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz",
-    "ondemand/omnisharp-net6.0.tar.gz.asc");
+    "ondemand/omnisharp-net6.0.tar.gz.asc"),
+  /**
+   * ZIP plugin. The version appears twice in the documented exploded layout, so the pattern uses {@code %1$s}.
+   * BUILD-13154 has not published this tree yet.
+   */
+  JAVASCRIPT(SonarPlugin.JS, "javascript.version",
+    "/Distribution/sonar-javascript-plugin/%1$s/plugin/sonar-javascript-plugin-%1$s.jar",
+    "ondemand/sonar-javascript-plugin.jar.asc", true),
+  PYTHON(SonarPlugin.PYTHON, "python.version",
+    "/Distribution/sonar-python-plugin/%1$s/plugin/sonar-python-plugin-%1$s.jar",
+    "ondemand/sonar-python-plugin.jar.asc", true);
 
   /** System property to override the download URL pattern for all artifacts, e.g. for testing with a mock server. */
   public static final String PROPERTY_URL_PATTERN = "sonarlint.ondemand.url";
+  public static final String MANIFEST_FILE_NAME = "manifest.json";
 
   private static final String PROPERTIES_FILE = "ondemand/plugins.properties";
   private static final String BINARIES_URL = "https://binaries.sonarsource.com";
@@ -56,12 +67,18 @@ public enum BinariesArtifact {
   private final String versionKey;
   private final String urlPattern;
   private final String signatureResourcePath;
+  private final boolean exploded;
 
   BinariesArtifact(SonarArtifact artifact, String versionKey, String urlPattern, String signatureResourcePath) {
+    this(artifact, versionKey, urlPattern, signatureResourcePath, false);
+  }
+
+  BinariesArtifact(SonarArtifact artifact, String versionKey, String urlPattern, String signatureResourcePath, boolean exploded) {
     this.artifact = artifact;
     this.versionKey = versionKey;
     this.urlPattern = urlPattern;
     this.signatureResourcePath = signatureResourcePath;
+    this.exploded = exploded;
   }
 
   public static Optional<BinariesArtifact> findByKey(@Nullable String key) {
@@ -94,6 +111,37 @@ public enum BinariesArtifact {
 
   public boolean isArchive() {
     return urlPattern.endsWith(TAR_GZ_EXTENSION);
+  }
+
+  /**
+   * ZIP plugins are published as an exploded tree: {@code plugin/<artifact>-<version>.jar} plus {@code manifest.json}.
+   */
+  public boolean isExploded() {
+    return exploded;
+  }
+
+  public String downloadUrl() {
+    return String.format(urlPattern(), version());
+  }
+
+  /**
+   * URL of {@code manifest.json} beside the {@code plugin/} directory. Only exploded plugins have one.
+   */
+  public String manifestUrl() {
+    if (!exploded) {
+      throw new IllegalStateException("No manifest for " + artifactKey());
+    }
+    var jarUrl = urlPattern();
+    var pluginSegment = "/plugin/";
+    var index = jarUrl.lastIndexOf(pluginSegment);
+    if (index < 0) {
+      throw new IllegalStateException("Exploded plugin URL has no plugin directory: " + jarUrl);
+    }
+    return String.format(jarUrl.substring(0, index), version()) + "/" + MANIFEST_FILE_NAME;
+  }
+
+  public String jarFileName() {
+    return "sonar-" + artifactKey() + "-plugin-" + version() + ".jar";
   }
 
   private static Properties loadVersions() {

@@ -169,6 +169,9 @@ public class BinariesArtifactSource implements ArtifactSource {
         return false;
       }
     }
+    if (artifact.isExploded() && !Files.isRegularFile(manifestPath(pluginPath))) {
+      return false;
+    }
     return signatureVerifier.verify(pluginPath, artifact);
   }
 
@@ -243,9 +246,13 @@ public class BinariesArtifactSource implements ArtifactSource {
 
   private void downloadAndVerify(BinariesArtifact artifact, Path targetPath) throws IOException {
     Files.createDirectories(targetPath.getParent());
+    if (artifact.isExploded()) {
+      downloadExploded(artifact, targetPath);
+      return;
+    }
     var tempFile = targetPath.getParent().resolve(targetPath.getFileName() + ".tmp");
     try {
-      downloadArtifact(artifact, tempFile);
+      downloadTo(artifact.downloadUrl(), tempFile, artifact);
       if (!signatureVerifier.verify(tempFile, artifact)) {
         throw new IOException("Signature verification failed for " + artifact.artifactKey());
       }
@@ -267,6 +274,33 @@ public class BinariesArtifactSource implements ArtifactSource {
     }
   }
 
+  /**
+   * Downloads {@code plugin/<artifact>-<version>.jar} and {@code manifest.json}. A failed download or PGP check leaves
+   * the previous version directory in place. Retention cleanup runs only after both files are stored.
+   */
+  private void downloadExploded(BinariesArtifact artifact, Path jarPath) throws IOException {
+    var versionDirectory = jarPath.getParent().getParent();
+    if (versionDirectory == null) {
+      throw new IOException("Cannot resolve version directory for " + jarPath);
+    }
+    var tempJar = jarPath.resolveSibling(jarPath.getFileName() + ".tmp");
+    var manifestPath = versionDirectory.resolve(BinariesArtifact.MANIFEST_FILE_NAME);
+    var tempManifest = versionDirectory.resolve(BinariesArtifact.MANIFEST_FILE_NAME + ".tmp");
+    try {
+      downloadTo(artifact.downloadUrl(), tempJar, artifact);
+      downloadTo(artifact.manifestUrl(), tempManifest, artifact);
+      if (!signatureVerifier.verify(tempJar, artifact)) {
+        throw new IOException("Signature verification failed for " + artifact.artifactKey());
+      }
+      moveAtomically(tempJar, jarPath);
+      moveAtomically(tempManifest, manifestPath);
+      LOG.info("Successfully downloaded {} plugin version {}", artifact.artifactKey(), artifact.version());
+    } finally {
+      Files.deleteIfExists(tempJar);
+      Files.deleteIfExists(tempManifest);
+    }
+  }
+
   private static void moveAtomically(Path source, Path target) throws IOException {
     try {
       Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
@@ -275,8 +309,7 @@ public class BinariesArtifactSource implements ArtifactSource {
     }
   }
 
-  private void downloadArtifact(BinariesArtifact artifact, Path destination) throws IOException {
-    var url = String.format(artifact.urlPattern(), artifact.version());
+  private void downloadTo(String url, Path destination, BinariesArtifact artifact) throws IOException {
     var httpClient = httpClientProvider.getHttpClientWithoutAuth();
     LOG.info("Downloading {} plugin version {} from {}", artifact.artifactKey(), artifact.version(), url);
     try (var response = httpClient.get(url)) {
@@ -289,12 +322,20 @@ public class BinariesArtifactSource implements ArtifactSource {
     }
   }
 
+  private static Path manifestPath(Path jarPath) {
+    var versionDirectory = jarPath.getParent().getParent();
+    return versionDirectory.resolve(BinariesArtifact.MANIFEST_FILE_NAME);
+  }
+
   private Path buildArtifactLocalPath(BinariesArtifact artifact) {
     var artifactKey = artifact.artifactKey();
     var version = artifact.version();
     var base = cacheBaseDirectory.resolve(artifactKey).resolve(version);
     if (artifact.isArchive()) {
       return base;
+    }
+    if (artifact.isExploded()) {
+      return base.resolve("plugin").resolve(artifact.jarFileName());
     }
     return base.resolve(String.format("sonar-%s-plugin-%s.jar", artifactKey, version));
   }

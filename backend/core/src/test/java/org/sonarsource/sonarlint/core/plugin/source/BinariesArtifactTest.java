@@ -27,6 +27,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(SystemStubsExtension.class)
 class BinariesArtifactTest {
@@ -106,6 +107,28 @@ class BinariesArtifactTest {
       .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-net472.tar.gz");
     assertThat(BinariesArtifact.OMNISHARP_NET6.urlPattern())
       .isEqualTo("https://binaries.sonarsource.com/OmniSharp-Roslyn/%s/omnisharp-net6.0.tar.gz");
+  }
+
+  @Test
+  void should_describe_exploded_javascript_and_python_plugins() {
+    assertThat(BinariesArtifact.JAVASCRIPT.version()).isEqualTo("13.9.0.44793");
+    assertThat(BinariesArtifact.PYTHON.version()).isEqualTo("5.18.0.31561");
+    assertThat(BinariesArtifact.JAVASCRIPT.isExploded()).isTrue();
+    assertThat(BinariesArtifact.CFAMILY_PLUGIN.isExploded()).isFalse();
+    assertThat(BinariesArtifact.JAVASCRIPT.signatureResourcePath()).isEqualTo("ondemand/sonar-javascript-plugin.jar.asc");
+    assertThat(BinariesArtifact.PYTHON.signatureResourcePath()).isEqualTo("ondemand/sonar-python-plugin.jar.asc");
+    assertThat(BinariesArtifact.JAVASCRIPT.downloadUrl())
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-javascript-plugin/13.9.0.44793/plugin/sonar-javascript-plugin-13.9.0.44793.jar");
+    assertThat(BinariesArtifact.JAVASCRIPT.manifestUrl())
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-javascript-plugin/13.9.0.44793/manifest.json");
+    assertThat(BinariesArtifact.PYTHON.downloadUrl())
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-python-plugin/5.18.0.31561/plugin/sonar-python-plugin-5.18.0.31561.jar");
+    assertThat(BinariesArtifact.PYTHON.manifestUrl())
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-python-plugin/5.18.0.31561/manifest.json");
+    assertThat(BinariesArtifact.JAVASCRIPT.jarFileName()).isEqualTo("sonar-javascript-plugin-13.9.0.44793.jar");
+    assertThatThrownBy(BinariesArtifact.CFAMILY_PLUGIN::manifestUrl)
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("No manifest for cpp");
   }
 
 }

@@ -269,6 +269,34 @@
               <skipCache>false</skipCache>
             </configuration>
           </execution>
+          <!-- The exploded plugin/<artifact>-<version>.jar.asc is not published yet (BUILD-13154).
+               Bundle the signature of the flat JAR that binaries.sonarsource.com already serves. -->
+          <execution>
+            <id>download-javascript-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/Distribution/sonar-javascript-plugin/sonar-javascript-plugin-${javascript.version}.jar.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>sonar-javascript-plugin.jar.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
+          <execution>
+            <id>download-python-signature</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://binaries.sonarsource.com/Distribution/sonar-python-plugin/sonar-python-plugin-${python.version}.jar.asc</url>
+              <outputDirectory>${project.build.outputDirectory}/ondemand</outputDirectory>
+              <outputFileName>sonar-python-plugin.jar.asc</outputFileName>
+              <skipCache>false</skipCache>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>

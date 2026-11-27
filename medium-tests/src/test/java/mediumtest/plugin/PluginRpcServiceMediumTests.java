@@ -111,7 +111,7 @@ class PluginRpcServiceMediumTests {
   @SonarLintTest
   void should_return_unsupported_status_for_languages_with_no_plugin(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .start();
 
     var response = backend.getPluginService()
@@ -119,7 +119,7 @@ class PluginRpcServiceMediumTests {
       .join();
 
     assertThat(response.getPluginStatuses())
-      .filteredOn(s -> "Python".equals(s.getPluginName()))
+      .filteredOn(s -> "Java".equals(s.getPluginName()))
       .singleElement()
       .satisfies(status -> {
         assertThat(status.getState()).isEqualTo(PluginStateDto.UNSUPPORTED);
