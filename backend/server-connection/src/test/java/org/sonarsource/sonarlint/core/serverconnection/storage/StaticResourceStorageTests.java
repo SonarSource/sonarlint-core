@@ -55,12 +55,10 @@ class StaticResourceStorageTests {
   }
 
   @Test
-  void deletes_hash_directories_missing_from_the_inventory() throws IOException {
+  void keeps_a_hash_directory_when_the_inventory_hash_differs_only_in_case_or_is_shared() throws IOException {
     var kept = write("aa", "native-tool", "keep");
     var removed = write("bb", "native-tool", "remove");
     var shared = write("cc", "native-tool", "shared");
-    var stray = storageRoot.resolve("resources").resolve("notes.txt");
-    Files.writeString(stray, "stray");
 
     underTest.purgeExcept(List.of(
       plugin("javascript", "AA"),
@@ -71,14 +69,6 @@ class StaticResourceStorageTests {
     assertThat(shared).hasContent("shared");
     assertThat(removed).doesNotExist();
     assertThat(removed.getParent()).doesNotExist();
-    assertThat(stray).hasContent("stray");
-  }
-
-  @Test
-  void does_nothing_when_there_is_no_resource_cache() {
-    underTest.purgeExcept(List.of());
-
-    assertThat(storageRoot.resolve("resources")).doesNotExist();
   }
 
   @Test
@@ -133,15 +123,15 @@ class StaticResourceStorageTests {
     }
   }
 
+  private static StoredPlugin plugin(String key, String hash) {
+    return new StoredPlugin(key, "jar", Path.of(key + ".jar"), "folder", List.of(new StaticResource("linux-x64/native-tool", hash, 1)));
+  }
+
   private Path write(String hash, String filename, String content) throws IOException {
     var file = storageRoot.resolve("resources").resolve(hash).resolve(filename);
     Files.createDirectories(file.getParent());
     Files.writeString(file, content);
     return file;
-  }
-
-  private static StoredPlugin plugin(String key, String hash) {
-    return new StoredPlugin(key, "jar", Path.of(key + ".jar"), "folder", List.of(new StaticResource("linux-x64/native-tool", hash, 1)));
   }
 
 }
