@@ -107,6 +107,7 @@ public class ServerFixture {
   private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
   private static final String ORGANIZATION_PARAM = "&organization=";
   private static final String BRANCH_PARAM = "&branch=";
+  private static final String SOURCE_RAW_PATH = "/api/sources/raw?key=";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1463,11 +1464,11 @@ public class ServerFixture {
             allBranchIssues.add(serverIssue);
             return serverIssue;
           }).toArray(Message[]::new);
-          var branchParameter = branchName == null ? "" : BRANCH_PARAM + urlEncode(branchName);
+          var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
           mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter)
             .willReturn(aResponse().withResponseBody(protobufBodyDelimited(messages))));
         });
-        var branchParameter = branchName == null ? "" : BRANCH_PARAM + urlEncode(branchName);
+        var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
         mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey) + branchParameter)
           .willReturn(aResponse().withResponseBody(protobufBodyDelimited(allBranchIssues.toArray(new Message[0])))));
       }));
@@ -1549,18 +1550,18 @@ public class ServerFixture {
     private void registerSourceApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> pullRequest.sourceFileByComponentKey
         .forEach((componentKey, sourceFile) -> mockServer
-          .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
+          .stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         if (branchName != null) {
           branch.sourceFileByComponentKey
             .forEach((componentKey, sourceFile) -> mockServer
-              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+              .stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
         }
       }));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> branch.sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {
