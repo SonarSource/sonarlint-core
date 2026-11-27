@@ -106,6 +106,7 @@ public class ServerFixture {
   private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
   private static final String ORGANIZATION_PARAM = "&organization=";
+  private static final String BRANCH_PARAM = "&branch=";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1192,7 +1193,7 @@ public class ServerFixture {
         .append(urlEncode(projectKey))
         .append("&rules=");
       if (branchName != null) {
-        url.append("&branch=").append(urlEncode(branchName));
+        url.append(BRANCH_PARAM).append(urlEncode(branchName));
       }
       if (organizationKey != null) {
         url.append(ORGANIZATION_PARAM).append(urlEncode(organizationKey));
@@ -1247,7 +1248,7 @@ public class ServerFixture {
               return builder.build();
             }, toList())));
         var searchUrl = "/api/hotspots/search.protobuf?" + projectParameter + "=" + urlEncode(projectKey);
-        var branchParameter = branchName == null ? "" : ("&branch=" + urlEncode(branchName));
+        var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get(searchUrl + "&files=" + urlEncode(filePath) + branchParameter + FIRST_PAGE_PARAMS)
             .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -1308,7 +1309,7 @@ public class ServerFixture {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
               .concat(componentKeyParams(projectKey))
               .concat("&ps=1&p=1")
-              .concat("&branch=").concat(branchName);
+              .concat(BRANCH_PARAM).concat(branchName);
             mockServer.stubFor(get(searchUrl)
               .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
                 .addIssues(
@@ -1462,11 +1463,11 @@ public class ServerFixture {
             allBranchIssues.add(serverIssue);
             return serverIssue;
           }).toArray(Message[]::new);
-          var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+          var branchParameter = branchName == null ? "" : BRANCH_PARAM + urlEncode(branchName);
           mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter)
             .willReturn(aResponse().withResponseBody(protobufBodyDelimited(messages))));
         });
-        var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+        var branchParameter = branchName == null ? "" : BRANCH_PARAM + urlEncode(branchName);
         mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey) + branchParameter)
           .willReturn(aResponse().withResponseBody(protobufBodyDelimited(allBranchIssues.toArray(new Message[0])))));
       }));
@@ -1554,7 +1555,7 @@ public class ServerFixture {
         if (branchName != null) {
           branch.sourceFileByComponentKey
             .forEach((componentKey, sourceFile) -> mockServer
-              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
         }
       }));
 
