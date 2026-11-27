@@ -271,10 +271,6 @@ class ConnectedResourceFetcherTests {
     return fetcher(List.of(resource), bytes, new AtomicInteger());
   }
 
-  private ConnectedResourceFetcher fetcher(List<StaticResource> resources, byte[] bytes) {
-    return fetcher(resources, bytes, new AtomicInteger());
-  }
-
   private ConnectedResourceFetcher fetcher(StaticResource resource, byte[] bytes, AtomicInteger calls) {
     return fetcher(List.of(resource), bytes, calls);
   }
