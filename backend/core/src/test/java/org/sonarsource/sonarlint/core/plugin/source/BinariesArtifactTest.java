@@ -126,9 +126,13 @@ class BinariesArtifactTest {
     assertThat(BinariesArtifact.PYTHON.manifestUrl())
       .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-python-plugin/5.18.0.31561/manifest.json");
     assertThat(BinariesArtifact.JAVASCRIPT.jarFileName()).isEqualTo("sonar-javascript-plugin-13.9.0.44793.jar");
+    assertThat(BinariesArtifact.JAVASCRIPT.resourceUrl("linux-x64/native-tool"))
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-javascript-plugin/13.9.0.44793/resources/linux-x64/native-tool");
+    assertThat(BinariesArtifact.PYTHON.resourceUrl("models/base.bin"))
+      .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-python-plugin/5.18.0.31561/resources/models/base.bin");
     assertThatThrownBy(BinariesArtifact.CFAMILY_PLUGIN::manifestUrl)
       .isInstanceOf(IllegalStateException.class)
-      .hasMessage("No manifest for cpp");
+      .hasMessage("No exploded tree for cpp");
   }
 
 }

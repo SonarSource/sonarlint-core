@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.source.binaries;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
@@ -128,8 +129,31 @@ public enum BinariesArtifact {
    * URL of {@code manifest.json} beside the {@code plugin/} directory. Only exploded plugins have one.
    */
   public String manifestUrl() {
+    return explodedRootUrl() + MANIFEST_FILE_NAME;
+  }
+
+  /**
+   * URL of one file under {@code resources/}. {@code resourcePath} is appended as published, after the version is filled in.
+   */
+  public String resourceUrl(String resourcePath) {
+    return resourcesRootUrl() + resourcePath;
+  }
+
+  private String resourcesRootUrl() {
+    var root = explodedRootUrl();
+    return root + "resources/";
+  }
+
+  /**
+   * Local {@code manifest.json} downloaded beside the exploded plugin.
+   */
+  public Path localManifest(Path onDemandPluginsDirectory) {
+    return onDemandPluginsDirectory.resolve(artifactKey()).resolve(version()).resolve(MANIFEST_FILE_NAME);
+  }
+
+  private String explodedRootUrl() {
     if (!exploded) {
-      throw new IllegalStateException("No manifest for " + artifactKey());
+      throw new IllegalStateException("No exploded tree for " + artifactKey());
     }
     var jarUrl = urlPattern();
     var pluginSegment = "/plugin/";
@@ -137,7 +161,7 @@ public enum BinariesArtifact {
     if (index < 0) {
       throw new IllegalStateException("Exploded plugin URL has no plugin directory: " + jarUrl);
     }
-    return String.format(jarUrl.substring(0, index), version()) + "/" + MANIFEST_FILE_NAME;
+    return String.format(jarUrl.substring(0, index + 1), version());
   }
 
   public String jarFileName() {

@@ -39,10 +39,12 @@ import org.sonarsource.sonarlint.core.commons.tracing.Trace;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.PluginLifecycleService;
 import org.sonarsource.sonarlint.core.plugin.PluginsConfiguration;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.resources.ConnectedResourceFetcher;
+import org.sonarsource.sonarlint.core.plugin.resources.StandaloneResourceFetcher;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.springframework.context.event.EventListener;
@@ -53,6 +55,7 @@ public class AnalysisSchedulerCache {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Path workDir;
+  private final Path storageRoot;
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
   private final PluginsService pluginsService;
@@ -60,19 +63,22 @@ public class AnalysisSchedulerCache {
   private final NodeJsService nodeJsService;
   private final StorageService storageService;
   private final SonarQubeClientManager sonarQubeClientManager;
+  private final HttpClientProvider httpClientProvider;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
   private final ConcurrentHashMap<String, AnalysisScheduler> connectedSchedulerByConnectionId = new ConcurrentHashMap<>();
 
   public AnalysisSchedulerCache(UserPaths userPaths, ConfigurationRepository configurationRepository,
     NodeJsService nodeJsService, PluginsService pluginsService, PluginLifecycleService pluginLifecycleService, ClientFileSystemService clientFileSystemService,
-    StorageService storageService, SonarQubeClientManager sonarQubeClientManager) {
+    StorageService storageService, SonarQubeClientManager sonarQubeClientManager, HttpClientProvider httpClientProvider) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.pluginLifecycleService = pluginLifecycleService;
     this.nodeJsService = nodeJsService;
     this.storageService = storageService;
     this.sonarQubeClientManager = sonarQubeClientManager;
+    this.httpClientProvider = httpClientProvider;
     this.workDir = userPaths.getWorkDir();
+    this.storageRoot = userPaths.getStorageRoot();
     this.clientFileSystemService = clientFileSystemService;
   }
 
@@ -106,7 +112,7 @@ public class AnalysisSchedulerCache {
   private synchronized AnalysisScheduler getOrCreateStandaloneScheduler(@Nullable Trace trace) {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), null, trace);
+      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), standaloneResourceFetcher(), trace);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -140,8 +146,12 @@ public class AnalysisSchedulerCache {
     return new ConnectedResourceFetcher(connectionId, connection.plugins().getStoredPluginsByKey(), connection.staticResources(), sonarQubeClientManager);
   }
 
-  private SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration, @Nullable String connectionId) {
-    var resourceFetcher = connectionId == null ? null : connectedResourceFetcher(connectionId);
+  private ResourceFetcher standaloneResourceFetcher() {
+    return new StandaloneResourceFetcher(storageRoot, httpClientProvider);
+  }
+
+  SchedulerResetConfiguration toSchedulerResetConfiguration(PluginsConfiguration pluginsConfiguration, @Nullable String connectionId) {
+    var resourceFetcher = connectionId == null ? standaloneResourceFetcher() : connectedResourceFetcher(connectionId);
     return new SchedulerResetConfiguration(buildSchedulerConfiguration(pluginsConfiguration.extraProperties(), resourceFetcher, null), pluginsConfiguration.plugins());
   }
 

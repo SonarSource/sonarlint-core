@@ -29,6 +29,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.SonarQubeClientManager;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.plugin.resources.StandaloneResourceFetcher;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.DownloadBatch;
@@ -65,7 +67,7 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class));
+      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class), mock(HttpClientProvider.class));
 
     cache.reloadStandalonePlugins();
 
@@ -81,7 +83,7 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(userPaths,
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class), mock(HttpClientProvider.class));
 
     cache.reloadPlugins("conn1");
 
@@ -100,7 +102,7 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class), mock(HttpClientProvider.class));
 
     assertThat(cache.configurationAfterUnload("conn").get()).isNotNull();
 
@@ -117,11 +119,25 @@ class AnalysisSchedulerCacheTest {
     var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
       mock(ConfigurationRepository.class), mock(NodeJsService.class),
       mock(PluginsService.class), pluginLifecycleService,
-      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class));
+      mock(ClientFileSystemService.class), resources.storage(), mock(SonarQubeClientManager.class), mock(HttpClientProvider.class));
 
     cache.reloadPlugins("conn");
 
     verify(pluginLifecycleService).unloadPluginsAndEvictCaches("conn");
+  }
+
+  @Test
+  void standalone_reset_uses_the_binaries_resource_fetcher(@TempDir Path tempDir) {
+    var cache = new AnalysisSchedulerCache(mockUserPaths(tempDir),
+      mock(ConfigurationRepository.class), mock(NodeJsService.class),
+      mock(PluginsService.class), mock(PluginLifecycleService.class),
+      mock(ClientFileSystemService.class), mock(StorageService.class), mock(SonarQubeClientManager.class),
+      mock(HttpClientProvider.class));
+
+    var reset = cache.toSchedulerResetConfiguration(
+      new PluginsConfiguration(mock(ArtifactsLoadingResult.class), mock(LoadedPlugins.class), Map.of(), mock(DownloadBatch.class)), null);
+
+    assertThat(reset.config().getResourceFetcher()).isInstanceOf(StandaloneResourceFetcher.class);
   }
 
   private static Storage staticResources(String connectionId) {
@@ -142,6 +158,7 @@ class AnalysisSchedulerCacheTest {
   private static UserPaths mockUserPaths(Path tempDir) {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getWorkDir()).thenReturn(tempDir.resolve("work"));
+    when(userPaths.getStorageRoot()).thenReturn(tempDir.resolve("storage"));
     return userPaths;
   }
 
