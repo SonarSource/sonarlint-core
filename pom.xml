@@ -27,7 +27,7 @@
     <module>buildSrc/maven-shade-ext-bnd-transformer</module>
     <module>backend</module>
     <module>client</module>
-    <module>medium-tests</module>
+    <module>rpc-integration-tests</module>
     <module>report-aggregate</module>
     <module>rpc-protocol</module>
     <module>test-utils</module>
@@ -78,7 +78,7 @@
     <!-- CI provides mvn on PATH; skip the mvnw wrapper whose distribution download is not authenticated -->
     <sonar.sca.mavenIgnoreWrapper>true</sonar.sca.mavenIgnoreWrapper>
     <sonar.organization>sonarsource</sonar.organization>
-    <!-- 2.5.250 and 2.5.252 cannot read files left by a 2.4.x crash while a transaction was open (SLCORE-2681), StorageUpgradeMediumTests checks it -->
+    <!-- 2.5.250 and 2.5.252 cannot read files left by a 2.4.x crash while a transaction was open (SLCORE-2681), StorageUpgradeIntegrationTests checks it -->
     <h2.version>2.4.240</h2.version>
     <!-- More recent versions require Java 21 -->
     <jooq.version>3.21.10</jooq.version>

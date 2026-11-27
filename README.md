@@ -43,19 +43,26 @@ Building
 
 To build sources locally follow these instructions.
 
-### Build and Run Unit Tests
+### Build and run unit and integration tests
 
 #### Prerequisites
 
-Some medium tests load plugins relying on Node.js, so make sure the latest LTS version is installed and `node` is in the PATH.
+Some integration tests load plugins relying on Node.js, so make sure the latest LTS version is installed and `node` is in the PATH.
 
 Execute from the project base directory:
 
     mvn verify
 
-### Run integration tests
+The default reactor includes the RPC integration suite in `rpc-integration-tests`. It exercises
+the real backend against a test client and includes launcher smoke tests that unpack and start a SLOOP distribution.
 
-See [Running Integration Tests](its/README.md)
+To run one RPC integration test on Linux without preparing the launcher distribution:
+
+    mvn verify -pl rpc-integration-tests -am -P '!its-linux' -Dtest=InitializationIntegrationTests -Dsurefire.failIfNoSpecifiedTests=false
+
+### Run standalone RPC, Server, Cloud and CLI compatibility integration tests
+
+See [running the additional integration suites](its/README.md).
 
 Documentation
 -------------

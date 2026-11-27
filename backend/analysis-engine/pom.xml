@@ -76,7 +76,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-open-source-plugins-for-mediumtests</id>
+            <id>copy-open-source-plugins-for-integration-tests</id>
             <phase>generate-test-resources</phase>
             <goals>
               <goal>copy</goal>
