@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.test.utils.server.BinariesServerFixture;
 public class SignedCfamilyPluginGenerator {
 
   private static final String PUBLIC_KEY_RESOURCE_PATH = "ondemand/sonarsource-public.key";
-  private static final String JAR_RESOURCE_PATH = BinariesServerFixture.FILES_CLASSPATH_ROOT + "/__files/fake-cpp-plugin.jar";
   private static final int KEY_SIZE = 2048;
 
   private SignedCfamilyPluginGenerator() {
@@ -62,14 +61,6 @@ public class SignedCfamilyPluginGenerator {
   }
 
   public static void generate(Path outputDirectory) throws IOException, GeneralSecurityException, PGPException {
-    var jarPath = outputDirectory.resolve(JAR_RESOURCE_PATH);
-    Files.createDirectories(jarPath.getParent());
-    var generatedJar = SonarPluginBuilder.newSonarPlugin(BinariesArtifact.CFAMILY_PLUGIN.artifactKey()).generate(jarPath.getParent());
-    Files.move(generatedJar, jarPath, StandardCopyOption.REPLACE_EXISTING);
-    sign(jarPath, outputDirectory);
-  }
-
-  private static void sign(Path jarPath, Path outputDirectory) throws IOException, GeneralSecurityException, PGPException {
     var provider = new BouncyCastleProvider();
     var keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider);
     keyPairGenerator.initialize(KEY_SIZE);
@@ -77,13 +68,21 @@ public class SignedCfamilyPluginGenerator {
     var signerBuilder = new JcaPGPContentSignerBuilder(PublicKeyAlgorithmTags.RSA_GENERAL, HashAlgorithmTags.SHA256).setProvider(provider);
     var keyRingGenerator = new PGPKeyRingGenerator(PGPSignature.POSITIVE_CERTIFICATION, keyPair, "SonarLint test signing key",
       new JcaPGPDigestCalculatorProviderBuilder().build().get(HashAlgorithmTags.SHA1), null, null, signerBuilder, null);
+    writeArmored(outputDirectory.resolve(PUBLIC_KEY_RESOURCE_PATH), keyRingGenerator.generatePublicKeyRing()::encode);
+    writeSignedPlugin(outputDirectory, BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar", keyPair, signerBuilder);
+    writeSignedPlugin(outputDirectory, BinariesArtifact.JAVASCRIPT, "fake-javascript-plugin.jar", keyPair, signerBuilder);
+  }
 
+  private static void writeSignedPlugin(Path outputDirectory, BinariesArtifact artifact, String fileName, JcaPGPKeyPair keyPair,
+    JcaPGPContentSignerBuilder signerBuilder) throws IOException, PGPException {
+    var jarPath = outputDirectory.resolve(BinariesServerFixture.FILES_CLASSPATH_ROOT + "/__files/" + fileName);
+    Files.createDirectories(jarPath.getParent());
+    var generatedJar = SonarPluginBuilder.newSonarPlugin(artifact.artifactKey()).generate(jarPath.getParent());
+    Files.move(generatedJar, jarPath, StandardCopyOption.REPLACE_EXISTING);
     var signatureGenerator = new PGPSignatureGenerator(signerBuilder, keyPair.getPublicKey());
     signatureGenerator.init(PGPSignature.BINARY_DOCUMENT, keyPair.getPrivateKey());
     signatureGenerator.update(Files.readAllBytes(jarPath));
-
-    writeArmored(outputDirectory.resolve(PUBLIC_KEY_RESOURCE_PATH), keyRingGenerator.generatePublicKeyRing()::encode);
-    writeArmored(outputDirectory.resolve(BinariesArtifact.CFAMILY_PLUGIN.signatureResourcePath()), signatureGenerator.generate()::encode);
+    writeArmored(outputDirectory.resolve(artifact.signatureResourcePath()), signatureGenerator.generate()::encode);
   }
 
   private static void writeArmored(Path target, Encoder encoder) throws IOException {

@@ -140,8 +140,15 @@ public class BinariesServerFixture {
       return mockServer.countRequestsMatching(getRequestedFor(urlEqualTo(pathOf(artifact))).build()).getCount();
     }
 
+    public int manifestRequestCount(BinariesArtifact artifact) {
+      return mockServer.countRequestsMatching(getRequestedFor(urlEqualTo(manifestPath(artifact))).build()).getCount();
+    }
+
     private void registerArtifact(BinariesArtifact artifact, ResponseDefinitionBuilder response) {
       mockServer.stubFor(get(urlEqualTo(pathOf(artifact))).willReturn(response));
+      if (artifact.isExploded()) {
+        mockServer.stubFor(get(urlEqualTo(manifestPath(artifact))).willReturn(aResponse().withStatus(200).withBody("{}")));
+      }
     }
 
     private void restoreUrlProperty() {
@@ -153,7 +160,11 @@ public class BinariesServerFixture {
     }
 
     private static String pathOf(BinariesArtifact artifact) {
-      return URI.create(String.format(artifact.urlPattern(), artifact.version())).getPath();
+      return URI.create(artifact.downloadUrl()).getPath();
+    }
+
+    private static String manifestPath(BinariesArtifact artifact) {
+      return URI.create(artifact.manifestUrl()).getPath();
     }
   }
 }

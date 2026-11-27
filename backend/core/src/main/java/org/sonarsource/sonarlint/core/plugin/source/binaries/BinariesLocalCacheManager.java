@@ -37,6 +37,26 @@ public class BinariesLocalCacheManager {
   private static final long RETENTION_DAYS = 60;
 
   /**
+   * Deletes every version directory except {@code currentVersion}. Used after an exploded plugin download has passed
+   * signature verification. A failed download does not call this, so the previous version stays.
+   *
+   * @param cacheDirectory the plugin directory (e.g., {storageRoot}/ondemand-plugins/javascript)
+   * @param currentVersion the version that was just verified
+   */
+  void deletePreviousVersions(Path cacheDirectory, String currentVersion) {
+    if (!Files.isDirectory(cacheDirectory)) {
+      return;
+    }
+    try (var stream = Files.list(cacheDirectory)) {
+      stream.filter(Files::isDirectory)
+        .filter(versionDir -> !versionDir.getFileName().toString().equals(currentVersion))
+        .forEach(BinariesLocalCacheManager::deleteVersionDirectory);
+    } catch (IOException e) {
+      LOG.debug("Error deleting previous plugin versions", e);
+    }
+  }
+
+  /**
    * Cleans up old plugin versions from the cache directory.
    *
    * @param cacheDirectory the base cache directory (e.g., {storageRoot}/cache/ondemand-plugins/cpp)

@@ -107,6 +107,29 @@ class BinariesLocalCacheManagerTest {
   }
 
   @Test
+  void should_delete_every_previous_version_after_a_verified_exploded_download() throws IOException {
+    var cacheDir = tempDir.resolve("javascript");
+    var currentDir = cacheDir.resolve("2.0");
+    var recentDir = cacheDir.resolve("1.9");
+    var oldDir = cacheDir.resolve("1.0");
+    Files.createDirectories(currentDir);
+    Files.createDirectories(recentDir);
+    Files.createDirectories(oldDir);
+    Files.writeString(recentDir.resolve("plugin.txt"), "recent");
+
+    underTest.deletePreviousVersions(cacheDir, "2.0");
+
+    assertThat(currentDir).exists();
+    assertThat(recentDir).doesNotExist();
+    assertThat(oldDir).doesNotExist();
+  }
+
+  @Test
+  void should_do_nothing_when_deleting_previous_versions_of_a_missing_plugin() {
+    Assertions.assertDoesNotThrow(() -> underTest.deletePreviousVersions(tempDir.resolve("missing"), "1.0"));
+  }
+
+  @Test
   void should_do_nothing_when_cache_directory_is_empty() throws IOException {
     var cacheDir = tempDir.resolve("cpp");
     Files.createDirectories(cacheDir);

@@ -97,6 +97,9 @@
     <cfamily.version>6.86.0.113840</cfamily.version>
     <csharp.version>10.37.0.15768</csharp.version>
     <omnisharp.version>1.39.15.2-sonar</omnisharp.version>
+    <!-- Versions already used by this repository. The exploded tree is not published yet (BUILD-13154). -->
+    <javascript.version>13.9.0.44793</javascript.version>
+    <python.version>5.18.0.31561</python.version>
   </properties>
 
   <dependencyManagement>

@@ -42,6 +42,27 @@ import static org.awaitility.Awaitility.await;
 class OnDemandAnalyzersMediumTests {
 
   @SonarLintTest
+  void should_download_exploded_javascript_and_its_manifest(SonarLintTestHarness harness) {
+    var binariesServer = harness.fakeBinariesServerBuilder()
+      .withArtifactFromResource(BinariesArtifact.JAVASCRIPT, "fake-javascript-plugin.jar")
+      .start();
+
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.JS)
+      .start(client);
+
+    await().atMost(15, SECONDS).untilAsserted(() -> {
+      var statuses = backend.getPluginService().getPluginStatuses(new GetPluginStatusesParams(null)).get().getPluginStatuses();
+      var javascript = statuses.stream().filter(status -> "JavaScript".equals(status.getPluginName())).findFirst();
+      assertThat(javascript).isPresent();
+      assertThat(javascript.get().getState()).isEqualTo(PluginStateDto.ACTIVE);
+    });
+    assertThat(binariesServer.requestCount(BinariesArtifact.JAVASCRIPT)).isEqualTo(1);
+    assertThat(binariesServer.manifestRequestCount(BinariesArtifact.JAVASCRIPT)).isEqualTo(1);
+  }
+
+  @SonarLintTest
   void should_download_and_cache_cfamily_in_standalone_mode(SonarLintTestHarness harness) {
     harness.fakeBinariesServerBuilder()
       .withArtifactFromResource(BinariesArtifact.CFAMILY_PLUGIN, "fake-cpp-plugin.jar")

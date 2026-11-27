@@ -72,9 +72,16 @@ Two factory methods select the right set of paths:
 
 #### `BinariesArtifactSource`
 
-Backed by `binaries.sonarsource.com`. Handles both **plugins** (CFamily, C# OSS) and **plugin
+Backed by `binaries.sonarsource.com`. Handles both **plugins** (CFamily, C# OSS, JavaScript, Python) and **plugin
 dependencies** (OmniSharp distributions). Artifacts are cached under
 `<storage-root>/ondemand-plugins/`.
+
+JavaScript and Python are ZIP plugins. They are downloaded from the exploded tree
+`Distribution/<artifact>/{version}/`: `plugin/<artifact>-{version}.jar` and `manifest.json`.
+The JAR is checked with the PGP signature bundled in SLCORE. After that check passes, every other
+version directory of that plugin is deleted. A failed download leaves the previous version in place.
+BUILD-13154 has not published this tree yet, so the URLs follow the documented ZIP layout. The bundled
+signature is the one published today beside the flat JAR.
 
 - `listAvailableArtifacts(Set<SonarLanguage> enabledLanguages)` lists artifacts available on Binaries.
 - `load(keys)` checks the cache first. For each missing artifact, it returns a

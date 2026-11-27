@@ -266,10 +266,70 @@ class BinariesArtifactSourceTest {
 
     var listed = source.listAvailableArtifacts(EnumSet.allOf(SonarLanguage.class));
     // Only one unique plugin key for C-family: "cpp"
-    assertThat(listed).hasSize(5);
+    assertThat(listed).hasSize(7);
     assertThat(listed)
       .extracting(AvailableArtifact::key)
-      .containsOnly("cpp", "csharp", "omnisharp-mono", "omnisharp-net472", "omnisharp-net6");
+      .containsOnly("cpp", "csharp", "omnisharp-mono", "omnisharp-net472", "omnisharp-net6", "javascript", "python");
+  }
+
+  @Test
+  void load_should_store_exploded_plugin_and_delete_previous_version_after_signature_check() throws Exception {
+    var requestedUrls = new CopyOnWriteArrayList<String>();
+    mockExplodedDownloads(requestedUrls, true, true);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
+    var source = buildSource(Executors.newCachedThreadPool(), new BinariesLocalCacheManager());
+    var version = BinariesArtifact.JAVASCRIPT.version();
+    var pluginDirectory = tempDir.resolve("ondemand-plugins").resolve("javascript");
+    var previous = pluginDirectory.resolve("0.9");
+    Files.createDirectories(previous);
+    Files.writeString(previous.resolve("previous.txt"), "keep-until-success");
+
+    source.load(Set.of("javascript")).pendingDownloads().forEach(BinariesArtifactSourceTest::startDownload);
+
+    var jarPath = pluginDirectory.resolve(version).resolve("plugin").resolve("sonar-javascript-plugin-" + version + ".jar");
+    var manifestPath = pluginDirectory.resolve(version).resolve(BinariesArtifact.MANIFEST_FILE_NAME);
+    await().atMost(10, TimeUnit.SECONDS).until(() -> capturedStatuses.size() == BinariesArtifact.JAVASCRIPT.getLanguages().size());
+    assertThat(requestedUrls).containsExactly(BinariesArtifact.JAVASCRIPT.downloadUrl(), BinariesArtifact.JAVASCRIPT.manifestUrl());
+    assertThat(jarPath).isRegularFile();
+    assertThat(manifestPath).content().isEqualTo("{\"resources\":[]}");
+    assertThat(previous).doesNotExist();
+    assertThat(capturedStatuses).allSatisfy(status -> {
+      assertThat(status.state()).isEqualTo(ArtifactState.ACTIVE);
+      assertThat(status.path()).isEqualTo(jarPath);
+    });
+  }
+
+  @Test
+  void load_should_keep_previous_version_when_exploded_download_fails() throws Exception {
+    mockExplodedDownloads(new CopyOnWriteArrayList<>(), true, false);
+    var source = buildSource(Executors.newCachedThreadPool(), new BinariesLocalCacheManager());
+    var previous = tempDir.resolve("ondemand-plugins").resolve("javascript").resolve("0.9");
+    Files.createDirectories(previous);
+    Files.writeString(previous.resolve("previous.txt"), "still-here");
+
+    var downloadFuture = source.load(Set.of("javascript")).pendingDownloads().getFirst().starter().get();
+
+    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
+    assertThat(previous).isDirectory();
+    assertThat(tempDir.resolve("ondemand-plugins").resolve("javascript").resolve(BinariesArtifact.JAVASCRIPT.version())
+      .resolve("plugin")).isEmptyDirectory();
+  }
+
+  @Test
+  void load_should_keep_previous_version_when_exploded_signature_check_fails() throws Exception {
+    mockExplodedDownloads(new CopyOnWriteArrayList<>(), true, true);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(false);
+    var source = buildSource(Executors.newCachedThreadPool(), new BinariesLocalCacheManager());
+    var previous = tempDir.resolve("ondemand-plugins").resolve("python").resolve("1.0");
+    Files.createDirectories(previous);
+
+    var downloadFuture = source.load(Set.of("python")).pendingDownloads().getFirst().starter().get();
+
+    await().atMost(5, TimeUnit.SECONDS).until(downloadFuture::isCompletedExceptionally);
+    assertThat(previous).isDirectory();
+    var versionDir = tempDir.resolve("ondemand-plugins").resolve("python").resolve(BinariesArtifact.PYTHON.version());
+    assertThat(versionDir.resolve("plugin")).isEmptyDirectory();
+    assertThat(versionDir.resolve(BinariesArtifact.MANIFEST_FILE_NAME)).doesNotExist();
   }
 
   private static void startDownload(PendingDownload download) {
@@ -281,9 +341,30 @@ class BinariesArtifactSourceTest {
   }
 
   private BinariesArtifactSource buildSource(ExecutorService executor) {
+    return buildSource(executor, cacheManager);
+  }
+
+  private BinariesArtifactSource buildSource(ExecutorService executor, BinariesLocalCacheManager binariesLocalCacheManager) {
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(tempDir);
-    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, executor, signatureVerifier, cacheManager);
+    return new BinariesArtifactSource(userPaths, httpClientProvider, eventPublisher, executor, signatureVerifier, binariesLocalCacheManager);
+  }
+
+  private void mockExplodedDownloads(List<String> requestedUrls, boolean jarSucceeds, boolean manifestSucceeds) {
+    var httpClient = mock(HttpClient.class);
+    when(httpClient.get(anyString())).thenAnswer(invocation -> {
+      var url = invocation.getArgument(0, String.class);
+      requestedUrls.add(url);
+      var manifest = url.endsWith("/" + BinariesArtifact.MANIFEST_FILE_NAME);
+      var response = mock(HttpClient.Response.class);
+      var success = manifest ? manifestSucceeds : jarSucceeds;
+      when(response.isSuccessful()).thenReturn(success);
+      when(response.code()).thenReturn(success ? 200 : 404);
+      var body = manifest ? "{\"resources\":[]}" : "jar-bytes";
+      when(response.bodyAsStream()).thenAnswer(ignored -> new ByteArrayInputStream(body.getBytes()));
+      return response;
+    });
+    when(httpClientProvider.getHttpClientWithoutAuth()).thenReturn(httpClient);
   }
 
   private void mockSuccessfulHttpClient() throws Exception {
