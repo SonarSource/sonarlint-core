@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin.resources;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +44,7 @@ import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSou
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -67,7 +71,7 @@ class StandaloneResourceFetcherTests {
     assertThat(Files.readAllBytes(first)).isEqualTo(bytes);
     assertThat(Files.readAllBytes(second)).isEqualTo(bytes);
     assertThat(second).isNotEqualTo(first);
-    assertThat(first.getParent()).isEqualTo(storage.resolve("tmp"));
+    assertThat(first).hasParentRaw(storage.resolve("tmp"));
     assertThat(calls).hasValue(2);
     assertThat(urls).containsExactly(
       BinariesArtifact.JAVASCRIPT.resourceUrl("linux-x64/native-tool"),
@@ -142,6 +146,75 @@ class StandaloneResourceFetcherTests {
   }
 
   @Test
+  void rejects_a_resource_with_a_blank_hash() throws IOException {
+    writeManifest("javascript", "linux-x64/native-tool", "", 1);
+    var fetcher = fetcher(url -> new byte[0]);
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("Plugin 'javascript' has no hash for static resource 'linux-x64/native-tool'");
+  }
+
+  @Test
+  void rejects_a_manifest_without_static_resources() throws IOException {
+    var manifest = BinariesArtifact.JAVASCRIPT.localManifest(storage.resolve(BinariesArtifactSource.CACHE_SUBDIR));
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(manifest, "{}");
+    var fetcher = fetcher(url -> new byte[0]);
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("Plugin 'javascript' has no static resource 'linux-x64/native-tool'");
+  }
+
+  @Test
+  void rejects_an_absolute_resource_path() {
+    var fetcher = fetcher(url -> new byte[0]);
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "/linux-x64/native-tool"))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Invalid static resource path: /linux-x64/native-tool");
+  }
+
+  @Test
+  void downloads_a_resource_through_the_http_client() throws IOException {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    writeManifest("javascript", "linux-x64/native-tool", DigestUtils.sha256Hex(bytes), bytes.length);
+    var response = mock(HttpClient.Response.class);
+    when(response.isSuccessful()).thenReturn(true);
+    when(response.bodyAsStream()).thenReturn(new ByteArrayInputStream(bytes));
+    var client = mock(HttpClient.class);
+    when(client.get(anyString())).thenReturn(response);
+    var provider = mock(HttpClientProvider.class);
+    when(provider.getHttpClientWithoutAuth()).thenReturn(client);
+    var fetcher = new StandaloneResourceFetcher(storage, provider);
+
+    assertThat(fetcher.fetch("javascript", "linux-x64/native-tool")).hasContent("native");
+  }
+
+  @Test
+  void reports_an_io_failure_while_downloading() throws IOException {
+    writeManifest("javascript", "linux-x64/native-tool", "abc", 1);
+    var response = mock(HttpClient.Response.class);
+    when(response.isSuccessful()).thenReturn(true);
+    when(response.bodyAsStream()).thenReturn(new InputStream() {
+      @Override
+      public int read() throws IOException {
+        throw new IOException("broken");
+      }
+    });
+    var client = mock(HttpClient.class);
+    when(client.get(anyString())).thenReturn(response);
+    var provider = mock(HttpClientProvider.class);
+    when(provider.getHttpClientWithoutAuth()).thenReturn(client);
+    var fetcher = new StandaloneResourceFetcher(storage, provider);
+
+    assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
+      .isInstanceOf(UncheckedIOException.class)
+      .hasMessageContaining("Failed to download static resource");
+  }
+
+  @Test
   void reports_an_http_failure_from_binaries() throws IOException {
     writeManifest("javascript", "linux-x64/native-tool", "abc", 1);
     var response = mock(HttpClient.Response.class);
@@ -186,7 +259,7 @@ class StandaloneResourceFetcherTests {
     var extracted = fetcher.fetchAndExtract("python", "tools/native.tar.gz");
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(extracted.getParent()).isEqualTo(storage.resolve("tmp"));
+    assertThat(extracted).hasParentRaw(storage.resolve("tmp"));
   }
 
   @Test
