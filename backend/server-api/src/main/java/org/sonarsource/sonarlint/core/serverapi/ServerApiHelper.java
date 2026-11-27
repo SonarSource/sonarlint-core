@@ -293,6 +293,11 @@ public class ServerApiHelper {
     return endpointParams.getBaseUrl();
   }
 
+  @CheckForNull
+  public String getCdnBaseUrl() {
+    return endpointParams.getCdnBaseUrl();
+  }
+
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
     Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker) {
     getPaginated(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, cancelChecker, "p", "ps");

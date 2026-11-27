@@ -24,10 +24,18 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -56,6 +64,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -96,6 +105,9 @@ public class ServerFixture {
 
   private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
+  private static final String ORGANIZATION_PARAM = "&organization=";
+  private static final String BRANCH_PARAM = "&branch=";
+  private static final String SOURCE_RAW_PREFIX = "/api/sources/raw?key=";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -222,6 +234,8 @@ public class ServerFixture {
       private String hash = "hash";
       private Path jarPath;
       private boolean sonarLintSupported = true;
+      private String staticResourceFolder;
+      private final List<StaticResourceFixture> staticResources = new ArrayList<>();
 
       public ServerPluginBuilder withHash(String hash) {
         this.hash = hash;
@@ -236,6 +250,92 @@ public class ServerFixture {
       public ServerPluginBuilder withSonarLintSupported(boolean sonarLintSupported) {
         this.sonarLintSupported = sonarLintSupported;
         return this;
+      }
+
+      public ServerPluginBuilder withStaticResourceFolder(String staticResourceFolder) {
+        this.staticResourceFolder = staticResourceFolder;
+        return this;
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, byte[] content) {
+        return withStaticResource(path, sha256(content), content);
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, String hash, byte[] content) {
+        staticResources.add(new StaticResourceFixture(path, hash, content.length, content, null, null));
+        return this;
+      }
+
+      public ServerPluginBuilder withStaticResource(String path, UnaryOperator<StaticResourceBuilder> resource) {
+        var builder = new StaticResourceBuilder(path);
+        staticResources.add(resource.apply(builder).build());
+        return this;
+      }
+
+      public static class StaticResourceBuilder {
+        private final String path;
+        private String hash;
+        private long size;
+        private byte[] content = new byte[0];
+        private Integer status;
+        private Fault fault;
+
+        private StaticResourceBuilder(String path) {
+          this.path = path;
+        }
+
+        public StaticResourceBuilder withContent(byte[] content) {
+          this.content = content;
+          this.size = content.length;
+          return this;
+        }
+
+        public StaticResourceBuilder withHash(String hash) {
+          this.hash = hash;
+          return this;
+        }
+
+        public StaticResourceBuilder withStatus(int status) {
+          this.status = status;
+          return this;
+        }
+
+        public StaticResourceBuilder withEmptyResponse() {
+          this.fault = Fault.EMPTY_RESPONSE;
+          return this;
+        }
+
+        private StaticResourceFixture build() {
+          return new StaticResourceFixture(path, hash != null ? hash : sha256(content), size, content, status, fault);
+        }
+      }
+
+      private static String sha256(byte[] content) {
+        try {
+          return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException e) {
+          throw new IllegalStateException(e);
+        }
+      }
+
+      private static final class StaticResourceFixture {
+        private final String path;
+        private final String hash;
+        private final long size;
+        private final byte[] content;
+        @Nullable
+        private final Integer status;
+        @Nullable
+        private final Fault fault;
+
+        private StaticResourceFixture(String path, String hash, long size, byte[] content, @Nullable Integer status, @Nullable Fault fault) {
+          this.path = path;
+          this.hash = hash;
+          this.size = size;
+          this.content = content;
+          this.status = status;
+          this.fault = fault;
+        }
       }
     }
 
@@ -908,6 +1008,7 @@ public class ServerFixture {
     private void registerPluginsApiResponses() {
       registerPluginsInstalledResponses();
       registerPluginsDownloadResponses();
+      registerStaticResourceResponses();
     }
 
     private void registerPluginsInstalledResponses() {
@@ -916,13 +1017,62 @@ public class ServerFixture {
           pluginsByKey.entrySet().stream().map(
             entry -> {
               var pluginKey = entry.getKey();
-              return "{\"key\": \"" + pluginKey + "\", " +
-                "\"hash\": \"" + entry.getValue().hash + "\", " +
-                "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
-                "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
+              return installedPluginJson(pluginKey, entry.getValue());
             })
             .collect(Collectors.joining(", "))
           + "]}")));
+    }
+
+    private static String installedPluginJson(String pluginKey, AbstractServerBuilder.ServerPluginBuilder plugin) {
+      var json = new StringBuilder();
+      json.append("{\"key\": \"").append(pluginKey).append("\", ");
+      json.append("\"hash\": \"").append(plugin.hash).append("\", ");
+      json.append("\"filename\": \"").append(plugin.jarPath.getFileName()).append("\", ");
+      json.append("\"sonarLintSupported\": ").append(plugin.sonarLintSupported);
+      if (plugin.staticResourceFolder != null) {
+        json.append(", \"staticResourceFolder\": \"").append(plugin.staticResourceFolder).append('"');
+      }
+      if (!plugin.staticResources.isEmpty()) {
+        json.append(", \"staticResources\": [");
+        json.append(plugin.staticResources.stream()
+          .map(resource -> "{\"path\": \"" + resource.path + "\", \"hash\": \"" + resource.hash + "\", \"size\": " + resource.size + "}")
+          .collect(Collectors.joining(", ")));
+        json.append(']');
+      }
+      json.append('}');
+      return json.toString();
+    }
+
+    private void registerStaticResourceResponses() {
+      pluginsByKey.forEach((pluginKey, plugin) -> plugin.staticResources.forEach(resource -> {
+        stubStaticResource(encodeStaticPath("/static/" + pluginKey + "/" + resource.path), resource);
+        if (plugin.staticResourceFolder != null) {
+          stubStaticResource(encodeCdnPath("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path), resource);
+        }
+      }));
+    }
+
+    private static String encodeStaticPath(String path) {
+      return Stream.of(path.split("/", -1))
+        .map(segment -> URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20"))
+        .collect(Collectors.joining("/"));
+    }
+
+    private static String encodeCdnPath(String path) {
+      try {
+        return new URI(null, null, path, null).toASCIIString();
+      } catch (URISyntaxException e) {
+        throw new IllegalArgumentException(e);
+      }
+    }
+
+    private void stubStaticResource(String path, AbstractServerBuilder.ServerPluginBuilder.StaticResourceFixture resource) {
+      if (resource.fault != null) {
+        mockServer.stubFor(get(path).willReturn(aResponse().withFault(resource.fault)));
+        return;
+      }
+      var status = resource.status != null ? resource.status : responseCodes.statusCode;
+      mockServer.stubFor(get(path).willReturn(aResponse().withStatus(status).withBody(resource.content)));
     }
 
     private void registerPluginsDownloadResponses() {
@@ -944,7 +1094,7 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var urlBuilder = new StringBuilder("/api/qualityprofiles/search.protobuf?project=" + projectKey);
         if (project.organizationKey != null) {
-          urlBuilder.append("&organization=").append(project.organizationKey);
+          urlBuilder.append(ORGANIZATION_PARAM).append(project.organizationKey);
         }
         mockServer.stubFor(get(urlBuilder.toString())
           .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
@@ -968,7 +1118,7 @@ public class ServerFixture {
       qualityProfilesByKey.forEach((qualityProfileKey, qualityProfile) -> {
         var url = "/api/rules/search.protobuf?qprofile=" + qualityProfileKey;
         if (qualityProfile.organizationKey != null) {
-          url += "&organization=" + qualityProfile.organizationKey;
+          url += ORGANIZATION_PARAM + qualityProfile.organizationKey;
         }
         url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -987,9 +1137,9 @@ public class ServerFixture {
       var taintActiveRulesByKey = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream())
         .filter(entry -> TAINT_REPOS_BY_LANGUAGE.containsValue(entry.getKey())).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
       qualityProfilesByKey.values().stream().map(qp -> qp.organizationKey).collect(Collectors.toSet()).forEach(organizationKey -> {
-        var url = "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity";
+        var url = "/api/rules/search.protobuf?repositories=" + taintRepositories();
         if (organizationKey != null) {
-          url += "&organization=" + organizationKey;
+          url += ORGANIZATION_PARAM + organizationKey;
         }
         url += "&f=repo&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -1028,6 +1178,28 @@ public class ServerFixture {
               .build())
             .build()))));
       });
+    }
+
+    private static String taintRepositories() {
+      return Stream.of(SonarLanguage.values())
+        .map(TAINT_REPOS_BY_LANGUAGE::get)
+        .filter(Objects::nonNull)
+        .collect(Collectors.joining(","));
+    }
+
+    private static String taintVulnerabilitySearchUrl(String projectKey, @Nullable String branchName, @Nullable String organizationKey) {
+      var url = new StringBuilder("/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY&componentKeys=")
+        .append(urlEncode(projectKey))
+        .append("&components=")
+        .append(urlEncode(projectKey))
+        .append("&rules=");
+      if (branchName != null) {
+        url.append(BRANCH_PARAM).append(urlEncode(branchName));
+      }
+      if (organizationKey != null) {
+        url.append(ORGANIZATION_PARAM).append(urlEncode(organizationKey));
+      }
+      return url.append(FIRST_PAGE_PARAMS).toString();
     }
 
     private void registerProjectBranchesApiResponses() {
@@ -1077,7 +1249,7 @@ public class ServerFixture {
               return builder.build();
             }, toList())));
         var searchUrl = "/api/hotspots/search.protobuf?" + projectParameter + "=" + urlEncode(projectKey);
-        var branchParameter = branchName == null ? "" : ("&branch=" + urlEncode(branchName));
+        var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get(searchUrl + "&files=" + urlEncode(filePath) + branchParameter + FIRST_PAGE_PARAMS)
             .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -1138,7 +1310,7 @@ public class ServerFixture {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
               .concat(componentKeyParams(projectKey))
               .concat("&ps=1&p=1")
-              .concat("&branch=").concat(branchName);
+              .concat(BRANCH_PARAM).concat(branchName);
             mockServer.stubFor(get(searchUrl)
               .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
                 .addIssues(
@@ -1153,11 +1325,9 @@ public class ServerFixture {
           });
 
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
-          var searchUrl = "/api/issues/search.protobuf?issueStatuses=OPEN,CONFIRMED,FALSE_POSITIVE,ACCEPTED&types=VULNERABILITY"
-            + componentKeyParams(projectKey) + "&rules=&branch=" + branchName
-            + FIRST_PAGE_PARAMS;
+          var searchUrl = taintVulnerabilitySearchUrl(projectKey, branchName, project.organizationKey);
           mockServer.stubFor(get(searchUrl)
-            .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
+            .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
               .addAllIssues(
                 vulnerabilities.stream().map(vulnerability -> Issues.Issue.newBuilder()
                   .setKey(vulnerability.getKey()).setRule(vulnerability.getRule()).setCreationDate(vulnerability.getCreationDate()).setMessage(vulnerability.getMessage())
@@ -1294,11 +1464,11 @@ public class ServerFixture {
             allBranchIssues.add(serverIssue);
             return serverIssue;
           }).toArray(Message[]::new);
-          var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+          var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
           mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter)
             .willReturn(aResponse().withResponseBody(protobufBodyDelimited(messages))));
         });
-        var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+        var branchParameter = branchName == null ? "" : (BRANCH_PARAM + urlEncode(branchName));
         mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey) + branchParameter)
           .willReturn(aResponse().withResponseBody(protobufBodyDelimited(allBranchIssues.toArray(new Message[0])))));
       }));
@@ -1380,18 +1550,18 @@ public class ServerFixture {
     private void registerSourceApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> pullRequest.sourceFileByComponentKey
         .forEach((componentKey, sourceFile) -> mockServer
-          .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
+          .stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         if (branchName != null) {
           branch.sourceFileByComponentKey
             .forEach((componentKey, sourceFile) -> mockServer
-              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+              .stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
         }
       }));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> branch.sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {
@@ -1443,7 +1613,7 @@ public class ServerFixture {
           .filter(e -> projectKey.equals(e.getValue().projectKey()))
           .forEach(e -> {
             var projectBinding = e.getValue();
-            var endpoint = "/api/components/search_projects?projectIds=" + projectBinding.projectId() + "&organization=" + organizationKey;
+            var endpoint = "/api/components/search_projects?projectIds=" + projectBinding.projectId() + ORGANIZATION_PARAM + organizationKey;
             var body = """
               {"components":[{"key":"%s","name":"%s"}]}
               """.formatted(projectKey, projectName);
@@ -1471,7 +1641,7 @@ public class ServerFixture {
         .forEach((organizationKey, projects) -> {
           var url = "/api/components/search.protobuf?qualifiers=TRK";
           if (organizationKey.isPresent()) {
-            url += "&organization=" + organizationKey.get();
+            url += ORGANIZATION_PARAM + organizationKey.get();
           }
           url += FIRST_PAGE_PARAMS;
           mockServer.stubFor(get(url)
@@ -1504,7 +1674,7 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var url = "/api/components/tree.protobuf?qualifiers=FIL,UTS&component=" + projectKey;
         if (project.organizationKey != null) {
-          url += "&organization=" + project.organizationKey;
+          url += ORGANIZATION_PARAM + project.organizationKey;
         }
         url += FIRST_PAGE_PARAMS;
         mockServer.stubFor(get(url)

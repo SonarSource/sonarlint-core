@@ -101,8 +101,8 @@ public class ConnectionService {
 
   private SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
     var region = SonarCloudRegion.valueOf(scDto.getRegion().toString());
-    return new SonarCloudConnectionConfiguration(sonarCloudActiveEnvironment.getUri(region), sonarCloudActiveEnvironment.getApiUri(region), scDto.getConnectionId(),
-      scDto.getOrganization(), region, scDto.isDisableNotifications());
+    return new SonarCloudConnectionConfiguration(sonarCloudActiveEnvironment.getUri(region), sonarCloudActiveEnvironment.getApiUri(region),
+      sonarCloudActiveEnvironment.getCdnUri(region), scDto.getConnectionId(), scDto.getOrganization(), region, scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.Strings;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -123,7 +125,8 @@ public class SonarQubeClientManager {
       sq -> new EndpointParams(sq.getServerUrl(), null, false, null),
       sc -> {
         var region = SonarCloudRegion.valueOf(sc.getRegion().toString());
-        return new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, sc.getOrganization());
+        return new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, sc.getOrganization(),
+          cdnBaseUrl(sonarCloudActiveEnvironment.getCdnUri(region)));
       });
     var httpClient = transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials)
@@ -143,6 +146,10 @@ public class SonarQubeClientManager {
         }
         return httpClientProvider.getWebSocketClient(credentials.getLeft().getToken());
       });
+  }
+
+  private static String cdnBaseUrl(@Nullable URI cdnUri) {
+    return cdnUri == null ? null : Strings.CS.removeEnd(cdnUri.toString(), "/");
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> getValidCredentialsFromClient(String connectionId) {
