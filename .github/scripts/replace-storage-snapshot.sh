@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Replaces the storage snapshot of StorageUpgradeMediumTests with the one generated from a release, for the version bump PR,
+# Replaces the storage snapshot of StorageUpgradeIntegrationTests with the one generated from a release, for the version bump PR,
 # and writes a note describing the outcome for the PR body.
 #
 # Master must always keep exactly one valid snapshot, otherwise the upgrade test fails on every PR. So this script never fails:
@@ -12,7 +12,7 @@
 #   GITHUB_OUTPUT     receives the note, as the "note" output
 set -uo pipefail
 
-SNAPSHOTS_DIR=medium-tests/src/test/resources/storage-snapshots
+SNAPSHOTS_DIR=rpc-integration-tests/src/test/resources/storage-snapshots
 
 # Files
 

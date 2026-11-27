@@ -113,7 +113,7 @@ jobs:
         if: failure()
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
-          name: QA Linux Test Report
+          name: Linux Unit and Integration Test Report
           reporter: java-junit
           path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
@@ -157,7 +157,7 @@ jobs:
         if: failure()
         uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
-          name: QA Windows Test Report
+          name: Windows Unit and Integration Test Report
           reporter: java-junit
           path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/*.xml'
           list-suites: failed
@@ -279,7 +279,7 @@ jobs:
       - uses: SonarSource/ci-github-actions/config-maven@43609e4795f6400aa0b66dc1f5277f1fc3fb4768 # 2.6.0
         with:
           artifactory-reader-role: private-reader
-      - name: Run QA
+      - name: Run integration tests
         if: ${{ github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'branch-') || startsWith(github.ref_name, 'dogfood-on-') }}
         env:
           MAVEN_OPTS: -Xmx4g
@@ -292,7 +292,7 @@ jobs:
           SONAR_CE_JAVAADDITIONALOPTS: -XX:-UseContainerSupport
         run: |
           mvn "-Dorchestrator.configUrl=$ORCHESTRATOR_CONFIG_URL" "-Dorchestrator.home=$ORCHESTRATOR_HOME" -f its/pom.xml -Dsonar.runtimeVersion=${{ matrix.sq_version }} ${{ matrix.category }} verify surefire-report:report
-      - name: Generate QA test report on failure
+      - name: Generate integration test report on failure
         if: failure()
         uses: dorny/test-reporter@2dcf091ad558da2cabf16f6b423e02cd078c937a
         with:

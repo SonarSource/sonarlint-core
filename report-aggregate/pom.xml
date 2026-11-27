@@ -83,7 +83,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-medium-tests</artifactId>
+      <artifactId>sonarlint-rpc-integration-tests</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

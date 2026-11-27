@@ -52,11 +52,18 @@ jobs:
       - name: Generate storage snapshot
         env:
           RELEASED_VERSION: ${{ needs.release.outputs.released-version }}
-        # See medium-tests/src/test/resources/storage-snapshots/README.md
+        # See rpc-integration-tests/src/test/resources/storage-snapshots/README.md
         run: |
-          mvn -B install -DskipTests -pl medium-tests -am -P '!its-linux'
-          mvn -B exec:java -pl medium-tests -P '!its-linux' \
-            -Dexec.mainClass=mediumtest.storage.StorageSnapshotGenerator -Dexec.classpathScope=test \
+          test_module=rpc-integration-tests
+          test_package=integrationtests
+          # This step runs from a release tag, which can predate the rename.
+          if [[ -d medium-tests ]]; then
+            test_module=medium-tests
+            test_package=mediumtest
+          fi
+          mvn -B install -DskipTests -pl "$test_module" -am -P '!its-linux'
+          mvn -B exec:java -pl "$test_module" -P '!its-linux' \
+            -Dexec.mainClass="$test_package.storage.StorageSnapshotGenerator" -Dexec.classpathScope=test \
             -Dexec.args="$RELEASED_VERSION $RUNNER_TEMP/storage-snapshot/$RELEASED_VERSION"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

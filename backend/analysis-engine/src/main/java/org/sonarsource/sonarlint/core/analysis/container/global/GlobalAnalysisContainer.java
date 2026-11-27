@@ -102,7 +102,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
     loadedPlugins.getAnalysisPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
-  // Visible for medium tests
+  // Visible for integration tests
   public ModuleRegistry getModuleRegistry() {
     return moduleRegistry;
   }

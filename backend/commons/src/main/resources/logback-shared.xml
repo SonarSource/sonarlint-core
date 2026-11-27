@@ -1,4 +1,4 @@
-<!-- This file is shared between the production and medium test code -->
+<!-- This file is shared between production and integration test code -->
 <included>
   <root level="trace"/>
   <logger name="org.springframework" level="warn" />
