@@ -182,13 +182,7 @@ public class BinariesArtifactSource implements ArtifactSource {
   private Path downloadAndCache(BinariesArtifact artifact) throws IOException {
     var pluginPath = buildArtifactLocalPath(artifact);
     downloadAndVerify(artifact, pluginPath);
-    var pluginDirectory = cacheBaseDirectory.resolve(artifact.artifactKey());
-    if (artifact.isExploded()) {
-      // The previous version stays until the new JAR has passed the bundled PGP check.
-      cacheManager.deletePreviousVersions(pluginDirectory, artifact.version());
-    } else {
-      cacheManager.cleanupOldVersions(pluginDirectory, artifact.version());
-    }
+    cacheManager.cleanupOldVersions(cacheBaseDirectory.resolve(artifact.artifactKey()), artifact.version());
     cachedArtifactPaths.put(artifact.artifactKey(), pluginPath);
     return pluginPath;
   }
@@ -281,8 +275,8 @@ public class BinariesArtifactSource implements ArtifactSource {
   }
 
   /**
-   * Downloads {@code plugin/<artifact>-<version>.jar} and {@code manifest.json}. The previous version directory is left
-   * untouched when either download or the PGP check fails.
+   * Downloads {@code plugin/<artifact>-<version>.jar} and {@code manifest.json}. A failed download or PGP check leaves
+   * the previous version directory in place. Retention cleanup runs only after both files are stored.
    */
   private void downloadExploded(BinariesArtifact artifact, Path jarPath) throws IOException {
     var versionDirectory = jarPath.getParent().getParent();

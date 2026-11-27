@@ -78,8 +78,9 @@ dependencies** (OmniSharp distributions). Artifacts are cached under
 
 JavaScript and Python are ZIP plugins. They are downloaded from the exploded tree
 `Distribution/<artifact>/{version}/`: `plugin/<artifact>-{version}.jar` and `manifest.json`.
-The JAR is checked with the PGP signature bundled in SLCORE. After that check passes, every other
-version directory of that plugin is deleted. A failed download leaves the previous version in place.
+The JAR is checked with the PGP signature bundled in SLCORE. After that check passes, version
+directories older than 60 days are removed, the same retention used for CFamily and C#. A failed
+download leaves the previous version in place.
 BUILD-13154 has not published this tree yet, so the URLs follow the documented ZIP layout. The bundled
 signature is the one published today beside the flat JAR.
 

@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -273,7 +276,7 @@ class BinariesArtifactSourceTest {
   }
 
   @Test
-  void load_should_store_exploded_plugin_and_delete_previous_version_after_signature_check() throws Exception {
+  void load_should_store_exploded_plugin_and_apply_retention_cleanup() throws Exception {
     var requestedUrls = new CopyOnWriteArrayList<String>();
     mockExplodedDownloads(requestedUrls, true, true);
     when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
@@ -281,8 +284,11 @@ class BinariesArtifactSourceTest {
     var version = BinariesArtifact.JAVASCRIPT.version();
     var pluginDirectory = tempDir.resolve("ondemand-plugins").resolve("javascript");
     var previous = pluginDirectory.resolve("0.9");
+    var expired = pluginDirectory.resolve("0.8");
     Files.createDirectories(previous);
-    Files.writeString(previous.resolve("previous.txt"), "keep-until-success");
+    Files.createDirectories(expired);
+    Files.writeString(previous.resolve("previous.txt"), "within-retention");
+    Files.setLastModifiedTime(expired, FileTime.from(Instant.now().minus(61, ChronoUnit.DAYS)));
 
     source.load(Set.of("javascript")).pendingDownloads().forEach(BinariesArtifactSourceTest::startDownload);
 
@@ -292,7 +298,8 @@ class BinariesArtifactSourceTest {
     assertThat(requestedUrls).containsExactly(BinariesArtifact.JAVASCRIPT.downloadUrl(), BinariesArtifact.JAVASCRIPT.manifestUrl());
     assertThat(jarPath).isRegularFile();
     assertThat(manifestPath).content().isEqualTo("{\"resources\":[]}");
-    assertThat(previous).doesNotExist();
+    assertThat(previous).isDirectory();
+    assertThat(expired).doesNotExist();
     assertThat(capturedStatuses).allSatisfy(status -> {
       assertThat(status.state()).isEqualTo(ArtifactState.ACTIVE);
       assertThat(status.path()).isEqualTo(jarPath);
@@ -306,6 +313,7 @@ class BinariesArtifactSourceTest {
     var previous = tempDir.resolve("ondemand-plugins").resolve("javascript").resolve("0.9");
     Files.createDirectories(previous);
     Files.writeString(previous.resolve("previous.txt"), "still-here");
+    Files.setLastModifiedTime(previous, FileTime.from(Instant.now().minus(61, ChronoUnit.DAYS)));
 
     var downloadFuture = source.load(Set.of("javascript")).pendingDownloads().getFirst().starter().get();
 
@@ -322,6 +330,7 @@ class BinariesArtifactSourceTest {
     var source = buildSource(Executors.newCachedThreadPool(), new BinariesLocalCacheManager());
     var previous = tempDir.resolve("ondemand-plugins").resolve("python").resolve("1.0");
     Files.createDirectories(previous);
+    Files.setLastModifiedTime(previous, FileTime.from(Instant.now().minus(61, ChronoUnit.DAYS)));
 
     var downloadFuture = source.load(Set.of("python")).pendingDownloads().getFirst().starter().get();
 
