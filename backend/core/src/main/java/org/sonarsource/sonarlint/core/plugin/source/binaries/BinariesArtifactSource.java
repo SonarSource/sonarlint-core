@@ -72,7 +72,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils
 public class BinariesArtifactSource implements ArtifactSource {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String CACHE_SUBDIR = "ondemand-plugins";
+  /** Directory under the storage root where on-demand plugins and their resources are stored. */
+  public static final String CACHE_SUBDIR = "ondemand-plugins";
 
   private final Path cacheBaseDirectory;
   private final HttpClientProvider httpClientProvider;

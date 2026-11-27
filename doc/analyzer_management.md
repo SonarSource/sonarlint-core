@@ -84,6 +84,14 @@ download leaves the previous version in place.
 BUILD-13154 has not published this tree yet, so the URLs follow the documented ZIP layout. The bundled
 signature is the one published today beside the flat JAR.
 
+Standalone analysis passes a `StandaloneResourceFetcher` to the scanner. `fetch` downloads
+`resources/<path>` from that exploded tree on every call and checks the SHA-256 against the local
+`manifest.json`. The manifest is read as the connected-mode inventory: a `staticResources` array of
+`path`, `hash`, and `size`. BUILD-13154 has not defined this file, so that is the shape used here.
+`fetchAndExtract` extracts a zip or tar.gz into a new directory under `<storage-root>/tmp`, then deletes
+the downloaded archive. A failed extraction deletes that directory as well. `fetch` writes the resource
+under `<storage-root>/tmp` and returns that file, and a later call downloads it again.
+
 - `listAvailableArtifacts(Set<SonarLanguage> enabledLanguages)` lists artifacts available on Binaries.
 - `load(keys)` checks the cache first. For each missing artifact, it returns a
   `DOWNLOADING` result and a pending supplier. The supplier starts the download after the
