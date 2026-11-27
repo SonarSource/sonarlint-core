@@ -137,7 +137,7 @@ public enum BinariesArtifact {
     if (index < 0) {
       throw new IllegalStateException("Exploded plugin URL has no plugin directory: " + jarUrl);
     }
-    return String.format(jarUrl.substring(0, index) + "/" + MANIFEST_FILE_NAME, version());
+    return String.format(jarUrl.substring(0, index), version()) + "/" + MANIFEST_FILE_NAME;
   }
 
   public String jarFileName() {

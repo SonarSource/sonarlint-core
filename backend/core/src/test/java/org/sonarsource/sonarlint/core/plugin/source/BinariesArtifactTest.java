@@ -27,6 +27,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(SystemStubsExtension.class)
 class BinariesArtifactTest {
@@ -125,6 +126,9 @@ class BinariesArtifactTest {
     assertThat(BinariesArtifact.PYTHON.manifestUrl())
       .isEqualTo("https://binaries.sonarsource.com/Distribution/sonar-python-plugin/5.18.0.31561/manifest.json");
     assertThat(BinariesArtifact.JAVASCRIPT.jarFileName()).isEqualTo("sonar-javascript-plugin-13.9.0.44793.jar");
+    assertThatThrownBy(BinariesArtifact.CFAMILY_PLUGIN::manifestUrl)
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("No manifest for cpp");
   }
 
 }

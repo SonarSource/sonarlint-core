@@ -276,6 +276,48 @@ class BinariesArtifactSourceTest {
   }
 
   @Test
+  void load_should_reuse_a_verified_exploded_plugin_and_its_manifest() throws Exception {
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
+    var source = buildSource();
+    var version = BinariesArtifact.JAVASCRIPT.version();
+    var jarPath = tempDir.resolve("ondemand-plugins").resolve("javascript").resolve(version).resolve("plugin")
+      .resolve(BinariesArtifact.JAVASCRIPT.jarFileName());
+    Files.createDirectories(jarPath.getParent());
+    Files.writeString(jarPath, "cached-jar");
+    Files.writeString(jarPath.getParent().getParent().resolve(BinariesArtifact.MANIFEST_FILE_NAME), "{}");
+
+    var result = source.load(Set.of("javascript"));
+
+    assertThat(result.pendingDownloads()).isEmpty();
+    assertThat(result.resolvedArtifactsByKey().get("javascript"))
+      .usingRecursiveComparison()
+      .isEqualTo(new ResolvedArtifact(ArtifactState.ACTIVE, jarPath, ArtifactOrigin.ON_DEMAND, Version.create(version)));
+    verifyNoInteractions(httpClientProvider);
+  }
+
+  @Test
+  void load_should_download_again_when_the_exploded_manifest_is_missing() throws Exception {
+    var requestedUrls = new CopyOnWriteArrayList<String>();
+    mockExplodedDownloads(requestedUrls, true, true);
+    when(signatureVerifier.verify(any(Path.class), any(BinariesArtifact.class))).thenReturn(true);
+    var source = buildSource(Executors.newCachedThreadPool(), new BinariesLocalCacheManager());
+    var version = BinariesArtifact.PYTHON.version();
+    var jarPath = tempDir.resolve("ondemand-plugins").resolve("python").resolve(version).resolve("plugin")
+      .resolve(BinariesArtifact.PYTHON.jarFileName());
+    Files.createDirectories(jarPath.getParent());
+    Files.writeString(jarPath, "stale-jar");
+
+    var result = source.load(Set.of("python"));
+    assertThat(result.pendingDownloads()).hasSize(1);
+    result.pendingDownloads().forEach(BinariesArtifactSourceTest::startDownload);
+
+    var manifestPath = jarPath.getParent().getParent().resolve(BinariesArtifact.MANIFEST_FILE_NAME);
+    await().atMost(10, TimeUnit.SECONDS).until(() -> Files.isRegularFile(manifestPath));
+    assertThat(jarPath).content().isEqualTo("jar-bytes");
+    assertThat(requestedUrls).contains(BinariesArtifact.PYTHON.manifestUrl());
+  }
+
+  @Test
   void load_should_store_exploded_plugin_and_apply_retention_cleanup() throws Exception {
     var requestedUrls = new CopyOnWriteArrayList<String>();
     mockExplodedDownloads(requestedUrls, true, true);
