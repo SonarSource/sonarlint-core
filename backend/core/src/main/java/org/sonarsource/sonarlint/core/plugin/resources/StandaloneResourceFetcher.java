@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.sonar.api.scanner.ResourceFetcher;
@@ -35,19 +36,19 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
 import org.sonarsource.sonarlint.core.serverapi.plugins.StaticResource;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 
 /**
- * Downloads a standalone static resource from the exploded binaries tree on every call.
- * The bytes are checked against the {@code staticResources} entries of the local {@code manifest.json}.
- * A JAR-packaged plugin has no exploded tree, so a fetch for it fails.
+ * Returns a standalone static resource from {@code ondemand-plugins/{key}/{version}/resources/{sha256}/{filename}}.
+ * A missing or stale file is downloaded from the exploded binaries tree, checked against {@code manifest.json},
+ * and published through a temporary file. A JAR-packaged plugin has no exploded tree, so a fetch for it fails.
  */
 public class StandaloneResourceFetcher implements ResourceFetcher {
 
   private static final Gson GSON = new Gson();
 
   private final Path onDemandPluginsDirectory;
-  private final Path workDirectory;
   private final Downloader downloader;
 
   public StandaloneResourceFetcher(Path storageRoot, HttpClientProvider httpClientProvider) {
@@ -56,24 +57,29 @@ public class StandaloneResourceFetcher implements ResourceFetcher {
 
   StandaloneResourceFetcher(Path storageRoot, Downloader downloader) {
     this.onDemandPluginsDirectory = storageRoot.resolve(BinariesArtifactSource.CACHE_SUBDIR);
-    this.workDirectory = storageRoot.resolve("tmp");
     this.downloader = downloader;
   }
 
   @Override
   public Path fetch(String pluginKey, String resourcePath) {
-    filename(resourcePath);
+    var name = filename(resourcePath);
     var artifact = requireExplodedPlugin(pluginKey);
-    var resource = requireResource(artifact, pluginKey, resourcePath);
-    if (resource.hash() == null || resource.hash().isBlank()) {
-      throw new IllegalStateException("Plugin '" + pluginKey + "' has no hash for static resource '" + resourcePath + "'");
+    var resource = requireHashedResource(artifact, pluginKey, resourcePath);
+    var storage = storageFor(artifact);
+    var cached = storage.file(resource.hash(), name);
+    if (storage.matches(cached, resource.hash())) {
+      return cached;
     }
     var bytes = downloader.download(artifact.resourceUrl(resourcePath));
     var actualHash = DigestUtils.sha256Hex(bytes);
     if (!actualHash.equalsIgnoreCase(resource.hash())) {
       throw new IllegalStateException("Static resource '" + resourcePath + "' for plugin '" + pluginKey + "' has SHA-256 " + actualHash + ", expected " + resource.hash());
     }
-    return writeTemporaryFile(workDirectory, resourcePath, bytes);
+    try {
+      return storage.store(resource.hash(), name, bytes);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot store static resource '" + resourcePath + "'", e);
+    }
   }
 
   @Override
@@ -84,27 +90,52 @@ public class StandaloneResourceFetcher implements ResourceFetcher {
     if (!zip && !tarGz) {
       throw new IllegalArgumentException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "' because only zip and tar.gz resources are supported");
     }
+    filename(resourcePath);
+    var artifact = requireExplodedPlugin(pluginKey);
+    var resource = requireHashedResource(artifact, pluginKey, resourcePath);
+    var storage = storageFor(artifact);
+    var destination = storage.extractionDirectory(resource.hash());
+    ConnectedResourceFetcher.deleteStaleExtractingDirectories(destination);
+    var complete = destination.resolve(StaticResourceStorage.EXTRACTION_COMPLETE);
+    if (Files.isRegularFile(complete)) {
+      return destination;
+    }
     var archive = fetch(pluginKey, resourcePath);
-    Path destination = null;
+    var extracting = destination.resolveSibling(ConnectedResourceFetcher.EXTRACTING_PREFIX + UUID.randomUUID());
     try {
-      Files.createDirectories(workDirectory);
-      destination = Files.createTempDirectory(workDirectory, "sonarlint-resource-");
+      Files.createDirectories(extracting);
       if (zip) {
-        ZipUtils.unzip(archive.toFile(), destination.toFile());
+        ZipUtils.unzip(archive.toFile(), extracting.toFile());
       } else {
-        TarGzUtils.extractTarGz(archive, destination);
+        TarGzUtils.extractTarGz(archive, extracting);
       }
-      var extracted = destination;
-      destination = null;
-      return extracted;
+      Files.writeString(extracting.resolve(StaticResourceStorage.EXTRACTION_COMPLETE), "");
+      if (Files.isRegularFile(complete) || ConnectedResourceFetcher.keepNewlyCompletedExtraction(destination)) {
+        ConnectedResourceFetcher.deleteRecursivelyQuietly(extracting);
+        return destination;
+      }
+      ConnectedResourceFetcher.publishExtraction(extracting, destination);
+      if (!ConnectedResourceFetcher.extractionRemainsComplete(complete)) {
+        throw new IOException("Extracted resource '" + resourcePath + "' for plugin '" + pluginKey + "' is incomplete");
+      }
+      return destination;
     } catch (IOException e) {
       throw new UncheckedIOException("Cannot extract '" + resourcePath + "' for plugin '" + pluginKey + "'", e);
     } finally {
-      if (destination != null) {
-        FileUtils.deleteQuietly(destination.toFile());
-      }
-      FileUtils.deleteQuietly(archive.toFile());
+      FileUtils.deleteQuietly(extracting.toFile());
     }
+  }
+
+  private StaticResource requireHashedResource(BinariesArtifact artifact, String pluginKey, String resourcePath) {
+    var resource = requireResource(artifact, pluginKey, resourcePath);
+    if (resource.hash() == null || resource.hash().isBlank()) {
+      throw new IllegalStateException("Plugin '" + pluginKey + "' has no hash for static resource '" + resourcePath + "'");
+    }
+    return resource;
+  }
+
+  private StandaloneResourceStorage storageFor(BinariesArtifact artifact) {
+    return new StandaloneResourceStorage(artifact.localManifest(onDemandPluginsDirectory).getParent());
   }
 
   private StaticResource requireResource(BinariesArtifact artifact, String pluginKey, String resourcePath) {
@@ -150,25 +181,6 @@ public class StandaloneResourceFetcher implements ResourceFetcher {
       }
     } catch (IOException e) {
       throw new UncheckedIOException("Failed to download static resource from " + url, e);
-    }
-  }
-
-  private static Path writeTemporaryFile(Path workDirectory, String resourcePath, byte[] bytes) {
-    var filename = filename(resourcePath);
-    Path file = null;
-    try {
-      Files.createDirectories(workDirectory);
-      file = Files.createTempFile(workDirectory, "sonarlint-resource-", "-" + filename);
-      Files.write(file, bytes);
-      var written = file;
-      file = null;
-      return written;
-    } catch (IOException e) {
-      throw new UncheckedIOException("Cannot store static resource '" + resourcePath + "'", e);
-    } finally {
-      if (file != null) {
-        FileUtils.deleteQuietly(file.toFile());
-      }
     }
   }
 

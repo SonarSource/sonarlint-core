@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifact;
 import org.sonarsource.sonarlint.core.plugin.source.binaries.BinariesArtifactSource;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,11 +55,12 @@ class StandaloneResourceFetcherTests {
   Path storage;
 
   @Test
-  void downloads_the_resource_on_every_call_and_checks_the_manifest_hash() throws IOException {
+  void reuses_a_cached_resource_whose_hash_matches_the_manifest() throws IOException {
     var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var hash = DigestUtils.sha256Hex(bytes);
     var calls = new AtomicInteger();
     var urls = new ArrayList<String>();
-    writeManifest("javascript", "linux-x64/native-tool", DigestUtils.sha256Hex(bytes).toUpperCase(Locale.ROOT), bytes.length);
+    writeManifest("javascript", "linux-x64/native-tool", hash.toUpperCase(Locale.ROOT), bytes.length);
     var fetcher = fetcher(url -> {
       calls.incrementAndGet();
       urls.add(url);
@@ -69,13 +71,34 @@ class StandaloneResourceFetcherTests {
     var second = fetcher.fetch("javascript", "linux-x64/native-tool");
 
     assertThat(Files.readAllBytes(first)).isEqualTo(bytes);
-    assertThat(Files.readAllBytes(second)).isEqualTo(bytes);
-    assertThat(second).isNotEqualTo(first);
-    assertThat(first).hasParentRaw(storage.resolve("tmp"));
-    assertThat(calls).hasValue(2);
-    assertThat(urls).containsExactly(
-      BinariesArtifact.JAVASCRIPT.resourceUrl("linux-x64/native-tool"),
-      BinariesArtifact.JAVASCRIPT.resourceUrl("linux-x64/native-tool"));
+    assertThat(second).isEqualTo(first);
+    assertThat(first).isEqualTo(cachedFile("javascript", hash, "native-tool"));
+    try (var children = Files.list(first.getParent())) {
+      assertThat(children).containsExactly(first);
+    }
+    assertThat(calls).hasValue(1);
+    assertThat(urls).containsExactly(BinariesArtifact.JAVASCRIPT.resourceUrl("linux-x64/native-tool"));
+  }
+
+  @Test
+  void replaces_a_cached_file_whose_hash_does_not_match() throws IOException {
+    var bytes = "native".getBytes(StandardCharsets.UTF_8);
+    var hash = DigestUtils.sha256Hex(bytes);
+    var cached = cachedFile("javascript", hash, "native-tool");
+    Files.createDirectories(cached.getParent());
+    Files.writeString(cached, "stale");
+    writeManifest("javascript", "linux-x64/native-tool", hash, bytes.length);
+    var calls = new AtomicInteger();
+    var fetcher = fetcher(url -> {
+      calls.incrementAndGet();
+      return bytes;
+    });
+
+    var fetched = fetcher.fetch("javascript", "linux-x64/native-tool");
+
+    assertThat(fetched).isEqualTo(cached);
+    assertThat(fetched).hasContent("native");
+    assertThat(calls).hasValue(1);
   }
 
   @Test
@@ -87,7 +110,7 @@ class StandaloneResourceFetcherTests {
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
       .hasMessageContaining("expected deadbeef");
-    assertThat(storage.resolve("tmp")).doesNotExist();
+    assertThat(cachedFile("javascript", "deadbeef", "native-tool")).doesNotExist();
   }
 
   @Test
@@ -228,14 +251,15 @@ class StandaloneResourceFetcherTests {
     assertThatThrownBy(() -> fetcher.fetch("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalStateException.class)
       .hasMessage("Failed to download static resource: HTTP 404");
-    assertThat(storage.resolve("tmp")).doesNotExist();
+    assertThat(cachedFile("javascript", "abc", "native-tool")).doesNotExist();
   }
 
   @Test
-  void extracts_a_zip_again_on_every_call() throws IOException {
+  void reuses_an_extracted_archive_without_downloading_again() throws IOException {
     var bytes = zip("hello.txt", "hello");
+    var hash = DigestUtils.sha256Hex(bytes);
     var calls = new AtomicInteger();
-    writeManifest("javascript", "tools/native.zip", DigestUtils.sha256Hex(bytes), bytes.length);
+    writeManifest("javascript", "tools/native.zip", hash, bytes.length);
     var fetcher = fetcher(url -> {
       calls.incrementAndGet();
       return bytes;
@@ -245,41 +269,24 @@ class StandaloneResourceFetcherTests {
     var again = fetcher.fetchAndExtract("javascript", "tools/native.zip");
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(again.resolve("hello.txt")).hasContent("hello");
-    assertThat(again).isNotEqualTo(extracted);
-    assertThat(calls).hasValue(2);
-    try (var children = Files.list(storage.resolve("tmp"))) {
-      assertThat(children).containsExactlyInAnyOrder(extracted, again);
-    }
+    assertThat(extracted.resolve(StaticResourceStorage.EXTRACTION_COMPLETE)).isEmptyFile();
+    assertThat(again).isEqualTo(extracted);
+    assertThat(extracted).isEqualTo(cachedFile("javascript", hash, "native.zip").getParent().resolve(StandaloneResourceStorage.EXTRACTED_DIRECTORY));
+    assertThat(Files.readAllBytes(cachedFile("javascript", hash, "native.zip"))).isEqualTo(bytes);
+    assertThat(calls).hasValue(1);
   }
 
   @Test
   void extracts_a_tar_gz_resource() throws IOException {
     var bytes = tarGz("hello.txt", "hello");
-    writeManifest("python", "tools/native.tar.gz", DigestUtils.sha256Hex(bytes), bytes.length);
+    var hash = DigestUtils.sha256Hex(bytes);
+    writeManifest("python", "tools/native.tar.gz", hash, bytes.length);
     var fetcher = fetcher(url -> bytes);
 
     var extracted = fetcher.fetchAndExtract("python", "tools/native.tar.gz");
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
-    assertThat(extracted).hasParentRaw(storage.resolve("tmp"));
-    try (var children = Files.list(storage.resolve("tmp"))) {
-      assertThat(children).containsExactly(extracted);
-    }
-  }
-
-  @Test
-  void deletes_the_archive_and_a_partial_extraction_when_extraction_fails() throws IOException {
-    var bytes = "not-a-zip".getBytes(StandardCharsets.UTF_8);
-    writeManifest("javascript", "tools/native.zip", DigestUtils.sha256Hex(bytes), bytes.length);
-    var fetcher = fetcher(url -> bytes);
-
-    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
-      .isInstanceOf(UncheckedIOException.class)
-      .hasMessageContaining("Cannot extract");
-    try (var children = Files.list(storage.resolve("tmp"))) {
-      assertThat(children).isEmpty();
-    }
+    assertThat(extracted).isEqualTo(cachedFile("python", hash, "native.tar.gz").getParent().resolve(StandaloneResourceStorage.EXTRACTED_DIRECTORY));
   }
 
   @Test
@@ -291,6 +298,12 @@ class StandaloneResourceFetcherTests {
     assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "linux-x64/native-tool"))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessageContaining("only zip and tar.gz");
+  }
+
+  private Path cachedFile(String pluginKey, String hash, String filename) {
+    var artifact = BinariesArtifact.findByKey(pluginKey).orElseThrow();
+    var versionDirectory = artifact.localManifest(storage.resolve(BinariesArtifactSource.CACHE_SUBDIR)).getParent();
+    return new StandaloneResourceStorage(versionDirectory).file(hash, filename);
   }
 
   private StandaloneResourceFetcher fetcher(StandaloneResourceFetcher.Downloader downloader) {
