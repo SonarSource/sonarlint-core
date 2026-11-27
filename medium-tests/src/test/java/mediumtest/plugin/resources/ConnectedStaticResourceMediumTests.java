@@ -44,9 +44,9 @@ import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StaticResourceStorage;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -121,7 +121,9 @@ class ConnectedStaticResourceMediumTests {
     assertThat(analysis.result()).isEqualTo("native");
     assertThat(analysis.cached(RESOURCE_PATH, bytes)).hasContent("native");
     var cdnPath = "/plugins/" + PLUGIN_KEY + "/versions/" + FOLDER + "/" + RESOURCE_PATH;
-    assertThat(analysis.server().getMockServer().findAll(getRequestedFor(urlPathEqualTo(cdnPath)))).hasSize(1);
+    var requests = analysis.server().getMockServer().findAll(getRequestedFor(urlPathEqualTo(cdnPath)));
+    assertThat(requests).hasSize(1);
+    assertThat(requests.get(0).getHeader("Authorization")).isNull();
   }
 
   @SonarLintTest
@@ -248,7 +250,7 @@ class ConnectedStaticResourceMediumTests {
       assertThat(keptResources.resolve(hash).resolve("native-tool")).hasContent("keep");
       assertThat(keptResources.resolve("notes.txt")).hasContent("stray");
       assertThat(resources(backend, "empty")).doesNotExist();
-      assertThat(references(backend, "empty")).containsKey(PLUGIN_KEY);
+      assertThat(storedPlugins(backend, "empty")).containsKey(PLUGIN_KEY);
     });
   }
 
@@ -275,23 +277,19 @@ class ConnectedStaticResourceMediumTests {
 
   private static void awaitInventory(SonarLintTestRpcServer backend, byte[] bytes) {
     await().atMost(20, SECONDS).untilAsserted(() -> {
-      var reference = references(backend, CONNECTION_ID).get(PLUGIN_KEY);
-      assertThat(reference).isNotNull();
-      assertThat(reference.getStaticResourcesCount()).isEqualTo(1);
-      var resource = reference.getStaticResources(0);
-      assertThat(resource.getPath()).isEqualTo(RESOURCE_PATH);
-      assertThat(resource.getHash()).isEqualTo(DigestUtils.sha256Hex(bytes));
-      assertThat(resource.getSize()).isEqualTo(bytes.length);
-      assertThat(reference.getStaticResourceFolder()).isEqualTo(FOLDER);
+      var plugin = storedPlugins(backend, CONNECTION_ID).get(PLUGIN_KEY);
+      assertThat(plugin).isNotNull();
+      assertThat(plugin.getStaticResources()).hasSize(1);
+      var resource = plugin.getStaticResources().get(0);
+      assertThat(resource.path()).isEqualTo(RESOURCE_PATH);
+      assertThat(resource.hash()).isEqualTo(DigestUtils.sha256Hex(bytes));
+      assertThat(resource.size()).isEqualTo(bytes.length);
+      assertThat(plugin.getStaticResourceFolder()).isEqualTo(FOLDER);
     });
   }
 
-  private static Map<String, Sonarlint.PluginReferences.PluginReference> references(SonarLintTestRpcServer backend, String connectionId) {
-    var file = backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("plugins").resolve("plugin_references.pb");
-    if (!Files.exists(file)) {
-      return Map.of();
-    }
-    return ProtobufFileUtil.readFile(file, Sonarlint.PluginReferences.parser()).getPluginsByKeyMap();
+  private static Map<String, StoredPlugin> storedPlugins(SonarLintTestRpcServer backend, String connectionId) {
+    return backend.getApplicationContext().getBean(StorageService.class).connection(connectionId).plugins().getStoredPluginsByKey();
   }
 
   private static Analysis analyze(SonarLintTestHarness harness, Path baseDir, String instruction, boolean cloud, Consumer<ServerPluginBuilder> customize) throws IOException {
@@ -316,9 +314,9 @@ class ConnectedStaticResourceMediumTests {
     }
     var backend = backendBuilder.start(client);
     await().atMost(20, SECONDS).untilAsserted(() -> {
-      var reference = references(backend, CONNECTION_ID).get(PLUGIN_KEY);
-      assertThat(reference).isNotNull();
-      assertThat(reference.getStaticResourcesCount()).isPositive();
+      var plugin = storedPlugins(backend, CONNECTION_ID).get(PLUGIN_KEY);
+      assertThat(plugin).isNotNull();
+      assertThat(plugin.getStaticResources()).isNotEmpty();
     });
     var analysis = new Analysis(server, backend, file);
     analyzeAgain(analysis);
