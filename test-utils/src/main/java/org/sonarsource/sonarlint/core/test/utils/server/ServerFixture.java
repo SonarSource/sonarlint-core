@@ -27,6 +27,8 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1041,17 +1043,25 @@ public class ServerFixture {
 
     private void registerStaticResourceResponses() {
       pluginsByKey.forEach((pluginKey, plugin) -> plugin.staticResources.forEach(resource -> {
-        stubStaticResource(encodeResourcePath("/static/" + pluginKey + "/" + resource.path), resource);
+        stubStaticResource(encodeStaticPath("/static/" + pluginKey + "/" + resource.path), resource);
         if (plugin.staticResourceFolder != null) {
-          stubStaticResource(encodeResourcePath("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path), resource);
+          stubStaticResource(encodeCdnPath("/plugins/" + pluginKey + "/versions/" + plugin.staticResourceFolder + "/" + resource.path), resource);
         }
       }));
     }
 
-    private static String encodeResourcePath(String path) {
+    private static String encodeStaticPath(String path) {
       return Stream.of(path.split("/", -1))
         .map(segment -> URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20"))
         .collect(Collectors.joining("/"));
+    }
+
+    private static String encodeCdnPath(String path) {
+      try {
+        return new URI(null, null, path, null).toASCIIString();
+      } catch (URISyntaxException e) {
+        throw new IllegalArgumentException(e);
+      }
     }
 
     private void stubStaticResource(String path, AbstractServerBuilder.ServerPluginBuilder.StaticResourceFixture resource) {
@@ -1166,9 +1176,6 @@ public class ServerFixture {
               .build())
             .build()))));
       });
-      if (serverKind == ServerKind.SONARCLOUD) {
-        registerEmptyTaintVulnerabilitySearch();
-      }
     }
 
     private static String taintRepositories() {
@@ -1176,13 +1183,6 @@ public class ServerFixture {
         .map(TAINT_REPOS_BY_LANGUAGE::get)
         .filter(Objects::nonNull)
         .collect(Collectors.joining(","));
-    }
-
-    private void registerEmptyTaintVulnerabilitySearch() {
-      var emptyPage = protobufBody(Issues.SearchWsResponse.newBuilder().setPaging(Common.Paging.newBuilder().setTotal(0).build()).build());
-      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.keySet().stream().filter(Objects::nonNull).forEach(branchName -> mockServer.stubFor(
-        get(taintVulnerabilitySearchUrl(projectKey, branchName, project.organizationKey))
-          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(emptyPage)))));
     }
 
     private static String taintVulnerabilitySearchUrl(String projectKey, @Nullable String branchName, @Nullable String organizationKey) {
@@ -1325,7 +1325,7 @@ public class ServerFixture {
           var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
           var searchUrl = taintVulnerabilitySearchUrl(projectKey, branchName, project.organizationKey);
           mockServer.stubFor(get(searchUrl)
-            .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
+            .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
               .addAllIssues(
                 vulnerabilities.stream().map(vulnerability -> Issues.Issue.newBuilder()
                   .setKey(vulnerability.getKey()).setRule(vulnerability.getRule()).setCreationDate(vulnerability.getCreationDate()).setMessage(vulnerability.getMessage())
