@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 public class ConnectedResourceFetcher implements ResourceFetcher {
 
   private static final Duration STALE_EXTRACTING_AGE = Duration.ofHours(1);
-  private static final String EXTRACTING_PREFIX = ".extracting-";
+  static final String EXTRACTING_PREFIX = ".extracting-";
 
   private final String connectionId;
   private final Map<String, StoredPlugin> plugins;
@@ -264,7 +264,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
-  private static void deleteStaleExtractingDirectories(Path destination) {
+  static void deleteStaleExtractingDirectories(Path destination) {
     var parent = destination.getParent();
     if (parent == null || !Files.isDirectory(parent)) {
       return;
@@ -289,7 +289,7 @@ public class ConnectedResourceFetcher implements ResourceFetcher {
     }
   }
 
-  private static void deleteRecursivelyQuietly(Path root) {
+  static void deleteRecursivelyQuietly(Path root) {
     try {
       deleteRecursively(root);
     } catch (IOException | UncheckedIOException ignored) {
