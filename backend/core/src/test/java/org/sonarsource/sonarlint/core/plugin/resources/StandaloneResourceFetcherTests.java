@@ -96,8 +96,7 @@ class StandaloneResourceFetcherTests {
 
     var fetched = fetcher.fetch("javascript", "linux-x64/native-tool");
 
-    assertThat(fetched).isEqualTo(cached);
-    assertThat(fetched).hasContent("native");
+    assertThat(fetched).isEqualTo(cached).hasContent("native");
     assertThat(calls).hasValue(1);
   }
 
@@ -287,6 +286,17 @@ class StandaloneResourceFetcherTests {
 
     assertThat(extracted.resolve("hello.txt")).hasContent("hello");
     assertThat(extracted).isEqualTo(cachedFile("python", hash, "native.tar.gz").getParent().resolve(StandaloneResourceStorage.EXTRACTED_DIRECTORY));
+  }
+
+  @Test
+  void reports_a_corrupt_archive() throws IOException {
+    var bytes = "not-a-zip".getBytes(StandardCharsets.UTF_8);
+    writeManifest("javascript", "tools/native.zip", DigestUtils.sha256Hex(bytes), bytes.length);
+    var fetcher = fetcher(url -> bytes);
+
+    assertThatThrownBy(() -> fetcher.fetchAndExtract("javascript", "tools/native.zip"))
+      .isInstanceOf(UncheckedIOException.class)
+      .hasMessageContaining("Cannot extract 'tools/native.zip'");
   }
 
   @Test

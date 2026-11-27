@@ -64,4 +64,22 @@ class StandaloneResourceStorageTests {
     }
   }
 
+  @Test
+  void rejects_a_hash_that_is_not_hexadecimal() {
+    var storage = new StandaloneResourceStorage(versionDirectory);
+
+    assertThatThrownBy(() -> storage.file("not-hex", "native-tool"))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Invalid static resource hash: not-hex");
+  }
+
+  @Test
+  void does_not_match_when_the_cached_path_is_a_directory() throws IOException {
+    var storage = new StandaloneResourceStorage(versionDirectory);
+    var directory = storage.file("abc", "native-tool");
+    Files.createDirectories(directory);
+
+    assertThat(storage.matches(directory, "abc")).isFalse();
+  }
+
 }
