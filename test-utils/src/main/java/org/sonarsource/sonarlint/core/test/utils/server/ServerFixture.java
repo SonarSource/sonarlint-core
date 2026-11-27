@@ -107,7 +107,7 @@ public class ServerFixture {
   private static final String FIRST_PAGE_PARAMS = "&ps=500&p=1";
   private static final String ORGANIZATION_PARAM = "&organization=";
   private static final String BRANCH_PARAM = "&branch=";
-  private static final String SOURCE_RAW_PATH = "/api/sources/raw?key=";
+  private static final String SOURCE_RAW_PREFIX = "/api/sources/raw?key=";
   public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
@@ -1550,18 +1550,18 @@ public class ServerFixture {
     private void registerSourceApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> pullRequest.sourceFileByComponentKey
         .forEach((componentKey, sourceFile) -> mockServer
-          .stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
+          .stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         if (branchName != null) {
           branch.sourceFileByComponentKey
             .forEach((componentKey, sourceFile) -> mockServer
-              .stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+              .stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey) + BRANCH_PARAM + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
         }
       }));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> branch.sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get(SOURCE_RAW_PATH + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get(SOURCE_RAW_PREFIX + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {
